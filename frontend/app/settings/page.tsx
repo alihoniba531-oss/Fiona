@@ -21,6 +21,8 @@ export default function SettingsPage() {
   const switchUser = (u: string) => {
     setUsername(u);
     localStorage.setItem("fiona_user", u);
+    // 通知 TopBar 等组件:身份变了,重新拉余额 / 状态
+    window.dispatchEvent(new Event("fiona-user-changed"));
   };
 
   const clearHistory = async () => {

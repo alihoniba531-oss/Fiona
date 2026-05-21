@@ -69,10 +69,16 @@ async def init_db():
                 type TEXT,
                 tags_json TEXT,
                 triggered_by_message_id INTEGER,
+                match_layer TEXT DEFAULT 'layer1',
                 seen INTEGER DEFAULT 0,
                 created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
             )
         """)
+        # 老库迁移：pending_matches 加 match_layer 列（区分 Layer 1 对话级 / Layer 2 画像级）
+        try:
+            await db.execute("ALTER TABLE pending_matches ADD COLUMN match_layer TEXT DEFAULT 'layer1'")
+        except Exception:
+            pass
         # 老库迁移：matches 表加 greeting 列
         try:
             await db.execute("ALTER TABLE matches ADD COLUMN greeting_a TEXT DEFAULT NULL")
@@ -345,15 +351,20 @@ async def save_pending_match(
     match_type: str,
     tags: list,
     triggered_by_message_id: int | None = None,
+    match_layer: str = "layer1",
 ):
-    """保存对话内匹配命中（待前端拉取并弹卡）"""
+    """保存对话内匹配命中（待前端拉取并弹卡）。
+    match_layer: 'layer1' = 对话级（A 触发，给 A/B 双方各推一张）；
+                 'layer2' = 画像级（用户每次画像更新后批量算）。
+    用于 _has_recent_layer2_match 判断 24h 冷却时区分两类，
+    避免 B 端收到的 layer1 卡误判为 layer2 占位，让 B 自己的 layer2 跑不起来。"""
     async with aiosqlite.connect(DB_PATH) as db:
         await db.execute(
             """INSERT INTO pending_matches
-               (username, peer_username, interest_topic, reason, type, tags_json, triggered_by_message_id)
-               VALUES (?, ?, ?, ?, ?, ?, ?)""",
+               (username, peer_username, interest_topic, reason, type, tags_json, triggered_by_message_id, match_layer)
+               VALUES (?, ?, ?, ?, ?, ?, ?, ?)""",
             (username, peer_username, interest_topic, reason, match_type,
-             _json.dumps(tags, ensure_ascii=False), triggered_by_message_id)
+             _json.dumps(tags, ensure_ascii=False), triggered_by_message_id, match_layer)
         )
         await db.commit()
 

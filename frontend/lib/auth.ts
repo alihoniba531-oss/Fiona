@@ -23,6 +23,10 @@ export function setAuth(token: string, username: string, balance: number) {
   localStorage.setItem(BALANCE_KEY, String(balance));
   // cookie 供 middleware 读取（7天）
   document.cookie = `fiona_token=${token}; path=/; max-age=${60 * 60 * 24 * 7}; SameSite=Lax`;
+  // 通知监听者（TopBar 等）身份变了
+  if (typeof window !== "undefined") {
+    window.dispatchEvent(new Event("fiona-user-changed"));
+  }
 }
 
 export function updateBalance(balance: number) {

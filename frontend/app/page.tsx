@@ -677,14 +677,25 @@ export default function ChatPage() {
       .catch(() => {});
   }, [username, hydrated]);
 
-  // Auto-scroll to bottom on new messages
+  // Auto-scroll to bottom on new messages —— 仅当用户已经接近底部时才跟随，
+  // 否则用户上滑看历史 / 流式输出时上滑停顿都会被强行拉回，体验很糟
   useEffect(() => {
-    bottomRef.current?.scrollIntoView({ behavior: "smooth" });
+    const container = bottomRef.current?.parentElement;
+    if (!container) return;
+    const distFromBottom = container.scrollHeight - container.scrollTop - container.clientHeight;
+    if (distFromBottom < 80) {
+      bottomRef.current?.scrollIntoView({ behavior: "smooth" });
+    }
   }, [messages]);
 
-  // Auto-scroll peer chat
+  // Auto-scroll peer chat —— 同上策略
   useEffect(() => {
-    peerBottomRef.current?.scrollIntoView({ behavior: "smooth" });
+    const container = peerBottomRef.current?.parentElement;
+    if (!container) return;
+    const distFromBottom = container.scrollHeight - container.scrollTop - container.clientHeight;
+    if (distFromBottom < 80) {
+      peerBottomRef.current?.scrollIntoView({ behavior: "smooth" });
+    }
   }, [peerMessages]);
 
   // ── callbacks / handlers ──

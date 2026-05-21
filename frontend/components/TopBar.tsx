@@ -20,9 +20,11 @@ export default function TopBar() {
   }, []);
 
   useEffect(() => {
-    const username = getUsername();
-    if (!username) return;
+    // 每次拉余额都重读 username —— 切换身份后能看到新账号的余额
+    // 监听两个事件:跨 tab 的 storage 变化 + 同 tab 的自定义 fiona-user-changed
     const fetchBalance = () => {
+      const username = getUsername();
+      if (!username) { setBalance(null); return; }
       fetch(`${API}/strawberry/${encodeURIComponent(username)}`)
         .then(r => r.json())
         .then(data => {
@@ -35,7 +37,13 @@ export default function TopBar() {
     };
     fetchBalance();
     const timer = setInterval(fetchBalance, 60000);
-    return () => clearInterval(timer);
+    window.addEventListener("storage", fetchBalance);
+    window.addEventListener("fiona-user-changed", fetchBalance);
+    return () => {
+      clearInterval(timer);
+      window.removeEventListener("storage", fetchBalance);
+      window.removeEventListener("fiona-user-changed", fetchBalance);
+    };
   }, []);
 
   return (

@@ -689,11 +689,13 @@ async def evaluate_profile_match(
 
 
 async def _has_recent_layer2_match(username: str, hours: int = 24) -> bool:
-    """检查该用户在最近 N 小时内是否已有画像级匹配推送（避免频繁打扰）。"""
+    """检查该用户在最近 N 小时内是否已有画像级（layer2）匹配推送，避免频繁打扰。
+    早期版本用 triggered_by_message_id IS NULL 判定，但 layer1 给 B 端的卡片也是 NULL，
+    会让经常被人匹配的用户自己的 layer2 永远跑不起来。改用显式 match_layer 字段。"""
     async with aiosqlite.connect(DB_PATH) as db:
         async with db.execute(
             """SELECT COUNT(*) FROM pending_matches
-               WHERE username = ? AND triggered_by_message_id IS NULL
+               WHERE username = ? AND match_layer = 'layer2'
                AND created_at > datetime('now', ?)""",
             (username, f"-{hours} hours")
         ) as cursor:
@@ -741,6 +743,7 @@ async def detect_and_save_from_profile(client, username: str) -> int:
             match_type=result["type"],
             tags=result["tags"],
             triggered_by_message_id=None,  # Layer 2 不关联具体消息
+            match_layer="layer2",
         )
         await save_match(username, candidate["peer_username"])
         return 1
