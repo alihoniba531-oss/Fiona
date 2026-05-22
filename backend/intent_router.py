@@ -14,7 +14,8 @@ INTENT_PROMPT = """你是意图识别器，只输出JSON，不输出任何其他
   wechat_video    微信视频通话     params: contact(联系人)
   web_search      搜索信息         params: query(搜索词)
   hot_topics      看热搜/热门话题  params: source(可选: 微博/知乎/抖音, 默认 微博)
-  route           查驾车路线       params: origin(起点), destination(终点)
+  route           查驾车导航(同城/同省短途) params: origin(起点), destination(终点)
+  travel_plan     旅行/出差规划(跨城以上,含航班/高铁/签证) params: query(原话)
   set_reminder    设置提醒         params: text(提醒内容), minutes(几分钟后, 整数)
   take_screenshot 截图             params: (无)
   get_datetime    查询时间日期     params: (无)
@@ -52,6 +53,19 @@ INTENT_PROMPT = """你是意图识别器，只输出JSON，不输出任何其他
 "中关村到北京西站怎么走" → route, origin=中关村, destination=北京西站
 "我想从家出发去公司" → route, missing=[origin, destination]  （太模糊时缺参，需追问）
 "怎么去机场" → route, missing=[origin], params={destination: 机场}
+
+【route vs travel_plan】区分关键：
+- route = 同城/同省 + 关键词含"开/驾车/导航/怎么走"，结果是地图驾车路线
+- travel_plan = 跨城/跨省/跨国 + 关键词含"规划/出差/旅行/几天/什么时候去"，
+  结果是航班+高铁+签证+预算+季节的综合方案
+- 一旦提到外国地名、签证、航班、机票，铁定 travel_plan
+- 一旦提到"X天后去"、"下周去"、"国庆去"、"规划"，也铁定 travel_plan
+
+"我在宁波三天后要去新德里帮我规划路线" → travel_plan, query=我在宁波三天后要去新德里帮我规划路线
+"下周从北京出差去东京怎么安排" → travel_plan, query=下周从北京出差去东京怎么安排
+"国庆想去新疆玩 5 天" → travel_plan, query=国庆想去新疆玩5天
+"从广州去拉萨怎么走比较方便" → travel_plan, query=从广州去拉萨怎么走比较方便（跨省+方式不限定）
+"上海到迪拜机票多少钱" → travel_plan, query=上海到迪拜机票多少钱
 "半小时后提醒我开会" → set_reminder, text=开会, minutes=30
 "10分钟后提醒我喝水" → set_reminder, text=喝水, minutes=10
 "截个图" / "帮我截屏" → take_screenshot

@@ -39,6 +39,7 @@ from tools.system_tools import open_url, take_screenshot, get_datetime, write_cl
 from tools.fetch_card import fetch_card as _fetch_card_impl
 from tools.hot_topics import hot_topics
 from tools.route import route as route_query
+from tools.travel_plan import travel_plan as travel_plan_query
 from nls_token import generate_nls_token
 from nls_asr import asr_recognize
 from tools.reminder import set_reminder
@@ -239,6 +240,8 @@ def execute_intent(intent: str, params: dict):
         return hot_topics(params.get("source", ""))
     if intent == "route":
         return route_query(params.get("origin", ""), params.get("destination", ""))
+    if intent == "travel_plan":
+        return travel_plan_query(params.get("query", ""))
     if intent == "set_reminder":
         return set_reminder(params.get("text", "提醒"), params.get("minutes", 5))
     if intent == "take_screenshot":

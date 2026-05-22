@@ -1,0 +1,124 @@
+# -*- coding: utf-8 -*-
+"""
+旅行规划工具。
+
+route.py 走 OSRM 算驾车导航，对"宁波 → 新德里"这种跨国旅行毫无意义
+（会给你算出 5810 km 穿过 7 个国家的开车路线）。
+
+此工具用千问 enable_search 联网搜索 + 整理：航班 / 高铁 / 签证 / 季节
+提示 / 大致预算等多维度，给出可执行的旅行方案。
+"""
+import json
+import os
+import re
+from openai import OpenAI
+
+
+_client_cache = None
+def _get_client():
+    global _client_cache
+    if _client_cache is None:
+        _client_cache = OpenAI(
+            api_key=os.environ.get("DASHSCOPE_API_KEY", ""),
+            base_url="https://dashscope.aliyuncs.com/compatible-mode/v1",
+        )
+    return _client_cache
+
+
+_PROMPT = """你是一个旅行规划助手。用户给出起点、终点、可选的出行时间/天数，你需要联网搜索并整理一个**可执行**的旅行方案。
+
+【输出格式 - 严格 JSON】
+{
+  "headline": "一句话主线方案（如：宁波栎社→上海浦东→德里英迪拉，全程约18小时，含中转）",
+  "points": [
+    "交通推荐：建议方式 + 关键航班号/车次 + 大致时长 + 起飞/发车时段",
+    "中转/换乘：在哪里中转、需要多久、是否需要签注",
+    "签证/证件：是否需要签证、办理方式、所需时间（跨国时必填）",
+    "费用范围：合理票价 + 旺/淡季差异",
+    "时间建议：最佳出行月份、当地季节/气候提醒",
+    "其他注意：行李/SIM卡/防疫等关键提示"
+  ],
+  "sources": [{"title": "信息来源标题", "url": "https://..."}]
+}
+
+【规则】
+- points: 3-6 条，每条必须有具体内容（航班号、时刻、价格、天数），不要笼统
+- 跨国/跨大区时必含签证项；同城/同省驾车时直接给路线即可
+- sources 给真实搜到的链接；编不出真实 URL 就留空数组
+- 不输出 markdown、不加 ```json 围栏，直接 JSON 对象
+"""
+
+
+def travel_plan(query: str) -> dict:
+    """旅行规划。query 是用户的原话或 "起点 → 终点 + 时间/天数" 描述。"""
+    q = (query or "").strip()
+    if not q:
+        return {"type": "card", "source": "旅行规划", "points": ["没说要去哪"], "error": True}
+
+    client = _get_client()
+    try:
+        resp = client.chat.completions.create(
+            model="qwen-plus",
+            messages=[
+                {"role": "system", "content": _PROMPT},
+                {"role": "user", "content": q},
+            ],
+            extra_body={"enable_search": True},
+            max_tokens=1200,
+            temperature=0.3,
+        )
+        content = (resp.choices[0].message.content or "").strip()
+    except Exception as e:
+        return {
+            "type": "card",
+            "source": f"旅行规划 · {q[:20]}",
+            "points": [f"规划失败：{type(e).__name__}", str(e)[:120]],
+            "error": True,
+        }
+
+    m = re.search(r"\{[\s\S]*\}", content)
+    if m:
+        content = m.group(0)
+    try:
+        data = json.loads(content)
+    except Exception:
+        lines = [l.strip("•- \t").strip() for l in content.split("\n") if l.strip()]
+        lines = [l for l in lines if l and not l.startswith(("{", "}", '"'))]
+        return {
+            "type": "card",
+            "source": f"旅行规划 · {q[:20]}",
+            "points": lines[:6] or ["没规划出方案"],
+        }
+
+    headline = (data.get("headline") or "").strip()
+    points = [str(p).strip() for p in data.get("points", []) if p]
+    # headline 放第一条，方便手机/卡片首屏看到主线
+    if headline:
+        points.insert(0, headline)
+
+    raw_sources = data.get("sources") or []
+    sources = []
+    for s in raw_sources:
+        u = (s or {}).get("url") or ""
+        if not u.startswith(("http://", "https://")):
+            continue
+        if "example.com" in u or "example.org" in u:
+            continue
+        sources.append({"title": str((s or {}).get("title") or "")[:80], "url": u})
+    first_url = sources[0]["url"] if sources else ""
+
+    if not points:
+        return {
+            "type": "card",
+            "source": f"旅行规划 · {q[:20]}",
+            "points": ["没规划出方案"],
+            "error": True,
+        }
+
+    return {
+        "type": "card",
+        "source": f"旅行规划 · {q[:20]}",
+        "url": first_url,
+        "points": points[:6],
+        "sources": sources[:5],
+    }
