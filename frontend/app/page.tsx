@@ -621,10 +621,37 @@ export default function ChatPage() {
     audio.play().catch(onDone);
   }, [startHandsFreeRecording, mkTtsAudio, tryPrefetch]);
 
+  // ── TTS 文本归一化：日期/时间/数字范围转成可读的中文 ──
+  // CosyVoice 默认会把 "4.3" 念成"四点三"（小数），把 "780–2380" 念成"七百八十—两千三百八十"
+  // 拼读出来的句子不像人话。在送 TTS 前把这些模式改写成口播友好的写法。
+  // 屏幕上的文字保持原样（"4.3–4.5"看着像日期就够了），只改语音那一路。
+  const normalizeForTTS = useCallback((text: string): string => {
+    let s = text;
+    // 日期范围 "M.D–M.D" → "M月D日到M月D日"
+    // 月份/日期 alternation 必须长串在前（JS 正则不是 longest-match，先匹配先决定），
+    // 否则 "5.15" 会被吃成 "5月1日" + 残留 "5"
+    s = s.replace(
+      /(1[0-2]|[1-9])\.(3[01]|[12]\d|[1-9])\s*[–—~\-]\s*(1[0-2]|[1-9])\.(3[01]|[12]\d|[1-9])/g,
+      "$1月$2日到$3月$4日",
+    );
+    // 单个 "M.D" 极容易和小数 (3.14 / 版本号 / 4.5 分钟) 撞，删除该规则
+    // 范围形式 "M.D–M.D" 因为有 "–" 锚定，是唯一安全的日期模式
+    // 时间范围 "HH:MM–HH:MM" → "HH点MM分到HH点MM分"
+    s = s.replace(
+      /(\d{1,2}):(\d{2})\s*[–—~\-]\s*(\d{1,2}):(\d{2})/g,
+      "$1点$2分到$3点$4分",
+    );
+    // 单个时间 "HH:MM" → "HH点MM分"
+    s = s.replace(/(\d{1,2}):(\d{2})(?!\d)/g, "$1点$2分");
+    // 纯数字范围 "780–2380" → "780到2380"（仅 unicode 长划线，避开 "-1" 之类）
+    s = s.replace(/(\d+(?:\.\d+)?)\s*[–—~]\s*(\d+(?:\.\d+)?)/g, "$1到$2");
+    return s;
+  }, []);
+
   const enqueueSpeech = useCallback((text: string, sessionId: number) => {
     if (!voiceOn) return;
     if (sessionId !== ttsSessionRef.current) return;
-    const t = text.trim();
+    const t = normalizeForTTS(text.trim());
     if (!t) return;
     ttsQueueRef.current.push(t);
     if (ttsPlayingRef.current) {
@@ -632,7 +659,7 @@ export default function ChatPage() {
     } else {
       playNextInQueue();
     }
-  }, [voiceOn, playNextInQueue, tryPrefetch]);
+  }, [voiceOn, playNextInQueue, tryPrefetch, normalizeForTTS]);
 
   const clearTtsQueue = useCallback(() => {
     ttsQueueRef.current = [];
@@ -847,9 +874,21 @@ export default function ChatPage() {
     const flushSentences = () => {
       // 首句更激进：碰逗号也切；后续只在句末（。！？）切，保留韵律
       const re = firstFlushDone ? /[。！？\n.!?；;]/ : /[。！？\n.!?；;，,]/;
+      // 数字间的 . : 不是句号 / 时间间隔，是日期 / 时间分隔符，不能在这里切句
+      // 例: "4.3–4.5" 不能从 "4." 切开，会让 TTS 念成 "4   3"
+      const isRealBoundary = (i: number): boolean => {
+        const ch = ttsBuf[i];
+        if (!re.test(ch)) return false;
+        if (ch === "." || ch === "．") {
+          const prev = ttsBuf[i - 1] || "";
+          const next = ttsBuf[i + 1] || "";
+          if (/\d/.test(prev) && /\d/.test(next)) return false;
+        }
+        return true;
+      };
       let lastIdx = -1;
       for (let i = ttsBuf.length - 1; i >= 0; i--) {
-        if (re.test(ttsBuf[i])) { lastIdx = i; break; }
+        if (isRealBoundary(i)) { lastIdx = i; break; }
       }
       if (lastIdx < 0) return;
       // 首次切要求至少 4 字符，避免"嗯，"这种没意义小段
