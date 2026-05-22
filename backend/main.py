@@ -556,8 +556,14 @@ async def chat(req: ChatRequest, user: str = Depends(get_current_user)):
                     if isinstance(result, dict) and result.get("type") == "card":
                         # 卡片数据走专门 SSE 事件
                         yield f"data: {json.dumps({'card': result}, ensure_ascii=False)}\n\n"
-                        # 数据库存简化纯文本，历史回放友好
-                        full_response = _summarize_card_for_history(result)
+                        if result.get("subtype") == "travel_plan":
+                            from tools.travel_plan import build_playback
+                            playback = build_playback(result)
+                            yield f"data: {json.dumps({'text': playback}, ensure_ascii=False)}\n\n"
+                            full_response = playback
+                        else:
+                            # 数据库存简化纯文本，历史回放友好
+                            full_response = _summarize_card_for_history(result)
                     else:
                         full_response = result
                         yield f"data: {json.dumps({'text': result}, ensure_ascii=False)}\n\n"
@@ -607,7 +613,14 @@ async def chat(req: ChatRequest, user: str = Depends(get_current_user)):
                     if isinstance(result, dict) and result.get("type") == "card":
                         # 卡片数据走专门 SSE 事件
                         yield f"data: {json.dumps({'card': result}, ensure_ascii=False)}\n\n"
-                        full_response = _summarize_card_for_history(result)
+                        # 旅行规划卡：除了右侧卡片，再把要点完整口播 + 追问优化方向
+                        if result.get("subtype") == "travel_plan":
+                            from tools.travel_plan import build_playback
+                            playback = build_playback(result)
+                            yield f"data: {json.dumps({'text': playback}, ensure_ascii=False)}\n\n"
+                            full_response = playback
+                        else:
+                            full_response = _summarize_card_for_history(result)
                     else:
                         full_response = result
                         yield f"data: {json.dumps({'text': result}, ensure_ascii=False)}\n\n"

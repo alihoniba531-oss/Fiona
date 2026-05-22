@@ -117,8 +117,36 @@ def travel_plan(query: str) -> dict:
 
     return {
         "type": "card",
+        "subtype": "travel_plan",  # 前端/口播路径用 subtype 区分卡型
         "source": f"旅行规划 · {q[:20]}",
         "url": first_url,
         "points": points[:6],
         "sources": sources[:5],
     }
+
+
+# ── 口播文本构建：把卡片要点串成自然中文，末尾追加优化方向反问 ─────────
+_OPT_FOLLOWUP = (
+    "如果想再细一点，可以告诉我是想省时间、省钱、还是舒适度优先，"
+    "我再按那个方向帮你对比一版。"
+)
+
+
+def build_playback(card: dict) -> str:
+    """travel_plan 卡片 → 完整口播文本（TTS 用）。
+    第一条 points 是 headline，单独成句；其余每条单独一句；末尾追加反问。"""
+    points = [str(p or "").strip() for p in (card.get("points") or []) if p]
+    if not points:
+        return "没规划出方案，要不你换个说法再问我一次？"
+    parts: list[str] = []
+    for i, p in enumerate(points):
+        # 已有句号 / 问号的不再补；否则补句号让 TTS 切句更自然
+        if p[-1] not in "。！？.!?；;":
+            p = p + "。"
+        # 首条前面加引导词，让口播听起来不像念清单
+        if i == 0:
+            parts.append(p)
+        else:
+            parts.append(p)
+    parts.append(_OPT_FOLLOWUP)
+    return " ".join(parts)

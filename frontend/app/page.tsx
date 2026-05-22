@@ -952,7 +952,10 @@ export default function ChatPage() {
               weather: data.card.weather,
             };
             setActiveCards((prev) => [card, ...prev].slice(0, 5));
-            const tip = card.subtype === "weather" && card.weather
+            // 旅行规划卡：后端紧跟着会发完整口播 text，气泡不用 "搜到了" 占位覆盖
+            const tip = card.subtype === "travel_plan"
+              ? ""
+              : card.subtype === "weather" && card.weather
               ? (() => {
                   const w = card.weather;
                   const c = (w.condition || "").toLowerCase();
