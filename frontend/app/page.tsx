@@ -229,15 +229,8 @@ export default function ChatPage() {
   const [inlineRecording, setInlineRecording] = useState(false);
   const [voiceText, setVoiceText] = useState("");
   const [pendingImage, setPendingImage] = useState<string | null>(null);
-  // 中间聊天面板"卷帘门"状态
+  // 中间聊天面板"卷帘门"状态 —— 只能手动点 COLLAPSE/EXPAND 切换，不再 30s 自动收起
   const [chatCollapsed, setChatCollapsed] = useState(false);
-  const idleTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
-  const IDLE_MS = 30_000;
-  const bumpActivity = useCallback(() => {
-    if (idleTimerRef.current) clearTimeout(idleTimerRef.current);
-    setChatCollapsed(false);
-    idleTimerRef.current = setTimeout(() => setChatCollapsed(true), IDLE_MS);
-  }, []);
 
   const bottomRef = useRef<HTMLDivElement>(null);
   // 跟随贴底状态：用 scroll 事件维护，而不是渲染后量距离 —— 渲染后新消息已撑大 scrollHeight，
@@ -284,15 +277,6 @@ export default function ChatPage() {
     const stored = localStorage.getItem("fiona_user");
     if (stored) setUsername(stored);
     setHydrated(true);
-  }, []);
-
-  // 卷帘门：任何消息更新（含流式 chunk） / 输入变化 → 视为活动，重置闲置计时
-  useEffect(() => {
-    bumpActivity();
-  }, [messages, input, bumpActivity]);
-
-  useEffect(() => () => {
-    if (idleTimerRef.current) clearTimeout(idleTimerRef.current);
   }, []);
 
   // Persist username to localStorage — only after hydration, so initial "默认用户" doesn't overwrite a stored login
@@ -1357,14 +1341,7 @@ export default function ChatPage() {
               {/* 卷帘把手条 —— 收起时唯一可见的部分，点击展开/收起 */}
               <div
                 className="shutter-handle shrink-0"
-                onClick={() => {
-                  if (chatCollapsed) {
-                    bumpActivity();
-                  } else {
-                    if (idleTimerRef.current) clearTimeout(idleTimerRef.current);
-                    setChatCollapsed(true);
-                  }
-                }}
+                onClick={() => setChatCollapsed((v) => !v)}
                 title={chatCollapsed ? "展开聊天" : "卷起聊天 · 露出星空"}
               >
                 <span className="chev">{chatCollapsed ? "▲" : "▼"}</span>
