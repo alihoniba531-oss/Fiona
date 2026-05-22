@@ -324,14 +324,21 @@ async def asr_recognize_endpoint(req: AsrRequest):
         out.close()
         import shutil
         ffmpeg = shutil.which("ffmpeg") or r"D:\Program Files\软件\ffmpeg\bin\ffmpeg.exe"
-        subprocess.run(
+        proc = subprocess.run(
             [ffmpeg, "-y", "-i", inp.name, "-ar", str(req.sample_rate), "-ac", "1", "-f", "s16le", out.name],
             capture_output=True, timeout=10,
         )
         with open(out.name, "rb") as f:
             audio_bytes = f.read()
-        import os; os.unlink(inp.name); os.unlink(out.name)
-        print(f"[ASR] converted to PCM: {len(audio_bytes)} bytes")
+        import os
+        if len(audio_bytes) == 0:
+            # 保留失败样本供诊断
+            import shutil as _sh
+            _sh.copy(inp.name, "/tmp/fiona-asr-bad.webm")
+            print(f"[ASR][ffmpeg-stderr] {proc.stderr.decode('utf-8', errors='replace')[-800:]}")
+            print(f"[ASR] bad sample saved to /tmp/fiona-asr-bad.webm")
+        os.unlink(inp.name); os.unlink(out.name)
+        print(f"[ASR] converted to PCM: {len(audio_bytes)} bytes (ffmpeg rc={proc.returncode})")
 
     result = asr_recognize(audio_bytes, "pcm", req.sample_rate)
     print(f"[ASR] result: {result}")
@@ -899,9 +906,18 @@ async def get_usage(user: str = Depends(get_current_user)):
 PLAZA_TAGS = ["日常", "风景", "美食", "创意", "情感", "搞笑", "音乐", "运动", "宠物", "穿搭", "旅行", "随拍"]
 
 
+@app.get("/hot/expand")
+async def hot_expand(title: str = ""):
+    """把一个热搜标题展开成结构化内容卡（千问联网检索）。
+    注意：此路由必须注册在 /hot/{source} 之前，否则被泛匹配吃掉。"""
+    import asyncio
+    from tools.topic_expand import topic_expand
+    return await asyncio.to_thread(topic_expand, title)
+
+
 @app.get("/hot/{source}")
 async def hot_endpoint(source: str = "微博"):
-    """直接给前端拉热搜（广场角落 HUD 用）。source: 微博 / 知乎 / 抖音"""
+    """直接给前端拉热搜（广场角落 HUD 用）。source: 微博 / 知乎 / 抖音 / B站 / 头条"""
     import asyncio
     return await asyncio.to_thread(hot_topics, source)
 
@@ -952,18 +968,20 @@ def _classify_topic(title: str) -> str:
 @app.get("/hot/categorized/all")
 async def hot_categorized():
     """返回按类别分类的热搜，供广场分类卡片使用。
-    源：微博 + 抖音 + 知乎（知乎补"历史/哲学/思考类"话题，前两者很少出现）。
-    三源并行拉，失败不影响其他。"""
+    源：微博 + 抖音 + 知乎 + B站 + 头条。
+    多源并行拉，单源失败不影响其他。"""
     import asyncio
-    weibo_data, douyin_data, zhihu_data = await asyncio.gather(
+    results = await asyncio.gather(
         asyncio.to_thread(hot_topics, "微博"),
         asyncio.to_thread(hot_topics, "抖音"),
         asyncio.to_thread(hot_topics, "知乎"),
+        asyncio.to_thread(hot_topics, "B站"),
+        asyncio.to_thread(hot_topics, "头条"),
         return_exceptions=True,
     )
 
     all_titles: list[str] = []
-    for d in [weibo_data, douyin_data, zhihu_data]:
+    for d in results:
         if isinstance(d, Exception) or not isinstance(d, dict):
             continue
         for pt in d.get("points", []):

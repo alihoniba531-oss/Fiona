@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useEffect, useRef, useCallback } from "react";
+import { useSearchParams } from "next/navigation";
 import Sidebar from "@/components/Sidebar";
 import TopBar from "@/components/TopBar";
 import SolarSystem3D from "@/components/SolarSystem3D";
@@ -140,14 +141,21 @@ function PostCard({ post, username }: { post: Post; username: string }) {
 
 // ─────────────────── 分类热搜卡 ───────────────────
 function CategoryCard({
-  title, accent, icon: Icon, items, style,
+  title, accent, icon: Icon, items, style, onItemClick,
 }: {
   title: string;
   accent: string;
   icon: React.ComponentType<{ size?: number; className?: string; style?: React.CSSProperties }>;
   items: string[];
   style: React.CSSProperties;
+  onItemClick?: (title: string) => void;
 }) {
+  // 去掉标题前的序号 "01. " 和尾部的 " · 12.3万"，得到纯净的话题文本
+  const cleanTitle = (raw: string): string => {
+    let s = raw.replace(/^\d+\.\s*/, "");
+    s = s.replace(/\s*·\s*[\d.]+[万亿千]?$/, "");
+    return s.trim();
+  };
   return (
     <div
       className="z-20 w-[220px] hud-card-float px-3 py-2 pointer-events-auto"
@@ -165,7 +173,13 @@ function CategoryCard({
           <li className="text-[10px] text-muted-foreground/50">拉取中…</li>
         ) : (
           items.slice(0, 4).map((it, i) => (
-            <li key={i} className="text-[11px] leading-snug text-foreground/80 flex gap-1.5">
+            <li
+              key={i}
+              className="text-[11px] leading-snug text-foreground/80 flex gap-1.5 cursor-pointer hover:text-white transition-colors"
+              onClick={() => onItemClick?.(cleanTitle(it))}
+              style={{ borderRadius: 3 }}
+              title="点开查看详情"
+            >
               <span className="tabular-nums shrink-0 text-[9px] mt-0.5" style={{ color: accent + "99" }}>
                 {String(i + 1).padStart(2, "0")}
               </span>
@@ -197,6 +211,35 @@ export default function PlazaPage() {
   const [cats, setCats] = useState<CatMap>({
     娱乐: [], 经济: [], 生活: [], 历史: [], 哲学: [], 科技: [], 文化: [], 时事: [],
   });
+  // 热点话题展开
+  type ExpandedTopic = {
+    title: string;
+    summary?: string;
+    whats_happening?: string;
+    why_trending?: string;
+    key_facts?: string[];
+    background?: string;
+    sources?: { title: string; url: string }[];
+    error?: string;
+  };
+  const [expanded, setExpanded] = useState<ExpandedTopic | null>(null);
+  const [expanding, setExpanding] = useState(false);
+
+  const openTopic = useCallback(async (title: string) => {
+    if (!title) return;
+    setExpanded({ title });  // 立刻显示标题占位
+    setExpanding(true);
+    try {
+      const res = await fetch(`${API}/hot/expand?title=${encodeURIComponent(title)}`);
+      const data = await res.json();
+      setExpanded({ title, ...data });
+    } catch (e: any) {
+      setExpanded({ title, error: e?.message || "拉取失败" });
+    } finally {
+      setExpanding(false);
+    }
+  }, []);
+
   const [hotNews,  setHotNews]  = useState<string[]>([]);
   const [trending, setTrending] = useState<string[]>([]);
   const [interests, setInterests] = useState<string[]>([]);
@@ -314,11 +357,14 @@ export default function PlazaPage() {
     if (fileRef.current) fileRef.current.value = "";
   };
 
+  const searchParams = useSearchParams();
+  const embedded = searchParams?.get("embed") === "1";
+
   return (
     <div className="flex flex-col h-screen overflow-hidden bg-background">
-      <TopBar />
+      {!embedded && <TopBar />}
       <div className="flex flex-1 min-h-0 relative">
-        <Sidebar />
+        {!embedded && <Sidebar />}
 
         <main className="flex flex-col flex-1 min-w-0 relative overflow-hidden">
           {/* 太阳系 3D 全息背景 */}
@@ -332,10 +378,10 @@ export default function PlazaPage() {
               maxHeight: "calc(100% - 70px)", overflowY: "auto",
             }}
           >
-            <CategoryCard title="TODAY · 今日热点" accent="#ff7720" icon={Flame}      items={hotNews}        style={{}} />
-            <CategoryCard title="ENT · 娱乐"      accent="#ff66cc" icon={Music2}     items={cats["娱乐"] || []} style={{}} />
-            <CategoryCard title="ECON · 经济"     accent="#facc15" icon={BarChart2}  items={cats["经济"] || []} style={{}} />
-            <CategoryCard title="LIFE · 生活"     accent="#22d3ee" icon={Sparkles}   items={cats["生活"] || []} style={{}} />
+            <CategoryCard title="TODAY · 今日热点" accent="#ff7720" icon={Flame}      items={hotNews}        style={{}} onItemClick={openTopic} />
+            <CategoryCard title="ENT · 娱乐"      accent="#ff66cc" icon={Music2}     items={cats["娱乐"] || []} style={{}} onItemClick={openTopic} />
+            <CategoryCard title="ECON · 经济"     accent="#facc15" icon={BarChart2}  items={cats["经济"] || []} style={{}} onItemClick={openTopic} />
+            <CategoryCard title="LIFE · 生活"     accent="#22d3ee" icon={Sparkles}   items={cats["生活"] || []} style={{}} onItemClick={openTopic} />
           </div>
 
           {/* 右栏：TRENDING + 科技 + 文化 */}
@@ -346,9 +392,9 @@ export default function PlazaPage() {
               maxHeight: "calc(100% - 70px)", overflowY: "auto",
             }}
           >
-            <CategoryCard title="TRENDING · 潮流" accent="#ff3e80" icon={TrendingUp} items={trending}           style={{}} />
-            <CategoryCard title="TECH · 科技"     accent="#a78bfa" icon={Cpu}        items={cats["科技"] || []} style={{}} />
-            <CategoryCard title="CULT · 文化"     accent="#94e6c4" icon={BookOpen}   items={cats["文化"] || []} style={{}} />
+            <CategoryCard title="TRENDING · 潮流" accent="#ff3e80" icon={TrendingUp} items={trending}           style={{}} onItemClick={openTopic} />
+            <CategoryCard title="TECH · 科技"     accent="#a78bfa" icon={Cpu}        items={cats["科技"] || []} style={{}} onItemClick={openTopic} />
+            <CategoryCard title="CULT · 文化"     accent="#94e6c4" icon={BookOpen}   items={cats["文化"] || []} style={{}} onItemClick={openTopic} />
           </div>
 
           {/* 纯网格内容流 — 居中容器 + 半透明，让背景透出 */}
@@ -364,6 +410,104 @@ export default function PlazaPage() {
               )}
             </div>
           </div>
+
+          {/* 热点话题展开层 — 居中抽屉式拉出，左右避开两侧分类卡 */}
+          {expanded && (
+            <div
+              className="absolute z-30 flex items-stretch justify-center pointer-events-none"
+              style={{ top: 16, bottom: 56, left: 260, right: 260 }}
+            >
+            <div
+              className="flex flex-col hud-card-float topic-drawer-in pointer-events-auto"
+              style={{
+                width: "100%",
+                maxWidth: 920,
+                background: "rgba(4,10,22,0.94)",
+                backdropFilter: "blur(8px)",
+                overflow: "hidden",
+              }}>
+              {/* 头部 */}
+              <div className="flex items-center justify-between px-5 py-3 border-b border-cyan-500/20 shrink-0">
+                <div className="flex items-center gap-2 min-w-0">
+                  <Flame size={14} className="text-orange-400 shrink-0" />
+                  <span className="hud-label text-[10px] text-orange-300/80 shrink-0">HOT TOPIC</span>
+                  <span className="text-sm text-foreground/90 truncate ml-2">{expanded.title}</span>
+                </div>
+                <button
+                  onClick={() => setExpanded(null)}
+                  className="text-cyan-300/70 hover:text-cyan-200 text-lg leading-none px-2"
+                  title="关闭"
+                >✕</button>
+              </div>
+
+              {/* 内容区 */}
+              <div className="flex-1 overflow-y-auto px-6 py-5 text-sm leading-relaxed space-y-4">
+                {expanding && (
+                  <div className="flex items-center gap-2 text-cyan-300/70 text-xs">
+                    <span className="inline-block w-2 h-2 rounded-full bg-cyan-400 animate-pulse" />
+                    加载中…
+                  </div>
+                )}
+                {expanded.error && (
+                  <div className="text-orange-300/90 text-xs">拉取失败：{expanded.error}</div>
+                )}
+                {expanded.summary && (
+                  <div className="text-foreground/95 text-[15px] leading-relaxed">{expanded.summary}</div>
+                )}
+                {expanded.whats_happening && (
+                  <div>
+                    <div className="hud-label text-[9px] text-cyan-300/80 mb-1.5">发生了什么</div>
+                    <div className="text-foreground/85">{expanded.whats_happening}</div>
+                  </div>
+                )}
+                {expanded.why_trending && (
+                  <div>
+                    <div className="hud-label text-[9px] text-pink-300/80 mb-1.5">为什么上热搜</div>
+                    <div className="text-foreground/85">{expanded.why_trending}</div>
+                  </div>
+                )}
+                {expanded.key_facts && expanded.key_facts.length > 0 && (
+                  <div>
+                    <div className="hud-label text-[9px] text-yellow-300/80 mb-1.5">关键事实</div>
+                    <ul className="space-y-1.5">
+                      {expanded.key_facts.map((f, i) => (
+                        <li key={i} className="flex gap-2 text-foreground/85">
+                          <span className="text-yellow-400/70 shrink-0">▸</span>
+                          <span>{f}</span>
+                        </li>
+                      ))}
+                    </ul>
+                  </div>
+                )}
+                {expanded.background && (
+                  <div>
+                    <div className="hud-label text-[9px] text-violet-300/80 mb-1.5">背景</div>
+                    <div className="text-foreground/75 text-[13px]">{expanded.background}</div>
+                  </div>
+                )}
+                {expanded.sources && expanded.sources.length > 0 && (
+                  <div className="pt-2 border-t border-cyan-500/15">
+                    <div className="hud-label text-[9px] text-cyan-300/80 mb-2">来源</div>
+                    <ul className="space-y-1">
+                      {expanded.sources.map((s, i) => (
+                        <li key={i}>
+                          <a
+                            href={s.url}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            className="text-[12px] text-cyan-300/80 hover:text-cyan-200 break-all"
+                          >
+                            {s.title || s.url}
+                          </a>
+                        </li>
+                      ))}
+                    </ul>
+                  </div>
+                )}
+              </div>
+            </div>
+            </div>
+          )}
 
           {/* 底部兴趣横栏 */}
           <div

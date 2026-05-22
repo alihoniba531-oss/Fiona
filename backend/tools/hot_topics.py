@@ -1,19 +1,28 @@
 # -*- coding: utf-8 -*-
 """
 热搜 / 热门话题工具。
-直连 60s.viki.moe 公开 API（无需 key），微博 / 知乎 / 抖音 三源。
+直连 60s.viki.moe 公开 API（无需 key），微博 / 知乎 / 抖音 / B站 / 头条 五源。
 返回卡片 dict，套用既有的 card 结构（前端不用改 UI）。
 """
 import requests
 
 SOURCE_MAP = {
     # 用户口语 -> (60s API endpoint, 卡片显示名, 热度字段名/格式化方式)
+    # hot_kind: "int" 用 hot_value 整数；"desc" 用 hot_value_desc 字符串；"none" 不显示热度
     "微博": ("weibo", "微博热搜",   "int"),
     "weibo": ("weibo", "微博热搜",  "int"),
     "知乎": ("zhihu", "知乎热榜",   "desc"),
     "zhihu": ("zhihu", "知乎热榜",  "desc"),
     "抖音": ("douyin", "抖音热搜",  "int"),
     "douyin": ("douyin", "抖音热搜","int"),
+    "b站": ("bili", "B站热搜",      "none"),
+    "B站": ("bili", "B站热搜",      "none"),
+    "bili": ("bili", "B站热搜",     "none"),
+    "bilibili": ("bili", "B站热搜", "none"),
+    "哔哩哔哩": ("bili", "B站热搜",  "none"),
+    "头条": ("toutiao", "头条热榜",    "int"),
+    "今日头条": ("toutiao", "头条热榜","int"),
+    "toutiao": ("toutiao", "头条热榜", "int"),
 }
 
 DEFAULT_SOURCE = "微博"
@@ -66,8 +75,10 @@ def hot_topics(source: str = "") -> dict:
             continue
         if hot_kind == "int":
             hot = _fmt_hot_int(it.get("hot_value"))
-        else:
+        elif hot_kind == "desc":
             hot = (it.get("hot_value_desc") or "").strip()
+        else:
+            hot = ""
         line = f"{i}. {title}"
         if hot:
             line += f" · {hot}"

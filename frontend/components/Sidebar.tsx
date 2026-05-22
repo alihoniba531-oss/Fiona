@@ -15,7 +15,19 @@ const navItems = [
   { href: "/settings", icon: Settings, label: "设置" },
 ];
 
-export default function Sidebar({ onHistoryClick }: { onHistoryClick?: () => void }) {
+export default function Sidebar({
+  onHistoryClick,
+  onPlazaClick,
+  plazaActive,
+  onMatchClick,
+  matchActive,
+}: {
+  onHistoryClick?: () => void;
+  onPlazaClick?: () => void;
+  plazaActive?: boolean;
+  onMatchClick?: () => void;
+  matchActive?: boolean;
+}) {
   const pathname = usePathname();
   const [dark, setDark] = useState(true);
 
@@ -34,7 +46,33 @@ export default function Sidebar({ onHistoryClick }: { onHistoryClick?: () => voi
       {/* Nav */}
       <nav className="flex flex-col items-center gap-1 flex-1">
         {navItems.map(({ href, icon: Icon, label }) => {
-          const active = pathname === href;
+          const active =
+            pathname === href ||
+            (href === "/plaza" && plazaActive) ||
+            (href === "/match" && matchActive);
+          // 抽屉模式：父组件传了对应 callback 时走按钮 + 不路由跳转
+          const drawerCallback =
+            href === "/plaza" ? onPlazaClick :
+            href === "/match" ? onMatchClick :
+            undefined;
+          if (drawerCallback) {
+            return (
+              <button
+                key={href}
+                onClick={drawerCallback}
+                className={cn(
+                  "flex flex-col items-center justify-center w-12 h-12 rounded-xl gap-0.5 transition-all duration-150",
+                  active
+                    ? "bg-accent text-accent-foreground"
+                    : "text-muted-foreground hover:bg-secondary hover:text-foreground"
+                )}
+                title={label}
+              >
+                <Icon size={20} strokeWidth={active ? 2.2 : 1.8} />
+                <span className="text-[9px] font-medium">{label}</span>
+              </button>
+            );
+          }
           return (
             <Link
               key={href}

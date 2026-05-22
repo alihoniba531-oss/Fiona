@@ -89,14 +89,17 @@ export interface Message {
   isDivider?: boolean;
   imageUrl?: string;
   cardData?: CardData;  // 网页卡片(fetch_card 意图)——非空时整条消息渲染为卡片
+  pendingTtsText?: string;  // 搜索类回复待询问播报的文本；非空时气泡下方出现 [帮我读]/[不用] 按钮
 }
 
 interface ChatBubbleProps {
   message: Message;
   onDelete?: (id: string, dbId?: number) => void;
+  onConfirmTts?: (id: string, text: string) => void;
+  onDeclineTts?: (id: string) => void;
 }
 
-export default function ChatBubble({ message, onDelete }: ChatBubbleProps) {
+export default function ChatBubble({ message, onDelete, onConfirmTts, onDeclineTts }: ChatBubbleProps) {
   // 分隔线渲染
   if (message.isDivider) {
     return (
@@ -258,6 +261,26 @@ export default function ChatBubble({ message, onDelete }: ChatBubbleProps) {
             )}
           >
             {isUser ? message.content : (shownContent || (message.isTyping ? "" : "…"))}
+          </div>
+        )}
+
+        {/* 搜索类回复：询问是否播报 */}
+        {!isUser && message.pendingTtsText && (
+          <div className="flex gap-2 mt-1">
+            <button
+              onClick={() => onConfirmTts?.(message.id, message.pendingTtsText!)}
+              className="hud-btn flex items-center gap-1.5 px-3 py-1 text-[11px]"
+              style={{ clipPath: "polygon(0 0, calc(100% - 6px) 0, 100% 6px, 100% 100%, 6px 100%, 0 calc(100% - 6px))" }}
+            >
+              <Volume2 size={11} />
+              <span className="hud-label">帮我读</span>
+            </button>
+            <button
+              onClick={() => onDeclineTts?.(message.id)}
+              className="text-[11px] px-3 py-1 text-muted-foreground hover:text-foreground transition-colors"
+            >
+              不用
+            </button>
           </div>
         )}
 

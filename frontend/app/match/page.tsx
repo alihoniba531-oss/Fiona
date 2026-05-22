@@ -1,8 +1,10 @@
 "use client";
 
 import { useState, useEffect, useRef, useCallback } from "react";
+import { useSearchParams } from "next/navigation";
 import Sidebar from "@/components/Sidebar";
 import TopBar from "@/components/TopBar";
+import Earth3D from "@/components/Earth3D";
 import { Send, User, Sparkles, MessageCircle } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { apiFetch, getToken, getUsername as readStoredUsername } from "@/lib/auth";
@@ -289,17 +291,33 @@ export default function MatchPage() {
     if (e.key === "Enter" && !e.shiftKey) { e.preventDefault(); handleSend(); }
   };
 
+  const searchParams = useSearchParams();
+  const embedded = searchParams?.get("embed") === "1";
+
   return (
     <div className="flex flex-col h-screen overflow-hidden bg-background">
-      <TopBar />
+      {!embedded && <TopBar />}
       <div className="flex flex-1 min-h-0">
-        <Sidebar />
-        <div className="flex flex-1 min-w-0">
+        {!embedded && <Sidebar />}
+        <div className="flex flex-1 min-w-0 relative overflow-hidden">
 
-          {/* 左侧：最近 5 个联系人 */}
-          <div className="w-64 border-r border-border flex flex-col shrink-0">
-            <div className="px-4 py-3 border-b border-border">
-              <p className="text-[11px] font-semibold text-muted-foreground tracking-wide">最近聊天</p>
+          {/* 3D 地球背景：横跨整个区域，让左栏也能透出宇宙 */}
+          <Earth3D />
+
+          {/* 左侧：最近 5 个联系人 (玻璃质感，星空直接穿透) */}
+          <div
+            className="w-64 flex flex-col shrink-0 relative z-10"
+            style={{
+              background:
+                "linear-gradient(180deg, rgba(8,18,38,0.08) 0%, rgba(4,10,22,0.14) 100%)",
+              borderRight: "1px solid rgba(0,212,255,0.22)",
+              backdropFilter: "blur(4px) saturate(140%)",
+              WebkitBackdropFilter: "blur(4px) saturate(140%)",
+              boxShadow: "inset -1px 0 0 rgba(0,212,255,0.10), inset 0 1px 0 rgba(0,212,255,0.06)",
+            }}
+          >
+            <div className="px-4 py-3" style={{ borderBottom: "1px solid rgba(0,212,255,0.15)" }}>
+              <p className="hud-label text-[10px] tracking-wider" style={{ color: "rgba(0,212,255,0.85)" }}>最近聊天</p>
             </div>
             <div className="flex-1 overflow-y-auto py-1">
               {rooms.length === 0 ? (
@@ -325,8 +343,8 @@ export default function MatchPage() {
             </div>
           </div>
 
-          {/* 右侧：聊天区 / 匹配卡飘动区 */}
-          <div className="flex-1 flex flex-col min-w-0 relative">
+          {/* 右侧：聊天区 / 匹配卡飘动区 (Earth3D 在外层公共背景) */}
+          <div className="flex-1 flex flex-col min-w-0 relative z-10">
             {!selected ? (
               <div className="flex-1 relative overflow-hidden">
                 {pendingMatches.length === 0 ? (

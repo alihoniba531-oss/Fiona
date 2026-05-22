@@ -219,6 +219,9 @@ export default function ChatPage() {
   const [isLoading, setIsLoading] = useState(false);
   const [activeCards, setActiveCards] = useState<CardData[]>([]);
   const [hoveredCard, setHoveredCard] = useState<number | null>(null);
+  const [enlargedCard, setEnlargedCard] = useState<CardData | null>(null);
+  const [plazaOpen, setPlazaOpen] = useState(false);
+  const [matchOpen, setMatchOpen] = useState(false);
   const [showHistory, setShowHistory] = useState(false);
   const [username, setUsername] = useState("默认用户");
   const [hydrated, setHydrated] = useState(false);
@@ -430,7 +433,7 @@ export default function ChatPage() {
           else { setVoiceText(data.error || "未识别到语音"); setTimeout(() => setVoiceText(""), 2000); }
         } catch (e: any) { setVoiceText("识别失败"); setTimeout(() => setVoiceText(""), 2000); }
       };
-      mr.start(100);
+      mr.start();
     } catch (e: any) {
       setVoiceText("麦克风未授权"); setTimeout(() => setRecording(false), 1000);
     }
@@ -480,7 +483,7 @@ export default function ChatPage() {
             if (data.text) handleSendRef.current(data.text);
           } catch (_) {}
         };
-        mr.start(100);
+        mr.start();
         setInlineRecording(true);
       } catch (_) {}
     }
@@ -549,7 +552,7 @@ export default function ChatPage() {
         } catch (_) {}
       };
 
-      mr.start(100);
+      mr.start();
       requestAnimationFrame(tick);
     } catch (e) { console.error('[handsfree] mic error', e); }
   }, []);
@@ -801,6 +804,25 @@ export default function ChatPage() {
     }
   };
 
+  // 搜索类回复："帮我读" — 把搁置的 tip 文本送进 TTS 队列开始播放
+  // 用户显式点击 = 想听 → 即使 AUDIO OFF 也自动开启并播放（绕开 enqueueSpeech 的 voiceOn 守卫）
+  const handleConfirmTts = (id: string, text: string) => {
+    if (!voiceOn) setVoiceOn(true);
+    ttsSessionRef.current += 1;
+    streamDoneRef.current = true;
+    const t = normalizeForTTS(text.trim());
+    if (t) {
+      ttsQueueRef.current.push(t);
+      if (!ttsPlayingRef.current) playNextInQueue();
+    }
+    setMessages((prev) => prev.map((m) => (m.id === id ? { ...m, pendingTtsText: undefined } : m)));
+  };
+
+  // 搜索类回复："不用" — 直接清掉 pending 文本
+  const handleDeclineTts = (id: string) => {
+    setMessages((prev) => prev.map((m) => (m.id === id ? { ...m, pendingTtsText: undefined } : m)));
+  };
+
   const handleClearChat = () => {
     if (!confirm("清空当前聊天界面？（历史记录仍保留）")) return;
     setMessages([]);
@@ -870,19 +892,26 @@ export default function ChatPage() {
         }
         return true;
       };
-      let lastIdx = -1;
-      for (let i = ttsBuf.length - 1; i >= 0; i--) {
-        if (isRealBoundary(i)) { lastIdx = i; break; }
-      }
-      if (lastIdx < 0) return;
-      // 首次切要求至少 4 字符，避免"嗯，"这种没意义小段
-      const minChars = firstFlushDone ? 1 : 4;
-      if (lastIdx + 1 < minChars) return;
-      const chunk = ttsBuf.slice(0, lastIdx + 1).trim();
-      ttsBuf = ttsBuf.slice(lastIdx + 1);
-      if (chunk) {
+      // 单段 TTS 上限：CosyVoice 后端截 300，留余量
+      const MAX_CHUNK = 250;
+      while (true) {
+        // 在前 MAX_CHUNK 个字符内，从后往前找最后一个标点；超出范围就在 MAX_CHUNK 处强切
+        const scanUpTo = Math.min(ttsBuf.length, MAX_CHUNK);
+        let lastIdx = -1;
+        for (let i = scanUpTo - 1; i >= 0; i--) {
+          if (isRealBoundary(i)) { lastIdx = i; break; }
+        }
+        if (lastIdx < 0 && ttsBuf.length > MAX_CHUNK) lastIdx = MAX_CHUNK - 1;
+        if (lastIdx < 0) return;
+        // 首次切要求至少 4 字符，避免"嗯，"这种没意义小段
+        const minChars = firstFlushDone ? 1 : 4;
+        if (lastIdx + 1 < minChars) return;
+        const chunk = ttsBuf.slice(0, lastIdx + 1).trim();
+        ttsBuf = ttsBuf.slice(lastIdx + 1);
+        if (!chunk) return;
         enqueueSpeech(chunk, mySession);
         firstFlushDone = true;
+        if (ttsBuf.length === 0) return;
       }
     };
 
@@ -987,18 +1016,17 @@ export default function ChatPage() {
                   return msg;
                 })()
               : "搜到了，看右边卡片";
-            setMessages((prev) =>
-              prev.map((m) =>
-                m.id === replyId
-                  ? { ...m, content: tip, cardData: undefined }
-                  : m,
-              ),
-            );
-            // 卡片回复替换流式文本 — 清掉旧队列，把 tip 整段送 TTS
+            // 卡片回复替换流式文本 — 清掉旧队列；TTS 不自动播，挂 pendingTtsText 等用户点"帮我读"
             clearTtsQueue();
             ttsBuf = "";
             reply = tip;
-            if (tip) enqueueSpeech(tip, mySession);
+            setMessages((prev) =>
+              prev.map((m) =>
+                m.id === replyId
+                  ? { ...m, content: tip, cardData: undefined, pendingTtsText: tip || undefined }
+                  : m,
+              ),
+            );
           }
         }
       }
@@ -1116,7 +1144,13 @@ export default function ChatPage() {
 
       <div className="flex flex-1 min-h-0 relative">
         {/* ── sidebar 64px ── */}
-        <Sidebar onHistoryClick={() => setShowHistory(!showHistory)} />
+        <Sidebar
+          onHistoryClick={() => setShowHistory(!showHistory)}
+          onPlazaClick={() => setPlazaOpen((o) => !o)}
+          plazaActive={plazaOpen}
+          onMatchClick={() => setMatchOpen((o) => !o)}
+          matchActive={matchOpen}
+        />
 
         {/* ── history slide-out drawer ── */}
         {showHistory && (
@@ -1356,7 +1390,7 @@ export default function ChatPage() {
                   <p className="text-xs text-muted-foreground/50 text-center pt-8">新对话</p>
                 )}
                 {messages.filter((m) => m.timestamp >= sessionStart).map((msg) => (
-                  <ChatBubble key={msg.id} message={msg} onDelete={handleDeleteMessage} />
+                  <ChatBubble key={msg.id} message={msg} onDelete={handleDeleteMessage} onConfirmTts={handleConfirmTts} onDeclineTts={handleDeclineTts} />
                 ))}
                 <div ref={bottomRef} />
               </div>
@@ -1418,7 +1452,7 @@ export default function ChatPage() {
                       return (
                         <div
                           key={`cs-${idx}-${card.source}-${card.subtype}`}
-                          className="w-full"
+                          className="w-full cursor-pointer"
                           style={{
                             marginTop: isHovered ? 12 : idx === 0 ? 0 : -24,
                             zIndex: isHovered ? 200 : 100 - idx,
@@ -1428,10 +1462,12 @@ export default function ChatPage() {
                           }}
                           onMouseEnter={() => idx > 0 && setHoveredCard(idx)}
                           onMouseLeave={() => setHoveredCard(null)}
+                          onClick={() => setEnlargedCard(card)}
+                          title="点击放大"
                         >
                           {/* X button on newest or hovered card */}
                           {(isNewest || isHovered) && (
-                            <button onClick={() => handleDismissCard(idx)}
+                            <button onClick={(e) => { e.stopPropagation(); handleDismissCard(idx); }}
                               className="absolute -top-1 -right-1 z-20 w-5 h-5 flex items-center justify-center rounded-full bg-background/80 border border-border hover:bg-destructive hover:text-white transition-colors">
                               <X size={10} />
                             </button>
@@ -1451,7 +1487,7 @@ export default function ChatPage() {
                               }}
                             >
                               {idx > 0 && !isHovered ? (
-                                <div className="px-3 py-1.5 flex items-center gap-3 cursor-pointer" onClick={() => handleDismissCard(idx)}>
+                                <div className="px-3 py-1.5 flex items-center gap-3">
                                   <span style={{fontSize:11,color:theme.sub,opacity:0.7,fontWeight:500}}>{card.weather.location}</span>
                                   <span style={{fontSize:18,fontWeight:300,color:theme.accent}}>{card.weather.currentTemp + '°'}</span>
                                   <span style={{fontSize:10,color:theme.sub,opacity:0.6}}>{weatherCN(card.weather.condition)}</span>
@@ -1530,6 +1566,156 @@ export default function ChatPage() {
 
         </div>
       </div>
+
+      {/* 我的世界 抽屉 — 从右侧滑出，覆盖 2/3 聊天区；不卸载 iframe，重开秒回原状态 */}
+      <div
+        className="fixed z-[55] flex flex-col"
+        style={{
+          top: 0,
+          bottom: 0,
+          right: 0,
+          width: "calc((100vw - 64px) * 2 / 3)",
+          background: "linear-gradient(180deg, rgba(4,10,22,0.96) 0%, rgba(2,6,18,0.98) 100%)",
+          borderLeft: "1px solid rgba(0,212,255,0.18)",
+          boxShadow: plazaOpen ? "-18px 0 48px rgba(0,0,0,0.55), inset 1px 0 0 rgba(0,212,255,0.08)" : "none",
+          transform: plazaOpen ? "translateX(0)" : "translateX(105%)",
+          transition: "transform 360ms cubic-bezier(.22,.61,.36,1)",
+          willChange: "transform",
+        }}
+      >
+        <div
+          className="flex items-center justify-between px-4 py-2 shrink-0"
+          style={{
+            borderBottom: "1px solid rgba(0,212,255,0.15)",
+            background: "linear-gradient(180deg, rgba(0,212,255,0.04) 0%, transparent 100%)",
+          }}
+        >
+          <span className="hud-label text-[11px] tracking-wider" style={{ color: "rgba(0,212,255,0.85)" }}>我的世界</span>
+          <button
+            onClick={() => setPlazaOpen(false)}
+            className="w-6 h-6 flex items-center justify-center rounded text-muted-foreground hover:bg-secondary hover:text-foreground"
+            title="收起"
+          >
+            <X size={14} />
+          </button>
+        </div>
+        <iframe src="/plaza?embed=1" className="flex-1 w-full border-0" />
+      </div>
+
+      {/* 匹配 抽屉 — 同样从右侧滑出，覆盖 2/3 聊天区 */}
+      <div
+        className="fixed z-[55] flex flex-col"
+        style={{
+          top: 0,
+          bottom: 0,
+          right: 0,
+          width: "calc((100vw - 64px) * 2 / 3)",
+          background: "linear-gradient(180deg, rgba(4,10,22,0.96) 0%, rgba(2,6,18,0.98) 100%)",
+          borderLeft: "1px solid rgba(0,212,255,0.18)",
+          boxShadow: matchOpen ? "-18px 0 48px rgba(0,0,0,0.55), inset 1px 0 0 rgba(0,212,255,0.08)" : "none",
+          transform: matchOpen ? "translateX(0)" : "translateX(105%)",
+          transition: "transform 360ms cubic-bezier(.22,.61,.36,1)",
+          willChange: "transform",
+        }}
+      >
+        <div
+          className="flex items-center justify-between px-4 py-2 shrink-0"
+          style={{
+            borderBottom: "1px solid rgba(0,212,255,0.15)",
+            background: "linear-gradient(180deg, rgba(0,212,255,0.04) 0%, transparent 100%)",
+          }}
+        >
+          <span className="hud-label text-[11px] tracking-wider" style={{ color: "rgba(0,212,255,0.85)" }}>匹配</span>
+          <button
+            onClick={() => setMatchOpen(false)}
+            className="w-6 h-6 flex items-center justify-center rounded text-muted-foreground hover:bg-secondary hover:text-foreground"
+            title="收起"
+          >
+            <X size={14} />
+          </button>
+        </div>
+        <iframe src="/match?embed=1" className="flex-1 w-full border-0" />
+      </div>
+
+      {/* 卡片放大层 — 点击卡片或背景关闭 */}
+      {enlargedCard && (
+        <div
+          className="fixed inset-0 z-[60] flex items-center justify-center"
+          style={{ background: "rgba(2,6,18,0.78)", backdropFilter: "blur(6px)" }}
+          onClick={() => setEnlargedCard(null)}
+        >
+          <div
+            className="topic-drawer-in relative"
+            style={{ maxWidth: 760, width: "92%", maxHeight: "88vh" }}
+            onClick={(e) => e.stopPropagation()}
+          >
+            <button
+              onClick={() => setEnlargedCard(null)}
+              className="absolute -top-3 -right-3 z-10 w-7 h-7 flex items-center justify-center rounded-full bg-background border border-border hover:bg-destructive hover:text-white transition-colors"
+              title="缩小"
+            >
+              <X size={14} />
+            </button>
+
+            {enlargedCard.subtype === "weather" && enlargedCard.weather ? (() => {
+              const w = enlargedCard.weather;
+              const theme = getWeatherTheme(w.condition);
+              return (
+                <div className="rounded-2xl overflow-hidden"
+                  style={{ background: theme.bg, color: theme.text, border: `1px solid ${theme.glow}`, boxShadow: `0 16px 48px rgba(0,0,0,0.6), inset 0 1px 0 ${theme.glow}` }}>
+                  <div className="px-6 pt-6 pb-3">
+                    <div style={{ fontSize: 14, color: theme.sub }}>{w.location}</div>
+                    <div style={{ fontSize: 72, fontWeight: 200, color: theme.accent, marginTop: 8, lineHeight: 1 }}>{w.currentTemp}°</div>
+                    <div style={{ fontSize: 14, color: theme.sub, opacity: 0.85, marginTop: 6 }}>体感 {w.feelsLike}° · {weatherCN(w.condition)}</div>
+                  </div>
+                  <div className="px-6 pb-5 flex gap-6" style={{ fontSize: 13, color: theme.sub, opacity: 0.75 }}>
+                    <span>💧 {w.humidity}%</span>
+                    <span>🌬 {w.windSpeed} km/h</span>
+                    <span>👁 {w.visibility} km</span>
+                  </div>
+                  <div className="mx-6" style={{ height: 1, background: theme.glow, opacity: 0.35 }} />
+                  <div className="px-4 py-3">
+                    {w.forecast.map((f: any, i: number) => (
+                      <div key={i} className="flex items-center px-2 py-2">
+                        <span style={{ fontSize: 13, color: theme.sub, width: 56 }}>{f.day}</span>
+                        {f.icon && <img src={f.icon} alt={f.condition} className="w-6 h-6 mx-2 opacity-75" />}
+                        <span style={{ fontSize: 13, color: theme.sub, opacity: 0.7, flex: 1 }}>{f.condition}</span>
+                        <span className="tabular-nums" style={{ fontSize: 14, color: theme.accent }}>
+                          <span style={{ opacity: 0.5 }}>{f.low}°</span> <span className="ml-1">{f.high}°</span>
+                        </span>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              );
+            })() : (
+              <div className="hud-card-float rounded-2xl px-8 py-7 bg-background/95 flex flex-col" style={{ maxHeight: "88vh" }}>
+                <div className="hud-label text-xs opacity-75 mb-4 shrink-0 tracking-wider">{enlargedCard.source || "卡片"}</div>
+                <div className="flex-1 overflow-y-auto pr-2 -mr-2">
+                  {enlargedCard.points && enlargedCard.points.length > 0 ? (
+                    <ul className="space-y-4 text-[15px] leading-relaxed">
+                      {enlargedCard.points.map((p, i) => (
+                        <li key={i} className="flex gap-3">
+                          <span className="text-primary/70 shrink-0 mt-0.5">▸</span>
+                          <span>{p}</span>
+                        </li>
+                      ))}
+                    </ul>
+                  ) : (
+                    <p className="text-base opacity-70">无可展示内容</p>
+                  )}
+                </div>
+                {enlargedCard.url && (
+                  <a href={enlargedCard.url} target="_blank" rel="noopener noreferrer"
+                    className="block mt-5 pt-4 border-t border-border/40 text-sm text-primary hover:underline truncate shrink-0">
+                    {enlargedCard.url}
+                  </a>
+                )}
+              </div>
+            )}
+          </div>
+        </div>
+      )}
     </div>
   );
 }
