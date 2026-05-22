@@ -2,7 +2,7 @@
 
 import { Wifi, Battery, Signal, Bell, Search, ChevronDown, User } from "lucide-react";
 import { useState, useEffect } from "react";
-import { getUsername, updateBalance } from "@/lib/auth";
+import { getUsername, updateBalance, apiFetch } from "@/lib/auth";
 
 const API = "/api";
 
@@ -25,7 +25,7 @@ export default function TopBar() {
     const fetchBalance = () => {
       const username = getUsername();
       if (!username) { setBalance(null); return; }
-      fetch(`${API}/strawberry/${encodeURIComponent(username)}`)
+      apiFetch(`${API}/strawberry`)
         .then(r => r.json())
         .then(data => {
           if (typeof data?.balance === "number") {

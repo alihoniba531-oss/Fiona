@@ -5,6 +5,7 @@ import Sidebar from "@/components/Sidebar";
 import TopBar from "@/components/TopBar";
 import { Send, User, Sparkles, MessageCircle } from "lucide-react";
 import { cn } from "@/lib/utils";
+import { apiFetch, getToken, getUsername as readStoredUsername } from "@/lib/auth";
 
 const API = "/api";
 // WebSocket 需要完整 scheme + host，"/api" 直接 new WebSocket 会抛 SyntaxError
@@ -164,11 +165,11 @@ export default function MatchPage() {
 
   // 加载 rooms
   const loadRooms = useCallback(() => {
-    fetch(`${API}/peer/rooms/${username}`)
+    apiFetch(`${API}/peer/rooms`)
       .then(r => r.json())
       .then(data => setRooms((data.rooms || []).slice(0, 5)))
       .catch(() => {});
-  }, [username]);
+  }, []);
 
   // 拉取最近5个已接受匹配
   useEffect(() => {
@@ -184,7 +185,7 @@ export default function MatchPage() {
 
     async function poll() {
       try {
-        const r = await fetch(`${API}/match/pending/${username}`);
+        const r = await apiFetch(`${API}/match/pending`);
         const data = await r.json();
         if (!mounted) return;
         const incoming: PendingMatch[] = data.pending || [];
@@ -222,21 +223,19 @@ export default function MatchPage() {
 
   // 卡片自然过期（淡出动画完成后）
   const handleCardExpire = useCallback((id: number) => {
-    fetch(`${API}/match/pending/${id}/seen`, { method: "POST" }).catch(() => {});
+    apiFetch(`${API}/match/pending/${id}/seen`, { method: "POST" }).catch(() => {});
     removeCard(id);
   }, [removeCard]);
 
   // 用户点"认识下" → accept + 可选招呼
   const handleAcceptMatch = useCallback(async (match: PendingMatch, greeting: string = "") => {
-    fetch(`${API}/match/pending/${match.id}/seen`, { method: "POST" }).catch(() => {});
+    apiFetch(`${API}/match/pending/${match.id}/seen`, { method: "POST" }).catch(() => {});
     try {
-      await fetch(`${API}/match/response`, {
+      await apiFetch(`${API}/match/response`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
-          user_a: username,
-          user_b: match.peer_username,
-          responder: "a",
+          peer: match.peer_username,
           response: "accept",
           greeting: greeting.trim(),
         }),
@@ -244,11 +243,11 @@ export default function MatchPage() {
       loadRooms();
     } catch {}
     removeCard(match.id);
-  }, [username, loadRooms, removeCard]);
+  }, [loadRooms, removeCard]);
 
   // 用户点"算了"
   const handleSkipMatch = useCallback((id: number) => {
-    fetch(`${API}/match/pending/${id}/seen`, { method: "POST" }).catch(() => {});
+    apiFetch(`${API}/match/pending/${id}/seen`, { method: "POST" }).catch(() => {});
     removeCard(id);
   }, [removeCard]);
 
@@ -258,12 +257,16 @@ export default function MatchPage() {
     setSelected(room);
     setMessages([]);
 
-    fetch(`${API}/peer/history/${room.room_id}`)
+    apiFetch(`${API}/peer/history/${room.room_id}`)
       .then(r => r.json())
       .then(data => setMessages(data.messages || []))
       .catch(() => {});
 
-    const ws = new WebSocket(`${WS_BASE}/ws/peer/${room.room_id}/${username}`);
+    const token = getToken();
+    const wsAuth = token
+      ? `token=${encodeURIComponent(token)}`
+      : `dev_user=${encodeURIComponent(readStoredUsername() || username)}`;
+    const ws = new WebSocket(`${WS_BASE}/ws/peer/${room.room_id}?${wsAuth}`);
     ws.onmessage = (e) => {
       const msg: PeerMsg = JSON.parse(e.data);
       setMessages(prev => [...prev, msg]);

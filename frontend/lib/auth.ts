@@ -43,3 +43,19 @@ export function clearAuth() {
 export function isLoggedIn(): boolean {
   return !!getToken();
 }
+
+// ── 带鉴权头的 fetch ─────────────────────────────────────────────
+// 优先发 Authorization: Bearer <jwt>；dev（无 token）退化为 X-Dev-User
+// 后端 auth_dep.get_current_user 也对称：JWT > X-Dev-User（DEV_MODE=1）> 401
+export async function apiFetch(input: string, init: RequestInit = {}): Promise<Response> {
+  const token = getToken();
+  const headers = new Headers(init.headers || {});
+  if (token) {
+    headers.set("Authorization", `Bearer ${token}`);
+  } else if (typeof window !== "undefined") {
+    // dev 兜底：未登录但 localStorage 里有 fiona_user，给后端走 DEV_MODE 通道
+    const user = getUsername();
+    if (user) headers.set("X-Dev-User", user);
+  }
+  return fetch(input, { ...init, headers });
+}

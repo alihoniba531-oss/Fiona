@@ -6,6 +6,7 @@ import TopBar from "@/components/TopBar";
 import SolarSystem3D from "@/components/SolarSystem3D";
 import { Plus, Heart, ImageIcon, Video, X, Check, Sparkles, Music2, BarChart2, Cpu, BookOpen, Newspaper, Flame, TrendingUp } from "lucide-react";
 import { cn } from "@/lib/utils";
+import { apiFetch } from "@/lib/auth";
 
 const API = "/api";
 
@@ -47,7 +48,7 @@ function PostCard({ post, username }: { post: Post; username: string }) {
     if (burstTimer.current) window.clearTimeout(burstTimer.current);
     burstTimer.current = window.setTimeout(() => setBurst(0), 800);
     try {
-      await fetch(`${API}/plaza/like/${post.id}?username=${encodeURIComponent(username)}`, { method: "POST" });
+      await apiFetch(`${API}/plaza/like/${post.id}`, { method: "POST" });
     } catch {}
   };
 
@@ -209,12 +210,12 @@ export default function PlazaPage() {
 
   const loadPosts = useCallback(async () => {
     try {
-      const params = new URLSearchParams({ username, limit: "30" });
-      const r = await fetch(`${API}/plaza/feed?${params}`);
+      const params = new URLSearchParams({ limit: "30" });
+      const r = await apiFetch(`${API}/plaza/feed?${params}`);
       const data = await r.json();
       setPosts(data.posts || []);
     } catch {}
-  }, [username]);
+  }, []);
   useEffect(() => {
     if (!hydrated) return; // 等 localStorage hydrate 完再拉，免得用"默认用户"先拉一次
     loadPosts();
@@ -251,7 +252,7 @@ export default function PlazaPage() {
   // 拉用户兴趣（当前时段 top tags）
   useEffect(() => {
     if (!hydrated || !username) return;
-    fetch(`${API}/plaza/time-prefs/${encodeURIComponent(username)}`)
+    apiFetch(`${API}/plaza/time-prefs`)
       .then((r) => r.json())
       .then((d) => {
         const slot = d.time_slot;
@@ -268,7 +269,7 @@ export default function PlazaPage() {
   // 拉社区其他用户兴趣（底部 ticker）
   useEffect(() => {
     if (!hydrated || !username) return;
-    fetch(`${API}/plaza/community-interests?username=${encodeURIComponent(username)}`)
+    apiFetch(`${API}/plaza/community-interests`)
       .then((r) => r.json())
       .then((d) => setCommunityItems(d.items || []))
       .catch(() => {});
@@ -294,11 +295,10 @@ export default function PlazaPage() {
     setUploading(true);
     try {
       const form = new FormData();
-      form.append("username", username);
       form.append("caption", caption);
       form.append("tags", JSON.stringify(selectedTags));
       form.append("file", selectedFile.current);
-      await fetch(`${API}/plaza/post`, { method: "POST", body: form });
+      await apiFetch(`${API}/plaza/post`, { method: "POST", body: form });
       handleClose();
       await loadPosts();
     } catch {}

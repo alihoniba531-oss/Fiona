@@ -4,6 +4,7 @@ import { useState, useEffect } from "react";
 import Sidebar from "@/components/Sidebar";
 import TopBar from "@/components/TopBar";
 import { Edit3, Trash2, Shield, Loader2 } from "lucide-react";
+import { apiFetch } from "@/lib/auth";
 
 const API = "/api";
 
@@ -54,7 +55,7 @@ export default function ProfilePage() {
   useEffect(() => {
     if (!hydrated) return; // 等 localStorage 读完再拉，避免用"默认用户"拉一次空 profile
     setLoading(true);
-    fetch(`${API}/profile/${username}`)
+    apiFetch(`${API}/profile`)
       .then(r => r.json())
       .then(data => setProfile(data.profile || {}))
       .catch(() => setProfile({}))

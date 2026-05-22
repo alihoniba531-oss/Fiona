@@ -4,6 +4,7 @@ import { useState, useEffect, useRef, useMemo, Suspense } from "react";
 import { useSearchParams } from "next/navigation";
 import { Search, X, Download, Calendar, ChevronDown, ChevronRight } from "lucide-react";
 import { cn } from "@/lib/utils";
+import { apiFetch } from "@/lib/auth";
 
 const API = "/api";
 
@@ -41,7 +42,9 @@ function HistoryContent() {
   const searchRef = useRef<HTMLInputElement>(null);
 
   useEffect(() => {
-    fetch(`${API}/history/${username}`)
+    // 历史记录端点已收紧为"当前登录用户"，路径里的 ?user= 参数已无意义但保留 UI 不变。
+    // 后端通过鉴权头识别用户。
+    apiFetch(`${API}/history`)
       .then(r => r.json())
       .then(d => setAllMsgs(d.messages || []))
       .catch(() => {})

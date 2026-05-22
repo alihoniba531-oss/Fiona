@@ -14,6 +14,7 @@ import {
   Sparkles, Globe,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
+import { apiFetch, getToken, getUsername as readStoredUsername } from "@/lib/auth";
 
 const API = "/api";
 const WS_BASE = typeof window !== "undefined"
@@ -298,8 +299,9 @@ export default function ChatPage() {
 
   // Load all users
   useEffect(() => {
+    // /users 仅 DEV_MODE 开放；prod 返 404，安静忽略
     fetch(`${API}/users`)
-      .then((r) => r.json())
+      .then((r) => r.ok ? r.json() : { users: [] })
       .then((d) => setAllUsers(d.users || []))
       .catch(() => {});
   }, []);
@@ -307,7 +309,7 @@ export default function ChatPage() {
   // Load user settings
   useEffect(() => {
     if (!hydrated || !username) return;
-    fetch(`${API}/user/${username}/settings`)
+    apiFetch(`${API}/user/settings`)
       .then((r) => r.json())
       .then((d) => {
         const s = d.settings || {};
@@ -333,11 +335,11 @@ export default function ChatPage() {
 
   // Load peer rooms
   const loadPeerRooms = useCallback(() => {
-    fetch(`${API}/peer/rooms/${username}`)
+    apiFetch(`${API}/peer/rooms`)
       .then((r) => r.json())
       .then((d) => setPeerRooms(d.rooms || []))
       .catch(() => {});
-  }, [username]);
+  }, []);
 
   useEffect(() => {
     if (!hydrated) return;
@@ -351,7 +353,7 @@ export default function ChatPage() {
     const lastIds = new Set<number>();
     async function poll() {
       try {
-        const r = await fetch(`${API}/match/pending/${username}`);
+        const r = await apiFetch(`${API}/match/pending`);
         const data = await r.json();
         if (!mounted) return;
         const incoming: PendingMatch[] = data.pending || [];
@@ -653,7 +655,7 @@ export default function ChatPage() {
   // Load history — only after hydration so we use the real username, not the "默认用户" placeholder
   useEffect(() => {
     if (!hydrated) return;
-    fetch(`${API}/history/${username}`)
+    apiFetch(`${API}/history`)
       .then((r) => r.json())
       .then((data) => {
         const loaded: Message[] = (data.messages || []).map(
@@ -702,13 +704,13 @@ export default function ChatPage() {
 
   const saveUserSettings = useCallback(
     (gender: "male" | "female" | null, pref: "male" | "female" | "both") => {
-      fetch(`${API}/user/${username}/settings`, {
+      apiFetch(`${API}/user/settings`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ gender, match_pref: pref }),
       }).catch(() => {});
     },
-    [username],
+    [],
   );
 
   const removeCard = useCallback((id: number) => {
@@ -722,7 +724,7 @@ export default function ChatPage() {
 
   const handleCardExpire = useCallback(
     (id: number) => {
-      fetch(`${API}/match/pending/${id}/seen`, { method: "POST" }).catch(() => {});
+      apiFetch(`${API}/match/pending/${id}/seen`, { method: "POST" }).catch(() => {});
       removeCard(id);
     },
     [removeCard],
@@ -730,15 +732,13 @@ export default function ChatPage() {
 
   const handleAcceptCard = useCallback(
     async (match: PendingMatch) => {
-      fetch(`${API}/match/pending/${match.id}/seen`, { method: "POST" }).catch(() => {});
+      apiFetch(`${API}/match/pending/${match.id}/seen`, { method: "POST" }).catch(() => {});
       try {
-        await fetch(`${API}/match/response`, {
+        await apiFetch(`${API}/match/response`, {
           method: "POST",
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({
-            user_a: username,
-            user_b: match.peer_username,
-            responder: "a",
+            peer: match.peer_username,
             response: "accept",
           }),
         });
@@ -748,12 +748,12 @@ export default function ChatPage() {
       }
       removeCard(match.id);
     },
-    [username, loadPeerRooms, removeCard],
+    [loadPeerRooms, removeCard],
   );
 
   const handleSkipCard = useCallback(
     (id: number) => {
-      fetch(`${API}/match/pending/${id}/seen`, { method: "POST" }).catch(() => {});
+      apiFetch(`${API}/match/pending/${id}/seen`, { method: "POST" }).catch(() => {});
       removeCard(id);
     },
     [removeCard],
@@ -764,7 +764,7 @@ export default function ChatPage() {
   const handleDeleteMessage = async (id: string, dbId?: number) => {
     setMessages((prev) => prev.filter((m) => m.id !== id));
     if (dbId) {
-      await fetch(`${API}/message/${dbId}`, { method: "DELETE" }).catch(() => {});
+      await apiFetch(`${API}/message/${dbId}`, { method: "DELETE" }).catch(() => {});
     }
   };
 
@@ -781,7 +781,7 @@ export default function ChatPage() {
 
   const handleClearHistory = async () => {
     if (!confirm("确定要清空所有历史记录吗？此操作不可恢复。")) return;
-    await fetch(`${API}/history/${username}`, { method: "DELETE" }).catch(() => {});
+    await apiFetch(`${API}/history`, { method: "DELETE" }).catch(() => {});
     setMessages([]);
   };
 
@@ -843,11 +843,10 @@ export default function ChatPage() {
 
     let reply = "";
     try {
-      const res = await fetch(`${API}/chat`, {
+      const res = await apiFetch(`${API}/chat`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
-          username: username,
           message: text,
           image_base64: sentImage || undefined,
         }),
@@ -1024,7 +1023,12 @@ export default function ChatPage() {
       setPeerMessages([]);
       setPeerConnected(false);
 
-      const ws = new WebSocket(`${WS_BASE}/ws/peer/${room.room_id}/${username}`);
+      // WS 鉴权：浏览器没法给 WebSocket 加 header，token 走 query；dev 无 token 时退化为 dev_user
+      const token = getToken();
+      const wsAuth = token
+        ? `token=${encodeURIComponent(token)}`
+        : `dev_user=${encodeURIComponent(readStoredUsername() || username)}`;
+      const ws = new WebSocket(`${WS_BASE}/ws/peer/${room.room_id}?${wsAuth}`);
       wsRef.current = ws;
 
       ws.onopen = () => setPeerConnected(true);

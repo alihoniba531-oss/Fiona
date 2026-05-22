@@ -7,10 +7,10 @@ if sys.platform == "win32":
 import os
 import json
 import base64
-from datetime import datetime
+from datetime import datetime, timezone
 from contextlib import asynccontextmanager
 from dotenv import load_dotenv
-from fastapi import FastAPI, HTTPException, WebSocket, WebSocketDisconnect, UploadFile, File, Form
+from fastapi import FastAPI, HTTPException, WebSocket, WebSocketDisconnect, UploadFile, File, Form, Depends
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import StreamingResponse
 from fastapi.staticfiles import StaticFiles
@@ -23,7 +23,8 @@ from database import (init_db, get_or_create_user, save_message, get_messages,
                       get_pending_matches_for_user, mark_pending_match_seen,
                       save_otp, check_and_consume_otp, get_or_create_user_by_phone,
                       get_strawberry_balance, deduct_strawberry, add_strawberry)
-from auth import make_otp, create_token, decode_token
+from auth import make_otp, create_token
+from auth_dep import get_current_user, get_optional_user, ws_authenticate
 from sms import send_sms
 from persona import build_system_prompt
 from intent_router import recognize_intent, get_pending, set_pending, clear_pending, ask_missing, fill_param
@@ -161,7 +162,6 @@ app.add_middleware(
 )
 
 class ChatRequest(BaseModel):
-    username: str
     message: str
     image_base64: str | None = None
 
@@ -183,7 +183,9 @@ def _save_uploaded_image(image_base64: str) -> str | None:
 
 
 def _compute_hours_since_last_user(history: list[dict]) -> float | None:
-    """从 history（不含当前消息）算距上次 user 消息的小时数。无历史返回 None。"""
+    """从 history（不含当前消息）算距上次 user 消息的小时数。无历史返回 None。
+    SQLite CURRENT_TIMESTAMP 是 UTC，必须按 UTC 解析后跟 utcnow() 比较，
+    否则在非 UTC 时区（如 CST +8）算出来恒定多 8 小时。"""
     for m in reversed(history):
         if m.get("role") != "user":
             continue
@@ -191,13 +193,14 @@ def _compute_hours_since_last_user(history: list[dict]) -> float | None:
         if not ts:
             continue
         try:
-            # SQLite TIMESTAMP 默认 'YYYY-MM-DD HH:MM:SS' 或 ISO 格式
             if isinstance(ts, str):
-                ts_str = ts.replace("T", " ").split(".")[0]  # 兼容 ISO 和 SQLite 格式
-                created = datetime.strptime(ts_str, "%Y-%m-%d %H:%M:%S")
+                ts_str = ts.replace("T", " ").split(".")[0]
+                created = datetime.strptime(ts_str, "%Y-%m-%d %H:%M:%S").replace(tzinfo=timezone.utc)
+            elif isinstance(ts, datetime):
+                created = ts if ts.tzinfo else ts.replace(tzinfo=timezone.utc)
             else:
-                created = ts  # 已经是 datetime
-            delta = datetime.now() - created
+                return None
+            delta = datetime.now(timezone.utc) - created
             return max(0.0, delta.total_seconds() / 3600)
         except Exception:
             return None
@@ -338,25 +341,23 @@ async def root():
 
 
 @app.post("/chat")
-async def chat(req: ChatRequest):
-    if not req.username.strip():
-        raise HTTPException(status_code=400, detail="username 不能为空")
+async def chat(req: ChatRequest, user: str = Depends(get_current_user)):
     has_image = bool(req.image_base64)
     if not req.message.strip() and not has_image:
         raise HTTPException(status_code=400, detail="message 和图片不能同时为空")
 
-    await get_or_create_user(req.username)
+    await get_or_create_user(user)
 
     # ── 草莓余额检查（DEV 模式跳过）────────────────────────────
     DEV_MODE = os.getenv("DEV_MODE", "0") == "1"
     if not DEV_MODE:
-        balance = await get_strawberry_balance(req.username)
+        balance = await get_strawberry_balance(user)
         if balance <= 0:
             async def _no_balance():
                 yield f"data: {json.dumps({'error': '草莓不足，请充值后继续聊天 🍓'}, ensure_ascii=False)}\n\n"
             return StreamingResponse(_no_balance(), media_type="text/event-stream")
 
-    history = await get_messages(req.username, limit=60)
+    history = await get_messages(user, limit=60)
     message_count = len(history)
 
     # 图片处理：保存到 uploads/，拿到相对 URL
@@ -370,11 +371,11 @@ async def chat(req: ChatRequest):
     hours_since_last = _compute_hours_since_last_user(history)
     length_drop = _compute_length_drop(history, user_content)
 
-    await save_message(req.username, "user", user_content, image_path)
+    await save_message(user, "user", user_content, image_path)
 
     # 加载画像（含 special_dates），传给 persona 做日期感知
     from database import get_profile
-    user_profile = await get_profile(req.username)
+    user_profile = await get_profile(user)
 
     # 提取用户语气特征（镜像阶段需要）
     from avatar_state import extract_tone_profile, build_tone_description, get_stage, AvatarStage
@@ -385,7 +386,7 @@ async def chat(req: ChatRequest):
         tone_description = build_tone_description(tone)
 
     system_prompt = build_system_prompt(
-        req.username,
+        user,
         message_count,
         hours_since_last=hours_since_last,
         length_drop=length_drop,
@@ -482,18 +483,18 @@ async def chat(req: ChatRequest):
             # ── 0. 模式判定（双模式系统 P1.5）──
             # detect_mode 内部跑同步 LLM 调用，必须扔到线程池，否则会阻塞 event loop
             # 其他在 chat 路径上的同步 LLM/IO 调用同理（recognize_intent / execute_intent）
-            mode = await asyncio.to_thread(detect_mode, client, req.username, req.message, history)
+            mode = await asyncio.to_thread(detect_mode, client, user, req.message, history)
             sys_prompt_final = apply_mode_prompt(system_prompt, mode)
 
             # 镜子模式：跳过所有意图识别 + 工具调用，直走简化 Persona
             if mode == "mirror":
                 # 只有用户明确手动切镜子（说"别给建议"之类）才清 pending；
                 # 自动判定（连续短情绪 / LLM 判定发泄）可能误伤——用户也许只是在补工具参数
-                _mode_state = get_user_mode(req.username)
+                _mode_state = get_user_mode(user)
                 _trigger = (_mode_state.get("last_trigger") or "")
                 if _trigger.startswith("manual"):
-                    clear_pending(req.username)
-                _slot = choose_model(req.username, user_content, "mirror")
+                    clear_pending(user)
+                _slot = choose_model(user, user_content, "mirror")
                 stream, _actually_qwen = _create_stream_with_fallback(
                     _slot == "qwen",
                     [{"role": "system", "content": sys_prompt_final}] + messages,
@@ -507,10 +508,10 @@ async def chat(req: ChatRequest):
                     if text:
                         full_response += text
                         yield f"data: {json.dumps({'text': text}, ensure_ascii=False)}\n\n"
-                await save_message(req.username, "assistant", full_response)
+                await save_message(user, "assistant", full_response)
                 yield f"data: {json.dumps({'done': True}, ensure_ascii=False)}\n\n"
                 if not _actually_qwen:
-                    token_budget.add(req.username, len(full_response) // 2)
+                    token_budget.add(user, len(full_response) // 2)
                 return
 
             # ── 朋友模式：保留现有完整逻辑 ──
@@ -521,7 +522,7 @@ async def chat(req: ChatRequest):
                     "用菲欧娜的方式回应——直接、有人味、一两句话承认看不到，必要时让对方用文字描述，"
                     "不要假装能看到，也不要长篇道歉。"
                 )
-                _slot = choose_model(req.username, user_content, "image")
+                _slot = choose_model(user, user_content, "image")
                 stream, _actually_qwen = _create_stream_with_fallback(
                     _slot == "qwen",
                     [{"role": "system", "content": sys_prompt_final + extra}] + messages,
@@ -535,19 +536,19 @@ async def chat(req: ChatRequest):
                     if text:
                         full_response += text
                         yield f"data: {json.dumps({'text': text}, ensure_ascii=False)}\n\n"
-                await save_message(req.username, "assistant", full_response)
+                await save_message(user, "assistant", full_response)
                 yield f"data: {json.dumps({'done': True}, ensure_ascii=False)}\n\n"
                 if not _actually_qwen:
-                    token_budget.add(req.username, len(full_response) // 2)
+                    token_budget.add(user, len(full_response) // 2)
                 return
 
             # ── 1. 检查是否有等待补全参数的 pending intent ──
-            pending = get_pending(req.username)
+            pending = get_pending(user)
             if pending:
                 filled = fill_param(pending, req.message)
                 if not filled["missing"]:
                     # 参数补全，执行
-                    clear_pending(req.username)
+                    clear_pending(user)
                     result = await asyncio.to_thread(execute_intent, filled["intent"], filled["params"])
                     if isinstance(result, dict) and result.get("type") == "card":
                         # 卡片数据走专门 SSE 事件
@@ -557,16 +558,16 @@ async def chat(req: ChatRequest):
                     else:
                         full_response = result
                         yield f"data: {json.dumps({'text': result}, ensure_ascii=False)}\n\n"
-                    await save_message(req.username, "assistant", full_response)
+                    await save_message(user, "assistant", full_response)
                     yield f"data: {json.dumps({'done': True}, ensure_ascii=False)}\n\n"
                     return
                 else:
                     # 还缺参数，继续追问
-                    set_pending(req.username, filled)
+                    set_pending(user, filled)
                     question = ask_missing(filled["missing"][0])
                     full_response = question
                     yield f"data: {json.dumps({'text': question}, ensure_ascii=False)}\n\n"
-                    await save_message(req.username, "assistant", full_response)
+                    await save_message(user, "assistant", full_response)
                     yield f"data: {json.dumps({'done': True}, ensure_ascii=False)}\n\n"
                     return
 
@@ -593,16 +594,16 @@ async def chat(req: ChatRequest):
                         yield f"data: {json.dumps({'text': result}, ensure_ascii=False)}\n\n"
                 else:
                     # 意图明确，但缺参数，存 pending 并追问
-                    set_pending(req.username, intent_result)
+                    set_pending(user, intent_result)
                     question = ask_missing(intent_result["missing"][0])
                     full_response = question
                     yield f"data: {json.dumps({'text': question}, ensure_ascii=False)}\n\n"
-                await save_message(req.username, "assistant", full_response)
+                await save_message(user, "assistant", full_response)
                 yield f"data: {json.dumps({'done': True}, ensure_ascii=False)}\n\n"
                 return
 
             # ── 3. 普通对话，走菲欧娜（路由决定使用哪个模型槽）──
-            _slot      = choose_model(req.username, user_content, "normal")
+            _slot      = choose_model(user, user_content, "normal")
             _use_light = (_slot == "qwen")
             # gemini 槽用轻量参数，deepseek 槽保持原有高密度参数
             _max_tok   = 150  if _use_light else 400
@@ -624,24 +625,24 @@ async def chat(req: ChatRequest):
                     full_response += text
                     yield f"data: {json.dumps({'text': text}, ensure_ascii=False)}\n\n"
 
-            await save_message(req.username, "assistant", full_response)
+            await save_message(user, "assistant", full_response)
             yield f"data: {json.dumps({'done': True}, ensure_ascii=False)}\n\n"
 
             # DeepSeek 实际使用时计入预算（含 Gemini 失败回退的情况）
             if not _actually_qwen:
-                token_budget.add(req.username, len(full_response) // 2)
+                token_budget.add(user, len(full_response) // 2)
 
             # ── 4. 每 5 轮后台静默提取画像（不阻塞返回）──
             if message_count > 0 and message_count % 5 == 0:
-                all_msgs = await get_messages(req.username, limit=60)
-                asyncio.create_task(extract_and_update(client, req.username, all_msgs))
+                all_msgs = await get_messages(user, limit=60)
+                asyncio.create_task(extract_and_update(client, user, all_msgs))
 
             # ── 5. 对话内匹配检测（后台异步，不阻塞返回）──
             # 只在朋友模式的普通对话流跑（这里已经过了 mirror 分支 + 工具分支）
             asyncio.create_task(
                 detect_matches_and_save(
                     client,
-                    req.username,
+                    user,
                     user_content,
                     history + [{"role": "user", "content": user_content}],
                     message_count=message_count,
@@ -654,93 +655,107 @@ async def chat(req: ChatRequest):
             # 有实际回复才扣草莓（DEV 模式跳过）
             DEV_MODE = os.getenv("DEV_MODE", "0") == "1"
             if full_response and not DEV_MODE:
-                await deduct_strawberry(req.username, 10)
+                await deduct_strawberry(user, 10)
 
     return StreamingResponse(generate(), media_type="text/event-stream")
 
 
-@app.get("/match/{username}")
-async def get_matches(username: str):
-    """为 username 计算并返回匹配结果"""
-    await get_or_create_user(username)
-    results = await find_matches(client, username)
-    return {"username": username, "matches": results}
+@app.get("/match")
+async def get_matches(user: str = Depends(get_current_user)):
+    """为当前登录用户计算并返回匹配结果"""
+    await get_or_create_user(user)
+    results = await find_matches(client, user)
+    return {"username": user, "matches": results}
 
 
 @app.post("/match/response")
-async def match_response(body: dict):
-    """记录用户对匹配的态度：accept / reject；可选附带打招呼内容"""
+async def match_response(body: dict, user: str = Depends(get_current_user)):
+    """记录当前用户对匹配的态度：accept / reject；可选附带打招呼内容。
+    body: { peer: str, response: 'accept'|'reject', greeting?: str }"""
     from database import update_match_response, save_greeting
-    await update_match_response(
-        body["user_a"], body["user_b"],
-        body["responder"], body["response"]
-    )
+    peer = (body.get("peer") or "").strip()
+    response = (body.get("response") or "").strip()
+    if not peer or response not in ("accept", "reject"):
+        raise HTTPException(status_code=400, detail="peer 和 response 必填")
+    await update_match_response(user, peer, response)
     greeting = (body.get("greeting") or "").strip()
-    if greeting and body.get("response") == "accept":
-        await save_greeting(body["user_a"], body["user_b"], body["responder"], greeting)
+    if greeting and response == "accept":
+        await save_greeting(user, peer, greeting)
     return {"status": "ok"}
 
 
-@app.get("/match/pending/{username}")
-async def get_pending_matches(username: str):
+@app.get("/match/pending")
+async def get_pending_matches(user: str = Depends(get_current_user)):
     """拉对话内匹配检测命中的卡片（前端聊天页轮询/回复后调用）"""
-    matches = await get_pending_matches_for_user(username, limit=5)
-    return {"username": username, "pending": matches}
+    matches = await get_pending_matches_for_user(user, limit=5)
+    return {"username": user, "pending": matches}
 
 
-@app.get("/user/{username}/settings")
-async def get_user_settings_api(username: str):
-    """获取用户性别 + 匹配偏好"""
+@app.get("/user/settings")
+async def get_user_settings_api(user: str = Depends(get_current_user)):
+    """获取当前用户性别 + 匹配偏好"""
     from database import get_user_settings
-    await get_or_create_user(username)
-    settings = await get_user_settings(username)
-    return {"username": username, "settings": settings}
+    await get_or_create_user(user)
+    settings = await get_user_settings(user)
+    return {"username": user, "settings": settings}
 
 
-@app.post("/user/{username}/settings")
-async def update_user_settings_api(username: str, body: dict):
-    """更新用户性别 + 匹配偏好"""
+@app.post("/user/settings")
+async def update_user_settings_api(body: dict, user: str = Depends(get_current_user)):
+    """更新当前用户性别 + 匹配偏好"""
     from database import update_user_settings
-    await get_or_create_user(username)
+    await get_or_create_user(user)
     gender = body.get("gender")
     match_pref = body.get("match_pref", "both")
-    await update_user_settings(username, gender, match_pref)
+    await update_user_settings(user, gender, match_pref)
     return {"status": "ok"}
 
 
 @app.post("/match/pending/{match_id}/seen")
-async def mark_match_seen(match_id: int):
-    """前端弹了卡片后标记已看，避免重复弹"""
+async def mark_match_seen(match_id: int, user: str = Depends(get_current_user)):
+    """前端弹了卡片后标记已看，避免重复弹。校验卡片归属当前用户。"""
+    from database import get_pending_match_owner
+    owner = await get_pending_match_owner(match_id)
+    if owner is None:
+        raise HTTPException(status_code=404, detail="匹配不存在")
+    if owner != user:
+        raise HTTPException(status_code=403, detail="无权操作")
     await mark_pending_match_seen(match_id)
     return {"status": "ok"}
 
 
-@app.get("/profile/{username}")
-async def get_user_profile(username: str):
+@app.get("/profile")
+async def get_user_profile(user: str = Depends(get_current_user)):
     from database import get_profile
-    profile = await get_profile(username)
-    return {"username": username, "profile": profile}
+    profile = await get_profile(user)
+    return {"username": user, "profile": profile}
 
 
-@app.get("/history/{username}")
-async def get_history(username: str):
-    await get_or_create_user(username)
-    messages = await get_all_messages(username)
-    return {"username": username, "messages": messages}
+@app.get("/history")
+async def get_history(user: str = Depends(get_current_user)):
+    await get_or_create_user(user)
+    messages = await get_all_messages(user)
+    return {"username": user, "messages": messages}
 
 
 @app.delete("/message/{message_id}")
-async def delete_one_message(message_id: int):
+async def delete_one_message(message_id: int, user: str = Depends(get_current_user)):
+    from database import get_message_owner
+    owner = await get_message_owner(message_id)
+    if owner is None:
+        raise HTTPException(status_code=404, detail="消息不存在")
+    if owner != user:
+        raise HTTPException(status_code=403, detail="无权操作")
     await delete_message(message_id)
     return {"status": "deleted"}
 
 
-@app.delete("/history/{username}")
-async def clear_history(username: str):
+@app.delete("/history")
+async def clear_history(user: str = Depends(get_current_user)):
     import aiosqlite
     from database import DB_PATH
     async with aiosqlite.connect(DB_PATH) as db:
-        await db.execute("DELETE FROM messages WHERE username = ?", (username,))
+        await db.execute("DELETE FROM messages WHERE username = ?", (user,))
         await db.commit()
     return {"status": "cleared"}
 
@@ -787,8 +802,17 @@ class ConnectionManager:
 ws_manager = ConnectionManager()
 
 
-@app.websocket("/ws/peer/{room_id}/{username}")
-async def peer_chat_ws(ws: WebSocket, room_id: str, username: str):
+@app.websocket("/ws/peer/{room_id}")
+async def peer_chat_ws(ws: WebSocket, room_id: str):
+    """WebSocket 鉴权走 query: ?token=<jwt>（或 DEV_MODE 下 ?dev_user=<name>）"""
+    username = await ws_authenticate(ws)
+    if not username:
+        await ws.close(code=4401)
+        return
+    # 校验当前用户属于该房间（房间 ID 由两个 username 排序拼接得出）
+    if username not in room_id.split("__"):
+        await ws.close(code=4403)
+        return
     await ws_manager.connect(room_id, username, ws)
     # 连接后推送历史消息
     history = await get_peer_messages(room_id, limit=100)
@@ -810,26 +834,28 @@ async def peer_chat_ws(ws: WebSocket, room_id: str, username: str):
         ws_manager.disconnect(room_id, username)
 
 
-@app.get("/peer/rooms/{username}")
-async def get_peer_rooms(username: str):
-    """返回该用户所有已接受匹配的对方用户名（可开启聊天的列表）"""
-    peers = await get_accepted_matches(username)
-    rooms = [{"peer": p, "room_id": make_room_id(username, p)} for p in peers]
-    return {"username": username, "rooms": rooms}
+@app.get("/peer/rooms")
+async def get_peer_rooms(user: str = Depends(get_current_user)):
+    """返回当前用户所有已接受匹配的对方用户名（可开启聊天的列表）"""
+    peers = await get_accepted_matches(user)
+    rooms = [{"peer": p, "room_id": make_room_id(user, p)} for p in peers]
+    return {"username": user, "rooms": rooms}
 
 
 @app.get("/peer/history/{room_id}")
-async def peer_history(room_id: str, limit: int = 100):
+async def peer_history(room_id: str, limit: int = 100, user: str = Depends(get_current_user)):
+    if user not in room_id.split("__"):
+        raise HTTPException(status_code=403, detail="不在该房间内")
     messages = await get_peer_messages(room_id, limit=limit)
     return {"room_id": room_id, "messages": messages}
 
 
-@app.get("/usage/{username}")
-async def get_usage(username: str):
-    """返回用户今日 + 本月草莓用量"""
+@app.get("/usage")
+async def get_usage(user: str = Depends(get_current_user)):
+    """返回当前用户今日 + 本月草莓用量"""
     from model_router import DEEPSEEK_DAILY_LIMIT, DEEPSEEK_MONTHLY_LIMIT
-    daily   = token_budget.get_daily(username)
-    monthly = token_budget.get_monthly(username)
+    daily   = token_budget.get_daily(user)
+    monthly = token_budget.get_monthly(user)
     def pct(used, limit): return min(100, round(used / limit * 100)) if limit > 0 else 0
     return {
         "daily":   {"used": daily,   "limit": DEEPSEEK_DAILY_LIMIT,   "percent": pct(daily,   DEEPSEEK_DAILY_LIMIT)},
@@ -934,13 +960,13 @@ async def plaza_tags():
 
 @app.get("/plaza/feed")
 async def plaza_feed(
-    username: str = "",
     tag: str = "",
     sort: str = "recommended",  # recommended | latest | hot
     limit: int = 30,
     offset: int = 0,
+    user: str | None = Depends(get_optional_user),
 ):
-    """feed：默认按用户偏好（推荐），可指定 latest / hot"""
+    """feed：默认按用户偏好（推荐），可指定 latest / hot。匿名也能用，但无个性化"""
     from database import get_posts, get_tag_prefs, get_time_tag_prefs, get_time_slot
     posts = await get_posts(limit=200, offset=0)
 
@@ -953,9 +979,9 @@ async def plaza_feed(
     elif sort == "hot":
         posts.sort(key=lambda p: (p.get("likes", 0), p.get("created_at") or ""), reverse=True)
     else:  # recommended
-        if username:
-            global_prefs = await get_tag_prefs(username)
-            time_prefs   = await get_time_tag_prefs(username)
+        if user:
+            global_prefs = await get_tag_prefs(user)
+            time_prefs   = await get_time_tag_prefs(user)
             if global_prefs or time_prefs:
                 def score(p):
                     tags = p.get("tags", [])
@@ -968,24 +994,26 @@ async def plaza_feed(
     return {"posts": posts[offset: offset + limit], "time_slot": current_slot}
 
 
-@app.get("/plaza/time-prefs/{username}")
-async def plaza_time_prefs(username: str):
-    """返回用户各时段的标签偏好（用于可视化）"""
+@app.get("/plaza/time-prefs")
+async def plaza_time_prefs(user: str = Depends(get_current_user)):
+    """返回当前用户各时段的标签偏好（用于可视化）"""
     from database import get_all_time_tag_prefs, get_time_slot
-    prefs = await get_all_time_tag_prefs(username)
-    return {"username": username, "time_slot": get_time_slot(), "prefs": prefs}
+    prefs = await get_all_time_tag_prefs(user)
+    return {"username": user, "time_slot": get_time_slot(), "prefs": prefs}
 
 
 @app.get("/plaza/community-interests")
-async def community_interests(username: str = ""):
-    """返回其他用户的兴趣标签，用于广场底部滚动展示（匿名）"""
+async def community_interests(user: str | None = Depends(get_optional_user)):
+    """返回其他用户的兴趣标签，用于广场底部滚动展示（匿名）。
+    已登录则排除自己；匿名则全量返回。"""
     import hashlib, aiosqlite
     from database import DB_PATH
+    exclude = user or ""
     async with aiosqlite.connect(DB_PATH) as db:
         db.row_factory = aiosqlite.Row
         async with db.execute(
             "SELECT username, tag, score FROM user_tag_prefs WHERE username != ? AND score > 0 ORDER BY score DESC LIMIT 80",
-            (username,),
+            (exclude,),
         ) as cursor:
             rows = await cursor.fetchall()
     seen: dict[str, int] = {}
@@ -1002,10 +1030,10 @@ async def community_interests(username: str = ""):
 
 @app.post("/plaza/post")
 async def plaza_post(
-    username: str = Form(default=""),
     caption: str = Form(default=""),
     tags: str = Form(default="[]"),
     file: UploadFile = File(...),
+    user: str = Depends(get_current_user),
 ):
     import hashlib
     from database import save_post
@@ -1014,7 +1042,7 @@ async def plaza_post(
         tag_list = [t for t in tag_list if t in PLAZA_TAGS][:5]
     except Exception:
         tag_list = []
-    anon_id = hashlib.md5(("fiona_plaza_" + (username or "anon")).encode()).hexdigest()[:8]
+    anon_id = hashlib.md5(("fiona_plaza_" + user).encode()).hexdigest()[:8]
     ext = (file.filename or "").rsplit(".", 1)[-1].lower()
     media_type = "video" if ext in ("mp4", "mov", "webm") else "image"
     fname = f"plaza_{datetime.now().strftime('%Y%m%d_%H%M%S_%f')}.{ext or 'jpg'}"
@@ -1026,15 +1054,14 @@ async def plaza_post(
 
 
 @app.post("/plaza/like/{post_id}")
-async def plaza_like(post_id: int, username: str = ""):
+async def plaza_like(post_id: int, user: str = Depends(get_current_user)):
     from database import like_post, get_posts, update_tag_prefs
     likes = await like_post(post_id)
     # 更新用户标签喜好
-    if username:
-        all_posts = await get_posts(limit=200)
-        post = next((p for p in all_posts if p["id"] == post_id), None)
-        if post and post.get("tags"):
-            await update_tag_prefs(username, post["tags"])
+    all_posts = await get_posts(limit=200)
+    post = next((p for p in all_posts if p["id"] == post_id), None)
+    if post and post.get("tags"):
+        await update_tag_prefs(user, post["tags"])
     return {"likes": likes}
 
 
@@ -1071,16 +1098,18 @@ async def verify_otp_api(body: dict):
     }
 
 
-@app.get("/strawberry/{username}")
-async def get_strawberry(username: str):
-    bal = await get_strawberry_balance(username)
-    return {"username": username, "balance": bal}
+@app.get("/strawberry")
+async def get_strawberry(user: str = Depends(get_current_user)):
+    bal = await get_strawberry_balance(user)
+    return {"username": user, "balance": bal}
 
 
-# ── 用户列表（dev 用）──────────────────────────────────────────
+# ── 用户列表（仅 DEV_MODE 开放，供本地切换身份用）─────────────
 @app.get("/users")
 async def list_users():
-    """返回所有用户列表，供前端选择身份用"""
+    """DEV_MODE=1 时返回所有用户列表，便于本地切身份调试；生产环境返回 404 隐藏。"""
+    if os.getenv("DEV_MODE", "0") != "1":
+        raise HTTPException(status_code=404, detail="Not Found")
     import aiosqlite
     from database import DB_PATH
     async with aiosqlite.connect(DB_PATH) as db:

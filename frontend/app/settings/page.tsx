@@ -4,6 +4,7 @@ import { useState, useEffect } from "react";
 import Sidebar from "@/components/Sidebar";
 import TopBar from "@/components/TopBar";
 import { Trash2, User, Info } from "lucide-react";
+import { apiFetch } from "@/lib/auth";
 
 const API = "/api";
 
@@ -15,7 +16,8 @@ export default function SettingsPage() {
   useEffect(() => {
     const u = localStorage.getItem("fiona_user");
     if (u) setUsername(u);
-    fetch(`${API}/users`).then(r => r.json()).then(d => setAllUsers(d.users || [])).catch(() => {});
+    // /users 端点仅在后端 DEV_MODE=1 时开放；prod 直接 404，前端把列表留空即可。
+    fetch(`${API}/users`).then(r => r.ok ? r.json() : { users: [] }).then(d => setAllUsers(d.users || [])).catch(() => {});
   }, []);
 
   const switchUser = (u: string) => {
@@ -27,7 +29,7 @@ export default function SettingsPage() {
 
   const clearHistory = async () => {
     if (!confirm(`确定清空「${username}」的所有聊天记录？此操作不可恢复。`)) return;
-    await fetch(`${API}/history/${username}`, { method: "DELETE" }).catch(() => {});
+    await apiFetch(`${API}/history`, { method: "DELETE" }).catch(() => {});
     setCleared(true);
     setTimeout(() => setCleared(false), 3000);
   };

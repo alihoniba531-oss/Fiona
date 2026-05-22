@@ -194,6 +194,24 @@ async def delete_message(message_id: int):
         await db.execute("DELETE FROM messages WHERE id = ?", (message_id,))
         await db.commit()
 
+
+async def get_message_owner(message_id: int) -> str | None:
+    async with aiosqlite.connect(DB_PATH) as db:
+        async with db.execute(
+            "SELECT username FROM messages WHERE id = ?", (message_id,)
+        ) as cursor:
+            row = await cursor.fetchone()
+    return row[0] if row else None
+
+
+async def get_pending_match_owner(match_id: int) -> str | None:
+    async with aiosqlite.connect(DB_PATH) as db:
+        async with db.execute(
+            "SELECT username FROM pending_matches WHERE id = ?", (match_id,)
+        ) as cursor:
+            row = await cursor.fetchone()
+    return row[0] if row else None
+
 async def save_message(username: str, role: str, content: str, image_path: str | None = None):
     async with aiosqlite.connect(DB_PATH) as db:
         await db.execute(
@@ -302,26 +320,25 @@ async def save_match(user_a: str, user_b: str):
         )
         await db.commit()
 
-async def update_match_response(user_a: str, user_b: str, responder: str, response: str):
-    """responder 是 'a' 或 'b'，response 是 'accept' 或 'reject'"""
+async def update_match_response(me: str, peer: str, response: str):
+    """记录 me 对 (me ↔ peer) 这对匹配的态度。response = 'accept' / 'reject'。
+    根据 matches 行实际 user_a/user_b 的顺序更新对应列；若行不存在则新建一条，
+    把 me 当成 user_a。"""
     async with aiosqlite.connect(DB_PATH) as db:
-        # 找最近一条记录，拿到真实的 user_a/user_b 顺序
         async with db.execute(
             "SELECT id, user_a FROM matches WHERE (user_a=? AND user_b=?) OR (user_a=? AND user_b=?) ORDER BY recommended_at DESC LIMIT 1",
-            (user_a, user_b, user_b, user_a)
+            (me, peer, peer, me)
         ) as cursor:
             row = await cursor.fetchone()
 
         if row:
             match_id, actual_user_a = row
-            col = "response_a" if actual_user_a == user_a else "response_b"
+            col = "response_a" if actual_user_a == me else "response_b"
             await db.execute(f"UPDATE matches SET {col}=? WHERE id=?", (response, match_id))
         else:
-            # 没有 matches 记录（如手动插入的 pending_match）：直接插入并带上 response
-            col = "response_a" if responder == "a" else "response_b"
             await db.execute(
-                f"INSERT INTO matches (user_a, user_b, {col}) VALUES (?, ?, ?)",
-                (user_a, user_b, response)
+                "INSERT INTO matches (user_a, user_b, response_a) VALUES (?, ?, ?)",
+                (me, peer, response)
             )
         await db.commit()
 
@@ -416,18 +433,18 @@ async def get_pending_matches_for_user(username: str, limit: int = 5) -> list[di
     return result
 
 
-async def save_greeting(user_a: str, user_b: str, sender: str, text: str):
-    """保存打招呼内容到最新一条 matches 记录。sender='a' 或 'b'"""
-    col = "greeting_a" if sender == "a" else "greeting_b"
+async def save_greeting(me: str, peer: str, text: str):
+    """保存 me 给 peer 的打招呼内容，写入最新一条 matches 行对应方向的列。"""
     async with aiosqlite.connect(DB_PATH) as db:
-        # 找最新一条 matches 记录
         async with db.execute(
-            "SELECT id FROM matches WHERE (user_a=? AND user_b=?) OR (user_a=? AND user_b=?) ORDER BY recommended_at DESC LIMIT 1",
-            (user_a, user_b, user_b, user_a)
+            "SELECT id, user_a FROM matches WHERE (user_a=? AND user_b=?) OR (user_a=? AND user_b=?) ORDER BY recommended_at DESC LIMIT 1",
+            (me, peer, peer, me)
         ) as cursor:
             row = await cursor.fetchone()
         if row:
-            await db.execute(f"UPDATE matches SET {col}=? WHERE id=?", (text, row[0]))
+            match_id, actual_user_a = row
+            col = "greeting_a" if actual_user_a == me else "greeting_b"
+            await db.execute(f"UPDATE matches SET {col}=? WHERE id=?", (text, match_id))
             await db.commit()
 
 
