@@ -54,8 +54,9 @@ export async function apiFetch(input: string, init: RequestInit = {}): Promise<R
     headers.set("Authorization", `Bearer ${token}`);
   } else if (typeof window !== "undefined") {
     // dev 兜底：未登录但 localStorage 里有 fiona_user，给后端走 DEV_MODE 通道
+    // HTTP header 值只能是 ISO-8859-1，中文用户名必须 encodeURIComponent；后端 unquote 还原
     const user = getUsername();
-    if (user) headers.set("X-Dev-User", user);
+    if (user) headers.set("X-Dev-User", encodeURIComponent(user));
   }
   return fetch(input, { ...init, headers });
 }

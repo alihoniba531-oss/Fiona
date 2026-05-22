@@ -240,6 +240,10 @@ export default function ChatPage() {
   }, []);
 
   const bottomRef = useRef<HTMLDivElement>(null);
+  // 跟随贴底状态：用 scroll 事件维护，而不是渲染后量距离 —— 渲染后新消息已撑大 scrollHeight，
+  // 量出来的"距底"会包含新消息高度，长消息一进来就误判为"用户上滑"，结果不跟随
+  const wasNearBottomRef = useRef(true);
+  const peerWasNearBottomRef = useRef(true);
   const textareaRef = useRef<HTMLTextAreaElement>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const isComposingRef = useRef(false);
@@ -679,24 +683,42 @@ export default function ChatPage() {
       .catch(() => {});
   }, [username, hydrated]);
 
-  // Auto-scroll to bottom on new messages —— 仅当用户已经接近底部时才跟随，
-  // 否则用户上滑看历史 / 流式输出时上滑停顿都会被强行拉回，体验很糟
+  // 监听滚动维护"贴底"状态（独立于渲染时机）：用户手滑离底 → 不跟随；
+  // 程序触发的 scrollIntoView 也会回调这里，自然把状态拉回 true
   useEffect(() => {
     const container = bottomRef.current?.parentElement;
     if (!container) return;
-    const distFromBottom = container.scrollHeight - container.scrollTop - container.clientHeight;
-    if (distFromBottom < 80) {
-      bottomRef.current?.scrollIntoView({ behavior: "smooth" });
-    }
-  }, [messages]);
+    const onScroll = () => {
+      const dist = container.scrollHeight - container.scrollTop - container.clientHeight;
+      wasNearBottomRef.current = dist < 100;
+    };
+    onScroll();
+    container.addEventListener("scroll", onScroll, { passive: true });
+    return () => container.removeEventListener("scroll", onScroll);
+  }, []);
 
-  // Auto-scroll peer chat —— 同上策略
   useEffect(() => {
     const container = peerBottomRef.current?.parentElement;
     if (!container) return;
-    const distFromBottom = container.scrollHeight - container.scrollTop - container.clientHeight;
-    if (distFromBottom < 80) {
-      peerBottomRef.current?.scrollIntoView({ behavior: "smooth" });
+    const onScroll = () => {
+      const dist = container.scrollHeight - container.scrollTop - container.clientHeight;
+      peerWasNearBottomRef.current = dist < 100;
+    };
+    onScroll();
+    container.addEventListener("scroll", onScroll, { passive: true });
+    return () => container.removeEventListener("scroll", onScroll);
+  }, []);
+
+  // 消息更新时若 *渲染前* 在底部 → 跟随；否则放手，让用户继续看历史
+  useEffect(() => {
+    if (wasNearBottomRef.current) {
+      bottomRef.current?.scrollIntoView({ behavior: "smooth", block: "end" });
+    }
+  }, [messages]);
+
+  useEffect(() => {
+    if (peerWasNearBottomRef.current) {
+      peerBottomRef.current?.scrollIntoView({ behavior: "smooth", block: "end" });
     }
   }, [peerMessages]);
 

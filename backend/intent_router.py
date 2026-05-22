@@ -39,6 +39,12 @@ INTENT_PROMPT = """你是意图识别器，只输出JSON，不输出任何其他
 "帮我看下明天的天气" → web_search, query=明天天气
 "帮我查下比特币最新价格" → web_search, query=比特币价格
 "搜一下怎么学Python" → web_search, query=怎么学Python
+"查一下五月天演唱会" / "查查油价" → web_search, query=五月天演唱会 / 油价
+"我查一下 XX" / "我看下 XX" / "我搜一下 XX" → web_search, query=XX
+（注：用户用"我查/我看/我搜"是软性请求，本质还是要你帮查，不是在描述自己的动作）
+"大麦网上有没有五月天演唱会" → web_search, query=大麦网 五月天 演唱会
+"苹果有没有出新机型" → web_search, query=苹果 新机型
+"XX上有没有YY" / "XX有没有YY的信息" → web_search, query=XX YY（信息核实类问句）
 "看下热搜" / "现在热门话题" / "今天热门是啥" → hot_topics, source=微博
 "知乎热榜有什么" / "知乎在聊啥" → hot_topics, source=知乎
 "抖音热搜" / "刷下抖音热榜" → hot_topics, source=抖音

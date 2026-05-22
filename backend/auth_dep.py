@@ -9,6 +9,7 @@ DEV_MODE=1 时支持 X-Dev-User 头跳过 JWT —— 和前端 proxy.ts 在
 NODE_ENV=development 时跳过路由门禁对称，本地起服务不用每次过 OTP。
 """
 import os
+from urllib.parse import unquote
 from fastapi import Header, HTTPException, WebSocket
 from auth import decode_token
 
@@ -23,6 +24,14 @@ def _decode_bearer(authorization: str | None) -> str | None:
     return decode_token(authorization[7:])
 
 
+def _decode_dev_user(raw: str | None) -> str | None:
+    """X-Dev-User 头若含非 ASCII（如中文用户名），前端会 encodeURIComponent，后端 unquote 还原。"""
+    if not raw:
+        return None
+    v = unquote(raw).strip()
+    return v or None
+
+
 def get_current_user(
     authorization: str | None = Header(default=None),
     x_dev_user: str | None = Header(default=None, alias="X-Dev-User"),
@@ -31,8 +40,8 @@ def get_current_user(
     u = _decode_bearer(authorization)
     if u:
         return u
-    if _dev_mode() and x_dev_user:
-        v = x_dev_user.strip()
+    if _dev_mode():
+        v = _decode_dev_user(x_dev_user)
         if v:
             return v
     raise HTTPException(status_code=401, detail="未鉴权或鉴权失败")
@@ -47,8 +56,8 @@ def get_optional_user(
     u = _decode_bearer(authorization)
     if u:
         return u
-    if _dev_mode() and x_dev_user:
-        v = x_dev_user.strip()
+    if _dev_mode():
+        v = _decode_dev_user(x_dev_user)
         if v:
             return v
     return None

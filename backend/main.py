@@ -573,12 +573,28 @@ async def chat(req: ChatRequest, user: str = Depends(get_current_user)):
 
             # ── 2. 意图识别（JSON mode，带上下文）──
             intent_result = await asyncio.to_thread(recognize_intent, client, req.message, history)
-            # LLM 意图路由偶尔把"帮我看下天气"误判为 null——正则补一刀
+            # LLM 意图路由偶尔把"帮我看下天气"/"我查一下 XX"误判为 null——正则补一刀
+            # 只兜"帮我/我 + 查/搜/找/看 + 一下/..." 和句首"查一下/搜搜..."这两种明显搜索措辞
+            # ("你有没有时间"之类靠 LLM prompt 例子识别，不在 regex 里硬抠)
             if intent_result["intent"] is None:
                 import re as _re
-                _m = _re.search(r"(?:帮我?(?:看|查|搜|找)(?:下|一下|看|查|搜|找)?)\s*(\S.+)", req.message)
-                if _m and not _re.match(r"^https?://", _m.group(1)):
-                    intent_result = {"intent": "web_search", "params": {"query": _m.group(1)}, "missing": []}
+                _query = None
+                for _pat in [
+                    r"(?:帮我?|我)\s*(?:查|搜|找|看)(?:一下|下|看|查|搜|找|个|看看)?\s*(\S.+)",
+                    r"^(?:查一下|查查|查下|搜一下|搜搜|搜下|找一下|找找|找下|看一下|看看|看下)\s*(\S.+)",
+                ]:
+                    _m = _re.search(_pat, req.message)
+                    if not _m:
+                        continue
+                    cand = _m.group(1)
+                    # 剥掉残余的语气补语（"一下吧"、"下" 等被正则吃剩的尾巴）
+                    cand = _re.sub(r"^(?:一下|下|看|看看|个)\s*", "", cand)
+                    cand = cand.strip("，。?？.! 吧啊呢哦呀")
+                    if len(cand) >= 2 and not _re.match(r"^https?://", cand):
+                        _query = cand
+                        break
+                if _query:
+                    intent_result = {"intent": "web_search", "params": {"query": _query}, "missing": []}
             print(f"[意图识别] message={req.message[:60]!r}, intent={intent_result.get('intent')}, missing={intent_result.get('missing')}")
 
             if intent_result["intent"] is not None:

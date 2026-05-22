@@ -65,12 +65,13 @@ def _capture_screenshot_blocking(search_url: str, ready_selector: str = "", time
             page = context.new_page()
             print(f"[Playwright] 访问: {search_url}")
             page.goto(search_url, wait_until="domcontentloaded", timeout=timeout_ms)
-            # 优先等结果区出现(精确信号);拿不到再回退到 networkidle / 固定 sleep
+            # ready_selector 出现 = 搜到了真的结果页;不出现 = 八成是反爬/验证页,
+            # 这种情况下截图给 VL 也是浪费,直接抛错让上层 fallback 到下个搜索源
             if ready_selector:
                 try:
                     page.wait_for_selector(ready_selector, timeout=5000)
                 except Exception:
-                    print(f"[Playwright] selector {ready_selector!r} 未出现,继续截图")
+                    raise RuntimeError(f"ready_selector {ready_selector!r} 未出现 (可能反爬/验证页)")
             else:
                 try:
                     page.wait_for_load_state("networkidle", timeout=3000)
