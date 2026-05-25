@@ -230,7 +230,7 @@ export default function PlazaPage() {
     setExpanded({ title });  // 立刻显示标题占位
     setExpanding(true);
     try {
-      const res = await fetch(`${API}/hot/expand?title=${encodeURIComponent(title)}`);
+      const res = await apiFetch(`${API}/hot/expand?title=${encodeURIComponent(title)}`);
       const data = await res.json();
       setExpanded({ title, ...data });
     } catch (e: any) {
@@ -267,7 +267,7 @@ export default function PlazaPage() {
   // 拉热搜 / 潮流（贴边）
   useEffect(() => {
     const grab = (src: string, set: (v: string[]) => void) =>
-      fetch(`${API}/hot/${encodeURIComponent(src)}`)
+      apiFetch(`${API}/hot/${encodeURIComponent(src)}`)
         .then((r) => r.json())
         .then((d) => {
           // points 形如 "1. 标题 · 154万" — 去掉序号方便重新编号
@@ -279,7 +279,7 @@ export default function PlazaPage() {
     grab("抖音", setTrending);
     // 同时拉一份按类目分桶的热搜（娱乐/经济/生活/历史/哲学 等）
     const grabCats = () =>
-      fetch(`${API}/hot/categorized/all`)
+      apiFetch(`${API}/hot/categorized/all`)
         .then((r) => r.json())
         .then((d) => setCats(d.categories || {}))
         .catch(() => {});

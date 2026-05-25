@@ -10,7 +10,7 @@ NODE_ENV=development 时跳过路由门禁对称，本地起服务不用每次�
 """
 import os
 from urllib.parse import unquote
-from fastapi import Header, HTTPException, WebSocket
+from fastapi import Header, HTTPException, WebSocket, Request
 from auth import decode_token
 
 
@@ -33,10 +33,16 @@ def _decode_dev_user(raw: str | None) -> str | None:
 
 
 def get_current_user(
+    request: Request,
     authorization: str | None = Header(default=None),
     x_dev_user: str | None = Header(default=None, alias="X-Dev-User"),
 ) -> str:
-    """必选鉴权 —— 失败抛 401。"""
+    """必选鉴权 —— 失败抛 401。
+    主入口是 main.py 的 require_auth 中间件：通过则把 user 写到 request.state.user，
+    本函数直接读。中间件没设说明走了白名单，再从 header 兜底（少数 Depends 链路）。"""
+    u = getattr(request.state, "user", None)
+    if u:
+        return u
     u = _decode_bearer(authorization)
     if u:
         return u
@@ -48,11 +54,15 @@ def get_current_user(
 
 
 def get_optional_user(
+    request: Request,
     authorization: str | None = Header(default=None),
     x_dev_user: str | None = Header(default=None, alias="X-Dev-User"),
 ) -> str | None:
     """可选鉴权 —— 没鉴权时返回 None，不抛错。
     用于 plaza/feed 这类匿名也能用、有身份则个性化的端点。"""
+    u = getattr(request.state, "user", None)
+    if u:
+        return u
     u = _decode_bearer(authorization)
     if u:
         return u

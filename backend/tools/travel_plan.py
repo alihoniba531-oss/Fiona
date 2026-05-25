@@ -11,6 +11,7 @@ route.py 走 OSRM 算驾车导航，对"宁波 → 新德里"这种跨国旅行�
 import json
 import os
 import re
+from datetime import datetime
 from openai import OpenAI
 
 
@@ -36,7 +37,7 @@ _PROMPT = """你是一个旅行规划助手。用户给出起点、终点、可�
     "签证/证件：是否需要签证、办理方式、所需时间（跨国时必填）",
     "费用范围：合理票价 + 旺/淡季差异",
     "时间建议：最佳出行月份、当地季节/气候提醒",
-    "其他注意：行李/SIM卡/防疫等关键提示"
+    "其他注意：行李/SIM卡/插座/支付方式 等实用提示"
   ],
   "sources": [{"title": "信息来源标题", "url": "https://..."}]
 }
@@ -47,6 +48,22 @@ _PROMPT = """你是一个旅行规划助手。用户给出起点、终点、可�
 - sources 给真实搜到的链接；编不出真实 URL 就留空数组
 - 不输出 markdown、不加 ```json 围栏，直接 JSON 对象
 """
+
+
+def _today_directive() -> str:
+    """注入"今天日期 + 禁止过期措辞"指令 —— 防止模型按训练截止时段（约 2024）输出
+    核酸/健康宝/绿码这种已废止的疫情措辞。"""
+    now = datetime.now()
+    today = now.strftime("%Y-%m-%d")
+    weekday = "周" + "一二三四五六日"[now.weekday()]
+    return (
+        f"\n\n【时效性 — 必须遵守】\n"
+        f"- 今天是 {today}（{weekday}），不是你训练数据里的某个过去时刻。\n"
+        f"- 中国境内疫情管控自 2023 年初已全面取消，**禁止提及**核酸检测、健康宝、"
+        f"绿码、行程卡、隔离观察、48 小时阴性证明等已废止措辞。\n"
+        f"- 票价、班次、签证流程必须用联网搜索的最新结果，不要照搬训练数据里的旧政策旧价格。\n"
+        f"- 目的地国家若仍有入境要求（电子签、ETA、健康申报等），以搜到的当前官方口径为准。"
+    )
 
 
 def travel_plan(query: str) -> dict:
@@ -60,7 +77,7 @@ def travel_plan(query: str) -> dict:
         resp = client.chat.completions.create(
             model="qwen-plus",
             messages=[
-                {"role": "system", "content": _PROMPT},
+                {"role": "system", "content": _PROMPT + _today_directive()},
                 {"role": "user", "content": q},
             ],
             extra_body={"enable_search": True},

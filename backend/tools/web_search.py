@@ -12,6 +12,7 @@ v0.3: 用通义千问 enable_search 替代 Playwright + VL 截图方案。
 import json
 import os
 import re
+from datetime import datetime
 from openai import OpenAI
 
 
@@ -45,6 +46,21 @@ _SEARCH_PROMPT = """你是一个搜索结果整理器。你需要联网搜索用
 """
 
 
+def _today_directive() -> str:
+    """注入"今天日期 + 禁止过期措辞"指令 —— 防止模型按训练截止时段输出
+    核酸/健康宝/绿码这种已废止的疫情措辞，或用陈年价格/政策回答。"""
+    now = datetime.now()
+    today = now.strftime("%Y-%m-%d")
+    weekday = "周" + "一二三四五六日"[now.weekday()]
+    return (
+        f"\n\n【时效性 — 必须遵守】\n"
+        f"- 今天是 {today}（{weekday}），不是你训练数据里的某个过去时刻。\n"
+        f"- 中国境内疫情管控自 2023 年初已全面取消，**禁止提及**核酸检测、健康宝、"
+        f"绿码、行程卡、隔离观察、48 小时阴性证明等已废止措辞。\n"
+        f"- 价格、政策、班次、官方流程必须用联网搜索的最新结果，不要照搬训练数据里的旧版本。"
+    )
+
+
 def web_search(query: str) -> dict:
     """走通义千问 enable_search 搜索，返回卡片 dict。
 
@@ -67,7 +83,7 @@ def web_search(query: str) -> dict:
         resp = client.chat.completions.create(
             model="qwen-plus",
             messages=[
-                {"role": "system", "content": _SEARCH_PROMPT},
+                {"role": "system", "content": _SEARCH_PROMPT + _today_directive()},
                 {"role": "user", "content": f"搜索：{query}"},
             ],
             extra_body={"enable_search": True},

@@ -17,16 +17,30 @@ const navItems = [
 
 export default function Sidebar({
   onHistoryClick,
+  onChatClick,
   onPlazaClick,
   plazaActive,
   onMatchClick,
   matchActive,
+  onCommunityClick,
+  communityActive,
+  onProfileClick,
+  profileActive,
+  onSettingsClick,
+  settingsActive,
 }: {
   onHistoryClick?: () => void;
+  onChatClick?: () => void;          // 主页传入 → 点"聊天"关闭所有抽屉
   onPlazaClick?: () => void;
   plazaActive?: boolean;
   onMatchClick?: () => void;
   matchActive?: boolean;
+  onCommunityClick?: () => void;
+  communityActive?: boolean;
+  onProfileClick?: () => void;
+  profileActive?: boolean;
+  onSettingsClick?: () => void;
+  settingsActive?: boolean;
 }) {
   const pathname = usePathname();
   const [dark, setDark] = useState(true);
@@ -46,14 +60,25 @@ export default function Sidebar({
       {/* Nav */}
       <nav className="flex flex-col items-center gap-1 flex-1">
         {navItems.map(({ href, icon: Icon, label }) => {
-          const active =
-            pathname === href ||
+          // active 优先看抽屉状态，没传 active prop 时回退到 pathname
+          const drawerActive =
             (href === "/plaza" && plazaActive) ||
-            (href === "/match" && matchActive);
+            (href === "/match" && matchActive) ||
+            (href === "/community" && communityActive) ||
+            (href === "/profile" && profileActive) ||
+            (href === "/settings" && settingsActive);
+          const anyDrawerOpen = !!(plazaActive || matchActive || communityActive || profileActive || settingsActive);
+          // "聊天"在主页且没抽屉开时高亮；任一抽屉开时不高亮
+          const chatActive = href === "/" && pathname === "/" && !anyDrawerOpen;
+          const active = drawerActive || chatActive || (href !== "/" && pathname === href);
           // 抽屉模式：父组件传了对应 callback 时走按钮 + 不路由跳转
           const drawerCallback =
+            href === "/" ? onChatClick :
             href === "/plaza" ? onPlazaClick :
             href === "/match" ? onMatchClick :
+            href === "/community" ? onCommunityClick :
+            href === "/profile" ? onProfileClick :
+            href === "/settings" ? onSettingsClick :
             undefined;
           if (drawerCallback) {
             return (

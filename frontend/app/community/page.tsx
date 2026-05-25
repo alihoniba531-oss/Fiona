@@ -1,15 +1,18 @@
 "use client";
 
+import { useSearchParams } from "next/navigation";
 import Sidebar from "@/components/Sidebar";
 import TopBar from "@/components/TopBar";
 import { UsersRound } from "lucide-react";
 
 export default function CommunityPage() {
+  const sp = useSearchParams();
+  const embedded = sp?.get("embed") === "1";
   return (
     <div className="flex flex-col h-screen overflow-hidden bg-background">
-      <TopBar />
+      {!embedded && <TopBar />}
       <div className="flex flex-1 min-h-0">
-        <Sidebar />
+        {!embedded && <Sidebar />}
         <div className="flex flex-col flex-1 min-w-0">
           <header className="glass border-b border-border px-6 py-4 shrink-0">
             <h1 className="text-base font-semibold">社群</h1>

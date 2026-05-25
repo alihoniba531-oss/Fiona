@@ -10,9 +10,9 @@ import base64
 from datetime import datetime, timezone
 from contextlib import asynccontextmanager
 from dotenv import load_dotenv
-from fastapi import FastAPI, HTTPException, WebSocket, WebSocketDisconnect, UploadFile, File, Form, Depends
+from fastapi import FastAPI, HTTPException, WebSocket, WebSocketDisconnect, UploadFile, File, Form, Depends, Request
 from fastapi.middleware.cors import CORSMiddleware
-from fastapi.responses import StreamingResponse
+from fastapi.responses import StreamingResponse, JSONResponse
 from fastapi.staticfiles import StaticFiles
 from pydantic import BaseModel
 from openai import OpenAI
@@ -162,6 +162,42 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
+# ── 全局鉴权中间件 ────────────────────────────────────────────────
+# 默认所有 HTTP 请求都要鉴权，白名单放过；鉴权来源按优先级：
+#   1. Authorization: Bearer <jwt> 头        — apiFetch 走这条
+#   2. cookie fiona_token=<jwt>              — <audio src> / <img> 不能带 header，走这条
+#   3. X-Dev-User 头（仅 DEV_MODE=1）         — 本地切身份调试
+# WebSocket 握手不走 HTTP middleware，各 ws 端点用 ws_authenticate 单独鉴权。
+_AUTH_PUBLIC_PATHS = {"/", "/auth/send-otp", "/auth/verify-otp", "/auth/test-login"}
+_AUTH_PUBLIC_PREFIXES = ("/uploads/", "/docs", "/redoc", "/openapi.json")
+
+@app.middleware("http")
+async def require_auth(request: Request, call_next):
+    if request.method == "OPTIONS":  # CORS 预检
+        return await call_next(request)
+    path = request.url.path
+    if path in _AUTH_PUBLIC_PATHS or any(path.startswith(p) for p in _AUTH_PUBLIC_PREFIXES):
+        return await call_next(request)
+    from auth import decode_token
+    user = None
+    auth_header = request.headers.get("authorization", "")
+    if auth_header.startswith("Bearer "):
+        user = decode_token(auth_header[7:])
+    if not user:
+        cookie_token = request.cookies.get("fiona_token")
+        if cookie_token:
+            user = decode_token(cookie_token)
+    if not user and os.getenv("DEV_MODE", "0") == "1":
+        from urllib.parse import unquote
+        dev = request.headers.get("x-dev-user")
+        if dev:
+            user = unquote(dev).strip() or None
+    if not user:
+        return JSONResponse({"detail": "未鉴权或鉴权失败"}, status_code=401)
+    # 把鉴权结果挂到 request.state，路由里 Depends(get_current_user) 直接读，避免重复解码。
+    request.state.user = user
+    return await call_next(request)
+
 class ChatRequest(BaseModel):
     message: str
     image_base64: str | None = None
@@ -297,6 +333,10 @@ async def tts_stream(text: str, voice: str = "longxiaoxia_v2", speech_rate: floa
 async def tts_ws_endpoint(websocket: WebSocket):
     """持久化 TTS WebSocket：边喂文本边吐音频字节。首音 ~500ms。"""
     from tts_ws import handle_tts_ws
+    user = await ws_authenticate(websocket)
+    if not user:
+        await websocket.close(code=4401)
+        return
     await handle_tts_ws(websocket)
 
 
@@ -317,28 +357,37 @@ async def asr_recognize_endpoint(req: AsrRequest):
 
     # WebM/Opus 需要转成 PCM 16kHz mono
     if req.format != "pcm":
-        import subprocess, tempfile
+        import subprocess, tempfile, shutil
         inp = tempfile.NamedTemporaryFile(suffix=".webm", delete=False)
         inp.write(audio_bytes); inp.close()
         out = tempfile.NamedTemporaryFile(suffix=".wav", delete=False)
         out.close()
-        import shutil
-        ffmpeg = shutil.which("ffmpeg") or r"D:\Program Files\软件\ffmpeg\bin\ffmpeg.exe"
-        proc = subprocess.run(
-            [ffmpeg, "-y", "-i", inp.name, "-ar", str(req.sample_rate), "-ac", "1", "-f", "s16le", out.name],
-            capture_output=True, timeout=10,
-        )
-        with open(out.name, "rb") as f:
-            audio_bytes = f.read()
-        import os
-        if len(audio_bytes) == 0:
-            # 保留失败样本供诊断
-            import shutil as _sh
-            _sh.copy(inp.name, "/tmp/fiona-asr-bad.webm")
-            print(f"[ASR][ffmpeg-stderr] {proc.stderr.decode('utf-8', errors='replace')[-800:]}")
-            print(f"[ASR] bad sample saved to /tmp/fiona-asr-bad.webm")
-        os.unlink(inp.name); os.unlink(out.name)
-        print(f"[ASR] converted to PCM: {len(audio_bytes)} bytes (ffmpeg rc={proc.returncode})")
+        try:
+            ffmpeg = shutil.which("ffmpeg") or r"D:\Program Files\软件\ffmpeg\bin\ffmpeg.exe"
+            try:
+                proc = subprocess.run(
+                    [ffmpeg, "-y", "-i", inp.name, "-ar", str(req.sample_rate), "-ac", "1", "-f", "s16le", out.name],
+                    capture_output=True, timeout=10,
+                )
+            except subprocess.TimeoutExpired:
+                print("[ASR] ffmpeg timeout (>10s)")
+                return {"text": "", "error": "ffmpeg timeout"}
+            except FileNotFoundError:
+                print(f"[ASR] ffmpeg not found at: {ffmpeg}")
+                return {"text": "", "error": "ffmpeg not installed"}
+            with open(out.name, "rb") as f:
+                audio_bytes = f.read()
+            if len(audio_bytes) == 0:
+                # 保留失败样本供诊断
+                shutil.copy(inp.name, "/tmp/fiona-asr-bad.webm")
+                print(f"[ASR][ffmpeg-stderr] {proc.stderr.decode('utf-8', errors='replace')[-800:]}")
+                print(f"[ASR] bad sample saved to /tmp/fiona-asr-bad.webm")
+            print(f"[ASR] converted to PCM: {len(audio_bytes)} bytes (ffmpeg rc={proc.returncode})")
+        finally:
+            # 不论 ffmpeg 成功/超时/异常，临时文件必删，避免 /tmp 堆积
+            for _p in (inp.name, out.name):
+                try: os.unlink(_p)
+                except OSError: pass
 
     result = asr_recognize(audio_bytes, "pcm", req.sample_rate)
     print(f"[ASR] result: {result}")
@@ -1128,6 +1177,20 @@ async def send_otp_api(body: dict):
     if not ok:
         raise HTTPException(status_code=500, detail="短信发送失败，请稍后重试")
     return {"status": "ok"}
+
+
+@app.post("/auth/test-login")
+async def test_login(body: dict | None = None):
+    """开发测试入口：传 {"username": "alice"} 直接拿 JWT，不走短信验证。
+    仅 DEV_MODE=1 时启用；生产环境（DEV_MODE 关掉）返回 404 把口子堵上。"""
+    if os.getenv("DEV_MODE", "0") != "1":
+        raise HTTPException(status_code=404, detail="Not Found")
+    body = body or {}
+    username = (body.get("username") or "tester").strip() or "tester"
+    await get_or_create_user(username)
+    balance = await get_strawberry_balance(username)
+    token = create_token(username)
+    return {"token": token, "username": username, "balance": balance}
 
 
 @app.post("/auth/verify-otp")

@@ -6,6 +6,20 @@ DB_PATH = os.path.join(os.path.dirname(__file__), "fiona.db")
 
 import json as _json
 
+
+async def _safe_migrate(db, sql: str):
+    """跑一句"老库迁移"DDL（ALTER TABLE / CREATE INDEX 等）。
+    "列已存在 / 索引已存在"是这类语句的预期错（库已迁过），静默吞；
+    其他错误打 console 日志，便于发现真问题。"""
+    try:
+        await db.execute(sql)
+    except Exception as e:
+        msg = str(e).lower()
+        if "duplicate column" in msg or "already exists" in msg:
+            return  # 已迁过，正常
+        print(f"[init_db] migrate failed: {sql} -> {type(e).__name__}: {e}")
+
+
 async def init_db():
     async with aiosqlite.connect(DB_PATH) as db:
         await db.execute("""
@@ -27,19 +41,10 @@ async def init_db():
             )
         """)
         # 兼容老库：如果列不存在则添加
-        try:
-            await db.execute("ALTER TABLE messages ADD COLUMN image_path TEXT DEFAULT NULL")
-        except Exception:
-            pass
+        await _safe_migrate(db, "ALTER TABLE messages ADD COLUMN image_path TEXT DEFAULT NULL")
         # 用户性别 + 匹配偏好（老库迁移）
-        try:
-            await db.execute("ALTER TABLE users ADD COLUMN gender TEXT DEFAULT NULL")
-        except Exception:
-            pass
-        try:
-            await db.execute("ALTER TABLE users ADD COLUMN match_pref TEXT DEFAULT 'both'")
-        except Exception:
-            pass
+        await _safe_migrate(db, "ALTER TABLE users ADD COLUMN gender TEXT DEFAULT NULL")
+        await _safe_migrate(db, "ALTER TABLE users ADD COLUMN match_pref TEXT DEFAULT 'both'")
         await db.execute("""
             CREATE TABLE IF NOT EXISTS matches (
                 id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -75,19 +80,10 @@ async def init_db():
             )
         """)
         # 老库迁移：pending_matches 加 match_layer 列（区分 Layer 1 对话级 / Layer 2 画像级）
-        try:
-            await db.execute("ALTER TABLE pending_matches ADD COLUMN match_layer TEXT DEFAULT 'layer1'")
-        except Exception:
-            pass
+        await _safe_migrate(db, "ALTER TABLE pending_matches ADD COLUMN match_layer TEXT DEFAULT 'layer1'")
         # 老库迁移：matches 表加 greeting 列
-        try:
-            await db.execute("ALTER TABLE matches ADD COLUMN greeting_a TEXT DEFAULT NULL")
-        except Exception:
-            pass
-        try:
-            await db.execute("ALTER TABLE matches ADD COLUMN greeting_b TEXT DEFAULT NULL")
-        except Exception:
-            pass
+        await _safe_migrate(db, "ALTER TABLE matches ADD COLUMN greeting_a TEXT DEFAULT NULL")
+        await _safe_migrate(db, "ALTER TABLE matches ADD COLUMN greeting_b TEXT DEFAULT NULL")
         # ── plaza：匿名广场帖子 ──
         await db.execute("""
             CREATE TABLE IF NOT EXISTS posts (
@@ -101,10 +97,7 @@ async def init_db():
                 created_at  TIMESTAMP DEFAULT CURRENT_TIMESTAMP
             )
         """)
-        try:
-            await db.execute("ALTER TABLE posts ADD COLUMN tags_json TEXT DEFAULT '[]'")
-        except Exception:
-            pass
+        await _safe_migrate(db, "ALTER TABLE posts ADD COLUMN tags_json TEXT DEFAULT '[]'")
         # ── user_tag_prefs：用户标签喜好权重（全局） ──
         await db.execute("""
             CREATE TABLE IF NOT EXISTS user_tag_prefs (
@@ -148,23 +141,14 @@ async def init_db():
             ("interest_anchor",     "TEXT DEFAULT 'light_connection'"),
             ("updated_at",          "TIMESTAMP DEFAULT CURRENT_TIMESTAMP"),
         ]:
-            try:
-                await db.execute(f"ALTER TABLE user_states ADD COLUMN {_col} {_def}")
-            except Exception:
-                pass
+            await _safe_migrate(db, f"ALTER TABLE user_states ADD COLUMN {_col} {_def}")
         # ── 手机号 + 草莓余额（老库迁移）──
         for _col, _def in [
             ("phone",              "TEXT DEFAULT NULL"),
             ("strawberry_balance", "INTEGER DEFAULT 200"),
         ]:
-            try:
-                await db.execute(f"ALTER TABLE users ADD COLUMN {_col} {_def}")
-            except Exception:
-                pass
-        try:
-            await db.execute("CREATE UNIQUE INDEX IF NOT EXISTS idx_users_phone ON users(phone) WHERE phone IS NOT NULL")
-        except Exception:
-            pass
+            await _safe_migrate(db, f"ALTER TABLE users ADD COLUMN {_col} {_def}")
+        await _safe_migrate(db, "CREATE UNIQUE INDEX IF NOT EXISTS idx_users_phone ON users(phone) WHERE phone IS NOT NULL")
         # ── OTP 验证码表 ──
         await db.execute("""
             CREATE TABLE IF NOT EXISTS otp_codes (
@@ -434,7 +418,9 @@ async def get_pending_matches_for_user(username: str, limit: int = 5) -> list[di
 
 
 async def save_greeting(me: str, peer: str, text: str):
-    """保存 me 给 peer 的打招呼内容，写入最新一条 matches 行对应方向的列。"""
+    """保存 me 给 peer 的打招呼内容，写入最新一条 matches 行对应方向的列。
+    若 matches 行不存在则新建一条（me 视为 user_a），与 update_match_response 行为一致，
+    避免 race 或调用顺序异常时招呼内容静默丢失。"""
     async with aiosqlite.connect(DB_PATH) as db:
         async with db.execute(
             "SELECT id, user_a FROM matches WHERE (user_a=? AND user_b=?) OR (user_a=? AND user_b=?) ORDER BY recommended_at DESC LIMIT 1",
@@ -445,7 +431,12 @@ async def save_greeting(me: str, peer: str, text: str):
             match_id, actual_user_a = row
             col = "greeting_a" if actual_user_a == me else "greeting_b"
             await db.execute(f"UPDATE matches SET {col}=? WHERE id=?", (text, match_id))
-            await db.commit()
+        else:
+            await db.execute(
+                "INSERT INTO matches (user_a, user_b, greeting_a) VALUES (?, ?, ?)",
+                (me, peer, text)
+            )
+        await db.commit()
 
 
 async def upsert_user_state(

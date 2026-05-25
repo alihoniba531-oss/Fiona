@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useEffect } from "react";
+import { useSearchParams } from "next/navigation";
 import Sidebar from "@/components/Sidebar";
 import TopBar from "@/components/TopBar";
 import { Edit3, Trash2, Shield, Loader2 } from "lucide-react";
@@ -76,11 +77,14 @@ export default function ProfilePage() {
     && needs.length === 0 && skills.length === 0
     && struggles.length === 0 && !city && !occupation && !stage;
 
+  const sp = useSearchParams();
+  const embedded = sp?.get("embed") === "1";
+
   return (
     <div className="flex flex-col h-screen overflow-hidden bg-background">
-      <TopBar />
+      {!embedded && <TopBar />}
       <div className="flex flex-1 min-h-0">
-        <Sidebar />
+        {!embedded && <Sidebar />}
         <div className="flex flex-col flex-1 min-w-0">
         <header className="glass border-b border-border px-6 py-4 shrink-0">
           <div className="flex items-center justify-between">

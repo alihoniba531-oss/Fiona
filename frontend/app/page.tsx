@@ -220,8 +220,18 @@ export default function ChatPage() {
   const [activeCards, setActiveCards] = useState<CardData[]>([]);
   const [hoveredCard, setHoveredCard] = useState<number | null>(null);
   const [enlargedCard, setEnlargedCard] = useState<CardData | null>(null);
-  const [plazaOpen, setPlazaOpen] = useState(false);
-  const [matchOpen, setMatchOpen] = useState(false);
+  // 5 个右侧抽屉互斥，用单一 string 管理；衍生出各 boolean 复用现有引用。
+  type DrawerName = "plaza" | "match" | "community" | "profile" | "settings" | null;
+  const [drawer, setDrawer] = useState<DrawerName>(null);
+  const toggleDrawer = (name: Exclude<DrawerName, null>) =>
+    setDrawer((d) => (d === name ? null : name));
+  const closeDrawer = () => setDrawer(null);
+  const plazaOpen     = drawer === "plaza";
+  const matchOpen     = drawer === "match";
+  const communityOpen = drawer === "community";
+  const profileOpen   = drawer === "profile";
+  const settingsOpen  = drawer === "settings";
+  const anyDrawerOpen = drawer !== null;
   const [showHistory, setShowHistory] = useState(false);
   const [username, setUsername] = useState("默认用户");
   const [hydrated, setHydrated] = useState(false);
@@ -423,7 +433,7 @@ export default function ChatPage() {
           let b64 = "";
           for (let i = 0; i < bytes.length; i++) b64 += String.fromCharCode(bytes[i]);
           const base64 = btoa(b64);
-          const res = await fetch(`${API}/asr/recognize`, {
+          const res = await apiFetch(`${API}/asr/recognize`, {
             method: "POST",
             headers: { "Content-Type": "application/json" },
             body: JSON.stringify({ audio: base64, format: "opus", sample_rate: 16000 }),
@@ -475,7 +485,7 @@ export default function ChatPage() {
             const buf = await blob.arrayBuffer();
             const bytes = new Uint8Array(buf);
             let b64 = ""; for (let i = 0; i < bytes.length; i++) b64 += String.fromCharCode(bytes[i]);
-            const res = await fetch(`${API}/asr/recognize`, {
+            const res = await apiFetch(`${API}/asr/recognize`, {
               method: "POST", headers: { "Content-Type": "application/json" },
               body: JSON.stringify({ audio: btoa(b64), format: "opus", sample_rate: 16000 }),
             });
@@ -543,7 +553,7 @@ export default function ChatPage() {
           const ab = await blob.arrayBuffer();
           const bytes = new Uint8Array(ab);
           let b64 = ""; for (let i = 0; i < bytes.length; i++) b64 += String.fromCharCode(bytes[i]);
-          const res = await fetch(`${API}/asr/recognize`, {
+          const res = await apiFetch(`${API}/asr/recognize`, {
             method: "POST", headers: { "Content-Type": "application/json" },
             body: JSON.stringify({ audio: btoa(b64), format: "opus", sample_rate: 16000 }),
           });
@@ -1146,10 +1156,17 @@ export default function ChatPage() {
         {/* ── sidebar 64px ── */}
         <Sidebar
           onHistoryClick={() => setShowHistory(!showHistory)}
-          onPlazaClick={() => setPlazaOpen((o) => !o)}
+          onChatClick={closeDrawer}
+          onPlazaClick={() => toggleDrawer("plaza")}
           plazaActive={plazaOpen}
-          onMatchClick={() => setMatchOpen((o) => !o)}
+          onMatchClick={() => toggleDrawer("match")}
           matchActive={matchOpen}
+          onCommunityClick={() => toggleDrawer("community")}
+          communityActive={communityOpen}
+          onProfileClick={() => toggleDrawer("profile")}
+          profileActive={profileOpen}
+          onSettingsClick={() => toggleDrawer("settings")}
+          settingsActive={settingsOpen}
         />
 
         {/* ── history slide-out drawer ── */}
@@ -1592,7 +1609,7 @@ export default function ChatPage() {
         >
           <span className="hud-label text-[11px] tracking-wider" style={{ color: "rgba(0,212,255,0.85)" }}>我的世界</span>
           <button
-            onClick={() => setPlazaOpen(false)}
+            onClick={closeDrawer}
             className="w-6 h-6 flex items-center justify-center rounded text-muted-foreground hover:bg-secondary hover:text-foreground"
             title="收起"
           >
@@ -1627,7 +1644,7 @@ export default function ChatPage() {
         >
           <span className="hud-label text-[11px] tracking-wider" style={{ color: "rgba(0,212,255,0.85)" }}>匹配</span>
           <button
-            onClick={() => setMatchOpen(false)}
+            onClick={closeDrawer}
             className="w-6 h-6 flex items-center justify-center rounded text-muted-foreground hover:bg-secondary hover:text-foreground"
             title="收起"
           >
@@ -1636,6 +1653,61 @@ export default function ChatPage() {
         </div>
         <iframe src="/match?embed=1" className="flex-1 w-full border-0" />
       </div>
+
+      {/* 社群 / 我的 / 设置 抽屉 — 同 plaza/match 样式，按 drawer 互斥状态显示 */}
+      {(["community", "profile", "settings"] as const).map((name) => {
+        const labelMap = { community: "社群", profile: "我的", settings: "设置" };
+        const open =
+          (name === "community" && communityOpen) ||
+          (name === "profile" && profileOpen) ||
+          (name === "settings" && settingsOpen);
+        return (
+          <div
+            key={name}
+            className="fixed z-[55] flex flex-col"
+            style={{
+              top: 0,
+              bottom: 0,
+              right: 0,
+              width: "calc((100vw - 64px) * 2 / 3)",
+              background: "linear-gradient(180deg, rgba(4,10,22,0.96) 0%, rgba(2,6,18,0.98) 100%)",
+              borderLeft: "1px solid rgba(0,212,255,0.18)",
+              boxShadow: open ? "-18px 0 48px rgba(0,0,0,0.55), inset 1px 0 0 rgba(0,212,255,0.08)" : "none",
+              transform: open ? "translateX(0)" : "translateX(105%)",
+              transition: "transform 360ms cubic-bezier(.22,.61,.36,1)",
+              willChange: "transform",
+            }}
+          >
+            <div
+              className="flex items-center justify-between px-4 py-2 shrink-0"
+              style={{
+                borderBottom: "1px solid rgba(0,212,255,0.15)",
+                background: "linear-gradient(180deg, rgba(0,212,255,0.04) 0%, transparent 100%)",
+              }}
+            >
+              <span className="hud-label text-[11px] tracking-wider" style={{ color: "rgba(0,212,255,0.85)" }}>{labelMap[name]}</span>
+              <button
+                onClick={closeDrawer}
+                className="w-6 h-6 flex items-center justify-center rounded text-muted-foreground hover:bg-secondary hover:text-foreground"
+                title="收起"
+              >
+                <X size={14} />
+              </button>
+            </div>
+            <iframe src={`/${name}?embed=1`} className="flex-1 w-full border-0" />
+          </div>
+        );
+      })}
+
+      {/* 抽屉外部点击关闭 — 任一右侧抽屉打开时铺一层透明背板，盖在抽屉之下、聊天区之上。
+          z-50 < 抽屉 z-55；left-16 避开 sidebar 让侧栏始终可点切换抽屉 */}
+      {anyDrawerOpen && (
+        <div
+          className="fixed left-16 top-0 right-0 bottom-0 z-50"
+          onClick={closeDrawer}
+          aria-hidden
+        />
+      )}
 
       {/* 卡片放大层 — 点击卡片或背景关闭 */}
       {enlargedCard && (
