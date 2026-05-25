@@ -141,7 +141,7 @@ function PostCard({ post, username }: { post: Post; username: string }) {
 
 // ─────────────────── 分类热搜卡 ───────────────────
 function CategoryCard({
-  title, accent, icon: Icon, items, style, onItemClick,
+  title, accent, icon: Icon, items, style, onItemClick, loaded = false,
 }: {
   title: string;
   accent: string;
@@ -149,6 +149,7 @@ function CategoryCard({
   items: string[];
   style: React.CSSProperties;
   onItemClick?: (title: string) => void;
+  loaded?: boolean;
 }) {
   // 去掉标题前的序号 "01. " 和尾部的 " · 12.3万"，得到纯净的话题文本
   const cleanTitle = (raw: string): string => {
@@ -170,7 +171,9 @@ function CategoryCard({
       </div>
       <ul className="space-y-1">
         {items.length === 0 ? (
-          <li className="text-[10px] text-muted-foreground/50">拉取中…</li>
+          <li className="text-[10px] text-muted-foreground/50">
+            {loaded ? "这会儿没相关" : "拉取中…"}
+          </li>
         ) : (
           items.slice(0, 4).map((it, i) => (
             <li
@@ -209,8 +212,9 @@ export default function PlazaPage() {
   // 分类热搜数据
   type CatMap = Record<string, string[]>;
   const [cats, setCats] = useState<CatMap>({
-    娱乐: [], 经济: [], 生活: [], 历史: [], 哲学: [], 科技: [], 文化: [], 时事: [],
+    娱乐: [], 经济: [], 生活: [], 科技: [], 文化: [],
   });
+  const [catsLoaded, setCatsLoaded] = useState(false);
   // 热点话题展开
   type ExpandedTopic = {
     title: string;
@@ -277,12 +281,15 @@ export default function PlazaPage() {
         .catch(() => {});
     grab("微博", setHotNews);
     grab("抖音", setTrending);
-    // 同时拉一份按类目分桶的热搜（娱乐/经济/生活/历史/哲学 等）
+    // 同时拉一份按类目分桶的热搜（娱乐/经济/生活/科技/文化）
     const grabCats = () =>
       apiFetch(`${API}/hot/categorized/all`)
         .then((r) => r.json())
-        .then((d) => setCats(d.categories || {}))
-        .catch(() => {});
+        .then((d) => {
+          setCats(d.categories || {});
+          setCatsLoaded(true);
+        })
+        .catch(() => setCatsLoaded(true));  // 失败也算"已尝试"，避免永远转圈
     grabCats();
     const id = window.setInterval(() => {
       grab("微博", setHotNews);
@@ -379,9 +386,9 @@ export default function PlazaPage() {
             }}
           >
             <CategoryCard title="TODAY · 今日热点" accent="#ff7720" icon={Flame}      items={hotNews}        style={{}} onItemClick={openTopic} />
-            <CategoryCard title="ENT · 娱乐"      accent="#ff66cc" icon={Music2}     items={cats["娱乐"] || []} style={{}} onItemClick={openTopic} />
-            <CategoryCard title="ECON · 经济"     accent="#facc15" icon={BarChart2}  items={cats["经济"] || []} style={{}} onItemClick={openTopic} />
-            <CategoryCard title="LIFE · 生活"     accent="#22d3ee" icon={Sparkles}   items={cats["生活"] || []} style={{}} onItemClick={openTopic} />
+            <CategoryCard title="ENT · 娱乐"      accent="#ff66cc" icon={Music2}     items={cats["娱乐"] || []} loaded={catsLoaded} style={{}} onItemClick={openTopic} />
+            <CategoryCard title="ECON · 经济"     accent="#facc15" icon={BarChart2}  items={cats["经济"] || []} loaded={catsLoaded} style={{}} onItemClick={openTopic} />
+            <CategoryCard title="LIFE · 生活"     accent="#22d3ee" icon={Sparkles}   items={cats["生活"] || []} loaded={catsLoaded} style={{}} onItemClick={openTopic} />
           </div>
 
           {/* 右栏：TRENDING + 科技 + 文化 */}
@@ -393,21 +400,14 @@ export default function PlazaPage() {
             }}
           >
             <CategoryCard title="TRENDING · 潮流" accent="#ff3e80" icon={TrendingUp} items={trending}           style={{}} onItemClick={openTopic} />
-            <CategoryCard title="TECH · 科技"     accent="#a78bfa" icon={Cpu}        items={cats["科技"] || []} style={{}} onItemClick={openTopic} />
-            <CategoryCard title="CULT · 文化"     accent="#94e6c4" icon={BookOpen}   items={cats["文化"] || []} style={{}} onItemClick={openTopic} />
+            <CategoryCard title="TECH · 科技"     accent="#a78bfa" icon={Cpu}        items={cats["科技"] || []} loaded={catsLoaded} style={{}} onItemClick={openTopic} />
+            <CategoryCard title="CULT · 文化"     accent="#94e6c4" icon={BookOpen}   items={cats["文化"] || []} loaded={catsLoaded} style={{}} onItemClick={openTopic} />
           </div>
 
           {/* 纯网格内容流 — 居中容器 + 半透明，让背景透出 */}
           <div className="relative z-10 flex-1 overflow-y-auto px-4 py-6">
             <div className="grid grid-cols-2 sm:grid-cols-3 gap-3 max-w-2xl mx-auto">
-              {posts.length === 0 ? (
-                <div className="col-span-full flex flex-col items-center justify-center py-20 gap-3 opacity-60">
-                  <ImageIcon size={36} className="text-cyan-300/60" />
-                  <p className="text-sm text-cyan-300/70">还没有内容，来发第一条吧</p>
-                </div>
-              ) : (
-                posts.map((p) => <PostCard key={p.id} post={p} username={username} />)
-              )}
+              {posts.map((p) => <PostCard key={p.id} post={p} username={username} />)}
             </div>
           </div>
 

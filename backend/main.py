@@ -595,31 +595,55 @@ async def chat(req: ChatRequest, user: str = Depends(get_current_user)):
                 return
 
             # ── 朋友模式：保留现有完整逻辑 ──
-            # 有图片：跳过意图识别，直接走对话流，加"看不到图"系统提示
+            # 有图片：用 qwen-vl-max 看图，跳过意图识别。
             if has_image:
-                extra = (
-                    "\n\n【临时】用户刚发了张图给你。你现在还没装上眼睛，看不到图片内容。"
-                    "用菲欧娜的方式回应——直接、有人味、一两句话承认看不到，必要时让对方用文字描述，"
-                    "不要假装能看到，也不要长篇道歉。"
+                # base64 直接喂 VL，避免落盘再读盘
+                _img_raw = req.image_base64 or ""
+                _mime = "png"
+                if _img_raw.startswith("data:image/"):
+                    try:
+                        _mime = _img_raw.split("/", 1)[1].split(";", 1)[0] or "png"
+                    except Exception:
+                        _mime = "png"
+                _img_b64 = _img_raw.split(",", 1)[1] if "," in _img_raw else _img_raw
+
+                vl_system = (
+                    sys_prompt_final
+                    + "\n\n【临时】对方刚发了张图给你。你能看到。用菲欧娜的语气，"
+                    "**一两句话**讲图里跟当前话题相关的关键信息——"
+                    "不要 OCR 逐字段念，不要说『这张图显示...』『从图中可以看出...』这种主持人腔，"
+                    "就像朋友凑过来扫一眼，挑最有意思 / 最相关的一两点说出来。"
+                    "如果对方文字里问了具体问题（『这是什么』『多少钱』『几点』），先回答那个。"
                 )
-                _slot = choose_model(user, user_content, "image")
-                stream, _actually_qwen = _create_stream_with_fallback(
-                    _slot == "qwen",
-                    [{"role": "system", "content": sys_prompt_final + extra}] + messages,
-                    max_tokens=200,
-                    temperature=1.1,
-                    frequency_penalty=0.6,
-                    presence_penalty=0.4,
-                )
-                for chunk in stream:
-                    text = chunk.choices[0].delta.content or ""
-                    if text:
-                        full_response += text
-                        yield f"data: {json.dumps({'text': text}, ensure_ascii=False)}\n\n"
+
+                vl_messages = [
+                    {"role": "system", "content": vl_system},
+                    {"role": "user", "content": [
+                        {"type": "image_url", "image_url": {"url": f"data:image/{_mime};base64,{_img_b64}"}},
+                        {"type": "text", "text": user_content},
+                    ]},
+                ]
+
+                try:
+                    stream = QWEN_CLIENT.chat.completions.create(
+                        model="qwen-vl-max",
+                        messages=vl_messages,
+                        max_tokens=400,
+                        temperature=0.9,
+                        stream=True,
+                    )
+                    for chunk in stream:
+                        text = chunk.choices[0].delta.content or ""
+                        if text:
+                            full_response += text
+                            yield f"data: {json.dumps({'text': text}, ensure_ascii=False)}\n\n"
+                except Exception as e:
+                    full_response = "图我接到了，但看的时候出了点意外，再发一次试试？"
+                    yield f"data: {json.dumps({'text': full_response}, ensure_ascii=False)}\n\n"
+                    print(f"[chat] qwen-vl-max error: {type(e).__name__}: {e}", flush=True)
+
                 await save_message(user, "assistant", full_response)
                 yield f"data: {json.dumps({'done': True}, ensure_ascii=False)}\n\n"
-                if not _actually_qwen:
-                    token_budget.add(user, len(full_response) // 2)
                 return
 
             # ── 1. 检查是否有等待补全参数的 pending intent ──
@@ -1046,6 +1070,64 @@ def _classify_topic(title: str) -> str:
     return "时事"
 
 
+# ── LLM 整批分类（5 分钟缓存）──────────────────────────────────────
+# 关键词字典覆盖不全（新词跟不上 / 顺序敏感把模糊词归错），
+# 用 qwen-plus 整批理解一次。同批标题 5 分钟内不重复调。
+import time as _time
+
+CATEGORIES_DISPLAY = ["娱乐", "经济", "生活", "科技", "文化"]
+_CLASSIFY_TTL = 300
+_classify_cache: dict[int, tuple[float, dict[str, str]]] = {}
+
+_BATCH_CLASSIFY_PROMPT = """你是热搜分类器，只输出 JSON 对象。
+
+给你一批热搜标题（每行一个），把每条归到下面 5 类之一：
+- 娱乐：明星 / 影视 / 综艺 / 音乐 / 网红 / 八卦 / 选秀
+- 经济：股市 / 楼市 / 企业 / 消费 / 就业 / 价格 / 货币 / 贸易 / 财报
+- 科技：AI / 芯片 / 互联网 / 航天 / 汽车工业 / 新能源 / 机器人 / 5G/6G / 量子 / 工业制造
+- 文化：教育 / 高考 / 读书 / 艺术 / 传统 / 历史 / 考古 / 文物 / 宗教 / 思想
+- 生活：美食 / 健康 / 宠物 / 旅行 / 穿搭 / 运动 / 婚恋 / 家庭 / 灾难 / 政策 / 民生 / 法律 / 犯罪 / 外交 / 体育赛事 / 国际新闻
+
+规则：
+- 一条标题只能归一类，挑最贴的
+- 严格输出 JSON：{"标题原文": "类别", ...}
+- 不解释，不 markdown，不加其他文字
+- 标题列表为空时输出 {}
+"""
+
+
+def _classify_with_llm(titles: list[str]) -> dict[str, str]:
+    """整批 LLM 分类。失败/超时 → 空 dict，调用方走关键词 fallback。"""
+    if not titles:
+        return {}
+    key = hash(tuple(titles))
+    now = _time.time()
+    cached = _classify_cache.get(key)
+    if cached and now - cached[0] < _CLASSIFY_TTL:
+        return cached[1]
+    try:
+        resp = QWEN_CLIENT.chat.completions.create(
+            model="qwen-plus",
+            messages=[
+                {"role": "system", "content": _BATCH_CLASSIFY_PROMPT},
+                {"role": "user", "content": "\n".join(titles)},
+            ],
+            response_format={"type": "json_object"},
+            max_tokens=2000,
+            temperature=0.1,
+        )
+        raw = resp.choices[0].message.content or "{}"
+        data = json.loads(raw)
+        if not isinstance(data, dict):
+            return {}
+        clean = {str(k): str(v) for k, v in data.items() if str(v) in CATEGORIES_DISPLAY}
+        _classify_cache[key] = (now, clean)
+        return clean
+    except Exception as e:
+        print(f"[hot/categorized] LLM classify failed: {type(e).__name__}: {e}", flush=True)
+        return {}
+
+
 @app.get("/hot/categorized/all")
 async def hot_categorized():
     """返回按类别分类的热搜，供广场分类卡片使用。
@@ -1071,13 +1153,26 @@ async def hot_categorized():
             if title:
                 all_titles.append(title)
 
-    buckets: dict[str, list[str]] = {c: [] for c in _CAT_KEYWORDS}
+    # 去重保序
     seen: set[str] = set()
-    for title in all_titles:
-        if title in seen:
-            continue
-        seen.add(title)
-        cat = _classify_topic(title)
+    unique: list[str] = []
+    for t in all_titles:
+        if t not in seen:
+            seen.add(t)
+            unique.append(t)
+
+    # LLM 整批分类（带缓存）；漏归 / 失败的标题走关键词 fallback
+    llm_map = await asyncio.to_thread(_classify_with_llm, unique)
+    _fallback_map = {"历史": "文化", "哲学": "文化", "时事": "生活"}
+
+    buckets: dict[str, list[str]] = {c: [] for c in CATEGORIES_DISPLAY}
+    for title in unique:
+        cat = llm_map.get(title)
+        if cat not in CATEGORIES_DISPLAY:
+            kw_cat = _classify_topic(title)
+            cat = _fallback_map.get(kw_cat, kw_cat)
+            if cat not in CATEGORIES_DISPLAY:
+                cat = "生活"
         if len(buckets[cat]) < 5:
             buckets[cat].append(title)
 
