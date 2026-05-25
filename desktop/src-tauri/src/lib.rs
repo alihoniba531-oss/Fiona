@@ -35,7 +35,15 @@ fn find_config() -> Option<PathBuf> {
             return Some(p);
         }
     }
-    // prod：可执行文件同级或上一级
+    // .msi 安装版的标准位置：%APPDATA%\fiona\config.json
+    #[cfg(windows)]
+    if let Ok(appdata) = std::env::var("APPDATA") {
+        let c = PathBuf::from(appdata).join("fiona").join("config.json");
+        if c.exists() {
+            return Some(c);
+        }
+    }
+    // 兜底：可执行文件同级或上几级
     if let Ok(exe) = std::env::current_exe() {
         for parent in exe.ancestors().take(4) {
             let c = parent.join("fiona.config.json");
