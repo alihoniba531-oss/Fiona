@@ -154,9 +154,10 @@ pub fn run() {
     tauri::Builder::default()
         .invoke_handler(tauri::generate_handler![open_url])
         .setup(|app| {
-            // 启动自动弹 DevTools（仅在编了 devtools feature 时）
-            // 调试期间方便看 console；如果不需要可注释掉这块
-            #[cfg(feature = "devtools")]
+            // 启动自动弹 DevTools。tauri crate 的 devtools feature 已启用，
+            // open_devtools() 方法在 release build 也可用。
+            // (之前用 #[cfg(feature = "devtools")] 是错的——那是 tauri crate
+            //  的 feature，不是 fiona-desktop crate 的，cfg 永远 false。)
             if let Some(window) = app.get_webview_window("main") {
                 window.open_devtools();
             }
