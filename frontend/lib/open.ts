@@ -38,10 +38,25 @@ async function tauriInvoke(cmd: string, args: Record<string, unknown>): Promise<
   return false;
 }
 
+function isTauri(): boolean {
+  const w = window as any;
+  return !!(w.__TAURI_INTERNALS__?.invoke || w.__TAURI__?.core?.invoke || w.__TAURI__?.invoke);
+}
+
 export async function openExternal(url: string): Promise<void> {
   if (typeof window === "undefined" || !url) return;
-  const ok = await tauriInvoke("plugin:opener|open_url", { url });
-  if (ok) return;
-  // 浏览器或 Tauri 调用失败：fallback 到 window.open
+
+  if (isTauri()) {
+    // Tauri 环境必须走 invoke。失败时绝对不能 fallback 到 window.open——
+    // Tauri webview 会把 _blank 解释成 location.replace，整个主界面被替换。
+    const ok = await tauriInvoke("plugin:opener|open_url", { url });
+    if (!ok) {
+      console.error("[openExternal] Tauri invoke failed; refusing window.open fallback to protect main view. URL:", url);
+      // 不替换页面、也不报弹窗——让用户感知"点了没反应"比"页面消失"安全
+    }
+    return;
+  }
+
+  // 浏览器环境：标准新窗口
   window.open(url, "_blank", "noopener,noreferrer");
 }
