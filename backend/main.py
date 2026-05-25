@@ -714,9 +714,11 @@ async def chat(req: ChatRequest, user: str = Depends(get_current_user)):
             # ── 3. 普通对话，走菲欧娜（路由决定使用哪个模型槽）──
             _slot      = choose_model(user, user_content, "normal")
             _use_light = (_slot == "qwen")
-            # qwen 槽用轻量参数，deepseek 槽保持原有高密度参数
-            # max_tokens 给得够大，否则碰技术/对比类长回答会被砍在半截
-            _max_tok   = 250  if _use_light else 700
+            # max_tokens 统一给 700：_create_stream_with_fallback 会在 qwen 失败时
+            # 自动切 deepseek，但 max_tokens 是事先传入的参数，给小了 fallback 后
+            # deepseek 也被锁在小上限，对话被砍在半截。给统一上限消掉这个漏洞。
+            # qwen 自己回短句时不会用满，没浪费。
+            _max_tok   = 700
             _temp      = 0.9  if _use_light else 1.05
             _freq_pen  = 0.3  if _use_light else 0.4
             _pres_pen  = 0.2  if _use_light else 0.4
