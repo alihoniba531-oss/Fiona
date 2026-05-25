@@ -1,0 +1,9 @@
+{
+  "_comment": "复制此文件为 fiona.config.json 并填上你的云端信息。fiona.config.json 已在 .gitignore，不会被提交。",
+  "host": "your.cloud.ip.or.domain",
+  "user": "root",
+  "port": 22,
+  "forwards": [
+    "3000:127.0.0.1:3000"
+  ]
+}

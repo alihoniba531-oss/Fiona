@@ -2,3 +2,5 @@ node_modules/
 src-tauri/target/
 src-tauri/gen/
 *.log
+# 含云端 SSH 信息，不入库
+fiona.config.json
