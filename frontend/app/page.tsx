@@ -568,9 +568,22 @@ export default function ChatPage() {
   }, []);
 
   // ── 流式 TTS 队列：按句送合成、顺序播放，**预取下一句消除句间空隙** ──
+  // <audio> 不能带 Authorization 头，cookie 也可能没设上（dev 直进 / 跨域）——
+  // 用 query.token 或 query.dev_user 兜底，后端 require_auth 中间件已对称支持。
   const mkTtsAudio = useCallback((text: string): HTMLAudioElement => {
-    const url = `${API}/tts/stream?text=${encodeURIComponent(text.slice(0, 300))}&voice=longxiaoxia_v2&speech_rate=1.15`;
-    const a = new Audio(url);
+    const params = new URLSearchParams({
+      text: text.slice(0, 300),
+      voice: "longxiaoxia_v2",
+      speech_rate: "1.15",
+    });
+    const tok = typeof window !== "undefined" ? localStorage.getItem("fiona_token") : null;
+    if (tok) {
+      params.set("token", tok);
+    } else {
+      const u = typeof window !== "undefined" ? localStorage.getItem("fiona_user") : null;
+      if (u) params.set("dev_user", u);
+    }
+    const a = new Audio(`${API}/tts/stream?${params.toString()}`);
     a.preload = "auto";
     return a;
   }, []);

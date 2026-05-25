@@ -187,9 +187,15 @@ async def require_auth(request: Request, call_next):
         cookie_token = request.cookies.get("fiona_token")
         if cookie_token:
             user = decode_token(cookie_token)
+    # <audio src> / <img src> 不能带 header，前端把 token 塞 query 兜底
+    # （和 ws_authenticate 对称）
+    if not user:
+        q_token = request.query_params.get("token")
+        if q_token:
+            user = decode_token(q_token)
     if not user and os.getenv("DEV_MODE", "0") == "1":
         from urllib.parse import unquote
-        dev = request.headers.get("x-dev-user")
+        dev = request.headers.get("x-dev-user") or request.query_params.get("dev_user")
         if dev:
             user = unquote(dev).strip() or None
     if not user:
@@ -535,6 +541,21 @@ async def chat(req: ChatRequest, user: str = Depends(get_current_user)):
 
     messages = [{"role": m["role"], "content": m["content"]} for m in history]
     messages.append({"role": "user", "content": user_content})
+
+    # qwen 对"播报/朗读/念出来"这类词的训练倾向太强（自动解释 TTS 机制、教对方开手机朗读），
+    # 顶部 persona 禁令压不住。在 user 消息后贴一条强约束 system，离生成位置最近、attention 最大。
+    import re as _re
+    if _re.search(r"(播报|朗读|口播|念出来|读出来|念一[下遍]|读一[下遍]|大声[念读])", req.message or ""):
+        messages.append({
+            "role": "system",
+            "content": (
+                "对方刚才请求你**直接开口说话**——前端会把你这条回复送进 TTS 念给对方听。"
+                "你只能做一件事：把上一条消息用更口语化的方式重新说一遍，或就当前话题继续聊几句。"
+                "绝对禁止：解释 TTS/朗读机制；说『我没法播报』『我没有朗读功能』『我的语音是文字不是声波』；"
+                "给『语音稿』让对方复制；列 iPhone/安卓/Chrome 朗读步骤；说『手把手教你』。"
+                "对方听得见你说话，跟机制无关，不用解释。"
+            ),
+        })
 
     async def generate():
         full_response = ""
