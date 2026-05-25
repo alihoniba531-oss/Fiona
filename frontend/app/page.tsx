@@ -1233,7 +1233,7 @@ export default function ChatPage() {
                             {msgs.map((msg, idx2) => (
                               <div key={`${msg.id}-${idx2}`} className="flex flex-col gap-0.5">
                                 <div className="flex items-center gap-1.5">
-                                  <span className="text-[10px] font-medium text-muted-foreground">{msg.role === "assistant" ? "菲欧娜" : "我"}</span>
+                                  <span className="text-[10px] font-medium text-muted-foreground">{msg.role === "assistant" ? "Chloe" : "我"}</span>
                                   <span className="text-[9px] text-muted-foreground/50">{msg.timestamp.toLocaleString("zh-CN", { year: "numeric", month: "2-digit", day: "2-digit", hour: "2-digit", minute: "2-digit" })}</span>
                                 </div>
                                 <p className="text-[11px] text-foreground/70 leading-relaxed line-clamp-2">{msg.content}</p>
@@ -1262,7 +1262,7 @@ export default function ChatPage() {
 
         {/* ── main content: flex-col flex-1 ── */}
         <div className="flex flex-col flex-1 min-w-0">
-          {/* header — single column: Fiona + new chat + voice toggle */}
+          {/* header — single column: Chloe + new chat + voice toggle */}
           <header className="hud-panel hud-corners flex shrink-0" style={{ borderRadius: 0, borderTop: "none", borderLeft: "none", borderRight: "none" }}>
             <div className="flex-1 px-5 py-3 flex items-center justify-between gap-2">
               <div className="flex items-center gap-3">
@@ -1274,11 +1274,11 @@ export default function ChatPage() {
                       boxShadow: "inset 0 0 8px rgba(0,212,255,0.55), 0 0 12px rgba(0,212,255,0.4)",
                     }}
                   >
-                    <span className="text-[#e0f6ff] text-xs font-semibold tracking-wider">菲</span>
+                    <span className="text-[#e0f6ff] text-xs font-semibold tracking-wider">C</span>
                   </div>
                 </div>
                 <div className="leading-tight">
-                  <p className="text-sm font-semibold tracking-wider" style={{ color: "var(--hud-cyan)", textShadow: "0 0 6px var(--hud-cyan-glow)" }}>F·I·O·N·A</p>
+                  <p className="text-sm font-semibold tracking-wider" style={{ color: "var(--hud-cyan)", textShadow: "0 0 6px var(--hud-cyan-glow)" }}>C·H·L·O·E</p>
                   <p className="hud-label flex items-center gap-1.5 mt-0.5">
                     <span className="hud-pulse" />
                     <span>ONLINE · CH.A1</span>
@@ -1320,7 +1320,7 @@ export default function ChatPage() {
                     handsFree && "hud-btn-active"
                   )}
                   style={{ clipPath: "polygon(0 0, calc(100% - 8px) 0, 100% 8px, 100% 100%, 8px 100%, 0 calc(100% - 8px))" }}
-                  title="免提：菲欧娜说完自动开麦，你停顿 1.5 秒后自动发"
+                  title="免提：Chloe说完自动开麦，你停顿 1.5 秒后自动发"
                 >
                   <span className="hud-label" style={handsFree ? { color: "inherit", textShadow: "none" } : undefined}>{handsFree ? "HANDS·FREE" : "HANDS"}</span>
                 </button>

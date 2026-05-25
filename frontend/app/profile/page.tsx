@@ -90,7 +90,7 @@ export default function ProfilePage() {
           <div className="flex items-center justify-between">
             <div>
               <h1 className="text-base font-semibold">我的画像</h1>
-              <p className="text-[11px] text-muted-foreground mt-0.5">菲欧娜从对话中整理的信息，每 5 轮自动更新</p>
+              <p className="text-[11px] text-muted-foreground mt-0.5">Chloe从对话中整理的信息，每 5 轮自动更新</p>
             </div>
             <div className="flex items-center gap-1 text-[11px] text-muted-foreground">
               <Shield size={12} />
@@ -122,7 +122,7 @@ export default function ProfilePage() {
             <div className="bg-card border border-border rounded-2xl p-8 text-center">
               <p className="text-sm text-muted-foreground mb-2">画像还没建立起来</p>
               <p className="text-[11px] text-muted-foreground/70 leading-relaxed">
-                跟菲欧娜聊几轮你的兴趣、烦恼、最近在做的事，<br/>
+                跟Chloe聊几轮你的兴趣、烦恼、最近在做的事，<br/>
                 每 5 轮她会在后台静默更新这里
               </p>
             </div>

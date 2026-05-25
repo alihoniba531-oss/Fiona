@@ -75,7 +75,7 @@ def choose_model(
     返回 "deepseek" 或 "qwen"，供 main.py 选择客户端和参数。
 
     mode 取值：
-      "mirror"  — 镜子模式（菲欧娜纯陪伴，无工具）
+      "mirror"  — 镜子模式（Chloe纯陪伴，无工具）
       "image"   — 有图片的对话（简短告知看不到）
       "normal"  — 普通对话
     """

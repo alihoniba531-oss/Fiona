@@ -7,7 +7,7 @@
 import json
 from database import get_profile, get_all_profiles, was_recently_matched, save_match
 
-MATCH_PROMPT = """你是菲欧娜的后台匹配系统，只输出JSON，不输出任何其他内容。
+MATCH_PROMPT = """你是Chloe的后台匹配系统，只输出JSON，不输出任何其他内容。
 
 目标用户的画像已提供，其他用户的画像也已提供。
 找出最适合和目标用户连接的 1-3 个人。

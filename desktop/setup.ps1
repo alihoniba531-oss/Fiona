@@ -125,4 +125,4 @@ if ($LASTEXITCODE -eq 0 -and $result -match "OK") {
 }
 
 Write-Host ""
-Write-Host "[OK] setup 完成。运行 .\dev.ps1 启动菲欧娜。"
+Write-Host "[OK] setup 完成。运行 .\dev.ps1 启动Chloe。"

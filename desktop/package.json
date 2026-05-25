@@ -2,7 +2,7 @@
   "name": "fiona-desktop",
   "version": "0.1.0",
   "private": true,
-  "description": "菲欧娜 Tauri 桌面客户端 — 加载云端 next dev，连云端 backend",
+  "description": "Chloe Tauri 桌面客户端 — 加载云端 next dev，连云端 backend",
   "scripts": {
     "dev": "tauri dev",
     "build": "tauri build",

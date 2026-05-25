@@ -1,4 +1,4 @@
-# desktop/ — 菲欧娜桌面客户端
+# desktop/ — Chloe桌面客户端
 
 Tauri 2 桌面壳 + 嵌入式 SSH 隧道。**双击 .exe 自动连云、自动加载、关窗自动清理**。
 
@@ -19,7 +19,7 @@ Tauri 2 桌面壳 + 嵌入式 SSH 隧道。**双击 .exe 自动连云、自动�
    }
    ```
 5. 配 SSH 免密（见下面【SSH 免密】小节）
-6. 开始菜单 / 桌面找到"菲欧娜"双击即开
+6. 开始菜单 / 桌面找到"Chloe"双击即开
 
 ### B. 本机 setup + dev（开发者模式，能改代码热调）
 
@@ -31,7 +31,7 @@ Tauri 2 桌面壳 + 嵌入式 SSH 隧道。**双击 .exe 自动连云、自动�
    - 交互问云端 IP/用户/端口，写入 `desktop/fiona.config.json`
    - 测试 SSH 免密
 3. 重开 PowerShell（让 PATH 生效）
-4. `.\dev.ps1` 启动菲欧娜窗口
+4. `.\dev.ps1` 启动Chloe窗口
 
 ## SSH 免密（两条路径都需要）
 

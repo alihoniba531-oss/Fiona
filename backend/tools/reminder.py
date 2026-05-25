@@ -13,7 +13,7 @@ def set_reminder(text: str, minutes: int) -> str:
             subprocess.Popen([
                 "powershell", "-Command",
                 f"[reflection.assembly]::loadwithpartialname('System.Windows.Forms') | Out-Null; "
-                f"[System.Windows.Forms.MessageBox]::Show('{safe_text}', '菲欧娜提醒你', "
+                f"[System.Windows.Forms.MessageBox]::Show('{safe_text}', 'Chloe提醒你', "
                 f"[System.Windows.Forms.MessageBoxButtons]::OK, "
                 f"[System.Windows.Forms.MessageBoxIcon]::Information)"
             ])

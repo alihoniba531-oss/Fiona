@@ -20,7 +20,7 @@ INTENT_PROMPT = """你是意图识别器，只输出JSON，不输出任何其他
   take_screenshot 截图             params: (无)
   get_datetime    查询时间日期     params: (无)
   write_clipboard 复制内容到剪贴板 params: content(要复制的内容)
-  fetch_card      读取网页内容做成卡片(默认在菲欧娜里呈现) params: query(网址 URL,如 https://...)
+  fetch_card      读取网页内容做成卡片(默认在Chloe里呈现) params: query(网址 URL,如 https://...)
   open_in_browser 用浏览器外部打开(仅当用户明确说"用浏览器/打开浏览器/在浏览器里"时) params: site(网站名或网址)
 
 【核心原则 - 严格遵守】
@@ -72,7 +72,7 @@ INTENT_PROMPT = """你是意图识别器，只输出JSON，不输出任何其他
 "现在几点了" / "今天几号" → get_datetime
 "帮我把这段话复制好：你好世界" → write_clipboard, content=你好世界
 
-【fetch_card 默认走这条 - 信息以卡片在菲欧娜里呈现,不打开浏览器】
+【fetch_card 默认走这条 - 信息以卡片在Chloe里呈现,不打开浏览器】
 "帮我看看 https://news.sina.com.cn 头条" → fetch_card, query=https://news.sina.com.cn
 "读一下这个网页 https://..." → fetch_card, query=https://...
 "看下这个商品 https://item.jd.com/xxx.html" → fetch_card, query=https://item.jd.com/xxx.html
@@ -121,7 +121,7 @@ INTENT_PROMPT = """你是意图识别器，只输出JSON，不输出任何其他
 普通对话：{"intent": null}
 """
 
-# 缺少参数时菲欧娜的追问话术
+# 缺少参数时Chloe的追问话术
 MISSING_QUESTIONS = {
     "message":     "发啥内容？",
     "contact":     "找谁？",

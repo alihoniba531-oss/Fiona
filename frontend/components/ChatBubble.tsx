@@ -148,7 +148,7 @@ export default function ChatBubble({ message, onDelete, onConfirmTts, onDeclineT
               boxShadow: "inset 0 0 8px rgba(0,212,255,0.5), 0 0 10px rgba(0,212,255,0.35)",
             }}
           >
-            <span className="text-[#e0f6ff] text-xs font-semibold tracking-wider">菲</span>
+            <span className="text-[#e0f6ff] text-xs font-semibold tracking-wider">C</span>
           </div>
         </div>
       )}

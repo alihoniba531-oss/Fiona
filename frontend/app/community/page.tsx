@@ -22,7 +22,7 @@ export default function CommunityPage() {
             <UsersRound size={40} strokeWidth={1.2} className="text-muted-foreground/30" />
             <p className="text-sm text-muted-foreground">社群功能即将上线</p>
             <p className="text-[11px] text-muted-foreground/60 max-w-xs leading-relaxed">
-              菲欧娜会在这里帮你发现与你需求、兴趣相近的人，建立真实连接
+              Chloe会在这里帮你发现与你需求、兴趣相近的人，建立真实连接
             </p>
           </div>
         </div>

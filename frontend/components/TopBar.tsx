@@ -54,7 +54,7 @@ export default function TopBar() {
         <span className="text-[13px] font-semibold w-16">{time}</span>
 
         {/* 中：App 名称 */}
-        <span className="text-[13px] font-semibold tracking-tight">菲欧娜</span>
+        <span className="text-[13px] font-semibold tracking-tight">Chloe</span>
 
         {/* 右：状态图标 */}
         <div className="flex items-center gap-1.5 w-16 justify-end">

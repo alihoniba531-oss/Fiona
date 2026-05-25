@@ -55,7 +55,7 @@ EXTRACT_INTEREST_PROMPT = """你是兴趣点抽取器，只输出 JSON 数组。
 
 规则：
 - 抽 0-3 个最显著的，宁缺勿滥
-- 只看用户当前在意的，不抽寒暄/打招呼/对菲欧娜的元话术
+- 只看用户当前在意的，不抽寒暄/打招呼/对Chloe的元话术
 - topic 要具体（"骑行"而不是"运动"）
 - 严格 JSON 数组，不加解释
 
@@ -491,7 +491,7 @@ async def detect_and_save(
                 username=candidate["peer_username"],
                 peer_username=username,
                 interest_topic=main_topic,
-                reason="菲欧娜觉得你们可能聊得来",
+                reason="Chloe觉得你们可能聊得来",
                 match_type=result["type"],
                 tags=result["tags"],
                 triggered_by_message_id=None,
@@ -518,7 +518,7 @@ async def detect_and_save(
                 username=username,
                 peer_username=candidate["peer_username"],
                 interest_topic=seeking_topic,
-                reason=f"菲欧娜找到了一个符合你条件的人",
+                reason=f"Chloe找到了一个符合你条件的人",
                 match_type="精准对接",
                 tags=result["tags"],
                 triggered_by_message_id=triggered_by_message_id,
@@ -540,7 +540,7 @@ async def detect_and_save(
 
 
 # ─────────────────────────────────────────────
-#  Layer 2：画像级匹配（菲欧娜与菲欧娜的比对）
+#  Layer 2：画像级匹配（Chloe与Chloe的比对）
 # ─────────────────────────────────────────────
 
 def _keyword_overlap(list_a: list, list_b: list) -> int:
@@ -635,7 +635,7 @@ async def find_profile_candidates(my_username: str, my_profile: dict) -> list[di
     return scored[:5]
 
 
-PROFILE_EVAL_PROMPT = """你是两个菲欧娜的中介人——每个菲欧娜深度了解自己的用户。
+PROFILE_EVAL_PROMPT = """你是两个Chloe的中介人——每个Chloe深度了解自己的用户。
 现在你要判断：把用户 A 和用户 B 连起来，对他们有没有真实价值？
 
 输出 JSON：

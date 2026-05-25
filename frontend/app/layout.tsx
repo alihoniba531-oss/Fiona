@@ -3,11 +3,11 @@ import "./globals.css";
 import PwaRegister from "@/components/PwaRegister";
 
 export const metadata: Metadata = {
-  title: "菲欧娜",
+  title: "Chloe",
   description: "我拥有世界 — 每个人自己的分身",
   appleWebApp: {
     capable: true,
-    title: "菲欧娜",
+    title: "Chloe",
     statusBarStyle: "black-translucent",
   },
 };

@@ -113,13 +113,13 @@ function HistoryContent() {
 
   const handleExport = () => {
     const lines = filtered.map(m =>
-      `[${m.created_at}] ${m.role === "user" ? username : "菲欧娜"}: ${m.content}`
+      `[${m.created_at}] ${m.role === "user" ? username : "Chloe"}: ${m.content}`
     );
     const blob = new Blob([lines.join("\n")], { type: "text/plain;charset=utf-8" });
     const url = URL.createObjectURL(blob);
     const a = document.createElement("a");
     a.href = url;
-    a.download = `菲欧娜_${username}_${toDateStr(new Date())}.txt`;
+    a.download = `Chloe_${username}_${toDateStr(new Date())}.txt`;
     a.click();
     URL.revokeObjectURL(url);
   };
@@ -138,7 +138,7 @@ function HistoryContent() {
       <header className="sticky top-0 z-20 glass border-b border-border px-5 py-2.5 flex items-center gap-3">
         <div className="flex items-center gap-2 shrink-0">
           <div className="w-7 h-7 rounded-lg bg-primary flex items-center justify-center">
-            <span className="text-white text-xs font-semibold">菲</span>
+            <span className="text-white text-xs font-semibold">C</span>
           </div>
           <div>
             <p className="text-sm font-semibold leading-tight">历史记录</p>
@@ -325,7 +325,7 @@ function HistoryContent() {
                             "w-7 h-7 rounded-full flex items-center justify-center text-xs font-semibold shrink-0 mt-0.5",
                             isUser ? "bg-primary text-white" : "bg-accent text-accent-foreground"
                           )}>
-                            {isUser ? username[0] : "菲"}
+                            {isUser ? username[0] : "C"}
                           </div>
                           <div className={cn("flex flex-col gap-0.5 max-w-[80%]", isUser && "items-end")}>
                             <div className={cn(

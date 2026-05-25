@@ -1,4 +1,4 @@
-# 启动菲欧娜桌面 dev — 双击即用
+# 启动Chloe桌面 dev — 双击即用
 #
 # Tauri 进程会读 fiona.config.json，自动建 SSH 隧道、等端口通、加载 webview。
 # 关窗时自动 kill 隧道。

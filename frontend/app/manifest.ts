@@ -2,8 +2,8 @@ import type { MetadataRoute } from "next";
 
 export default function manifest(): MetadataRoute.Manifest {
   return {
-    name: "菲欧娜",
-    short_name: "菲欧娜",
+    name: "Chloe",
+    short_name: "Chloe",
     description: "我拥有世界 — 每个人自己的分身",
     start_url: "/",
     display: "standalone",

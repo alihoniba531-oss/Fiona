@@ -1,6 +1,6 @@
 {
   "$schema": "https://schema.tauri.app/config/2",
-  "productName": "Fiona",
+  "productName": "Chloe",
   "version": "0.1.0",
   "identifier": "com.fiona.desktop",
   "build": {
@@ -14,7 +14,7 @@
     "windows": [
       {
         "label": "main",
-        "title": "菲欧娜",
+        "title": "Chloe",
         "width": 1280,
         "height": 800,
         "minWidth": 960,
@@ -42,7 +42,7 @@
     ],
     "copyright": "",
     "category": "SocialNetworking",
-    "shortDescription": "Fiona desktop client",
-    "longDescription": "Fiona — your personal AI assistant"
+    "shortDescription": "Chloe desktop client",
+    "longDescription": "Chloe — your personal AI assistant"
   }
 }

@@ -5,7 +5,7 @@
 
 音色推荐（v2）：
   longwan_v2       — 龙婉，知性平稳女声
-  longxiaobai_v2   — 龙小白，邻家温柔少女（默认，贴合菲欧娜）
+  longxiaobai_v2   — 龙小白，邻家温柔少女（默认，贴合Chloe）
   longxiaoxia_v2   — 龙小夏，活泼少女
   longxiaocheng_v2 — 龙小诚，沉稳男声
 """

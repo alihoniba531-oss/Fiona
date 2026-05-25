@@ -147,7 +147,7 @@ async def lifespan(app: FastAPI):
     await init_db()
     yield
 
-app = FastAPI(title="菲欧娜 API", lifespan=lifespan)
+app = FastAPI(title="Chloe API", lifespan=lifespan)
 
 # 图片上传目录
 UPLOADS_DIR = os.path.join(os.path.dirname(__file__), "uploads")
@@ -437,7 +437,7 @@ async def asr_recognize_endpoint(req: AsrRequest):
 
 @app.get("/")
 async def root():
-    return {"status": "ok", "name": "菲欧娜 API"}
+    return {"status": "ok", "name": "Chloe API"}
 
 
 @app.post("/chat")
@@ -644,7 +644,7 @@ async def chat(req: ChatRequest, user: str = Depends(get_current_user)):
 
                 vl_system = (
                     sys_prompt_final
-                    + "\n\n【临时】对方刚发了张图给你。你能看到。用菲欧娜的语气，"
+                    + "\n\n【临时】对方刚发了张图给你。你能看到。用Chloe的语气，"
                     "**一两句话**讲图里跟当前话题相关的关键信息——"
                     "不要 OCR 逐字段念，不要说『这张图显示...』『从图中可以看出...』这种主持人腔，"
                     "就像朋友凑过来扫一眼，挑最有意思 / 最相关的一两点说出来。"
@@ -770,7 +770,7 @@ async def chat(req: ChatRequest, user: str = Depends(get_current_user)):
                 yield f"data: {json.dumps({'done': True}, ensure_ascii=False)}\n\n"
                 return
 
-            # ── 3. 普通对话，走菲欧娜（路由决定使用哪个模型槽）──
+            # ── 3. 普通对话，走Chloe（路由决定使用哪个模型槽）──
             _slot      = choose_model(user, user_content, "normal")
             _use_light = (_slot == "qwen")
             # max_tokens 统一给 700：_create_stream_with_fallback 会在 qwen 失败时

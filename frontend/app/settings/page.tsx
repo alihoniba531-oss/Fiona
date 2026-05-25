@@ -100,7 +100,7 @@ export default function SettingsPage() {
                 关于
               </div>
               <div className="space-y-1 text-[11px] text-muted-foreground">
-                <p>菲欧娜 AI 助理 · 内测版</p>
+                <p>Chloe AI 助理 · 内测版</p>
                 <p>后端：FastAPI + DeepSeek · 前端：Next.js</p>
                 <p className="text-muted-foreground/50">数据存储在本地 SQLite，不上传任何服务器</p>
               </div>
