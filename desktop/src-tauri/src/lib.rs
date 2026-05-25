@@ -119,6 +119,7 @@ pub fn run() {
     let tunnel_for_event = tunnel.clone();
 
     tauri::Builder::default()
+        .plugin(tauri_plugin_opener::init())
         .on_window_event(move |_window, event| {
             if matches!(event, tauri::WindowEvent::CloseRequested { .. }) {
                 if let Ok(mut guard) = tunnel_for_event.lock() {

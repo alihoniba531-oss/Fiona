@@ -8,6 +8,7 @@ import SolarSystem3D from "@/components/SolarSystem3D";
 import { Plus, Heart, ImageIcon, Video, X, Check, Sparkles, Music2, BarChart2, Cpu, BookOpen, Newspaper, Flame, TrendingUp } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { apiFetch } from "@/lib/auth";
+import { openExternal } from "@/lib/open";
 
 const API = "/api";
 
@@ -491,14 +492,12 @@ export default function PlazaPage() {
                     <ul className="space-y-1">
                       {expanded.sources.map((s, i) => (
                         <li key={i}>
-                          <a
-                            href={s.url}
-                            target="_blank"
-                            rel="noopener noreferrer"
-                            className="text-[12px] text-cyan-300/80 hover:text-cyan-200 break-all"
+                          <button
+                            onClick={() => openExternal(s.url)}
+                            className="text-[12px] text-cyan-300/80 hover:text-cyan-200 break-all text-left cursor-pointer bg-transparent border-0 p-0"
                           >
                             {s.title || s.url}
-                          </a>
+                          </button>
                         </li>
                       ))}
                     </ul>

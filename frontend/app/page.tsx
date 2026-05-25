@@ -15,6 +15,7 @@ import {
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { apiFetch, getToken, getUsername as readStoredUsername } from "@/lib/auth";
+import { openExternal } from "@/lib/open";
 
 const API = "/api";
 const WS_BASE = typeof window !== "undefined"
@@ -1802,10 +1803,12 @@ export default function ChatPage() {
                   )}
                 </div>
                 {enlargedCard.url && (
-                  <a href={enlargedCard.url} target="_blank" rel="noopener noreferrer"
-                    className="block mt-5 pt-4 border-t border-border/40 text-sm text-primary hover:underline truncate shrink-0">
+                  <button
+                    onClick={() => openExternal(enlargedCard.url!)}
+                    className="block w-full mt-5 pt-4 border-t border-border/40 text-sm text-primary hover:underline truncate shrink-0 text-left bg-transparent border-0 p-0 cursor-pointer"
+                  >
                     {enlargedCard.url}
-                  </a>
+                  </button>
                 )}
               </div>
             )}
