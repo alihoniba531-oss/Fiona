@@ -9,23 +9,23 @@ function isTauri(): boolean {
   return !!(w.__TAURI_INTERNALS__?.invoke || w.__TAURI__?.core?.invoke || w.__TAURI__?.invoke);
 }
 
-async function tauriInvoke(cmd: string, args: Record<string, unknown>): Promise<boolean> {
+async function tauriInvoke(cmd: string, args: Record<string, unknown>): Promise<{ ok: true } | { ok: false; errors: string[] }> {
   const w = window as any;
-  const bridges: any[] = [
-    w.__TAURI_INTERNALS__?.invoke?.bind(w.__TAURI_INTERNALS__),
-    w.__TAURI__?.core?.invoke?.bind(w.__TAURI__.core),
-    w.__TAURI__?.invoke?.bind(w.__TAURI__),
-  ].filter(Boolean);
+  const bridges: Array<{ name: string; fn: any }> = [];
+  if (w.__TAURI_INTERNALS__?.invoke) bridges.push({ name: "INTERNALS", fn: w.__TAURI_INTERNALS__.invoke.bind(w.__TAURI_INTERNALS__) });
+  if (w.__TAURI__?.core?.invoke) bridges.push({ name: "TAURI.core", fn: w.__TAURI__.core.invoke.bind(w.__TAURI__.core) });
+  if (w.__TAURI__?.invoke) bridges.push({ name: "TAURI", fn: w.__TAURI__.invoke.bind(w.__TAURI__) });
 
-  for (const invoke of bridges) {
+  const errors: string[] = [];
+  for (const b of bridges) {
     try {
-      await invoke(cmd, args);
-      return true;
+      await b.fn(cmd, args);
+      return { ok: true };
     } catch (e) {
-      console.warn(`[openExternal] invoke ${cmd} failed:`, e);
+      errors.push(`${b.name}: ${String(e).slice(0, 300)}`);
     }
   }
-  return false;
+  return { ok: false, errors };
 }
 
 export async function openExternal(url: string): Promise<void> {
@@ -38,9 +38,13 @@ export async function openExternal(url: string): Promise<void> {
   }
 
   // Tauri 环境：调 Rust 端 open_url（自定义命令，不走 plugin ACL）
-  const ok = await tauriInvoke("open_url", { url });
-  if (!ok) {
+  const r = await tauriInvoke("open_url", { url });
+  if (!r.ok) {
     // 失败时绝对不能 fallback 到 window.open（Tauri webview 里会 location.replace 主界面）
-    console.error("[openExternal] open_url command failed. URL:", url);
+    console.error(
+      "[openExternal] open_url failed.\nErrors:\n  " +
+      r.errors.join("\n  ") +
+      "\nURL: " + url,
+    );
   }
 }
