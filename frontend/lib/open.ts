@@ -2,23 +2,46 @@
 //
 // Tauri WebView 没有"新 tab"概念，<a target="_blank"> 默认被吞。
 // Tauri 2 通过 plugin-opener 的内置 invoke 调系统默认浏览器打开。
-// 不依赖 npm 包：用全局 __TAURI_INTERNALS__ 直接发 IPC，前端无需 install。
+// 不依赖 npm 包：用 webview 注入的全局桥直接发 IPC。
+//
+// Tauri 2 桥的命名因版本/配置有差异，试多个路径兜底。
+
+async function tauriInvoke(cmd: string, args: Record<string, unknown>): Promise<boolean> {
+  const w = window as any;
+  // Tauri 2 internal bridge（最常见）
+  if (w.__TAURI_INTERNALS__?.invoke) {
+    try {
+      await w.__TAURI_INTERNALS__.invoke(cmd, args);
+      return true;
+    } catch (e) {
+      console.warn(`[openExternal] __TAURI_INTERNALS__.invoke ${cmd} failed:`, e);
+    }
+  }
+  // Tauri 2 with globalTauri=true
+  if (w.__TAURI__?.core?.invoke) {
+    try {
+      await w.__TAURI__.core.invoke(cmd, args);
+      return true;
+    } catch (e) {
+      console.warn(`[openExternal] __TAURI__.core.invoke ${cmd} failed:`, e);
+    }
+  }
+  // Tauri 1 legacy
+  if (w.__TAURI__?.invoke) {
+    try {
+      await w.__TAURI__.invoke(cmd, args);
+      return true;
+    } catch (e) {
+      console.warn(`[openExternal] __TAURI__.invoke ${cmd} failed:`, e);
+    }
+  }
+  return false;
+}
 
 export async function openExternal(url: string): Promise<void> {
   if (typeof window === "undefined" || !url) return;
-
-  // Tauri 环境检测：__TAURI_INTERNALS__ 是 webview 注入的内部桥
-  const internals = (window as any).__TAURI_INTERNALS__;
-  if (internals && typeof internals.invoke === "function") {
-    try {
-      await internals.invoke("plugin:opener|open_url", { url });
-      return;
-    } catch (e) {
-      // 没接 plugin / 权限缺失 → 静默 fallback 到 window.open
-      console.warn("[openExternal] tauri invoke failed, fallback:", e);
-    }
-  }
-
-  // 浏览器：标准新窗口/新标签
+  const ok = await tauriInvoke("plugin:opener|open_url", { url });
+  if (ok) return;
+  // 浏览器或 Tauri 调用失败：fallback 到 window.open
   window.open(url, "_blank", "noopener,noreferrer");
 }
