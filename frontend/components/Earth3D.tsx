@@ -1,7 +1,7 @@
 "use client";
 
 import { Canvas, useFrame } from "@react-three/fiber";
-import { useRef, Suspense } from "react";
+import { useRef, Suspense, useMemo } from "react";
 import * as THREE from "three";
 import { useTexture, Stars } from "@react-three/drei";
 
@@ -17,7 +17,9 @@ function CosmosBackground() {
   );
 }
 
-// ─── 地球 (Blue Marble 日图 + 城市灯夜图 + 法线 bump) ───
+// ─── 地球本体 ───
+// Blue Marble 日图 + 城市灯夜图 (emissive) + 法线 bump。
+// metalness 中度 + 低 roughness：海洋有镜面反光（真实地球在太空标志特征）。
 function EarthMesh() {
   const [dayMap, nightMap, normalMap] = useTexture([
     "/textures/earth_day_2k.jpg",
@@ -26,6 +28,7 @@ function EarthMesh() {
   ]);
   dayMap.colorSpace = THREE.SRGBColorSpace;
   nightMap.colorSpace = THREE.SRGBColorSpace;
+  dayMap.anisotropy = 16;
   const meshRef = useRef<THREE.Mesh>(null!);
 
   useFrame(({ clock }) => {
@@ -36,17 +39,18 @@ function EarthMesh() {
   return (
     <group rotation={[0, 0, 0.408]}>
       <mesh ref={meshRef}>
-        <sphereGeometry args={[1, 128, 128]} />
+        <sphereGeometry args={[1, 256, 256]} />
         <meshStandardMaterial
           map={dayMap}
           normalMap={normalMap}
-          normalScale={new THREE.Vector2(0.5, 0.5)}
-          /* 夜面 emissive = 城市灯 + 海洋微辉 (太阳照不到时唯一可见的) */
+          normalScale={new THREE.Vector2(0.85, 0.85)}
+          // 夜面 emissive = 城市灯 (太阳照不到时唯一可见的)
           emissiveMap={nightMap}
-          emissive={new THREE.Color("#ffe4a0")}
-          emissiveIntensity={1.0}
-          roughness={0.9}
-          metalness={0.0}
+          emissive={new THREE.Color("#ffdc8a")}
+          emissiveIntensity={1.2}
+          // 海洋光泽：metalness 适中让海面反光（陆地法线粗糙度也压住反射）
+          roughness={0.55}
+          metalness={0.35}
         />
       </mesh>
     </group>
@@ -59,22 +63,71 @@ function CloudsMesh() {
   const meshRef = useRef<THREE.Mesh>(null!);
 
   useFrame(({ clock }) => {
-    meshRef.current.rotation.y = clock.elapsedTime * 0.055;
+    meshRef.current.rotation.y = clock.elapsedTime * 0.052;
   });
 
   return (
     <group rotation={[0, 0, 0.408]}>
       <mesh ref={meshRef}>
-        <sphereGeometry args={[1.012, 96, 96]} />
-        <meshLambertMaterial
+        <sphereGeometry args={[1.012, 128, 128]} />
+        <meshStandardMaterial
           map={cloudsMap}
           alphaMap={cloudsMap}
           transparent
-          opacity={0.85}
+          opacity={0.9}
           depthWrite={false}
+          roughness={1}
+          metalness={0}
         />
       </mesh>
     </group>
+  );
+}
+
+// ─── 大气层光晕（菲涅耳 shader）───
+// 地球从太空看的标志特征：边缘一圈蓝色光晕。
+// 做法：套一个略大的球（背面渲染），shader 算 1 - dot(normal, view)，
+// 边缘（normal 垂直于 view）出现强光，正中心透明。
+function AtmosphereHalo() {
+  const material = useMemo(() => new THREE.ShaderMaterial({
+    side: THREE.BackSide,
+    transparent: true,
+    blending: THREE.AdditiveBlending,
+    depthWrite: false,
+    uniforms: {
+      uColor: { value: new THREE.Color("#5cb6ff") },
+      uIntensity: { value: 1.6 },
+      uPower: { value: 3.0 },
+    },
+    vertexShader: `
+      varying vec3 vNormal;
+      varying vec3 vViewDir;
+      void main() {
+        vec4 mvPosition = modelViewMatrix * vec4(position, 1.0);
+        vNormal = normalize(normalMatrix * normal);
+        vViewDir = normalize(-mvPosition.xyz);
+        gl_Position = projectionMatrix * mvPosition;
+      }
+    `,
+    fragmentShader: `
+      varying vec3 vNormal;
+      varying vec3 vViewDir;
+      uniform vec3 uColor;
+      uniform float uIntensity;
+      uniform float uPower;
+      void main() {
+        float rim = 1.0 - abs(dot(vNormal, vViewDir));
+        float halo = pow(rim, uPower) * uIntensity;
+        gl_FragColor = vec4(uColor * halo, halo);
+      }
+    `,
+  }), []);
+
+  return (
+    <mesh>
+      <sphereGeometry args={[1.05, 64, 64]} />
+      <primitive object={material} attach="material" />
+    </mesh>
   );
 }
 
@@ -84,6 +137,7 @@ function Scene() {
       <CosmosBackground />
       <EarthMesh />
       <CloudsMesh />
+      <AtmosphereHalo />
     </Suspense>
   );
 }
@@ -91,23 +145,6 @@ function Scene() {
 export default function Earth3D({ className = "" }: { className?: string }) {
   return (
     <div className={"absolute inset-0 pointer-events-none " + className}>
-      {/* 全息扫描线 */}
-      <div
-        className="absolute inset-0 z-10 pointer-events-none"
-        style={{
-          background:
-            "repeating-linear-gradient(180deg, transparent, transparent 3px, rgba(0,212,255,0.018) 3px, rgba(0,212,255,0.018) 4px)",
-          mixBlendMode: "screen",
-        }}
-      />
-      {/* 边缘暗角 */}
-      <div
-        className="absolute inset-0 z-10 pointer-events-none"
-        style={{
-          background:
-            "radial-gradient(ellipse at 50% 50%, transparent 45%, rgba(0,0,15,0.65) 100%)",
-        }}
-      />
       <Canvas
         camera={{ position: [0, 0, 6.5], fov: 38 }}
         gl={{
@@ -115,19 +152,22 @@ export default function Earth3D({ className = "" }: { className?: string }) {
           antialias: true,
           powerPreference: "high-performance",
           toneMapping: THREE.ACESFilmicToneMapping,
-          toneMappingExposure: 1.15,
+          toneMappingExposure: 1.0,
         }}
         dpr={[1, 2]}
       >
         {/*
-          光照配方：
-          - 太阳：直射光从相机正后方，照亮昼半球
-          - hemisphereLight：模拟大气散射，海洋反射蓝调
-          - ambient：保留极弱兜底
+          光照配方（真实太空视角）：
+          - directional：太阳光，从一侧斜射，制造明显的晨昏线 / 半边夜
+          - ambient：极弱兜底防止背面纯黑（实际太空里背面就是该极暗）
+          - 不用 hemisphereLight：之前给海洋叠了过强蓝调，反而像塑料
         */}
-        <ambientLight intensity={0.12} />
-        <hemisphereLight args={["#88baff", "#0a1428", 0.55]} />
-        <directionalLight position={[0.3, 0.4, 8]} intensity={3.2} color="#fffaf0" />
+        <ambientLight intensity={0.05} />
+        <directionalLight
+          position={[5, 1.5, 3]}
+          intensity={3.8}
+          color="#fffaf0"
+        />
         <Scene />
         <Stars radius={300} depth={60} count={6000} factor={3} saturation={0} fade speed={0.4} />
       </Canvas>
