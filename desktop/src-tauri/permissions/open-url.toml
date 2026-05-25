@@ -1,0 +1,6 @@
+"$schema" = "schemas/schema.json"
+
+[[permission]]
+identifier = "allow-open-url"
+description = "Enable invoking the open_url custom command (opens URL in OS default browser)."
+commands.allow = ["open_url"]
