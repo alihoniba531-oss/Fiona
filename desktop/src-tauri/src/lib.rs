@@ -1,11 +1,15 @@
-// 桌面壳 + 嵌入式 SSH 隧道。
+// 桌面壳 + 嵌入式 SSH 隧道 + 自定义 open_url 命令。
+//
 // 启动流程：
 //   1. 读 desktop/fiona.config.json（云 IP / 用户 / 转发规则）
 //   2. spawn `ssh -N -L ...` 子进程做端口转发
 //   3. 轮询 localhost:<主端口> 直到通（最长 15 秒）
 //   4. 启动 Tauri 窗口，加载 devUrl
 //   5. 关窗时 kill 隧道子进程
-// 配置缺失时跳过隧道，直接加载 localhost:3000（兼容已手动转发的场景）。
+//
+// 自定义 open_url 命令（绕过 plugin-opener 的 ACL 配置坑）：
+// 自定义 command 用 invoke_handler 注册，默认不走 capability ACL，
+// 前端直接 invoke("open_url", { url }) 即可。
 
 use std::net::TcpStream;
 use std::path::PathBuf;
@@ -15,6 +19,7 @@ use std::thread;
 use std::time::{Duration, Instant};
 
 use serde::Deserialize;
+use tauri::Manager;
 
 #[derive(Deserialize)]
 struct CloudConfig {
@@ -103,6 +108,34 @@ fn primary_port(cfg: &CloudConfig) -> u16 {
         .unwrap_or(3000)
 }
 
+/// 用系统默认应用打开 URL（绕过 plugin-opener 的 ACL 配置）
+#[tauri::command]
+fn open_url(url: String) -> Result<(), String> {
+    #[cfg(target_os = "windows")]
+    {
+        // cmd /C start "" <url> ——空标题避免 start 把 url 当窗口标题
+        Command::new("cmd")
+            .args(["/C", "start", "", &url])
+            .spawn()
+            .map_err(|e| e.to_string())?;
+    }
+    #[cfg(target_os = "macos")]
+    {
+        Command::new("open")
+            .arg(&url)
+            .spawn()
+            .map_err(|e| e.to_string())?;
+    }
+    #[cfg(target_os = "linux")]
+    {
+        Command::new("xdg-open")
+            .arg(&url)
+            .spawn()
+            .map_err(|e| e.to_string())?;
+    }
+    Ok(())
+}
+
 #[cfg_attr(mobile, tauri::mobile_entry_point)]
 pub fn run() {
     let cfg = load_config();
@@ -119,7 +152,16 @@ pub fn run() {
     let tunnel_for_event = tunnel.clone();
 
     tauri::Builder::default()
-        .plugin(tauri_plugin_opener::init())
+        .invoke_handler(tauri::generate_handler![open_url])
+        .setup(|app| {
+            // 启动自动弹 DevTools（仅在编了 devtools feature 时）
+            // 调试期间方便看 console；如果不需要可注释掉这块
+            #[cfg(feature = "devtools")]
+            if let Some(window) = app.get_webview_window("main") {
+                window.open_devtools();
+            }
+            Ok(())
+        })
         .on_window_event(move |_window, event| {
             if matches!(event, tauri::WindowEvent::CloseRequested { .. }) {
                 if let Ok(mut guard) = tunnel_for_event.lock() {
