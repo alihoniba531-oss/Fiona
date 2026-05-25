@@ -714,8 +714,9 @@ async def chat(req: ChatRequest, user: str = Depends(get_current_user)):
             # ── 3. 普通对话，走菲欧娜（路由决定使用哪个模型槽）──
             _slot      = choose_model(user, user_content, "normal")
             _use_light = (_slot == "qwen")
-            # gemini 槽用轻量参数，deepseek 槽保持原有高密度参数
-            _max_tok   = 150  if _use_light else 400
+            # qwen 槽用轻量参数，deepseek 槽保持原有高密度参数
+            # max_tokens 给得够大，否则碰技术/对比类长回答会被砍在半截
+            _max_tok   = 250  if _use_light else 700
             _temp      = 0.9  if _use_light else 1.05
             _freq_pen  = 0.3  if _use_light else 0.4
             _pres_pen  = 0.2  if _use_light else 0.4
@@ -728,11 +729,19 @@ async def chat(req: ChatRequest, user: str = Depends(get_current_user)):
                 frequency_penalty=_freq_pen,
                 presence_penalty=_pres_pen,
             )
+            _finish_reason = None
             for chunk in stream:
                 text = chunk.choices[0].delta.content or ""
                 if text:
                     full_response += text
                     yield f"data: {json.dumps({'text': text}, ensure_ascii=False)}\n\n"
+                fr = chunk.choices[0].finish_reason
+                if fr:
+                    _finish_reason = fr
+            if _finish_reason == "length":
+                # 撞到 max_tokens 上限 —— 用户会看到回答被砍在半句话
+                print(f"[chat] truncated: user={user} model={'qwen' if _actually_qwen else 'deepseek'} "
+                      f"max_tokens={_max_tok} chars={len(full_response)}", flush=True)
 
             await save_message(user, "assistant", full_response)
             yield f"data: {json.dumps({'done': True}, ensure_ascii=False)}\n\n"
