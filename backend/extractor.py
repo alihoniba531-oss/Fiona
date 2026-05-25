@@ -122,5 +122,6 @@ async def extract_and_update(client, username: str, messages: list):
         import asyncio
         from conversation_matcher import detect_and_save_from_profile
         asyncio.create_task(detect_and_save_from_profile(client, username))
-    except Exception:
-        pass  # 提取失败静默忽略，不影响主流程
+    except Exception as e:
+        # 失败不影响主流程，但日志保留方便排查
+        print(f"[extractor] extract_and_update failed for {username}: {type(e).__name__}: {e}", flush=True)

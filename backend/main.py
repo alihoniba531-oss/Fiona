@@ -209,19 +209,54 @@ class ChatRequest(BaseModel):
     image_base64: str | None = None
 
 
+# 单张图上限 5MB，base64 解码前粗筛 base64 长度（base64 比原始大约 33%）
+_MAX_IMAGE_BYTES = 5 * 1024 * 1024
+# magic bytes → 文件扩展名映射
+_MIME_SNIFF = [
+    (b"\x89PNG\r\n\x1a\n", "png"),
+    (b"\xff\xd8\xff",      "jpg"),
+    (b"GIF87a",            "gif"),
+    (b"GIF89a",            "gif"),
+    (b"RIFF",              "webp"),  # 还要校验偏移 8 处是 WEBP，下面会做
+]
+
+def _sniff_image_ext(data: bytes) -> str | None:
+    """嗅探前 12 字节判图片类型。不是已知图片格式返回 None。"""
+    for magic, ext in _MIME_SNIFF:
+        if data.startswith(magic):
+            if ext == "webp" and not (len(data) >= 12 and data[8:12] == b"WEBP"):
+                continue
+            return ext
+    return None
+
+
 def _save_uploaded_image(image_base64: str) -> str | None:
-    """保存 base64 图片到 uploads 目录，返回相对 URL 路径。失败返回 None。"""
+    """保存 base64 图片到 uploads 目录，返回相对 URL 路径。失败返回 None。
+    校验：base64 长度上限、解码后 mime 嗅探、文件名 uuid（不可猜）。"""
     try:
-        # 去掉 data:image/png;base64, 前缀
         if "," in image_base64:
             image_base64 = image_base64.split(",", 1)[1]
-        img_data = base64.b64decode(image_base64)
-        fname = f"{datetime.now().strftime('%Y%m%d_%H%M%S_%f')}.png"
+        # 粗筛：base64 串本身长度上限（解码后约小 25%）
+        if len(image_base64) > _MAX_IMAGE_BYTES * 4 // 3 + 1024:
+            print(f"[upload] reject: base64 too large ({len(image_base64)} chars)", flush=True)
+            return None
+        img_data = base64.b64decode(image_base64, validate=False)
+        if len(img_data) > _MAX_IMAGE_BYTES:
+            print(f"[upload] reject: decoded too large ({len(img_data)} bytes)", flush=True)
+            return None
+        ext = _sniff_image_ext(img_data[:12])
+        if not ext:
+            print(f"[upload] reject: not a known image format (head={img_data[:8].hex()})", flush=True)
+            return None
+        # 文件名用 uuid4 hex，不可枚举（修 #6 跨用户图泄露的最小成本方案）
+        import uuid as _uuid
+        fname = f"{_uuid.uuid4().hex}.{ext}"
         fpath = os.path.join(UPLOADS_DIR, fname)
         with open(fpath, "wb") as f:
             f.write(img_data)
         return f"/uploads/{fname}"
-    except Exception:
+    except Exception as e:
+        print(f"[upload] save failed: {type(e).__name__}: {e}", flush=True)
         return None
 
 
