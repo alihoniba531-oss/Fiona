@@ -1,6 +1,6 @@
 {
   "$schema": "https://schema.tauri.app/config/2",
-  "productName": "菲欧娜",
+  "productName": "Fiona",
   "version": "0.1.0",
   "identifier": "com.fiona.desktop",
   "build": {
@@ -42,8 +42,7 @@
     ],
     "copyright": "",
     "category": "SocialNetworking",
-    "shortDescription": "菲欧娜桌面客户端",
-    "longDescription": "菲欧娜 — 你的私人 AI 助理（桌面端）",
-    "resources": ["../fiona.config.example.json"]
+    "shortDescription": "Fiona desktop client",
+    "longDescription": "Fiona — your personal AI assistant"
   }
 }
