@@ -4,23 +4,18 @@
 
 用于广场页"点开一个热点话题查看详情"——比单纯弹一个原链接信息密度高、
 对用户更友好（很多热搜源页面是搜索页，没有内容）。
+
+sources 不让 LLM 自己输出 URL（之前千问会编 caixin.com/404/index.html 这种死链），
+改用 dashscope 原生 HTTP 接口的 output.search_info.search_results —— 那是百度/必应
+真实搜过的链接，URL 可靠。OpenAI 兼容模式不暴露 search_info，所以必须走原生接口。
 """
 import json
 import os
 import re
+import urllib.request
 from datetime import datetime
-from openai import OpenAI
 
-
-_client_cache = None
-def _get_client():
-    global _client_cache
-    if _client_cache is None:
-        _client_cache = OpenAI(
-            api_key=os.environ.get("DASHSCOPE_API_KEY", ""),
-            base_url="https://dashscope.aliyuncs.com/compatible-mode/v1",
-        )
-    return _client_cache
+DASHSCOPE_URL = "https://dashscope.aliyuncs.com/api/v1/services/aigc/text-generation/generation"
 
 
 def _build_expand_prompt() -> str:
@@ -45,8 +40,7 @@ def _build_expand_prompt() -> str:
   "whats_happening": "这件事是什么，2-4 句具体陈述事实，含人物/时间/地点/数字",
   "why_trending": "为什么上热搜，1-2 句指出引爆点（争议/反转/情感共鸣等）",
   "key_facts": ["关键事实1（具体到数字/时间）", "关键事实2", "关键事实3"],
-  "background": "如果有前因后果或上下文，1-2 句补充；没有就留空字符串",
-  "sources": [{{"title": "来源标题", "url": "https://..."}}]
+  "background": "如果有前因后果或上下文，1-2 句补充；没有就留空字符串"
 }}
 
 【规则】
@@ -54,7 +48,7 @@ def _build_expand_prompt() -> str:
 - 全部用第三人称、中性陈述，不评价不站队
 - key_facts 必须具体（带数字/时间/姓名），不要"广泛关注"这种空话
 - 如果是娱乐/八卦类，也只陈述公开事实，不演绎不脑补
-- sources 里 url 必须是搜索结果中出现的真实链接，记不准就删，宁可空也不假
+- **不要在输出里写来源链接** —— 来源由系统自动从真实搜索结果附加，你只管讲事实
 - 不输出 markdown、不加 ```json 围栏
 """
 
@@ -70,7 +64,7 @@ def topic_expand(title: str) -> dict:
         "why_trending": "...",
         "key_facts": [...],
         "background": "...",
-        "sources": [{title, url}, ...],
+        "sources": [{title, url, site_name}, ...],   # 真实搜索结果，非 LLM 编
         "error": "..."            # 仅失败时存在
       }
     """
@@ -78,12 +72,15 @@ def topic_expand(title: str) -> dict:
     if not title:
         return {"title": "", "error": "标题为空"}
 
-    client = _get_client()
+    api_key = os.environ.get("DASHSCOPE_API_KEY", "")
+    if not api_key:
+        return {"title": title, "error": "DASHSCOPE_API_KEY 未设置"}
+
     now = datetime.now()
-    try:
-        resp = client.chat.completions.create(
-            model="qwen-plus",
-            messages=[
+    body = {
+        "model": "qwen-plus",
+        "input": {
+            "messages": [
                 {"role": "system", "content": _build_expand_prompt()},
                 {
                     "role": "user",
@@ -96,13 +93,40 @@ def topic_expand(title: str) -> dict:
                     ),
                 },
             ],
-            extra_body={"enable_search": True},
-            max_tokens=900,
-            temperature=0.3,
+        },
+        "parameters": {
+            "result_format": "message",
+            "enable_search": True,
+            "search_options": {
+                "forced_search": True,    # 强制走搜索，别用训练记忆
+                "enable_source": True,    # response 里返回 search_info.search_results
+                "enable_citation": True,  # content 里带 [1][2] 引用标记
+            },
+            "max_tokens": 900,
+            "temperature": 0.3,
+        },
+    }
+
+    try:
+        req = urllib.request.Request(
+            DASHSCOPE_URL,
+            data=json.dumps(body).encode("utf-8"),
+            headers={
+                "Authorization": f"Bearer {api_key}",
+                "Content-Type": "application/json",
+            },
         )
-        content = (resp.choices[0].message.content or "").strip()
+        with urllib.request.urlopen(req, timeout=30) as r:
+            resp = json.loads(r.read())
     except Exception as e:
         return {"title": title, "error": f"{type(e).__name__}:{str(e)[:120]}"}
+
+    output = resp.get("output", {})
+    choices = output.get("choices") or []
+    if not choices:
+        return {"title": title, "error": "模型无 choices 返回",
+                "raw": json.dumps(resp, ensure_ascii=False)[:300]}
+    content = ((choices[0].get("message") or {}).get("content") or "").strip()
 
     # 千问偶尔会在 JSON 外面包 ```json ... ```，剥一下
     content = re.sub(r"^```(?:json)?\s*", "", content)
@@ -113,7 +137,18 @@ def topic_expand(title: str) -> dict:
     except Exception:
         return {"title": title, "error": "模型返回不是合法 JSON", "raw": content[:300]}
 
-    sources = data.get("sources", []) or []
+    # 真实搜索结果（百度/必应等返回，非 LLM 编）
+    search_results = (output.get("search_info") or {}).get("search_results") or []
+    sources = [
+        {
+            "title": s.get("title", "") or "",
+            "url": s.get("url", "") or "",
+            "site_name": s.get("site_name", "") or "",
+        }
+        for s in search_results
+        if s.get("url")
+    ]
+    # 兜底死链校验——绝大多数搜索结果应该是活的，但偶发文章删档/站点抽风也可能死
     sources = _verify_source_urls(sources)
 
     return {
