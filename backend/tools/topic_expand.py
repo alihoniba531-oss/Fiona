@@ -130,12 +130,33 @@ def topic_expand(title: str) -> dict:
 def _verify_source_urls(sources: list[dict]) -> list[dict]:
     """并发 HEAD 验证 source URL 是否真实可达。
     千问 enable_search 偶尔会编看似合理但不存在的链接（典型大模型幻觉），
-    这里把死链的 url 清空（保留 title），前端就只显示标题不渲染点击。"""
+    这里把死链的 url 清空（保留 title），前端就只显示标题不渲染点击。
+
+    死链识别有两层：
+      1. URL path 含 404/error/notfound 等关键词 → 直接判死（不发请求）
+         例：https://other.caixin.com/404/index.html — LLM 把站点 404 落地页当文章链接
+      2. HEAD/GET 跟随重定向，最终 status_code < 400 且最终 URL 不命中第 1 层
+         （处理"302 跳到 /error" 这种软 404）
+    """
+    import re
     import requests
     from concurrent.futures import ThreadPoolExecutor
+    from urllib.parse import urlparse
+
+    # 命中即判死的路径关键词。要求关键词后跟分隔符或行尾，避免误伤 /articles/4042 这种
+    _DEAD_RE = re.compile(r"/(?:404|error|notfound|not-found|page-not-found)(?:[/.?#]|$)")
+
+    def looks_like_dead_landing(url: str) -> bool:
+        try:
+            path = (urlparse(url).path or "").lower()
+            return bool(_DEAD_RE.search(path))
+        except Exception:
+            return False
 
     def is_alive(url: str) -> bool:
         if not url or not url.startswith(("http://", "https://")):
+            return False
+        if looks_like_dead_landing(url):
             return False
         try:
             # 先 HEAD；某些站点 HEAD 405，退一步用 Range GET 拿头几字节
@@ -152,6 +173,10 @@ def _verify_source_urls(sources: list[dict]) -> list[dict]:
                     stream=(method == "GET"),
                 )
                 if r.status_code < 400:
+                    # 软 404：服务端 302 跳到 /404 落地页但 HTTP 200 — 用最终 URL 再判一次
+                    final_url = str(r.url) if r.url else url
+                    if looks_like_dead_landing(final_url):
+                        return False
                     return True
                 if r.status_code != 405:  # 不是 method not allowed 就不重试
                     return False
