@@ -113,6 +113,9 @@ def topic_expand(title: str) -> dict:
     except Exception:
         return {"title": title, "error": "模型返回不是合法 JSON", "raw": content[:300]}
 
+    sources = data.get("sources", []) or []
+    sources = _verify_source_urls(sources)
+
     return {
         "title": title,
         "summary": data.get("summary", ""),
@@ -120,5 +123,48 @@ def topic_expand(title: str) -> dict:
         "why_trending": data.get("why_trending", ""),
         "key_facts": data.get("key_facts", []) or [],
         "background": data.get("background", ""),
-        "sources": data.get("sources", []) or [],
+        "sources": sources,
     }
+
+
+def _verify_source_urls(sources: list[dict]) -> list[dict]:
+    """并发 HEAD 验证 source URL 是否真实可达。
+    千问 enable_search 偶尔会编看似合理但不存在的链接（典型大模型幻觉），
+    这里把死链的 url 清空（保留 title），前端就只显示标题不渲染点击。"""
+    import requests
+    from concurrent.futures import ThreadPoolExecutor
+
+    def is_alive(url: str) -> bool:
+        if not url or not url.startswith(("http://", "https://")):
+            return False
+        try:
+            # 先 HEAD；某些站点 HEAD 405，退一步用 Range GET 拿头几字节
+            for method in ("HEAD", "GET"):
+                r = requests.request(
+                    method,
+                    url,
+                    timeout=4,
+                    allow_redirects=True,
+                    headers={
+                        "User-Agent": "Mozilla/5.0",
+                        "Range": "bytes=0-0" if method == "GET" else "",
+                    },
+                    stream=(method == "GET"),
+                )
+                if r.status_code < 400:
+                    return True
+                if r.status_code != 405:  # 不是 method not allowed 就不重试
+                    return False
+            return False
+        except Exception:
+            return False
+
+    if not sources:
+        return []
+    urls = [s.get("url", "") for s in sources]
+    with ThreadPoolExecutor(max_workers=6) as ex:
+        alive = list(ex.map(is_alive, urls))
+    return [
+        {**s, "url": s.get("url", "") if ok else ""}
+        for s, ok in zip(sources, alive)
+    ]

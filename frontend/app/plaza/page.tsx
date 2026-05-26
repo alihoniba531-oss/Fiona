@@ -492,12 +492,23 @@ export default function PlazaPage() {
                     <ul className="space-y-1">
                       {expanded.sources.map((s, i) => (
                         <li key={i}>
-                          <button
-                            onClick={() => openExternal(s.url)}
-                            className="text-[12px] text-cyan-300/80 hover:text-cyan-200 break-all text-left cursor-pointer bg-transparent border-0 p-0"
-                          >
-                            {s.title || s.url}
-                          </button>
+                          {s.url ? (
+                            <button
+                              onClick={() => openExternal(s.url)}
+                              className="text-[12px] text-cyan-300/80 hover:text-cyan-200 break-all text-left cursor-pointer bg-transparent border-0 p-0"
+                            >
+                              {s.title || s.url}
+                            </button>
+                          ) : (
+                            // 链接死了（AI 编的）→ 只显示标题，加灰 + 标注
+                            <span
+                              className="text-[12px] text-cyan-300/40 break-all"
+                              title="AI 整理时未能确认此来源原链接"
+                            >
+                              {s.title || "来源"}
+                              <span className="ml-1 text-[9px] opacity-60">（链接失效）</span>
+                            </span>
+                          )}
                         </li>
                       ))}
                     </ul>
