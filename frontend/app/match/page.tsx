@@ -347,12 +347,7 @@ export default function MatchPage() {
           <div className="flex-1 flex flex-col min-w-0 relative z-10">
             {!selected ? (
               <div className="flex-1 relative overflow-hidden">
-                {pendingMatches.length === 0 ? (
-                  <div className="absolute inset-0 flex flex-col items-center justify-center gap-3 text-center opacity-60">
-                    <Sparkles size={28} className="text-muted-foreground/40" />
-                    <p className="text-xs text-muted-foreground">聊到能连上别人的话题时<br/>她会在这儿轻轻提一下</p>
-                  </div>
-                ) : (
+                {pendingMatches.length === 0 ? null : (
                   pendingMatches.map((m, idx) => {
                     const pos = cardPositions[m.id] ?? { x: 10 + idx * 8, y: 10 + idx * 8 };
                     return (
