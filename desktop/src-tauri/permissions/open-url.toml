@@ -2,5 +2,10 @@
 
 [[permission]]
 identifier = "allow-open-url"
-description = "Enable invoking the open_url custom command (opens URL in OS default browser)."
+description = "Allow invoking open_url (system default browser)."
 commands.allow = ["open_url"]
+
+[[permission]]
+identifier = "allow-open-url-in-app"
+description = "Allow invoking open_url_in_app (Chloe in-app child webview window)."
+commands.allow = ["open_url_in_app"]

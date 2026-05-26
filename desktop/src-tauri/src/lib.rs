@@ -108,7 +108,7 @@ fn primary_port(cfg: &CloudConfig) -> u16 {
         .unwrap_or(3000)
 }
 
-/// 用系统默认应用打开 URL（绕过 plugin-opener 的 ACL 配置）
+/// 用系统默认应用打开 URL（备用：用户想跳外部浏览器时用）
 #[tauri::command]
 fn open_url(url: String) -> Result<(), String> {
     #[cfg(target_os = "windows")]
@@ -136,6 +136,34 @@ fn open_url(url: String) -> Result<(), String> {
     Ok(())
 }
 
+/// 在 Chloe 内置子窗口打开 URL（不是 iframe，不受 X-Frame-Options 拦截）
+/// 体验：弹一个独立窗口仍属于 Chloe 应用，用户关掉就回主窗口
+#[tauri::command]
+async fn open_url_in_app(app: tauri::AppHandle, url: String) -> Result<(), String> {
+    use tauri::{WebviewWindowBuilder, WebviewUrl, Url};
+
+    let parsed: Url = url.parse().map_err(|e: url::ParseError| format!("invalid URL: {}", e))?;
+
+    // label 必须唯一且只含 ASCII 字符
+    // 用时间戳保证唯一（同一 URL 多次打开也独立窗口）
+    let label = format!("ext_{}",
+        std::time::SystemTime::now()
+            .duration_since(std::time::UNIX_EPOCH)
+            .map(|d| d.as_millis())
+            .unwrap_or(0)
+    );
+
+    WebviewWindowBuilder::new(&app, &label, WebviewUrl::External(parsed))
+        .title("外部页面 · Chloe")
+        .inner_size(1100.0, 750.0)
+        .min_inner_size(600.0, 400.0)
+        .resizable(true)
+        .build()
+        .map_err(|e| format!("build window: {}", e))?;
+
+    Ok(())
+}
+
 #[cfg_attr(mobile, tauri::mobile_entry_point)]
 pub fn run() {
     let cfg = load_config();
@@ -152,7 +180,7 @@ pub fn run() {
     let tunnel_for_event = tunnel.clone();
 
     tauri::Builder::default()
-        .invoke_handler(tauri::generate_handler![open_url])
+        .invoke_handler(tauri::generate_handler![open_url, open_url_in_app])
         .setup(|app| {
             // 启动自动弹 DevTools。tauri crate 的 devtools feature 已启用，
             // open_devtools() 方法在 release build 也可用。
