@@ -6,7 +6,10 @@
   "permissions": [
     "core:default",
     "allow-open-url",
-    "allow-open-url-in-app"
+    "allow-open-url-in-app",
+    "allow-startup-diagnostics",
+    "allow-probe-backend",
+    "allow-open-logs-dir"
   ],
   "remote": {
     "urls": [

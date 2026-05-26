@@ -9,3 +9,18 @@ commands.allow = ["open_url"]
 identifier = "allow-open-url-in-app"
 description = "Allow invoking open_url_in_app (Chloe in-app child webview window)."
 commands.allow = ["open_url_in_app"]
+
+[[permission]]
+identifier = "allow-startup-diagnostics"
+description = "Read startup diagnostics (config path, ssh pid, port readiness, notes)."
+commands.allow = ["startup_diagnostics"]
+
+[[permission]]
+identifier = "allow-probe-backend"
+description = "TCP-probe 127.0.0.1:<port> to check whether the backend tunnel is live."
+commands.allow = ["probe_backend"]
+
+[[permission]]
+identifier = "allow-open-logs-dir"
+description = "Open the fiona data directory (startup.log + ssh.log) in the OS file manager."
+commands.allow = ["open_logs_dir"]
