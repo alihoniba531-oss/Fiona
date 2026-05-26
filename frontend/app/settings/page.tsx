@@ -5,7 +5,7 @@ import { useSearchParams } from "next/navigation";
 import Sidebar from "@/components/Sidebar";
 import TopBar from "@/components/TopBar";
 import { Trash2, User, Info } from "lucide-react";
-import { apiFetch } from "@/lib/auth";
+import { apiFetch, clearAuth } from "@/lib/auth";
 
 const API = "/api";
 
@@ -25,8 +25,11 @@ export default function SettingsPage() {
 
   const switchUser = (u: string) => {
     setUsername(u);
+    // 必须先彻底清旧 auth（token+user+balance+cookie），再写新 user。
+    // 否则旧 JWT 留在 localStorage，apiFetch 还按旧用户身份发请求，
+    // 后端把新身份的操作记到旧账号，UI 完全不知情。
+    clearAuth();
     localStorage.setItem("fiona_user", u);
-    // 通知 TopBar 等组件:身份变了,重新拉余额 / 状态
     window.dispatchEvent(new Event("fiona-user-changed"));
   };
 
