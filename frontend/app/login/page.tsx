@@ -4,7 +4,7 @@ import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { setAuth } from "@/lib/auth";
 
-const API = "/api";
+import { API_BASE as API } from "@/lib/config";
 
 type Step = "invite" | "phone" | "otp";
 

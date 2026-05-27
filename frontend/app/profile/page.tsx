@@ -7,7 +7,7 @@ import TopBar from "@/components/TopBar";
 import { Edit3, Trash2, Shield, Loader2 } from "lucide-react";
 import { apiFetch } from "@/lib/auth";
 
-const API = "/api";
+import { API_BASE as API } from "@/lib/config";
 
 interface Profile {
   interests?: string[];

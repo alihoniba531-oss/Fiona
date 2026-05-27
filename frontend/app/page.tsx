@@ -17,10 +17,7 @@ import { cn } from "@/lib/utils";
 import { apiFetch, getToken, getUsername as readStoredUsername } from "@/lib/auth";
 import { openExternal } from "@/lib/open";
 
-const API = "/api";
-const WS_BASE = typeof window !== "undefined"
-  ? `${window.location.protocol === "https:" ? "wss" : "ws"}://${window.location.host}/api`
-  : "";
+import { API_BASE as API, WS_BASE } from "@/lib/config";
 
 // ── interfaces (kept but peer chat is not rendered in UI) ──
 

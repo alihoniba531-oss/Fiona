@@ -9,11 +9,7 @@ import { Send, User, Sparkles, MessageCircle } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { apiFetch, getToken, getUsername as readStoredUsername } from "@/lib/auth";
 
-const API = "/api";
-// WebSocket 需要完整 scheme + host，"/api" 直接 new WebSocket 会抛 SyntaxError
-const WS_BASE = typeof window !== "undefined"
-  ? `${window.location.protocol === "https:" ? "wss" : "ws"}://${window.location.host}/api`
-  : "";
+import { API_BASE as API, WS_BASE } from "@/lib/config";
 
 interface Room { peer: string; room_id: string }
 interface PeerMsg { sender: string; content: string; created_at: string }

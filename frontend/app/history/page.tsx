@@ -6,7 +6,7 @@ import { Search, X, Download, Calendar, ChevronDown, ChevronRight } from "lucide
 import { cn } from "@/lib/utils";
 import { apiFetch } from "@/lib/auth";
 
-const API = "/api";
+import { API_BASE as API } from "@/lib/config";
 
 interface Msg {
   id: number;

@@ -7,7 +7,7 @@ import TopBar from "@/components/TopBar";
 import { Trash2, User, Info } from "lucide-react";
 import { apiFetch, clearAuth } from "@/lib/auth";
 
-const API = "/api";
+import { API_BASE as API } from "@/lib/config";
 
 function SettingsContent() {
   const sp = useSearchParams();

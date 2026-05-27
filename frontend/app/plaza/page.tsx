@@ -10,7 +10,7 @@ import { cn } from "@/lib/utils";
 import { apiFetch } from "@/lib/auth";
 import { openExternal } from "@/lib/open";
 
-const API = "/api";
+import { API_BASE as API } from "@/lib/config";
 
 const ALL_TAGS = ["日常", "风景", "美食", "创意", "情感", "搞笑", "音乐", "运动", "宠物", "穿搭", "旅行", "随拍"];
 

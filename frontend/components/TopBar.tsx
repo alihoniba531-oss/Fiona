@@ -4,7 +4,7 @@ import { Wifi, Battery, Signal, Bell, Search, ChevronDown, User } from "lucide-r
 import { useState, useEffect } from "react";
 import { getUsername, updateBalance, apiFetch } from "@/lib/auth";
 
-const API = "/api";
+import { API_BASE as API } from "@/lib/config";
 
 export default function TopBar() {
   const [time,    setTime]    = useState("");
