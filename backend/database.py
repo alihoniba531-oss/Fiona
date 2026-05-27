@@ -233,6 +233,15 @@ async def get_messages(username: str, limit: int = 100) -> list[dict]:
             rows = await cursor.fetchall()
     return [dict(r) for r in reversed(rows)]
 
+async def count_messages(username: str) -> int:
+    """该用户的消息总数，用于成长阶段路由（区别于注入上下文的截断窗口）"""
+    async with aiosqlite.connect(DB_PATH) as db:
+        async with db.execute(
+            "SELECT COUNT(*) FROM messages WHERE username = ?", (username,)
+        ) as cursor:
+            row = await cursor.fetchone()
+    return row[0] if row else 0
+
 async def get_profile(username: str) -> dict:
     async with aiosqlite.connect(DB_PATH) as db:
         db.row_factory = aiosqlite.Row

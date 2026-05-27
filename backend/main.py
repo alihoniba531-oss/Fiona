@@ -18,7 +18,7 @@ from pydantic import BaseModel
 from openai import OpenAI
 
 from database import (init_db, get_or_create_user, save_message, get_messages,
-                      get_all_messages, delete_message,
+                      count_messages, get_all_messages, delete_message,
                       save_peer_message, get_peer_messages, get_accepted_matches,
                       get_pending_matches_for_user, mark_pending_match_seen,
                       save_otp, check_and_consume_otp, get_or_create_user_by_phone,
@@ -528,7 +528,7 @@ async def chat(req: ChatRequest, user: str = Depends(get_current_user)):
             return StreamingResponse(_no_balance(), media_type="text/event-stream")
 
     history = await get_messages(user, limit=60)
-    message_count = len(history)
+    message_count = await count_messages(user)  # 真实总数，不能用 len(history)（封顶 60 永远进不了 EMBODIED）
 
     # 图片处理：保存到 uploads/，拿到相对 URL
     image_path = None
