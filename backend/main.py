@@ -18,7 +18,7 @@ from pydantic import BaseModel
 from openai import OpenAI
 
 from database import (init_db, get_or_create_user, save_message, get_messages,
-                      count_messages, get_all_messages, delete_message,
+                      count_messages, redeem_invite, get_all_messages, delete_message,
                       save_peer_message, get_peer_messages, get_accepted_matches,
                       get_pending_matches_for_user, mark_pending_match_seen,
                       save_otp, check_and_consume_otp, get_or_create_user_by_phone,
@@ -169,7 +169,7 @@ app.add_middleware(
 #   2. cookie fiona_token=<jwt>              — <audio src> / <img> 不能带 header，走这条
 #   3. X-Dev-User 头（仅 DEV_MODE=1）         — 本地切身份调试
 # WebSocket 握手不走 HTTP middleware，各 ws 端点用 ws_authenticate 单独鉴权。
-_AUTH_PUBLIC_PATHS = {"/", "/auth/send-otp", "/auth/verify-otp", "/auth/test-login"}
+_AUTH_PUBLIC_PATHS = {"/", "/auth/send-otp", "/auth/verify-otp", "/auth/test-login", "/auth/redeem-invite"}
 _AUTH_PUBLIC_PREFIXES = ("/docs", "/redoc", "/openapi.json")
 
 @app.middleware("http")
@@ -1475,6 +1475,21 @@ async def verify_otp_api(body: dict):
         "username": user["username"],
         "balance":  user.get("strawberry_balance", 200),
     }
+
+
+@app.post("/auth/redeem-invite")
+async def redeem_invite_api(body: dict):
+    """内测邀请码登录：输码即进。码预绑定用户名，首次兑换建号，老号重登直接命中。"""
+    code = (body.get("code") or "").strip().upper()
+    if not code:
+        raise HTTPException(status_code=400, detail="请输入邀请码")
+    username = await redeem_invite(code)
+    if not username:
+        raise HTTPException(status_code=401, detail="邀请码无效")
+    await get_or_create_user(username)
+    balance = await get_strawberry_balance(username)
+    token = create_token(username)
+    return {"token": token, "username": username, "balance": balance}
 
 
 @app.get("/strawberry")

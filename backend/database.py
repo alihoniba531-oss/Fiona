@@ -177,6 +177,17 @@ async def init_db():
         """)
         await _safe_migrate(db, "CREATE INDEX IF NOT EXISTS idx_events_ts ON events(ts)")
         await _safe_migrate(db, "CREATE INDEX IF NOT EXISTS idx_events_user_type ON events(username, event_type)")
+        # ── 内测邀请码 ──
+        # 每个码预绑定一个用户名；兑换即登录该号，无需短信。redeemed_at 记首次使用。
+        await db.execute("""
+            CREATE TABLE IF NOT EXISTS invite_codes (
+                code        TEXT PRIMARY KEY,
+                username    TEXT NOT NULL,
+                note        TEXT DEFAULT NULL,
+                created_at  TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+                redeemed_at TIMESTAMP DEFAULT NULL
+            )
+        """)
         await db.commit()
 
 async def get_or_create_user(username: str) -> dict:
@@ -241,6 +252,43 @@ async def count_messages(username: str) -> int:
         ) as cursor:
             row = await cursor.fetchone()
     return row[0] if row else 0
+
+async def create_invite(code: str, username: str, note: str | None = None) -> bool:
+    """登记一个邀请码→用户名。已存在则不覆盖，返回是否新建。"""
+    async with aiosqlite.connect(DB_PATH) as db:
+        cur = await db.execute(
+            "INSERT OR IGNORE INTO invite_codes (code, username, note) VALUES (?, ?, ?)",
+            (code, username, note),
+        )
+        await db.commit()
+    return cur.rowcount > 0
+
+async def redeem_invite(code: str) -> str | None:
+    """用邀请码换取绑定的用户名；无效返回 None。首次兑换记 redeemed_at。"""
+    async with aiosqlite.connect(DB_PATH) as db:
+        db.row_factory = aiosqlite.Row
+        async with db.execute(
+            "SELECT username, redeemed_at FROM invite_codes WHERE code = ?", (code,)
+        ) as cursor:
+            row = await cursor.fetchone()
+        if not row:
+            return None
+        if not row["redeemed_at"]:
+            await db.execute(
+                "UPDATE invite_codes SET redeemed_at = CURRENT_TIMESTAMP WHERE code = ?", (code,)
+            )
+            await db.commit()
+        return row["username"]
+
+async def list_invites() -> list[dict]:
+    """列出全部邀请码 + 绑定用户名 + 是否已用，供发码/查用量。"""
+    async with aiosqlite.connect(DB_PATH) as db:
+        db.row_factory = aiosqlite.Row
+        async with db.execute(
+            "SELECT code, username, note, redeemed_at FROM invite_codes ORDER BY created_at"
+        ) as cursor:
+            rows = await cursor.fetchall()
+    return [dict(r) for r in rows]
 
 async def get_profile(username: str) -> dict:
     async with aiosqlite.connect(DB_PATH) as db:

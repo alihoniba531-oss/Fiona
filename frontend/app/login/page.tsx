@@ -6,11 +6,12 @@ import { setAuth } from "@/lib/auth";
 
 const API = "/api";
 
-type Step = "phone" | "otp";
+type Step = "invite" | "phone" | "otp";
 
 export default function LoginPage() {
   const router = useRouter();
-  const [step,    setStep]    = useState<Step>("phone");
+  const [step,    setStep]    = useState<Step>("invite");
+  const [invite,  setInvite]  = useState("");
   const [phone,   setPhone]   = useState("");
   const [code,    setCode]    = useState("");
   const [loading, setLoading] = useState(false);
@@ -38,6 +39,34 @@ export default function LoginPage() {
       router.replace("/");
     } catch {
       setErr("网络错误");
+    } finally {
+      setLoading(false);
+    }
+  }
+
+  async function handleRedeem() {
+    setErr("");
+    const inviteCode = invite.trim().toUpperCase();
+    if (!inviteCode) {
+      setErr("请输入邀请码");
+      return;
+    }
+    setLoading(true);
+    try {
+      const res = await fetch(`${API}/auth/redeem-invite`, {
+        method:  "POST",
+        headers: { "Content-Type": "application/json" },
+        body:    JSON.stringify({ code: inviteCode }),
+      });
+      const data = await res.json().catch(() => ({}));
+      if (!res.ok) {
+        setErr(data.detail || "邀请码无效");
+        return;
+      }
+      setAuth(data.token, data.username, data.balance ?? 200);
+      router.replace("/");
+    } catch {
+      setErr("网络错误，请重试");
     } finally {
       setLoading(false);
     }
@@ -108,7 +137,34 @@ export default function LoginPage() {
 
         {/* Form */}
         <div className="space-y-4">
-          {step === "phone" ? (
+          {step === "invite" ? (
+            <>
+              <div className="space-y-1.5">
+                <label className="text-sm font-medium">邀请码</label>
+                <input
+                  type="text"
+                  placeholder="输入邀请码"
+                  value={invite}
+                  onChange={e => setInvite(e.target.value.toUpperCase().replace(/\s/g, ""))}
+                  onKeyDown={e => e.key === "Enter" && handleRedeem()}
+                  className="w-full bg-secondary rounded-xl px-4 py-3 text-sm outline-none
+                             placeholder:text-muted-foreground tracking-[0.2em] font-mono"
+                  autoFocus
+                />
+              </div>
+
+              {err && <p className="text-xs text-red-400">{err}</p>}
+
+              <button
+                onClick={handleRedeem}
+                disabled={loading || !invite.trim()}
+                className="w-full py-3 rounded-xl bg-primary text-primary-foreground text-sm font-semibold
+                           disabled:opacity-40 hover:opacity-90 transition-opacity"
+              >
+                {loading ? "进入中…" : "进入"}
+              </button>
+            </>
+          ) : step === "phone" ? (
             <>
               <div className="space-y-1.5">
                 <label className="text-sm font-medium">手机号</label>
