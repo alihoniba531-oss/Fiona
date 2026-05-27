@@ -43,6 +43,7 @@ from tools.travel_plan import travel_plan as travel_plan_query
 from nls_token import generate_nls_token
 from nls_asr import asr_recognize
 from tools.reminder import set_reminder
+from trace import log_event, trace_span
 
 
 def _summarize_card_for_history(card: dict) -> str:
@@ -594,11 +595,21 @@ async def chat(req: ChatRequest, user: str = Depends(get_current_user)):
 
     async def generate():
         full_response = ""
+        # ── 使用埋点：每次 chat 一条汇总事件，沿途收集关键参数 ──
+        _trace_info = {
+            "mode": None,
+            "intent": None,
+            "model": None,
+            "has_image": has_image,
+            "tool": None,
+            "message_count": message_count,
+        }
         try:
             # ── 0. 模式判定（双模式系统 P1.5）──
             # detect_mode 内部跑同步 LLM 调用，必须扔到线程池，否则会阻塞 event loop
             # 其他在 chat 路径上的同步 LLM/IO 调用同理（recognize_intent / execute_intent）
             mode = await asyncio.to_thread(detect_mode, client, user, req.message, history)
+            _trace_info["mode"] = mode
             sys_prompt_final = apply_mode_prompt(system_prompt, mode)
 
             # 镜子模式：跳过所有意图识别 + 工具调用，直走简化 Persona
@@ -610,6 +621,7 @@ async def chat(req: ChatRequest, user: str = Depends(get_current_user)):
                 if _trigger.startswith("manual"):
                     clear_pending(user)
                 _slot = choose_model(user, user_content, "mirror")
+                _trace_info["model"] = _slot
                 stream, _actually_qwen = _create_stream_with_fallback(
                     _slot == "qwen",
                     [{"role": "system", "content": sys_prompt_final}] + messages,
@@ -688,7 +700,10 @@ async def chat(req: ChatRequest, user: str = Depends(get_current_user)):
                 if not filled["missing"]:
                     # 参数补全，执行
                     clear_pending(user)
-                    result = await asyncio.to_thread(execute_intent, filled["intent"], filled["params"])
+                    _trace_info["intent"] = filled["intent"]
+                    _trace_info["tool"] = filled["intent"]
+                    async with trace_span(user, "tool_call", filled["intent"], payload={"via": "pending_fill"}):
+                        result = await asyncio.to_thread(execute_intent, filled["intent"], filled["params"])
                     if isinstance(result, dict) and result.get("type") == "card":
                         # 卡片数据走专门 SSE 事件
                         yield f"data: {json.dumps({'card': result}, ensure_ascii=False)}\n\n"
@@ -741,11 +756,14 @@ async def chat(req: ChatRequest, user: str = Depends(get_current_user)):
                 if _query:
                     intent_result = {"intent": "web_search", "params": {"query": _query}, "missing": []}
             print(f"[意图识别] message={req.message[:60]!r}, intent={intent_result.get('intent')}, missing={intent_result.get('missing')}")
+            _trace_info["intent"] = intent_result.get("intent")
 
             if intent_result["intent"] is not None:
                 if not intent_result["missing"]:
                     # 意图明确，参数完整，直接执行
-                    result = await asyncio.to_thread(execute_intent, intent_result["intent"], intent_result["params"])
+                    _trace_info["tool"] = intent_result["intent"]
+                    async with trace_span(user, "tool_call", intent_result["intent"], payload={"via": "direct"}):
+                        result = await asyncio.to_thread(execute_intent, intent_result["intent"], intent_result["params"])
                     if isinstance(result, dict) and result.get("type") == "card":
                         # 卡片数据走专门 SSE 事件
                         yield f"data: {json.dumps({'card': result}, ensure_ascii=False)}\n\n"
@@ -772,6 +790,7 @@ async def chat(req: ChatRequest, user: str = Depends(get_current_user)):
 
             # ── 3. 普通对话，走Chloe（路由决定使用哪个模型槽）──
             _slot      = choose_model(user, user_content, "normal")
+            _trace_info["model"] = _slot
             _use_light = (_slot == "qwen")
             # max_tokens 统一给 700：_create_stream_with_fallback 会在 qwen 失败时
             # 自动切 deepseek，但 max_tokens 是事先传入的参数，给小了 fallback 后
@@ -830,11 +849,16 @@ async def chat(req: ChatRequest, user: str = Depends(get_current_user)):
 
         except Exception as e:
             yield f"data: {json.dumps({'error': str(e)}, ensure_ascii=False)}\n\n"
+            _trace_info["error"] = str(e)[:200]
         finally:
             # 有实际回复才扣草莓（DEV 模式跳过）
             DEV_MODE = os.getenv("DEV_MODE", "0") == "1"
             if full_response and not DEV_MODE:
                 await deduct_strawberry(user, 10)
+            # ── 写 chat 汇总事件 ──
+            _trace_info["resp_chars"] = len(full_response)
+            await log_event(user, "chat", payload=_trace_info,
+                            success=("error" not in _trace_info))
 
     return StreamingResponse(generate(), media_type="text/event-stream")
 

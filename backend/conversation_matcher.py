@@ -536,6 +536,14 @@ async def detect_and_save(
             await save_match(username, candidate["peer_username"])
             saved += 1
 
+    # ── 使用埋点：本次对话级匹配命中数 ──
+    if saved > 0:
+        try:
+            from trace import log_event
+            await log_event(username, "match_card", "layer1_conversation",
+                            payload={"saved": saved, "message_count": message_count})
+        except Exception:
+            pass
     return saved
 
 

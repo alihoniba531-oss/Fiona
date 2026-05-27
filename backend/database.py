@@ -159,6 +159,24 @@ async def init_db():
                 PRIMARY KEY (phone)
             )
         """)
+        # ── 使用埋点：events ──
+        # 原始事件流，不预聚合。analyze.py 按维度汇总。
+        # event_type: 'chat' / 'tool_call' / 'mode_switch' / 'match_card'
+        # payload: JSON 字符串，存事件细节（如 intent / mode / model / match_type 等）
+        await db.execute("""
+            CREATE TABLE IF NOT EXISTS events (
+                id          INTEGER PRIMARY KEY AUTOINCREMENT,
+                ts          TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+                username    TEXT,
+                event_type  TEXT NOT NULL,
+                name        TEXT,
+                payload     TEXT,
+                duration_ms INTEGER,
+                success     INTEGER DEFAULT 1
+            )
+        """)
+        await _safe_migrate(db, "CREATE INDEX IF NOT EXISTS idx_events_ts ON events(ts)")
+        await _safe_migrate(db, "CREATE INDEX IF NOT EXISTS idx_events_user_type ON events(username, event_type)")
         await db.commit()
 
 async def get_or_create_user(username: str) -> dict:
