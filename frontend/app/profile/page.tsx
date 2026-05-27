@@ -49,12 +49,14 @@ export default function ProfilePage() {
 
   useEffect(() => {
     const u = localStorage.getItem("fiona_user");
+    // eslint-disable-next-line react-hooks/set-state-in-effect
     if (u) setUsername(u);
     setHydrated(true);
   }, []);
 
   useEffect(() => {
     if (!hydrated) return; // 等 localStorage 读完再拉，避免用"默认用户"拉一次空 profile
+    // eslint-disable-next-line react-hooks/set-state-in-effect
     setLoading(true);
     apiFetch(`${API}/profile`)
       .then(r => r.json())
@@ -149,7 +151,7 @@ export default function ProfilePage() {
           <div className="flex items-start gap-2 px-4 py-3 bg-accent/30 rounded-xl">
             <Shield size={13} className="text-accent-foreground mt-0.5 shrink-0" />
             <p className="text-xs text-muted-foreground leading-relaxed">
-              这些信息仅用于帮你匹配合适的人，不会透露给其他用户。匹配时只说"有位朋友在关注类似的事"。
+              这些信息仅用于帮你匹配合适的人，不会透露给其他用户。匹配时只说&quot;有位朋友在关注类似的事&quot;。
             </p>
           </div>
 

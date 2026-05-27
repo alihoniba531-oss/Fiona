@@ -170,13 +170,15 @@ app.add_middleware(
 #   3. X-Dev-User 头（仅 DEV_MODE=1）         — 本地切身份调试
 # WebSocket 握手不走 HTTP middleware，各 ws 端点用 ws_authenticate 单独鉴权。
 _AUTH_PUBLIC_PATHS = {"/", "/auth/send-otp", "/auth/verify-otp", "/auth/test-login"}
-_AUTH_PUBLIC_PREFIXES = ("/uploads/", "/docs", "/redoc", "/openapi.json")
+_AUTH_PUBLIC_PREFIXES = ("/docs", "/redoc", "/openapi.json")
 
 @app.middleware("http")
 async def require_auth(request: Request, call_next):
     if request.method == "OPTIONS":  # CORS 预检
         return await call_next(request)
     path = request.url.path
+    if path.startswith("/uploads/") and os.getenv("DEV_MODE", "0") == "1":
+        return await call_next(request)
     if path in _AUTH_PUBLIC_PATHS or any(path.startswith(p) for p in _AUTH_PUBLIC_PREFIXES):
         return await call_next(request)
     from auth import decode_token
@@ -221,6 +223,12 @@ _MIME_SNIFF = [
     (b"RIFF",              "webp"),  # 还要校验偏移 8 处是 WEBP，下面会做
 ]
 
+_VIDEO_SNIFF = [
+    (b"\x1a\x45\xdf\xa3", "webm"),
+]
+_MAX_PLAZA_IMAGE_BYTES = 5 * 1024 * 1024
+_MAX_PLAZA_VIDEO_BYTES = 20 * 1024 * 1024
+
 def _sniff_image_ext(data: bytes) -> str | None:
     """嗅探前 12 字节判图片类型。不是已知图片格式返回 None。"""
     for magic, ext in _MIME_SNIFF:
@@ -229,6 +237,67 @@ def _sniff_image_ext(data: bytes) -> str | None:
                 continue
             return ext
     return None
+
+
+def _sniff_video_ext(data: bytes) -> str | None:
+    """嗅探常见短视频格式。返回保存扩展名，不信任用户上传的文件名。"""
+    for magic, ext in _VIDEO_SNIFF:
+        if data.startswith(magic):
+            return ext
+    if len(data) >= 12 and data[4:8] == b"ftyp":
+        brand = data[8:12]
+        if brand == b"qt  ":
+            return "mov"
+        return "mp4"
+    return None
+
+
+async def _save_plaza_upload(file: UploadFile) -> tuple[str, str]:
+    """保存广场媒体，校验魔数和大小，返回 (media_path, media_type)。"""
+    import uuid as _uuid
+
+    first = await file.read(8192)
+    ext = _sniff_image_ext(first[:12])
+    media_type = "image"
+    limit = _MAX_PLAZA_IMAGE_BYTES
+    if not ext:
+        ext = _sniff_video_ext(first[:16])
+        media_type = "video"
+        limit = _MAX_PLAZA_VIDEO_BYTES
+    if not ext:
+        raise HTTPException(status_code=400, detail="只支持常见图片或短视频格式")
+
+    fname = f"plaza_{_uuid.uuid4().hex}.{ext}"
+    fpath = os.path.join(UPLOADS_DIR, fname)
+    total = 0
+    try:
+        with open(fpath, "wb") as f:
+            if first:
+                total += len(first)
+                if total > limit:
+                    raise HTTPException(status_code=413, detail="文件太大")
+                f.write(first)
+            while True:
+                chunk = await file.read(1024 * 1024)
+                if not chunk:
+                    break
+                total += len(chunk)
+                if total > limit:
+                    raise HTTPException(status_code=413, detail="文件太大")
+                f.write(chunk)
+    except Exception:
+        try:
+            os.unlink(fpath)
+        except OSError:
+            pass
+        raise
+    if total == 0:
+        try:
+            os.unlink(fpath)
+        except OSError:
+            pass
+        raise HTTPException(status_code=400, detail="文件为空")
+    return f"/uploads/{fname}", media_type
 
 
 def _save_uploaded_image(image_base64: str) -> str | None:
@@ -970,6 +1039,22 @@ def make_room_id(user_a: str, user_b: str) -> str:
     return "__".join(sorted([user_a, user_b]))
 
 
+async def _require_peer_room_access(user: str, room_id: str) -> str:
+    """校验当前用户能访问 room_id，并返回 peer 用户名。"""
+    parts = room_id.split("__")
+    if len(parts) != 2 or user not in parts:
+        raise HTTPException(status_code=403, detail="不在该房间内")
+    peer = parts[1] if parts[0] == user else parts[0]
+    if peer == user:
+        raise HTTPException(status_code=403, detail="房间无效")
+    accepted_peers = await get_accepted_matches(user)
+    if peer not in accepted_peers:
+        raise HTTPException(status_code=403, detail="双方尚未互相接受匹配")
+    if make_room_id(user, peer) != room_id:
+        raise HTTPException(status_code=403, detail="房间无效")
+    return peer
+
+
 class ConnectionManager:
     def __init__(self):
         # room_id → {username: WebSocket}
@@ -1012,8 +1097,9 @@ async def peer_chat_ws(ws: WebSocket, room_id: str):
     if not username:
         await ws.close(code=4401)
         return
-    # 校验当前用户属于该房间（房间 ID 由两个 username 排序拼接得出）
-    if username not in room_id.split("__"):
+    try:
+        await _require_peer_room_access(username, room_id)
+    except HTTPException:
         await ws.close(code=4403)
         return
     await ws_manager.connect(room_id, username, ws)
@@ -1047,8 +1133,7 @@ async def get_peer_rooms(user: str = Depends(get_current_user)):
 
 @app.get("/peer/history/{room_id}")
 async def peer_history(room_id: str, limit: int = 100, user: str = Depends(get_current_user)):
-    if user not in room_id.split("__"):
-        raise HTTPException(status_code=403, detail="不在该房间内")
+    await _require_peer_room_access(user, room_id)
     messages = await get_peer_messages(room_id, limit=limit)
     return {"room_id": room_id, "messages": messages}
 
@@ -1328,14 +1413,9 @@ async def plaza_post(
     except Exception:
         tag_list = []
     anon_id = hashlib.md5(("fiona_plaza_" + user).encode()).hexdigest()[:8]
-    ext = (file.filename or "").rsplit(".", 1)[-1].lower()
-    media_type = "video" if ext in ("mp4", "mov", "webm") else "image"
-    fname = f"plaza_{datetime.now().strftime('%Y%m%d_%H%M%S_%f')}.{ext or 'jpg'}"
-    fpath = os.path.join(UPLOADS_DIR, fname)
-    with open(fpath, "wb") as f:
-        f.write(await file.read())
-    post_id = await save_post(anon_id, f"/uploads/{fname}", media_type, caption, tag_list)
-    return {"id": post_id, "anon_id": anon_id, "media_path": f"/uploads/{fname}", "tags": tag_list}
+    media_path, media_type = await _save_plaza_upload(file)
+    post_id = await save_post(anon_id, media_path, media_type, caption, tag_list)
+    return {"id": post_id, "anon_id": anon_id, "media_path": media_path, "tags": tag_list}
 
 
 @app.post("/plaza/like/{post_id}")

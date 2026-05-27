@@ -161,6 +161,7 @@ export default function MatchPage() {
   // 启动后从 localStorage 读取当前身份
   useEffect(() => {
     const u = localStorage.getItem("fiona_user");
+    // eslint-disable-next-line react-hooks/set-state-in-effect
     if (u) setUsername(u);
     setHydrated(true);
   }, []);
@@ -183,7 +184,7 @@ export default function MatchPage() {
   useEffect(() => {
     if (!hydrated || !username) return;
     let mounted = true;
-    let lastIds = new Set<number>();
+    const lastIds = new Set<number>();
 
     async function poll() {
       try {

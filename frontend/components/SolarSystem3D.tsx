@@ -1,7 +1,7 @@
 "use client";
 
 import { Canvas, useFrame } from "@react-three/fiber";
-import { useRef, Suspense } from "react";
+import { useRef, Suspense, useEffect } from "react";
 import * as THREE from "three";
 import { useTexture, Stars } from "@react-three/drei";
 import { EffectComposer, Bloom } from "@react-three/postprocessing";
@@ -32,7 +32,10 @@ const PLANETS: PlanetDef[] = [
 // ─── 银河背景球 ───────────────────────────────────────────────────────────
 function CosmosBackground() {
   const texture = useTexture("/textures/milkyway.jpg");
-  texture.colorSpace = THREE.SRGBColorSpace;
+  useEffect(() => {
+    // eslint-disable-next-line react-hooks/immutability
+    texture.colorSpace = THREE.SRGBColorSpace;
+  }, [texture]);
   return (
     <mesh>
       <sphereGeometry args={[500, 64, 40]} />
@@ -44,7 +47,10 @@ function CosmosBackground() {
 // ─── 太阳 ─────────────────────────────────────────────────────────────────
 function SunMesh() {
   const texture = useTexture("/textures/sun.jpg");
-  texture.colorSpace = THREE.SRGBColorSpace;
+  useEffect(() => {
+    // eslint-disable-next-line react-hooks/immutability
+    texture.colorSpace = THREE.SRGBColorSpace;
+  }, [texture]);
   const meshRef = useRef<THREE.Mesh>(null!);
 
   useFrame(({ clock }) => {
@@ -83,7 +89,10 @@ function SaturnRing() {
 // ─── 单颗星球 ─────────────────────────────────────────────────────────────
 function PlanetMesh({ planet }: { planet: PlanetDef }) {
   const texture = useTexture(planet.texture);
-  texture.colorSpace = THREE.SRGBColorSpace;
+  useEffect(() => {
+    // eslint-disable-next-line react-hooks/immutability
+    texture.colorSpace = THREE.SRGBColorSpace;
+  }, [texture]);
   const groupRef = useRef<THREE.Group>(null!);
   const meshRef = useRef<THREE.Mesh>(null!);
 

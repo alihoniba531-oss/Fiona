@@ -18,6 +18,7 @@ export default function SettingsPage() {
 
   useEffect(() => {
     const u = localStorage.getItem("fiona_user");
+    // eslint-disable-next-line react-hooks/set-state-in-effect
     if (u) setUsername(u);
     // /users 端点仅在后端 DEV_MODE=1 时开放；prod 直接 404，前端把列表留空即可。
     fetch(`${API}/users`).then(r => r.ok ? r.json() : { users: [] }).then(d => setAllUsers(d.users || [])).catch(() => {});

@@ -238,8 +238,8 @@ export default function PlazaPage() {
       const res = await apiFetch(`${API}/hot/expand?title=${encodeURIComponent(title)}`);
       const data = await res.json();
       setExpanded({ title, ...data });
-    } catch (e: any) {
-      setExpanded({ title, error: e?.message || "拉取失败" });
+    } catch (e: unknown) {
+      setExpanded({ title, error: e instanceof Error ? e.message : "拉取失败" });
     } finally {
       setExpanding(false);
     }
@@ -252,6 +252,7 @@ export default function PlazaPage() {
 
   useEffect(() => {
     const u = localStorage.getItem("fiona_user");
+    // eslint-disable-next-line react-hooks/set-state-in-effect
     if (u) setUsername(u);
     setHydrated(true);
   }, []);
@@ -266,6 +267,7 @@ export default function PlazaPage() {
   }, []);
   useEffect(() => {
     if (!hydrated) return; // 等 localStorage hydrate 完再拉，免得用"默认用户"先拉一次
+    // eslint-disable-next-line react-hooks/set-state-in-effect
     loadPosts();
   }, [loadPosts, hydrated]);
 

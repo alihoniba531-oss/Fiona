@@ -9,8 +9,16 @@ import os
 import secrets
 import jwt
 from datetime import datetime, timedelta, timezone
+from dotenv import load_dotenv
 
-SECRET_KEY = os.getenv("JWT_SECRET", "fiona-dev-secret-change-in-prod-xxxxx")
+load_dotenv(dotenv_path=os.path.join(os.path.dirname(os.path.abspath(__file__)), ".env"), override=True)
+
+SECRET_KEY = os.getenv("JWT_SECRET")
+if not SECRET_KEY:
+    if os.getenv("DEV_MODE", "0") == "1":
+        SECRET_KEY = "fiona-dev-secret-change-in-prod-xxxxx"
+    else:
+        raise RuntimeError("JWT_SECRET must be set when DEV_MODE is not 1")
 ALGORITHM = "HS256"
 TOKEN_EXPIRE_DAYS = 30
 

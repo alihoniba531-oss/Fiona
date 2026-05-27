@@ -2,27 +2,22 @@
 
 import { cn } from "@/lib/utils";
 import { Volume2, VolumeX, Trash2, Globe } from "lucide-react";
-import { useState, useEffect, useRef } from "react";
+import { useState, useEffect, useRef, useMemo } from "react";
 
 // 打字机：把 target 按固定字符速率 (cps) 显示出来。
 // 历史消息首次渲染时 initial 即 target，不会重放；只有当 target 在生命周期内"增长"才动画。
 function useTypewriter(target: string, enabled: boolean, cps = 45) {
   const [shown, setShown] = useState(target);
   const targetRef = useRef(target);
-  targetRef.current = target;
+  const cpsRef = useRef(cps);
 
   useEffect(() => {
-    if (!enabled) {
-      setShown(target);
-      return;
-    }
-    // 卡片把文本整段替换 / 文本变短 / 前缀不一致 → 直接同步，避免错位
-    setShown((cur) => {
-      const tgt = targetRef.current;
-      if (tgt.length < cur.length || !tgt.startsWith(cur)) return tgt;
-      return cur;
-    });
+    targetRef.current = target;
+    cpsRef.current = cps;
+  }, [target, cps]);
 
+  useEffect(() => {
+    if (!enabled) return;
     let raf = 0;
     let last = performance.now();
     const tick = (now: number) => {
@@ -33,7 +28,7 @@ function useTypewriter(target: string, enabled: boolean, cps = 45) {
         if (cur === tgt) return cur;
         // 前缀失配（外部突然换了内容）→ 直接同步
         if (!tgt.startsWith(cur)) return tgt;
-        const add = Math.max(1, Math.floor((dt / 1000) * cps));
+        const add = Math.max(1, Math.floor((dt / 1000) * cpsRef.current));
         // 防止落后过多（网络突然吐一大段时加速追赶，但不秒到）
         const lag = tgt.length - cur.length;
         const step = lag > 60 ? add + Math.floor(lag / 20) : add;
@@ -44,9 +39,9 @@ function useTypewriter(target: string, enabled: boolean, cps = 45) {
     };
     raf = requestAnimationFrame(tick);
     return () => cancelAnimationFrame(raf);
-  }, [enabled, target]);
+  }, [enabled]);
 
-  return shown;
+  return enabled ? shown : target;
 }
 
 export interface WeatherForecastDay {
@@ -100,6 +95,21 @@ interface ChatBubbleProps {
 }
 
 export default function ChatBubble({ message, onDelete, onConfirmTts, onDeclineTts }: ChatBubbleProps) {
+  const isUser = message.role === "user";
+  const [muted, setMuted] = useState(false);
+  const [hovered, setHovered] = useState(false);
+
+  // AI 消息走打字机，用户消息和分隔线直出
+  const shownContent = useTypewriter(message.content, !message.isDivider && !isUser);
+  const stillTyping = !isUser && shownContent !== message.content;
+  const timeStr = useMemo(
+    () => message.timestamp.toLocaleTimeString("zh-CN", {
+      hour: "2-digit",
+      minute: "2-digit",
+    }),
+    [message.timestamp],
+  );
+
   // 分隔线渲染
   if (message.isDivider) {
     return (
@@ -110,24 +120,6 @@ export default function ChatBubble({ message, onDelete, onConfirmTts, onDeclineT
       </div>
     );
   }
-
-  const isUser = message.role === "user";
-  const [muted, setMuted] = useState(false);
-  const [timeStr, setTimeStr] = useState("");
-  const [hovered, setHovered] = useState(false);
-
-  // AI 消息走打字机，用户消息直出
-  const shownContent = useTypewriter(message.content, !isUser);
-  const stillTyping = !isUser && shownContent !== message.content;
-
-  useEffect(() => {
-    setTimeStr(
-      message.timestamp.toLocaleTimeString("zh-CN", {
-        hour: "2-digit",
-        minute: "2-digit",
-      })
-    );
-  }, [message.timestamp]);
 
   return (
     <div

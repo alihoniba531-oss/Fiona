@@ -1,9 +1,9 @@
 ﻿"use client";
 
-import { useState, useRef, useEffect, useCallback } from "react";
+import { useState, useRef, useEffect, useCallback, useMemo } from "react";
 import Sidebar from "@/components/Sidebar";
 import TopBar from "@/components/TopBar";
-import ChatBubble, { type Message, type CardData, type WeatherData } from "@/components/ChatBubble";
+import ChatBubble, { type Message, type CardData, type WeatherData, type WeatherForecastDay } from "@/components/ChatBubble";
 import AmbientHUD from "@/components/AmbientHUD";
 import HudOrb from "@/components/HudOrb";
 import StarField from "@/components/StarField";
@@ -45,6 +45,14 @@ interface PendingMatch {
   tags: string[];
   created_at: string;
   peer_greeting?: string | null;
+}
+
+interface ChatStreamEvent {
+  tool?: unknown;
+  text?: string;
+  card?: CardData;
+  error?: string;
+  done?: boolean;
 }
 
 // ── Mini cloud card for match popups ──
@@ -260,6 +268,7 @@ export default function ChatPage() {
   const ttsPreloadRef = useRef<HTMLAudioElement | null>(null);  // 预取下一句音频，消除句间空隙
   const ttsQueueRef = useRef<string[]>([]);
   const ttsPlayingRef = useRef(false);
+  const playNextInQueueRef = useRef<() => void>(() => {});
   const ttsSessionRef = useRef(0);
   const streamDoneRef = useRef(true);
   const synthRef = useRef<SpeechSynthesis | null>(null);
@@ -283,12 +292,21 @@ export default function ChatPage() {
   const [myGender, setMyGender] = useState<"male" | "female" | null>(null);
   const [matchPref, setMatchPref] = useState<"male" | "female" | "both">("both");
   const userMenuRef = useRef<HTMLDivElement>(null);
+  const recordingBars = useMemo(
+    () => [0, 1, 2, 3, 4, 5, 6].map((i) => ({
+      i,
+      height: 10 + ((i * 17) % 19),
+      duration: 0.5 + ((i * 11) % 4) * 0.1,
+    })),
+    [],
+  );
 
   // ── effects ──
 
   // Hydrate username from localStorage (must finish before history/persist effects run)
   useEffect(() => {
     const stored = localStorage.getItem("fiona_user");
+    // eslint-disable-next-line react-hooks/set-state-in-effect
     if (stored) setUsername(stored);
     setHydrated(true);
   }, []);
@@ -442,10 +460,10 @@ export default function ChatPage() {
           const data = await res.json();
           if (data.text) { setVoiceText(""); handleSendRef.current(data.text); }
           else { setVoiceText(data.error || "未识别到语音"); setTimeout(() => setVoiceText(""), 2000); }
-        } catch (e: any) { setVoiceText("识别失败"); setTimeout(() => setVoiceText(""), 2000); }
+        } catch { setVoiceText("识别失败"); setTimeout(() => setVoiceText(""), 2000); }
       };
       mr.start();
-    } catch (e: any) {
+    } catch {
       setVoiceText("麦克风未授权"); setTimeout(() => setRecording(false), 1000);
     }
   }, []);
@@ -457,6 +475,7 @@ export default function ChatPage() {
 
   // Toggle recording (voice panel)
   useEffect(() => {
+    // eslint-disable-next-line react-hooks/set-state-in-effect
     if (recording) { setVoiceText(""); startNlsAsr(); }
     else { stopNlsAsr(); }
   }, [recording, startNlsAsr, stopNlsAsr]);
@@ -625,12 +644,16 @@ export default function ChatPage() {
     const onDone = () => {
       ttsPlayingRef.current = false;
       ttsAudioRef.current = null;
-      playNextInQueue();
+      playNextInQueueRef.current();
     };
-    audio.onended = onDone;
-    audio.onerror = onDone;
+    audio.addEventListener("ended", onDone, { once: true });
+    audio.addEventListener("error", onDone, { once: true });
     audio.play().catch(onDone);
   }, [startHandsFreeRecording, mkTtsAudio, tryPrefetch]);
+
+  useEffect(() => {
+    playNextInQueueRef.current = playNextInQueue;
+  }, [playNextInQueue]);
 
   // ── TTS 文本归一化：日期/时间/数字范围转成可读的中文 ──
   // CosyVoice 默认会把 "4.3" 念成"四点三"（小数），把 "780–2380" 念成"七百八十—两千三百八十"
@@ -701,6 +724,7 @@ export default function ChatPage() {
 
   // Mount-time reset (F5 fix: clear stuck isLoading and typing messages)
   useEffect(() => {
+    // eslint-disable-next-line react-hooks/set-state-in-effect
     setIsLoading(false);
     setMessages((prev) => prev.filter((m) => !m.isTyping));
   }, []);
@@ -988,7 +1012,7 @@ export default function ChatPage() {
         for (const ev of events) {
           const line = ev.split("\n").find((l) => l.startsWith("data: "));
           if (!line) continue;
-          let data: any;
+          let data: ChatStreamEvent;
           try {
             data = JSON.parse(line.slice(6));
           } catch {
@@ -1030,10 +1054,10 @@ export default function ChatPage() {
                   // 未来三天概要
                   const fc = w.forecast || [];
                   if (fc.length >= 2) {
-                    const parts = fc.slice(0, 3).map((f: any) => `${f.day} ${weatherCN(f.condition)} ${f.low}~${f.high}°`);
+                    const parts = fc.slice(0, 3).map((f: WeatherForecastDay) => `${f.day} ${weatherCN(f.condition)} ${f.low}~${f.high}°`);
                     msg += `接下来：${parts.join("；")}。`;
                     // 预警未来三天内的坏天气
-                    const hasRain = fc.slice(0, 3).some((f: any) => {
+                    const hasRain = fc.slice(0, 3).some((f: WeatherForecastDay) => {
                       const fc = (f.condition || "").toLowerCase();
                       return fc.includes("rain") || fc.includes("drizzle") || fc.includes("shower") || fc.includes("thunder");
                     });
@@ -1086,7 +1110,9 @@ export default function ChatPage() {
     if (!ttsPlayingRef.current) playNextInQueue();
     setIsLoading(false);
   };
-  handleSendRef.current = handleSend;
+  useEffect(() => {
+    handleSendRef.current = handleSend;
+  }, [handleSend]);
 
   const handleKeyDown = (e: React.KeyboardEvent) => {
     if (e.key !== "Enter" || e.shiftKey) return;
@@ -1369,16 +1395,16 @@ export default function ChatPage() {
                 {/* 录音波形 / 待机心电图 */}
                 {recording ? (
                   <div className="flex gap-1 h-5 items-end">
-                    {[0, 1, 2, 3, 4, 5, 6].map((i) => (
+                    {recordingBars.map(({ i, height, duration }) => (
                       <div
                         key={i}
                         className="w-[3px] rounded-sm wave-bar"
                         style={{
-                          height: `${10 + Math.random() * 18}px`,
+                          height: `${height}px`,
                           background: "linear-gradient(180deg, #00d4ff, #ff6680)",
                           boxShadow: "0 0 6px rgba(0,212,255,0.65)",
                           animationDelay: `${i * 0.08}s`,
-                          animationDuration: `${0.5 + Math.random() * 0.3}s`,
+                          animationDuration: `${duration}s`,
                         }}
                       />
                     ))}
@@ -1549,7 +1575,7 @@ export default function ChatPage() {
                                   </div>
                                   <div className="mx-3" style={{height:1,background:theme.glow,opacity:0.3}} />
                                   <div className="px-2 py-2">
-                                    {card.weather.forecast.map((f: any, i: number) => (
+                                    {card.weather.forecast.map((f: WeatherForecastDay, i: number) => (
                                       <div key={i} className="flex items-center px-1 py-1">
                                         <span style={{fontSize:10,color:theme.sub,width:40,flexShrink:0}}>{f.day}</span>
                                         {f.icon && <img src={f.icon} alt={f.condition} className="w-4 h-4 mx-1 opacity-60" />}
@@ -1772,7 +1798,7 @@ export default function ChatPage() {
                   </div>
                   <div className="mx-6" style={{ height: 1, background: theme.glow, opacity: 0.35 }} />
                   <div className="px-4 py-3">
-                    {w.forecast.map((f: any, i: number) => (
+                    {w.forecast.map((f: WeatherForecastDay, i: number) => (
                       <div key={i} className="flex items-center px-2 py-2">
                         <span style={{ fontSize: 13, color: theme.sub, width: 56 }}>{f.day}</span>
                         {f.icon && <img src={f.icon} alt={f.condition} className="w-6 h-6 mx-2 opacity-75" />}

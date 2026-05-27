@@ -6,14 +6,23 @@
 // 默认行为：openExternal(url) → Tauri 弹子窗口（内置 webview 浏览，不跳系统浏览器）
 // 备用：openInBrowser(url) → 调系统默认浏览器（旧 open_url 命令保留）
 
+type TauriInvoke = (cmd: string, args?: Record<string, unknown>) => Promise<unknown>;
+type TauriWindow = Window & {
+  __TAURI_INTERNALS__?: { invoke?: TauriInvoke };
+  __TAURI__?: {
+    core?: { invoke?: TauriInvoke };
+    invoke?: TauriInvoke;
+  };
+};
+
 function isTauri(): boolean {
-  const w = window as any;
+  const w = window as TauriWindow;
   return !!(w.__TAURI_INTERNALS__?.invoke || w.__TAURI__?.core?.invoke || w.__TAURI__?.invoke);
 }
 
 async function tauriInvoke(cmd: string, args: Record<string, unknown>): Promise<{ ok: true } | { ok: false; errors: string[] }> {
-  const w = window as any;
-  const bridges: Array<{ name: string; fn: any }> = [];
+  const w = window as TauriWindow;
+  const bridges: Array<{ name: string; fn: TauriInvoke }> = [];
   if (w.__TAURI_INTERNALS__?.invoke) bridges.push({ name: "INTERNALS", fn: w.__TAURI_INTERNALS__.invoke.bind(w.__TAURI_INTERNALS__) });
   if (w.__TAURI__?.core?.invoke) bridges.push({ name: "TAURI.core", fn: w.__TAURI__.core.invoke.bind(w.__TAURI__.core) });
   if (w.__TAURI__?.invoke) bridges.push({ name: "TAURI", fn: w.__TAURI__.invoke.bind(w.__TAURI__) });

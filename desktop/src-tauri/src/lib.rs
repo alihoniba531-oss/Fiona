@@ -20,6 +20,12 @@ use std::time::{Duration, Instant};
 use serde::{Deserialize, Serialize};
 use tauri::Manager;
 
+#[cfg(windows)]
+use std::os::windows::process::CommandExt;
+
+#[cfg(windows)]
+const CREATE_NO_WINDOW: u32 = 0x08000000;
+
 #[derive(Deserialize)]
 struct CloudConfig {
     host: String,
@@ -150,6 +156,10 @@ fn spawn_tunnel(cfg: &CloudConfig) -> Option<Child> {
     }
     cmd.arg(format!("{}@{}", cfg.user, cfg.host));
     cmd.stdout(Stdio::null()).stderr(stderr_target);
+    #[cfg(windows)]
+    {
+        cmd.creation_flags(CREATE_NO_WINDOW);
+    }
     match cmd.spawn() {
         Ok(c) => Some(c),
         Err(e) => {
