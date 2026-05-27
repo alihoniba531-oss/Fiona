@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect, useRef, useCallback } from "react";
+import { Suspense, useState, useEffect, useRef, useCallback } from "react";
 import { useSearchParams } from "next/navigation";
 import Sidebar from "@/components/Sidebar";
 import TopBar from "@/components/TopBar";
@@ -146,7 +146,7 @@ function CloudCard({
   );
 }
 
-export default function MatchPage() {
+function MatchContent() {
   const [username, setUsername] = useState("默认用户");
   const [hydrated, setHydrated] = useState(false);
   const [rooms, setRooms] = useState<Room[]>([]);
@@ -447,5 +447,13 @@ export default function MatchPage() {
         }
       `}</style>
     </div>
+  );
+}
+
+export default function MatchPage() {
+  return (
+    <Suspense fallback={null}>
+      <MatchContent />
+    </Suspense>
   );
 }

@@ -1,11 +1,12 @@
 "use client";
 
+import { Suspense } from "react";
 import { useSearchParams } from "next/navigation";
 import Sidebar from "@/components/Sidebar";
 import TopBar from "@/components/TopBar";
 import { UsersRound } from "lucide-react";
 
-export default function CommunityPage() {
+function CommunityContent() {
   const sp = useSearchParams();
   const embedded = sp?.get("embed") === "1";
   return (
@@ -28,5 +29,13 @@ export default function CommunityPage() {
         </div>
       </div>
     </div>
+  );
+}
+
+export default function CommunityPage() {
+  return (
+    <Suspense fallback={null}>
+      <CommunityContent />
+    </Suspense>
   );
 }

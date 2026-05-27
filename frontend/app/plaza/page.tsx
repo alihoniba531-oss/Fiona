@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect, useRef, useCallback } from "react";
+import { Suspense, useState, useEffect, useRef, useCallback } from "react";
 import { useSearchParams } from "next/navigation";
 import Sidebar from "@/components/Sidebar";
 import TopBar from "@/components/TopBar";
@@ -197,7 +197,7 @@ function CategoryCard({
 }
 
 // ─────────────────── 主页 ───────────────────
-export default function PlazaPage() {
+function PlazaContent() {
   const [posts, setPosts] = useState<Post[]>([]);
   const [uploading, setUploading] = useState(false);
   const [showModal, setShowModal] = useState(false);
@@ -654,5 +654,13 @@ export default function PlazaPage() {
         </div>
       )}
     </div>
+  );
+}
+
+export default function PlazaPage() {
+  return (
+    <Suspense fallback={null}>
+      <PlazaContent />
+    </Suspense>
   );
 }

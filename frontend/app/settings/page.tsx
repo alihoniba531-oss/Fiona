@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { Suspense, useState, useEffect } from "react";
 import { useSearchParams } from "next/navigation";
 import Sidebar from "@/components/Sidebar";
 import TopBar from "@/components/TopBar";
@@ -9,7 +9,7 @@ import { apiFetch, clearAuth } from "@/lib/auth";
 
 const API = "/api";
 
-export default function SettingsPage() {
+function SettingsContent() {
   const sp = useSearchParams();
   const embedded = sp?.get("embed") === "1";
   const [username, setUsername] = useState("默认用户");
@@ -112,5 +112,13 @@ export default function SettingsPage() {
         </div>
       </div>
     </div>
+  );
+}
+
+export default function SettingsPage() {
+  return (
+    <Suspense fallback={null}>
+      <SettingsContent />
+    </Suspense>
   );
 }

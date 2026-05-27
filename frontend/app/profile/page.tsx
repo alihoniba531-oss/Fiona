@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { Suspense, useState, useEffect } from "react";
 import { useSearchParams } from "next/navigation";
 import Sidebar from "@/components/Sidebar";
 import TopBar from "@/components/TopBar";
@@ -41,7 +41,7 @@ const Empty = ({ hint }: { hint: string }) => (
   <p className="text-xs text-muted-foreground/60 italic">{hint}</p>
 );
 
-export default function ProfilePage() {
+function ProfileContent() {
   const [username, setUsername] = useState("默认用户");
   const [hydrated, setHydrated] = useState(false);
   const [profile, setProfile] = useState<Profile | null>(null);
@@ -169,5 +169,13 @@ export default function ProfilePage() {
         </div>
       </div>
     </div>
+  );
+}
+
+export default function ProfilePage() {
+  return (
+    <Suspense fallback={null}>
+      <ProfileContent />
+    </Suspense>
   );
 }
