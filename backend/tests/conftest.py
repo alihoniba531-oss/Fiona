@@ -9,33 +9,9 @@
      （detect_mode / recognize_intent / _create_stream_with_fallback /
       find_matches / extract_and_update / detect_matches_and_save）。
 """
-import os
-import importlib
-
 import pytest
 
-
-# ── 假流：模拟 OpenAI 流式响应，generate() 按 chunk.choices[0].delta.content 消费 ──
-class _FakeDelta:
-    def __init__(self, content):
-        self.content = content
-
-
-class _FakeChoice:
-    def __init__(self, content, finish_reason=None):
-        self.delta = _FakeDelta(content)
-        self.finish_reason = finish_reason
-
-
-class _FakeChunk:
-    def __init__(self, content, finish_reason=None):
-        self.choices = [_FakeChoice(content, finish_reason)]
-
-
-class _FakeStream:
-    def __iter__(self):
-        yield _FakeChunk("测试")
-        yield _FakeChunk("回复", finish_reason="stop")
+from _fakes import FakeStream
 
 
 @pytest.fixture
@@ -49,9 +25,9 @@ def client(tmp_path, monkeypatch):
     monkeypatch.setattr(database, "DB_PATH", str(tmp_path / "test.db"))
 
     import main  # noqa: F401  触发 app 装配
-    # 端点已拆到 routers/，符号经 `from X import Y` 绑定在各 router 模块命名空间，
-    # 所以打桩目标是 routers.chat / routers.match，不是 main。
-    import routers.chat as chat
+    # /chat 逻辑已抽到 services.chat_service，符号经 `from X import Y` 绑定在该模块命名空间，
+    # 所以 chat 相关打桩目标是 services.chat_service；find_matches 仍在 routers.match。
+    import services.chat_service as chat
     import routers.match as match
 
     async def _noop_async(*a, **k):
@@ -64,7 +40,7 @@ def client(tmp_path, monkeypatch):
     )
     monkeypatch.setattr(
         chat, "_create_stream_with_fallback",
-        lambda use_qwen, messages, **k: (_FakeStream(), False),
+        lambda use_qwen, messages, **k: (FakeStream(), False),
     )
     monkeypatch.setattr(chat, "extract_and_update", _noop_async)
     monkeypatch.setattr(chat, "detect_matches_and_save", _noop_async)
