@@ -170,7 +170,7 @@ app.add_middleware(
 #   3. X-Dev-User 头（仅 DEV_MODE=1）         — 本地切身份调试
 # WebSocket 握手不走 HTTP middleware，各 ws 端点用 ws_authenticate 单独鉴权。
 _AUTH_PUBLIC_PATHS = {"/", "/auth/send-otp", "/auth/verify-otp", "/auth/test-login", "/auth/redeem-invite"}
-_AUTH_PUBLIC_PREFIXES = ("/docs", "/redoc", "/openapi.json")
+_AUTH_PUBLIC_PREFIXES = ("/docs", "/redoc", "/openapi.json", "/hot/")
 
 @app.middleware("http")
 async def require_auth(request: Request, call_next):

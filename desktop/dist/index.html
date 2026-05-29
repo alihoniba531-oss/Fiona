@@ -74,7 +74,8 @@
   <script>
     // 隧道由 Rust 端在窗口出现前已建好；这里先 probe，通了就跳，
     // 没通就展示诊断（避免 webview 一直黑屏 + ERR_CONNECTION_REFUSED）。
-    const TARGET = "http://localhost:3000";
+    const LOCAL_TARGET = "http://localhost:3000";
+    const PUBLIC_TARGET = "https://madchloechat.online";
     const POLL_INTERVAL = 500;
     const POLL_TIMEOUT = 15000;
 
@@ -102,7 +103,7 @@
       try {
         const ctrl = new AbortController();
         const t = setTimeout(() => ctrl.abort(), 1500);
-        const res = await fetch(TARGET + "/", { method: "GET", cache: "no-store", signal: ctrl.signal });
+        const res = await fetch(LOCAL_TARGET + "/", { method: "GET", cache: "no-store", signal: ctrl.signal });
         clearTimeout(t);
         return res.status < 500;
       } catch { return false; }
@@ -116,12 +117,20 @@
 
     async function waitAndRedirect() {
       const diag = await getDiag();
+
+      // 用户模式：不给内测者发 fiona.config.json。无配置时不建 SSH 隧道，
+      // 直接进入公网同源部署；有配置才按开发者模式等 localhost 隧道。
+      if (diag && !diag.config_path && !diag.config_loaded) {
+        window.location.replace(PUBLIC_TARGET);
+        return;
+      }
+
       const port = (diag && diag.primary_port) || 3000;
 
       const start = Date.now();
       while (Date.now() - start < POLL_TIMEOUT) {
         if (await probeReady(port)) {
-          window.location.replace(TARGET);
+          window.location.replace(LOCAL_TARGET);
           return;
         }
         await new Promise(r => setTimeout(r, POLL_INTERVAL));
@@ -151,7 +160,7 @@
     function inferReason(d) {
       if (!d) return "无法连接到云端（127.0.0.1:" + 3000 + "），且诊断不可读。";
       if (!d.config_loaded) {
-        return "未找到或无法解析 fiona.config.json（云端地址配置）——首次安装请按 README 创建配置文件。";
+        return "检测到配置文件但无法解析 fiona.config.json——请检查 JSON 格式，或删除配置文件进入公网用户模式。";
       }
       if (d.ssh_pid == null) {
         return "SSH 进程未能启动——这台机器可能没装 ssh，或 PATH 里找不到。";

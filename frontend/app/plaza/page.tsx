@@ -247,6 +247,8 @@ function PlazaContent() {
 
   const [hotNews,  setHotNews]  = useState<string[]>([]);
   const [trending, setTrending] = useState<string[]>([]);
+  const [hotLoaded, setHotLoaded] = useState(false);
+  const [trendingLoaded, setTrendingLoaded] = useState(false);
   const [interests, setInterests] = useState<string[]>([]);
   const [communityItems, setCommunityItems] = useState<{ tag: string; user: string }[]>([]);
 
@@ -273,21 +275,23 @@ function PlazaContent() {
 
   // 拉热搜 / 潮流（贴边）
   useEffect(() => {
-    const grab = (src: string, set: (v: string[]) => void) =>
+    const grab = (src: string, set: (v: string[]) => void, setLoaded: (v: boolean) => void) =>
       apiFetch(`${API}/hot/${encodeURIComponent(src)}`)
-        .then((r) => r.json())
+        .then((r) => (r.ok ? r.json() : Promise.reject(new Error(`hot ${src} ${r.status}`))))
         .then((d) => {
+          if (d.error) throw new Error(d.points?.[0] || `hot ${src} failed`);
           // points 形如 "1. 标题 · 154万" — 去掉序号方便重新编号
           const items: string[] = (d.points || []).map((p: string) => p.replace(/^\d+\.\s*/, ""));
           set(items.slice(0, 5));
         })
-        .catch(() => {});
-    grab("微博", setHotNews);
-    grab("抖音", setTrending);
+        .catch(() => set([]))
+        .finally(() => setLoaded(true));
+    grab("微博", setHotNews, setHotLoaded);
+    grab("抖音", setTrending, setTrendingLoaded);
     // 同时拉一份按类目分桶的热搜（娱乐/经济/生活/科技/文化）
     const grabCats = () =>
       apiFetch(`${API}/hot/categorized/all`)
-        .then((r) => r.json())
+        .then((r) => (r.ok ? r.json() : Promise.reject(new Error(`hot categorized ${r.status}`))))
         .then((d) => {
           setCats(d.categories || {});
           setCatsLoaded(true);
@@ -295,8 +299,8 @@ function PlazaContent() {
         .catch(() => setCatsLoaded(true));  // 失败也算"已尝试"，避免永远转圈
     grabCats();
     const id = window.setInterval(() => {
-      grab("微博", setHotNews);
-      grab("抖音", setTrending);
+      grab("微博", setHotNews, setHotLoaded);
+      grab("抖音", setTrending, setTrendingLoaded);
       grabCats();
     }, 5 * 60_000); // 5 分钟刷一次
     return () => window.clearInterval(id);
@@ -388,7 +392,7 @@ function PlazaContent() {
               maxHeight: "calc(100% - 70px)", overflowY: "auto",
             }}
           >
-            <CategoryCard title="TODAY · 今日热点" accent="#ff7720" icon={Flame}      items={hotNews}        style={{}} onItemClick={openTopic} />
+            <CategoryCard title="TODAY · 今日热点" accent="#ff7720" icon={Flame}      items={hotNews}        loaded={hotLoaded} style={{}} onItemClick={openTopic} />
             <CategoryCard title="ENT · 娱乐"      accent="#ff66cc" icon={Music2}     items={cats["娱乐"] || []} loaded={catsLoaded} style={{}} onItemClick={openTopic} />
             <CategoryCard title="ECON · 经济"     accent="#facc15" icon={BarChart2}  items={cats["经济"] || []} loaded={catsLoaded} style={{}} onItemClick={openTopic} />
             <CategoryCard title="LIFE · 生活"     accent="#22d3ee" icon={Sparkles}   items={cats["生活"] || []} loaded={catsLoaded} style={{}} onItemClick={openTopic} />
@@ -402,7 +406,7 @@ function PlazaContent() {
               maxHeight: "calc(100% - 70px)", overflowY: "auto",
             }}
           >
-            <CategoryCard title="TRENDING · 潮流" accent="#ff3e80" icon={TrendingUp} items={trending}           style={{}} onItemClick={openTopic} />
+            <CategoryCard title="TRENDING · 潮流" accent="#ff3e80" icon={TrendingUp} items={trending}           loaded={trendingLoaded} style={{}} onItemClick={openTopic} />
             <CategoryCard title="TECH · 科技"     accent="#a78bfa" icon={Cpu}        items={cats["科技"] || []} loaded={catsLoaded} style={{}} onItemClick={openTopic} />
             <CategoryCard title="CULT · 文化"     accent="#94e6c4" icon={BookOpen}   items={cats["文化"] || []} loaded={catsLoaded} style={{}} onItemClick={openTopic} />
           </div>

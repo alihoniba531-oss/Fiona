@@ -1,6 +1,6 @@
 # desktop/ — Chloe桌面客户端
 
-Tauri 2 桌面壳 + 嵌入式 SSH 隧道。**双击 .exe 自动连云、自动加载、关窗自动清理**。
+Tauri 2 桌面壳 + 可选 SSH 隧道。**双击 .exe 自动加载；开发者模式自动连云，用户模式直连公网**。
 
 ## 两条获取路径，选一条
 
@@ -9,7 +9,9 @@ Tauri 2 桌面壳 + 嵌入式 SSH 隧道。**双击 .exe 自动连云、自动�
 1. 仓库 → **Actions** 页面 → 选最新一次 **Build Windows Desktop** 成功的 run
 2. 滚到底 **Artifacts** → 下载 `fiona-desktop-msi`（解压得到 `.msi`）
 3. 双击 `.msi` 安装到 Windows
-4. **创建配置文件** `%APPDATA%\fiona\config.json`（在文件管理器地址栏输入 `%APPDATA%\fiona\` 回车进入该目录，没有就建一下），内容参考 [fiona.config.example.json](fiona.config.example.json)：
+4. 直接打开 Chloe。默认不需要配置文件，会加载公网 `https://madchloechat.online`
+
+如果要用开发者模式连自己的云端 dev 服务，再创建配置文件 `%APPDATA%\fiona\config.json`（在文件管理器地址栏输入 `%APPDATA%\fiona\` 回车进入该目录，没有就建一下），内容参考 [fiona.config.example.json](fiona.config.example.json)：
    ```json
    {
      "host": "<云IP>",
@@ -18,8 +20,7 @@ Tauri 2 桌面壳 + 嵌入式 SSH 隧道。**双击 .exe 自动连云、自动�
      "forwards": ["3000:127.0.0.1:3000"]
    }
    ```
-5. 配 SSH 免密（见下面【SSH 免密】小节）
-6. 开始菜单 / 桌面找到"Chloe"双击即开
+开发者模式还需要配 SSH 免密（见下面【SSH 免密】小节）。
 
 ### B. 本机 setup + dev（开发者模式，能改代码热调）
 
@@ -33,7 +34,7 @@ Tauri 2 桌面壳 + 嵌入式 SSH 隧道。**双击 .exe 自动连云、自动�
 3. 重开 PowerShell（让 PATH 生效）
 4. `.\dev.ps1` 启动Chloe窗口
 
-## SSH 免密（两条路径都需要）
+## SSH 免密（仅开发者模式需要）
 
 Tauri 内部用 `BatchMode=yes` 起 ssh，**免密没配会失败**。在 Windows PowerShell 跑一次：
 
@@ -57,18 +58,22 @@ type $env:USERPROFILE\.ssh\id_ed25519.pub | ssh root@<你的云IP> 'cat >> ~/.ss
 └──────────────────────────────────┘      └──────────────────────┘
 ```
 
-启动顺序（Tauri 进程内部）：
+开发者模式启动顺序（检测到配置文件）：
 1. 读配置（dev 用 `desktop/fiona.config.json`，prod 用 `%APPDATA%\fiona\config.json`）
 2. spawn `ssh -N -L <forwards> user@host` 子进程
 3. 轮询 `localhost:<前端端口>` 通了再开窗（最长等 15 秒）
 4. WebView2 加载 `http://localhost:3000`
 5. 关窗时 kill 子进程
 
+用户模式启动顺序（无配置文件）：
+1. 不启动 SSH
+2. 静态加载页直接跳转到 `https://madchloechat.online`
+
 ## 文件说明
 
 - `package.json` — 装 `@tauri-apps/cli`
 - `fiona.config.example.json` — 配置模板（实际配置 `fiona.config.json` 已 gitignore）
-- `dist/index.html` — prod build 的占位首页（瞬时 redirect 到 `localhost:3000`）
+- `dist/index.html` — prod build 的占位首页（有配置跳 `localhost:3000`，无配置跳公网）
 - `src-tauri/Cargo.toml` — Rust 依赖
 - `src-tauri/tauri.conf.json` — Tauri 主配置
 - `src-tauri/src/main.rs` + `lib.rs` — 入口 + SSH 隧道嵌入逻辑
@@ -80,5 +85,5 @@ type $env:USERPROFILE\.ssh\id_ed25519.pub | ssh root@<你的云IP> 'cat >> ~/.ss
 
 - 接 `tauri-plugin-store` 把 token 从 localStorage 迁到 OS keychain
 - 接 `tauri-plugin-notification` 接桌面通知
-- 装好后**首次启动**改成弹原生表单填云端配置（替代手编 `%APPDATA%\fiona\config.json`）
+- 开发者模式首次启动可考虑弹原生表单填云端配置（替代手编 `%APPDATA%\fiona\config.json`）
 - 用 `cargo tauri icon path/to/1024.png` 生成全套图标

@@ -1,10 +1,10 @@
-// 桌面壳 + 嵌入式 SSH 隧道 + 自定义 open_url 命令。
+// 桌面壳 + 可选 SSH 隧道 + 自定义 open_url 命令。
 //
 // 启动流程：
 //   1. 读 desktop/fiona.config.json（云 IP / 用户 / 转发规则）
-//   2. spawn `ssh -N -L ...` 子进程做端口转发；stderr 重定向到 ssh.log
-//   3. 轮询 localhost:<主端口> 直到通（最长 15 秒）
-//   4. 启动 Tauri 窗口，加载 devUrl
+//   2. 有配置则 spawn `ssh -N -L ...` 子进程做端口转发；stderr 重定向到 ssh.log
+//   3. 有配置则轮询 localhost:<主端口> 直到通（最长 15 秒）
+//   4. 启动 Tauri 窗口；静态加载页决定跳 localhost 还是公网
 //   5. 关窗时 kill 隧道子进程
 //
 // 全程把诊断（config 路径 / ssh pid / 端口就绪 / 耗时 / 备注）写进全局 StartupReport
@@ -314,7 +314,7 @@ pub fn run() {
         r.config_path = cfg_path.as_ref().map(|p| p.display().to_string());
     }
     if cfg_path.is_none() {
-        add_note("未找到 fiona.config.json（请放到 %APPDATA%\\fiona\\config.json，或可执行文件同级）");
+        add_note("未找到 fiona.config.json，进入公网用户模式");
     }
 
     let cfg = cfg_path.as_ref().and_then(load_config_from);
@@ -364,12 +364,11 @@ pub fn run() {
             open_logs_dir
         ])
         .setup(|app| {
-            // 启动自动弹 DevTools。tauri crate 的 devtools feature 已启用，
-            // open_devtools() 方法在 release build 也可用。
-            // (之前用 #[cfg(feature = "devtools")] 是错的——那是 tauri crate
-            //  的 feature，不是 fiona-desktop crate 的，cfg 永远 false。)
-            if let Some(window) = app.get_webview_window("main") {
-                window.open_devtools();
+            #[cfg(debug_assertions)]
+            {
+                if let Some(window) = app.get_webview_window("main") {
+                    window.open_devtools();
+                }
             }
             Ok(())
         })
