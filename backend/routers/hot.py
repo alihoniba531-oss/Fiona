@@ -2,26 +2,31 @@
 import json
 import time as _time
 
-from fastapi import APIRouter
+from fastapi import APIRouter, Request
 
 from llm import QWEN_CLIENT, client
+from rate_limit import limiter
 from tools.hot_topics import hot_topics
 
 router = APIRouter()
 
 
 @router.get("/hot/expand")
-async def hot_expand(title: str = ""):
+@limiter.limit("20/minute")
+async def hot_expand(request: Request, title: str = ""):
     """把一个热搜标题展开成结构化内容卡（千问联网检索）。
-    注意：此路由必须注册在 /hot/{source} 之前，否则被泛匹配吃掉。"""
+    注意：此路由必须注册在 /hot/{source} 之前，否则被泛匹配吃掉。
+    限流 20/分钟/IP：匿名可访问且触发 LLM 联网外呼，防钱包型 DoS；request 供 slowapi 取 key。"""
     import asyncio
     from tools.topic_expand import topic_expand
     return await asyncio.to_thread(topic_expand, title)
 
 
 @router.get("/hot/{source}")
-async def hot_endpoint(source: str = "微博"):
-    """直接给前端拉热搜（广场角落 HUD 用）。source: 微博 / 知乎 / 抖音 / B站 / 头条"""
+@limiter.limit("20/minute")
+async def hot_endpoint(request: Request, source: str = "微博"):
+    """直接给前端拉热搜（广场角落 HUD 用）。source: 微博 / 知乎 / 抖音 / B站 / 头条
+    限流 20/分钟/IP：匿名可访问且触发外呼，防刷爆；request 供 slowapi 取 key。"""
     import asyncio
     return await asyncio.to_thread(hot_topics, source)
 

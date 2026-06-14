@@ -98,6 +98,16 @@ async def init_db():
             )
         """)
         await _safe_migrate(db, "ALTER TABLE posts ADD COLUMN tags_json TEXT DEFAULT '[]'")
+        # ── post_likes：谁赞过哪条帖子（点赞去重）──
+        # (post_id, username) 唯一,同一登录用户对同一帖只能赞一次,防无限刷赞。
+        await db.execute("""
+            CREATE TABLE IF NOT EXISTS post_likes (
+                post_id     INTEGER NOT NULL,
+                username    TEXT NOT NULL,
+                created_at  TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+                PRIMARY KEY (post_id, username)
+            )
+        """)
         # ── user_tag_prefs：用户标签喜好权重（全局） ──
         await db.execute("""
             CREATE TABLE IF NOT EXISTS user_tag_prefs (
@@ -628,13 +638,20 @@ async def get_posts(limit: int = 30, offset: int = 0) -> list[dict]:
     return result
 
 
-async def like_post(post_id: int) -> int:
-    """给帖子点赞，返回新的 likes 数"""
+async def like_post(post_id: int, username: str) -> int:
+    """给帖子点赞（按登录用户去重），返回最新 likes 数。
+    先 INSERT OR IGNORE 进 post_likes;只有确实是新插入(rowcount>0)才给 posts.likes +1，
+    所以同一用户重复点赞幂等、不再加数。"""
     async with aiosqlite.connect(DB_PATH) as db:
-        await db.execute("UPDATE posts SET likes = likes + 1 WHERE id = ?", (post_id,))
+        cur = await db.execute(
+            "INSERT OR IGNORE INTO post_likes (post_id, username) VALUES (?, ?)",
+            (post_id, username),
+        )
+        if cur.rowcount > 0:  # 本次确实是新点赞
+            await db.execute("UPDATE posts SET likes = likes + 1 WHERE id = ?", (post_id,))
         await db.commit()
-        async with db.execute("SELECT likes FROM posts WHERE id = ?", (post_id,)) as cur:
-            row = await cur.fetchone()
+        async with db.execute("SELECT likes FROM posts WHERE id = ?", (post_id,)) as c:
+            row = await c.fetchone()
     return row[0] if row else 0
 
 

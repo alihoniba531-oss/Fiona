@@ -1,34 +1,6 @@
 # -*- coding: utf-8 -*-
-import threading
-import subprocess
 
 
 def set_reminder(text: str, minutes: int) -> str:
-    minutes = max(1, int(minutes))
-
-    def notify():
-        # Windows toast 通知（PowerShell）
-        safe_text = text.replace("'", "''")
-        try:
-            subprocess.Popen([
-                "powershell", "-Command",
-                f"[reflection.assembly]::loadwithpartialname('System.Windows.Forms') | Out-Null; "
-                f"[System.Windows.Forms.MessageBox]::Show('{safe_text}', 'Chloe提醒你', "
-                f"[System.Windows.Forms.MessageBoxButtons]::OK, "
-                f"[System.Windows.Forms.MessageBoxIcon]::Information)"
-            ])
-        except Exception:
-            pass
-
-    t = threading.Timer(minutes * 60, notify)
-    t.daemon = True
-    t.start()
-
-    if minutes >= 60:
-        h = minutes // 60
-        m = minutes % 60
-        time_str = f"{h}小时" + (f"{m}分钟" if m else "")
-    else:
-        time_str = f"{minutes}分钟"
-
-    return f"好，{time_str}后提醒你{text}"
+    # 后端只跑在无头服务器上，不再起常驻定时线程（消除线程泄漏），诚实告知做不到
+    return "定时提醒这个我在网页版还做不到呢～到点了我没法主动弹消息给你。要不你先用手机的闹钟提醒一下？"

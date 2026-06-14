@@ -111,7 +111,8 @@ async def plaza_post(
 @router.post("/plaza/like/{post_id}")
 async def plaza_like(post_id: int, user: str = Depends(get_current_user)):
     from database import like_post, get_posts, update_tag_prefs
-    likes = await like_post(post_id)
+    # 按真实登录用户名去重(不是帖子作者的 anon_id),防同一人重复刷赞
+    likes = await like_post(post_id, user)
     # 更新用户标签喜好
     all_posts = await get_posts(limit=200)
     post = next((p for p in all_posts if p["id"] == post_id), None)

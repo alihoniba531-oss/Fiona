@@ -1,73 +1,15 @@
 # -*- coding: utf-8 -*-
-import webbrowser
-import subprocess
 from datetime import datetime
 
 
-SITE_MAP = {
-    "淘宝": "https://www.taobao.com",
-    "京东": "https://www.jd.com",
-    "jd": "https://www.jd.com",
-    "抖音": "https://www.douyin.com",
-    "微博": "https://www.weibo.com",
-    "bilibili": "https://www.bilibili.com",
-    "b站": "https://www.bilibili.com",
-    "知乎": "https://www.zhihu.com",
-    "百度": "https://www.baidu.com",
-    "github": "https://github.com",
-    "youtube": "https://www.youtube.com",
-    "小红书": "https://www.xiaohongshu.com",
-    "微信": "https://wx.qq.com",
-    "qq邮箱": "https://mail.qq.com",
-    "163邮箱": "https://mail.163.com",
-    "google": "https://www.google.com",
-}
-
-
 def open_url(site: str) -> str:
-    key = site.lower().strip()
-    url = SITE_MAP.get(key)
-    if not url:
-        # 如果像域名就直接加 https，否则百度搜
-        if "." in site and " " not in site:
-            url = f"https://{site}" if not site.startswith("http") else site
-        else:
-            url = f"https://www.baidu.com/s?wd={site}"
-    webbrowser.open(url)
-    return f"打开了"
+    # 后端只跑在无头服务器上，没有桌面浏览器可以替你外部打开网页
+    return "用浏览器帮你打开网页这个，我在网页版里还做不到呢～你想看的话告诉我，我可以直接帮你搜来看看？"
 
 
 def take_screenshot() -> str:
-    try:
-        from PIL import ImageGrab
-        import os
-        desktop = os.path.join(os.path.expanduser("~"), "Desktop")
-        ts = datetime.now().strftime("%Y%m%d_%H%M%S")
-        path = os.path.join(desktop, f"截图_{ts}.png")
-        img = ImageGrab.grab()
-        img.save(path)
-        return f"截图保存到桌面了：截图_{ts}.png"
-    except ImportError:
-        # PIL 没装，用 PowerShell 截图
-        try:
-            import os
-            desktop = os.path.join(os.path.expanduser("~"), "Desktop")
-            ts = datetime.now().strftime("%Y%m%d_%H%M%S")
-            path = os.path.join(desktop, f"截图_{ts}.png")
-            cmd = (
-                f"Add-Type -AssemblyName System.Windows.Forms; "
-                f"$screen = [System.Windows.Forms.Screen]::PrimaryScreen; "
-                f"$bmp = New-Object System.Drawing.Bitmap $screen.Bounds.Width, $screen.Bounds.Height; "
-                f"$g = [System.Drawing.Graphics]::FromImage($bmp); "
-                f"$g.CopyFromScreen($screen.Bounds.Location, [System.Drawing.Point]::Empty, $screen.Bounds.Size); "
-                f"$bmp.Save('{path}'); $g.Dispose(); $bmp.Dispose()"
-            )
-            subprocess.run(["powershell", "-Command", cmd], timeout=10)
-            return f"截图保存到桌面了：截图_{ts}.png"
-        except Exception as e:
-            return f"截图失败：{e}"
-    except Exception as e:
-        return f"截图失败：{e}"
+    # 服务器上没有屏幕可截，老老实实说做不到
+    return "截图这个我现在还做不到哎，我这边是没有屏幕的那种～有别的我能帮上的吗？"
 
 
 def get_datetime() -> str:
@@ -78,18 +20,5 @@ def get_datetime() -> str:
 
 
 def write_clipboard(content: str) -> str:
-    try:
-        import pyperclip
-        pyperclip.copy(content)
-        return "复制好了，直接粘贴就行"
-    except ImportError:
-        # 用 PowerShell 写剪贴板
-        try:
-            safe = content.replace("'", "''")
-            subprocess.run(
-                ["powershell", "-Command", f"Set-Clipboard -Value '{safe}'"],
-                timeout=5
-            )
-            return "复制好了，直接粘贴就行"
-        except Exception as e:
-            return f"复制失败：{e}"
+    # 服务器上没有剪贴板，复制粘贴这种本机操作做不了
+    return "帮你复制到剪贴板这个我还做不到呢，我这边没办法碰你电脑的剪贴板～不过你直接选中我发的内容复制也很方便呀。"

@@ -10,7 +10,10 @@ from fastapi import FastAPI, Request
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse
 from fastapi.staticfiles import StaticFiles
+from slowapi import _rate_limit_exceeded_handler
+from slowapi.errors import RateLimitExceeded
 from database import init_db
+from rate_limit import limiter
 from routers import auth, chat, hot, match, me, peer, plaza, voice
 from utils.media import UPLOADS_DIR
 
@@ -34,6 +37,12 @@ async def lifespan(app: FastAPI):
     yield
 
 app = FastAPI(title="Chloe API", lifespan=lifespan)
+
+# ── 限流（slowapi）────────────────────────────────────────────────
+# 不设全局 default_limits，免误伤 /uploads、TTS 流等；只在具体端点上挂 @limiter.limit。
+# key_func 走 rate_limit.py 里从 X-Forwarded-For 取真实 IP（nginx 反代后面）。
+app.state.limiter = limiter
+app.add_exception_handler(RateLimitExceeded, _rate_limit_exceeded_handler)
 
 app.mount("/uploads", StaticFiles(directory=UPLOADS_DIR), name="uploads")
 

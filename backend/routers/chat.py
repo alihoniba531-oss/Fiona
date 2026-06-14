@@ -2,12 +2,13 @@
 import json
 import os
 
-from fastapi import APIRouter, Depends, HTTPException
+from fastapi import APIRouter, Depends, HTTPException, Request
 from fastapi.responses import StreamingResponse
 from pydantic import BaseModel
 
 from auth_dep import get_current_user
 from database import get_or_create_user, get_strawberry_balance
+from rate_limit import limiter
 from services.chat_service import build_context, run_chat
 
 router = APIRouter()
@@ -19,7 +20,8 @@ class ChatRequest(BaseModel):
 
 
 @router.post("/chat")
-async def chat(req: ChatRequest, user: str = Depends(get_current_user)):
+@limiter.limit("30/minute")
+async def chat(request: Request, req: ChatRequest, user: str = Depends(get_current_user)):
     has_image = bool(req.image_base64)
     if not req.message.strip() and not has_image:
         raise HTTPException(status_code=400, detail="message 和图片不能同时为空")
