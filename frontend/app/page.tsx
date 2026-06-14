@@ -1271,7 +1271,7 @@ export default function ChatPage() {
                 </div>
               </div>
               <div className="border-t border-border px-4 py-2.5">
-                <button onClick={() => window.open(`/history?user=${encodeURIComponent(username)}`, "_blank")} className="flex items-center gap-1.5 text-[11px] text-muted-foreground hover:text-foreground transition-colors w-full" title="查看完整历史记录">
+                <button onClick={() => window.open(`/history?user=${encodeURIComponent(username)}`, "_blank", "noopener,noreferrer")} className="flex items-center gap-1.5 text-[11px] text-muted-foreground hover:text-foreground transition-colors w-full" title="查看完整历史记录">
                   <Clock size={11} />查看完整历史记录
                 </button>
             </div>

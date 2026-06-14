@@ -119,7 +119,7 @@ function PostCard({ post, username }: { post: Post; username: string }) {
                 boxShadow: "inset 0 0 6px rgba(0,212,255,0.5), 0 0 8px rgba(0,212,255,0.3)",
               }}
             >
-              <span className="text-[9px] font-semibold text-cyan-50 tracking-wider">{post.anon_id[0].toUpperCase()}</span>
+              <span className="text-[9px] font-semibold text-cyan-50 tracking-wider">{(post.anon_id || "?")[0].toUpperCase()}</span>
             </div>
             <span className="text-[10px] text-muted-foreground hud-label">{post.anon_id}</span>
           </div>

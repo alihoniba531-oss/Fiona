@@ -20,6 +20,21 @@ function isTauri(): boolean {
   return !!(w.__TAURI_INTERNALS__?.invoke || w.__TAURI__?.core?.invoke || w.__TAURI__?.invoke);
 }
 
+// URL 可能来自 LLM / 后端卡片（data.card.url），不可信。
+// 只放行安全协议；挡掉 javascript: / data: / vbscript: 等伪协议——
+// 否则 window.open("javascript:...") 会在本应用 origin 内执行脚本（XSS / 窃取 token）。
+// 相对/协议无关 URL（"/x"、"//host"）按当前页 origin 解析后再判 protocol。
+const SAFE_PROTOCOLS = new Set(["http:", "https:", "mailto:", "tel:"]);
+function isSafeUrl(url: string): boolean {
+  try {
+    const base = typeof window !== "undefined" ? window.location.href : undefined;
+    const proto = new URL(url, base).protocol.toLowerCase();
+    return SAFE_PROTOCOLS.has(proto);
+  } catch {
+    return false;
+  }
+}
+
 async function tauriInvoke(cmd: string, args: Record<string, unknown>): Promise<{ ok: true } | { ok: false; errors: string[] }> {
   const w = window as TauriWindow;
   const bridges: Array<{ name: string; fn: TauriInvoke }> = [];
@@ -45,6 +60,10 @@ async function tauriInvoke(cmd: string, args: Record<string, unknown>): Promise<
  */
 export async function openExternal(url: string): Promise<void> {
   if (typeof window === "undefined" || !url) return;
+  if (!isSafeUrl(url)) {
+    console.warn("[openExternal] blocked unsafe URL scheme:", url.slice(0, 80));
+    return;
+  }
 
   if (!isTauri()) {
     // 浏览器环境（PWA 或网页直接打开）：标准新标签
@@ -67,6 +86,10 @@ export async function openExternal(url: string): Promise<void> {
  */
 export async function openInBrowser(url: string): Promise<void> {
   if (typeof window === "undefined" || !url) return;
+  if (!isSafeUrl(url)) {
+    console.warn("[openInBrowser] blocked unsafe URL scheme:", url.slice(0, 80));
+    return;
+  }
   if (!isTauri()) {
     window.open(url, "_blank", "noopener,noreferrer");
     return;

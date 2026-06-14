@@ -21,8 +21,14 @@ export function setAuth(token: string, username: string, balance: number) {
   localStorage.setItem(TOKEN_KEY,   token);
   localStorage.setItem(USER_KEY,    username);
   localStorage.setItem(BALANCE_KEY, String(balance));
-  // cookie 供 middleware 读取（7天）
-  document.cookie = `fiona_token=${token}; path=/; max-age=${60 * 60 * 24 * 7}; SameSite=Lax`;
+  // cookie 供 middleware 读取。寿命对齐后端 JWT（30 天），否则 cookie 提前过期会
+  // 让 proxy 路由门禁误判未登录、同源 <img>/<audio> 媒体鉴权失效，而 localStorage
+  // 里的 token 仍有效。HTTPS 下加 Secure（dev 走 http 不能加，否则浏览器丢弃 cookie）。
+  const secure =
+    typeof window !== "undefined" && window.location.protocol === "https:"
+      ? "; Secure"
+      : "";
+  document.cookie = `fiona_token=${token}; path=/; max-age=${60 * 60 * 24 * 30}; SameSite=Lax${secure}`;
   // 通知监听者（TopBar 等）身份变了
   if (typeof window !== "undefined") {
     window.dispatchEvent(new Event("fiona-user-changed"));

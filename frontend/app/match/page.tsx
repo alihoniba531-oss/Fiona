@@ -277,6 +277,11 @@ function MatchContent() {
     bottomRef.current?.scrollIntoView({ behavior: "smooth" });
   }, [messages]);
 
+  // 离开页面时关掉聊天 WebSocket，避免连接泄漏与卸载后 setState 警告
+  useEffect(() => {
+    return () => { wsRef.current?.close(); };
+  }, []);
+
   const handleSend = () => {
     const text = input.trim();
     if (!text || !wsRef.current || wsRef.current.readyState !== WebSocket.OPEN) return;

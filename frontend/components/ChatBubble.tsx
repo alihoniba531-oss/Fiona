@@ -153,7 +153,7 @@ export default function ChatBubble({ message, onDelete, onConfirmTts, onDeclineT
             src={message.imageUrl}
             alt="图片"
             className="rounded-2xl max-w-[260px] max-h-[260px] object-cover cursor-pointer hover:opacity-95 transition"
-            onClick={() => window.open(message.imageUrl, "_blank")}
+            onClick={() => window.open(message.imageUrl, "_blank", "noopener,noreferrer")}
           />
         )}
 
