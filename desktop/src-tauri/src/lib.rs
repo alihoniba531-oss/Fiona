@@ -305,12 +305,16 @@ fn startup_diagnostics() -> StartupReport {
 
 /// 实时 HTTP 探测 127.0.0.1:port——前端轮询，不会被 Service Worker 缓存搅扰
 #[tauri::command]
-fn probe_backend(port: u16) -> bool {
-    backend_http_ready(
-        port,
-        Duration::from_millis(500),
-        Duration::from_millis(500),
-    )
+async fn probe_backend(port: u16) -> bool {
+    tauri::async_runtime::spawn_blocking(move || {
+        backend_http_ready(
+            port,
+            Duration::from_millis(500),
+            Duration::from_millis(500),
+        )
+    })
+    .await
+    .unwrap_or(false)
 }
 
 fn stop_tunnel(tunnel: &Mutex<Option<Child>>) {

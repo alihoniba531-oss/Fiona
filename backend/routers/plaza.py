@@ -27,23 +27,20 @@ async def plaza_feed(
     user: str | None = Depends(get_optional_user),
 ):
     """feed：默认按用户偏好（推荐），可指定 latest / hot。匿名也能用，但无个性化"""
-    from database import get_posts, get_tag_prefs, get_time_tag_prefs, get_time_slot
-    db_sort = sort if sort in {"latest", "hot"} else "latest"
-    posts = await get_posts(limit=limit, offset=offset, sort=db_sort, tag=tag)
-
-    if sort not in {"latest", "hot"}:  # recommended
-        if user:
-            global_prefs = await get_tag_prefs(user)
-            time_prefs   = await get_time_tag_prefs(user)
-            if global_prefs or time_prefs:
-                def score(p):
-                    tags = p.get("tags", [])
-                    g = sum(global_prefs.get(t, 0) for t in tags)
-                    s = sum(time_prefs.get(t, 0) * 1.5 for t in tags)
-                    return g + s
-                posts.sort(key=score, reverse=True)
-
+    from database import get_posts, get_recommended_posts, get_time_slot
     current_slot = get_time_slot()
+    if sort in {"latest", "hot"}:
+        posts = await get_posts(limit=limit, offset=offset, sort=sort, tag=tag)
+    elif user:
+        posts = await get_recommended_posts(
+            user,
+            current_slot,
+            limit=limit,
+            offset=offset,
+            tag=tag,
+        )
+    else:
+        posts = await get_posts(limit=limit, offset=offset, sort="latest", tag=tag)
     return {"posts": posts, "time_slot": current_slot}
 
 

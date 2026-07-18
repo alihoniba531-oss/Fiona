@@ -98,7 +98,7 @@ async def peer_chat_ws(ws: WebSocket, room_id: str):
                 data = await ws.receive_json()
             except WebSocketDisconnect:
                 raise
-            except (json.JSONDecodeError, ValueError, TypeError):
+            except (json.JSONDecodeError, ValueError, TypeError, KeyError):
                 continue
             if not isinstance(data, dict):
                 continue

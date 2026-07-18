@@ -657,6 +657,61 @@ async def get_posts(
     return result
 
 
+async def get_recommended_posts(
+    username: str,
+    time_slot: str,
+    limit: int = 30,
+    offset: int = 0,
+    tag: str = "",
+) -> list[dict]:
+    """按用户全局/当前时段标签偏好在全表排序后，再做真实分页。"""
+    where = ""
+    params: list = [username, username, time_slot]
+    if tag:
+        where = """WHERE EXISTS (
+            SELECT 1
+            FROM json_each(CASE WHEN json_valid(posts.tags_json) THEN posts.tags_json ELSE '[]' END) AS filter_tag
+            WHERE filter_tag.value = ?
+        )"""
+        params.append(tag)
+    params.extend((limit, offset))
+    async with aiosqlite.connect(DB_PATH) as db:
+        db.row_factory = aiosqlite.Row
+        async with db.execute(
+            f"""SELECT id, anon_id, media_path, media_type, caption, tags_json, likes, created_at,
+                       COALESCE((
+                           SELECT SUM(
+                               COALESCE(global_pref.score, 0)
+                               + COALESCE(time_pref.score, 0) * 1.5
+                           )
+                           FROM json_each(
+                               CASE WHEN json_valid(posts.tags_json) THEN posts.tags_json ELSE '[]' END
+                           ) AS tag_item
+                           LEFT JOIN user_tag_prefs AS global_pref
+                             ON global_pref.username = ? AND global_pref.tag = tag_item.value
+                           LEFT JOIN user_time_tag_prefs AS time_pref
+                             ON time_pref.username = ? AND time_pref.time_slot = ?
+                            AND time_pref.tag = tag_item.value
+                       ), 0) AS preference_score
+                FROM posts
+                {where}
+                ORDER BY preference_score DESC, created_at DESC
+                LIMIT ? OFFSET ?""",
+            params,
+        ) as cursor:
+            rows = await cursor.fetchall()
+    result = []
+    for r in rows:
+        d = dict(r)
+        d.pop("preference_score", None)
+        try:
+            d["tags"] = _json.loads(d.pop("tags_json") or "[]")
+        except Exception:
+            d["tags"] = []
+        result.append(d)
+    return result
+
+
 async def get_post(post_id: int) -> dict | None:
     """按 id 直查一条广场帖子。"""
     async with aiosqlite.connect(DB_PATH) as db:
@@ -830,6 +885,11 @@ async def get_or_create_user_by_phone(phone: str) -> dict:
         await db.commit()
         async with db.execute("SELECT * FROM users WHERE phone = ?", (phone,)) as cursor:
             row = await cursor.fetchone()
+        if row is None:
+            # 兼容旧数据：username 已占用该手机号、但 phone 尚未回填时，
+            # INSERT OR IGNORE 会因 username 唯一约束被吞掉，按 username 兜底返回。
+            async with db.execute("SELECT * FROM users WHERE username = ?", (phone,)) as cursor:
+                row = await cursor.fetchone()
         return dict(row)
 
 

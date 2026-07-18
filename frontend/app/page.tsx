@@ -261,7 +261,7 @@ export default function ChatPage() {
   const isComposingRef = useRef(false);
   const handleSendRef = useRef<(text?: string) => Promise<void>>(async () => {});
   const handsFreeRef = useRef(false);
-  const recordingWantedRef = useRef(false);
+  const asrSessionRef = useRef(0);
   const ttsAudioRef = useRef<HTMLAudioElement | null>(null);
   const ttsPreloadRef = useRef<HTMLAudioElement | null>(null);  // 预取下一句音频，消除句间空隙
   const ttsQueueRef = useRef<string[]>([]);
@@ -419,7 +419,7 @@ export default function ChatPage() {
   useEffect(() => {
     if (!recording) return;
     const up = () => {
-      recordingWantedRef.current = false;
+      asrSessionRef.current += 1;
       setRecording(false);
     };
     window.addEventListener("mouseup", up);
@@ -435,9 +435,10 @@ export default function ChatPage() {
   const audioChunksRef = useRef<Blob[]>([]);
 
   const startNlsAsr = useCallback(async () => {
+    const sessionId = ++asrSessionRef.current;
     try {
       const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
-      if (!recordingWantedRef.current) {
+      if (asrSessionRef.current !== sessionId) {
         stream.getTracks().forEach(t => t.stop());
         return;
       }
@@ -469,15 +470,18 @@ export default function ChatPage() {
       };
       mr.start();
     } catch {
+      if (asrSessionRef.current !== sessionId) return;
       setVoiceText("麦克风未授权");
       setTimeout(() => {
-        recordingWantedRef.current = false;
+        if (asrSessionRef.current !== sessionId) return;
+        asrSessionRef.current += 1;
         setRecording(false);
       }, 1000);
     }
   }, []);
 
   const stopNlsAsr = useCallback(() => {
+    asrSessionRef.current += 1;
     const mr = mediaRecorderRef2.current;
     if (mr && mr.state === 'recording') mr.stop();
   }, []);
@@ -1412,8 +1416,8 @@ export default function ChatPage() {
               {/* 下：录音按钮 + 状态文字 */}
               <div className="mt-auto flex flex-col items-center gap-3">
                 <button
-                  onPointerDown={(e) => { e.preventDefault(); (e.target as HTMLElement).setPointerCapture(e.pointerId); recordingWantedRef.current = true; setRecording(true); }}
-                  onPointerUp={(e) => { e.preventDefault(); (e.target as HTMLElement).releasePointerCapture(e.pointerId); recordingWantedRef.current = false; setRecording(false); }}
+                  onPointerDown={(e) => { e.preventDefault(); (e.target as HTMLElement).setPointerCapture(e.pointerId); setRecording(true); }}
+                  onPointerUp={(e) => { e.preventDefault(); (e.target as HTMLElement).releasePointerCapture(e.pointerId); asrSessionRef.current += 1; setRecording(false); }}
                   className={cn(
                     "hud-btn flex items-center gap-2 px-5 py-2 text-xs font-medium",
                     recording && "hud-btn-active"

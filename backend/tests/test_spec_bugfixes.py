@@ -70,6 +70,75 @@ def test_concurrent_get_or_create_is_idempotent(tmp_path, monkeypatch):
     assert len({u["id"] for u in phones}) == 1
 
 
+def test_phone_login_falls_back_to_legacy_username_row(tmp_path, monkeypatch):
+    import aiosqlite
+    import database
+
+    monkeypatch.setattr(database, "DB_PATH", str(tmp_path / "legacy-phone.db"))
+
+    async def scenario():
+        await database.init_db()
+        async with aiosqlite.connect(database.DB_PATH) as db:
+            cursor = await db.execute(
+                "INSERT INTO users (username, phone) VALUES (?, NULL)",
+                ("13800000001",),
+            )
+            await db.commit()
+            legacy_id = cursor.lastrowid
+        user = await database.get_or_create_user_by_phone("13800000001")
+        return legacy_id, user
+
+    legacy_id, user = asyncio.run(scenario())
+    assert user["id"] == legacy_id
+    assert user["username"] == "13800000001"
+
+
+def test_recommended_feed_sorts_globally_before_pagination(tmp_path, monkeypatch):
+    import aiosqlite
+    import database
+    from routers.plaza import plaza_feed
+
+    monkeypatch.setattr(database, "DB_PATH", str(tmp_path / "recommended.db"))
+
+    async def scenario():
+        await database.init_db()
+        base = datetime(2026, 1, 1)
+        rows = [
+            (
+                f"anon-{i}",
+                f"/{i}.jpg",
+                "image",
+                f"post-{i}",
+                '["旅行"]' if i <= 10 else '["日常"]',
+                (base + timedelta(seconds=i)).strftime("%Y-%m-%d %H:%M:%S"),
+            )
+            for i in range(1, 206)
+        ]
+        async with aiosqlite.connect(database.DB_PATH) as db:
+            await db.executemany(
+                """INSERT INTO posts
+                   (anon_id, media_path, media_type, caption, tags_json, created_at)
+                   VALUES (?, ?, ?, ?, ?, ?)""",
+                rows,
+            )
+            await db.execute(
+                "INSERT INTO user_tag_prefs (username, tag, score) VALUES (?, ?, ?)",
+                ("reader", "旅行", 10),
+            )
+            await db.commit()
+
+        first = await plaza_feed(sort="recommended", limit=5, offset=0, user="reader")
+        second = await plaza_feed(sort="recommended", limit=5, offset=5, user="reader")
+        latest = await plaza_feed(sort="latest", limit=1, offset=200, user="reader")
+        return first, second, latest
+
+    first, second, latest = asyncio.run(scenario())
+    assert [post["id"] for post in first["posts"]] == [10, 9, 8, 7, 6]
+    assert [post["id"] for post in second["posts"]] == [5, 4, 3, 2, 1]
+    assert latest["posts"][0]["id"] == 5
+    assert "preference_score" not in first["posts"][0]
+
+
 def test_plaza_pagination_hot_sort_and_duplicate_like(tmp_path, monkeypatch):
     import aiosqlite
     import database
@@ -202,6 +271,129 @@ def test_peer_manager_keeps_each_socket_independent():
     assert manager.rooms["room"]["alice"] == {second}
 
 
+def test_peer_binary_frame_does_not_disconnect(client):
+    import aiosqlite
+    import database
+
+    async def seed_match():
+        async with aiosqlite.connect(database.DB_PATH) as db:
+            await db.execute(
+                """INSERT INTO matches (user_a, user_b, response_a, response_b)
+                   VALUES (?, ?, 'accept', 'accept')""",
+                ("alice", "smoke_tester"),
+            )
+            await db.commit()
+
+    asyncio.run(seed_match())
+    with client.websocket_connect(
+        "/ws/peer/alice__smoke_tester?dev_user=smoke_tester"
+    ) as websocket:
+        assert websocket.receive_json()["type"] == "history"
+        websocket.send_bytes(b"\x00\xff")
+        websocket.send_json({"content": "二进制帧之后仍可发送"})
+        message = websocket.receive_json()
+
+    assert message["type"] == "message"
+    assert message["content"] == "二进制帧之后仍可发送"
+
+
+def test_extractor_tracks_nested_profile_match_task(monkeypatch):
+    import conversation_matcher
+    import extractor
+
+    async def fake_get_profile(username):
+        return {}
+
+    async def fake_update_profile(username, profile):
+        return None
+
+    started = None
+    release = None
+
+    async def fake_detect(client, username):
+        started.set()
+        await release.wait()
+
+    monkeypatch.setattr(extractor, "get_profile", fake_get_profile)
+    monkeypatch.setattr(extractor, "update_profile", fake_update_profile)
+    monkeypatch.setattr(conversation_matcher, "detect_and_save_from_profile", fake_detect)
+    fake_client = _fake_llm('{"interests": [], "needs": []}')
+
+    async def scenario():
+        nonlocal started, release
+        started = asyncio.Event()
+        release = asyncio.Event()
+        baseline = set(extractor._background_tasks)
+        messages = [{"role": "user", "content": f"消息 {i}"} for i in range(4)]
+        await extractor.extract_and_update(fake_client, "tracked-user", messages)
+        await asyncio.wait_for(started.wait(), timeout=1)
+        tracked = set(extractor._background_tasks) - baseline
+        assert len(tracked) == 1
+        release.set()
+        await asyncio.gather(*tracked)
+        await asyncio.sleep(0)
+        return tracked
+
+    tracked = asyncio.run(scenario())
+    assert tracked.isdisjoint(extractor._background_tasks)
+
+
+def test_outer_chat_stream_closes_sync_stream_when_consumer_stops(monkeypatch):
+    monkeypatch.setenv("DEEPSEEK_API_KEY", "x")
+    monkeypatch.setenv("DASHSCOPE_API_KEY", "x")
+    import services.chat_service as chat
+
+    class _Delta:
+        content = "仍在生成"
+
+    class _Choice:
+        delta = _Delta()
+        finish_reason = None
+
+    class _Chunk:
+        choices = [_Choice()]
+
+    class _EndlessStream:
+        def __init__(self):
+            self.closed = False
+
+        def __iter__(self):
+            return self
+
+        def __next__(self):
+            return _Chunk()
+
+        def close(self):
+            self.closed = True
+
+    async def scenario():
+        stream = _EndlessStream()
+        monkeypatch.setattr(chat, "choose_model", lambda *args: "deepseek")
+        monkeypatch.setattr(
+            chat,
+            "_create_stream_with_fallback",
+            lambda *args, **kwargs: (stream, False),
+        )
+        ctx = chat.ChatContext(
+            user="disconnect-user",
+            message="继续说",
+            has_image=False,
+            image_base64=None,
+            user_content="继续说",
+            history=[],
+            message_count=1,
+            system_prompt="system",
+            messages=[{"role": "user", "content": "继续说"}],
+        )
+        state = chat.ChatState(trace={}, sys_prompt_final="system")
+        generator = chat.stream_normal(ctx, state)
+        await anext(generator)
+        await generator.aclose()
+        return stream.closed
+
+    assert asyncio.run(scenario()) is True
+
+
 def test_stream_failure_is_not_saved_or_charged(monkeypatch):
     monkeypatch.setenv("DEV_MODE", "0")
     monkeypatch.setenv("DEEPSEEK_API_KEY", "x")
@@ -221,6 +413,7 @@ def test_stream_failure_is_not_saved_or_charged(monkeypatch):
     class _BrokenStream:
         def __init__(self):
             self.count = 0
+            self.closed = False
 
         def __iter__(self):
             return self
@@ -230,6 +423,9 @@ def test_stream_failure_is_not_saved_or_charged(monkeypatch):
             if self.count == 1:
                 return _Chunk()
             raise RuntimeError("stream broke")
+
+        def close(self):
+            self.closed = True
 
     saved = []
     charged = []
@@ -249,7 +445,8 @@ def test_stream_failure_is_not_saved_or_charged(monkeypatch):
         "recognize_intent",
         lambda *args: {"intent": None, "params": {}, "missing": []},
     )
-    monkeypatch.setattr(chat, "_create_stream_with_fallback", lambda *args, **kwargs: (_BrokenStream(), False))
+    broken_stream = _BrokenStream()
+    monkeypatch.setattr(chat, "_create_stream_with_fallback", lambda *args, **kwargs: (broken_stream, False))
     monkeypatch.setattr(chat, "save_message", fake_save)
     monkeypatch.setattr(chat, "deduct_strawberry", fake_deduct)
     monkeypatch.setattr(chat, "log_event", fake_log)
@@ -273,3 +470,4 @@ def test_stream_failure_is_not_saved_or_charged(monkeypatch):
     assert any('"error"' in event for event in events)
     assert saved == []
     assert charged == []
+    assert broken_stream.closed is True

@@ -15,6 +15,7 @@ import asyncio
 import json
 import os
 import re
+from contextlib import aclosing
 from dataclasses import dataclass, field
 from datetime import datetime, timezone
 
@@ -48,12 +49,21 @@ _background_tasks: set[asyncio.Task] = set()
 
 async def _iter_sync_stream(stream):
     """逐块在线程池推进同步 OpenAI Stream，避免阻塞 asyncio 事件循环。"""
-    iterator = iter(stream)
-    while True:
-        chunk = await asyncio.to_thread(next, iterator, _STREAM_END)
-        if chunk is _STREAM_END:
-            break
-        yield chunk
+    try:
+        iterator = iter(stream)
+        while True:
+            chunk = await asyncio.to_thread(next, iterator, _STREAM_END)
+            if chunk is _STREAM_END:
+                break
+            yield chunk
+    finally:
+        try:
+            close = getattr(stream, "close", None)
+            if callable(close):
+                await asyncio.to_thread(close)
+        except Exception as e:
+            # 关闭失败不能覆盖原始流异常或改变 SSE 输出。
+            print(f"[chat] stream close error: {type(e).__name__}: {e}", flush=True)
 
 
 def _track_background_task(coro) -> asyncio.Task:
@@ -375,11 +385,12 @@ async def stream_mirror(ctx: ChatContext, state: ChatState):
             frequency_penalty=0.6,
             presence_penalty=0.4,
         )
-        async for chunk in _iter_sync_stream(stream):
-            text = chunk.choices[0].delta.content or ""
-            if text:
-                state.full_response += text
-                yield _sse({"text": text})
+        async with aclosing(_iter_sync_stream(stream)) as chunks:
+            async for chunk in chunks:
+                text = chunk.choices[0].delta.content or ""
+                if text:
+                    state.full_response += text
+                    yield _sse({"text": text})
     except Exception as e:
         state.trace["error"] = str(e)[:200]
         print(f"[chat] mirror stream error: {type(e).__name__}: {e}", flush=True)
@@ -430,11 +441,12 @@ async def stream_image(ctx: ChatContext, state: ChatState):
             temperature=0.9,
             stream=True,
         )
-        async for chunk in _iter_sync_stream(stream):
-            text = chunk.choices[0].delta.content or ""
-            if text:
-                state.full_response += text
-                yield _sse({"text": text})
+        async with aclosing(_iter_sync_stream(stream)) as chunks:
+            async for chunk in chunks:
+                text = chunk.choices[0].delta.content or ""
+                if text:
+                    state.full_response += text
+                    yield _sse({"text": text})
     except Exception as e:
         state.full_response = "图我接到了，但看的时候出了点意外，再发一次试试？"
         yield _sse({"text": state.full_response})
@@ -566,14 +578,15 @@ async def stream_normal(ctx: ChatContext, state: ChatState):
             frequency_penalty=_freq_pen,
             presence_penalty=_pres_pen,
         )
-        async for chunk in _iter_sync_stream(stream):
-            text = chunk.choices[0].delta.content or ""
-            if text:
-                state.full_response += text
-                yield _sse({"text": text})
-            fr = chunk.choices[0].finish_reason
-            if fr:
-                _finish_reason = fr
+        async with aclosing(_iter_sync_stream(stream)) as chunks:
+            async for chunk in chunks:
+                text = chunk.choices[0].delta.content or ""
+                if text:
+                    state.full_response += text
+                    yield _sse({"text": text})
+                fr = chunk.choices[0].finish_reason
+                if fr:
+                    _finish_reason = fr
     except Exception as e:
         state.trace["error"] = str(e)[:200]
         print(f"[chat] normal stream error: {type(e).__name__}: {e}", flush=True)

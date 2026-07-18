@@ -8,6 +8,17 @@ import asyncio
 import json
 from database import get_profile, update_profile, update_time_tag_prefs
 
+_background_tasks: set[asyncio.Task] = set()
+
+
+def _track_background_task(coro) -> asyncio.Task:
+    """保留后台任务的强引用，完成后自动移除。"""
+    task = asyncio.create_task(coro)
+    _background_tasks.add(task)
+    task.add_done_callback(_background_tasks.discard)
+    return task
+
+
 # 对话兴趣词 → 广场标签映射
 _INTEREST_TO_TAG: list[tuple[list[str], str]] = [
     (["美食", "吃", "餐", "菜", "料理", "食物", "烹饪"], "美食"),
@@ -122,7 +133,7 @@ async def extract_and_update(client, username: str, messages: list):
 
         # Layer 2：画像更新后触发画像级跨用户匹配
         from conversation_matcher import detect_and_save_from_profile
-        asyncio.create_task(detect_and_save_from_profile(client, username))
+        _track_background_task(detect_and_save_from_profile(client, username))
     except Exception as e:
         # 失败不影响主流程，但日志保留方便排查
         print(f"[extractor] extract_and_update failed for {username}: {type(e).__name__}: {e}", flush=True)
