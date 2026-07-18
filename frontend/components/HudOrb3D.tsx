@@ -1,7 +1,7 @@
 "use client";
 
-import { Canvas, useFrame } from "@react-three/fiber";
-import { useMemo, useRef } from "react";
+import { Canvas, useFrame, useThree } from "@react-three/fiber";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { createNoise3D } from "simplex-noise";
 import * as THREE from "three";
 
@@ -13,6 +13,38 @@ interface Props {
 const PARTICLE_COUNT = 900;
 const COLOR_IDLE = new THREE.Color("#00d4ff");
 const COLOR_REC = new THREE.Color("#ff3366");
+
+function VisibilityController({ onVisibilityChange }: { onVisibilityChange: (isVisible: boolean) => void }) {
+  const get = useThree((state) => state.get);
+  const pausedElapsed = useRef(0);
+
+  useEffect(() => {
+    const handleVisibilityChange = () => {
+      const state = get();
+      const isPageVisible = !document.hidden;
+
+      if (!isPageVisible && state.frameloop !== "never") {
+        pausedElapsed.current = state.clock.getElapsedTime();
+        state.setFrameloop("never");
+      } else if (isPageVisible && state.frameloop !== "always") {
+        state.setFrameloop("always");
+        state.clock.elapsedTime = pausedElapsed.current;
+        state.invalidate();
+      }
+
+      onVisibilityChange(isPageVisible);
+    };
+
+    document.addEventListener("visibilitychange", handleVisibilityChange);
+    handleVisibilityChange();
+
+    return () => {
+      document.removeEventListener("visibilitychange", handleVisibilityChange);
+    };
+  }, [get, onVisibilityChange]);
+
+  return null;
+}
 
 function fibonacciSphere(count: number) {
   const arr = new Float32Array(count * 3);
@@ -150,13 +182,17 @@ function CoreGlow({ recording }: { recording: boolean }) {
 }
 
 export default function HudOrb3D({ recording = false, size = 240 }: Props) {
+  const [isPageVisible, setIsPageVisible] = useState(true);
+
   return (
     <div style={{ width: size, height: size }} className="select-none">
       <Canvas
         camera={{ position: [0, 0, 3.2], fov: 45 }}
         gl={{ alpha: true, antialias: true, powerPreference: "high-performance" }}
-        dpr={[1, 2]}
+        dpr={[1, 1.5]}
+        frameloop={isPageVisible ? "always" : "never"}
       >
+        <VisibilityController onVisibilityChange={setIsPageVisible} />
         <ParticleField recording={recording} />
         <CoreGlow recording={recording} />
       </Canvas>

@@ -2,7 +2,7 @@
 
 import { cn } from "@/lib/utils";
 import { Volume2, VolumeX, Trash2, Globe } from "lucide-react";
-import { useState, useEffect, useRef, useMemo } from "react";
+import { memo, useState, useEffect, useRef, useMemo } from "react";
 
 // 打字机：把 target 按固定字符速率 (cps) 显示出来。
 // 历史消息首次渲染时 initial 即 target，不会重放；只有当 target 在生命周期内"增长"才动画。
@@ -94,7 +94,7 @@ interface ChatBubbleProps {
   onDeclineTts?: (id: string) => void;
 }
 
-export default function ChatBubble({ message, onDelete, onConfirmTts, onDeclineTts }: ChatBubbleProps) {
+function ChatBubble({ message, onDelete, onConfirmTts, onDeclineTts }: ChatBubbleProps) {
   const isUser = message.role === "user";
   const [muted, setMuted] = useState(false);
   const [hovered, setHovered] = useState(false);
@@ -308,3 +308,5 @@ export default function ChatBubble({ message, onDelete, onConfirmTts, onDeclineT
     </div>
   );
 }
+
+export default memo(ChatBubble);

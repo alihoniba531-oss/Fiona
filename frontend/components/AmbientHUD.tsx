@@ -9,43 +9,11 @@ interface Props {
 
 /** 右板块环境 HUD — 空状态时显示动态系统读数，不显示"卡片放这里"占位文字 */
 export default function AmbientHUD({ username, messageCount }: Props) {
-  const [now, setNow] = useState<Date | null>(null);
-
-  useEffect(() => {
-    // eslint-disable-next-line react-hooks/set-state-in-effect
-    setNow(new Date());
-    const t = setInterval(() => setNow(new Date()), 1000);
-    return () => clearInterval(t);
-  }, []);
-
   const sessionId = hash(username).toString(16).padStart(6, "0").toUpperCase().slice(0, 6);
-  const time = now ? now.toLocaleTimeString("zh-CN", { hour12: false }) : "--:--:--";
-  const date = now ? now.toLocaleDateString("zh-CN", { year: "numeric", month: "2-digit", day: "2-digit" }) : "----/--/--";
-  const ms = now ? now.getMilliseconds().toString().padStart(3, "0") : "000";
 
   return (
     <div className="absolute inset-0 p-4 flex flex-col gap-4 pointer-events-none select-none">
-      {/* 大时钟 */}
-      <div className="flex flex-col items-center mt-6">
-        <div className="hud-label opacity-60 mb-1">SYS · CLOCK</div>
-        <div
-          className="tabular-nums hud-flicker"
-          style={{
-            fontFamily: "var(--font-mono), 'SF Mono', Menlo, monospace",
-            fontSize: 42,
-            fontWeight: 300,
-            letterSpacing: "0.08em",
-            color: "var(--hud-cyan)",
-            textShadow: "0 0 16px var(--hud-cyan-glow), 0 0 32px rgba(0,212,255,0.25)",
-            lineHeight: 1,
-          }}
-        >
-          {time}
-        </div>
-        <div className="hud-label mt-2 opacity-60 tabular-nums">
-          {date} · {ms}MS
-        </div>
-      </div>
+      <HudClock />
 
       {/* 心电图条 */}
       <div className="mt-3 flex flex-col items-center gap-1.5">
@@ -66,25 +34,80 @@ export default function AmbientHUD({ username, messageCount }: Props) {
       {/* 底部环境频谱（伪静态） */}
       <div className="mt-auto pb-2">
         <div className="hud-label opacity-60 mb-1.5 px-2">AMBIENT SPECTRUM</div>
-        <div className="flex items-end gap-[3px] h-12 px-2">
-          {Array.from({ length: 36 }).map((_, i) => {
-            const seed = now ? now.getSeconds() : 0;
-            const h = 8 + Math.abs(Math.sin(i * 0.7 + seed * 0.3)) * 28;
-            return (
-              <div
-                key={i}
-                className="flex-1 rounded-sm"
-                style={{
-                  height: `${h}px`,
-                  background: "linear-gradient(180deg, rgba(0,212,255,0.7), rgba(0,212,255,0.1))",
-                  boxShadow: "0 0 4px rgba(0,212,255,0.3)",
-                  opacity: 0.4 + (i % 6) * 0.08,
-                }}
-              />
-            );
-          })}
-        </div>
+        <AmbientSpectrum />
       </div>
+    </div>
+  );
+}
+
+function HudClock() {
+  const [now, setNow] = useState<Date | null>(null);
+
+  useEffect(() => {
+    // eslint-disable-next-line react-hooks/set-state-in-effect
+    setNow(new Date());
+    const t = setInterval(() => setNow(new Date()), 1000);
+    return () => clearInterval(t);
+  }, []);
+
+  const time = now ? now.toLocaleTimeString("zh-CN", { hour12: false }) : "--:--:--";
+  const date = now ? now.toLocaleDateString("zh-CN", { year: "numeric", month: "2-digit", day: "2-digit" }) : "----/--/--";
+  const ms = now ? now.getMilliseconds().toString().padStart(3, "0") : "000";
+
+  return (
+    /* 大时钟 */
+    <div className="flex flex-col items-center mt-6">
+      <div className="hud-label opacity-60 mb-1">SYS · CLOCK</div>
+      <div
+        className="tabular-nums hud-flicker"
+        style={{
+          fontFamily: "var(--font-mono), 'SF Mono', Menlo, monospace",
+          fontSize: 42,
+          fontWeight: 300,
+          letterSpacing: "0.08em",
+          color: "var(--hud-cyan)",
+          textShadow: "0 0 16px var(--hud-cyan-glow), 0 0 32px rgba(0,212,255,0.25)",
+          lineHeight: 1,
+        }}
+      >
+        {time}
+      </div>
+      <div className="hud-label mt-2 opacity-60 tabular-nums">
+        {date} · {ms}MS
+      </div>
+    </div>
+  );
+}
+
+function AmbientSpectrum() {
+  const [now, setNow] = useState<Date | null>(null);
+
+  useEffect(() => {
+    // eslint-disable-next-line react-hooks/set-state-in-effect
+    setNow(new Date());
+    const t = setInterval(() => setNow(new Date()), 1000);
+    return () => clearInterval(t);
+  }, []);
+
+  const seconds = now ? now.getSeconds() : 0;
+
+  return (
+    <div className="flex items-end gap-[3px] h-12 px-2">
+      {Array.from({ length: 36 }).map((_, i) => {
+        const h = 8 + Math.abs(Math.sin(i * 0.7 + seconds * 0.3)) * 28;
+        return (
+          <div
+            key={i}
+            className="flex-1 rounded-sm"
+            style={{
+              height: `${h}px`,
+              background: "linear-gradient(180deg, rgba(0,212,255,0.7), rgba(0,212,255,0.1))",
+              boxShadow: "0 0 4px rgba(0,212,255,0.3)",
+              opacity: 0.4 + (i % 6) * 0.08,
+            }}
+          />
+        );
+      })}
     </div>
   );
 }

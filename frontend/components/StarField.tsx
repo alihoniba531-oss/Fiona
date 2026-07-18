@@ -35,13 +35,13 @@ export default function StarField({ count = 260, className = "" }: Props) {
     const ctx = canvas.getContext("2d");
     if (!ctx) return;
 
-    let raf = 0;
+    let raf: number | null = null;
     let stars: Star[] = [];
     let shootingStar: ShootingStar | null = null;
     let dpr = 1;
 
     const resize = () => {
-      dpr = Math.min(window.devicePixelRatio || 1, 2);
+      dpr = Math.min(window.devicePixelRatio || 1, 1.5);
       const w = canvas.clientWidth;
       const h = canvas.clientHeight;
       canvas.width = Math.max(1, Math.floor(w * dpr));
@@ -74,6 +74,9 @@ export default function StarField({ count = 260, className = "" }: Props) {
 
     let lastT = performance.now();
     const tick = (now: number) => {
+      raf = null;
+      if (document.hidden) return;
+
       const dt = Math.min(3, (now - lastT) / 16.67);
       lastT = now;
       const t = now * 0.001;
@@ -128,10 +131,33 @@ export default function StarField({ count = 260, className = "" }: Props) {
 
       raf = requestAnimationFrame(tick);
     };
-    raf = requestAnimationFrame(tick);
+
+    const stopAnimation = () => {
+      if (raf === null) return;
+      cancelAnimationFrame(raf);
+      raf = null;
+    };
+
+    const startAnimation = () => {
+      if (document.hidden || raf !== null) return;
+      lastT = performance.now();
+      raf = requestAnimationFrame(tick);
+    };
+
+    const handleVisibilityChange = () => {
+      if (document.hidden) {
+        stopAnimation();
+      } else {
+        startAnimation();
+      }
+    };
+
+    document.addEventListener("visibilitychange", handleVisibilityChange);
+    startAnimation();
 
     return () => {
-      cancelAnimationFrame(raf);
+      document.removeEventListener("visibilitychange", handleVisibilityChange);
+      stopAnimation();
       ro.disconnect();
     };
   }, [count]);

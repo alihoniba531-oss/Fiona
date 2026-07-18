@@ -1,7 +1,7 @@
 "use client";
 
-import { Canvas, useFrame } from "@react-three/fiber";
-import { useRef, Suspense, useEffect } from "react";
+import { Canvas, useFrame, useThree } from "@react-three/fiber";
+import { useRef, Suspense, useEffect, useState } from "react";
 import * as THREE from "three";
 import { useTexture, Stars } from "@react-three/drei";
 import { EffectComposer, Bloom } from "@react-three/postprocessing";
@@ -28,6 +28,38 @@ const PLANETS: PlanetDef[] = [
   { name: "Uranus",  texture: "/textures/uranus.jpg",   size: 0.12,  orbit: 6.8,  speed: 0.06, phase: 4.8, tilt: 1.7 },
   { name: "Neptune", texture: "/textures/neptune.jpg",  size: 0.12,  orbit: 7.8,  speed: 0.045, phase: 1.5 },
 ];
+
+function VisibilityController({ onVisibilityChange }: { onVisibilityChange: (isVisible: boolean) => void }) {
+  const get = useThree((state) => state.get);
+  const pausedElapsed = useRef(0);
+
+  useEffect(() => {
+    const handleVisibilityChange = () => {
+      const state = get();
+      const isPageVisible = !document.hidden;
+
+      if (!isPageVisible && state.frameloop !== "never") {
+        pausedElapsed.current = state.clock.getElapsedTime();
+        state.setFrameloop("never");
+      } else if (isPageVisible && state.frameloop !== "always") {
+        state.setFrameloop("always");
+        state.clock.elapsedTime = pausedElapsed.current;
+        state.invalidate();
+      }
+
+      onVisibilityChange(isPageVisible);
+    };
+
+    document.addEventListener("visibilitychange", handleVisibilityChange);
+    handleVisibilityChange();
+
+    return () => {
+      document.removeEventListener("visibilitychange", handleVisibilityChange);
+    };
+  }, [get, onVisibilityChange]);
+
+  return null;
+}
 
 // ─── 银河背景球 ───────────────────────────────────────────────────────────
 function CosmosBackground() {
@@ -166,6 +198,8 @@ function Scene() {
 
 // ─── 导出 ─────────────────────────────────────────────────────────────────
 export default function SolarSystem3D({ className = "" }: { className?: string }) {
+  const [isPageVisible, setIsPageVisible] = useState(true);
+
   return (
     <div className={"absolute inset-0 pointer-events-none " + className}>
       {/* 全息扫描线叠层 */}
@@ -186,8 +220,10 @@ export default function SolarSystem3D({ className = "" }: { className?: string }
       <Canvas
         camera={{ position: [0, 3.8, 11], fov: 44 }}
         gl={{ alpha: true, antialias: true, powerPreference: "high-performance", toneMapping: THREE.ACESFilmicToneMapping }}
-        dpr={[1, 2]}
+        dpr={[1, 1.5]}
+        frameloop={isPageVisible ? "always" : "never"}
       >
+        <VisibilityController onVisibilityChange={setIsPageVisible} />
         <ambientLight intensity={0.18} />
         <Scene />
         <Stars radius={300} depth={60} count={8000} factor={4} saturation={0.5} fade speed={0.6} />

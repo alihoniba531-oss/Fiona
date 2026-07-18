@@ -1,6 +1,6 @@
 ﻿"use client";
 
-import { useState, useRef, useEffect, useCallback, useMemo } from "react";
+import { useState, useRef, useEffect, useCallback, useMemo, type CSSProperties } from "react";
 import Sidebar from "@/components/Sidebar";
 import TopBar from "@/components/TopBar";
 import ChatBubble, { type Message, type CardData, type WeatherData, type WeatherForecastDay } from "@/components/ChatBubble";
@@ -18,6 +18,98 @@ import { apiFetch, getToken, getUsername as readStoredUsername } from "@/lib/aut
 import { openExternal } from "@/lib/open";
 
 import { API_BASE as API, WS_BASE } from "@/lib/config";
+
+const HISTORY_DRAWER_STYLE = {
+  boxShadow: "8px 0 40px rgba(0,0,0,0.5), 2px 0 12px rgba(0,0,0,0.3), inset -1px 0 0 rgba(255,255,255,0.04)",
+  borderRight: "1px solid rgba(255,255,255,0.06)",
+} satisfies CSSProperties;
+
+const CHAT_HEADER_STYLE = {
+  borderRadius: 0,
+  borderTop: "none",
+  borderLeft: "none",
+  borderRight: "none",
+} satisfies CSSProperties;
+
+const CHAT_AVATAR_STYLE = {
+  background: "radial-gradient(circle at 30% 30%, rgba(0,212,255,0.6), rgba(0,90,140,0.95))",
+  boxShadow: "inset 0 0 8px rgba(0,212,255,0.55), 0 0 12px rgba(0,212,255,0.4)",
+} satisfies CSSProperties;
+
+const HUD_CYAN_TITLE_STYLE = {
+  color: "var(--hud-cyan)",
+  textShadow: "0 0 6px var(--hud-cyan-glow)",
+} satisfies CSSProperties;
+
+const HUD_BUTTON_CLIP_8_STYLE = {
+  clipPath: "polygon(0 0, calc(100% - 8px) 0, 100% 8px, 100% 100%, 8px 100%, 0 calc(100% - 8px))",
+} satisfies CSSProperties;
+
+const HUD_PLUS_STYLE = {
+  color: "var(--hud-cyan)",
+  textShadow: "0 0 6px var(--hud-cyan-glow)",
+  lineHeight: 1,
+  fontSize: 14,
+} satisfies CSSProperties;
+
+const HUD_ACTIVE_LABEL_STYLE = {
+  color: "inherit",
+  textShadow: "none",
+} satisfies CSSProperties;
+
+const HUD_BUTTON_CLIP_10_STYLE = {
+  clipPath: "polygon(0 0, calc(100% - 10px) 0, 100% 10px, 100% 100%, 10px 100%, 0 calc(100% - 10px))",
+} satisfies CSSProperties;
+
+const VOICE_TEXT_STYLE = {
+  color: "var(--hud-cyan)",
+  textShadow: "0 0 4px var(--hud-cyan-glow)",
+} satisfies CSSProperties;
+
+const CHAT_SLOT_STYLE = { contain: "layout paint" } satisfies CSSProperties;
+const DATA_STREAM_HEADER_STYLE = { borderBottom: "1px solid rgba(0,212,255,0.15)" } satisfies CSSProperties;
+const HUD_PULSE_DOT_STYLE = { width: 6, height: 6 } satisfies CSSProperties;
+const HALF_OPACITY_STYLE = { opacity: 0.5 } satisfies CSSProperties;
+
+const CARD_GLOBE_MUTED_STYLE = { color: "rgba(56,189,248,0.5)" } satisfies CSSProperties;
+const CARD_SOURCE_MUTED_STYLE = {
+  fontSize: 11,
+  color: "rgba(125,211,252,0.6)",
+  fontWeight: 500,
+} satisfies CSSProperties;
+const CARD_GLOBE_STYLE = { color: "rgba(56,189,248,0.6)" } satisfies CSSProperties;
+const CARD_SOURCE_STYLE = {
+  fontSize: 10,
+  color: "rgba(125,211,252,0.5)",
+  fontWeight: 500,
+} satisfies CSSProperties;
+const CARD_POINT_STYLE = {
+  fontSize: 11,
+  display: "flex",
+  gap: 6,
+  color: "rgba(186,230,253,0.7)",
+} satisfies CSSProperties;
+const CARD_BULLET_STYLE = {
+  color: "rgba(56,189,248,0.4)",
+  flexShrink: 0,
+  marginTop: 2,
+} satisfies CSSProperties;
+
+const DRAWER_HEADER_STYLE = {
+  borderBottom: "1px solid rgba(0,212,255,0.15)",
+  background: "linear-gradient(180deg, rgba(0,212,255,0.04) 0%, transparent 100%)",
+} satisfies CSSProperties;
+const DRAWER_LABEL_STYLE = { color: "rgba(0,212,255,0.85)" } satisfies CSSProperties;
+const CARD_MODAL_BACKDROP_STYLE = {
+  background: "rgba(2,6,18,0.78)",
+  backdropFilter: "blur(6px)",
+} satisfies CSSProperties;
+const CARD_MODAL_CONTENT_STYLE = {
+  maxWidth: 760,
+  width: "92%",
+  maxHeight: "88vh",
+} satisfies CSSProperties;
+const GENERIC_MODAL_CARD_STYLE = { maxHeight: "88vh" } satisfies CSSProperties;
 
 // ── interfaces (kept but peer chat is not rendered in UI) ──
 
@@ -872,16 +964,16 @@ export default function ChatPage() {
 
   // ── chat actions ──
 
-  const handleDeleteMessage = async (id: string, dbId?: number) => {
+  const handleDeleteMessage = useCallback(async (id: string, dbId?: number) => {
     setMessages((prev) => prev.filter((m) => m.id !== id));
     if (dbId) {
       await apiFetch(`${API}/message/${dbId}`, { method: "DELETE" }).catch(() => {});
     }
-  };
+  }, []);
 
   // 搜索类回复："帮我读" — 把搁置的 tip 文本送进 TTS 队列开始播放
   // 用户显式点击 = 想听 → 即使 AUDIO OFF 也自动开启并播放（绕开 enqueueSpeech 的 voiceOn 守卫）
-  const handleConfirmTts = (id: string, text: string) => {
+  const handleConfirmTts = useCallback((id: string, text: string) => {
     if (!voiceOn) setVoiceOn(true);
     ttsSessionRef.current += 1;
     streamDoneRef.current = true;
@@ -891,12 +983,12 @@ export default function ChatPage() {
       if (!ttsPlayingRef.current) playNextInQueue();
     }
     setMessages((prev) => prev.map((m) => (m.id === id ? { ...m, pendingTtsText: undefined } : m)));
-  };
+  }, [normalizeForTTS, playNextInQueue, voiceOn]);
 
   // 搜索类回复："不用" — 直接清掉 pending 文本
-  const handleDeclineTts = (id: string) => {
+  const handleDeclineTts = useCallback((id: string) => {
     setMessages((prev) => prev.map((m) => (m.id === id ? { ...m, pendingTtsText: undefined } : m)));
-  };
+  }, []);
 
   const handleClearChat = () => {
     if (!confirm("清空当前聊天界面？（历史记录仍保留）")) return;
@@ -1266,10 +1358,7 @@ export default function ChatPage() {
         {showHistory && (
         <div
           className="absolute left-16 top-0 bottom-0 w-64 z-50 flex flex-col bg-background/98 backdrop-blur-xl animate-in slide-in-from-left duration-300"
-          style={{
-            boxShadow: "8px 0 40px rgba(0,0,0,0.5), 2px 0 12px rgba(0,0,0,0.3), inset -1px 0 0 rgba(255,255,255,0.04)",
-            borderRight: "1px solid rgba(255,255,255,0.06)",
-          }}
+          style={HISTORY_DRAWER_STYLE}
         >
           <>
               <div className="flex items-center justify-between px-4 py-3 border-b border-border">
@@ -1332,22 +1421,19 @@ export default function ChatPage() {
         {/* ── main content: flex-col flex-1 ── */}
         <div className="flex flex-col flex-1 min-w-0">
           {/* header — single column: Chloe + new chat + voice toggle */}
-          <header className="hud-panel hud-corners flex shrink-0" style={{ borderRadius: 0, borderTop: "none", borderLeft: "none", borderRight: "none" }}>
+          <header className="hud-panel hud-corners flex shrink-0" style={CHAT_HEADER_STYLE}>
             <div className="flex-1 px-5 py-3 flex items-center justify-between gap-2">
               <div className="flex items-center gap-3">
                 <div className="hud-avatar-ring">
                   <div
                     className="w-8 h-8 rounded-full flex items-center justify-center"
-                    style={{
-                      background: "radial-gradient(circle at 30% 30%, rgba(0,212,255,0.6), rgba(0,90,140,0.95))",
-                      boxShadow: "inset 0 0 8px rgba(0,212,255,0.55), 0 0 12px rgba(0,212,255,0.4)",
-                    }}
+                    style={CHAT_AVATAR_STYLE}
                   >
                     <span className="text-[#e0f6ff] text-xs font-semibold tracking-wider">C</span>
                   </div>
                 </div>
                 <div className="leading-tight">
-                  <p className="text-sm font-semibold tracking-wider" style={{ color: "var(--hud-cyan)", textShadow: "0 0 6px var(--hud-cyan-glow)" }}>C·H·L·O·E</p>
+                  <p className="text-sm font-semibold tracking-wider" style={HUD_CYAN_TITLE_STYLE}>C·H·L·O·E</p>
                   <p className="hud-label flex items-center gap-1.5 mt-0.5">
                     <span className="hud-pulse" />
                     <span>ONLINE · CH.A1</span>
@@ -1357,11 +1443,11 @@ export default function ChatPage() {
                 <button
                   onClick={handleNewChat}
                   className="hud-btn flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium"
-                  style={{ clipPath: "polygon(0 0, calc(100% - 8px) 0, 100% 8px, 100% 100%, 8px 100%, 0 calc(100% - 8px))" }}
+                  style={HUD_BUTTON_CLIP_8_STYLE}
                   title="新建聊天"
                 >
                   <span className="hud-label">NEW</span>
-                  <span style={{ color: "var(--hud-cyan)", textShadow: "0 0 6px var(--hud-cyan-glow)", lineHeight: 1, fontSize: 14 }}>+</span>
+                  <span style={HUD_PLUS_STYLE}>+</span>
                 </button>
               </div>
               <div className="flex items-center gap-2">
@@ -1372,10 +1458,10 @@ export default function ChatPage() {
                     "hud-btn flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium",
                     voiceOn && "hud-btn-active"
                   )}
-                  style={{ clipPath: "polygon(0 0, calc(100% - 8px) 0, 100% 8px, 100% 100%, 8px 100%, 0 calc(100% - 8px))" }}
+                  style={HUD_BUTTON_CLIP_8_STYLE}
                 >
                   {voiceOn ? <Volume2 size={13} /> : <VolumeX size={13} />}
-                  <span className="hud-label" style={voiceOn ? { color: "inherit", textShadow: "none" } : undefined}>{voiceOn ? "AUDIO ON" : "AUDIO OFF"}</span>
+                  <span className="hud-label" style={voiceOn ? HUD_ACTIVE_LABEL_STYLE : undefined}>{voiceOn ? "AUDIO ON" : "AUDIO OFF"}</span>
                 </button>
                 {/* hands-free toggle */}
                 <button
@@ -1388,10 +1474,10 @@ export default function ChatPage() {
                     "hud-btn flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium",
                     handsFree && "hud-btn-active"
                   )}
-                  style={{ clipPath: "polygon(0 0, calc(100% - 8px) 0, 100% 8px, 100% 100%, 8px 100%, 0 calc(100% - 8px))" }}
+                  style={HUD_BUTTON_CLIP_8_STYLE}
                   title="免提：Chloe说完自动开麦，你停顿 1.5 秒后自动发"
                 >
-                  <span className="hud-label" style={handsFree ? { color: "inherit", textShadow: "none" } : undefined}>{handsFree ? "HANDS·FREE" : "HANDS"}</span>
+                  <span className="hud-label" style={handsFree ? HUD_ACTIVE_LABEL_STYLE : undefined}>{handsFree ? "HANDS·FREE" : "HANDS"}</span>
                 </button>
               </div>
             </div>
@@ -1422,10 +1508,10 @@ export default function ChatPage() {
                     "hud-btn flex items-center gap-2 px-5 py-2 text-xs font-medium",
                     recording && "hud-btn-active"
                   )}
-                  style={{ clipPath: "polygon(0 0, calc(100% - 10px) 0, 100% 10px, 100% 100%, 10px 100%, 0 calc(100% - 10px))" }}
+                  style={HUD_BUTTON_CLIP_10_STYLE}
                 >
                   <Mic size={14} />
-                  <span className="hud-label" style={recording ? { color: "inherit", textShadow: "none" } : undefined}>
+                  <span className="hud-label" style={recording ? HUD_ACTIVE_LABEL_STYLE : undefined}>
                     {recording ? "TRANSMIT" : "HOLD · TALK"}
                   </span>
                 </button>
@@ -1458,7 +1544,7 @@ export default function ChatPage() {
                 )}
 
                 {voiceText && (
-                  <p className="text-xs text-center px-4 leading-relaxed" style={{ color: "var(--hud-cyan)", textShadow: "0 0 4px var(--hud-cyan-glow)" }}>
+                  <p className="text-xs text-center px-4 leading-relaxed" style={VOICE_TEXT_STYLE}>
                     {voiceText}
                   </p>
                 )}
@@ -1474,7 +1560,7 @@ export default function ChatPage() {
             {/* chat slot — 卷帘门：里面的卡片可向下滑出 */}
             <div
               className="w-1/2 min-h-0 relative z-10 overflow-hidden"
-              style={{ contain: "layout paint" }}  /* 严格 layout/paint 隔离，防卷帘 transform 动画过程中视觉跳出父框 */
+              style={CHAT_SLOT_STYLE}  /* 严格 layout/paint 隔离，防卷帘 transform 动画过程中视觉跳出父框 */
             >
             <div
               className="absolute inset-0 hud-card-float flex flex-col min-h-0"
@@ -1544,9 +1630,9 @@ export default function ChatPage() {
 
             {/* right column: card panel + ambient HUD */}
             <div className="w-1/4 hud-card-float flex flex-col min-h-0 relative z-10">
-              <div className="px-4 pt-4 pb-2 flex items-center justify-between" style={{ borderBottom: "1px solid rgba(0,212,255,0.15)" }}>
+              <div className="px-4 pt-4 pb-2 flex items-center justify-between" style={DATA_STREAM_HEADER_STYLE}>
                 <span className="hud-label flex items-center gap-1.5">
-                  <span className="hud-pulse" style={{ width: 6, height: 6 }} />
+                  <span className="hud-pulse" style={HUD_PULSE_DOT_STYLE} />
                   DATA STREAM
                 </span>
                 <span className="hud-label opacity-60">{activeCards.length.toString().padStart(2, "0")} / 05</span>
@@ -1623,7 +1709,7 @@ export default function ChatPage() {
                                         {f.icon && <img src={f.icon} alt={f.condition} className="w-4 h-4 mx-1 opacity-60" />}
                                         <span style={{fontSize:10,color:theme.sub,opacity:0.6,flex:1}}>{f.condition}</span>
                                         <span className="tabular-nums" style={{fontSize:10,color:theme.accent}}>
-                                          <span style={{opacity:0.5}}>{f.low + '°'}</span> <span>{f.high + '°'}</span>
+                                          <span style={HALF_OPACITY_STYLE}>{f.low + '°'}</span> <span>{f.high + '°'}</span>
                                         </span>
                                       </div>
                                     ))}
@@ -1642,19 +1728,19 @@ export default function ChatPage() {
                             >
                               {idx > 0 && !isHovered ? (
                                 <div className="px-3 py-1.5 flex items-center gap-2 cursor-pointer" onClick={() => handleDismissCard(idx)}>
-                                  <Globe size={11} style={{color:'rgba(56,189,248,0.5)'}} />
-                                  <span style={{fontSize:11,color:'rgba(125,211,252,0.6)',fontWeight:500}}>{card.source}</span>
+                                  <Globe size={11} style={CARD_GLOBE_MUTED_STYLE} />
+                                  <span style={CARD_SOURCE_MUTED_STYLE}>{card.source}</span>
                                 </div>
                               ) : (
                                 <div className="p-3">
                                   <div className="flex items-center gap-2 mb-2">
-                                    <Globe size={11} style={{color:'rgba(56,189,248,0.6)'}} />
-                                    <span style={{fontSize:10,color:'rgba(125,211,252,0.5)',fontWeight:500}}>{card.source}</span>
+                                    <Globe size={11} style={CARD_GLOBE_STYLE} />
+                                    <span style={CARD_SOURCE_STYLE}>{card.source}</span>
                                   </div>
                                   <ul className="space-y-1.5">
                                     {card.points.map((point: string, i: number) => (
-                                      <li key={i} style={{fontSize:11,display:'flex',gap:6,color:'rgba(186,230,253,0.7)'}}>
-                                        <span style={{color:'rgba(56,189,248,0.4)',flexShrink:0,marginTop:2}}>•</span>
+                                      <li key={i} style={CARD_POINT_STYLE}>
+                                        <span style={CARD_BULLET_STYLE}>•</span>
                                         <span>{point}</span>
                                       </li>
                                     ))}
@@ -1695,12 +1781,9 @@ export default function ChatPage() {
       >
         <div
           className="flex items-center justify-between px-4 py-2 shrink-0"
-          style={{
-            borderBottom: "1px solid rgba(0,212,255,0.15)",
-            background: "linear-gradient(180deg, rgba(0,212,255,0.04) 0%, transparent 100%)",
-          }}
+          style={DRAWER_HEADER_STYLE}
         >
-          <span className="hud-label text-[11px] tracking-wider" style={{ color: "rgba(0,212,255,0.85)" }}>我的世界</span>
+          <span className="hud-label text-[11px] tracking-wider" style={DRAWER_LABEL_STYLE}>我的世界</span>
           <button
             onClick={closeDrawer}
             className="w-6 h-6 flex items-center justify-center rounded text-muted-foreground hover:bg-secondary hover:text-foreground"
@@ -1730,12 +1813,9 @@ export default function ChatPage() {
       >
         <div
           className="flex items-center justify-between px-4 py-2 shrink-0"
-          style={{
-            borderBottom: "1px solid rgba(0,212,255,0.15)",
-            background: "linear-gradient(180deg, rgba(0,212,255,0.04) 0%, transparent 100%)",
-          }}
+          style={DRAWER_HEADER_STYLE}
         >
-          <span className="hud-label text-[11px] tracking-wider" style={{ color: "rgba(0,212,255,0.85)" }}>匹配</span>
+          <span className="hud-label text-[11px] tracking-wider" style={DRAWER_LABEL_STYLE}>匹配</span>
           <button
             onClick={closeDrawer}
             className="w-6 h-6 flex items-center justify-center rounded text-muted-foreground hover:bg-secondary hover:text-foreground"
@@ -1773,12 +1853,9 @@ export default function ChatPage() {
           >
             <div
               className="flex items-center justify-between px-4 py-2 shrink-0"
-              style={{
-                borderBottom: "1px solid rgba(0,212,255,0.15)",
-                background: "linear-gradient(180deg, rgba(0,212,255,0.04) 0%, transparent 100%)",
-              }}
+              style={DRAWER_HEADER_STYLE}
             >
-              <span className="hud-label text-[11px] tracking-wider" style={{ color: "rgba(0,212,255,0.85)" }}>{labelMap[name]}</span>
+              <span className="hud-label text-[11px] tracking-wider" style={DRAWER_LABEL_STYLE}>{labelMap[name]}</span>
               <button
                 onClick={closeDrawer}
                 className="w-6 h-6 flex items-center justify-center rounded text-muted-foreground hover:bg-secondary hover:text-foreground"
@@ -1806,12 +1883,12 @@ export default function ChatPage() {
       {enlargedCard && (
         <div
           className="fixed inset-0 z-[60] flex items-center justify-center"
-          style={{ background: "rgba(2,6,18,0.78)", backdropFilter: "blur(6px)" }}
+          style={CARD_MODAL_BACKDROP_STYLE}
           onClick={() => setEnlargedCard(null)}
         >
           <div
             className="topic-drawer-in relative"
-            style={{ maxWidth: 760, width: "92%", maxHeight: "88vh" }}
+            style={CARD_MODAL_CONTENT_STYLE}
             onClick={(e) => e.stopPropagation()}
           >
             <button
@@ -1846,7 +1923,7 @@ export default function ChatPage() {
                         {f.icon && <img src={f.icon} alt={f.condition} className="w-6 h-6 mx-2 opacity-75" />}
                         <span style={{ fontSize: 13, color: theme.sub, opacity: 0.7, flex: 1 }}>{f.condition}</span>
                         <span className="tabular-nums" style={{ fontSize: 14, color: theme.accent }}>
-                          <span style={{ opacity: 0.5 }}>{f.low}°</span> <span className="ml-1">{f.high}°</span>
+                          <span style={HALF_OPACITY_STYLE}>{f.low}°</span> <span className="ml-1">{f.high}°</span>
                         </span>
                       </div>
                     ))}
@@ -1854,7 +1931,7 @@ export default function ChatPage() {
                 </div>
               );
             })() : (
-              <div className="hud-card-float rounded-2xl px-8 py-7 bg-background/95 flex flex-col" style={{ maxHeight: "88vh" }}>
+              <div className="hud-card-float rounded-2xl px-8 py-7 bg-background/95 flex flex-col" style={GENERIC_MODAL_CARD_STYLE}>
                 <div className="hud-label text-xs opacity-75 mb-4 shrink-0 tracking-wider">{enlargedCard.source || "卡片"}</div>
                 <div className="flex-1 overflow-y-auto pr-2 -mr-2">
                   {enlargedCard.points && enlargedCard.points.length > 0 ? (
