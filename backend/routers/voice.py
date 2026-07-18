@@ -1,21 +1,96 @@
 # -*- coding: utf-8 -*-
 import asyncio
 import base64
+import io
 import os
+import shutil
+import subprocess
+import tempfile
+import wave
 
 from fastapi import APIRouter, WebSocket
 from pydantic import BaseModel
 
 from auth_dep import ws_authenticate
 from nls_token import generate_nls_token
-from nls_asr import asr_recognize
+from qwen_asr import asr_recognize
 
 router = APIRouter()
+ASR_SAMPLE_RATE = 16000
+
+
+def _pcm_to_wav(audio_bytes: bytes, sample_rate: int = ASR_SAMPLE_RATE) -> bytes:
+    """Wrap 16-bit mono PCM samples in a self-describing WAV container."""
+    output = io.BytesIO()
+    with wave.open(output, "wb") as wav_file:
+        wav_file.setnchannels(1)
+        wav_file.setsampwidth(2)
+        wav_file.setframerate(sample_rate)
+        wav_file.writeframes(audio_bytes)
+    return output.getvalue()
+
+
+def _ffmpeg_to_wav(audio_bytes: bytes, input_suffix: str = ".webm") -> bytes:
+    """Synchronously transcode audio to 16 kHz mono/16-bit WAV."""
+    inp = None
+    out = None
+    try:
+        inp = tempfile.NamedTemporaryFile(suffix=input_suffix, delete=False)
+        out = tempfile.NamedTemporaryFile(suffix=".wav", delete=False)
+        inp.write(audio_bytes)
+        inp.close()
+        out.close()
+
+        ffmpeg = shutil.which("ffmpeg") or r"D:\Program Files\软件\ffmpeg\bin\ffmpeg.exe"
+        proc = subprocess.run(
+            [
+                ffmpeg,
+                "-y",
+                "-i",
+                inp.name,
+                "-vn",
+                "-ar",
+                str(ASR_SAMPLE_RATE),
+                "-ac",
+                "1",
+                "-c:a",
+                "pcm_s16le",
+                "-f",
+                "wav",
+                out.name,
+            ],
+            capture_output=True,
+            timeout=10,
+        )
+        with open(out.name, "rb") as output_file:
+            converted = output_file.read()
+
+        if proc.returncode != 0 or not converted:
+            try:
+                shutil.copy(inp.name, "/tmp/fiona-asr-bad.webm")
+            except OSError:
+                pass
+            stderr = proc.stderr.decode("utf-8", errors="replace")[-800:]
+            print(f"[ASR][ffmpeg-stderr] {stderr}")
+            print("[ASR] bad sample saved to /tmp/fiona-asr-bad.webm")
+            raise RuntimeError("ffmpeg audio conversion failed")
+
+        print(f"[ASR] converted to WAV: {len(converted)} bytes (ffmpeg rc={proc.returncode})")
+        return converted
+    finally:
+        for temporary_file in (inp, out):
+            if temporary_file is None:
+                continue
+            temporary_file.close()
+            try:
+                os.unlink(temporary_file.name)
+            except OSError:
+                pass
 
 
 @router.get("/asr/token")
 async def asr_token():
-    """阿里云 NLS 实时语音识别 token"""
+    """已弃用：旧阿里云 NLS 实时语音识别 token，暂为兼容保留。"""
     return generate_nls_token()
 
 
@@ -67,49 +142,37 @@ class AsrRequest(BaseModel):
 
 @router.post("/asr/recognize")
 async def asr_recognize_endpoint(req: AsrRequest):
-    """一句话识别：接收 base64 音频(WebM/Opus) → ffmpeg 转 PCM → NLS"""
+    """一句话识别：接收 base64 音频并以 WAV 调用 Qwen3-ASR-Flash。"""
     try:
         audio_bytes = base64.b64decode(req.audio)
     except Exception:
         return {"text": "", "error": "invalid base64 audio"}
     print(f"[ASR] received {len(audio_bytes)} bytes, format={req.format}")
+    if not audio_bytes:
+        return {"text": "", "error": "empty audio"}
 
-    # WebM/Opus 需要转成 PCM 16kHz mono
-    if req.format != "pcm":
-        import subprocess, tempfile, shutil
-        inp = tempfile.NamedTemporaryFile(suffix=".webm", delete=False)
-        inp.write(audio_bytes); inp.close()
-        out = tempfile.NamedTemporaryFile(suffix=".wav", delete=False)
-        out.close()
+    # WebM/Opus 需要转成 WAV 16kHz mono/16-bit；裸 PCM 则先补 WAV 头。
+    if req.format.lower() == "pcm":
+        if req.sample_rate <= 0:
+            return {"text": "", "error": "invalid PCM sample rate"}
         try:
-            ffmpeg = shutil.which("ffmpeg") or r"D:\Program Files\软件\ffmpeg\bin\ffmpeg.exe"
-            try:
-                proc = await asyncio.to_thread(
-                    subprocess.run,
-                    [ffmpeg, "-y", "-i", inp.name, "-ar", str(req.sample_rate), "-ac", "1", "-f", "s16le", out.name],
-                    capture_output=True,
-                    timeout=10,
-                )
-            except subprocess.TimeoutExpired:
-                print("[ASR] ffmpeg timeout (>10s)")
-                return {"text": "", "error": "ffmpeg timeout"}
-            except FileNotFoundError:
-                print(f"[ASR] ffmpeg not found at: {ffmpeg}")
-                return {"text": "", "error": "ffmpeg not installed"}
-            with open(out.name, "rb") as f:
-                audio_bytes = f.read()
-            if len(audio_bytes) == 0:
-                # 保留失败样本供诊断
-                shutil.copy(inp.name, "/tmp/fiona-asr-bad.webm")
-                print(f"[ASR][ffmpeg-stderr] {proc.stderr.decode('utf-8', errors='replace')[-800:]}")
-                print(f"[ASR] bad sample saved to /tmp/fiona-asr-bad.webm")
-            print(f"[ASR] converted to PCM: {len(audio_bytes)} bytes (ffmpeg rc={proc.returncode})")
-        finally:
-            # 不论 ffmpeg 成功/超时/异常，临时文件必删，避免 /tmp 堆积
-            for _p in (inp.name, out.name):
-                try: os.unlink(_p)
-                except OSError: pass
+            audio_bytes = await asyncio.to_thread(_pcm_to_wav, audio_bytes, req.sample_rate)
+            if req.sample_rate != ASR_SAMPLE_RATE:
+                audio_bytes = await asyncio.to_thread(_ffmpeg_to_wav, audio_bytes, ".wav")
+        except Exception as exc:
+            return {"text": "", "error": f"PCM to WAV conversion failed: {exc}"}
+    else:
+        try:
+            audio_bytes = await asyncio.to_thread(_ffmpeg_to_wav, audio_bytes)
+        except subprocess.TimeoutExpired:
+            print("[ASR] ffmpeg timeout (>10s)")
+            return {"text": "", "error": "ffmpeg timeout"}
+        except FileNotFoundError:
+            print("[ASR] ffmpeg not found")
+            return {"text": "", "error": "ffmpeg not installed"}
+        except Exception as exc:
+            return {"text": "", "error": str(exc)}
 
-    result = await asyncio.to_thread(asr_recognize, audio_bytes, "pcm", req.sample_rate)
+    result = await asyncio.to_thread(asr_recognize, audio_bytes, "wav", ASR_SAMPLE_RATE)
     print(f"[ASR] result: {result}")
     return result
