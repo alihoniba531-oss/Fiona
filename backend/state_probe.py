@@ -16,6 +16,7 @@ interest_anchor 六种类型（内部信号，绝不出现在任何面向用户�
   intimate          — 性/浪漫吸引：需要亲密连接、被渴望；渴望被"选中"
   light_connection  — 无明确锚点，随缘轻连接
 """
+import asyncio
 import json
 from database import upsert_user_state
 
@@ -97,7 +98,8 @@ async def run_state_probe(
     )
 
     try:
-        resp = client.chat.completions.create(
+        resp = await asyncio.to_thread(
+            client.chat.completions.create,
             model="deepseek-chat",
             messages=[
                 {"role": "system", "content": STATE_PROBE_PROMPT},

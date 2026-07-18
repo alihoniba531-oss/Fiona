@@ -261,6 +261,7 @@ export default function ChatPage() {
   const isComposingRef = useRef(false);
   const handleSendRef = useRef<(text?: string) => Promise<void>>(async () => {});
   const handsFreeRef = useRef(false);
+  const recordingWantedRef = useRef(false);
   const ttsAudioRef = useRef<HTMLAudioElement | null>(null);
   const ttsPreloadRef = useRef<HTMLAudioElement | null>(null);  // 预取下一句音频，消除句间空隙
   const ttsQueueRef = useRef<string[]>([]);
@@ -417,7 +418,10 @@ export default function ChatPage() {
   // Global mouseup: stop recording if mouse released outside the button
   useEffect(() => {
     if (!recording) return;
-    const up = () => setRecording(false);
+    const up = () => {
+      recordingWantedRef.current = false;
+      setRecording(false);
+    };
     window.addEventListener("mouseup", up);
     window.addEventListener("touchend", up);
     return () => {
@@ -433,6 +437,10 @@ export default function ChatPage() {
   const startNlsAsr = useCallback(async () => {
     try {
       const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+      if (!recordingWantedRef.current) {
+        stream.getTracks().forEach(t => t.stop());
+        return;
+      }
       const mr = new MediaRecorder(stream, { mimeType: 'audio/webm;codecs=opus' });
       mediaRecorderRef2.current = mr;
       audioChunksRef.current = [];
@@ -461,7 +469,11 @@ export default function ChatPage() {
       };
       mr.start();
     } catch {
-      setVoiceText("麦克风未授权"); setTimeout(() => setRecording(false), 1000);
+      setVoiceText("麦克风未授权");
+      setTimeout(() => {
+        recordingWantedRef.current = false;
+        setRecording(false);
+      }, 1000);
     }
   }, []);
 
@@ -638,7 +650,10 @@ export default function ChatPage() {
     // 立刻把"再下一句"也预取，与当前播放重叠
     tryPrefetch();
 
+    let done = false;
     const onDone = () => {
+      if (done) return;
+      done = true;
       ttsPlayingRef.current = false;
       ttsAudioRef.current = null;
       playNextInQueueRef.current();
@@ -982,7 +997,24 @@ export default function ChatPage() {
         }),
       });
 
-      const reader = res.body!.getReader();
+      if (!res.ok) {
+        const raw = await res.text();
+        let errorMessage = `请求失败 (${res.status})`;
+        const dataLine = raw.split(/\r?\n/).find((line) => line.startsWith("data:"));
+        const payload = (dataLine ? dataLine.slice(5) : raw).trim();
+        if (payload) {
+          try {
+            const data = JSON.parse(payload) as { error?: string; detail?: string };
+            errorMessage = data.error || data.detail || errorMessage;
+          } catch {
+            errorMessage = payload;
+          }
+        }
+        throw new Error(errorMessage);
+      }
+      if (!res.body) throw new Error("服务器未返回响应内容");
+
+      const reader = res.body.getReader();
       const decoder = new TextDecoder();
       const replyId = Date.now().toString();
 
@@ -1002,16 +1034,16 @@ export default function ChatPage() {
       let sseBuffer = "";
       while (true) {
         const { done, value } = await reader.read();
-        if (done) break;
-        sseBuffer += decoder.decode(value, { stream: true });
-        const events = sseBuffer.split("\n\n");
-        sseBuffer = events.pop() || ""; // 末尾可能是不完整的事件，留到下次拼
+        if (value) sseBuffer += decoder.decode(value, { stream: true });
+        if (done) sseBuffer += decoder.decode();
+        const events = sseBuffer.split(/\r?\n\r?\n/);
+        sseBuffer = done ? "" : events.pop() || ""; // 流结束时也处理未带空行的最后一个事件
         for (const ev of events) {
-          const line = ev.split("\n").find((l) => l.startsWith("data: "));
+          const line = ev.split(/\r?\n/).find((l) => l.startsWith("data:"));
           if (!line) continue;
           let data: ChatStreamEvent;
           try {
-            data = JSON.parse(line.slice(6));
+            data = JSON.parse(line.slice(5).trimStart());
           } catch {
             continue; // 损坏的事件跳过，不要让一条坏事件拖死整个流
           }
@@ -1023,6 +1055,13 @@ export default function ChatPage() {
             reply += data.text;
             ttsBuf += data.text;
             flushSentences();
+            setMessages((prev) =>
+              prev.map((m) => (m.id === replyId ? { ...m, content: reply } : m)),
+            );
+          }
+          if (data.error) {
+            const errorText = `错误：${data.error}`;
+            reply = reply ? `${reply}\n\n${errorText}` : errorText;
             setMessages((prev) =>
               prev.map((m) => (m.id === replyId ? { ...m, content: reply } : m)),
             );
@@ -1084,7 +1123,9 @@ export default function ChatPage() {
               ),
             );
           }
+          if (data.done) streamDoneRef.current = true;
         }
+        if (done) break;
       }
       textareaRef.current?.focus();
     } catch (err) {
@@ -1371,8 +1412,8 @@ export default function ChatPage() {
               {/* 下：录音按钮 + 状态文字 */}
               <div className="mt-auto flex flex-col items-center gap-3">
                 <button
-                  onPointerDown={(e) => { e.preventDefault(); (e.target as HTMLElement).setPointerCapture(e.pointerId); setRecording(true); }}
-                  onPointerUp={(e) => { e.preventDefault(); (e.target as HTMLElement).releasePointerCapture(e.pointerId); setRecording(false); }}
+                  onPointerDown={(e) => { e.preventDefault(); (e.target as HTMLElement).setPointerCapture(e.pointerId); recordingWantedRef.current = true; setRecording(true); }}
+                  onPointerUp={(e) => { e.preventDefault(); (e.target as HTMLElement).releasePointerCapture(e.pointerId); recordingWantedRef.current = false; setRecording(false); }}
                   className={cn(
                     "hud-btn flex items-center gap-2 px-5 py-2 text-xs font-medium",
                     recording && "hud-btn-active"

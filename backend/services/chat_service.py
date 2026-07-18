@@ -42,6 +42,28 @@ from trace import log_event, trace_span
 from utils.media import _save_uploaded_image
 
 
+_STREAM_END = object()
+_background_tasks: set[asyncio.Task] = set()
+
+
+async def _iter_sync_stream(stream):
+    """逐块在线程池推进同步 OpenAI Stream，避免阻塞 asyncio 事件循环。"""
+    iterator = iter(stream)
+    while True:
+        chunk = await asyncio.to_thread(next, iterator, _STREAM_END)
+        if chunk is _STREAM_END:
+            break
+        yield chunk
+
+
+def _track_background_task(coro) -> asyncio.Task:
+    """保留后台任务的强引用，完成后自动移除。"""
+    task = asyncio.create_task(coro)
+    _background_tasks.add(task)
+    task.add_done_callback(_background_tasks.discard)
+    return task
+
+
 def _sse(obj: dict) -> str:
     """统一 SSE 行格式（与原内联 f-string 输出逐字节一致）。"""
     return f"data: {json.dumps(obj, ensure_ascii=False)}\n\n"
@@ -257,6 +279,7 @@ class ChatState:
     trace: dict
     full_response: str = ""
     sys_prompt_final: str = ""
+    response_saved: bool = False
 
 
 async def build_context(req, user: str) -> ChatContext:
@@ -342,20 +365,28 @@ async def stream_mirror(ctx: ChatContext, state: ChatState):
         clear_pending(ctx.user)
     _slot = choose_model(ctx.user, ctx.user_content, "mirror")
     state.trace["model"] = _slot
-    stream, _actually_qwen = _create_stream_with_fallback(
-        _slot == "qwen",
-        [{"role": "system", "content": state.sys_prompt_final}] + ctx.messages,
-        max_tokens=80,
-        temperature=1.0,
-        frequency_penalty=0.6,
-        presence_penalty=0.4,
-    )
-    for chunk in stream:
-        text = chunk.choices[0].delta.content or ""
-        if text:
-            state.full_response += text
-            yield _sse({"text": text})
+    try:
+        stream, _actually_qwen = await asyncio.to_thread(
+            _create_stream_with_fallback,
+            _slot == "qwen",
+            [{"role": "system", "content": state.sys_prompt_final}] + ctx.messages,
+            max_tokens=80,
+            temperature=1.0,
+            frequency_penalty=0.6,
+            presence_penalty=0.4,
+        )
+        async for chunk in _iter_sync_stream(stream):
+            text = chunk.choices[0].delta.content or ""
+            if text:
+                state.full_response += text
+                yield _sse({"text": text})
+    except Exception as e:
+        state.trace["error"] = str(e)[:200]
+        print(f"[chat] mirror stream error: {type(e).__name__}: {e}", flush=True)
+        yield _sse({"error": str(e)})
+        return
     await save_message(ctx.user, "assistant", state.full_response)
+    state.response_saved = True
     yield _sse({"done": True})
     if not _actually_qwen:
         token_budget.add(ctx.user, len(state.full_response) // 2)
@@ -391,14 +422,15 @@ async def stream_image(ctx: ChatContext, state: ChatState):
     ]
 
     try:
-        stream = QWEN_CLIENT.chat.completions.create(
+        stream = await asyncio.to_thread(
+            QWEN_CLIENT.chat.completions.create,
             model="qwen-vl-max",
             messages=vl_messages,
             max_tokens=400,
             temperature=0.9,
             stream=True,
         )
-        for chunk in stream:
+        async for chunk in _iter_sync_stream(stream):
             text = chunk.choices[0].delta.content or ""
             if text:
                 state.full_response += text
@@ -409,6 +441,7 @@ async def stream_image(ctx: ChatContext, state: ChatState):
         print(f"[chat] qwen-vl-max error: {type(e).__name__}: {e}", flush=True)
 
     await save_message(ctx.user, "assistant", state.full_response)
+    state.response_saved = True
     yield _sse({"done": True})
 
 
@@ -436,6 +469,7 @@ async def stream_pending(ctx: ChatContext, state: ChatState, pending: dict):
             state.full_response = result
             yield _sse({"text": result})
         await save_message(ctx.user, "assistant", state.full_response)
+        state.response_saved = True
         yield _sse({"done": True})
     else:
         # 还缺参数，继续追问
@@ -444,20 +478,21 @@ async def stream_pending(ctx: ChatContext, state: ChatState, pending: dict):
         state.full_response = question
         yield _sse({"text": question})
         await save_message(ctx.user, "assistant", state.full_response)
+        state.response_saved = True
         yield _sse({"done": True})
 
 
 def recognize_intent_with_fallback(message: str, history: list[dict]) -> dict:
     """意图识别（JSON mode）+ 正则兜底搜索措辞。同步，调用方负责 to_thread。"""
     intent_result = recognize_intent(client, message, history)
-    # LLM 意图路由偶尔把"帮我看下天气"/"我查一下 XX"误判为 null——正则补一刀
-    # 只兜"帮我/我 + 查/搜/找/看 + 一下/..." 和句首"查一下/搜搜..."这两种明显搜索措辞
+    # LLM 意图路由偶尔把"我查一下 XX"误判为 null——正则补一刀。
+    # 只兜明确的"查/搜"措辞；裸"看/找"容易把观察、情绪表达误判成联网搜索。
     # ("你有没有时间"之类靠 LLM prompt 例子识别，不在 regex 里硬抠)
     if intent_result["intent"] is None:
         _query = None
         for _pat in [
-            r"(?:帮我?|我)\s*(?:查|搜|找|看)(?:一下|下|看|查|搜|找|个|看看)?\s*(\S.+)",
-            r"^(?:查一下|查查|查下|搜一下|搜搜|搜下|找一下|找找|找下|看一下|看看|看下)\s*(\S.+)",
+            r"(?:帮我?|我)\s*(?:查|搜)(?:一下|下|查|搜|个)?\s*(\S.+)",
+            r"^(?:查一下|查查|查下|搜一下|搜搜|搜下)\s*(\S.+)",
         ]:
             _m = re.search(_pat, message)
             if not _m:
@@ -502,6 +537,7 @@ async def stream_intent(ctx: ChatContext, state: ChatState, intent_result: dict)
         state.full_response = question
         yield _sse({"text": question})
     await save_message(ctx.user, "assistant", state.full_response)
+    state.response_saved = True
     yield _sse({"done": True})
 
 
@@ -519,29 +555,37 @@ async def stream_normal(ctx: ChatContext, state: ChatState):
     _freq_pen = 0.3 if _use_light else 0.4
     _pres_pen = 0.2 if _use_light else 0.4
 
-    stream, _actually_qwen = _create_stream_with_fallback(
-        _use_light,
-        [{"role": "system", "content": state.sys_prompt_final}] + ctx.messages,
-        max_tokens=_max_tok,
-        temperature=_temp,
-        frequency_penalty=_freq_pen,
-        presence_penalty=_pres_pen,
-    )
     _finish_reason = None
-    for chunk in stream:
-        text = chunk.choices[0].delta.content or ""
-        if text:
-            state.full_response += text
-            yield _sse({"text": text})
-        fr = chunk.choices[0].finish_reason
-        if fr:
-            _finish_reason = fr
+    try:
+        stream, _actually_qwen = await asyncio.to_thread(
+            _create_stream_with_fallback,
+            _use_light,
+            [{"role": "system", "content": state.sys_prompt_final}] + ctx.messages,
+            max_tokens=_max_tok,
+            temperature=_temp,
+            frequency_penalty=_freq_pen,
+            presence_penalty=_pres_pen,
+        )
+        async for chunk in _iter_sync_stream(stream):
+            text = chunk.choices[0].delta.content or ""
+            if text:
+                state.full_response += text
+                yield _sse({"text": text})
+            fr = chunk.choices[0].finish_reason
+            if fr:
+                _finish_reason = fr
+    except Exception as e:
+        state.trace["error"] = str(e)[:200]
+        print(f"[chat] normal stream error: {type(e).__name__}: {e}", flush=True)
+        yield _sse({"error": str(e)})
+        return
     if _finish_reason == "length":
         # 撞到 max_tokens 上限 —— 用户会看到回答被砍在半句话
         print(f"[chat] truncated: user={ctx.user} model={'qwen' if _actually_qwen else 'deepseek'} "
               f"max_tokens={_max_tok} chars={len(state.full_response)}", flush=True)
 
     await save_message(ctx.user, "assistant", state.full_response)
+    state.response_saved = True
     yield _sse({"done": True})
 
     # DeepSeek 实际使用时计入预算（含 Gemini 失败回退的情况）
@@ -551,11 +595,11 @@ async def stream_normal(ctx: ChatContext, state: ChatState):
     # ── 每 5 轮后台静默提取画像（不阻塞返回）──
     if ctx.message_count > 0 and ctx.message_count % 5 == 0:
         all_msgs = await get_messages(ctx.user, limit=60)
-        asyncio.create_task(extract_and_update(client, ctx.user, all_msgs))
+        _track_background_task(extract_and_update(client, ctx.user, all_msgs))
 
     # ── 对话内匹配检测（后台异步，不阻塞返回）──
     # 只在朋友模式的普通对话流跑（这里已经过了 mirror 分支 + 工具分支）
-    asyncio.create_task(
+    _track_background_task(
         detect_matches_and_save(
             client,
             ctx.user,
@@ -619,9 +663,9 @@ async def run_chat(ctx: ChatContext):
         yield _sse({"error": str(e)})
         state.trace["error"] = str(e)[:200]
     finally:
-        # 有实际回复才扣草莓（DEV 模式跳过）
+        # 只有回复确实落库后才扣草莓（DEV 模式跳过）
         DEV_MODE = os.getenv("DEV_MODE", "0") == "1"
-        if state.full_response and not DEV_MODE:
+        if state.full_response and state.response_saved and not DEV_MODE:
             await deduct_strawberry(ctx.user, 10)
         # ── 写 chat 汇总事件 ──
         state.trace["resp_chars"] = len(state.full_response)

@@ -28,17 +28,10 @@ async def plaza_feed(
 ):
     """feed：默认按用户偏好（推荐），可指定 latest / hot。匿名也能用，但无个性化"""
     from database import get_posts, get_tag_prefs, get_time_tag_prefs, get_time_slot
-    posts = await get_posts(limit=200, offset=0)
+    db_sort = sort if sort in {"latest", "hot"} else "latest"
+    posts = await get_posts(limit=limit, offset=offset, sort=db_sort, tag=tag)
 
-    # 标签过滤
-    if tag:
-        posts = [p for p in posts if tag in p.get("tags", [])]
-
-    if sort == "latest":
-        posts.sort(key=lambda p: p.get("created_at") or "", reverse=True)
-    elif sort == "hot":
-        posts.sort(key=lambda p: (p.get("likes", 0), p.get("created_at") or ""), reverse=True)
-    else:  # recommended
+    if sort not in {"latest", "hot"}:  # recommended
         if user:
             global_prefs = await get_tag_prefs(user)
             time_prefs   = await get_time_tag_prefs(user)
@@ -51,7 +44,7 @@ async def plaza_feed(
                 posts.sort(key=score, reverse=True)
 
     current_slot = get_time_slot()
-    return {"posts": posts[offset: offset + limit], "time_slot": current_slot}
+    return {"posts": posts, "time_slot": current_slot}
 
 
 @router.get("/plaza/time-prefs")
@@ -110,12 +103,11 @@ async def plaza_post(
 
 @router.post("/plaza/like/{post_id}")
 async def plaza_like(post_id: int, user: str = Depends(get_current_user)):
-    from database import like_post, get_posts, update_tag_prefs
+    from database import get_post, like_post, update_tag_prefs
     # 按真实登录用户名去重(不是帖子作者的 anon_id),防同一人重复刷赞
-    likes = await like_post(post_id, user)
-    # 更新用户标签喜好
-    all_posts = await get_posts(limit=200)
-    post = next((p for p in all_posts if p["id"] == post_id), None)
+    likes, inserted = await like_post(post_id, user)
+    # 只有新点赞才更新偏好；按 id 直查，旧帖也不会被漏掉。
+    post = await get_post(post_id) if inserted else None
     if post and post.get("tags"):
         await update_tag_prefs(user, post["tags"])
     return {"likes": likes}

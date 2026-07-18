@@ -19,7 +19,14 @@ interface Msg {
 type QuickRange = "all" | "today" | "week" | "month";
 
 function toDateStr(d: Date) {
-  return d.toISOString().slice(0, 10); // "YYYY-MM-DD"
+  const year = d.getFullYear();
+  const month = String(d.getMonth() + 1).padStart(2, "0");
+  const day = String(d.getDate()).padStart(2, "0");
+  return `${year}-${month}-${day}`;
+}
+
+function parseUtcTimestamp(timestamp: string) {
+  return new Date(timestamp.replace(" ", "T") + "Z");
 }
 
 function formatDisplayDate(isoDate: string) {
@@ -55,7 +62,7 @@ function HistoryContent() {
   const dateStats = useMemo(() => {
     const map: Record<string, number> = {};
     allMsgs.forEach(m => {
-      const day = m.created_at.slice(0, 10);
+      const day = toDateStr(parseUtcTimestamp(m.created_at));
       map[day] = (map[day] || 0) + 1;
     });
     return Object.entries(map).sort((a, b) => b[0].localeCompare(a[0]));
@@ -92,7 +99,7 @@ function HistoryContent() {
   // 过滤消息
   const filtered = useMemo(() => {
     return allMsgs.filter(m => {
-      const day = m.created_at.slice(0, 10);
+      const day = toDateStr(parseUtcTimestamp(m.created_at));
       if (dateFrom && day < dateFrom) return false;
       if (dateTo && day > dateTo) return false;
       if (query.trim() && !m.content.toLowerCase().includes(query.toLowerCase())) return false;
@@ -104,7 +111,7 @@ function HistoryContent() {
   const groups = useMemo(() => {
     const map: Record<string, Msg[]> = {};
     filtered.forEach(m => {
-      const day = m.created_at.slice(0, 10);
+      const day = toDateStr(parseUtcTimestamp(m.created_at));
       if (!map[day]) map[day] = [];
       map[day].push(m);
     });
@@ -113,7 +120,7 @@ function HistoryContent() {
 
   const handleExport = () => {
     const lines = filtered.map(m =>
-      `[${m.created_at}] ${m.role === "user" ? username : "Chloe"}: ${m.content}`
+      `[${parseUtcTimestamp(m.created_at).toLocaleString("zh-CN", { hour12: false })}] ${m.role === "user" ? username : "Chloe"}: ${m.content}`
     );
     const blob = new Blob([lines.join("\n")], { type: "text/plain;charset=utf-8" });
     const url = URL.createObjectURL(blob);
@@ -306,7 +313,7 @@ function HistoryContent() {
                   <div className="border-t border-border divide-y divide-border/50">
                     {msgs.map(msg => {
                       const isUser = msg.role === "user";
-                      const time = new Date(msg.created_at).toLocaleTimeString("zh-CN", {
+                      const time = parseUtcTimestamp(msg.created_at).toLocaleTimeString("zh-CN", {
                         hour: "2-digit", minute: "2-digit",
                       });
                       // 高亮搜索词。query 是用户输入，必须 escape 才能塞进 RegExp，

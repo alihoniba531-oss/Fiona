@@ -5,11 +5,12 @@
 //   2. 有配置则 spawn `ssh -N -L ...` 子进程做端口转发；stderr 重定向到 ssh.log
 //   3. 有配置则轮询 localhost:<主端口> 直到通（最长 15 秒）
 //   4. 启动 Tauri 窗口；静态加载页决定跳 localhost 还是公网
-//   5. 关窗时 kill 隧道子进程
+//   5. 关闭主窗口或应用退出时 kill + wait 隧道子进程
 //
 // 全程把诊断（config 路径 / ssh pid / 端口就绪 / 耗时 / 备注）写进全局 StartupReport
 // 和 %APPDATA%\fiona\startup.log，前端可 invoke("startup_diagnostics") 拿来展示。
 
+use std::io::{Read, Write};
 use std::net::TcpStream;
 use std::path::PathBuf;
 use std::process::{Child, Command, Stdio};
@@ -169,15 +170,37 @@ fn spawn_tunnel(cfg: &CloudConfig) -> Option<Child> {
     }
 }
 
+fn backend_http_ready(port: u16, connect_timeout: Duration, io_timeout: Duration) -> bool {
+    let addr = match format!("127.0.0.1:{}", port).parse() {
+        Ok(addr) => addr,
+        Err(_) => return false,
+    };
+    let mut stream = match TcpStream::connect_timeout(&addr, connect_timeout) {
+        Ok(stream) => stream,
+        Err(_) => return false,
+    };
+    if stream.set_read_timeout(Some(io_timeout)).is_err()
+        || stream.set_write_timeout(Some(io_timeout)).is_err()
+    {
+        return false;
+    }
+
+    let request = format!(
+        "GET / HTTP/1.0\r\nHost: localhost:{}\r\nConnection: close\r\n\r\n",
+        port
+    );
+    if stream.write_all(request.as_bytes()).is_err() {
+        return false;
+    }
+
+    let mut first_byte = [0_u8; 1];
+    matches!(stream.read(&mut first_byte), Ok(n) if n >= 1)
+}
+
 fn wait_for_port(port: u16, timeout: Duration) -> bool {
     let start = Instant::now();
     while start.elapsed() < timeout {
-        if TcpStream::connect_timeout(
-            &format!("127.0.0.1:{}", port).parse().unwrap(),
-            Duration::from_secs(1),
-        )
-        .is_ok()
-        {
+        if backend_http_ready(port, Duration::from_secs(1), Duration::from_secs(1)) {
             return true;
         }
         thread::sleep(Duration::from_millis(300));
@@ -280,14 +303,37 @@ fn startup_diagnostics() -> StartupReport {
     report().lock().map(|r| r.clone()).unwrap_or_default()
 }
 
-/// 实时 TCP 探测 127.0.0.1:port——前端轮询，比 fetch 更轻、不会被 Service Worker 缓存搅扰
+/// 实时 HTTP 探测 127.0.0.1:port——前端轮询，不会被 Service Worker 缓存搅扰
 #[tauri::command]
 fn probe_backend(port: u16) -> bool {
-    let addr = match format!("127.0.0.1:{}", port).parse() {
-        Ok(a) => a,
-        Err(_) => return false,
+    backend_http_ready(
+        port,
+        Duration::from_millis(500),
+        Duration::from_millis(500),
+    )
+}
+
+fn stop_tunnel(tunnel: &Mutex<Option<Child>>) {
+    let child = {
+        let mut guard = match tunnel.lock() {
+            Ok(guard) => guard,
+            Err(poisoned) => poisoned.into_inner(),
+        };
+        guard.take()
     };
-    TcpStream::connect_timeout(&addr, Duration::from_millis(500)).is_ok()
+
+    if let Some(mut child) = child {
+        let _ = child.kill();
+        let _ = child.wait();
+    }
+}
+
+struct TunnelCleanupGuard(Arc<Mutex<Option<Child>>>);
+
+impl Drop for TunnelCleanupGuard {
+    fn drop(&mut self) {
+        stop_tunnel(&self.0);
+    }
 }
 
 /// 用资源管理器/Finder 打开 fiona 数据目录（startup.log + ssh.log 都在里面）
@@ -326,6 +372,7 @@ pub fn run() {
     }
 
     let tunnel: Arc<Mutex<Option<Child>>> = Arc::new(Mutex::new(None));
+    let _tunnel_cleanup_guard = TunnelCleanupGuard(tunnel.clone());
 
     if let Some(ref c) = cfg {
         if let Some(child) = spawn_tunnel(c) {
@@ -353,9 +400,10 @@ pub fn run() {
     }
     write_startup_log();
 
-    let tunnel_for_event = tunnel.clone();
+    let tunnel_for_window_event = tunnel.clone();
+    let tunnel_for_run_event = tunnel.clone();
 
-    tauri::Builder::default()
+    let app = tauri::Builder::default()
         .invoke_handler(tauri::generate_handler![
             open_url,
             open_url_in_app,
@@ -372,16 +420,28 @@ pub fn run() {
             }
             Ok(())
         })
-        .on_window_event(move |_window, event| {
-            if matches!(event, tauri::WindowEvent::CloseRequested { .. }) {
-                if let Ok(mut guard) = tunnel_for_event.lock() {
-                    if let Some(c) = guard.as_mut() {
-                        let _ = c.kill();
-                        let _ = c.wait();
-                    }
-                }
+        .on_window_event(move |window, event| {
+            if window.label() == "main"
+                && matches!(event, tauri::WindowEvent::CloseRequested { .. })
+            {
+                stop_tunnel(&tunnel_for_window_event);
             }
         })
-        .run(tauri::generate_context!())
-        .expect("error while running tauri application");
+        .build(tauri::generate_context!());
+    let app = match app {
+        Ok(app) => app,
+        Err(error) => {
+            stop_tunnel(&tunnel);
+            panic!("error while building tauri application: {}", error);
+        }
+    };
+
+    app.run(move |_app_handle, event| {
+        if matches!(
+            event,
+            tauri::RunEvent::Exit | tauri::RunEvent::ExitRequested { .. }
+        ) {
+            stop_tunnel(&tunnel_for_run_event);
+        }
+    });
 }

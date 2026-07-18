@@ -1,7 +1,7 @@
 {
   "$schema": "../gen/schemas/desktop-schema.json",
   "identifier": "default",
-  "description": "默认 capability — 主窗口 + 远程内容（开发者模式 localhost:3000，用户模式 madchloechat.online）",
+  "description": "默认 capability — 主窗口 + 远程内容（开发者模式 localhost 动态转发端口，用户模式 madchloechat.online）",
   "windows": ["main"],
   "permissions": [
     "core:default",
@@ -13,8 +13,8 @@
   ],
   "remote": {
     "urls": [
-      "http://localhost:3000",
-      "http://localhost:3000/*",
+      "http://localhost:*",
+      "http://localhost:*/*",
       "https://madchloechat.online",
       "https://madchloechat.online/*"
     ]

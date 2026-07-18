@@ -188,7 +188,7 @@ def _search_weather_direct(query: str) -> dict | None:
         icon = cur.get("weatherIconUrl", [{}])[0].get("value", "") if cur.get("weatherIconUrl") else ""
 
         # 未来几天预报
-        weekday_names = ["周日", "周一", "周二", "周三", "周四", "周五", "周六"]
+        weekday_names = ["周一", "周二", "周三", "周四", "周五", "周六", "周日"]
         forecast = []
         for w in weather_list[:7]:
             date_str = w.get("date", "")

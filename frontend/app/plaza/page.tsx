@@ -26,7 +26,7 @@ interface Post {
 }
 
 function timeAgo(ts: string) {
-  const diff = Date.now() - new Date(ts).getTime();
+  const diff = Date.now() - new Date(ts.replace(" ", "T") + "Z").getTime();
   const m = Math.floor(diff / 60000);
   if (m < 1) return "刚刚";
   if (m < 60) return `${m}m`;

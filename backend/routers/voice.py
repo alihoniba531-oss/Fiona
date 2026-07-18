@@ -1,4 +1,5 @@
 # -*- coding: utf-8 -*-
+import asyncio
 import base64
 import os
 
@@ -83,9 +84,11 @@ async def asr_recognize_endpoint(req: AsrRequest):
         try:
             ffmpeg = shutil.which("ffmpeg") or r"D:\Program Files\软件\ffmpeg\bin\ffmpeg.exe"
             try:
-                proc = subprocess.run(
+                proc = await asyncio.to_thread(
+                    subprocess.run,
                     [ffmpeg, "-y", "-i", inp.name, "-ar", str(req.sample_rate), "-ac", "1", "-f", "s16le", out.name],
-                    capture_output=True, timeout=10,
+                    capture_output=True,
+                    timeout=10,
                 )
             except subprocess.TimeoutExpired:
                 print("[ASR] ffmpeg timeout (>10s)")
@@ -107,6 +110,6 @@ async def asr_recognize_endpoint(req: AsrRequest):
                 try: os.unlink(_p)
                 except OSError: pass
 
-    result = asr_recognize(audio_bytes, "pcm", req.sample_rate)
+    result = await asyncio.to_thread(asr_recognize, audio_bytes, "pcm", req.sample_rate)
     print(f"[ASR] result: {result}")
     return result

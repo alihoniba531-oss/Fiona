@@ -45,6 +45,7 @@ export default function LoginPage() {
   }
 
   async function handleRedeem() {
+    if (loading) return;
     setErr("");
     const inviteCode = invite.trim().toUpperCase();
     if (!inviteCode) {
@@ -73,6 +74,7 @@ export default function LoginPage() {
   }
 
   async function handleSendOtp() {
+    if (loading) return;
     setErr("");
     if (!/^1[3-9]\d{9}$/.test(phone)) {
       setErr("请输入正确的手机号");
@@ -99,6 +101,7 @@ export default function LoginPage() {
   }
 
   async function handleVerify() {
+    if (loading) return;
     setErr("");
     if (code.length !== 6) {
       setErr("验证码是 6 位数字");
@@ -145,6 +148,7 @@ export default function LoginPage() {
                   type="text"
                   placeholder="输入邀请码"
                   value={invite}
+                  disabled={loading}
                   onChange={e => setInvite(e.target.value.toUpperCase().replace(/\s/g, ""))}
                   onKeyDown={e => e.key === "Enter" && handleRedeem()}
                   className="w-full bg-secondary rounded-xl px-4 py-3 text-sm outline-none
@@ -175,6 +179,7 @@ export default function LoginPage() {
                     inputMode="numeric"
                     placeholder="请输入手机号"
                     value={phone}
+                    disabled={loading}
                     onChange={e => setPhone(e.target.value.replace(/\D/g, "").slice(0, 11))}
                     onKeyDown={e => e.key === "Enter" && handleSendOtp()}
                     className="flex-1 bg-transparent text-sm outline-none placeholder:text-muted-foreground"
@@ -207,6 +212,7 @@ export default function LoginPage() {
                   placeholder="6 位验证码"
                   maxLength={6}
                   value={code}
+                  disabled={loading}
                   onChange={e => setCode(e.target.value.replace(/\D/g, "").slice(0, 6))}
                   onKeyDown={e => e.key === "Enter" && handleVerify()}
                   className="w-full bg-secondary rounded-xl px-4 py-3 text-sm outline-none

@@ -77,7 +77,8 @@ async def extract_interests(client, current_msg: str, recent_msgs: list[dict]) -
     ctx = "\n".join(ctx_lines) if ctx_lines else "（无）"
 
     try:
-        resp = client.chat.completions.create(
+        resp = await asyncio.to_thread(
+            client.chat.completions.create,
             model="deepseek-chat",
             messages=[
                 {"role": "system", "content": EXTRACT_INTEREST_PROMPT},
@@ -238,7 +239,8 @@ async def evaluate_match(
 ) -> dict | None:
     """LLM 评估一对匹配是否值得推。返回 None 表示拒绝"""
     try:
-        resp = client.chat.completions.create(
+        resp = await asyncio.to_thread(
+            client.chat.completions.create,
             model="deepseek-chat",
             messages=[
                 {"role": "system", "content": EVAL_MATCH_PROMPT},
@@ -353,7 +355,8 @@ async def evaluate_seeking_match(
 ) -> dict | None:
     """评估候选是否符合寻求条件。"""
     try:
-        resp = client.chat.completions.create(
+        resp = await asyncio.to_thread(
+            client.chat.completions.create,
             model="deepseek-chat",
             messages=[
                 {"role": "system", "content": SEEKING_EVAL_PROMPT},
@@ -451,7 +454,12 @@ async def detect_and_save(
         if i.get("match_type") != "seeking"
         and passes_threshold(i, strength_threshold)
     ]
-    seeking_list = [i for i in interests if i.get("match_type") == "seeking" and i.get("strength", 0) >= 6]
+    seeking_list = [
+        i for i in interests
+        if i.get("match_type") == "seeking"
+        and i.get("strength", 0) >= 6
+        and i.get("category") not in BLOCKED_CATEGORIES
+    ]
 
     saved = 0
     my_settings = await get_user_settings(username)
@@ -671,7 +679,8 @@ async def evaluate_profile_match(
 ) -> dict | None:
     """用双方完整画像请 LLM 评估是否值得推荐。"""
     try:
-        resp = client.chat.completions.create(
+        resp = await asyncio.to_thread(
+            client.chat.completions.create,
             model="deepseek-chat",
             messages=[
                 {"role": "system", "content": PROFILE_EVAL_PROMPT},

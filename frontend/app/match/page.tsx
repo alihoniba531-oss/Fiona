@@ -13,6 +13,9 @@ import { API_BASE as API, WS_BASE } from "@/lib/config";
 
 interface Room { peer: string; room_id: string }
 interface PeerMsg { sender: string; content: string; created_at: string }
+type PeerWsEvent =
+  | ({ type: "message" } & PeerMsg)
+  | { type: "history"; messages: PeerMsg[] };
 interface PendingMatch {
   id: number;
   peer_username: string;
@@ -152,6 +155,7 @@ function MatchContent() {
   const [pendingMatches, setPendingMatches] = useState<PendingMatch[]>([]);
   const [cardPositions, setCardPositions] = useState<Record<number, { x: number; y: number }>>({});
   const wsRef = useRef<WebSocket | null>(null);
+  const selectedRoomIdRef = useRef<string | null>(null);
   const bottomRef = useRef<HTMLDivElement>(null);
 
   // 启动后从 localStorage 读取当前身份
@@ -252,23 +256,31 @@ function MatchContent() {
 
   // 切换联系人：加载历史 + 连 WebSocket
   const openChat = useCallback((room: Room) => {
+    const roomId = room.room_id;
+    selectedRoomIdRef.current = roomId;
     if (wsRef.current) wsRef.current.close();
     setSelected(room);
     setMessages([]);
 
-    apiFetch(`${API}/peer/history/${room.room_id}`)
+    apiFetch(`${API}/peer/history/${roomId}`)
       .then(r => r.json())
-      .then(data => setMessages(data.messages || []))
+      .then(data => {
+        if (selectedRoomIdRef.current === roomId && data.room_id === roomId) {
+          setMessages(data.messages || []);
+        }
+      })
       .catch(() => {});
 
     const token = getToken();
     const wsAuth = token
       ? `token=${encodeURIComponent(token)}`
       : `dev_user=${encodeURIComponent(readStoredUsername() || username)}`;
-    const ws = new WebSocket(`${WS_BASE}/ws/peer/${room.room_id}?${wsAuth}`);
+    const ws = new WebSocket(`${WS_BASE}/ws/peer/${roomId}?${wsAuth}`);
     ws.onmessage = (e) => {
-      const msg: PeerMsg = JSON.parse(e.data);
-      setMessages(prev => [...prev, msg]);
+      if (selectedRoomIdRef.current !== roomId || wsRef.current !== ws) return;
+      const msg = JSON.parse(e.data) as PeerWsEvent;
+      if (msg.type === "history") return;
+      if (msg.type === "message") setMessages(prev => [...prev, msg]);
     };
     wsRef.current = ws;
   }, [username]);

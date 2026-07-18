@@ -45,6 +45,7 @@ async def handle_tts_ws(ws: WebSocket):
     await ws.accept()
     cb = _Callback()
     synth: SpeechSynthesizer | None = None
+    synth_completed = False
     forwarder: asyncio.Task | None = None
     loop = asyncio.get_running_loop()
 
@@ -87,6 +88,7 @@ async def handle_tts_ws(ws: WebSocket):
             elif kind == "complete":
                 if synth is not None:
                     await loop.run_in_executor(None, synth.streaming_complete)
+                    synth_completed = True
                 if forwarder is not None:
                     try:
                         await asyncio.wait_for(forwarder, timeout=15)
@@ -99,8 +101,24 @@ async def handle_tts_ws(ws: WebSocket):
     except Exception as e:
         print(f"[TTS WS] handler error: {type(e).__name__}: {e}")
     finally:
+        # cancel 不能唤醒已在线程池中执行的 queue.get；先放 sentinel，确保线程能退出。
+        if synth is not None:
+            cb.queue.put(None)
+            if not synth_completed:
+                try:
+                    await loop.run_in_executor(None, synth.streaming_complete)
+                    synth_completed = True
+                except Exception as e:
+                    print(f"[TTS WS] synth close error: {type(e).__name__}: {e}")
         if forwarder is not None and not forwarder.done():
-            forwarder.cancel()
+            try:
+                await asyncio.wait_for(asyncio.shield(forwarder), timeout=1.0)
+            except asyncio.TimeoutError:
+                forwarder.cancel()
+                try:
+                    await forwarder
+                except asyncio.CancelledError:
+                    pass
         try:
             await ws.close()
         except Exception:

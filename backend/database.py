@@ -203,13 +203,10 @@ async def init_db():
 async def get_or_create_user(username: str) -> dict:
     async with aiosqlite.connect(DB_PATH) as db:
         db.row_factory = aiosqlite.Row
+        await db.execute("INSERT OR IGNORE INTO users (username) VALUES (?)", (username,))
+        await db.commit()
         async with db.execute("SELECT * FROM users WHERE username = ?", (username,)) as cursor:
             row = await cursor.fetchone()
-        if not row:
-            await db.execute("INSERT INTO users (username) VALUES (?)", (username,))
-            await db.commit()
-            async with db.execute("SELECT * FROM users WHERE username = ?", (username,)) as cursor:
-                row = await cursor.fetchone()
         return dict(row)
 
 async def delete_message(message_id: int):
@@ -602,9 +599,11 @@ async def get_accepted_matches(username: str) -> list[str]:
         else:
             other = r["user_a"]
             accepted = r["response_a"] == "accept" and r["response_b"] == "accept"
-        if accepted and other not in seen:
+        if other in seen:
+            continue
+        seen.add(other)
+        if accepted:
             result.append(other)
-            seen.add(other)
     return result
 
 async def save_post(anon_id: str, media_path: str, media_type: str, caption: str, tags: list) -> int:
@@ -618,13 +617,33 @@ async def save_post(anon_id: str, media_path: str, media_type: str, caption: str
         return cursor.lastrowid
 
 
-async def get_posts(limit: int = 30, offset: int = 0) -> list[dict]:
-    """拉广场帖子列表，按时间倒序"""
+async def get_posts(
+    limit: int = 30,
+    offset: int = 0,
+    sort: str = "latest",
+    tag: str = "",
+) -> list[dict]:
+    """按排序、标签和真实分页参数拉广场帖子列表。"""
+    order_by = "likes DESC, created_at DESC" if sort == "hot" else "created_at DESC"
+    where = ""
+    params: list = []
+    if tag:
+        where = """WHERE EXISTS (
+            SELECT 1
+            FROM json_each(CASE WHEN json_valid(posts.tags_json) THEN posts.tags_json ELSE '[]' END) AS tag_item
+            WHERE tag_item.value = ?
+        )"""
+        params.append(tag)
+    params.extend((limit, offset))
     async with aiosqlite.connect(DB_PATH) as db:
         db.row_factory = aiosqlite.Row
         async with db.execute(
-            "SELECT id, anon_id, media_path, media_type, caption, tags_json, likes, created_at FROM posts ORDER BY created_at DESC LIMIT ? OFFSET ?",
-            (limit, offset)
+            f"""SELECT id, anon_id, media_path, media_type, caption, tags_json, likes, created_at
+                FROM posts
+                {where}
+                ORDER BY {order_by}
+                LIMIT ? OFFSET ?""",
+            params,
         ) as cursor:
             rows = await cursor.fetchall()
     result = []
@@ -638,8 +657,28 @@ async def get_posts(limit: int = 30, offset: int = 0) -> list[dict]:
     return result
 
 
-async def like_post(post_id: int, username: str) -> int:
-    """给帖子点赞（按登录用户去重），返回最新 likes 数。
+async def get_post(post_id: int) -> dict | None:
+    """按 id 直查一条广场帖子。"""
+    async with aiosqlite.connect(DB_PATH) as db:
+        db.row_factory = aiosqlite.Row
+        async with db.execute(
+            """SELECT id, anon_id, media_path, media_type, caption, tags_json, likes, created_at
+               FROM posts WHERE id = ?""",
+            (post_id,),
+        ) as cursor:
+            row = await cursor.fetchone()
+    if not row:
+        return None
+    post = dict(row)
+    try:
+        post["tags"] = _json.loads(post.pop("tags_json") or "[]")
+    except Exception:
+        post["tags"] = []
+    return post
+
+
+async def like_post(post_id: int, username: str) -> tuple[int, bool]:
+    """给帖子点赞（按登录用户去重），返回（最新 likes 数，本次是否新点赞）。
     先 INSERT OR IGNORE 进 post_likes;只有确实是新插入(rowcount>0)才给 posts.likes +1，
     所以同一用户重复点赞幂等、不再加数。"""
     async with aiosqlite.connect(DB_PATH) as db:
@@ -647,12 +686,13 @@ async def like_post(post_id: int, username: str) -> int:
             "INSERT OR IGNORE INTO post_likes (post_id, username) VALUES (?, ?)",
             (post_id, username),
         )
-        if cur.rowcount > 0:  # 本次确实是新点赞
+        inserted = cur.rowcount > 0
+        if inserted:  # 本次确实是新点赞
             await db.execute("UPDATE posts SET likes = likes + 1 WHERE id = ?", (post_id,))
         await db.commit()
         async with db.execute("SELECT likes FROM posts WHERE id = ?", (post_id,)) as c:
             row = await c.fetchone()
-    return row[0] if row else 0
+    return (row[0] if row else 0), inserted
 
 
 def get_time_slot() -> str:
@@ -782,17 +822,14 @@ async def get_or_create_user_by_phone(phone: str) -> dict:
     """用手机号查找或创建用户，返回用户行"""
     async with aiosqlite.connect(DB_PATH) as db:
         db.row_factory = aiosqlite.Row
+        # username 与 phone 都有唯一约束；INSERT OR IGNORE 让并发首登幂等。
+        await db.execute(
+            "INSERT OR IGNORE INTO users (username, phone, strawberry_balance) VALUES (?, ?, 200)",
+            (phone, phone),
+        )
+        await db.commit()
         async with db.execute("SELECT * FROM users WHERE phone = ?", (phone,)) as cursor:
             row = await cursor.fetchone()
-        if not row:
-            # 新用户：username = 手机号，赠送 200 草莓
-            await db.execute(
-                "INSERT INTO users (username, phone, strawberry_balance) VALUES (?, ?, 200)",
-                (phone, phone)
-            )
-            await db.commit()
-            async with db.execute("SELECT * FROM users WHERE phone = ?", (phone,)) as cursor:
-                row = await cursor.fetchone()
         return dict(row)
 
 

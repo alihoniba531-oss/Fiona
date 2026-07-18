@@ -4,6 +4,7 @@
 每 5 轮对话后，后台静默调用一次，更新用户画像。
 用户完全感知不到这个过程。
 """
+import asyncio
 import json
 from database import get_profile, update_profile, update_time_tag_prefs
 
@@ -98,7 +99,8 @@ async def extract_and_update(client, username: str, messages: list):
     old_profile = await get_profile(username)
 
     try:
-        resp = client.chat.completions.create(
+        resp = await asyncio.to_thread(
+            client.chat.completions.create,
             model="deepseek-chat",
             messages=[
                 {"role": "system", "content": EXTRACT_PROMPT},
@@ -119,7 +121,6 @@ async def extract_and_update(client, username: str, messages: list):
             await update_time_tag_prefs(username, plaza_tags, delta=0.5)  # 对话信号权重略低于点赞
 
         # Layer 2：画像更新后触发画像级跨用户匹配
-        import asyncio
         from conversation_matcher import detect_and_save_from_profile
         asyncio.create_task(detect_and_save_from_profile(client, username))
     except Exception as e:

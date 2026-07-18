@@ -1,4 +1,5 @@
 # -*- coding: utf-8 -*-
+import json
 from datetime import datetime
 
 from fastapi import APIRouter, Depends, HTTPException, WebSocket, WebSocketDisconnect
@@ -34,34 +35,42 @@ async def _require_peer_room_access(user: str, room_id: str) -> str:
 
 class ConnectionManager:
     def __init__(self):
-        # room_id → {username: WebSocket}
-        self.rooms: dict[str, dict[str, WebSocket]] = {}
+        # room_id → {username: {WebSocket, ...}}
+        self.rooms: dict[str, dict[str, set[WebSocket]]] = {}
 
     async def connect(self, room_id: str, username: str, ws: WebSocket):
         await ws.accept()
         if room_id not in self.rooms:
             self.rooms[room_id] = {}
-        self.rooms[room_id][username] = ws
+        self.rooms[room_id].setdefault(username, set()).add(ws)
 
-    def disconnect(self, room_id: str, username: str):
-        if room_id in self.rooms:
-            self.rooms[room_id].pop(username, None)
-            if not self.rooms[room_id]:
-                del self.rooms[room_id]
-
-    async def broadcast(self, room_id: str, message: dict, exclude: str | None = None):
-        if room_id not in self.rooms:
+    def disconnect(self, room_id: str, username: str, ws: WebSocket):
+        room = self.rooms.get(room_id)
+        if not room:
             return
-        dead = []
-        for uname, ws in self.rooms[room_id].items():
-            if uname == exclude:
-                continue
-            try:
-                await ws.send_json(message)
-            except Exception:
-                dead.append(uname)
-        for uname in dead:
-            self.disconnect(room_id, uname)
+        sockets = room.get(username)
+        if sockets is not None:
+            sockets.discard(ws)
+            if not sockets:
+                room.pop(username, None)
+        if not room:
+            self.rooms.pop(room_id, None)
+
+    async def broadcast(self, room_id: str, message: dict, exclude: WebSocket | None = None):
+        room = self.rooms.get(room_id)
+        if not room:
+            return
+        dead: list[tuple[str, WebSocket]] = []
+        for uname, sockets in list(room.items()):
+            for socket in list(sockets):
+                if socket is exclude:
+                    continue
+                try:
+                    await socket.send_json(message)
+                except Exception:
+                    dead.append((uname, socket))
+        for uname, socket in dead:
+            self.disconnect(room_id, uname, socket)
 
 
 ws_manager = ConnectionManager()
@@ -80,13 +89,23 @@ async def peer_chat_ws(ws: WebSocket, room_id: str):
         await ws.close(code=4403)
         return
     await ws_manager.connect(room_id, username, ws)
-    # 连接后推送历史消息
-    history = await get_peer_messages(room_id, limit=100)
-    await ws.send_json({"type": "history", "messages": history})
     try:
+        # 连接后推送历史消息
+        history = await get_peer_messages(room_id, limit=100)
+        await ws.send_json({"type": "history", "messages": history})
         while True:
-            data = await ws.receive_json()
-            content = (data.get("content") or "").strip()
+            try:
+                data = await ws.receive_json()
+            except WebSocketDisconnect:
+                raise
+            except (json.JSONDecodeError, ValueError, TypeError):
+                continue
+            if not isinstance(data, dict):
+                continue
+            raw_content = data.get("content")
+            if not isinstance(raw_content, str):
+                continue
+            content = raw_content.strip()
             if not content:
                 continue
             await save_peer_message(room_id, username, content)
@@ -95,9 +114,11 @@ async def peer_chat_ws(ws: WebSocket, room_id: str):
             # 给自己确认
             await ws.send_json(msg)
             # 广播给房间里的其他人
-            await ws_manager.broadcast(room_id, msg, exclude=username)
+            await ws_manager.broadcast(room_id, msg, exclude=ws)
     except WebSocketDisconnect:
-        ws_manager.disconnect(room_id, username)
+        pass
+    finally:
+        ws_manager.disconnect(room_id, username, ws)
 
 
 @router.get("/peer/rooms")

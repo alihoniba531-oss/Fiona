@@ -107,21 +107,26 @@ def travel_plan(query: str) -> dict:
             "points": lines[:6] or ["没规划出方案"],
         }
 
-    headline = (data.get("headline") or "").strip()
-    points = [str(p).strip() for p in data.get("points", []) if p]
+    headline = (data.get("headline") or "").strip() if isinstance(data, dict) else ""
+    raw_points = data.get("points") if isinstance(data, dict) else None
+    raw_points = raw_points if isinstance(raw_points, list) else []
+    points = [str(p).strip() for p in raw_points if p]
     # headline 放第一条，方便手机/卡片首屏看到主线
     if headline:
         points.insert(0, headline)
 
-    raw_sources = data.get("sources") or []
+    raw_sources = (data.get("sources") or []) if isinstance(data, dict) else []
+    raw_sources = raw_sources if isinstance(raw_sources, list) else [raw_sources]
     sources = []
     for s in raw_sources:
-        u = (s or {}).get("url") or ""
+        if not isinstance(s, dict):
+            continue
+        u = s.get("url") or ""
         if not u.startswith(("http://", "https://")):
             continue
         if "example.com" in u or "example.org" in u:
             continue
-        sources.append({"title": str((s or {}).get("title") or "")[:80], "url": u})
+        sources.append({"title": str(s.get("title") or "")[:80], "url": u})
     first_url = sources[0]["url"] if sources else ""
 
     if not points:
