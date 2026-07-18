@@ -136,11 +136,11 @@ function ChatBubble({ message, onDelete, onConfirmTts, onDeclineTts }: ChatBubbl
           <div
             className="w-8 h-8 rounded-full flex items-center justify-center"
             style={{
-              background: "radial-gradient(circle at 30% 30%, rgba(0,212,255,0.55), rgba(0,90,140,0.85))",
-              boxShadow: "inset 0 0 8px rgba(0,212,255,0.5), 0 0 10px rgba(0,212,255,0.35)",
+              background: "radial-gradient(circle at 30% 30%, color-mix(in srgb, var(--primary) 55%, white), color-mix(in srgb, var(--primary) 70%, black))",
+              boxShadow: "inset 0 0 8px color-mix(in srgb, var(--primary) 32%, transparent), 0 0 8px color-mix(in srgb, var(--primary) 20%, transparent)",
             }}
           >
-            <span className="text-[#e0f6ff] text-xs font-semibold tracking-wider">C</span>
+            <span className="text-primary-foreground text-xs font-semibold tracking-wider">C</span>
           </div>
         </div>
       )}
@@ -215,7 +215,7 @@ function ChatBubble({ message, onDelete, onConfirmTts, onDeclineTts }: ChatBubbl
         {message.cardData && message.cardData.subtype !== "weather" && message.cardData.points && message.cardData.points.length > 0 && (
           <div
             className={cn(
-              "w-[340px] max-w-full rounded-2xl border border-border/60 bg-card/80 backdrop-blur-sm",
+              "w-[340px] max-w-full rounded-2xl border border-border/60 bg-card/80",
               "shadow-sm overflow-hidden"
             )}
           >

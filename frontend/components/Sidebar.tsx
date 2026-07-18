@@ -54,7 +54,7 @@ export default function Sidebar({
     <aside className="glass flex flex-col items-center w-16 border-r border-border bg-sidebar py-4 gap-1 shrink-0">
       {/* Logo */}
       <div className="w-9 h-9 rounded-xl bg-primary flex items-center justify-center mb-4 shadow-sm">
-        <span className="text-white text-sm font-semibold">C</span>
+        <span className="text-primary-foreground text-sm font-semibold">C</span>
       </div>
 
       {/* Nav */}

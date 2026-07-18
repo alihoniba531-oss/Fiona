@@ -145,7 +145,7 @@ function HistoryContent() {
       <header className="sticky top-0 z-20 glass border-b border-border px-5 py-2.5 flex items-center gap-3">
         <div className="flex items-center gap-2 shrink-0">
           <div className="w-7 h-7 rounded-lg bg-primary flex items-center justify-center">
-            <span className="text-white text-xs font-semibold">C</span>
+            <span className="text-primary-foreground text-xs font-semibold">C</span>
           </div>
           <div>
             <p className="text-sm font-semibold leading-tight">历史记录</p>
@@ -195,7 +195,7 @@ function HistoryContent() {
                   className={cn(
                     "w-full text-left px-3 py-1.5 rounded-lg text-xs transition-all",
                     quick === key && dateFrom === (key === "all" ? "" : dateFrom)
-                      ? "bg-primary text-white font-medium"
+                      ? "bg-primary text-primary-foreground font-medium"
                       : "text-muted-foreground hover:bg-secondary hover:text-foreground"
                   )}
                 >
@@ -332,14 +332,14 @@ function HistoryContent() {
                         <div key={msg.id} className={cn("px-4 py-3 flex gap-3", isUser && "flex-row-reverse")}>
                           <div className={cn(
                             "w-7 h-7 rounded-full flex items-center justify-center text-xs font-semibold shrink-0 mt-0.5",
-                            isUser ? "bg-primary text-white" : "bg-accent text-accent-foreground"
+                            isUser ? "bg-primary text-primary-foreground" : "bg-accent text-accent-foreground"
                           )}>
                             {isUser ? username[0] : "C"}
                           </div>
                           <div className={cn("flex flex-col gap-0.5 max-w-[80%]", isUser && "items-end")}>
                             <div className={cn(
                               "px-3 py-2 rounded-2xl text-sm leading-relaxed break-words whitespace-pre-wrap",
-                              isUser ? "bg-primary text-white rounded-br-sm" : "bg-secondary text-foreground rounded-bl-sm"
+                              isUser ? "bg-primary text-primary-foreground rounded-br-sm" : "bg-secondary text-foreground rounded-bl-sm"
                             )}>
                               {highlight(msg.content)}
                             </div>

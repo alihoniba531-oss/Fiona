@@ -59,14 +59,14 @@ function HudClock() {
     <div className="flex flex-col items-center mt-6">
       <div className="hud-label opacity-60 mb-1">SYS · CLOCK</div>
       <div
-        className="tabular-nums hud-flicker"
+        className="tabular-nums"
         style={{
           fontFamily: "var(--font-mono), 'SF Mono', Menlo, monospace",
           fontSize: 42,
           fontWeight: 300,
           letterSpacing: "0.08em",
-          color: "var(--hud-cyan)",
-          textShadow: "0 0 16px var(--hud-cyan-glow), 0 0 32px rgba(0,212,255,0.25)",
+          color: "var(--foreground)",
+          textShadow: "0 0 10px color-mix(in srgb, var(--primary) 18%, transparent)",
           lineHeight: 1,
         }}
       >
@@ -101,8 +101,8 @@ function AmbientSpectrum() {
             className="flex-1 rounded-sm"
             style={{
               height: `${h}px`,
-              background: "linear-gradient(180deg, rgba(0,212,255,0.7), rgba(0,212,255,0.1))",
-              boxShadow: "0 0 4px rgba(0,212,255,0.3)",
+              background: "linear-gradient(180deg, color-mix(in srgb, var(--primary) 70%, transparent), color-mix(in srgb, var(--primary) 10%, transparent))",
+              boxShadow: "0 0 2px color-mix(in srgb, var(--primary) 18%, transparent)",
               opacity: 0.4 + (i % 6) * 0.08,
             }}
           />
@@ -112,24 +112,23 @@ function AmbientSpectrum() {
   );
 }
 
-function HudStat({ label, value, pulse }: { label: string; value: string; pulse?: boolean }) {
+function HudStat({ label, value }: { label: string; value: string; pulse?: boolean }) {
   return (
     <div
       className="px-2 py-1.5"
       style={{
-        border: "1px solid rgba(0,212,255,0.18)",
-        background: "rgba(0,212,255,0.03)",
+        border: "1px solid var(--border)",
+        background: "color-mix(in srgb, var(--primary) 3%, transparent)",
         clipPath: "polygon(0 0, calc(100% - 6px) 0, 100% 6px, 100% 100%, 6px 100%, 0 calc(100% - 6px))",
       }}
     >
       <div className="hud-label opacity-50 text-[8px]">{label}</div>
       <div
-        className={pulse ? "hud-flicker" : ""}
         style={{
           fontFamily: "var(--font-mono), 'SF Mono', Menlo, monospace",
           fontSize: 13,
-          color: "var(--hud-cyan)",
-          textShadow: "0 0 6px var(--hud-cyan-glow)",
+          color: "var(--primary)",
+          textShadow: "0 0 4px color-mix(in srgb, var(--primary) 24%, transparent)",
           letterSpacing: "0.05em",
         }}
       >

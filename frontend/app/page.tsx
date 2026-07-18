@@ -20,8 +20,8 @@ import { openExternal } from "@/lib/open";
 import { API_BASE as API, WS_BASE } from "@/lib/config";
 
 const HISTORY_DRAWER_STYLE = {
-  boxShadow: "8px 0 40px rgba(0,0,0,0.5), 2px 0 12px rgba(0,0,0,0.3), inset -1px 0 0 rgba(255,255,255,0.04)",
-  borderRight: "1px solid rgba(255,255,255,0.06)",
+  boxShadow: "8px 0 40px rgba(0,0,0,0.42), 2px 0 12px rgba(0,0,0,0.26), inset 0 1px 0 rgba(255,255,255,0.62), inset 0 -8px 16px rgba(255,255,255,0.06), inset -1px 0 0 color-mix(in srgb, var(--foreground) 10%, transparent), inset 0 0 24px rgba(255,255,255,0.05)",
+  borderRight: "1px solid var(--border)",
 } satisfies CSSProperties;
 
 const CHAT_HEADER_STYLE = {
@@ -32,13 +32,13 @@ const CHAT_HEADER_STYLE = {
 } satisfies CSSProperties;
 
 const CHAT_AVATAR_STYLE = {
-  background: "radial-gradient(circle at 30% 30%, rgba(0,212,255,0.6), rgba(0,90,140,0.95))",
-  boxShadow: "inset 0 0 8px rgba(0,212,255,0.55), 0 0 12px rgba(0,212,255,0.4)",
+  background: "radial-gradient(circle at 30% 30%, color-mix(in srgb, var(--primary) 60%, white), color-mix(in srgb, var(--primary) 70%, black))",
+  boxShadow: "inset 0 0 8px color-mix(in srgb, var(--primary) 32%, transparent), 0 0 9px color-mix(in srgb, var(--primary) 20%, transparent)",
 } satisfies CSSProperties;
 
-const HUD_CYAN_TITLE_STYLE = {
-  color: "var(--hud-cyan)",
-  textShadow: "0 0 6px var(--hud-cyan-glow)",
+const HUD_PRIMARY_TITLE_STYLE = {
+  color: "var(--primary)",
+  textShadow: "0 0 4px color-mix(in srgb, var(--primary) 26%, transparent)",
 } satisfies CSSProperties;
 
 const HUD_BUTTON_CLIP_8_STYLE = {
@@ -46,8 +46,8 @@ const HUD_BUTTON_CLIP_8_STYLE = {
 } satisfies CSSProperties;
 
 const HUD_PLUS_STYLE = {
-  color: "var(--hud-cyan)",
-  textShadow: "0 0 6px var(--hud-cyan-glow)",
+  color: "var(--primary)",
+  textShadow: "0 0 4px color-mix(in srgb, var(--primary) 26%, transparent)",
   lineHeight: 1,
   fontSize: 14,
 } satisfies CSSProperties;
@@ -62,46 +62,46 @@ const HUD_BUTTON_CLIP_10_STYLE = {
 } satisfies CSSProperties;
 
 const VOICE_TEXT_STYLE = {
-  color: "var(--hud-cyan)",
-  textShadow: "0 0 4px var(--hud-cyan-glow)",
+  color: "var(--foreground)",
+  textShadow: "0 0 3px color-mix(in srgb, var(--primary) 22%, transparent)",
 } satisfies CSSProperties;
 
 const CHAT_SLOT_STYLE = { contain: "layout paint" } satisfies CSSProperties;
-const DATA_STREAM_HEADER_STYLE = { borderBottom: "1px solid rgba(0,212,255,0.15)" } satisfies CSSProperties;
+const DATA_STREAM_HEADER_STYLE = { borderBottom: "1px solid color-mix(in srgb, var(--primary) 15%, transparent)" } satisfies CSSProperties;
 const HUD_PULSE_DOT_STYLE = { width: 6, height: 6 } satisfies CSSProperties;
 const HALF_OPACITY_STYLE = { opacity: 0.5 } satisfies CSSProperties;
 
-const CARD_GLOBE_MUTED_STYLE = { color: "rgba(56,189,248,0.5)" } satisfies CSSProperties;
+const CARD_GLOBE_MUTED_STYLE = { color: "color-mix(in srgb, var(--primary) 50%, transparent)" } satisfies CSSProperties;
 const CARD_SOURCE_MUTED_STYLE = {
   fontSize: 11,
-  color: "rgba(125,211,252,0.6)",
+  color: "color-mix(in srgb, var(--foreground) 60%, transparent)",
   fontWeight: 500,
 } satisfies CSSProperties;
-const CARD_GLOBE_STYLE = { color: "rgba(56,189,248,0.6)" } satisfies CSSProperties;
+const CARD_GLOBE_STYLE = { color: "color-mix(in srgb, var(--primary) 60%, transparent)" } satisfies CSSProperties;
 const CARD_SOURCE_STYLE = {
   fontSize: 10,
-  color: "rgba(125,211,252,0.5)",
+  color: "color-mix(in srgb, var(--foreground) 58%, transparent)",
   fontWeight: 500,
 } satisfies CSSProperties;
 const CARD_POINT_STYLE = {
   fontSize: 11,
   display: "flex",
   gap: 6,
-  color: "rgba(186,230,253,0.7)",
+  color: "color-mix(in srgb, var(--foreground) 82%, transparent)",
 } satisfies CSSProperties;
 const CARD_BULLET_STYLE = {
-  color: "rgba(56,189,248,0.4)",
+  color: "color-mix(in srgb, var(--primary) 42%, transparent)",
   flexShrink: 0,
   marginTop: 2,
 } satisfies CSSProperties;
 
 const DRAWER_HEADER_STYLE = {
-  borderBottom: "1px solid rgba(0,212,255,0.15)",
-  background: "linear-gradient(180deg, rgba(0,212,255,0.04) 0%, transparent 100%)",
+  borderBottom: "1px solid color-mix(in srgb, var(--primary) 15%, transparent)",
+  background: "linear-gradient(180deg, color-mix(in srgb, var(--primary) 4%, transparent) 0%, transparent 100%)",
 } satisfies CSSProperties;
-const DRAWER_LABEL_STYLE = { color: "rgba(0,212,255,0.85)" } satisfies CSSProperties;
+const DRAWER_LABEL_STYLE = { color: "color-mix(in srgb, var(--primary) 85%, transparent)" } satisfies CSSProperties;
 const CARD_MODAL_BACKDROP_STYLE = {
-  background: "rgba(2,6,18,0.78)",
+  background: "color-mix(in srgb, var(--background) 78%, transparent)",
   backdropFilter: "blur(6px)",
 } satisfies CSSProperties;
 const CARD_MODAL_CONTENT_STYLE = {
@@ -175,7 +175,7 @@ function MiniCloudCard({
 
   return (
     <div
-      className="w-64 bg-card/90 backdrop-blur-md border border-border/60 rounded-2xl px-4 py-3 shadow-xl"
+      className="liquid-glass w-64 bg-card/90 backdrop-blur-md border border-border/60 rounded-2xl px-4 py-3 shadow-xl"
       style={{
         position: "absolute",
         left: `${pos.x}%`,
@@ -226,7 +226,7 @@ function MiniCloudCard({
         </button>
         <button
           onClick={() => onAccept(match)}
-          className="text-[10px] px-2.5 py-1 rounded-full bg-primary text-white hover:opacity-90 transition-opacity"
+          className="text-[10px] px-2.5 py-1 rounded-full bg-primary text-primary-foreground hover:opacity-90 transition-opacity"
         >
           认识下
         </button>
@@ -1357,7 +1357,7 @@ export default function ChatPage() {
         {/* ── history slide-out drawer ── */}
         {showHistory && (
         <div
-          className="absolute left-16 top-0 bottom-0 w-64 z-50 flex flex-col bg-background/98 backdrop-blur-xl animate-in slide-in-from-left duration-300"
+          className="liquid-glass absolute left-16 top-0 bottom-0 w-64 z-50 flex flex-col bg-background/98 backdrop-blur-xl animate-in slide-in-from-left duration-300"
           style={HISTORY_DRAWER_STYLE}
         >
           <>
@@ -1429,11 +1429,11 @@ export default function ChatPage() {
                     className="w-8 h-8 rounded-full flex items-center justify-center"
                     style={CHAT_AVATAR_STYLE}
                   >
-                    <span className="text-[#e0f6ff] text-xs font-semibold tracking-wider">C</span>
+                    <span className="text-primary-foreground text-xs font-semibold tracking-wider">C</span>
                   </div>
                 </div>
                 <div className="leading-tight">
-                  <p className="text-sm font-semibold tracking-wider" style={HUD_CYAN_TITLE_STYLE}>C·H·L·O·E</p>
+                  <p className="text-sm font-semibold tracking-wider" style={HUD_PRIMARY_TITLE_STYLE}>C·H·L·O·E</p>
                   <p className="hud-label flex items-center gap-1.5 mt-0.5">
                     <span className="hud-pulse" />
                     <span>ONLINE · CH.A1</span>
@@ -1487,7 +1487,7 @@ export default function ChatPage() {
           <div className="flex flex-1 min-h-0 gap-4 p-4 relative overflow-hidden">
             <StarField />
             {/* left column: HUD 能量球 / 语音端口 */}
-            <div className="w-1/4 hud-card-float flex flex-col overflow-y-auto items-center relative pt-10 pb-6 z-10">
+            <div className="liquid-glass w-1/4 hud-card-float flex flex-col overflow-y-auto items-center relative pt-10 pb-6 z-10">
               {/* 顶部 HUD 标签 */}
               <div className="absolute top-4 left-4 right-4 flex items-center justify-between">
                 <span className="hud-label">VOICE PORT</span>
@@ -1516,7 +1516,7 @@ export default function ChatPage() {
                   </span>
                 </button>
 
-                <div className="hud-label text-[10px]" style={{ color: recording ? "#ff6680" : "var(--hud-cyan)", letterSpacing: "0.18em" }}>
+                <div className="hud-label text-[10px]" style={{ color: recording ? "#ff6680" : "var(--primary)", letterSpacing: "0.18em" }}>
                   {recording ? "● LISTENING" : "▶ READY"}
                 </div>
 
@@ -1529,8 +1529,8 @@ export default function ChatPage() {
                         className="w-[3px] rounded-sm wave-bar"
                         style={{
                           height: `${height}px`,
-                          background: "linear-gradient(180deg, #00d4ff, #ff6680)",
-                          boxShadow: "0 0 6px rgba(0,212,255,0.65)",
+                          background: "linear-gradient(180deg, var(--primary), #ff6680)",
+                          boxShadow: "0 0 4px color-mix(in srgb, var(--primary) 30%, transparent)",
                           animationDelay: `${i * 0.08}s`,
                           animationDuration: `${duration}s`,
                         }}
@@ -1553,7 +1553,7 @@ export default function ChatPage() {
               {/* 底部 HUD 元数据 */}
               <div className="absolute bottom-4 left-4 right-4 flex justify-between hud-label text-[9px] opacity-60">
                 <span>SR · 16000Hz</span>
-                <span className="hud-flicker">CODEC · OPUS</span>
+                <span>CODEC · OPUS</span>
               </div>
             </div>
 
@@ -1563,7 +1563,7 @@ export default function ChatPage() {
               style={CHAT_SLOT_STYLE}  /* 严格 layout/paint 隔离，防卷帘 transform 动画过程中视觉跳出父框 */
             >
             <div
-              className="absolute inset-0 hud-card-float flex flex-col min-h-0"
+              className="liquid-glass absolute inset-0 hud-card-float flex flex-col min-h-0"
               style={{
                 transform: chatCollapsed ? "translateY(calc(100% - 28px))" : "translateY(0)",
                 transition: "transform 600ms cubic-bezier(.22,.61,.36,1)",
@@ -1619,7 +1619,7 @@ export default function ChatPage() {
                       <Mic size={14} />
                     </button>
                     <button onClick={() => handleSend()} disabled={!input.trim() && !pendingImage}
-                      className={cn("w-7 h-7 flex items-center justify-center rounded-full transition-all", input.trim() || pendingImage ? "bg-primary text-white hover:opacity-90 active:scale-95" : "text-muted-foreground cursor-not-allowed")}
+                      className={cn("w-7 h-7 flex items-center justify-center rounded-full transition-all", input.trim() || pendingImage ? "bg-primary text-primary-foreground hover:opacity-90 active:scale-95" : "text-muted-foreground cursor-not-allowed")}
                     ><Send size={14} /></button>
                   </div>
                 </div>
@@ -1629,10 +1629,10 @@ export default function ChatPage() {
             </div>
 
             {/* right column: card panel + ambient HUD */}
-            <div className="w-1/4 hud-card-float flex flex-col min-h-0 relative z-10">
+            <div className="liquid-glass w-1/4 hud-card-float flex flex-col min-h-0 relative z-10">
               <div className="px-4 pt-4 pb-2 flex items-center justify-between" style={DATA_STREAM_HEADER_STYLE}>
                 <span className="hud-label flex items-center gap-1.5">
-                  <span className="hud-pulse" style={HUD_PULSE_DOT_STYLE} />
+                  <span className="inline-block rounded-full bg-primary" style={HUD_PULSE_DOT_STYLE} />
                   DATA STREAM
                 </span>
                 <span className="hud-label opacity-60">{activeCards.length.toString().padStart(2, "0")} / 05</span>
@@ -1721,9 +1721,9 @@ export default function ChatPage() {
                           })() : card.points && card.points.length > 0 ? (
                             <div className="rounded-xl"
                               style={{
-                                background: 'linear-gradient(160deg, #0d1117 0%, #161b22 50%, #0d1117 100%)',
-                                boxShadow: idx === 0 ? '0 6px 24px rgba(0,0,0,0.5), 0 1px 4px rgba(0,0,0,0.4), 0 0 0 1px rgba(56,189,248,0.15)' : '0 2px 6px rgba(0,0,0,0.3), 0 0 0 1px rgba(56,189,248,0.08)',
-                                border: '1px solid rgba(56,189,248,0.15)',
+                                background: 'linear-gradient(160deg, var(--card) 0%, color-mix(in srgb, var(--background) 92%, transparent) 50%, var(--card) 100%)',
+                                boxShadow: idx === 0 ? '0 6px 20px rgba(0,0,0,0.42), 0 1px 4px rgba(0,0,0,0.32), 0 0 0 1px color-mix(in srgb, var(--foreground) 14%, transparent)' : '0 2px 6px rgba(0,0,0,0.26), 0 0 0 1px color-mix(in srgb, var(--foreground) 8%, transparent)',
+                                border: '1px solid color-mix(in srgb, var(--foreground) 14%, transparent)',
                               }}
                             >
                               {idx > 0 && !isHovered ? (
@@ -1765,15 +1765,14 @@ export default function ChatPage() {
 
       {/* 我的世界 抽屉 — 从右侧滑出，覆盖 2/3 聊天区；不卸载 iframe，重开秒回原状态 */}
       <div
-        className="fixed z-[55] flex flex-col"
+        className="liquid-glass fixed z-[55] flex flex-col bg-popover"
         style={{
           top: 0,
           bottom: 0,
           right: 0,
           width: "calc((100vw - 64px) * 2 / 3)",
-          background: "linear-gradient(180deg, rgba(4,10,22,0.96) 0%, rgba(2,6,18,0.98) 100%)",
-          borderLeft: "1px solid rgba(0,212,255,0.18)",
-          boxShadow: plazaOpen ? "-18px 0 48px rgba(0,0,0,0.55), inset 1px 0 0 rgba(0,212,255,0.08)" : "none",
+          borderLeft: "1px solid color-mix(in srgb, var(--primary) 18%, transparent)",
+          boxShadow: plazaOpen ? "-18px 0 48px rgba(0,0,0,0.48), inset 0 1px 0 rgba(255,255,255,0.62), inset 0 -8px 16px rgba(255,255,255,0.06), inset 1px 0 0 color-mix(in srgb, var(--primary) 6%, transparent), inset 0 0 24px rgba(255,255,255,0.05)" : "none",
           transform: plazaOpen ? "translateX(0)" : "translateX(105%)",
           transition: "transform 360ms cubic-bezier(.22,.61,.36,1)",
           willChange: "transform",
@@ -1797,15 +1796,14 @@ export default function ChatPage() {
 
       {/* 匹配 抽屉 — 同样从右侧滑出，覆盖 2/3 聊天区 */}
       <div
-        className="fixed z-[55] flex flex-col"
+        className="liquid-glass fixed z-[55] flex flex-col bg-popover"
         style={{
           top: 0,
           bottom: 0,
           right: 0,
           width: "calc((100vw - 64px) * 2 / 3)",
-          background: "linear-gradient(180deg, rgba(4,10,22,0.96) 0%, rgba(2,6,18,0.98) 100%)",
-          borderLeft: "1px solid rgba(0,212,255,0.18)",
-          boxShadow: matchOpen ? "-18px 0 48px rgba(0,0,0,0.55), inset 1px 0 0 rgba(0,212,255,0.08)" : "none",
+          borderLeft: "1px solid color-mix(in srgb, var(--primary) 18%, transparent)",
+          boxShadow: matchOpen ? "-18px 0 48px rgba(0,0,0,0.48), inset 0 1px 0 rgba(255,255,255,0.62), inset 0 -8px 16px rgba(255,255,255,0.06), inset 1px 0 0 color-mix(in srgb, var(--primary) 6%, transparent), inset 0 0 24px rgba(255,255,255,0.05)" : "none",
           transform: matchOpen ? "translateX(0)" : "translateX(105%)",
           transition: "transform 360ms cubic-bezier(.22,.61,.36,1)",
           willChange: "transform",
@@ -1837,15 +1835,14 @@ export default function ChatPage() {
         return (
           <div
             key={name}
-            className="fixed z-[55] flex flex-col"
+            className="liquid-glass fixed z-[55] flex flex-col bg-popover"
             style={{
               top: 0,
               bottom: 0,
               right: 0,
               width: "calc((100vw - 64px) * 2 / 3)",
-              background: "linear-gradient(180deg, rgba(4,10,22,0.96) 0%, rgba(2,6,18,0.98) 100%)",
-              borderLeft: "1px solid rgba(0,212,255,0.18)",
-              boxShadow: open ? "-18px 0 48px rgba(0,0,0,0.55), inset 1px 0 0 rgba(0,212,255,0.08)" : "none",
+              borderLeft: "1px solid color-mix(in srgb, var(--primary) 18%, transparent)",
+              boxShadow: open ? "-18px 0 48px rgba(0,0,0,0.48), inset 0 1px 0 rgba(255,255,255,0.62), inset 0 -8px 16px rgba(255,255,255,0.06), inset 1px 0 0 color-mix(in srgb, var(--primary) 6%, transparent), inset 0 0 24px rgba(255,255,255,0.05)" : "none",
               transform: open ? "translateX(0)" : "translateX(105%)",
               transition: "transform 360ms cubic-bezier(.22,.61,.36,1)",
               willChange: "transform",
@@ -1887,7 +1884,7 @@ export default function ChatPage() {
           onClick={() => setEnlargedCard(null)}
         >
           <div
-            className="topic-drawer-in relative"
+            className="liquid-glass topic-drawer-in relative"
             style={CARD_MODAL_CONTENT_STYLE}
             onClick={(e) => e.stopPropagation()}
           >

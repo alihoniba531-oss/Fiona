@@ -39,6 +39,25 @@ export default function StarField({ count = 260, className = "" }: Props) {
     let stars: Star[] = [];
     let shootingStar: ShootingStar | null = null;
     let dpr = 1;
+    const motionQuery = window.matchMedia("(prefers-reduced-motion: reduce)");
+    let prefersReducedMotion = motionQuery.matches;
+
+    const drawStaticStarfield = () => {
+      const w = canvas.clientWidth;
+      const h = canvas.clientHeight;
+      ctx.clearRect(0, 0, w, h);
+
+      for (const s of stars) {
+        const twinkle = (Math.sin(s.phase) + 1) * 0.5;
+        const a = s.alpha * (0.35 + twinkle * 0.65);
+        const r = Math.floor(180 + s.z * 75);
+        const g = Math.floor(215 + s.z * 40);
+        ctx.fillStyle = `rgba(${r},${g},255,${a})`;
+        ctx.beginPath();
+        ctx.arc(s.x, s.y, s.size * s.z, 0, Math.PI * 2);
+        ctx.fill();
+      }
+    };
 
     const resize = () => {
       dpr = Math.min(window.devicePixelRatio || 1, 1.5);
@@ -48,6 +67,7 @@ export default function StarField({ count = 260, className = "" }: Props) {
       canvas.height = Math.max(1, Math.floor(h * dpr));
       ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
       initStars();
+      if (prefersReducedMotion) drawStaticStarfield();
     };
 
     const initStars = () => {
@@ -75,7 +95,7 @@ export default function StarField({ count = 260, className = "" }: Props) {
     let lastT = performance.now();
     const tick = (now: number) => {
       raf = null;
-      if (document.hidden) return;
+      if (document.hidden || prefersReducedMotion) return;
 
       const dt = Math.min(3, (now - lastT) / 16.67);
       lastT = now;
@@ -115,8 +135,8 @@ export default function StarField({ count = 260, className = "" }: Props) {
           s.x - s.vx * 8, s.y - s.vy * 8,
           s.x, s.y
         );
-        grad.addColorStop(0, "rgba(0,212,255,0)");
-        grad.addColorStop(1, `rgba(0,212,255,${s.life * 0.9})`);
+        grad.addColorStop(0, "rgba(242,168,60,0)");
+        grad.addColorStop(1, `rgba(242,168,60,${s.life * 0.9})`);
         ctx.strokeStyle = grad;
         ctx.lineWidth = 1.5;
         ctx.beginPath();
@@ -139,7 +159,7 @@ export default function StarField({ count = 260, className = "" }: Props) {
     };
 
     const startAnimation = () => {
-      if (document.hidden || raf !== null) return;
+      if (document.hidden || prefersReducedMotion || raf !== null) return;
       lastT = performance.now();
       raf = requestAnimationFrame(tick);
     };
@@ -152,11 +172,25 @@ export default function StarField({ count = 260, className = "" }: Props) {
       }
     };
 
+    const handleMotionPreferenceChange = (event: MediaQueryListEvent) => {
+      prefersReducedMotion = event.matches;
+      shootingStar = null;
+
+      if (prefersReducedMotion) {
+        stopAnimation();
+        drawStaticStarfield();
+      } else {
+        startAnimation();
+      }
+    };
+
     document.addEventListener("visibilitychange", handleVisibilityChange);
+    motionQuery.addEventListener("change", handleMotionPreferenceChange);
     startAnimation();
 
     return () => {
       document.removeEventListener("visibilitychange", handleVisibilityChange);
+      motionQuery.removeEventListener("change", handleMotionPreferenceChange);
       stopAnimation();
       ro.disconnect();
     };

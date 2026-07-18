@@ -66,7 +66,7 @@ function SettingsContent() {
                     onClick={() => switchUser(u)}
                     className={`px-4 py-1.5 rounded-full text-sm transition-all ${
                       u === username
-                        ? "bg-primary text-white"
+                        ? "bg-primary text-primary-foreground"
                         : "bg-secondary text-muted-foreground hover:text-foreground"
                     }`}
                   >

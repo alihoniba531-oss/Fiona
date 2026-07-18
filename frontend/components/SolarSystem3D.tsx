@@ -29,9 +29,36 @@ const PLANETS: PlanetDef[] = [
   { name: "Neptune", texture: "/textures/neptune.jpg",  size: 0.12,  orbit: 7.8,  speed: 0.045, phase: 1.5 },
 ];
 
-function VisibilityController({ onVisibilityChange }: { onVisibilityChange: (isVisible: boolean) => void }) {
+function usePrefersReducedMotion() {
+  const [prefersReducedMotion, setPrefersReducedMotion] = useState(false);
+
+  useEffect(() => {
+    const mediaQuery = window.matchMedia("(prefers-reduced-motion: reduce)");
+    const handleChange = (event: MediaQueryListEvent) => {
+      setPrefersReducedMotion(event.matches);
+    };
+
+    setPrefersReducedMotion(mediaQuery.matches);
+    mediaQuery.addEventListener("change", handleChange);
+
+    return () => {
+      mediaQuery.removeEventListener("change", handleChange);
+    };
+  }, []);
+
+  return prefersReducedMotion;
+}
+
+function VisibilityController({
+  onVisibilityChange,
+  prefersReducedMotion,
+}: {
+  onVisibilityChange: (isVisible: boolean) => void;
+  prefersReducedMotion: boolean;
+}) {
   const get = useThree((state) => state.get);
   const pausedElapsed = useRef(0);
+  const visibleFrameloop = prefersReducedMotion ? "demand" : "always";
 
   useEffect(() => {
     const handleVisibilityChange = () => {
@@ -41,9 +68,10 @@ function VisibilityController({ onVisibilityChange }: { onVisibilityChange: (isV
       if (!isPageVisible && state.frameloop !== "never") {
         pausedElapsed.current = state.clock.getElapsedTime();
         state.setFrameloop("never");
-      } else if (isPageVisible && state.frameloop !== "always") {
-        state.setFrameloop("always");
-        state.clock.elapsedTime = pausedElapsed.current;
+      } else if (isPageVisible && state.frameloop !== visibleFrameloop) {
+        const wasStopped = state.frameloop === "never";
+        state.setFrameloop(visibleFrameloop);
+        if (wasStopped) state.clock.elapsedTime = pausedElapsed.current;
         state.invalidate();
       }
 
@@ -56,7 +84,7 @@ function VisibilityController({ onVisibilityChange }: { onVisibilityChange: (isV
     return () => {
       document.removeEventListener("visibilitychange", handleVisibilityChange);
     };
-  }, [get, onVisibilityChange]);
+  }, [get, onVisibilityChange, visibleFrameloop]);
 
   return null;
 }
@@ -199,6 +227,7 @@ function Scene() {
 // ─── 导出 ─────────────────────────────────────────────────────────────────
 export default function SolarSystem3D({ className = "" }: { className?: string }) {
   const [isPageVisible, setIsPageVisible] = useState(true);
+  const prefersReducedMotion = usePrefersReducedMotion();
 
   return (
     <div className={"absolute inset-0 pointer-events-none " + className}>
@@ -206,7 +235,7 @@ export default function SolarSystem3D({ className = "" }: { className?: string }
       <div
         className="absolute inset-0 z-10 pointer-events-none"
         style={{
-          background: "repeating-linear-gradient(180deg, transparent, transparent 3px, rgba(0,212,255,0.018) 3px, rgba(0,212,255,0.018) 4px)",
+          background: "repeating-linear-gradient(180deg, transparent, transparent 3px, rgba(242,168,60,0.012) 3px, rgba(242,168,60,0.012) 4px)",
           mixBlendMode: "screen",
         }}
       />
@@ -221,9 +250,12 @@ export default function SolarSystem3D({ className = "" }: { className?: string }
         camera={{ position: [0, 3.8, 11], fov: 44 }}
         gl={{ alpha: true, antialias: true, powerPreference: "high-performance", toneMapping: THREE.ACESFilmicToneMapping }}
         dpr={[1, 1.5]}
-        frameloop={isPageVisible ? "always" : "never"}
+        frameloop={isPageVisible ? (prefersReducedMotion ? "demand" : "always") : "never"}
       >
-        <VisibilityController onVisibilityChange={setIsPageVisible} />
+        <VisibilityController
+          onVisibilityChange={setIsPageVisible}
+          prefersReducedMotion={prefersReducedMotion}
+        />
         <ambientLight intensity={0.18} />
         <Scene />
         <Stars radius={300} depth={60} count={8000} factor={4} saturation={0.5} fade speed={0.6} />

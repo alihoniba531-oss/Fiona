@@ -11,12 +11,39 @@ interface Props {
 }
 
 const PARTICLE_COUNT = 900;
-const COLOR_IDLE = new THREE.Color("#00d4ff");
-const COLOR_REC = new THREE.Color("#ff3366");
+const COLOR_IDLE = new THREE.Color("#f2a83c");
+const COLOR_REC = new THREE.Color("#ff5a4d");
 
-function VisibilityController({ onVisibilityChange }: { onVisibilityChange: (isVisible: boolean) => void }) {
+function usePrefersReducedMotion() {
+  const [prefersReducedMotion, setPrefersReducedMotion] = useState(false);
+
+  useEffect(() => {
+    const mediaQuery = window.matchMedia("(prefers-reduced-motion: reduce)");
+    const handleChange = (event: MediaQueryListEvent) => {
+      setPrefersReducedMotion(event.matches);
+    };
+
+    setPrefersReducedMotion(mediaQuery.matches);
+    mediaQuery.addEventListener("change", handleChange);
+
+    return () => {
+      mediaQuery.removeEventListener("change", handleChange);
+    };
+  }, []);
+
+  return prefersReducedMotion;
+}
+
+function VisibilityController({
+  onVisibilityChange,
+  prefersReducedMotion,
+}: {
+  onVisibilityChange: (isVisible: boolean) => void;
+  prefersReducedMotion: boolean;
+}) {
   const get = useThree((state) => state.get);
   const pausedElapsed = useRef(0);
+  const visibleFrameloop = prefersReducedMotion ? "demand" : "always";
 
   useEffect(() => {
     const handleVisibilityChange = () => {
@@ -26,9 +53,10 @@ function VisibilityController({ onVisibilityChange }: { onVisibilityChange: (isV
       if (!isPageVisible && state.frameloop !== "never") {
         pausedElapsed.current = state.clock.getElapsedTime();
         state.setFrameloop("never");
-      } else if (isPageVisible && state.frameloop !== "always") {
-        state.setFrameloop("always");
-        state.clock.elapsedTime = pausedElapsed.current;
+      } else if (isPageVisible && state.frameloop !== visibleFrameloop) {
+        const wasStopped = state.frameloop === "never";
+        state.setFrameloop(visibleFrameloop);
+        if (wasStopped) state.clock.elapsedTime = pausedElapsed.current;
         state.invalidate();
       }
 
@@ -41,7 +69,7 @@ function VisibilityController({ onVisibilityChange }: { onVisibilityChange: (isV
     return () => {
       document.removeEventListener("visibilitychange", handleVisibilityChange);
     };
-  }, [get, onVisibilityChange]);
+  }, [get, onVisibilityChange, visibleFrameloop]);
 
   return null;
 }
@@ -60,9 +88,16 @@ function fibonacciSphere(count: number) {
   return arr;
 }
 
-function ParticleField({ recording }: { recording: boolean }) {
+function ParticleField({
+  recording,
+  prefersReducedMotion,
+}: {
+  recording: boolean;
+  prefersReducedMotion: boolean;
+}) {
   const pointsRef = useRef<THREE.Points>(null!);
   const matRef = useRef<THREE.PointsMaterial>(null!);
+  const invalidate = useThree((state) => state.invalidate);
 
   // 两套独立的 3D noise — 一套做大块隆起，一套做表面触手细节
   const noiseLow = useMemo(() => createNoise3D(), []);
@@ -78,6 +113,13 @@ function ParticleField({ recording }: { recording: boolean }) {
     const positions = new Float32Array(basePositions);
     return { positions, basePositions };
   }, []);
+
+  useEffect(() => {
+    if (!prefersReducedMotion) return;
+    matRef.current.color.copy(recording ? COLOR_REC : COLOR_IDLE);
+    matRef.current.size = recording ? 0.036 : 0.026;
+    invalidate();
+  }, [invalidate, prefersReducedMotion, recording]);
 
   useFrame((state) => {
     const t = state.clock.elapsedTime;
@@ -151,10 +193,25 @@ function ParticleField({ recording }: { recording: boolean }) {
   );
 }
 
-function CoreGlow({ recording }: { recording: boolean }) {
+function CoreGlow({
+  recording,
+  prefersReducedMotion,
+}: {
+  recording: boolean;
+  prefersReducedMotion: boolean;
+}) {
   const ref = useRef<THREE.Mesh>(null!);
   const matRef = useRef<THREE.MeshBasicMaterial>(null!);
+  const invalidate = useThree((state) => state.invalidate);
   const noise = useMemo(() => createNoise3D(), []);
+
+  useEffect(() => {
+    if (!prefersReducedMotion) return;
+    matRef.current.color.copy(recording ? COLOR_REC : COLOR_IDLE);
+    matRef.current.opacity = recording ? 0.32 : 0.2;
+    invalidate();
+  }, [invalidate, prefersReducedMotion, recording]);
+
   useFrame((state) => {
     const t = state.clock.elapsedTime;
     // 核心也用 noise 做不规则形变（缩放三轴不一致）
@@ -183,6 +240,7 @@ function CoreGlow({ recording }: { recording: boolean }) {
 
 export default function HudOrb3D({ recording = false, size = 240 }: Props) {
   const [isPageVisible, setIsPageVisible] = useState(true);
+  const prefersReducedMotion = usePrefersReducedMotion();
 
   return (
     <div style={{ width: size, height: size }} className="select-none">
@@ -190,11 +248,14 @@ export default function HudOrb3D({ recording = false, size = 240 }: Props) {
         camera={{ position: [0, 0, 3.2], fov: 45 }}
         gl={{ alpha: true, antialias: true, powerPreference: "high-performance" }}
         dpr={[1, 1.5]}
-        frameloop={isPageVisible ? "always" : "never"}
+        frameloop={isPageVisible ? (prefersReducedMotion ? "demand" : "always") : "never"}
       >
-        <VisibilityController onVisibilityChange={setIsPageVisible} />
-        <ParticleField recording={recording} />
-        <CoreGlow recording={recording} />
+        <VisibilityController
+          onVisibilityChange={setIsPageVisible}
+          prefersReducedMotion={prefersReducedMotion}
+        />
+        <ParticleField recording={recording} prefersReducedMotion={prefersReducedMotion} />
+        <CoreGlow recording={recording} prefersReducedMotion={prefersReducedMotion} />
       </Canvas>
     </div>
   );

@@ -57,7 +57,7 @@ function CloudCard({
   return (
     <div
       className={cn(
-        "cloud-card w-80 bg-card/70 backdrop-blur-md border border-border/60 rounded-2xl px-5 py-4 shadow-lg",
+        "cloud-card liquid-glass w-80 bg-card/70 backdrop-blur-md border border-border/60 rounded-2xl px-5 py-4 shadow-lg",
         phase === "in" && "cloud-in",
         phase === "stable" && "cloud-stable",
         phase === "out" && "cloud-out",
@@ -123,7 +123,7 @@ function CloudCard({
             >跳过</button>
             <button
               onClick={() => onAccept(match, greetingText)}
-              className="text-[10px] px-3 py-1.5 rounded-full bg-primary text-white hover:opacity-90 transition-opacity"
+              className="text-[10px] px-3 py-1.5 rounded-full bg-primary text-primary-foreground hover:opacity-90 transition-opacity"
             >发送打招呼</button>
           </div>
         </div>
@@ -137,7 +137,7 @@ function CloudCard({
           >算了</button>
           <button
             onClick={() => setShowGreeting(true)}
-            className="text-[11px] px-3 py-1.5 rounded-full bg-primary text-white hover:opacity-90 transition-opacity"
+            className="text-[11px] px-3 py-1.5 rounded-full bg-primary text-primary-foreground hover:opacity-90 transition-opacity"
           >认识下</button>
         </div>
       )}
@@ -323,15 +323,15 @@ function MatchContent() {
             className="w-64 flex flex-col shrink-0 relative z-10"
             style={{
               background:
-                "linear-gradient(180deg, rgba(8,18,38,0.08) 0%, rgba(4,10,22,0.14) 100%)",
-              borderRight: "1px solid rgba(0,212,255,0.22)",
+                "linear-gradient(180deg, color-mix(in srgb, var(--background) 8%, transparent) 0%, color-mix(in srgb, var(--background) 14%, transparent) 100%)",
+              borderRight: "1px solid color-mix(in srgb, var(--primary) 22%, transparent)",
               backdropFilter: "blur(4px) saturate(140%)",
               WebkitBackdropFilter: "blur(4px) saturate(140%)",
-              boxShadow: "inset -1px 0 0 rgba(0,212,255,0.10), inset 0 1px 0 rgba(0,212,255,0.06)",
+              boxShadow: "inset -1px 0 0 color-mix(in srgb, var(--primary) 10%, transparent), inset 0 1px 0 color-mix(in srgb, var(--primary) 6%, transparent)",
             }}
           >
-            <div className="px-4 py-3" style={{ borderBottom: "1px solid rgba(0,212,255,0.15)" }}>
-              <p className="hud-label text-[10px] tracking-wider" style={{ color: "rgba(0,212,255,0.85)" }}>最近聊天</p>
+            <div className="px-4 py-3" style={{ borderBottom: "1px solid color-mix(in srgb, var(--primary) 15%, transparent)" }}>
+              <p className="hud-label text-[10px] tracking-wider" style={{ color: "color-mix(in srgb, var(--primary) 85%, transparent)" }}>最近聊天</p>
             </div>
             <div className="flex-1 overflow-y-auto py-1">
               {rooms.length === 0 ? (
@@ -397,7 +397,7 @@ function MatchContent() {
                         <div className={cn(
                           "max-w-[70%] px-4 py-2 rounded-2xl text-sm leading-relaxed",
                           isSelf
-                            ? "bg-primary text-white rounded-br-sm"
+                            ? "bg-primary text-primary-foreground rounded-br-sm"
                             : "bg-secondary text-foreground rounded-bl-sm"
                         )}>
                           {m.content}
@@ -424,7 +424,7 @@ function MatchContent() {
                       disabled={!input.trim()}
                       className={cn(
                         "w-8 h-8 flex items-center justify-center rounded-full transition-all mb-0.5",
-                        input.trim() ? "bg-primary text-white hover:opacity-90" : "text-muted-foreground"
+                        input.trim() ? "bg-primary text-primary-foreground hover:opacity-90" : "text-muted-foreground"
                       )}
                     >
                       <Send size={14} />
@@ -440,9 +440,9 @@ function MatchContent() {
       <style jsx global>{`
         @keyframes cloud-drift {
           0%, 100% { transform: translateY(0); }
-          50% { transform: translateY(-4px); }
+          50% { transform: translateY(-3px); }
         }
-        .cloud-card {
+        .cloud-card.liquid-glass {
           opacity: 0;
           transform: translateY(-24px) scale(0.96);
           transition: opacity 1.2s ease-out, transform 1.5s cubic-bezier(0.16, 1, 0.3, 1);
@@ -450,13 +450,18 @@ function MatchContent() {
         .cloud-card.cloud-stable {
           opacity: 1;
           transform: translateY(0) scale(1);
-          animation: cloud-drift 6s ease-in-out infinite;
+          animation: cloud-drift 10s ease-in-out infinite;
         }
         .cloud-card.cloud-out {
           opacity: 0;
           transform: translateY(-32px) scale(0.95);
           transition: opacity 2s ease-in, transform 2.5s ease-in;
           animation: none;
+        }
+        @media (prefers-reduced-motion: reduce) {
+          .cloud-card.cloud-stable {
+            animation: none;
+          }
         }
       `}</style>
     </div>
