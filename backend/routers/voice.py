@@ -12,7 +12,6 @@ from fastapi import APIRouter, WebSocket
 from pydantic import BaseModel
 
 from auth_dep import ws_authenticate
-from nls_token import generate_nls_token
 from qwen_asr import asr_recognize
 
 router = APIRouter()
@@ -86,12 +85,6 @@ def _ffmpeg_to_wav(audio_bytes: bytes, input_suffix: str = ".webm") -> bytes:
                 os.unlink(temporary_file.name)
             except OSError:
                 pass
-
-
-@router.get("/asr/token")
-async def asr_token():
-    """已弃用：旧阿里云 NLS 实时语音识别 token，暂为兼容保留。"""
-    return generate_nls_token()
 
 
 @router.get("/tts/synthesize")
