@@ -167,3 +167,9 @@ npm run build
 - [前端开发](./frontend/README.md)
 - [Windows 桌面客户端](./desktop/README.md)
 - [编码代理快速上下文](./CLAUDE.md)
+
+## 开源许可与安全报告
+
+本项目原创代码采用 [MIT License](./LICENSE)。你可以使用、修改和分发代码，但需要保留许可证和版权声明。NASA、Solar System Scope 和 Three.js 的图片/纹理仍遵循各自条款，详见 [第三方素材声明](./THIRD_PARTY_NOTICES.md)。
+
+请不要在公开 Issue 中披露未修复漏洞、API Key、个人数据或数据库内容。安全问题请按 [安全政策](./.github/SECURITY.md) 通过 GitHub Private Vulnerability Reporting 私密提交。
