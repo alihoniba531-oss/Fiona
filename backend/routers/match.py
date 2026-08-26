@@ -3,7 +3,7 @@
 from fastapi import APIRouter, Depends, HTTPException
 
 from auth_dep import get_current_user
-from database import get_or_create_user, get_pending_matches_for_user, mark_pending_match_seen
+from database import get_pending_matches_for_user, mark_pending_match_seen
 from llm import client
 from matcher import find_matches
 
@@ -13,7 +13,6 @@ router = APIRouter()
 @router.get("/match")
 async def get_matches(user: str = Depends(get_current_user)):
     """为当前登录用户计算并返回匹配结果"""
-    await get_or_create_user(user)
     results = await find_matches(client, user)
     return {"username": user, "matches": results}
 

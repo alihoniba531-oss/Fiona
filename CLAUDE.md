@@ -1,32 +1,81 @@
-# 菲欧娜 / Chloe
+# Fiona / Chloe 开发上下文
 
-个人 AI 陪伴产品：用户跟"Chloe"聊天，附带匹配、广场等社交功能。作者自用 + 小范围内测。
+个人 AI 陪伴与社交连接产品，当前用于作者自用和受控小范围内测。完整说明见 `README.md`，实际数据流见 `docs/ARCHITECTURE.md`，当前风险和路线图见 `PLAN.md`。
 
-## 架构
-- **后端** `backend/`：FastAPI + SQLite（`fiona.db`），uvicorn 跑在 `127.0.0.1:8000`。
-  入口 `main.py`，人设 `persona.py`，鉴权 `auth.py`（JWT，`DEV_MODE=1` 时放行 X-Dev-User）。
-  成长阶段 `avatar_state.py`（空→镜像→完整分身，按消息总数 `count_messages` 路由）。
-- **前端** `frontend/`：Next.js **16**（App Router），dev 端口 3000。
-  ⚠️ 见 `frontend/AGENTS.md`：这是魔改版 Next，写前端代码前先读 `node_modules/next/dist/docs/`。
-  后端地址统一走 `lib/config.ts`（`API_BASE`/`WS_BASE`，不设环境变量则相对 `/api`）。
-- **桌面** `desktop/`：Tauri 2 壳。`src-tauri/src/lib.rs` 是启动逻辑，`dist/index.html` 是加载页。
-  Windows 打包脚本 `desktop/build.ps1` → 出 `.msi`/`.exe`（Linux 打不了，必须 Windows）。
+## 当前架构
 
-## 桌面壳两种模式（同一个 .msi 自适应）
-- **开发者模式**：检测到 `fiona.config.json`（云 IP + SSH）→ 建 SSH 隧道 → 加载 `localhost:3000`。
-- **用户模式**：无 config → 不建隧道 → 直接加载公网 `https://madchloechat.online`。给内测者发的就是不带 config 的用法。
+- `backend/`：FastAPI + SQLite `fiona.db`，入口 `main.py`，通过 `run.py` 监听 `127.0.0.1:8000`。
+- `frontend/`：Next.js 16.2.6 App Router + React 19，开发端口 3000。
+- `desktop/`：Tauri 2 Windows 壳；有配置时建 SSH 隧道，无配置时加载 `https://madchloechat.online`。
+- 模型：DashScope/Qwen；主力 `qwen3.8-max`，轻量 `qwen3.7-flash`，图片 `qwen-vl-max`，搜索/热点 `qwen-plus`，语音使用 Qwen ASR 和 DashScope TTS。
+- 数据：SQLite、`backend/uploads/`、`backend/.env` 都是本机/单机状态，不进入 Git。
 
-## 部署拓扑（Plan B，单域名）
-- 阿里云 ECS 新加坡，公网 IP `47.236.249.77`，域名 `madchloechat.online`（免备案）。
-- Nginx（443，certbot 证书）：`location /api/ → 127.0.0.1:8000`（后端），`location / → 127.0.0.1:3000`（前端）。
-- 两个 systemd 服务：`fiona`（uvicorn 8000）、`fiona-web`（`next start` 3000）。
-- 前后端同源 → 无 CORS、相对 `/api` 直通、`/uploads` 靠同源 cookie。
-- 代码在服务器 `/root/Fiona`（GitHub `Fiona.git`）；`backend/.env` 不入库，`DEV_MODE=0` + 强 `JWT_SECRET`。
+## 核心模块
 
-## 登录
-内测用**邀请码**（短信 `send_sms` 是 stub，未接真实服务商）。
-`POST /auth/redeem-invite` 输码即登录；`backend/seed_invites.py` 种码（绑 tester01..N）。
+- 聊天主流程：`backend/routers/chat.py`、`backend/services/chat_service.py`
+- Persona/成长状态：`backend/persona.py`、`backend/avatar_state.py`、`backend/state_probe.py`
+- 画像与匹配：`backend/extractor.py`、`backend/conversation_matcher.py`、`backend/matcher.py`
+- API：`backend/routers/` 下的 auth/chat/hot/match/me/peer/plaza/voice
+- 工具：`backend/tools/`
+- 前端 API 基址：`frontend/lib/config.ts`
+- 前端鉴权：`frontend/lib/auth.ts`、`frontend/proxy.ts`
+- 桌面启动与权限：`desktop/src-tauri/src/lib.rs`、`desktop/src-tauri/capabilities/default.json`
 
-## 约定
-- 改动只修真 bug（作者自用阶段）；简单优先。
-- 提交需作者明确要求；`.env`/`fiona.config.json` 永不入库。
+## 本地命令
+
+后端从 `backend/` 运行：
+
+```bash
+python run.py
+python -m pytest -q
+```
+
+测试必须优先使用 `python -m pytest`，直接调用某些环境中的 `pytest` 可能无法导入后端顶层模块。
+
+前端从 `frontend/` 运行：
+
+```bash
+npm ci
+npm run dev
+npm run lint
+npx tsc --noEmit
+npm run build
+```
+
+修改前端代码前必须阅读 `frontend/AGENTS.md` 和本地 `frontend/node_modules/next/dist/docs/` 中对应的 Next.js 16 文档。
+
+## 鉴权和配置
+
+- `backend/.env.example` 是后端配置模板。
+- 生产必须 `DEV_MODE=0`，设置真实 `DASHSCOPE_API_KEY` 和强 `JWT_SECRET`。
+- 内测登录使用邀请码，`backend/seed_invites.py` 创建绑定用户名的码。
+- `backend/manage_invites.py` 查看、撤销和轮换邀请码；这些操作会使绑定账号的旧会话失效。
+- 浏览器 JWT 只在 `HttpOnly` Cookie 中；HTTP/WebSocket 每次鉴权都核对数据库会话版本，不能恢复 query token 或 JavaScript 可读存储。
+- `DEV_MODE=1` 才开放测试登录和 `X-Dev-User`。
+- 单域名环境不设置 `NEXT_PUBLIC_API_BASE`；前端相对 `/api` 由 Next rewrite 或生产 Nginx 转发。
+
+## 生产拓扑
+
+- Nginx 443：`/` → Next.js 3000，`/api/` → FastAPI 8000 并移除前缀，`/uploads/` → FastAPI。
+- systemd：`fiona` 启动后端，`fiona-web` 启动 `next start`。
+- 当前约定服务器目录 `/root/Fiona`，域名 `madchloechat.online`。
+- 所有生产命令、备份和回滚步骤以 `docs/DEPLOYMENT.md` 为准；仓库文档不能证明外部服务器的即时状态。
+
+## 当前重要边界
+
+- 这是 SQLite 单机内测架构，不要宣称已经支持 PostgreSQL 或无限并发。
+- 远程 Tauri capability、Windows `open_url` 和 CSP 已完成代码整改；桌面公开发布仍需 Windows/Rust 复核、签名和发布验证。
+- 热点来源和网页卡片已经统一经过公网 HTTP(S) 校验、DNS/IP 固定、逐跳重定向检查和响应大小限制。
+- Layer 2 双边卡片、双方偏好验证、手动匹配输出约束和跨用户画像最小化已完成；候选原始消息不得进入匹配模型。
+- 完整账户删除会清理数据库关联记录、关闭真人连接，并通过持久化队列重试无引用上传文件；关键后台写入必须继续防止删号后重建数据。
+- 总请求体、Chat/图片、ASR、TTS、帖子和分页已有应用层边界；模型并发、真实 usage 与持久化成本控制仍未完成。
+- 模型预算是进程内估算，不等同于供应商真实账单；草莓扣费原子性与持久化成本控制按当前决定暂缓，不要误写为已完成。
+- 前端主页面和常驻抽屉 iframe 有已知性能与维护债务。
+- Persona、成人内容、AI 身份披露、年龄与危机处理政策必须在扩大内测前统一。
+
+## 工作约定
+
+- 优先修复可复现问题，避免无关重构。
+- 不提交 `.env`、数据库、上传文件、备份或 `fiona.config.json`。
+- 代码改变模型、路由、端口、环境变量、数据位置或部署方式时，同步更新 README、架构/部署文档和 PLAN。
+- 只有作者明确要求时才提交 Git commit。

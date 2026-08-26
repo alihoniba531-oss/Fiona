@@ -6,14 +6,12 @@
 import json
 import re
 import os
-import socket
-import ipaddress
-import requests
 from urllib.parse import urlparse
 from openai import OpenAI
 from bs4 import BeautifulSoup
 
 from llm import MAIN_EXTRA_BODY, MAIN_MODEL
+from utils.safe_http import request_public_url
 
 
 # 常见网站的友好名称
@@ -73,60 +71,28 @@ def _is_url(s: str) -> bool:
     return False
 
 
-# 显式拉黑的元数据 IP:阿里云 100.100.100.200 在 100.64/10 运营商共享段,
-# is_private 不一定覆盖,务必显式拦;169.254.169.254 是云厂商通用元数据地址。
-_BLOCKED_IPS = {"100.100.100.200", "169.254.169.254"}
-
-
-def _guard_url(url: str) -> None:
-    """SSRF 防护:抓取用户给的任意 URL 前必须先过这关,否则攻击者能让服务器
-    去访问云元数据(泄露 RAM 临时凭据)、本机/内网服务、做内网横向探测。
-    校验对象是补全 scheme 之后、最终真正要请求的 URL。不合法直接抛 ValueError,
-    由上层 fetch_card 的 try/except 接住转成『读不到这个网页』卡片。"""
-    parsed = urlparse(url)
-    # 1. 只允许 http / https
-    if parsed.scheme not in ("http", "https"):
-        raise ValueError(f"不允许的 scheme: {parsed.scheme}")
-    host = parsed.hostname
-    if not host:
-        raise ValueError("URL 没有主机名")
-    # 2. 把主机名解析成所有 IP,逐个判断;只要有一个落在危险范围就拒绝
-    #    (防 DNS 多记录绕过:一条指白名单、另一条指内网)
-    try:
-        infos = socket.getaddrinfo(host, None)
-    except Exception as e:
-        raise ValueError(f"DNS 解析失败: {e}")
-    for info in infos:
-        ip_str = info[4][0]
-        # IPv4-mapped IPv6(如 ::ffff:127.0.0.1)还原成 IPv4 再判,避免绕过
-        ip = ipaddress.ip_address(ip_str)
-        if isinstance(ip, ipaddress.IPv6Address) and ip.ipv4_mapped:
-            ip = ip.ipv4_mapped
-        if str(ip) in _BLOCKED_IPS:
-            raise ValueError(f"目标 IP 命中黑名单: {ip}")
-        if (ip.is_private or ip.is_loopback or ip.is_link_local
-                or ip.is_reserved or ip.is_unspecified or ip.is_multicast):
-            raise ValueError(f"目标 IP 落在禁止范围: {ip}")
-
-
 def _fetch_html(url: str, timeout: int = 8) -> str:
-    """抓取网页 HTML"""
+    """通过 DNS 固定和响应上限抓取网页 HTML。"""
     if not url.startswith("http"):
         url = "https://" + url
-    # SSRF 校验必须在补全 scheme 之后、真正发请求之前
-    _guard_url(url)
     headers = {
         "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36",
         "Accept-Language": "zh-CN,zh;q=0.9,en;q=0.8",
     }
     # 关闭重定向:卡片场景不需要跟随跳转,且能防『先给白名单 URL,再 302 跳内网』绕过
-    resp = requests.get(url, headers=headers, timeout=timeout, allow_redirects=False)
+    resp = request_public_url(
+        "GET",
+        url,
+        headers=headers,
+        timeout=timeout,
+        max_bytes=1_000_000,
+        follow_redirects=False,
+    )
     # 站点 301/302 时不跟随,直接当读不到(避免被跳板绕过 SSRF 校验)
-    if resp.is_redirect or resp.is_permanent_redirect:
+    if resp.status_code in {301, 302, 303, 307, 308}:
         raise ValueError(f"目标返回重定向({resp.status_code}),不跟随")
-    resp.raise_for_status()
-    if resp.encoding == "ISO-8859-1":  # requests 误判时用 chardet 猜
-        resp.encoding = resp.apparent_encoding
+    if resp.status_code >= 400:
+        raise ValueError(f"目标返回 HTTP {resp.status_code}")
     return resp.text
 
 

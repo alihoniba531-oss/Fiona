@@ -20,6 +20,19 @@ async def _safe_migrate(db, sql: str):
         print(f"[init_db] migrate failed: {sql} -> {type(e).__name__}: {e}")
 
 
+async def _users_exist(db, *usernames: str) -> bool:
+    unique = tuple(dict.fromkeys(name for name in usernames if name))
+    if not unique:
+        return False
+    placeholders = ",".join("?" for _ in unique)
+    async with db.execute(
+        f"SELECT COUNT(*) FROM users WHERE username IN ({placeholders})",
+        unique,
+    ) as cursor:
+        count = (await cursor.fetchone())[0]
+    return count == len(unique)
+
+
 async def init_db():
     async with aiosqlite.connect(DB_PATH) as db:
         await db.execute("""
@@ -45,6 +58,8 @@ async def init_db():
         # 用户性别 + 匹配偏好（老库迁移）
         await _safe_migrate(db, "ALTER TABLE users ADD COLUMN gender TEXT DEFAULT NULL")
         await _safe_migrate(db, "ALTER TABLE users ADD COLUMN match_pref TEXT DEFAULT 'both'")
+        # JWT 会话版本：退出/删号时递增即可立即撤销此前签发的全部 token。
+        await _safe_migrate(db, "ALTER TABLE users ADD COLUMN session_version INTEGER NOT NULL DEFAULT 0")
         await db.execute("""
             CREATE TABLE IF NOT EXISTS matches (
                 id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -98,6 +113,8 @@ async def init_db():
             )
         """)
         await _safe_migrate(db, "ALTER TABLE posts ADD COLUMN tags_json TEXT DEFAULT '[]'")
+        # anon_id 只用于对外展示；真实 owner 只在库内用于完整账户删除。
+        await _safe_migrate(db, "ALTER TABLE posts ADD COLUMN owner_username TEXT DEFAULT NULL")
         # ── post_likes：谁赞过哪条帖子（点赞去重）──
         # (post_id, username) 唯一,同一登录用户对同一帖只能赞一次,防无限刷赞。
         await db.execute("""
@@ -129,6 +146,7 @@ async def init_db():
             )
         """)
         await db.execute("CREATE INDEX IF NOT EXISTS idx_posts_created ON posts(created_at DESC)")
+        await db.execute("CREATE INDEX IF NOT EXISTS idx_posts_owner ON posts(owner_username)")
         await db.execute("CREATE INDEX IF NOT EXISTS idx_messages_user ON messages(username, created_at)")
         await db.execute("CREATE INDEX IF NOT EXISTS idx_matches_ab ON matches(user_a, user_b)")
         await db.execute("CREATE INDEX IF NOT EXISTS idx_peer_room ON peer_messages(room_id, created_at)")
@@ -198,6 +216,35 @@ async def init_db():
                 redeemed_at TIMESTAMP DEFAULT NULL
             )
         """)
+        await _safe_migrate(db, "ALTER TABLE invite_codes ADD COLUMN revoked_at TIMESTAMP DEFAULT NULL")
+        await _safe_migrate(db, "ALTER TABLE invite_codes ADD COLUMN use_count INTEGER NOT NULL DEFAULT 0")
+        await _safe_migrate(db, "ALTER TABLE invite_codes ADD COLUMN last_used_at TIMESTAMP DEFAULT NULL")
+        await db.execute("""
+            CREATE TABLE IF NOT EXISTS upload_cleanup_queue (
+                path       TEXT PRIMARY KEY,
+                created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+            )
+        """)
+
+        # 能确定归属的旧广场帖回填 owner_username；无法匹配的历史行保持 NULL，
+        # 删除账户时还会再次按当前 HMAC + 旧 MD5 别名兜底查找。
+        try:
+            import hashlib
+            from utils.pseudonym import anonymous_id
+            async with db.execute("SELECT username FROM users") as cursor:
+                existing_users = await cursor.fetchall()
+            for (existing_username,) in existing_users:
+                aliases = (
+                    anonymous_id(existing_username, "plaza-author", length=12),
+                    hashlib.md5(("fiona_plaza_" + existing_username).encode()).hexdigest()[:8],
+                )
+                await db.execute(
+                    """UPDATE posts SET owner_username = ?
+                       WHERE owner_username IS NULL AND anon_id IN (?, ?)""",
+                    (existing_username, *aliases),
+                )
+        except Exception as exc:
+            print(f"[init_db] post owner backfill failed: {type(exc).__name__}: {exc}")
         await db.commit()
 
 async def get_or_create_user(username: str) -> dict:
@@ -234,11 +281,16 @@ async def get_pending_match_owner(match_id: int) -> str | None:
 
 async def save_message(username: str, role: str, content: str, image_path: str | None = None):
     async with aiosqlite.connect(DB_PATH) as db:
+        await db.execute("BEGIN IMMEDIATE")
+        if not await _users_exist(db, username):
+            await db.rollback()
+            return False
         await db.execute(
             "INSERT INTO messages (username, role, content, image_path) VALUES (?, ?, ?, ?)",
             (username, role, content, image_path)
         )
         await db.commit()
+        return True
 
 async def get_messages(username: str, limit: int = 100) -> list[dict]:
     """取最近 limit 条消息，用于注入上下文"""
@@ -271,31 +323,254 @@ async def create_invite(code: str, username: str, note: str | None = None) -> bo
     return cur.rowcount > 0
 
 async def redeem_invite(code: str) -> str | None:
-    """用邀请码换取绑定的用户名；无效返回 None。首次兑换记 redeemed_at。"""
+    """原子兑换一个未撤销的邀请码；记录首次/最近使用时间和使用次数。"""
     async with aiosqlite.connect(DB_PATH) as db:
         db.row_factory = aiosqlite.Row
+        await db.execute("BEGIN IMMEDIATE")
         async with db.execute(
-            "SELECT username, redeemed_at FROM invite_codes WHERE code = ?", (code,)
+            """UPDATE invite_codes
+               SET redeemed_at = COALESCE(redeemed_at, CURRENT_TIMESTAMP),
+                   last_used_at = CURRENT_TIMESTAMP,
+                   use_count = use_count + 1
+               WHERE code = ? AND revoked_at IS NULL
+               RETURNING username""",
+            (code,),
+        ) as cursor:
+            row = await cursor.fetchone()
+        await db.commit()
+        return row["username"] if row else None
+
+
+async def revoke_invite(code: str) -> bool:
+    """撤销邀请码并使其绑定账号的现有会话失效。"""
+    async with aiosqlite.connect(DB_PATH) as db:
+        db.row_factory = aiosqlite.Row
+        await db.execute("BEGIN IMMEDIATE")
+        async with db.execute(
+            """UPDATE invite_codes SET revoked_at = CURRENT_TIMESTAMP
+               WHERE code = ? AND revoked_at IS NULL
+               RETURNING username""",
+            (code,),
+        ) as cursor:
+            row = await cursor.fetchone()
+        if row:
+            await db.execute(
+                "UPDATE users SET session_version = session_version + 1 WHERE username = ?",
+                (row["username"],),
+            )
+        await db.commit()
+        return row is not None
+
+
+async def rotate_invite(old_code: str, new_code: str) -> bool:
+    """把邀请码原子轮换为新码，保留绑定用户名和备注。"""
+    async with aiosqlite.connect(DB_PATH) as db:
+        db.row_factory = aiosqlite.Row
+        await db.execute("BEGIN IMMEDIATE")
+        async with db.execute(
+            """SELECT username, note FROM invite_codes
+               WHERE code = ? AND revoked_at IS NULL""",
+            (old_code,),
         ) as cursor:
             row = await cursor.fetchone()
         if not row:
-            return None
-        if not row["redeemed_at"]:
+            await db.rollback()
+            return False
+        try:
             await db.execute(
-                "UPDATE invite_codes SET redeemed_at = CURRENT_TIMESTAMP WHERE code = ?", (code,)
+                "INSERT INTO invite_codes (code, username, note) VALUES (?, ?, ?)",
+                (new_code, row["username"], row["note"]),
             )
-            await db.commit()
-        return row["username"]
+        except aiosqlite.IntegrityError:
+            await db.rollback()
+            return False
+        await db.execute(
+            "UPDATE invite_codes SET revoked_at = CURRENT_TIMESTAMP WHERE code = ?",
+            (old_code,),
+        )
+        await db.execute(
+            "UPDATE users SET session_version = session_version + 1 WHERE username = ?",
+            (row["username"],),
+        )
+        await db.commit()
+        return True
 
 async def list_invites() -> list[dict]:
-    """列出全部邀请码 + 绑定用户名 + 是否已用，供发码/查用量。"""
+    """列出邀请码状态，供本机管理脚本使用。"""
     async with aiosqlite.connect(DB_PATH) as db:
         db.row_factory = aiosqlite.Row
         async with db.execute(
-            "SELECT code, username, note, redeemed_at FROM invite_codes ORDER BY created_at"
+            """SELECT code, username, note, redeemed_at, revoked_at,
+                      use_count, last_used_at
+               FROM invite_codes ORDER BY created_at"""
         ) as cursor:
             rows = await cursor.fetchall()
     return [dict(r) for r in rows]
+
+
+async def get_session_version(username: str) -> int | None:
+    async with aiosqlite.connect(DB_PATH) as db:
+        async with db.execute(
+            "SELECT session_version FROM users WHERE username = ?",
+            (username,),
+        ) as cursor:
+            row = await cursor.fetchone()
+    return int(row[0]) if row else None
+
+
+async def is_session_valid(username: str, session_version: int) -> bool:
+    current = await get_session_version(username)
+    return current is not None and current == session_version
+
+
+async def revoke_user_sessions(username: str) -> bool:
+    """撤销用户此前签发的全部 JWT。"""
+    async with aiosqlite.connect(DB_PATH) as db:
+        cursor = await db.execute(
+            "UPDATE users SET session_version = session_version + 1 WHERE username = ?",
+            (username,),
+        )
+        await db.commit()
+        return cursor.rowcount > 0
+
+
+async def delete_account_data(username: str) -> dict:
+    """在单个事务中删除账号及所有可关联数据库记录。
+
+    返回删除后已无数据库引用的上传路径，由路由在事务提交后清理文件。
+    """
+    import hashlib
+    from utils.pseudonym import anonymous_id
+
+    aliases = (
+        anonymous_id(username, "plaza-author", length=12),
+        hashlib.md5(("fiona_plaza_" + username).encode()).hexdigest()[:8],
+    )
+
+    async with aiosqlite.connect(DB_PATH) as db:
+        db.row_factory = aiosqlite.Row
+        await db.execute("BEGIN IMMEDIATE")
+
+        async with db.execute(
+            "SELECT phone FROM users WHERE username = ?",
+            (username,),
+        ) as cursor:
+            user_row = await cursor.fetchone()
+        if user_row is None:
+            await db.rollback()
+            return {"deleted": False, "upload_paths": []}
+
+        async with db.execute(
+            "SELECT image_path FROM messages WHERE username = ? AND image_path IS NOT NULL",
+            (username,),
+        ) as cursor:
+            upload_paths = [row[0] for row in await cursor.fetchall() if row[0]]
+
+        async with db.execute(
+            """SELECT id, media_path FROM posts
+               WHERE owner_username = ? OR anon_id IN (?, ?)""",
+            (username, *aliases),
+        ) as cursor:
+            owned_posts = await cursor.fetchall()
+        post_ids = [int(row["id"]) for row in owned_posts]
+        upload_paths.extend(row["media_path"] for row in owned_posts if row["media_path"])
+
+        async with db.execute(
+            "SELECT user_a, user_b FROM matches WHERE user_a = ? OR user_b = ?",
+            (username, username),
+        ) as cursor:
+            pairs = await cursor.fetchall()
+        room_ids = {"__".join(sorted((row["user_a"], row["user_b"]))) for row in pairs}
+
+        async with db.execute(
+            "SELECT DISTINCT post_id FROM post_likes WHERE username = ?",
+            (username,),
+        ) as cursor:
+            liked_post_ids = [int(row[0]) for row in await cursor.fetchall()]
+
+        if post_ids:
+            placeholders = ",".join("?" for _ in post_ids)
+            await db.execute(
+                f"DELETE FROM post_likes WHERE post_id IN ({placeholders})",
+                post_ids,
+            )
+            await db.execute(
+                f"DELETE FROM posts WHERE id IN ({placeholders})",
+                post_ids,
+            )
+        await db.execute("DELETE FROM post_likes WHERE username = ?", (username,))
+        if liked_post_ids:
+            placeholders = ",".join("?" for _ in liked_post_ids)
+            await db.execute(
+                f"""UPDATE posts
+                    SET likes = (SELECT COUNT(*) FROM post_likes WHERE post_id = posts.id)
+                    WHERE id IN ({placeholders})""",
+                liked_post_ids,
+            )
+
+        if room_ids:
+            placeholders = ",".join("?" for _ in room_ids)
+            await db.execute(
+                f"DELETE FROM peer_messages WHERE room_id IN ({placeholders})",
+                list(room_ids),
+            )
+        await db.execute("DELETE FROM peer_messages WHERE sender = ?", (username,))
+        await db.execute(
+            "DELETE FROM pending_matches WHERE username = ? OR peer_username = ?",
+            (username, username),
+        )
+        await db.execute(
+            "DELETE FROM matches WHERE user_a = ? OR user_b = ?",
+            (username, username),
+        )
+        await db.execute("DELETE FROM messages WHERE username = ?", (username,))
+        await db.execute("DELETE FROM user_tag_prefs WHERE username = ?", (username,))
+        await db.execute("DELETE FROM user_time_tag_prefs WHERE username = ?", (username,))
+        await db.execute("DELETE FROM user_states WHERE username = ?", (username,))
+        await db.execute("DELETE FROM events WHERE username = ?", (username,))
+        await db.execute("DELETE FROM invite_codes WHERE username = ?", (username,))
+        if user_row["phone"]:
+            await db.execute("DELETE FROM otp_codes WHERE phone = ?", (user_row["phone"],))
+        await db.execute("DELETE FROM users WHERE username = ?", (username,))
+
+        # UUID 文件理论上不会共享；仍在事务内复核引用，避免误删异常旧数据。
+        unreferenced_paths = []
+        for path in dict.fromkeys(upload_paths):
+            async with db.execute(
+                """SELECT EXISTS(SELECT 1 FROM messages WHERE image_path = ?)
+                          OR EXISTS(SELECT 1 FROM posts WHERE media_path = ?)""",
+                (path, path),
+            ) as cursor:
+                referenced = (await cursor.fetchone())[0]
+            if not referenced:
+                unreferenced_paths.append(path)
+                await db.execute(
+                    "INSERT OR IGNORE INTO upload_cleanup_queue (path) VALUES (?)",
+                    (path,),
+                )
+
+        await db.commit()
+        return {"deleted": True, "upload_paths": unreferenced_paths}
+
+
+async def get_pending_upload_cleanup() -> list[str]:
+    async with aiosqlite.connect(DB_PATH) as db:
+        async with db.execute(
+            "SELECT path FROM upload_cleanup_queue ORDER BY created_at"
+        ) as cursor:
+            rows = await cursor.fetchall()
+    return [row[0] for row in rows]
+
+
+async def mark_upload_cleanup_done(paths: list[str]) -> None:
+    if not paths:
+        return
+    async with aiosqlite.connect(DB_PATH) as db:
+        await db.executemany(
+            "DELETE FROM upload_cleanup_queue WHERE path = ?",
+            [(path,) for path in paths],
+        )
+        await db.commit()
 
 async def get_profile(username: str) -> dict:
     async with aiosqlite.connect(DB_PATH) as db:
@@ -381,16 +656,25 @@ async def was_recently_matched(user_a: str, user_b: str, days: int = 30) -> bool
 
 async def save_match(user_a: str, user_b: str):
     async with aiosqlite.connect(DB_PATH) as db:
+        await db.execute("BEGIN IMMEDIATE")
+        if not await _users_exist(db, user_a, user_b):
+            await db.rollback()
+            return False
         await db.execute(
             "INSERT INTO matches (user_a, user_b) VALUES (?, ?)", (user_a, user_b)
         )
         await db.commit()
+        return True
 
 async def update_match_response(me: str, peer: str, response: str):
     """记录 me 对 (me ↔ peer) 这对匹配的态度。response = 'accept' / 'reject'。
     根据 matches 行实际 user_a/user_b 的顺序更新对应列；若行不存在则新建一条，
     把 me 当成 user_a。"""
     async with aiosqlite.connect(DB_PATH) as db:
+        await db.execute("BEGIN IMMEDIATE")
+        if not await _users_exist(db, me, peer):
+            await db.rollback()
+            return False
         async with db.execute(
             "SELECT id, user_a FROM matches WHERE (user_a=? AND user_b=?) OR (user_a=? AND user_b=?) ORDER BY recommended_at DESC LIMIT 1",
             (me, peer, peer, me)
@@ -407,14 +691,20 @@ async def update_match_response(me: str, peer: str, response: str):
                 (me, peer, response)
             )
         await db.commit()
+        return True
 
 async def save_peer_message(room_id: str, sender: str, content: str):
     async with aiosqlite.connect(DB_PATH) as db:
+        await db.execute("BEGIN IMMEDIATE")
+        if not await _users_exist(db, sender):
+            await db.rollback()
+            return False
         await db.execute(
             "INSERT INTO peer_messages (room_id, sender, content) VALUES (?, ?, ?)",
             (room_id, sender, content)
         )
         await db.commit()
+        return True
 
 async def get_peer_messages(room_id: str, limit: int = 100) -> list[dict]:
     async with aiosqlite.connect(DB_PATH) as db:
@@ -442,6 +732,10 @@ async def save_pending_match(
     用于 _has_recent_layer2_match 判断 24h 冷却时区分两类，
     避免 B 端收到的 layer1 卡误判为 layer2 占位，让 B 自己的 layer2 跑不起来。"""
     async with aiosqlite.connect(DB_PATH) as db:
+        await db.execute("BEGIN IMMEDIATE")
+        if not await _users_exist(db, username, peer_username):
+            await db.rollback()
+            return False
         await db.execute(
             """INSERT INTO pending_matches
                (username, peer_username, interest_topic, reason, type, tags_json, triggered_by_message_id, match_layer)
@@ -450,6 +744,7 @@ async def save_pending_match(
              _json.dumps(tags, ensure_ascii=False), triggered_by_message_id, match_layer)
         )
         await db.commit()
+        return True
 
 
 async def get_pending_matches_for_user(username: str, limit: int = 5) -> list[dict]:
@@ -504,6 +799,10 @@ async def save_greeting(me: str, peer: str, text: str):
     若 matches 行不存在则新建一条（me 视为 user_a），与 update_match_response 行为一致，
     避免 race 或调用顺序异常时招呼内容静默丢失。"""
     async with aiosqlite.connect(DB_PATH) as db:
+        await db.execute("BEGIN IMMEDIATE")
+        if not await _users_exist(db, me, peer):
+            await db.rollback()
+            return False
         async with db.execute(
             "SELECT id, user_a FROM matches WHERE (user_a=? AND user_b=?) OR (user_a=? AND user_b=?) ORDER BY recommended_at DESC LIMIT 1",
             (me, peer, peer, me)
@@ -519,6 +818,7 @@ async def save_greeting(me: str, peer: str, text: str):
                 (me, peer, text)
             )
         await db.commit()
+        return True
 
 
 async def upsert_user_state(
@@ -530,6 +830,10 @@ async def upsert_user_state(
 ):
     """底色探针结果持久化（一人一行 upsert）"""
     async with aiosqlite.connect(DB_PATH) as db:
+        await db.execute("BEGIN IMMEDIATE")
+        if not await _users_exist(db, username):
+            await db.rollback()
+            return False
         await db.execute(
             """INSERT INTO user_states
                (username, connection_mode, emotional_intensity, openness_level, interest_anchor, updated_at)
@@ -543,6 +847,7 @@ async def upsert_user_state(
             (username, connection_mode, emotional_intensity, openness_level, interest_anchor)
         )
         await db.commit()
+        return True
 
 
 async def get_user_state(username: str) -> dict | None:
@@ -606,12 +911,32 @@ async def get_accepted_matches(username: str) -> list[str]:
             result.append(other)
     return result
 
-async def save_post(anon_id: str, media_path: str, media_type: str, caption: str, tags: list) -> int:
+async def save_post(
+    anon_id: str,
+    media_path: str,
+    media_type: str,
+    caption: str,
+    tags: list,
+    owner_username: str,
+) -> int | None:
     """保存广场帖子，返回新帖 id"""
     async with aiosqlite.connect(DB_PATH) as db:
+        await db.execute("BEGIN IMMEDIATE")
+        if not await _users_exist(db, owner_username):
+            await db.rollback()
+            return None
         cursor = await db.execute(
-            "INSERT INTO posts (anon_id, media_path, media_type, caption, tags_json) VALUES (?,?,?,?,?)",
-            (anon_id, media_path, media_type, caption, _json.dumps(tags, ensure_ascii=False))
+            """INSERT INTO posts
+               (anon_id, media_path, media_type, caption, tags_json, owner_username)
+               VALUES (?,?,?,?,?,?)""",
+            (
+                anon_id,
+                media_path,
+                media_type,
+                caption,
+                _json.dumps(tags, ensure_ascii=False),
+                owner_username,
+            )
         )
         await db.commit()
         return cursor.lastrowid
@@ -737,6 +1062,10 @@ async def like_post(post_id: int, username: str) -> tuple[int, bool]:
     先 INSERT OR IGNORE 进 post_likes;只有确实是新插入(rowcount>0)才给 posts.likes +1，
     所以同一用户重复点赞幂等、不再加数。"""
     async with aiosqlite.connect(DB_PATH) as db:
+        await db.execute("BEGIN IMMEDIATE")
+        if not await _users_exist(db, username):
+            await db.rollback()
+            return 0, False
         cur = await db.execute(
             "INSERT OR IGNORE INTO post_likes (post_id, username) VALUES (?, ?)",
             (post_id, username),
@@ -777,6 +1106,10 @@ async def update_time_tag_prefs(username: str, tags: list, time_slot: str = "", 
         return
     slot = time_slot or get_time_slot()
     async with aiosqlite.connect(DB_PATH) as db:
+        await db.execute("BEGIN IMMEDIATE")
+        if not await _users_exist(db, username):
+            await db.rollback()
+            return
         for tag in tags:
             await db.execute(
                 """INSERT INTO user_time_tag_prefs (username, time_slot, tag, score) VALUES (?,?,?,?)
@@ -823,6 +1156,10 @@ async def update_tag_prefs(username: str, tags: list, delta: float = 1.0):
     if not username or not tags:
         return
     async with aiosqlite.connect(DB_PATH) as db:
+        await db.execute("BEGIN IMMEDIATE")
+        if not await _users_exist(db, username):
+            await db.rollback()
+            return
         for tag in tags:
             await db.execute(
                 """INSERT INTO user_tag_prefs (username, tag, score) VALUES (?,?,?)

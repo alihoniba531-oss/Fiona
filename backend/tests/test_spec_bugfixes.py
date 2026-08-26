@@ -147,6 +147,7 @@ def test_plaza_pagination_hot_sort_and_duplicate_like(tmp_path, monkeypatch):
 
     async def scenario():
         await database.init_db()
+        await database.get_or_create_user("plaza-user")
         base = datetime(2026, 1, 1)
         rows = [
             (

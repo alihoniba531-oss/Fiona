@@ -1,6 +1,7 @@
 # -*- coding: utf-8 -*-
 import asyncio
 import base64
+import binascii
 import io
 import os
 import shutil
@@ -8,14 +9,19 @@ import subprocess
 import tempfile
 import wave
 
-from fastapi import APIRouter, WebSocket
-from pydantic import BaseModel
+from fastapi import APIRouter, HTTPException, Query, Request, WebSocket
+from pydantic import BaseModel, Field
 
 from auth_dep import ws_authenticate
 from qwen_asr import asr_recognize
+from rate_limit import limiter
 
 router = APIRouter()
 ASR_SAMPLE_RATE = 16000
+ASR_MAX_SOURCE_BYTES = 10 * 1024 * 1024
+ASR_MAX_BASE64_CHARS = 4 * ((ASR_MAX_SOURCE_BYTES + 2) // 3) + 8
+ASR_MAX_DURATION_SECONDS = 120
+ASR_MAX_WAV_BYTES = 5 * 1024 * 1024
 
 
 def _pcm_to_wav(audio_bytes: bytes, sample_rate: int = ASR_SAMPLE_RATE) -> bytes:
@@ -47,6 +53,8 @@ def _ffmpeg_to_wav(audio_bytes: bytes, input_suffix: str = ".webm") -> bytes:
                 "-y",
                 "-i",
                 inp.name,
+                "-t",
+                str(ASR_MAX_DURATION_SECONDS),
                 "-vn",
                 "-ar",
                 str(ASR_SAMPLE_RATE),
@@ -61,10 +69,7 @@ def _ffmpeg_to_wav(audio_bytes: bytes, input_suffix: str = ".webm") -> bytes:
             capture_output=True,
             timeout=10,
         )
-        with open(out.name, "rb") as output_file:
-            converted = output_file.read()
-
-        if proc.returncode != 0 or not converted:
+        if proc.returncode != 0:
             try:
                 shutil.copy(inp.name, "/tmp/fiona-asr-bad.webm")
             except OSError:
@@ -73,6 +78,14 @@ def _ffmpeg_to_wav(audio_bytes: bytes, input_suffix: str = ".webm") -> bytes:
             print(f"[ASR][ffmpeg-stderr] {stderr}")
             print("[ASR] bad sample saved to /tmp/fiona-asr-bad.webm")
             raise RuntimeError("ffmpeg audio conversion failed")
+
+        converted_size = os.path.getsize(out.name)
+        if converted_size <= 0:
+            raise RuntimeError("ffmpeg produced empty audio")
+        if converted_size > ASR_MAX_WAV_BYTES:
+            raise ValueError("converted audio exceeds 2 minute limit")
+        with open(out.name, "rb") as output_file:
+            converted = output_file.read()
 
         print(f"[ASR] converted to WAV: {len(converted)} bytes (ffmpeg rc={proc.returncode})")
         return converted
@@ -88,7 +101,13 @@ def _ffmpeg_to_wav(audio_bytes: bytes, input_suffix: str = ".webm") -> bytes:
 
 
 @router.get("/tts/synthesize")
-async def tts_synthesize(text: str, voice: str = "longxiaoxia_v2", speech_rate: float = 1.15):
+@limiter.limit("20/minute")
+async def tts_synthesize(
+    request: Request,
+    text: str = Query(min_length=1, max_length=2000),
+    voice: str = Query(default="longxiaoxia_v2", min_length=1, max_length=64, pattern=r"^[A-Za-z0-9_-]+$"),
+    speech_rate: float = Query(default=1.15, ge=0.5, le=2.0),
+):
     """阿里云 CosyVoice v2 语音合成：text → mp3 字节流。
     SDK 在长进程里偶发 418，在独立线程跑 + 失败重试一次。"""
     import asyncio
@@ -104,7 +123,13 @@ async def tts_synthesize(text: str, voice: str = "longxiaoxia_v2", speech_rate: 
 
 
 @router.get("/tts/stream")
-async def tts_stream(text: str, voice: str = "longxiaoxia_v2", speech_rate: float = 1.15):
+@limiter.limit("20/minute")
+async def tts_stream(
+    request: Request,
+    text: str = Query(min_length=1, max_length=2000),
+    voice: str = Query(default="longxiaoxia_v2", min_length=1, max_length=64, pattern=r"^[A-Za-z0-9_-]+$"),
+    speech_rate: float = Query(default=1.15, ge=0.5, le=2.0),
+):
     """CosyVoice 流式合成：边合成边返回 mp3 chunks（chunked transfer）。
     浏览器 <audio> 元素天然支持流式 mp3，首音 ~300ms。"""
     from tts import synthesize_stream
@@ -128,26 +153,30 @@ async def tts_ws_endpoint(websocket: WebSocket):
 
 
 class AsrRequest(BaseModel):
-    audio: str  # base64 编码的 PCM 音频
-    format: str = "pcm"
-    sample_rate: int = 16000
+    audio: str = Field(max_length=ASR_MAX_BASE64_CHARS)  # base64 编码的 PCM/压缩音频
+    format: str = Field(default="pcm", min_length=1, max_length=16, pattern=r"^[A-Za-z0-9_+.-]+$")
+    sample_rate: int = Field(default=16000, ge=8000, le=192000)
 
 
 @router.post("/asr/recognize")
-async def asr_recognize_endpoint(req: AsrRequest):
+@limiter.limit("10/minute")
+async def asr_recognize_endpoint(request: Request, req: AsrRequest):
     """一句话识别：接收 base64 音频并以 WAV 调用 Qwen3-ASR-Flash。"""
     try:
-        audio_bytes = base64.b64decode(req.audio)
-    except Exception:
+        audio_bytes = base64.b64decode(req.audio, validate=True)
+    except (binascii.Error, ValueError):
         return {"text": "", "error": "invalid base64 audio"}
     print(f"[ASR] received {len(audio_bytes)} bytes, format={req.format}")
     if not audio_bytes:
         return {"text": "", "error": "empty audio"}
+    if len(audio_bytes) > ASR_MAX_SOURCE_BYTES:
+        raise HTTPException(status_code=413, detail="audio exceeds 10MB limit")
 
     # WebM/Opus 需要转成 WAV 16kHz mono/16-bit；裸 PCM 则先补 WAV 头。
     if req.format.lower() == "pcm":
-        if req.sample_rate <= 0:
-            return {"text": "", "error": "invalid PCM sample rate"}
+        max_pcm_bytes = req.sample_rate * 2 * ASR_MAX_DURATION_SECONDS
+        if len(audio_bytes) > max_pcm_bytes:
+            raise HTTPException(status_code=413, detail="PCM audio exceeds 2 minute limit")
         try:
             audio_bytes = await asyncio.to_thread(_pcm_to_wav, audio_bytes, req.sample_rate)
             if req.sample_rate != ASR_SAMPLE_RATE:

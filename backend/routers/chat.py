@@ -4,19 +4,20 @@ import os
 
 from fastapi import APIRouter, Depends, HTTPException, Request
 from fastapi.responses import StreamingResponse
-from pydantic import BaseModel
+from pydantic import BaseModel, Field
 
 from auth_dep import get_current_user
-from database import get_or_create_user, get_strawberry_balance
+from database import get_strawberry_balance
 from rate_limit import limiter
 from services.chat_service import build_context, run_chat
+from utils.media import MAX_IMAGE_BASE64_CHARS
 
 router = APIRouter()
 
 
 class ChatRequest(BaseModel):
-    message: str
-    image_base64: str | None = None
+    message: str = Field(max_length=8000)
+    image_base64: str | None = Field(default=None, max_length=MAX_IMAGE_BASE64_CHARS)
 
 
 @router.post("/chat")
@@ -25,8 +26,6 @@ async def chat(request: Request, req: ChatRequest, user: str = Depends(get_curre
     has_image = bool(req.image_base64)
     if not req.message.strip() and not has_image:
         raise HTTPException(status_code=400, detail="message 和图片不能同时为空")
-
-    await get_or_create_user(user)
 
     # ── 草莓余额检查（DEV 模式跳过）────────────────────────────
     if os.getenv("DEV_MODE", "0") != "1":

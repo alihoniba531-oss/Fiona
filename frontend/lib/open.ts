@@ -21,17 +21,24 @@ function isTauri(): boolean {
 }
 
 // URL 可能来自 LLM / 后端卡片（data.card.url），不可信。
-// 只放行安全协议；挡掉 javascript: / data: / vbscript: 等伪协议——
+// 只放行 HTTP(S)；挡掉 javascript: / data: / file: / 自定义协议——
 // 否则 window.open("javascript:...") 会在本应用 origin 内执行脚本（XSS / 窃取 token）。
 // 相对/协议无关 URL（"/x"、"//host"）按当前页 origin 解析后再判 protocol。
-const SAFE_PROTOCOLS = new Set(["http:", "https:", "mailto:", "tel:"]);
-function isSafeUrl(url: string): boolean {
+const SAFE_PROTOCOLS = new Set(["http:", "https:"]);
+function normalizeSafeUrl(url: string): string | null {
   try {
     const base = typeof window !== "undefined" ? window.location.href : undefined;
-    const proto = new URL(url, base).protocol.toLowerCase();
-    return SAFE_PROTOCOLS.has(proto);
+    const parsed = new URL(url, base);
+    const safe = (
+      SAFE_PROTOCOLS.has(parsed.protocol.toLowerCase()) &&
+      !!parsed.hostname &&
+      !parsed.username &&
+      !parsed.password &&
+      parsed.href.length <= 2048
+    );
+    return safe ? parsed.href : null;
   } catch {
-    return false;
+    return null;
   }
 }
 
@@ -60,23 +67,24 @@ async function tauriInvoke(cmd: string, args: Record<string, unknown>): Promise<
  */
 export async function openExternal(url: string): Promise<void> {
   if (typeof window === "undefined" || !url) return;
-  if (!isSafeUrl(url)) {
+  const safeUrl = normalizeSafeUrl(url);
+  if (!safeUrl) {
     console.warn("[openExternal] blocked unsafe URL scheme:", url.slice(0, 80));
     return;
   }
 
   if (!isTauri()) {
     // 浏览器环境（PWA 或网页直接打开）：标准新标签
-    window.open(url, "_blank", "noopener,noreferrer");
+    window.open(safeUrl, "_blank", "noopener,noreferrer");
     return;
   }
 
-  const r = await tauriInvoke("open_url_in_app", { url });
+  const r = await tauriInvoke("open_url_in_app", { url: safeUrl });
   if (!r.ok) {
     console.error(
       "[openExternal] open_url_in_app failed.\nErrors:\n  " +
       r.errors.join("\n  ") +
-      "\nURL: " + url,
+      "\nURL: " + safeUrl,
     );
   }
 }
@@ -86,15 +94,16 @@ export async function openExternal(url: string): Promise<void> {
  */
 export async function openInBrowser(url: string): Promise<void> {
   if (typeof window === "undefined" || !url) return;
-  if (!isSafeUrl(url)) {
+  const safeUrl = normalizeSafeUrl(url);
+  if (!safeUrl) {
     console.warn("[openInBrowser] blocked unsafe URL scheme:", url.slice(0, 80));
     return;
   }
   if (!isTauri()) {
-    window.open(url, "_blank", "noopener,noreferrer");
+    window.open(safeUrl, "_blank", "noopener,noreferrer");
     return;
   }
-  const r = await tauriInvoke("open_url", { url });
+  const r = await tauriInvoke("open_url", { url: safeUrl });
   if (!r.ok) {
     console.error("[openInBrowser] open_url failed: " + r.errors.join(" | "));
   }

@@ -45,7 +45,7 @@ def test_history_happy_path(client, dev_headers):
 
 
 def test_redeem_invite_happy_path(client):
-    """/auth/redeem-invite：种一个码 → 兑换 → 拿到 token。"""
+    """/auth/redeem-invite：种一个码 → 兑换 → 拿到 HttpOnly 会话。"""
     import asyncio
     import database
 
@@ -56,4 +56,5 @@ def test_redeem_invite_happy_path(client):
     assert r.status_code == 200
     data = r.json()
     assert data["username"] == "invited_user"
-    assert data["token"]
+    assert "token" not in data
+    assert "HttpOnly" in r.headers["set-cookie"]

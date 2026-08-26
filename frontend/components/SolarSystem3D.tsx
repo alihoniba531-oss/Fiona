@@ -5,6 +5,7 @@ import { useRef, Suspense, useEffect, useState } from "react";
 import * as THREE from "three";
 import { useTexture, Stars } from "@react-three/drei";
 import { EffectComposer, Bloom } from "@react-three/postprocessing";
+import { usePrefersReducedMotion } from "@/lib/usePrefersReducedMotion";
 
 // ─── 星球数据 ──────────────────────────────────────────────────────────────
 interface PlanetDef {
@@ -28,26 +29,6 @@ const PLANETS: PlanetDef[] = [
   { name: "Uranus",  texture: "/textures/uranus.jpg",   size: 0.12,  orbit: 6.8,  speed: 0.06, phase: 4.8, tilt: 1.7 },
   { name: "Neptune", texture: "/textures/neptune.jpg",  size: 0.12,  orbit: 7.8,  speed: 0.045, phase: 1.5 },
 ];
-
-function usePrefersReducedMotion() {
-  const [prefersReducedMotion, setPrefersReducedMotion] = useState(false);
-
-  useEffect(() => {
-    const mediaQuery = window.matchMedia("(prefers-reduced-motion: reduce)");
-    const handleChange = (event: MediaQueryListEvent) => {
-      setPrefersReducedMotion(event.matches);
-    };
-
-    setPrefersReducedMotion(mediaQuery.matches);
-    mediaQuery.addEventListener("change", handleChange);
-
-    return () => {
-      mediaQuery.removeEventListener("change", handleChange);
-    };
-  }, []);
-
-  return prefersReducedMotion;
-}
 
 function VisibilityController({
   onVisibilityChange,

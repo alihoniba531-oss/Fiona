@@ -2,20 +2,24 @@
 import os
 
 from fastapi import APIRouter, Depends, HTTPException
+from fastapi.responses import JSONResponse
+from pydantic import BaseModel, Field
 
 from auth_dep import get_current_user
-from database import (delete_message, get_all_messages, get_or_create_user,
-                      get_strawberry_balance)
+from database import delete_message, get_all_messages, get_strawberry_balance
 from model_router import token_budget
 
 router = APIRouter()
+
+
+class DeleteAccountRequest(BaseModel):
+    confirmation: str = Field(min_length=1, max_length=100)
 
 
 @router.get("/user/settings")
 async def get_user_settings_api(user: str = Depends(get_current_user)):
     """获取当前用户性别 + 匹配偏好"""
     from database import get_user_settings
-    await get_or_create_user(user)
     settings = await get_user_settings(user)
     return {"username": user, "settings": settings}
 
@@ -24,7 +28,6 @@ async def get_user_settings_api(user: str = Depends(get_current_user)):
 async def update_user_settings_api(body: dict, user: str = Depends(get_current_user)):
     """更新当前用户性别 + 匹配偏好"""
     from database import update_user_settings
-    await get_or_create_user(user)
     gender = body.get("gender")
     match_pref = body.get("match_pref", "both")
     await update_user_settings(user, gender, match_pref)
@@ -40,7 +43,6 @@ async def get_user_profile(user: str = Depends(get_current_user)):
 
 @router.get("/history")
 async def get_history(user: str = Depends(get_current_user)):
-    await get_or_create_user(user)
     messages = await get_all_messages(user)
     return {"username": user, "messages": messages}
 
@@ -65,6 +67,40 @@ async def clear_history(user: str = Depends(get_current_user)):
         await db.execute("DELETE FROM messages WHERE username = ?", (user,))
         await db.commit()
     return {"status": "cleared"}
+
+
+@router.delete("/account")
+async def delete_account(
+    body: DeleteAccountRequest,
+    user: str = Depends(get_current_user),
+):
+    """删除当前账号的数据库记录、广场内容和不再被引用的上传文件。"""
+    if body.confirmation != user:
+        raise HTTPException(status_code=400, detail="请输入当前用户名确认删除")
+
+    from database import delete_account_data, mark_upload_cleanup_done
+    from intent_router import clear_pending
+    from mode_switcher import clear_user_mode
+    from routers.peer import ws_manager
+    from utils.media import delete_uploaded_files
+
+    result = await delete_account_data(user)
+    if not result["deleted"]:
+        raise HTTPException(status_code=404, detail="账号不存在")
+
+    clear_pending(user)
+    clear_user_mode(user)
+    await ws_manager.disconnect_user(user)
+    deleted_files, failed_files = delete_uploaded_files(result["upload_paths"])
+    await mark_upload_cleanup_done(deleted_files)
+
+    response = JSONResponse({
+        "status": "deleted",
+        "deleted_files": len(deleted_files),
+        "file_cleanup_complete": not failed_files,
+    })
+    response.delete_cookie("fiona_token", path="/")
+    return response
 
 
 @router.get("/usage")

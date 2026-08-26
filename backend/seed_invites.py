@@ -44,7 +44,7 @@ async def main() -> None:
 
     print("\n当前全部邀请码：")
     for r in await list_invites():
-        status = "已用" if r["redeemed_at"] else "未用"
+        status = "已撤销" if r["revoked_at"] else ("已用" if r["redeemed_at"] else "未用")
         print(f"  {r['code']}   {r['username']:<10} [{status}]")
     print()
 

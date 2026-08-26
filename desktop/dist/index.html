@@ -3,196 +3,22 @@
 <head>
   <meta charset="UTF-8">
   <title>菲欧娜</title>
-  <style>
-    html, body {
-      margin: 0; padding: 0; height: 100%;
-      background: #09090b; color: #71717a;
-      font-family: -apple-system, "Segoe UI", sans-serif;
-      display: flex; align-items: center; justify-content: center;
-    }
-    #loading { font-size: 14px; }
-    .dot { animation: blink 1.4s infinite both; }
-    .dot:nth-child(2) { animation-delay: .2s; }
-    .dot:nth-child(3) { animation-delay: .4s; }
-    @keyframes blink { 0%, 80%, 100% { opacity: .2; } 40% { opacity: 1; } }
-
-    #err {
-      display: none;
-      max-width: 640px;
-      padding: 24px;
-      background: #0f0f12;
-      border: 1px solid #27272a;
-      border-radius: 8px;
-      box-shadow: 0 4px 24px rgba(0, 0, 0, .4);
-    }
-    #err h2 { color: #f87171; margin: 0 0 12px; font-size: 16px; font-weight: 600; }
-    #err p.reason { margin: 0 0 14px; color: #d4d4d8; font-size: 13px; line-height: 1.6; }
-    #err pre {
-      background: #18181b;
-      color: #a1a1aa;
-      padding: 12px;
-      border-radius: 6px;
-      font-size: 11px;
-      line-height: 1.5;
-      overflow: auto;
-      max-height: 220px;
-      margin: 0 0 14px;
-      white-space: pre-wrap;
-      word-break: break-all;
-    }
-    .btn {
-      background: #27272a;
-      color: #e4e4e7;
-      border: 1px solid #3f3f46;
-      padding: 7px 14px;
-      border-radius: 6px;
-      cursor: pointer;
-      margin-right: 8px;
-      font-size: 12px;
-      font-family: inherit;
-    }
-    .btn:hover { background: #3f3f46; }
-    .btn-primary { background: #4338ca; border-color: #4f46e5; color: #fff; }
-    .btn-primary:hover { background: #4f46e5; }
-    .hint { color: #71717a; font-size: 11px; margin-top: 10px; }
-  </style>
+  <link rel="stylesheet" href="./style.css">
 </head>
 <body>
   <div id="loading">加载菲欧娜中<span class="dot">.</span><span class="dot">.</span><span class="dot">.</span></div>
 
-  <div id="err">
+  <div id="err" hidden>
     <h2>无法连接到云端</h2>
     <p class="reason" id="reason">SSH 隧道未建立或云端 3000 端口未就绪。</p>
     <pre id="diag">收集诊断中…</pre>
     <div>
-      <button class="btn btn-primary" onclick="retry()">重试</button>
-      <button class="btn" onclick="openLogs()">打开日志目录</button>
+      <button id="retry-btn" class="btn btn-primary">重试</button>
+      <button id="open-logs-btn" class="btn">打开日志目录</button>
     </div>
     <div class="hint">日志目录里 <code>ssh.log</code> 是 SSH 详细输出，<code>startup.log</code> 是整体启动摘要。</div>
   </div>
 
-  <script>
-    // 隧道由 Rust 端在窗口出现前已建好；这里先 probe，通了就跳，
-    // 没通就展示诊断（避免 webview 一直黑屏 + ERR_CONNECTION_REFUSED）。
-    const PUBLIC_TARGET = "https://madchloechat.online";
-    const POLL_INTERVAL = 500;
-    const POLL_TIMEOUT = 15000;
-
-    function getInvoke() {
-      const w = window;
-      if (w.__TAURI_INTERNALS__ && w.__TAURI_INTERNALS__.invoke) {
-        return w.__TAURI_INTERNALS__.invoke.bind(w.__TAURI_INTERNALS__);
-      }
-      if (w.__TAURI__ && w.__TAURI__.core && w.__TAURI__.core.invoke) {
-        return w.__TAURI__.core.invoke.bind(w.__TAURI__.core);
-      }
-      if (w.__TAURI__ && w.__TAURI__.invoke) {
-        return w.__TAURI__.invoke.bind(w.__TAURI__);
-      }
-      return null;
-    }
-
-    async function probeReady(port, localTarget) {
-      // 优先用 Rust 的 HTTP probe（更可靠）；没桥就 fallback fetch
-      const invoke = getInvoke();
-      if (invoke) {
-        try { return await invoke("probe_backend", { port }); }
-        catch (_) { /* fall through */ }
-      }
-      try {
-        const ctrl = new AbortController();
-        const t = setTimeout(() => ctrl.abort(), 1500);
-        const res = await fetch(localTarget + "/", { method: "GET", cache: "no-store", signal: ctrl.signal });
-        clearTimeout(t);
-        return res.status < 500;
-      } catch { return false; }
-    }
-
-    async function getDiag() {
-      const invoke = getInvoke();
-      if (!invoke) return null;
-      try { return await invoke("startup_diagnostics"); } catch (_) { return null; }
-    }
-
-    async function waitAndRedirect() {
-      const diag = await getDiag();
-
-      // 用户模式：不给内测者发 fiona.config.json。无配置时不建 SSH 隧道，
-      // 直接进入公网同源部署；有配置才按开发者模式等 localhost 隧道。
-      if (diag && !diag.config_path && !diag.config_loaded) {
-        window.location.replace(PUBLIC_TARGET);
-        return;
-      }
-
-      const port = (diag && diag.primary_port) || 3000;
-      const LOCAL_TARGET = "http://localhost:" + port;
-
-      const start = Date.now();
-      while (Date.now() - start < POLL_TIMEOUT) {
-        if (await probeReady(port, LOCAL_TARGET)) {
-          window.location.replace(LOCAL_TARGET);
-          return;
-        }
-        await new Promise(r => setTimeout(r, POLL_INTERVAL));
-      }
-      await showError();
-    }
-
-    function formatDiag(d) {
-      if (!d) return "（无法读取诊断——Tauri invoke 不可用）";
-      const lines = [
-        "config 路径:     " + (d.config_path || "(未找到)"),
-        "config 已加载:   " + (d.config_loaded ? "是" : "否"),
-        "本地转发端口:    " + (d.primary_port || 3000),
-        "SSH 隧道 PID:    " + (d.ssh_pid != null ? d.ssh_pid : "(未启动)"),
-        "端口就绪:        " + (d.port_ready ? "是" : "否"),
-        "启动耗时:        " + (d.elapsed_ms || 0) + " ms",
-        "ssh.log 路径:    " + (d.ssh_log_path || "(无)"),
-      ];
-      if (d.notes && d.notes.length) {
-        lines.push("");
-        lines.push("备注:");
-        d.notes.forEach(n => lines.push("  • " + n));
-      }
-      return lines.join("\n");
-    }
-
-    function inferReason(d) {
-      if (!d) return "无法连接到云端（127.0.0.1:" + 3000 + "），且诊断不可读。";
-      if (!d.config_loaded) {
-        return "检测到配置文件但无法解析 fiona.config.json——请检查 JSON 格式，或删除配置文件进入公网用户模式。";
-      }
-      if (d.ssh_pid == null) {
-        return "SSH 进程未能启动——这台机器可能没装 ssh，或 PATH 里找不到。";
-      }
-      if (!d.port_ready) {
-        return "SSH 已启动但 15 秒内 127.0.0.1:" + d.primary_port + " 仍未就绪——\n隧道很可能立即退出了（看 ssh.log），常见原因：免密钥失效 / host key 变化 / 本机端口被占。";
-      }
-      return "未知原因——请把 startup.log 和 ssh.log 发出来。";
-    }
-
-    async function showError() {
-      const d = await getDiag();
-      document.getElementById("loading").style.display = "none";
-      document.getElementById("err").style.display = "block";
-      document.getElementById("reason").textContent = inferReason(d);
-      document.getElementById("diag").textContent = formatDiag(d);
-    }
-
-    async function retry() {
-      document.getElementById("err").style.display = "none";
-      document.getElementById("loading").style.display = "flex";
-      await waitAndRedirect();
-    }
-
-    async function openLogs() {
-      const invoke = getInvoke();
-      if (!invoke) { alert("Tauri invoke 不可用"); return; }
-      try { await invoke("open_logs_dir"); }
-      catch (e) { alert("打开失败: " + e); }
-    }
-
-    waitAndRedirect();
-  </script>
+  <script src="./main.js"></script>
 </body>
 </html>

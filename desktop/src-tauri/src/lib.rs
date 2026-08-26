@@ -20,12 +20,15 @@ use std::time::{Duration, Instant};
 
 use serde::{Deserialize, Serialize};
 use tauri::Manager;
+use url::Url;
 
 #[cfg(windows)]
 use std::os::windows::process::CommandExt;
 
 #[cfg(windows)]
 const CREATE_NO_WINDOW: u32 = 0x08000000;
+
+const MAX_EXTERNAL_URL_LEN: usize = 2048;
 
 #[derive(Deserialize)]
 struct CloudConfig {
@@ -241,28 +244,56 @@ fn write_startup_log() {
     let _ = std::fs::write(dir.join("startup.log"), text);
 }
 
-/// 用系统默认应用打开 URL（备用：用户想跳外部浏览器时用）
+/// 所有来自远程页面、LLM 卡片和热点源的 URL 都是不可信输入。
+/// 校验必须放在 Rust 特权边界，不能依赖可被绕过的前端 JavaScript。
+fn validate_external_url(raw: &str) -> Result<Url, String> {
+    if raw.is_empty() || raw.len() > MAX_EXTERNAL_URL_LEN {
+        return Err("URL 长度无效".to_string());
+    }
+    if raw.trim() != raw {
+        return Err("URL 不能包含首尾空白".to_string());
+    }
+
+    let parsed = Url::parse(raw).map_err(|_| "URL 格式无效".to_string())?;
+    if !matches!(parsed.scheme(), "http" | "https") {
+        return Err("只允许 http/https URL".to_string());
+    }
+    if parsed.host_str().is_none() || parsed.cannot_be_a_base() {
+        return Err("URL 必须包含有效主机名".to_string());
+    }
+    if !parsed.username().is_empty() || parsed.password().is_some() {
+        return Err("URL 不能包含用户名或密码".to_string());
+    }
+    Ok(parsed)
+}
+
+/// 用系统默认应用打开已验证的 HTTP(S) URL。
 #[tauri::command]
 fn open_url(url: String) -> Result<(), String> {
+    let parsed = validate_external_url(&url)?;
+
     #[cfg(target_os = "windows")]
     {
-        // cmd /C start "" <url> ——空标题避免 start 把 url 当窗口标题
-        Command::new("cmd")
-            .args(["/C", "start", "", &url])
+        // 不经过 cmd.exe，避免 &、|、^ 等 shell 元字符被解释。
+        let mut command = Command::new("rundll32.exe");
+        command
+            .arg("url.dll,FileProtocolHandler")
+            .arg(parsed.as_str())
+            .creation_flags(CREATE_NO_WINDOW)
             .spawn()
             .map_err(|e| e.to_string())?;
     }
     #[cfg(target_os = "macos")]
     {
         Command::new("open")
-            .arg(&url)
+            .arg(parsed.as_str())
             .spawn()
             .map_err(|e| e.to_string())?;
     }
     #[cfg(target_os = "linux")]
     {
         Command::new("xdg-open")
-            .arg(&url)
+            .arg(parsed.as_str())
             .spawn()
             .map_err(|e| e.to_string())?;
     }
@@ -273,9 +304,9 @@ fn open_url(url: String) -> Result<(), String> {
 /// 体验：弹一个独立窗口仍属于 Chloe 应用，用户关掉就回主窗口
 #[tauri::command]
 async fn open_url_in_app(app: tauri::AppHandle, url: String) -> Result<(), String> {
-    use tauri::{WebviewWindowBuilder, WebviewUrl, Url};
+    use tauri::{WebviewWindowBuilder, WebviewUrl};
 
-    let parsed: Url = url.parse().map_err(|e: url::ParseError| format!("invalid URL: {}", e))?;
+    let parsed = validate_external_url(&url)?;
 
     // label 必须唯一且只含 ASCII 字符
     // 用时间戳保证唯一（同一 URL 多次打开也独立窗口）
@@ -295,6 +326,49 @@ async fn open_url_in_app(app: tauri::AppHandle, url: String) -> Result<(), Strin
         .map_err(|e| format!("build window: {}", e))?;
 
     Ok(())
+}
+
+#[cfg(test)]
+mod url_tests {
+    use super::{validate_external_url, MAX_EXTERNAL_URL_LEN};
+
+    #[test]
+    fn allows_absolute_http_urls() {
+        assert!(validate_external_url("https://example.com/path?q=1#part").is_ok());
+        assert!(validate_external_url("http://example.com/").is_ok());
+    }
+
+    #[test]
+    fn rejects_executable_and_local_schemes() {
+        for value in [
+            "javascript:alert(1)",
+            "data:text/html,hello",
+            "file:///etc/passwd",
+            "mailto:test@example.com",
+            "tel:+15555555555",
+        ] {
+            assert!(validate_external_url(value).is_err(), "unexpectedly allowed {value}");
+        }
+    }
+
+    #[test]
+    fn rejects_relative_credentials_and_whitespace() {
+        for value in [
+            "/relative/path",
+            "https://user:secret@example.com/",
+            " https://example.com/",
+            "https://example.com/\n",
+        ] {
+            assert!(validate_external_url(value).is_err(), "unexpectedly allowed {value:?}");
+        }
+    }
+
+    #[test]
+    fn rejects_empty_host_and_oversized_url() {
+        assert!(validate_external_url("https:///").is_err());
+        let oversized = format!("https://example.com/{}", "a".repeat(MAX_EXTERNAL_URL_LEN));
+        assert!(validate_external_url(&oversized).is_err());
+    }
 }
 
 /// 把启动诊断给前端，用于"加载菲欧娜中..."卡住时展示故障原因

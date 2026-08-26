@@ -19,6 +19,8 @@ from contextlib import aclosing
 from dataclasses import dataclass, field
 from datetime import datetime, timezone
 
+from fastapi import HTTPException
+
 from avatar_state import AvatarStage, build_tone_description, extract_tone_profile, get_stage
 from conversation_matcher import detect_and_save as detect_matches_and_save
 from database import (count_messages, deduct_strawberry, get_messages, get_or_create_user,
@@ -40,7 +42,7 @@ from tools.travel_plan import travel_plan as travel_plan_query
 from tools.web_search import web_search
 from tools.wechat_send import send_wechat_message, start_wechat_video_call, start_wechat_voice_call
 from trace import log_event, trace_span
-from utils.media import _save_uploaded_image
+from utils.media import _save_uploaded_image, delete_uploaded_files
 
 
 _STREAM_END = object()
@@ -302,8 +304,9 @@ async def build_context(req, user: str) -> ChatContext:
 
     # 图片处理：保存到 uploads/，拿到相对 URL
     image_path = None
+    validated_image = None
     if has_image:
-        image_path = _save_uploaded_image(req.image_base64)
+        image_path, validated_image = _save_uploaded_image(req.image_base64)
 
     user_content = req.message.strip() or "[发了一张图片]"
 
@@ -311,7 +314,11 @@ async def build_context(req, user: str) -> ChatContext:
     hours_since_last = _compute_hours_since_last_user(history)
     length_drop = _compute_length_drop(history, user_content)
 
-    await save_message(user, "user", user_content, image_path)
+    saved = await save_message(user, "user", user_content, image_path)
+    if not saved:
+        if image_path:
+            delete_uploaded_files([image_path])
+        raise HTTPException(status_code=409, detail="账号已失效")
 
     # 加载画像（含 special_dates），传给 persona 做日期感知
     user_profile = await get_profile(user)
@@ -354,7 +361,7 @@ async def build_context(req, user: str) -> ChatContext:
         user=user,
         message=req.message,
         has_image=has_image,
-        image_base64=req.image_base64,
+        image_base64=validated_image,
         user_content=user_content,
         history=history,
         message_count=message_count,

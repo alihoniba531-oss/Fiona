@@ -1,10 +1,12 @@
 # -*- coding: utf-8 -*-
 import json
+from typing import Annotated, Literal
 
-from fastapi import APIRouter, Depends, File, Form, UploadFile
+from fastapi import APIRouter, Depends, File, Form, HTTPException, Path, Query, UploadFile
 
 from auth_dep import get_current_user, get_optional_user
-from utils.media import _save_plaza_upload
+from utils.media import _save_plaza_upload, delete_uploaded_files
+from utils.pseudonym import anonymous_id
 
 router = APIRouter()
 
@@ -20,10 +22,10 @@ async def plaza_tags():
 
 @router.get("/plaza/feed")
 async def plaza_feed(
-    tag: str = "",
-    sort: str = "recommended",  # recommended | latest | hot
-    limit: int = 30,
-    offset: int = 0,
+    tag: Annotated[str, Query(max_length=20)] = "",
+    sort: Literal["recommended", "latest", "hot"] = "recommended",
+    limit: Annotated[int, Query(ge=1, le=100)] = 30,
+    offset: Annotated[int, Query(ge=0, le=10000)] = 0,
     user: str | None = Depends(get_optional_user),
 ):
     """feed：默认按用户偏好（推荐），可指定 latest / hot。匿名也能用，但无个性化"""
@@ -56,7 +58,7 @@ async def plaza_time_prefs(user: str = Depends(get_current_user)):
 async def community_interests(user: str | None = Depends(get_optional_user)):
     """返回其他用户的兴趣标签，用于广场底部滚动展示（匿名）。
     已登录则排除自己；匿名则全量返回。"""
-    import hashlib, aiosqlite
+    import aiosqlite
     from database import DB_PATH
     exclude = user or ""
     async with aiosqlite.connect(DB_PATH) as db:
@@ -73,38 +75,45 @@ async def community_interests(user: str | None = Depends(get_optional_user)):
         seen[u] = seen.get(u, 0) + 1
         if seen[u] > 3:
             continue
-        anon = hashlib.md5(("fiona_plaza_" + u).encode()).hexdigest()[:6]
+        anon = anonymous_id(u, "community-interest", length=10)
         items.append({"tag": f"#{r['tag']}", "user": anon})
     return {"items": items}
 
 
 @router.post("/plaza/post")
 async def plaza_post(
-    caption: str = Form(default=""),
-    tags: str = Form(default="[]"),
+    caption: str = Form(default="", max_length=1000),
+    tags: str = Form(default="[]", max_length=500),
     file: UploadFile = File(...),
     user: str = Depends(get_current_user),
 ):
-    import hashlib
     from database import save_post
     try:
         tag_list = json.loads(tags)
         tag_list = [t for t in tag_list if t in PLAZA_TAGS][:5]
     except Exception:
         tag_list = []
-    anon_id = hashlib.md5(("fiona_plaza_" + user).encode()).hexdigest()[:8]
+    anon_id = anonymous_id(user, "plaza-author", length=12)
     media_path, media_type = await _save_plaza_upload(file)
-    post_id = await save_post(anon_id, media_path, media_type, caption, tag_list)
+    post_id = await save_post(anon_id, media_path, media_type, caption, tag_list, user)
+    if post_id is None:
+        delete_uploaded_files([media_path])
+        raise HTTPException(status_code=409, detail="账号已失效")
     return {"id": post_id, "anon_id": anon_id, "media_path": media_path, "tags": tag_list}
 
 
 @router.post("/plaza/like/{post_id}")
-async def plaza_like(post_id: int, user: str = Depends(get_current_user)):
+async def plaza_like(
+    post_id: int = Path(gt=0),
+    user: str = Depends(get_current_user),
+):
     from database import get_post, like_post, update_tag_prefs
+    post = await get_post(post_id)
+    if post is None:
+        raise HTTPException(status_code=404, detail="帖子不存在")
     # 按真实登录用户名去重(不是帖子作者的 anon_id),防同一人重复刷赞
     likes, inserted = await like_post(post_id, user)
     # 只有新点赞才更新偏好；按 id 直查，旧帖也不会被漏掉。
-    post = await get_post(post_id) if inserted else None
-    if post and post.get("tags"):
+    if inserted and post.get("tags"):
         await update_tag_prefs(user, post["tags"])
     return {"likes": likes}

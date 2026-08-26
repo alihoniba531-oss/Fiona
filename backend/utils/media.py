@@ -1,5 +1,6 @@
 # -*- coding: utf-8 -*-
 import base64
+import binascii
 import os
 
 from fastapi import HTTPException, UploadFile
@@ -9,7 +10,8 @@ UPLOADS_DIR = os.path.join(os.path.dirname(os.path.dirname(__file__)), "uploads"
 os.makedirs(UPLOADS_DIR, exist_ok=True)
 
 # 单张图上限 5MB，base64 解码前粗筛 base64 长度（base64 比原始大约 33%）
-_MAX_IMAGE_BYTES = 5 * 1024 * 1024
+MAX_IMAGE_BYTES = 5 * 1024 * 1024
+MAX_IMAGE_BASE64_CHARS = 4 * ((MAX_IMAGE_BYTES + 2) // 3) + 256
 # magic bytes → 文件扩展名映射
 _MIME_SNIFF = [
     (b"\x89PNG\r\n\x1a\n", "png"),
@@ -96,31 +98,70 @@ async def _save_plaza_upload(file: UploadFile) -> tuple[str, str]:
     return f"/uploads/{fname}", media_type
 
 
-def _save_uploaded_image(image_base64: str) -> str | None:
-    """保存 base64 图片到 uploads 目录，返回相对 URL 路径。失败返回 None。
-    校验：base64 长度上限、解码后 mime 嗅探、文件名 uuid（不可猜）。"""
+def _save_uploaded_image(image_base64: str) -> tuple[str, str]:
+    """校验并保存聊天图片，返回（相对路径，规范化 data URI）。
+
+    失败时明确返回 4xx，不能静默返回 None 后继续把未校验原文交给视觉模型。
+    """
+    raw = image_base64
+    if "," in raw:
+        prefix, raw = raw.split(",", 1)
+        if not prefix.lower().startswith("data:image/") or ";base64" not in prefix.lower():
+            raise HTTPException(status_code=400, detail="图片 data URI 格式无效")
+    if not raw or len(raw) > MAX_IMAGE_BASE64_CHARS:
+        raise HTTPException(status_code=413, detail="图片不能超过 5MB")
+
     try:
-        if "," in image_base64:
-            image_base64 = image_base64.split(",", 1)[1]
-        # 粗筛：base64 串本身长度上限（解码后约小 25%）
-        if len(image_base64) > _MAX_IMAGE_BYTES * 4 // 3 + 1024:
-            print(f"[upload] reject: base64 too large ({len(image_base64)} chars)", flush=True)
-            return None
-        img_data = base64.b64decode(image_base64, validate=False)
-        if len(img_data) > _MAX_IMAGE_BYTES:
-            print(f"[upload] reject: decoded too large ({len(img_data)} bytes)", flush=True)
-            return None
-        ext = _sniff_image_ext(img_data[:12])
-        if not ext:
-            print(f"[upload] reject: not a known image format (head={img_data[:8].hex()})", flush=True)
-            return None
-        # 文件名用 uuid4 hex，不可枚举（修 #6 跨用户图泄露的最小成本方案）
-        import uuid as _uuid
-        fname = f"{_uuid.uuid4().hex}.{ext}"
-        fpath = os.path.join(UPLOADS_DIR, fname)
+        img_data = base64.b64decode(raw, validate=True)
+    except (binascii.Error, ValueError) as exc:
+        raise HTTPException(status_code=400, detail="图片 base64 无效") from exc
+    if not img_data:
+        raise HTTPException(status_code=400, detail="图片为空")
+    if len(img_data) > MAX_IMAGE_BYTES:
+        raise HTTPException(status_code=413, detail="图片不能超过 5MB")
+
+    ext = _sniff_image_ext(img_data[:12])
+    if not ext:
+        raise HTTPException(status_code=400, detail="只支持 PNG、JPEG、GIF 或 WebP 图片")
+
+    import uuid as _uuid
+    fname = f"{_uuid.uuid4().hex}.{ext}"
+    fpath = os.path.join(UPLOADS_DIR, fname)
+    try:
         with open(fpath, "wb") as f:
             f.write(img_data)
-        return f"/uploads/{fname}"
-    except Exception as e:
-        print(f"[upload] save failed: {type(e).__name__}: {e}", flush=True)
-        return None
+    except OSError as exc:
+        print(f"[upload] save failed: {type(exc).__name__}: {exc}", flush=True)
+        raise HTTPException(status_code=500, detail="图片保存失败") from exc
+
+    mime = "jpeg" if ext == "jpg" else ext
+    normalized = base64.b64encode(img_data).decode("ascii")
+    return f"/uploads/{fname}", f"data:image/{mime};base64,{normalized}"
+
+
+def delete_uploaded_files(paths: list[str]) -> tuple[list[str], list[str]]:
+    """只删除 uploads 根目录下由应用记录的普通文件，拒绝路径穿越。"""
+    deleted: list[str] = []
+    failed: list[str] = []
+    upload_root = os.path.realpath(UPLOADS_DIR)
+    for stored_path in dict.fromkeys(paths):
+        if not isinstance(stored_path, str) or not stored_path.startswith("/uploads/"):
+            failed.append(str(stored_path))
+            continue
+        filename = stored_path.removeprefix("/uploads/")
+        if not filename or os.path.basename(filename) != filename:
+            failed.append(stored_path)
+            continue
+        target = os.path.realpath(os.path.join(upload_root, filename))
+        if os.path.dirname(target) != upload_root:
+            failed.append(stored_path)
+            continue
+        try:
+            os.unlink(target)
+            deleted.append(stored_path)
+        except FileNotFoundError:
+            # 数据已经不可引用且文件不存在，也视为清理完成。
+            deleted.append(stored_path)
+        except OSError:
+            failed.append(stored_path)
+    return deleted, failed

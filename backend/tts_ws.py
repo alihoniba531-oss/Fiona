@@ -7,6 +7,7 @@ CosyVoice 持久化 WebSocket TTS：
 import os
 import json
 import asyncio
+import re
 from queue import Queue
 from fastapi import WebSocket, WebSocketDisconnect
 import dashscope
@@ -14,6 +15,12 @@ from dashscope.audio.tts_v2 import SpeechSynthesizer, AudioFormat, ResultCallbac
 
 
 dashscope.api_key = os.environ.get("DASHSCOPE_API_KEY", "")
+
+TTS_WS_MAX_TEXT_CHARS = 2000
+TTS_WS_MAX_MESSAGE_CHARS = 4096
+TTS_WS_IDLE_TIMEOUT_SECONDS = 30
+TTS_WS_MAX_SESSION_SECONDS = 120
+_VOICE_PATTERN = re.compile(r"^[A-Za-z0-9_-]{1,64}$")
 
 
 class _Callback(ResultCallback):
@@ -46,8 +53,16 @@ async def handle_tts_ws(ws: WebSocket):
     cb = _Callback()
     synth: SpeechSynthesizer | None = None
     synth_completed = False
+    websocket_closed = False
     forwarder: asyncio.Task | None = None
     loop = asyncio.get_running_loop()
+    started_at = loop.time()
+    total_text_chars = 0
+
+    async def reject(code: int):
+        nonlocal websocket_closed
+        await ws.close(code=code)
+        websocket_closed = True
 
     async def forward_audio():
         """从 SDK 回调队列拿音频字节，推给前端 WS"""
@@ -62,19 +77,46 @@ async def handle_tts_ws(ws: WebSocket):
 
     try:
         while True:
-            msg = await ws.receive_text()
+            session_remaining = TTS_WS_MAX_SESSION_SECONDS - (loop.time() - started_at)
+            if session_remaining <= 0:
+                await reject(1008)
+                break
+            try:
+                msg = await asyncio.wait_for(
+                    ws.receive_text(),
+                    timeout=min(TTS_WS_IDLE_TIMEOUT_SECONDS, session_remaining),
+                )
+            except asyncio.TimeoutError:
+                await reject(1008)
+                break
+            if len(msg) > TTS_WS_MAX_MESSAGE_CHARS:
+                await reject(1009)
+                break
             try:
                 data = json.loads(msg)
             except Exception:
                 continue
+            if not isinstance(data, dict):
+                continue
             kind = data.get("type")
 
             if kind == "text":
-                chunk = (data.get("chunk") or "").strip()
+                raw_chunk = data.get("chunk")
+                if not isinstance(raw_chunk, str):
+                    await reject(1008)
+                    break
+                chunk = raw_chunk.strip()
                 if not chunk:
                     continue
+                total_text_chars += len(chunk)
+                if total_text_chars > TTS_WS_MAX_TEXT_CHARS:
+                    await reject(1009)
+                    break
                 if synth is None:
                     voice = data.get("voice", "longxiaoxia_v2")  # 与 tts.py / voice.py 默认音色一致
+                    if not isinstance(voice, str) or not _VOICE_PATTERN.fullmatch(voice):
+                        await reject(1008)
+                        break
                     synth = SpeechSynthesizer(
                         model="cosyvoice-v2",
                         voice=voice,
@@ -119,7 +161,8 @@ async def handle_tts_ws(ws: WebSocket):
                     await forwarder
                 except asyncio.CancelledError:
                     pass
-        try:
-            await ws.close()
-        except Exception:
-            pass
+        if not websocket_closed:
+            try:
+                await ws.close()
+            except Exception:
+                pass

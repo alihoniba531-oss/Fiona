@@ -2,7 +2,7 @@
 import json
 import time as _time
 
-from fastapi import APIRouter, Request
+from fastapi import APIRouter, Query, Request
 
 from llm import QWEN_CLIENT, client
 from rate_limit import limiter
@@ -13,7 +13,7 @@ router = APIRouter()
 
 @router.get("/hot/expand")
 @limiter.limit("20/minute")
-async def hot_expand(request: Request, title: str = ""):
+async def hot_expand(request: Request, title: str = Query(default="", max_length=200)):
     """把一个热搜标题展开成结构化内容卡（千问联网检索）。
     注意：此路由必须注册在 /hot/{source} 之前，否则被泛匹配吃掉。
     限流 20/分钟/IP：匿名可访问且触发 LLM 联网外呼，防钱包型 DoS；request 供 slowapi 取 key。"""
@@ -131,7 +131,8 @@ def _classify_with_llm(titles: list[str]) -> dict[str, str]:
 
 
 @router.get("/hot/categorized/all")
-async def hot_categorized():
+@limiter.limit("5/minute")
+async def hot_categorized(request: Request):
     """返回按类别分类的热搜，供广场分类卡片使用。
     源：微博 + 抖音 + 知乎 + B站 + 头条。
     多源并行拉，单源失败不影响其他。"""

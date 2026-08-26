@@ -14,7 +14,7 @@ import {
   Sparkles, Globe,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
-import { apiFetch, getToken, getUsername as readStoredUsername } from "@/lib/auth";
+import { apiFetch, getUsername as readStoredUsername } from "@/lib/auth";
 import { openExternal } from "@/lib/open";
 
 import { API_BASE as API, WS_BASE } from "@/lib/config";
@@ -410,7 +410,7 @@ export default function ChatPage() {
   // Load all users
   useEffect(() => {
     // /users 仅 DEV_MODE 开放；prod 返 404，安静忽略
-    fetch(`${API}/users`)
+    apiFetch(`${API}/users`)
       .then((r) => r.ok ? r.json() : { users: [] })
       .then((d) => setAllUsers(d.users || []))
       .catch(() => {});
@@ -693,18 +693,14 @@ export default function ChatPage() {
   }, []);
 
   // ── 流式 TTS 队列：按句送合成、顺序播放，**预取下一句消除句间空隙** ──
-  // <audio> 不能带 Authorization 头，cookie 也可能没设上（dev 直进 / 跨域）——
-  // 用 query.token 或 query.dev_user 兜底，后端 require_auth 中间件已对称支持。
+  // 同源 <audio> 会自动携带 HttpOnly Cookie；仅开发构建保留 dev_user 兜底。
   const mkTtsAudio = useCallback((text: string): HTMLAudioElement => {
     const params = new URLSearchParams({
       text: text.slice(0, 300),
       voice: "longxiaoxia_v2",
       speech_rate: "1.15",
     });
-    const tok = typeof window !== "undefined" ? localStorage.getItem("fiona_token") : null;
-    if (tok) {
-      params.set("token", tok);
-    } else {
+    if (process.env.NODE_ENV !== "production") {
       const u = typeof window !== "undefined" ? localStorage.getItem("fiona_user") : null;
       if (u) params.set("dev_user", u);
     }
@@ -1294,12 +1290,11 @@ export default function ChatPage() {
       setPeerMessages([]);
       setPeerConnected(false);
 
-      // WS 鉴权：浏览器没法给 WebSocket 加 header，token 走 query；dev 无 token 时退化为 dev_user
-      const token = getToken();
-      const wsAuth = token
-        ? `token=${encodeURIComponent(token)}`
-        : `dev_user=${encodeURIComponent(readStoredUsername() || username)}`;
-      const ws = new WebSocket(`${WS_BASE}/ws/peer/${room.room_id}?${wsAuth}`);
+      // WebSocket 握手自动携带同源 HttpOnly Cookie；开发构建可用 dev_user。
+      const devAuth = process.env.NODE_ENV !== "production"
+        ? `?dev_user=${encodeURIComponent(readStoredUsername() || username)}`
+        : "";
+      const ws = new WebSocket(`${WS_BASE}/ws/peer/${room.room_id}${devAuth}`);
       wsRef.current = ws;
 
       ws.onopen = () => setPeerConnected(true);

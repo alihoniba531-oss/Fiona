@@ -50,8 +50,11 @@ def test_chat_image_branch(client, dev_headers, monkeypatch):
     import services.chat_service as chat
     from _fakes import FakeStream
 
+    captured = {}
+
     class _FakeCompletions:
         def create(self, **k):
+            captured.update(k)
             return FakeStream()
 
     class _FakeChat:
@@ -63,12 +66,46 @@ def test_chat_image_branch(client, dev_headers, monkeypatch):
     monkeypatch.setattr(chat, "QWEN_CLIENT", _FakeQwen())
     r = client.post(
         "/chat",
-        json={"message": "这是啥", "image_base64": f"data:image/png;base64,{_TINY_PNG}"},
+        # 故意伪报 jpeg；后端必须按魔数规范化成 png 后再交给视觉模型。
+        json={"message": "这是啥", "image_base64": f"data:image/jpeg;base64,{_TINY_PNG}"},
         headers=dev_headers,
     )
     assert r.status_code == 200
     events = _events(r.text)
     assert _has_text(events) and _has_done(events)
+    image_url = captured["messages"][1]["content"][0]["image_url"]["url"]
+    assert image_url.startswith("data:image/png;base64,")
+
+
+def test_chat_rejects_invalid_image_before_visual_model(client, dev_headers, monkeypatch):
+    import services.chat_service as chat
+
+    class _MustNotRun:
+        def create(self, **kwargs):
+            raise AssertionError("visual model must not receive an invalid image")
+
+    monkeypatch.setattr(
+        chat,
+        "QWEN_CLIENT",
+        type("Fake", (), {"chat": type("Chat", (), {"completions": _MustNotRun()})()})(),
+    )
+    response = client.post(
+        "/chat",
+        json={"message": "看看", "image_base64": "data:image/png;base64,not-valid***"},
+        headers=dev_headers,
+    )
+
+    assert response.status_code == 400
+    assert "base64" in response.json()["detail"]
+
+
+def test_chat_rejects_message_over_limit(client, dev_headers):
+    response = client.post(
+        "/chat",
+        json={"message": "字" * 8001},
+        headers=dev_headers,
+    )
+    assert response.status_code == 422
 
 
 def test_chat_pending_branch(client, dev_headers, monkeypatch):

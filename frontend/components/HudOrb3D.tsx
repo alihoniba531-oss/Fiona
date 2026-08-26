@@ -4,6 +4,7 @@ import { Canvas, useFrame, useThree } from "@react-three/fiber";
 import { useEffect, useMemo, useRef, useState } from "react";
 import { createNoise3D } from "simplex-noise";
 import * as THREE from "three";
+import { usePrefersReducedMotion } from "@/lib/usePrefersReducedMotion";
 
 interface Props {
   recording?: boolean;
@@ -13,26 +14,6 @@ interface Props {
 const PARTICLE_COUNT = 900;
 const COLOR_IDLE = new THREE.Color("#f2a83c");
 const COLOR_REC = new THREE.Color("#ff5a4d");
-
-function usePrefersReducedMotion() {
-  const [prefersReducedMotion, setPrefersReducedMotion] = useState(false);
-
-  useEffect(() => {
-    const mediaQuery = window.matchMedia("(prefers-reduced-motion: reduce)");
-    const handleChange = (event: MediaQueryListEvent) => {
-      setPrefersReducedMotion(event.matches);
-    };
-
-    setPrefersReducedMotion(mediaQuery.matches);
-    mediaQuery.addEventListener("change", handleChange);
-
-    return () => {
-      mediaQuery.removeEventListener("change", handleChange);
-    };
-  }, []);
-
-  return prefersReducedMotion;
-}
 
 function VisibilityController({
   onVisibilityChange,

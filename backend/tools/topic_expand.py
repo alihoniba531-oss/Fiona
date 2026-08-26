@@ -15,6 +15,8 @@ import re
 import urllib.request
 from datetime import datetime
 
+from utils.safe_http import request_public_url
+
 DASHSCOPE_URL = "https://dashscope.aliyuncs.com/api/v1/services/aigc/text-generation/generation"
 
 
@@ -174,7 +176,6 @@ def _verify_source_urls(sources: list[dict]) -> list[dict]:
          （处理"302 跳到 /error" 这种软 404）
     """
     import re
-    import requests
     from concurrent.futures import ThreadPoolExecutor
     from urllib.parse import urlparse
 
@@ -196,24 +197,25 @@ def _verify_source_urls(sources: list[dict]) -> list[dict]:
         try:
             # 先 HEAD；某些站点 HEAD 405，退一步用 Range GET 拿头几字节
             for method in ("HEAD", "GET"):
-                r = requests.request(
+                response = request_public_url(
                     method,
                     url,
                     timeout=4,
-                    allow_redirects=True,
                     headers={
                         "User-Agent": "Mozilla/5.0",
                         "Range": "bytes=0-0" if method == "GET" else "",
                     },
-                    stream=(method == "GET"),
+                    max_bytes=0,
+                    follow_redirects=True,
+                    max_redirects=3,
                 )
-                if r.status_code < 400:
+                if response.status_code < 400:
                     # 软 404：服务端 302 跳到 /404 落地页但 HTTP 200 — 用最终 URL 再判一次
-                    final_url = str(r.url) if r.url else url
+                    final_url = response.url or url
                     if looks_like_dead_landing(final_url):
                         return False
                     return True
-                if r.status_code != 405:  # 不是 method not allowed 就不重试
+                if response.status_code != 405:  # 不是 method not allowed 就不重试
                     return False
             return False
         except Exception:

@@ -72,13 +72,26 @@ class ConnectionManager:
         for uname, socket in dead:
             self.disconnect(room_id, uname, socket)
 
+    async def disconnect_user(self, username: str):
+        """删号/退出时关闭该用户所有真人聊天连接。"""
+        targets = []
+        for room_id, room in list(self.rooms.items()):
+            for socket in list(room.get(username, set())):
+                targets.append((room_id, socket))
+        for room_id, socket in targets:
+            try:
+                await socket.close(code=4401)
+            except Exception:
+                pass
+            self.disconnect(room_id, username, socket)
+
 
 ws_manager = ConnectionManager()
 
 
 @router.websocket("/ws/peer/{room_id}")
 async def peer_chat_ws(ws: WebSocket, room_id: str):
-    """WebSocket 鉴权走 query: ?token=<jwt>（或 DEV_MODE 下 ?dev_user=<name>）"""
+    """WebSocket 鉴权走 HttpOnly Cookie（DEV_MODE 可用 dev_user 调试）。"""
     username = await ws_authenticate(ws)
     if not username:
         await ws.close(code=4401)

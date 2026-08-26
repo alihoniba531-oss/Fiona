@@ -4,8 +4,8 @@ import { Suspense, useState, useEffect } from "react";
 import { useSearchParams } from "next/navigation";
 import Sidebar from "@/components/Sidebar";
 import TopBar from "@/components/TopBar";
-import { Trash2, User, Info } from "lucide-react";
-import { apiFetch, clearAuth } from "@/lib/auth";
+import { Trash2, User, Info, LogOut } from "lucide-react";
+import { apiFetch, clearAuth, setAuth } from "@/lib/auth";
 
 import { API_BASE as API } from "@/lib/config";
 
@@ -15,23 +15,30 @@ function SettingsContent() {
   const [username, setUsername] = useState("默认用户");
   const [allUsers, setAllUsers] = useState<string[]>([]);
   const [cleared, setCleared] = useState(false);
+  const [deleteConfirmation, setDeleteConfirmation] = useState("");
+  const [deleting, setDeleting] = useState(false);
+  const [deleteError, setDeleteError] = useState("");
 
   useEffect(() => {
     const u = localStorage.getItem("fiona_user");
     // eslint-disable-next-line react-hooks/set-state-in-effect
     if (u) setUsername(u);
     // /users 端点仅在后端 DEV_MODE=1 时开放；prod 直接 404，前端把列表留空即可。
-    fetch(`${API}/users`).then(r => r.ok ? r.json() : { users: [] }).then(d => setAllUsers(d.users || [])).catch(() => {});
+    apiFetch(`${API}/users`).then(r => r.ok ? r.json() : { users: [] }).then(d => setAllUsers(d.users || [])).catch(() => {});
   }, []);
 
-  const switchUser = (u: string) => {
-    setUsername(u);
-    // 必须先彻底清旧 auth（token+user+balance+cookie），再写新 user。
-    // 否则旧 JWT 留在 localStorage，apiFetch 还按旧用户身份发请求，
-    // 后端把新身份的操作记到旧账号，UI 完全不知情。
-    clearAuth();
-    localStorage.setItem("fiona_user", u);
-    window.dispatchEvent(new Event("fiona-user-changed"));
+  const switchUser = async (u: string) => {
+    if (u === username || process.env.NODE_ENV === "production") return;
+    const response = await fetch(`${API}/auth/test-login`, {
+      method: "POST",
+      credentials: "include",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ username: u }),
+    });
+    if (!response.ok) return;
+    const data = await response.json();
+    setAuth(data.username, data.balance ?? 200);
+    setUsername(data.username);
   };
 
   const clearHistory = async () => {
@@ -39,6 +46,49 @@ function SettingsContent() {
     await apiFetch(`${API}/history`, { method: "DELETE" }).catch(() => {});
     setCleared(true);
     setTimeout(() => setCleared(false), 3000);
+  };
+
+  const redirectTop = (path: string) => {
+    const target = window.top ?? window;
+    try {
+      target.location.replace(path);
+    } catch {
+      window.location.replace(path);
+    }
+  };
+
+  const logout = async () => {
+    await apiFetch(`${API}/auth/logout`, { method: "POST" }).catch(() => null);
+    clearAuth();
+    redirectTop("/login?reason=logout");
+  };
+
+  const deleteAccount = async () => {
+    if (deleteConfirmation !== username || deleting) return;
+    if (!confirm(`将永久删除「${username}」的账号、聊天、画像、匹配、帖子和上传文件。确定继续？`)) return;
+    setDeleting(true);
+    setDeleteError("");
+    try {
+      const response = await apiFetch(`${API}/account`, {
+        method: "DELETE",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ confirmation: deleteConfirmation }),
+      });
+      const data = await response.json().catch(() => ({}));
+      if (!response.ok) {
+        setDeleteError(data.detail || "删除失败，请重试");
+        return;
+      }
+      if (!data.file_cleanup_complete) {
+        alert("账号数据已删除，但有媒体文件需要管理员继续清理。");
+      }
+      clearAuth();
+      redirectTop("/login?reason=deleted");
+    } catch {
+      setDeleteError("网络错误，请重试");
+    } finally {
+      setDeleting(false);
+    }
   };
 
   return (
@@ -75,8 +125,15 @@ function SettingsContent() {
                 ))}
               </div>
               <p className="text-[11px] text-muted-foreground/60">
-                切换身份后，聊天、画像、匹配均独立。正式登录系统上线前临时使用。
+                当前使用服务端 HttpOnly 会话；开发环境仍可切换测试身份。
               </p>
+              <button
+                onClick={logout}
+                className="flex items-center gap-2 px-4 py-2 rounded-xl text-sm text-muted-foreground hover:text-foreground hover:bg-secondary transition-all border border-border w-full"
+              >
+                <LogOut size={14} />
+                退出登录并撤销现有会话
+              </button>
             </div>
 
             {/* 数据管理 */}
@@ -95,6 +152,27 @@ function SettingsContent() {
               {cleared && (
                 <p className="text-xs text-green-500">已清空</p>
               )}
+              <div className="pt-3 border-t border-border space-y-2">
+                <p className="text-xs text-destructive">永久删除账号</p>
+                <p className="text-[11px] text-muted-foreground">
+                  输入当前用户名 <span className="font-mono text-foreground">{username}</span> 确认。此操作不可恢复。
+                </p>
+                <input
+                  value={deleteConfirmation}
+                  onChange={event => setDeleteConfirmation(event.target.value)}
+                  placeholder={username}
+                  className="w-full bg-secondary rounded-xl px-4 py-2 text-sm outline-none placeholder:text-muted-foreground"
+                />
+                <button
+                  onClick={deleteAccount}
+                  disabled={deleteConfirmation !== username || deleting}
+                  className="flex items-center gap-2 px-4 py-2 rounded-xl text-sm text-destructive hover:bg-destructive/10 transition-all border border-destructive/30 w-full disabled:opacity-40"
+                >
+                  <Trash2 size={14} />
+                  {deleting ? "正在删除…" : "永久删除账号及全部数据"}
+                </button>
+                {deleteError && <p className="text-xs text-destructive">{deleteError}</p>}
+              </div>
             </div>
 
             {/* 关于 */}
@@ -105,7 +183,7 @@ function SettingsContent() {
               </div>
               <div className="space-y-1 text-[11px] text-muted-foreground">
                 <p>Chloe AI 助理 · 内测版</p>
-                <p className="text-muted-foreground/50">数据保存在本地，不上传任何服务器</p>
+                <p className="text-muted-foreground/50">账号数据保存在部署服务器的 SQLite 与 uploads 目录</p>
               </div>
             </div>
           </div>

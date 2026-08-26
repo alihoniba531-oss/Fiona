@@ -1,11 +1,6 @@
-const TOKEN_KEY   = "fiona_token";
 const USER_KEY    = "fiona_user";
 const BALANCE_KEY = "fiona_balance";
-
-export function getToken(): string | null {
-  if (typeof window === "undefined") return null;
-  return localStorage.getItem(TOKEN_KEY);
-}
+let authRedirectStarted = false;
 
 export function getUsername(): string {
   if (typeof window === "undefined") return "";
@@ -17,18 +12,10 @@ export function getBalance(): number {
   return parseInt(localStorage.getItem(BALANCE_KEY) || "0", 10);
 }
 
-export function setAuth(token: string, username: string, balance: number) {
-  localStorage.setItem(TOKEN_KEY,   token);
+export function setAuth(username: string, balance: number) {
   localStorage.setItem(USER_KEY,    username);
   localStorage.setItem(BALANCE_KEY, String(balance));
-  // cookie 供 middleware 读取。寿命对齐后端 JWT（30 天），否则 cookie 提前过期会
-  // 让 proxy 路由门禁误判未登录、同源 <img>/<audio> 媒体鉴权失效，而 localStorage
-  // 里的 token 仍有效。HTTPS 下加 Secure（dev 走 http 不能加，否则浏览器丢弃 cookie）。
-  const secure =
-    typeof window !== "undefined" && window.location.protocol === "https:"
-      ? "; Secure"
-      : "";
-  document.cookie = `fiona_token=${token}; path=/; max-age=${60 * 60 * 24 * 30}; SameSite=Lax${secure}`;
+  // JWT 由后端写入 HttpOnly Cookie，前端 JavaScript 不再读取或持久化 token。
   // 通知监听者（TopBar 等）身份变了
   if (typeof window !== "undefined") {
     window.dispatchEvent(new Event("fiona-user-changed"));
@@ -40,29 +27,44 @@ export function updateBalance(balance: number) {
 }
 
 export function clearAuth() {
-  localStorage.removeItem(TOKEN_KEY);
+  if (typeof window === "undefined") return;
   localStorage.removeItem(USER_KEY);
   localStorage.removeItem(BALANCE_KEY);
+  // 清理由旧版本前端写入的非 HttpOnly cookie；新会话 Cookie 必须由后端
+  // /auth/logout、/account 或 401 响应清除。
   document.cookie = "fiona_token=; path=/; max-age=0";
+  window.dispatchEvent(new Event("fiona-user-changed"));
 }
 
 export function isLoggedIn(): boolean {
-  return !!getToken();
+  return !!getUsername();
 }
 
 // ── 带鉴权头的 fetch ─────────────────────────────────────────────
-// 优先发 Authorization: Bearer <jwt>；dev（无 token）退化为 X-Dev-User
-// 后端 auth_dep.get_current_user 也对称：JWT > X-Dev-User（DEV_MODE=1）> 401
+// 浏览器自动携带后端设置的 HttpOnly Cookie；dev 无 Cookie 时才退化为 X-Dev-User。
 export async function apiFetch(input: string, init: RequestInit = {}): Promise<Response> {
-  const token = getToken();
   const headers = new Headers(init.headers || {});
-  if (token) {
-    headers.set("Authorization", `Bearer ${token}`);
-  } else if (typeof window !== "undefined") {
+  if (typeof window !== "undefined" && process.env.NODE_ENV !== "production") {
     // dev 兜底：未登录但 localStorage 里有 fiona_user，给后端走 DEV_MODE 通道
     // HTTP header 值只能是 ISO-8859-1，中文用户名必须 encodeURIComponent；后端 unquote 还原
     const user = getUsername();
     if (user) headers.set("X-Dev-User", encodeURIComponent(user));
   }
-  return fetch(input, { ...init, headers });
+  const response = await fetch(input, { ...init, headers, credentials: "include" });
+
+  // Cookie 门禁只能判断 token 是否存在；真正的过期/撤销结果以后端 401 为准。
+  // 抽屉页面运行在同源 iframe 中，因此需要让顶层窗口回到登录页，避免只在
+  // 不可见的 iframe 内跳转。replace 也防止“后退”再次进入已失效的受保护页。
+  if (response.status === 401 && typeof window !== "undefined" && !authRedirectStarted) {
+    authRedirectStarted = true;
+    clearAuth();
+    const target = window.top ?? window;
+    try {
+      target.location.replace("/login?reason=expired");
+    } catch {
+      window.location.replace("/login?reason=expired");
+    }
+  }
+
+  return response;
 }

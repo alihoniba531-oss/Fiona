@@ -7,7 +7,7 @@ import TopBar from "@/components/TopBar";
 import Earth3D from "@/components/Earth3D";
 import { Send, User, Sparkles, MessageCircle } from "lucide-react";
 import { cn } from "@/lib/utils";
-import { apiFetch, getToken, getUsername as readStoredUsername } from "@/lib/auth";
+import { apiFetch, getUsername as readStoredUsername } from "@/lib/auth";
 
 import { API_BASE as API, WS_BASE } from "@/lib/config";
 
@@ -271,11 +271,10 @@ function MatchContent() {
       })
       .catch(() => {});
 
-    const token = getToken();
-    const wsAuth = token
-      ? `token=${encodeURIComponent(token)}`
-      : `dev_user=${encodeURIComponent(readStoredUsername() || username)}`;
-    const ws = new WebSocket(`${WS_BASE}/ws/peer/${roomId}?${wsAuth}`);
+    const devAuth = process.env.NODE_ENV !== "production"
+      ? `?dev_user=${encodeURIComponent(readStoredUsername() || username)}`
+      : "";
+    const ws = new WebSocket(`${WS_BASE}/ws/peer/${roomId}${devAuth}`);
     ws.onmessage = (e) => {
       if (selectedRoomIdRef.current !== roomId || wsRef.current !== ws) return;
       const msg = JSON.parse(e.data) as PeerWsEvent;

@@ -9,6 +9,7 @@ from http import HTTPStatus
 from types import SimpleNamespace
 
 import pytest
+from pydantic import ValidationError
 
 
 _MODEL = "qwen3-asr-flash"
@@ -255,6 +256,13 @@ def test_pcm_route_rejects_empty_audio_without_calling_asr(
     assert response.status_code == 200
     assert response.json() == {"text": "", "error": "empty audio"}
     assert called is False
+
+
+def test_asr_request_rejects_oversized_base64_before_decode():
+    from routers.voice import ASR_MAX_BASE64_CHARS, AsrRequest
+
+    with pytest.raises(ValidationError):
+        AsrRequest(audio="A" * (ASR_MAX_BASE64_CHARS + 1))
 
 
 def test_non_pcm_route_asks_ffmpeg_for_wav(client, dev_headers, monkeypatch):

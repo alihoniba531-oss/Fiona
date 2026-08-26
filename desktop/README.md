@@ -1,6 +1,8 @@
-# desktop/ — Chloe桌面客户端
+# Chloe Windows 桌面客户端
 
-Tauri 2 桌面壳 + 可选 SSH 隧道。**双击 .exe 自动加载；开发者模式自动连云，用户模式直连公网**。
+Tauri 2 桌面壳 + 可选 SSH 隧道。双击安装后的应用即可加载 Web 客户端：开发者模式连接云端开发服务，用户模式直接打开公网 `https://madchloechat.online`。
+
+桌面包不内置完整的 Next.js 应用；`dist/index.html` 是启动/跳转载体。整个产品的架构和发布阻断项分别见 [架构文档](../docs/ARCHITECTURE.md) 和 [PLAN.md](../PLAN.md)。
 
 ## 两条获取路径，选一条
 
@@ -26,7 +28,7 @@ Tauri 2 桌面壳 + 可选 SSH 隧道。**双击 .exe 自动加载；开发者�
 
 适合要改 Rust / 调隧道逻辑的场景。
 
-1. `git pull` 拿到这个 `desktop/` 目录
+1. 在仓库根目录执行 `git pull --ff-only`
 2. 在 `desktop/` 右键 `setup.ps1` → 用 PowerShell 运行：
    - 装 Rust + tauri-cli + npm 依赖（10-15 分钟）
    - 交互问云端 IP/用户/端口，写入 `desktop/fiona.config.json`
@@ -69,15 +71,48 @@ type $env:USERPROFILE\.ssh\id_ed25519.pub | ssh root@<你的云IP> 'cat >> ~/.ss
 1. 不启动 SSH
 2. 静态加载页直接跳转到 `https://madchloechat.online`
 
+这里的“开发者模式”和后端 `DEV_MODE` 不是同一个开关：前者由桌面配置文件是否存在决定，后者由 `backend/.env` 决定鉴权和测试入口。
+
+## 构建与 CI
+
+本地 release 构建：
+
+```powershell
+.\build.ps1
+```
+
+输出目录：
+
+- `src-tauri\target\release\bundle\msi\`
+- `src-tauri\target\release\bundle\nsis\`
+
+GitHub Actions 的 `Build Windows Desktop` 工作流只在 `desktop/**` 或工作流文件变化时自动触发，也可以手动运行。它使用 Node 20、Rust stable、`npm install` 和 `npm run build`，上传 MSI 与 NSIS artifact。
+
+当前目录没有独立 `package-lock.json`，Rust 侧也没有提交 `Cargo.lock`，因此构建还不是完全可复现的。公开发布前应补齐锁文件和安装包签名流程。
+
+## 安全边界
+
+用户模式加载的是远程网页，而 Tauri command 在本机执行。前端 JavaScript 的参数检查不能替代 Rust 命令边界的校验。
+
+当前代码已经完成：
+
+- 远程页面只保留 `open_url`/`open_url_in_app`，诊断、后端探测和日志目录命令只对本地隧道页面开放。
+- Rust 层只接受长度受限、无凭据且带主机名的绝对 HTTP(S) URL。
+- Windows 外链直接交给系统 URL 处理器，不再让 `cmd.exe` 解释输入。
+- Tauri 启动页和远程 Next.js 页面均配置了 CSP；启动页脚本与样式已外置，不再依赖内联脚本、样式或事件处理器。
+
+公开分发前仍需在 Windows CI 运行 Cargo 编译和新增 Rust 单元测试，并验证两种加载模式的 capability/CSP；安装包签名、锁文件和正式升级/回滚流程也尚未完成。因此桌面包目前仍只应在受控环境中测试。
+
 ## 文件说明
 
 - `package.json` — 装 `@tauri-apps/cli`
 - `fiona.config.example.json` — 配置模板（实际配置 `fiona.config.json` 已 gitignore）
-- `dist/index.html` — prod build 的占位首页（有配置跳 `localhost:3000`，无配置跳公网）
+- `dist/index.html` + `dist/main.js` + `dist/style.css` — prod build 的启动页（有配置跳 `localhost:3000`，无配置跳公网）
 - `src-tauri/Cargo.toml` — Rust 依赖
 - `src-tauri/tauri.conf.json` — Tauri 主配置
 - `src-tauri/src/main.rs` + `lib.rs` — 入口 + SSH 隧道嵌入逻辑
-- `src-tauri/capabilities/default.json` — 权限
+- `src-tauri/capabilities/default.json` — 本地隧道页面权限
+- `src-tauri/capabilities/remote-links.json` — 远程页面最小外链权限
 - `src-tauri/icons/icon.png` — 从 PWA 图标复制
 - `setup.ps1` / `dev.ps1` / `build.ps1` — Windows 开发者脚本
 
@@ -87,3 +122,4 @@ type $env:USERPROFILE\.ssh\id_ed25519.pub | ssh root@<你的云IP> 'cat >> ~/.ss
 - 接 `tauri-plugin-notification` 接桌面通知
 - 开发者模式首次启动可考虑弹原生表单填云端配置（替代手编 `%APPDATA%\fiona\config.json`）
 - 用 `cargo tauri icon path/to/1024.png` 生成全套图标
+- 增加安装包签名、版本发布和自动/受控更新流程

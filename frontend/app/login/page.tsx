@@ -19,7 +19,7 @@ export default function LoginPage() {
   const [showTest, setShowTest] = useState(false);
   const [testUser, setTestUser] = useState("tester");
 
-  // 开发测试入口：不走短信 OTP，直接以指定 username 拿 token。
+  // 开发测试入口：不走短信 OTP，直接以指定 username 建立会话。
   // 仅 NODE_ENV=development 时渲染按钮；后端也需 DEV_MODE=1，否则返回 404。
   async function handleTestLogin() {
     setErr("");
@@ -27,6 +27,7 @@ export default function LoginPage() {
     try {
       const res = await fetch(`${API}/auth/test-login`, {
         method:  "POST",
+        credentials: "include",
         headers: { "Content-Type": "application/json" },
         body:    JSON.stringify({ username: testUser.trim() || "tester" }),
       });
@@ -35,7 +36,7 @@ export default function LoginPage() {
         setErr(data.detail || "测试登录失败（后端是否 DEV_MODE=1？）");
         return;
       }
-      setAuth(data.token, data.username, data.balance ?? 200);
+      setAuth(data.username, data.balance ?? 200);
       router.replace("/");
     } catch {
       setErr("网络错误");
@@ -56,6 +57,7 @@ export default function LoginPage() {
     try {
       const res = await fetch(`${API}/auth/redeem-invite`, {
         method:  "POST",
+        credentials: "include",
         headers: { "Content-Type": "application/json" },
         body:    JSON.stringify({ code: inviteCode }),
       });
@@ -64,7 +66,7 @@ export default function LoginPage() {
         setErr(data.detail || "邀请码无效");
         return;
       }
-      setAuth(data.token, data.username, data.balance ?? 200);
+      setAuth(data.username, data.balance ?? 200);
       router.replace("/");
     } catch {
       setErr("网络错误，请重试");
@@ -84,6 +86,7 @@ export default function LoginPage() {
     try {
       const res = await fetch(`${API}/auth/send-otp`, {
         method:  "POST",
+        credentials: "include",
         headers: { "Content-Type": "application/json" },
         body:    JSON.stringify({ phone }),
       });
@@ -111,6 +114,7 @@ export default function LoginPage() {
     try {
       const res = await fetch(`${API}/auth/verify-otp`, {
         method:  "POST",
+        credentials: "include",
         headers: { "Content-Type": "application/json" },
         body:    JSON.stringify({ phone, code }),
       });
@@ -119,7 +123,7 @@ export default function LoginPage() {
         setErr(data.detail || "验证失败");
         return;
       }
-      setAuth(data.token, data.username, data.balance ?? 200);
+      setAuth(data.username, data.balance ?? 200);
       router.replace("/");
     } catch {
       setErr("网络错误，请重试");

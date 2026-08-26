@@ -1,15 +1,33 @@
 # -*- coding: utf-8 -*-
 import os
 
-from fastapi import APIRouter, HTTPException, Request
+from fastapi import APIRouter, Depends, HTTPException, Request
+from fastapi.responses import JSONResponse
 
-from auth import create_token, make_otp
+from auth import TOKEN_EXPIRE_DAYS, create_token, make_otp
+from auth_dep import get_current_user
 from database import (check_and_consume_otp, get_or_create_user, get_or_create_user_by_phone,
-                      get_strawberry_balance, redeem_invite, save_otp)
+                      get_strawberry_balance, redeem_invite, revoke_user_sessions, save_otp)
 from rate_limit import limiter
 from sms import send_sms
 
 router = APIRouter()
+
+
+def _login_response(user: dict, balance: int) -> JSONResponse:
+    username = user["username"]
+    token = create_token(username, int(user.get("session_version", 0)))
+    response = JSONResponse({"username": username, "balance": balance})
+    response.set_cookie(
+        key="fiona_token",
+        value=token,
+        max_age=TOKEN_EXPIRE_DAYS * 24 * 60 * 60,
+        path="/",
+        httponly=True,
+        secure=os.getenv("DEV_MODE", "0") != "1",
+        samesite="lax",
+    )
+    return response
 
 
 # ── 认证端点 ────────────────────────────────────────────────────
@@ -39,10 +57,9 @@ async def test_login(body: dict | None = None):
         raise HTTPException(status_code=404, detail="Not Found")
     body = body or {}
     username = (body.get("username") or "tester").strip() or "tester"
-    await get_or_create_user(username)
+    user = await get_or_create_user(username)
     balance = await get_strawberry_balance(username)
-    token = create_token(username)
-    return {"token": token, "username": username, "balance": balance}
+    return _login_response(user, balance)
 
 
 @router.post("/auth/verify-otp")
@@ -59,12 +76,7 @@ async def verify_otp_api(body: dict):
     if not ok:
         raise HTTPException(status_code=401, detail="验证码错误或已过期")
     user = await get_or_create_user_by_phone(phone)
-    token = create_token(user["username"])
-    return {
-        "token":    token,
-        "username": user["username"],
-        "balance":  user.get("strawberry_balance", 200),
-    }
+    return _login_response(user, user.get("strawberry_balance", 200))
 
 
 @router.post("/auth/redeem-invite")
@@ -78,7 +90,15 @@ async def redeem_invite_api(request: Request, body: dict):
     username = await redeem_invite(code)
     if not username:
         raise HTTPException(status_code=401, detail="邀请码无效")
-    await get_or_create_user(username)
+    user = await get_or_create_user(username)
     balance = await get_strawberry_balance(username)
-    token = create_token(username)
-    return {"token": token, "username": username, "balance": balance}
+    return _login_response(user, balance)
+
+
+@router.post("/auth/logout")
+async def logout_api(user: str = Depends(get_current_user)):
+    """撤销当前账号此前签发的全部 JWT，并清除 HttpOnly 会话 Cookie。"""
+    await revoke_user_sessions(user)
+    response = JSONResponse({"status": "logged_out"})
+    response.delete_cookie("fiona_token", path="/")
+    return response

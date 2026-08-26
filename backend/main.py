@@ -12,10 +12,11 @@ from fastapi.responses import JSONResponse
 from fastapi.staticfiles import StaticFiles
 from slowapi import _rate_limit_exceeded_handler
 from slowapi.errors import RateLimitExceeded
-from database import init_db
+from database import get_pending_upload_cleanup, init_db, mark_upload_cleanup_done
 from rate_limit import limiter
 from routers import auth, chat, hot, match, me, peer, plaza, voice
 from utils.media import UPLOADS_DIR
+from utils.request_limits import MAX_REQUEST_BODY_BYTES, RequestBodyLimitMiddleware
 
 if os.getenv("DEV_MODE", "0") == "1":
     import selectors as _selectors
@@ -34,9 +35,18 @@ if os.getenv("DEV_MODE", "0") == "1":
 @asynccontextmanager
 async def lifespan(app: FastAPI):
     await init_db()
+    # 重试上次删号过程中因文件系统错误而未完成的媒体清理。
+    pending_uploads = await get_pending_upload_cleanup()
+    if pending_uploads:
+        from utils.media import delete_uploaded_files
+        deleted, failed = delete_uploaded_files(pending_uploads)
+        await mark_upload_cleanup_done(deleted)
+        if failed:
+            print(f"[cleanup] {len(failed)} upload file(s) still pending deletion")
     yield
 
 app = FastAPI(title="Chloe API", lifespan=lifespan)
+app.add_middleware(RequestBodyLimitMiddleware, max_bytes=MAX_REQUEST_BODY_BYTES)
 
 # ── 限流（slowapi）────────────────────────────────────────────────
 # 不设全局 default_limits，免误伤 /uploads、TTS 流等；只在具体端点上挂 @limiter.limit。
@@ -65,11 +75,20 @@ app.add_middleware(
 
 # ── 全局鉴权中间件 ────────────────────────────────────────────────
 # 默认所有 HTTP 请求都要鉴权，白名单放过；鉴权来源按优先级：
-#   1. Authorization: Bearer <jwt> 头        — apiFetch 走这条
-#   2. cookie fiona_token=<jwt>              — <audio src> / <img> 不能带 header，走这条
+#   1. Authorization: Bearer <jwt> 头        — 非浏览器客户端兼容入口
+#   2. cookie fiona_token=<jwt>              — Web、媒体和 WebSocket 的主入口
 #   3. X-Dev-User 头（仅 DEV_MODE=1）         — 本地切身份调试
 # WebSocket 握手不走 HTTP middleware，各 ws 端点用 ws_authenticate 单独鉴权。
-_AUTH_PUBLIC_PATHS = {"/", "/auth/send-otp", "/auth/verify-otp", "/auth/test-login", "/auth/redeem-invite"}
+_AUTH_PUBLIC_PATHS = {
+    "/",
+    "/auth/send-otp",
+    "/auth/verify-otp",
+    "/auth/test-login",
+    "/auth/redeem-invite",
+    "/plaza/tags",
+    "/plaza/feed",
+    "/plaza/community-interests",
+}
 _AUTH_PUBLIC_PREFIXES = ("/docs", "/redoc", "/openapi.json", "/hot/")
 
 @app.middleware("http")
@@ -81,28 +100,28 @@ async def require_auth(request: Request, call_next):
         return await call_next(request)
     if path in _AUTH_PUBLIC_PATHS or any(path.startswith(p) for p in _AUTH_PUBLIC_PREFIXES):
         return await call_next(request)
-    from auth import decode_token
+    from auth_dep import authenticate_token
     user = None
     auth_header = request.headers.get("authorization", "")
     if auth_header.startswith("Bearer "):
-        user = decode_token(auth_header[7:])
+        user = await authenticate_token(auth_header[7:])
     if not user:
         cookie_token = request.cookies.get("fiona_token")
         if cookie_token:
-            user = decode_token(cookie_token)
-    # <audio src> / <img src> 不能带 header，前端把 token 塞 query 兜底
-    # （和 ws_authenticate 对称）
-    if not user:
-        q_token = request.query_params.get("token")
-        if q_token:
-            user = decode_token(q_token)
+            user = await authenticate_token(cookie_token)
     if not user and os.getenv("DEV_MODE", "0") == "1":
         from urllib.parse import unquote
         dev = request.headers.get("x-dev-user") or request.query_params.get("dev_user")
         if dev:
             user = unquote(dev).strip() or None
+            if user:
+                # 仅开发通道允许用 X-Dev-User 临时建测试账号。
+                from database import get_or_create_user
+                await get_or_create_user(user)
     if not user:
-        return JSONResponse({"detail": "未鉴权或鉴权失败"}, status_code=401)
+        response = JSONResponse({"detail": "未鉴权或鉴权失败"}, status_code=401)
+        response.delete_cookie("fiona_token", path="/")
+        return response
     # 把鉴权结果挂到 request.state，路由里 Depends(get_current_user) 直接读，避免重复解码。
     request.state.user = user
     return await call_next(request)

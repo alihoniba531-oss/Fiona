@@ -1,22 +1,13 @@
 {
   "$schema": "../gen/schemas/desktop-schema.json",
   "identifier": "default",
-  "description": "默认 capability — 主窗口 + 远程内容（开发者模式 localhost 动态转发端口，用户模式 madchloechat.online）",
+  "description": "仅供打包启动页使用的本地诊断 capability",
   "windows": ["main"],
+  "local": true,
   "permissions": [
     "core:default",
-    "allow-open-url",
-    "allow-open-url-in-app",
     "allow-startup-diagnostics",
     "allow-probe-backend",
     "allow-open-logs-dir"
-  ],
-  "remote": {
-    "urls": [
-      "http://localhost:*",
-      "http://localhost:*/*",
-      "https://madchloechat.online",
-      "https://madchloechat.online/*"
-    ]
-  }
+  ]
 }

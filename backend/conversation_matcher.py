@@ -7,7 +7,7 @@
 
 核心机制：
 1. extract_interests: 从本轮对话抽出兴趣点 + 强度评分 + 类别（政治红线过滤）
-2. find_cross_user_candidates: 跨用户 profile/messages 搜相关
+2. find_cross_user_candidates: 只用最小化画像搜相关，不读取其他用户原始消息
 3. evaluate_match: LLM 评估匹配质量
 4. detect_and_save: 完整流程，给 main.py 的 /chat 后台调用
 """
@@ -18,8 +18,9 @@ import aiosqlite
 from llm import MAIN_EXTRA_BODY, MAIN_MODEL
 from database import (
     get_profile, get_all_profiles, was_recently_matched, save_match,
-    save_pending_match, get_recent_user_messages, get_user_settings, DB_PATH,
+    save_pending_match, get_user_settings, DB_PATH,
 )
+from utils.match_privacy import minimized_match_profile
 
 # 上下文阈值——根据用户当前 openness_level 动态选择
 INTEREST_STRENGTH_THRESHOLD_HIGH   = 7  # openness=high：正常阈值
@@ -137,11 +138,29 @@ def passes_threshold(interest: dict, threshold: int = INTEREST_STRENGTH_THRESHOL
     return interest.get("strength", 0) >= threshold
 
 
+def _preference_allows(match_pref: str, other_gender: str | None) -> bool:
+    """`both` 接受任意/未填写性别；明确偏好只接受完全匹配的已知性别。"""
+    return match_pref == "both" or other_gender == match_pref
+
+
+async def _mutually_compatible(
+    my_settings: dict,
+    peer_username: str,
+    peer_gender: str | None,
+) -> bool:
+    """双方设置都是硬约束，不能只检查发起方的偏好。"""
+    if not _preference_allows(my_settings.get("match_pref", "both"), peer_gender):
+        return False
+    peer_settings = await get_user_settings(peer_username)
+    return _preference_allows(
+        peer_settings.get("match_pref", "both"),
+        my_settings.get("gender"),
+    )
+
+
 async def find_cross_user_candidates(my_username: str, topics: list[str]) -> list[dict]:
-    """跨用户搜相关：用 profile_json + 最近 messages 关键词搜，按性别偏好过滤。返回候选用户列表"""
-    # 我的匹配偏好（"male"/"female"/"both"）
+    """只在候选人的最小化匹配画像中搜索，不读取其原始对话。"""
     my_settings = await get_user_settings(my_username)
-    my_pref = my_settings.get("match_pref", "both")
 
     all_profiles = await get_all_profiles()
     candidates = []
@@ -153,30 +172,19 @@ async def find_cross_user_candidates(my_username: str, topics: list[str]) -> lis
         if await was_recently_matched(my_username, peer):
             continue
 
-        # 性别过滤：若我有明确偏好，对方必须匹配该性别（未设性别的对方不通过）
-        if my_pref in ("male", "female"):
-            peer_gender = p.get("gender")
-            if peer_gender != my_pref:
-                continue
+        if not await _mutually_compatible(my_settings, peer, p.get("gender")):
+            continue
 
-        profile = p["profile"]
-        # 用 profile_json 序列化后的字符串做关键词搜
+        profile = minimized_match_profile(p["profile"])
         profile_text = json.dumps(profile, ensure_ascii=False)
 
-        # 也搜对方最近 5 条用户消息（兴趣可能没在 profile 里但在最近对话里）
-        peer_recent = await get_recent_user_messages(peer, limit=5)
-        peer_recent_text = " ".join(m.get("content", "") for m in peer_recent)
-
-        full_text = profile_text + " " + peer_recent_text
-
         # 命中任一 topic 即列入候选
-        hit_topics = [t for t in topics if t and t in full_text]
+        hit_topics = [t for t in topics if t and t in profile_text]
         if hit_topics:
             candidates.append({
                 "peer_username": peer,
                 "peer_profile": profile,
                 "hit_topics": hit_topics,
-                "recent_msgs_summary": peer_recent_text[:300],
             })
 
     return candidates
@@ -185,10 +193,10 @@ async def find_cross_user_candidates(my_username: str, topics: list[str]) -> lis
 EVAL_MATCH_PROMPT = """你是匹配质量评估器，只输出 JSON。
 
 给定：
-- 目标用户（A）当前在聊的内容 + 参与模式 + 利益锚点（底色信号，内部使用）
-- 候选用户（B）的画像 + 最近聊天片段
+- 目标用户（A）经提取后的话题信号 + 参与模式 + 利益锚点（底色信号，内部使用）
+- 候选用户（B）的最小化匹配画像
 
-【第一步】从 B 的画像和近期消息里，推断 B 的参与模式 + 利益锚点：
+【第一步】从 B 的最小化画像里，谨慎判断可能的参与模式：
 参与模式：seeking / processing / sharing / exploring
 利益锚点：emotional_value / resource_exchange / safety / recognition / intimate / light_connection
 
@@ -234,7 +242,7 @@ reason 写法规则（严格遵守）：
 async def evaluate_match(
     client,
     my_username: str,
-    my_recent_msg: str,
+    my_match_signal: str,
     candidate: dict,
     a_engagement_mode: str = "exploring",
     a_interest_anchor: str = "light_connection",
@@ -249,13 +257,12 @@ async def evaluate_match(
             messages=[
                 {"role": "system", "content": EVAL_MATCH_PROMPT},
                 {"role": "user", "content": (
-                    f"目标用户「{my_username}」当前在聊的内容:\n{my_recent_msg}\n"
+                    f"目标用户「{my_username}」的提取话题信号:\n{my_match_signal}\n"
                     f"A 的参与模式: {a_engagement_mode}\n"
                     f"A 的利益锚点: {a_interest_anchor}\n"
                     f"A 的时段背景: {a_time_context}\n\n"
                     f"候选用户「{candidate['peer_username']}」:\n"
-                    f"画像: {json.dumps(candidate['peer_profile'], ensure_ascii=False)}\n"
-                    f"近期聊天片段: {candidate['recent_msgs_summary']}\n\n"
+                    f"最小化匹配画像: {json.dumps(minimized_match_profile(candidate['peer_profile']), ensure_ascii=False)}\n\n"
                     f"命中的话题词: {candidate['hit_topics']}"
                 )},
             ],
@@ -291,6 +298,9 @@ async def find_seeking_candidates(
     """
     target_gender = seeking.get("seeking_gender")
     target_traits = seeking.get("seeking_traits") or []
+    my_settings = await get_user_settings(my_username)
+    # 调用方已读取过性别；保留显式参数，避免并发更新设置时一次匹配中前后不一致。
+    my_settings["gender"] = my_gender
 
     all_profiles = await get_all_profiles()
     candidates = []
@@ -306,16 +316,12 @@ async def find_seeking_candidates(
         if target_gender and p.get("gender") != target_gender:
             continue
 
-        # 候选的 match_pref 需与发起人性别兼容
-        peer_settings = await get_user_settings(peer)
-        peer_pref = peer_settings.get("match_pref", "both")
-        if my_gender and peer_pref not in ("both", my_gender):
+        if not await _mutually_compatible(my_settings, peer, p.get("gender")):
             continue
 
-        # 候选 profile + 近期消息里是否有目标特征词
-        profile_text = json.dumps(p["profile"], ensure_ascii=False)
-        peer_recent = await get_recent_user_messages(peer, limit=5)
-        peer_text = profile_text + " " + " ".join(m.get("content", "") for m in peer_recent)
+        # 只在候选人的最小化匹配画像中检查特征词。
+        peer_profile = minimized_match_profile(p["profile"])
+        peer_text = json.dumps(peer_profile, ensure_ascii=False)
 
         hit_traits = [t for t in target_traits if t and t in peer_text]
         # 无特征词要求时，性别匹配即可；有特征词要求时至少命中一个
@@ -324,9 +330,8 @@ async def find_seeking_candidates(
 
         candidates.append({
             "peer_username": peer,
-            "peer_profile": p["profile"],
+            "peer_profile": peer_profile,
             "hit_traits": hit_traits,
-            "recent_msgs_summary": peer_text[:300],
         })
 
     return candidates
@@ -369,8 +374,7 @@ async def evaluate_seeking_match(
                     f"发起方正在寻找：{seeking.get('topic', '某类人')}\n"
                     f"寻求的特征：{seeking.get('seeking_traits', [])}\n"
                     f"寻求的性别：{seeking.get('seeking_gender') or '不限'}\n\n"
-                    f"候选用户画像：{json.dumps(candidate['peer_profile'], ensure_ascii=False)}\n"
-                    f"近期聊天：{candidate['recent_msgs_summary']}\n"
+                    f"候选用户最小化画像：{json.dumps(minimized_match_profile(candidate['peer_profile']), ensure_ascii=False)}\n"
                     f"命中特征词：{candidate['hit_traits']}"
                 )},
             ],
@@ -478,8 +482,9 @@ async def detect_and_save(
             if saved >= MAX_MATCHES_PER_TURN:
                 break
             # 使用底色探针的稳定信号，而非 per-topic 临时 engagement_mode
+            match_signal = "、".join(candidate["hit_topics"] or topics)[:200]
             result = await evaluate_match(
-                client, username, current_msg, candidate,
+                client, username, match_signal, candidate,
                 a_engagement_mode=stable_a_mode,
                 a_interest_anchor=a_anchor,
                 a_time_context=a_time_context,
@@ -627,7 +632,6 @@ def score_profile_compatibility(my_profile: dict, peer_profile: dict) -> tuple[i
 async def find_profile_candidates(my_username: str, my_profile: dict) -> list[dict]:
     """画像级跨用户候选搜索，按兼容度评分排序，返回 score >= 3 的前 5 个。"""
     my_settings = await get_user_settings(my_username)
-    my_pref = my_settings.get("match_pref", "both")
 
     all_profiles = await get_all_profiles()
     scored = []
@@ -638,16 +642,15 @@ async def find_profile_candidates(my_username: str, my_profile: dict) -> list[di
             continue
         if await was_recently_matched(my_username, peer, days=30):
             continue
-        if my_pref in ("male", "female"):
-            if p.get("gender") != my_pref:
-                continue
+        if not await _mutually_compatible(my_settings, peer, p.get("gender")):
+            continue
 
         peer_profile = p["profile"]
         score, reasons = score_profile_compatibility(my_profile, peer_profile)
         if score >= 3:
             scored.append({
                 "peer_username": peer,
-                "peer_profile": peer_profile,
+                "peer_profile": minimized_match_profile(peer_profile),
                 "score": score,
                 "match_reasons": reasons,
             })
@@ -682,7 +685,7 @@ async def evaluate_profile_match(
     my_profile: dict,
     candidate: dict,
 ) -> dict | None:
-    """用双方完整画像请 LLM 评估是否值得推荐。"""
+    """用双方最小化画像和本地评分理由请 LLM 评估。"""
     try:
         resp = await asyncio.to_thread(
             client.chat.completions.create,
@@ -691,10 +694,10 @@ async def evaluate_profile_match(
             messages=[
                 {"role": "system", "content": PROFILE_EVAL_PROMPT},
                 {"role": "user", "content": (
-                    f"用户 A「{my_username}」的画像：\n"
-                    f"{json.dumps(my_profile, ensure_ascii=False)}\n\n"
-                    f"用户 B「{candidate['peer_username']}」的画像：\n"
-                    f"{json.dumps(candidate['peer_profile'], ensure_ascii=False)}\n\n"
+                    f"用户 A「{my_username}」的最小化画像：\n"
+                    f"{json.dumps(minimized_match_profile(my_profile), ensure_ascii=False)}\n\n"
+                    f"用户 B「{candidate['peer_username']}」的最小化画像：\n"
+                    f"{json.dumps(minimized_match_profile(candidate['peer_profile']), ensure_ascii=False)}\n\n"
                     f"初步评分理由：{', '.join(candidate['match_reasons'])}"
                 )},
             ],
@@ -770,6 +773,16 @@ async def detect_and_save_from_profile(client, username: str) -> int:
             match_type=result["type"],
             tags=result["tags"],
             triggered_by_message_id=None,  # Layer 2 不关联具体消息
+            match_layer="layer2",
+        )
+        await save_pending_match(
+            username=candidate["peer_username"],
+            peer_username=username,
+            interest_topic=main_topic,
+            reason="Chloe觉得你们可能聊得来",
+            match_type=result["type"],
+            tags=result["tags"],
+            triggered_by_message_id=None,
             match_layer="layer2",
         )
         await save_match(username, candidate["peer_username"])

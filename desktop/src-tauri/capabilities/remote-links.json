@@ -1,0 +1,19 @@
+{
+  "$schema": "../gen/schemas/remote-schema.json",
+  "identifier": "remote-links",
+  "description": "远程业务页面只能调用经过 Rust 校验的 HTTP(S) 链接打开命令",
+  "windows": ["main"],
+  "local": false,
+  "permissions": [
+    "allow-open-url",
+    "allow-open-url-in-app"
+  ],
+  "remote": {
+    "urls": [
+      "http://localhost:*",
+      "http://localhost:*/*",
+      "https://madchloechat.online",
+      "https://madchloechat.online/*"
+    ]
+  }
+}

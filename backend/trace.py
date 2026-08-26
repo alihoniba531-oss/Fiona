@@ -21,6 +21,15 @@ async def log_event(
     """写一条事件。失败只打日志，不抛。"""
     try:
         async with aiosqlite.connect(DB_PATH) as db:
+            if username is not None:
+                await db.execute("BEGIN IMMEDIATE")
+                async with db.execute(
+                    "SELECT 1 FROM users WHERE username = ?",
+                    (username,),
+                ) as cursor:
+                    if await cursor.fetchone() is None:
+                        await db.rollback()
+                        return
             await db.execute(
                 "INSERT INTO events (username, event_type, name, payload, duration_ms, success) "
                 "VALUES (?, ?, ?, ?, ?, ?)",
