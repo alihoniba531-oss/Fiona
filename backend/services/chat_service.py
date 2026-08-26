@@ -378,7 +378,7 @@ async def stream_mirror(ctx: ChatContext, state: ChatState):
     try:
         stream, _actually_qwen = await asyncio.to_thread(
             _create_stream_with_fallback,
-            _slot == "qwen",
+            _slot == "light",
             [{"role": "system", "content": state.sys_prompt_final}] + ctx.messages,
             max_tokens=80,
             temperature=1.0,
@@ -557,11 +557,11 @@ async def stream_normal(ctx: ChatContext, state: ChatState):
     """普通对话，走 Chloe（路由决定使用哪个模型槽）+ 后台画像提取/匹配检测。"""
     _slot = choose_model(ctx.user, ctx.user_content, "normal")
     state.trace["model"] = _slot
-    _use_light = (_slot == "qwen")
-    # max_tokens 统一给 700：_create_stream_with_fallback 会在 qwen 失败时
-    # 自动切 deepseek，但 max_tokens 是事先传入的参数，给小了 fallback 后
-    # deepseek 也被锁在小上限，对话被砍在半截。给统一上限消掉这个漏洞。
-    # qwen 自己回短句时不会用满，没浪费。
+    _use_light = (_slot == "light")
+    # max_tokens 统一给 700：_create_stream_with_fallback 会在轻量槽失败时
+    # 自动切主力大脑，但 max_tokens 是事先传入的参数，给小了 fallback 后
+    # 主脑也被锁在小上限，对话被砍在半截。给统一上限消掉这个漏洞。
+    # 轻量槽自己回短句时不会用满，没浪费。
     _max_tok = 700
     _temp = 0.9 if _use_light else 1.05
     _freq_pen = 0.3 if _use_light else 0.4
@@ -594,14 +594,14 @@ async def stream_normal(ctx: ChatContext, state: ChatState):
         return
     if _finish_reason == "length":
         # 撞到 max_tokens 上限 —— 用户会看到回答被砍在半句话
-        print(f"[chat] truncated: user={ctx.user} model={'qwen' if _actually_qwen else 'deepseek'} "
+        print(f"[chat] truncated: user={ctx.user} model={'light' if _actually_qwen else 'main'} "
               f"max_tokens={_max_tok} chars={len(state.full_response)}", flush=True)
 
     await save_message(ctx.user, "assistant", state.full_response)
     state.response_saved = True
     yield _sse({"done": True})
 
-    # DeepSeek 实际使用时计入预算（含 Gemini 失败回退的情况）
+    # 主力大脑实际使用时计入预算（含轻量槽失败回退的情况）
     if not _actually_qwen:
         token_budget.add(ctx.user, len(state.full_response) // 2)
 

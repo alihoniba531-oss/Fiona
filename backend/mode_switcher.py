@@ -14,6 +14,8 @@ import json
 from datetime import datetime, timedelta
 from typing import Literal
 
+from llm import MAIN_EXTRA_BODY, MAIN_MODEL
+
 ModeType = Literal["friend", "mirror"]
 
 # ── 内存状态：username -> {mode, since, last_trigger} ───────────
@@ -199,7 +201,8 @@ def _llm_is_venting(client, current_msg: str, history: list[dict]) -> bool:
 
     try:
         resp = client.chat.completions.create(
-            model="deepseek-chat",
+            model=MAIN_MODEL,
+            extra_body=MAIN_EXTRA_BODY,
             messages=[
                 {"role": "system", "content": prompt},
                 {"role": "user", "content": f"上下文：\n{context}\n\n最新消息：{current_msg}"},

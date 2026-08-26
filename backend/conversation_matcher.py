@@ -14,6 +14,8 @@
 import json
 import asyncio
 import aiosqlite
+
+from llm import MAIN_EXTRA_BODY, MAIN_MODEL
 from database import (
     get_profile, get_all_profiles, was_recently_matched, save_match,
     save_pending_match, get_recent_user_messages, get_user_settings, DB_PATH,
@@ -79,7 +81,8 @@ async def extract_interests(client, current_msg: str, recent_msgs: list[dict]) -
     try:
         resp = await asyncio.to_thread(
             client.chat.completions.create,
-            model="deepseek-chat",
+            model=MAIN_MODEL,
+            extra_body=MAIN_EXTRA_BODY,
             messages=[
                 {"role": "system", "content": EXTRACT_INTEREST_PROMPT},
                 {"role": "user", "content": f"上下文:\n{ctx}\n\n当前消息:\n{current_msg}"},
@@ -90,7 +93,7 @@ async def extract_interests(client, current_msg: str, recent_msgs: list[dict]) -
         )
         raw = resp.choices[0].message.content
         data = json.loads(raw)
-        # DeepSeek JSON mode 可能包在对象里
+        # LLM JSON mode 可能包在对象里
         if isinstance(data, list):
             items = data
         else:
@@ -241,7 +244,8 @@ async def evaluate_match(
     try:
         resp = await asyncio.to_thread(
             client.chat.completions.create,
-            model="deepseek-chat",
+            model=MAIN_MODEL,
+            extra_body=MAIN_EXTRA_BODY,
             messages=[
                 {"role": "system", "content": EVAL_MATCH_PROMPT},
                 {"role": "user", "content": (
@@ -357,7 +361,8 @@ async def evaluate_seeking_match(
     try:
         resp = await asyncio.to_thread(
             client.chat.completions.create,
-            model="deepseek-chat",
+            model=MAIN_MODEL,
+            extra_body=MAIN_EXTRA_BODY,
             messages=[
                 {"role": "system", "content": SEEKING_EVAL_PROMPT},
                 {"role": "user", "content": (
@@ -681,7 +686,8 @@ async def evaluate_profile_match(
     try:
         resp = await asyncio.to_thread(
             client.chat.completions.create,
-            model="deepseek-chat",
+            model=MAIN_MODEL,
+            extra_body=MAIN_EXTRA_BODY,
             messages=[
                 {"role": "system", "content": PROFILE_EVAL_PROMPT},
                 {"role": "user", "content": (

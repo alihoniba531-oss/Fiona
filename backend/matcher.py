@@ -1,11 +1,12 @@
 # -*- coding: utf-8 -*-
 """
 匹配引擎。
-把当前用户画像 + 其他所有用户画像一起给 DeepSeek，让模型判断最佳匹配。
+把当前用户画像 + 其他所有用户画像一起给主力大脑（qwen3.8-max），让模型判断最佳匹配。
 小规模用户量下无需向量数据库，直接 LLM 评估。
 """
 import json
 from database import get_profile, get_all_profiles, was_recently_matched, save_match
+from llm import MAIN_EXTRA_BODY, MAIN_MODEL
 
 MATCH_PROMPT = """你是Chloe的后台匹配系统，只输出JSON，不输出任何其他内容。
 
@@ -61,7 +62,8 @@ async def find_matches(client, username: str) -> list[dict]:
 
     try:
         resp = client.chat.completions.create(
-            model="deepseek-chat",
+            model=MAIN_MODEL,
+            extra_body=MAIN_EXTRA_BODY,
             messages=[
                 {"role": "system", "content": MATCH_PROMPT},
                 {"role": "user", "content": (
@@ -75,7 +77,7 @@ async def find_matches(client, username: str) -> list[dict]:
             temperature=0.3,
         )
         raw = resp.choices[0].message.content
-        # DeepSeek JSON mode 有时会把数组包在对象里
+        # LLM JSON mode 有时会把数组包在对象里
         data = json.loads(raw)
         if isinstance(data, list):
             results = data

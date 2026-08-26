@@ -2,6 +2,8 @@
 import json
 import re
 
+from llm import MAIN_EXTRA_BODY, MAIN_MODEL
+
 # 内存缓存 pending intent（重启清空，轻量够用）
 _pending: dict[str, dict] = {}
 
@@ -131,7 +133,7 @@ def fill_param(pending: dict, message: str) -> dict:
 
 
 def recognize_intent(client, message: str, history: list[dict] | None = None) -> dict:
-    """调用 DeepSeek 识别意图，返回 {intent, params, missing}
+    """调用主力大脑识别意图，返回 {intent, params, missing}
 
     history: 最近的对话历史，用于让分类器看到"她刚做了什么"，区分新指令 vs 抱怨/吐槽
     """
@@ -150,7 +152,8 @@ def recognize_intent(client, message: str, history: list[dict] | None = None) ->
 
     try:
         resp = client.chat.completions.create(
-            model="deepseek-chat",
+            model=MAIN_MODEL,
+            extra_body=MAIN_EXTRA_BODY,
             messages=[
                 {"role": "system", "content": INTENT_PROMPT},
                 {"role": "user", "content": user_content},

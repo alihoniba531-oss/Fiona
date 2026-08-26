@@ -1,30 +1,31 @@
 # -*- coding: utf-8 -*-
 """
 模型路由层——根据对话场景分发请求。
+槽位标签："main" = 主力大脑 qwen3.8-max，"light" = 轻量槽 qwen-plus。
 
 路由规则：
-  mirror 模式  → qwen（短陪伴，轻量足够）
-  image 模式   → qwen（简单回复，不需要高密度）
+  mirror 模式  → light（短陪伴，轻量足够）
+  image 模式   → light（简单回复，不需要高密度）
   normal 模式  → 按优先级：
-    1. DeepSeek 今日 token 预算耗尽 + 非创作消息 → qwen
-    2. 消息含创作关键词 → deepseek
-    3. 消息长度 > 80 字 → deepseek
-    4. 默认（短闲聊）→ qwen
+    1. 主脑今日 token 预算耗尽 + 非创作消息 → light
+    2. 消息含创作关键词 → main
+    3. 消息长度 > 80 字 → main
+    4. 默认（短闲聊）→ light
 """
 from __future__ import annotations
 from datetime import date
 from typing import Literal
 
-# 触发 DeepSeek 的创作关键词
+# 触发主力大脑的创作关键词
 CREATIVE_KEYWORDS = [
     "设定", "背景", "分镜", "故事", "人物", "世界观", "剧情",
     "小说", "写作", "角色", "性格", "脑暴", "补全", "续写",
     "改写", "扩写", "剧本", "台词", "场景描写",
 ]
 
-# 草莓预算上限
-DEEPSEEK_DAILY_LIMIT   = 30_000   # 今日草莓上限
-DEEPSEEK_MONTHLY_LIMIT = 500_000  # 本月草莓上限
+# 草莓预算上限（主力大脑用量）
+MAIN_DAILY_LIMIT   = 30_000   # 今日草莓上限
+MAIN_MONTHLY_LIMIT = 500_000  # 本月草莓上限
 
 
 class TokenBudget:
@@ -59,7 +60,7 @@ class TokenBudget:
         return self.get_daily(username)
 
     def is_over_budget(self, username: str) -> bool:
-        return self.get_daily(username) >= DEEPSEEK_DAILY_LIMIT
+        return self.get_daily(username) >= MAIN_DAILY_LIMIT
 
 
 # 全局单例
@@ -70,9 +71,9 @@ def choose_model(
     username: str,
     message: str,
     mode: str,
-) -> Literal["deepseek", "qwen"]:
+) -> Literal["main", "light"]:
     """
-    返回 "deepseek" 或 "qwen"，供 main.py 选择客户端和参数。
+    返回 "main" 或 "light"，供聊天服务选择客户端和参数。
 
     mode 取值：
       "mirror"  — 镜子模式（Chloe纯陪伴，无工具）
@@ -81,18 +82,18 @@ def choose_model(
     """
     # mirror / image → 永远轻量槽
     if mode in ("mirror", "image"):
-        return "qwen"
+        return "light"
 
     # normal 模式
     has_creative = any(kw in message for kw in CREATIVE_KEYWORDS)
 
-    # 预算超限时：创作仍走 deepseek，闲聊切 qwen
+    # 预算超限时：创作仍走主脑，闲聊切轻量槽
     if token_budget.is_over_budget(username):
-        return "deepseek" if has_creative else "qwen"
+        return "main" if has_creative else "light"
 
-    # 预算充足：创作或长消息走 deepseek
+    # 预算充足：创作或长消息走主力大脑
     if has_creative or len(message.strip()) > 80:
-        return "deepseek"
+        return "main"
 
     # 默认：短闲聊走轻量槽
-    return "qwen"
+    return "light"

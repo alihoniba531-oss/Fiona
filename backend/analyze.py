@@ -152,7 +152,7 @@ def main():
     print_table(["mode", "count", "pct"], rows_out)
 
     # ── model 路由分布 ────────────────────────────────
-    section("🤖 模型路由（qwen vs deepseek）")
+    section("🤖 模型路由（light vs main）")
     model_counter: Counter = Counter()
     for c in chats:
         model = c["payload"].get("model") or "(none)"  # 工具直接执行时不走 model

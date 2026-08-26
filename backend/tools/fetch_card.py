@@ -13,6 +13,8 @@ from urllib.parse import urlparse
 from openai import OpenAI
 from bs4 import BeautifulSoup
 
+from llm import MAIN_EXTRA_BODY, MAIN_MODEL
+
 
 # 常见网站的友好名称
 _SOURCE_MAP = {
@@ -41,8 +43,8 @@ def _get_client():
     global _client_cache
     if _client_cache is None:
         _client_cache = OpenAI(
-            api_key=os.environ.get("DEEPSEEK_API_KEY", ""),
-            base_url="https://api.deepseek.com",
+            api_key=os.environ.get("DASHSCOPE_API_KEY", ""),
+            base_url="https://dashscope.aliyuncs.com/compatible-mode/v1",
         )
     return _client_cache
 
@@ -159,11 +161,12 @@ def _summarize_points(text: str, source: str) -> list:
     try:
         client = _get_client()
         resp = client.chat.completions.create(
-            model="deepseek-chat",
+            model=MAIN_MODEL,
             messages=[{"role": "user", "content": prompt}],
             temperature=0.3,
             max_tokens=400,
             response_format={"type": "json_object"},
+            extra_body=MAIN_EXTRA_BODY,
         )
         content = resp.choices[0].message.content or "{}"
         data = json.loads(content)

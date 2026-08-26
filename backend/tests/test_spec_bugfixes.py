@@ -34,7 +34,6 @@ def test_malformed_search_json_is_sanitized(monkeypatch):
 
 
 def test_search_fallback_does_not_match_observation(monkeypatch):
-    monkeypatch.setenv("DEEPSEEK_API_KEY", "x")
     monkeypatch.setenv("DASHSCOPE_API_KEY", "x")
     import services.chat_service as chat
 
@@ -339,7 +338,6 @@ def test_extractor_tracks_nested_profile_match_task(monkeypatch):
 
 
 def test_outer_chat_stream_closes_sync_stream_when_consumer_stops(monkeypatch):
-    monkeypatch.setenv("DEEPSEEK_API_KEY", "x")
     monkeypatch.setenv("DASHSCOPE_API_KEY", "x")
     import services.chat_service as chat
 
@@ -368,7 +366,7 @@ def test_outer_chat_stream_closes_sync_stream_when_consumer_stops(monkeypatch):
 
     async def scenario():
         stream = _EndlessStream()
-        monkeypatch.setattr(chat, "choose_model", lambda *args: "deepseek")
+        monkeypatch.setattr(chat, "choose_model", lambda *args: "main")
         monkeypatch.setattr(
             chat,
             "_create_stream_with_fallback",
@@ -396,7 +394,6 @@ def test_outer_chat_stream_closes_sync_stream_when_consumer_stops(monkeypatch):
 
 def test_stream_failure_is_not_saved_or_charged(monkeypatch):
     monkeypatch.setenv("DEV_MODE", "0")
-    monkeypatch.setenv("DEEPSEEK_API_KEY", "x")
     monkeypatch.setenv("DASHSCOPE_API_KEY", "x")
     import services.chat_service as chat
 

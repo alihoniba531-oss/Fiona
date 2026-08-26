@@ -70,13 +70,13 @@ async def clear_history(user: str = Depends(get_current_user)):
 @router.get("/usage")
 async def get_usage(user: str = Depends(get_current_user)):
     """返回当前用户今日 + 本月草莓用量"""
-    from model_router import DEEPSEEK_DAILY_LIMIT, DEEPSEEK_MONTHLY_LIMIT
+    from model_router import MAIN_DAILY_LIMIT, MAIN_MONTHLY_LIMIT
     daily   = token_budget.get_daily(user)
     monthly = token_budget.get_monthly(user)
     def pct(used, limit): return min(100, round(used / limit * 100)) if limit > 0 else 0
     return {
-        "daily":   {"used": daily,   "limit": DEEPSEEK_DAILY_LIMIT,   "percent": pct(daily,   DEEPSEEK_DAILY_LIMIT)},
-        "monthly": {"used": monthly, "limit": DEEPSEEK_MONTHLY_LIMIT, "percent": pct(monthly, DEEPSEEK_MONTHLY_LIMIT)},
+        "daily":   {"used": daily,   "limit": MAIN_DAILY_LIMIT,   "percent": pct(daily,   MAIN_DAILY_LIMIT)},
+        "monthly": {"used": monthly, "limit": MAIN_MONTHLY_LIMIT, "percent": pct(monthly, MAIN_MONTHLY_LIMIT)},
     }
 
 

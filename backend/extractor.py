@@ -7,6 +7,7 @@
 import asyncio
 import json
 from database import get_profile, update_profile, update_time_tag_prefs
+from llm import MAIN_EXTRA_BODY, MAIN_MODEL
 
 _background_tasks: set[asyncio.Task] = set()
 
@@ -112,7 +113,8 @@ async def extract_and_update(client, username: str, messages: list):
     try:
         resp = await asyncio.to_thread(
             client.chat.completions.create,
-            model="deepseek-chat",
+            model=MAIN_MODEL,
+            extra_body=MAIN_EXTRA_BODY,
             messages=[
                 {"role": "system", "content": EXTRACT_PROMPT},
                 {"role": "user", "content": f"旧画像：{json.dumps(old_profile, ensure_ascii=False)}\n\n对话：\n{convo}"},

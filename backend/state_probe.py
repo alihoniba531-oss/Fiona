@@ -19,6 +19,7 @@ interest_anchor 六种类型（内部信号，绝不出现在任何面向用户�
 import asyncio
 import json
 from database import upsert_user_state
+from llm import MAIN_EXTRA_BODY, MAIN_MODEL
 
 _VALID_MODES = {"seeking", "processing", "sharing", "exploring"}
 _VALID_OPENNESS = {"high", "medium", "low"}
@@ -100,7 +101,8 @@ async def run_state_probe(
     try:
         resp = await asyncio.to_thread(
             client.chat.completions.create,
-            model="deepseek-chat",
+            model=MAIN_MODEL,
+            extra_body=MAIN_EXTRA_BODY,
             messages=[
                 {"role": "system", "content": STATE_PROBE_PROMPT},
                 {"role": "user", "content": f"最近消息：\n{ctx}"},
