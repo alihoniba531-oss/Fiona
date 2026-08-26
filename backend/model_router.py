@@ -1,7 +1,7 @@
 # -*- coding: utf-8 -*-
 """
 模型路由层——根据对话场景分发请求。
-槽位标签："main" = 主力大脑 qwen3.8-max，"light" = 轻量槽 qwen-plus。
+槽位标签："main" = 主力大脑 qwen3.8-max，"light" = 轻量槽 qwen3.7-flash。
 
 路由规则：
   mirror 模式  → light（短陪伴，轻量足够）
@@ -77,7 +77,8 @@ def choose_model(
 
     mode 取值：
       "mirror"  — 镜子模式（Chloe纯陪伴，无工具）
-      "image"   — 有图片的对话（简短告知看不到）
+      "image"   — 保留分支；实际图片消息在 chat_service 里直接走
+                  stream_image(qwen-vl-max 看图)，不会路由到这里
       "normal"  — 普通对话
     """
     # mirror / image → 永远轻量槽

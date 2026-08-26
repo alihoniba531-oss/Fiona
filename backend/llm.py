@@ -53,13 +53,17 @@ QWEN_CLIENT    = OpenAI(
     api_key=os.getenv("DASHSCOPE_API_KEY"),
     base_url="https://dashscope.aliyuncs.com/compatible-mode/v1",
 )
-QWEN_MODEL     = "qwen-plus"
+# 轻量槽：qwen3.7-flash 实测首字 ~230ms，比 qwen-plus(~480ms) 快一倍，
+# 陪聊短句质量过关。它同样默认开思考模式，必须关掉——否则短陪伴回复
+# 要先等思考流，延迟回到秒级。
+QWEN_MODEL      = "qwen3.7-flash"
+QWEN_EXTRA_BODY = {"enable_thinking": False}
 
 
 
 def _create_stream_with_fallback(use_qwen: bool, messages: list, **kwargs):
     """
-    轻量槽走通义 qwen-plus，失败自动回退主力大脑 qwen3.8-max。
+    轻量槽走通义 qwen3.7-flash，失败自动回退主力大脑 qwen3.8-max。
     返回 (stream, actually_used_qwen)
     """
     if use_qwen:
@@ -68,6 +72,7 @@ def _create_stream_with_fallback(use_qwen: bool, messages: list, **kwargs):
                 model=QWEN_MODEL,
                 messages=messages,
                 stream=True,
+                extra_body=QWEN_EXTRA_BODY,
                 **kwargs,
             )
             return stream, True
