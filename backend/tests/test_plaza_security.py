@@ -41,3 +41,23 @@ def test_plaza_pagination_parameters_are_bounded(client):
     assert client.get("/plaza/feed?limit=101").status_code == 422
     assert client.get("/plaza/feed?offset=-1").status_code == 422
     assert client.get("/plaza/feed?sort=unknown").status_code == 422
+
+
+def test_plaza_rejects_magic_prefix_without_decodable_image(
+    client, dev_headers, tmp_path, monkeypatch
+):
+    from utils import media
+
+    upload_dir = tmp_path / "plaza-validation"
+    upload_dir.mkdir()
+    monkeypatch.setattr(media, "UPLOADS_DIR", str(upload_dir))
+    response = client.post(
+        "/plaza/post",
+        headers=dev_headers,
+        data={"caption": "fake", "tags": "[]"},
+        files={"file": ("fake.png", b"\x89PNG\r\n\x1a\nnot-an-image", "image/png")},
+    )
+
+    assert response.status_code == 400
+    assert "损坏" in response.json()["detail"]
+    assert list(upload_dir.iterdir()) == []

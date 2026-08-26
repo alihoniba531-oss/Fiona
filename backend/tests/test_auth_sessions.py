@@ -1,6 +1,9 @@
 # -*- coding: utf-8 -*-
 import asyncio
 
+import pytest
+from starlette.websockets import WebSocketDisconnect
+
 
 def test_logout_revokes_captured_cookie(client):
     import database
@@ -59,3 +62,55 @@ def test_public_optional_auth_reads_session_cookie(client, monkeypatch):
     response = client.get("/plaza/feed?sort=recommended")
     assert response.status_code == 200
     assert captured["username"] == "cookie_user"
+
+
+def test_logout_closes_existing_peer_websocket(client):
+    import aiosqlite
+    import database
+
+    async def seed():
+        await database.create_invite("PEERWS01", "peer_ws_user")
+        await database.get_or_create_user("peer_ws_user")
+        await database.get_or_create_user("peer_ws_friend")
+        async with aiosqlite.connect(database.DB_PATH) as db:
+            await db.execute(
+                """INSERT INTO matches (user_a, user_b, response_a, response_b)
+                   VALUES (?, ?, 'accept', 'accept')""",
+                ("peer_ws_friend", "peer_ws_user"),
+            )
+            await db.commit()
+
+    asyncio.run(seed())
+    assert client.post("/auth/redeem-invite", json={"code": "PEERWS01"}).status_code == 200
+
+    with client.websocket_connect("/ws/peer/peer_ws_friend__peer_ws_user") as websocket:
+        assert websocket.receive_json()["type"] == "history"
+        assert client.post("/auth/logout").status_code == 200
+        with pytest.raises(WebSocketDisconnect) as closed:
+            websocket.receive_json()
+        assert closed.value.code == 4401
+
+
+def test_peer_message_write_rechecks_latest_consent(client):
+    import aiosqlite
+    import database
+
+    async def scenario():
+        await database.get_or_create_user("consent_a")
+        await database.get_or_create_user("consent_b")
+        async with aiosqlite.connect(database.DB_PATH) as db:
+            await db.execute(
+                """INSERT INTO matches (user_a, user_b, response_a, response_b)
+                   VALUES ('consent_a', 'consent_b', 'accept', 'accept')"""
+            )
+            await db.commit()
+        accepted = await database.save_peer_message(
+            "consent_a__consent_b", "consent_a", "before reject"
+        )
+        await database.update_match_response("consent_b", "consent_a", "reject")
+        rejected = await database.save_peer_message(
+            "consent_a__consent_b", "consent_a", "after reject"
+        )
+        return accepted, rejected
+
+    assert asyncio.run(scenario()) == (True, False)

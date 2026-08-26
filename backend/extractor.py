@@ -8,16 +8,12 @@ import asyncio
 import json
 from database import get_profile, update_profile, update_time_tag_prefs
 from llm import MAIN_EXTRA_BODY, MAIN_MODEL
-
-_background_tasks: set[asyncio.Task] = set()
+from utils.background_tasks import _background_tasks, create_background_task
 
 
 def _track_background_task(coro) -> asyncio.Task:
-    """保留后台任务的强引用，完成后自动移除。"""
-    task = asyncio.create_task(coro)
-    _background_tasks.add(task)
-    task.add_done_callback(_background_tasks.discard)
-    return task
+    """兼容现有调用点，实际由应用级追踪器统一管理。"""
+    return create_background_task(coro, label="profile-match")
 
 
 # 对话兴趣词 → 广场标签映射
@@ -137,5 +133,5 @@ async def extract_and_update(client, username: str, messages: list):
         from conversation_matcher import detect_and_save_from_profile
         _track_background_task(detect_and_save_from_profile(client, username))
     except Exception as e:
-        # 失败不影响主流程，但日志保留方便排查
-        print(f"[extractor] extract_and_update failed for {username}: {type(e).__name__}: {e}", flush=True)
+        # 失败不影响主流程；不输出用户名或异常正文，避免日志携带用户内容。
+        print(f"[extractor] extract_and_update failed type={type(e).__name__}", flush=True)

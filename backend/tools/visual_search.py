@@ -17,21 +17,17 @@ sync_playwright 不能直接在 loop 里用——所以用线程隔离。
 """
 import base64
 import json
-import os
 import queue
 import re
 import threading
-from openai import OpenAI
+from llm import make_dashscope_client
 
 
 _vl_client_cache = None
 def _get_vl_client():
     global _vl_client_cache
     if _vl_client_cache is None:
-        _vl_client_cache = OpenAI(
-            api_key=os.environ.get("DASHSCOPE_API_KEY", ""),
-            base_url="https://dashscope.aliyuncs.com/compatible-mode/v1",
-        )
+        _vl_client_cache = make_dashscope_client()
     return _vl_client_cache
 
 
@@ -63,7 +59,7 @@ def _capture_screenshot_blocking(search_url: str, ready_selector: str = "", time
                 },
             )
             page = context.new_page()
-            print(f"[Playwright] 访问: {search_url}")
+            print("[Playwright] 访问搜索源")
             page.goto(search_url, wait_until="domcontentloaded", timeout=timeout_ms)
             # ready_selector 出现 = 搜到了真的结果页;不出现 = 八成是反爬/验证页,
             # 这种情况下截图给 VL 也是浪费,直接抛错让上层 fallback 到下个搜索源
@@ -272,7 +268,7 @@ def visual_search(query: str) -> dict:
     errors: list[str] = []
     for src in sources:
         try:
-            print(f"[visual_search] 尝试 {src['name']}: {src['url']}")
+            print(f"[visual_search] 尝试 {src['name']}")
             screenshot = _capture_in_thread(src["url"], ready_selector=src["ready"], timeout_sec=20)
             if screenshot:
                 print(f"[visual_search] {src['name']} 成功, {len(screenshot)} bytes")
@@ -280,7 +276,7 @@ def visual_search(query: str) -> dict:
                 break
         except Exception as e:
             errors.append(f"{src['name']}:{type(e).__name__}")
-            print(f"[visual_search] {src['name']} 失败: {type(e).__name__}: {e}")
+            print(f"[visual_search] {src['name']} 失败 type={type(e).__name__}")
             continue
 
     if not screenshot:
@@ -302,7 +298,7 @@ def visual_search(query: str) -> dict:
         return {
             "type": "card",
             "source": f"搜索:{query[:20]}",
-            "points": [f"VL 提炼失败:{type(e).__name__}", f"{str(e)[:120]}"],
+            "points": [f"VL 提炼失败:{type(e).__name__}"],
             "error": True,
         }
 

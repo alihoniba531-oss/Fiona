@@ -1,6 +1,6 @@
 # Fiona 生产部署手册
 
-本文把仓库当前采用的“单机、单域名、Nginx + systemd”拓扑写成可执行的基线。当前约定的线上域名是 `madchloechat.online`，代码目录是 `/root/Fiona`。
+本文把仓库当前采用的“单机、单域名、Nginx + systemd”拓扑写成可执行的基线。当前约定的线上域名是 `madchloechat.online`，只读代码目录是 `/opt/fiona`，运行状态位于 `/var/lib/fiona`。
 
 > 仓库无法证明外部服务器此刻的真实配置。首次使用或接手服务器时，必须先核对 Nginx、systemd、证书、数据库和上传目录，再按本文操作。
 
@@ -20,9 +20,9 @@ systemd:
     fiona-web.service  → npm run start
 
 state:
-    backend/fiona.db
-    backend/uploads/
-    backend/.env
+    /var/lib/fiona/fiona.db
+    /var/lib/fiona/uploads/
+    /etc/fiona/fiona.env
 ```
 
 该拓扑目前只支持单个后端实例。SQLite 和进程内预算计数器不适合直接横向扩容。
@@ -43,24 +43,34 @@ state:
 
 ## 首次安装
 
-以下命令假设仓库位于 `/root/Fiona`。若使用专用部署用户，请同步替换目录和 systemd 权限。
+先创建无登录 shell 的专用服务账号和状态目录。不要让 Web 或 API 进程以 root 运行：
 
 ```bash
-cd /root
-git clone <Fiona 仓库地址> Fiona
-cd /root/Fiona/backend
+useradd --system --home /var/lib/fiona --shell /usr/sbin/nologin fiona
+install -d -o root -g root -m 0755 /opt/fiona
+install -d -o fiona -g fiona -m 0700 /var/lib/fiona /var/lib/fiona/uploads
+install -d -o root -g root -m 0755 /etc/fiona /var/backups/fiona
+
+git clone <Fiona 仓库地址> /opt/fiona
+cd /opt/fiona/backend
 python3 -m venv .venv
 .venv/bin/python -m pip install --upgrade pip
 .venv/bin/python -m pip install -r requirements.txt -r requirements-dev.txt
-cp .env.example .env
+.venv/bin/python -m pytest -q
+.venv/bin/python -m pip_audit -r requirements.txt --progress-spinner off
+install -o root -g root -m 0600 .env.example /etc/fiona/fiona.env
 ```
 
-编辑 `/root/Fiona/backend/.env`：
+编辑 `/etc/fiona/fiona.env`：
 
 ```dotenv
 DASHSCOPE_API_KEY=<真实 DashScope Key>
+DASHSCOPE_TIMEOUT_SECONDS=60
+DASHSCOPE_MAX_RETRIES=1
 JWT_SECRET=<足够长的随机字符串>
 DEV_MODE=0
+FIONA_DB_PATH=/var/lib/fiona/fiona.db
+FIONA_UPLOADS_DIR=/var/lib/fiona/uploads
 ```
 
 可以使用下面的命令在服务器上生成 JWT Secret：
@@ -74,9 +84,11 @@ python3 -c "import secrets; print(secrets.token_urlsafe(48))"
 安装并构建前端：
 
 ```bash
-cd /root/Fiona/frontend
+cd /opt/fiona/frontend
 npm ci
+npm audit
 npm run build
+install -d -o fiona -g fiona -m 0700 /opt/fiona/frontend/.next/cache
 ```
 
 单域名部署不应设置 `NEXT_PUBLIC_API_BASE`，让浏览器继续使用相对 `/api`。只有前端和 API 确实位于不同域名时，才在构建前设置该变量，并同时重新审计 CORS、Cookie 和 WebSocket。
@@ -95,12 +107,24 @@ Wants=network-online.target
 
 [Service]
 Type=simple
-WorkingDirectory=/root/Fiona/backend
-EnvironmentFile=/root/Fiona/backend/.env
-ExecStart=/root/Fiona/backend/.venv/bin/python /root/Fiona/backend/run.py
+User=fiona
+Group=fiona
+WorkingDirectory=/opt/fiona/backend
+EnvironmentFile=/etc/fiona/fiona.env
+ExecStart=/opt/fiona/backend/.venv/bin/python /opt/fiona/backend/run.py
 Restart=on-failure
 RestartSec=3
 TimeoutStopSec=30
+UMask=0077
+NoNewPrivileges=true
+PrivateTmp=true
+ProtectSystem=strict
+ProtectHome=true
+ProtectKernelTunables=true
+ProtectKernelModules=true
+ProtectControlGroups=true
+RestrictSUIDSGID=true
+ReadWritePaths=/var/lib/fiona
 
 [Install]
 WantedBy=multi-user.target
@@ -120,12 +144,24 @@ Wants=network-online.target
 
 [Service]
 Type=simple
-WorkingDirectory=/root/Fiona/frontend
+User=fiona
+Group=fiona
+WorkingDirectory=/opt/fiona/frontend
 Environment=NODE_ENV=production
 ExecStart=/usr/bin/npm run start -- -H 127.0.0.1 -p 3000
 Restart=on-failure
 RestartSec=3
 TimeoutStopSec=30
+UMask=0077
+NoNewPrivileges=true
+PrivateTmp=true
+ProtectSystem=strict
+ProtectHome=true
+ProtectKernelTunables=true
+ProtectKernelModules=true
+ProtectControlGroups=true
+RestrictSUIDSGID=true
+ReadWritePaths=/opt/fiona/frontend/.next/cache
 
 [Install]
 WantedBy=multi-user.target
@@ -139,7 +175,7 @@ systemctl enable --now fiona fiona-web
 systemctl status fiona fiona-web
 ```
 
-如果未来改用专用服务用户，需要确保该用户可读代码和 `.env`，并可写 `backend/fiona.db`、数据库所在目录和 `backend/uploads/`。
+代码和虚拟环境保持 root 只写；`fiona` 账号只需要读取代码，并写入 `/var/lib/fiona` 与前端缓存。API Key 文件不应由 `fiona` 写入，也不应对其他普通账号可读。
 
 ## Nginx
 
@@ -234,17 +270,16 @@ curl --fail https://madchloechat.online/api/
 每次发布前先记录当前提交并备份状态：
 
 ```bash
-cd /root/Fiona
+cd /opt/fiona
 git rev-parse HEAD
-mkdir -p /root/fiona-backups
-sqlite3 backend/fiona.db ".backup '/root/fiona-backups/fiona-$(date +%Y%m%d-%H%M%S).db'"
-tar -C backend -czf "/root/fiona-backups/uploads-$(date +%Y%m%d-%H%M%S).tar.gz" uploads
+sqlite3 /var/lib/fiona/fiona.db ".backup '/var/backups/fiona/fiona-$(date +%Y%m%d-%H%M%S).db'"
+tar -C /var/lib/fiona -czf "/var/backups/fiona/uploads-$(date +%Y%m%d-%H%M%S).tar.gz" uploads
 ```
 
 然后更新、验证和重启：
 
 ```bash
-cd /root/Fiona
+cd /opt/fiona
 git pull --ff-only
 
 cd backend
@@ -270,7 +305,7 @@ systemctl status fiona fiona-web
 在后端目录运行本机管理命令：
 
 ```bash
-cd /root/Fiona/backend
+cd /opt/fiona/backend
 .venv/bin/python manage_invites.py list
 .venv/bin/python manage_invites.py revoke ABCD2345
 .venv/bin/python manage_invites.py rotate ABCD2345
@@ -292,8 +327,8 @@ journalctl -u fiona-web -f
 1. `systemctl status` 是否显示进程存活。
 2. 本机 8000 和 3000 是否可访问。
 3. `nginx -t` 和 Nginx error log。
-4. `backend/.env` 是否缺少 Key，且文件权限是否正确。
-5. `backend/fiona.db` 和 `backend/uploads/` 是否可写。
+4. `/etc/fiona/fiona.env` 是否缺少 Key，且权限是否为 `0600`。
+5. `/var/lib/fiona/fiona.db` 和 `/var/lib/fiona/uploads/` 是否只允许服务账号写入。
 6. SSE 是否被代理缓冲，WebSocket Upgrade 头是否保留。
 7. DashScope 或外部热点源是否发生超时/额度问题。
 
@@ -301,7 +336,7 @@ journalctl -u fiona-web -f
 
 代码回滚应使用发布前记录的提交或正式发布标签，重新安装依赖、重新构建前端，再重启两个服务。不要只恢复 `.next` 目录。
 
-如果新版本已经改变 SQLite schema，应优先恢复发布前数据库备份，再启动旧代码；同时恢复匹配时间点的 `uploads` 备份，避免消息记录和文件不一致。
+如果新版本已经改变 SQLite schema，应优先把备份恢复到 `/var/lib/fiona/fiona.db`，再启动旧代码；同时恢复匹配时间点的 `/var/lib/fiona/uploads/` 备份，避免消息记录和文件不一致。
 
 恢复前先停后端：
 
@@ -315,7 +350,7 @@ systemctl stop fiona
 
 - `DEV_MODE=0`，`JWT_SECRET` 不是开发默认值。
 - HTTPS 正常，登录响应的 `fiona_token` Cookie 带 `Secure`、`HttpOnly` 和 `SameSite=Lax`；HTTP/WebSocket URL 中没有 Token。
-- `.env`、数据库、上传目录和备份不可被 Nginx 静态暴露。
+- `/etc/fiona/fiona.env`、`/var/lib/fiona` 和备份目录不可被 Nginx 静态暴露。
 - `/api/docs` 是否需要在公网关闭或额外保护。
 - Nginx 请求体、连接、速率和超时限制符合当前容量。
 - 桌面端发布前已完成 Tauri capability、URL opener 和 CSP 整改。

@@ -10,20 +10,16 @@ v0.3: 用通义千问 enable_search 替代 Playwright + VL 截图方案。
 天气走专门的 wttr.in 直通车（保留 visual_search 里的实现）。
 """
 import json
-import os
 import re
 from datetime import datetime
-from openai import OpenAI
+from llm import make_dashscope_client
 
 
 _search_client_cache = None
 def _get_client():
     global _search_client_cache
     if _search_client_cache is None:
-        _search_client_cache = OpenAI(
-            api_key=os.environ.get("DASHSCOPE_API_KEY", ""),
-            base_url="https://dashscope.aliyuncs.com/compatible-mode/v1",
-        )
+        _search_client_cache = make_dashscope_client()
     return _search_client_cache
 
 
@@ -95,7 +91,7 @@ def web_search(query: str) -> dict:
         return {
             "type": "card",
             "source": f"搜索:{query[:20]}",
-            "points": [f"搜索失败:{type(e).__name__}", str(e)[:120]],
+            "points": [f"搜索失败:{type(e).__name__}"],
             "error": True,
         }
 

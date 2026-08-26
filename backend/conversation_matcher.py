@@ -127,7 +127,7 @@ async def extract_interests(client, current_msg: str, recent_msgs: list[dict]) -
             result.append(entry)
         return result
     except Exception as e:
-        print(f"[matcher] extract_interests failed: {type(e).__name__}: {e}", flush=True)
+        print(f"[matcher] extract_interests failed type={type(e).__name__}", flush=True)
         return []
 
 
@@ -279,7 +279,7 @@ async def evaluate_match(
             "tags": data.get("tags", [])[:3],
         }
     except Exception as e:
-        print(f"[matcher] evaluate_match failed: {type(e).__name__}: {e}", flush=True)
+        print(f"[matcher] evaluate_match failed type={type(e).__name__}", flush=True)
         return None
 
 
@@ -390,7 +390,7 @@ async def evaluate_seeking_match(
             "tags": data.get("tags", [])[:3],
         }
     except Exception as e:
-        print(f"[matcher] evaluate_seeking_match failed: {type(e).__name__}: {e}", flush=True)
+        print(f"[matcher] evaluate_seeking_match failed type={type(e).__name__}", flush=True)
         return None
 
 
@@ -714,7 +714,7 @@ async def evaluate_profile_match(
             "tags": data.get("tags", [])[:3],
         }
     except Exception as e:
-        print(f"[matcher] evaluate_profile_match failed: {type(e).__name__}: {e}", flush=True)
+        print(f"[matcher] evaluate_profile_match failed type={type(e).__name__}", flush=True)
         return None
 
 

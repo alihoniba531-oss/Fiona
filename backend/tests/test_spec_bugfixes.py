@@ -276,6 +276,8 @@ def test_peer_binary_frame_does_not_disconnect(client):
     import database
 
     async def seed_match():
+        await database.get_or_create_user("alice")
+        await database.get_or_create_user("smoke_tester")
         async with aiosqlite.connect(database.DB_PATH) as db:
             await db.execute(
                 """INSERT INTO matches (user_a, user_b, response_a, response_b)

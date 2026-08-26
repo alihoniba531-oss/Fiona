@@ -1,12 +1,17 @@
 # -*- coding: utf-8 -*-
 import base64
 import binascii
+import io
 import os
+import warnings
 
 from fastapi import HTTPException, UploadFile
+from PIL import Image
 
-# 图片上传目录
-UPLOADS_DIR = os.path.join(os.path.dirname(os.path.dirname(__file__)), "uploads")
+# 本地开发默认写仓库内；生产可通过环境变量把可变数据移出只读代码目录。
+UPLOADS_DIR = os.getenv("FIONA_UPLOADS_DIR") or os.path.join(
+    os.path.dirname(os.path.dirname(__file__)), "uploads"
+)
 os.makedirs(UPLOADS_DIR, exist_ok=True)
 
 # 单张图上限 5MB，base64 解码前粗筛 base64 长度（base64 比原始大约 33%）
@@ -26,6 +31,24 @@ _VIDEO_SNIFF = [
 ]
 _MAX_PLAZA_IMAGE_BYTES = 5 * 1024 * 1024
 _MAX_PLAZA_VIDEO_BYTES = 20 * 1024 * 1024
+_MAX_IMAGE_PIXELS = 40_000_000
+_PIL_FORMAT_BY_EXT = {"png": "PNG", "jpg": "JPEG", "gif": "GIF", "webp": "WEBP"}
+
+
+def _validate_decodable_image(source, ext: str) -> None:
+    """确认魔数后的内容确实是完整、尺寸受限的图片，而不是伪造前缀。"""
+    try:
+        with warnings.catch_warnings():
+            warnings.simplefilter("error", Image.DecompressionBombWarning)
+            with Image.open(source) as image:
+                if image.format != _PIL_FORMAT_BY_EXT.get(ext):
+                    raise ValueError("image format does not match signature")
+                width, height = image.size
+                if width <= 0 or height <= 0 or width * height > _MAX_IMAGE_PIXELS:
+                    raise ValueError("image dimensions exceed limit")
+                image.verify()
+    except Exception as exc:
+        raise HTTPException(status_code=400, detail="图片内容损坏或尺寸过大") from exc
 
 def _sniff_image_ext(data: bytes) -> str | None:
     """嗅探前 12 字节判图片类型。不是已知图片格式返回 None。"""
@@ -95,6 +118,15 @@ async def _save_plaza_upload(file: UploadFile) -> tuple[str, str]:
         except OSError:
             pass
         raise HTTPException(status_code=400, detail="文件为空")
+    if media_type == "image":
+        try:
+            _validate_decodable_image(fpath, ext)
+        except Exception:
+            try:
+                os.unlink(fpath)
+            except OSError:
+                pass
+            raise
     return f"/uploads/{fname}", media_type
 
 
@@ -123,6 +155,7 @@ def _save_uploaded_image(image_base64: str) -> tuple[str, str]:
     ext = _sniff_image_ext(img_data[:12])
     if not ext:
         raise HTTPException(status_code=400, detail="只支持 PNG、JPEG、GIF 或 WebP 图片")
+    _validate_decodable_image(io.BytesIO(img_data), ext)
 
     import uuid as _uuid
     fname = f"{_uuid.uuid4().hex}.{ext}"
@@ -131,7 +164,7 @@ def _save_uploaded_image(image_base64: str) -> tuple[str, str]:
         with open(fpath, "wb") as f:
             f.write(img_data)
     except OSError as exc:
-        print(f"[upload] save failed: {type(exc).__name__}: {exc}", flush=True)
+        print(f"[upload] save failed type={type(exc).__name__}", flush=True)
         raise HTTPException(status_code=500, detail="图片保存失败") from exc
 
     mime = "jpeg" if ext == "jpg" else ext

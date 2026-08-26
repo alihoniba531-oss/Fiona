@@ -1,6 +1,9 @@
 # -*- coding: utf-8 -*-
 
+from typing import Literal
+
 from fastapi import APIRouter, Depends, HTTPException
+from pydantic import BaseModel, Field, field_validator
 
 from auth_dep import get_current_user
 from database import get_pending_matches_for_user, mark_pending_match_seen
@@ -8,6 +11,17 @@ from llm import client
 from matcher import find_matches
 
 router = APIRouter()
+
+
+class MatchResponseRequest(BaseModel):
+    peer: str = Field(min_length=1, max_length=100)
+    response: Literal["accept", "reject"]
+    greeting: str = Field(default="", max_length=500)
+
+    @field_validator("peer", "greeting")
+    @classmethod
+    def strip_text(cls, value: str) -> str:
+        return value.strip()
 
 
 @router.get("/match")
@@ -18,18 +32,17 @@ async def get_matches(user: str = Depends(get_current_user)):
 
 
 @router.post("/match/response")
-async def match_response(body: dict, user: str = Depends(get_current_user)):
+async def match_response(body: MatchResponseRequest, user: str = Depends(get_current_user)):
     """记录当前用户对匹配的态度：accept / reject；可选附带打招呼内容。
     body: { peer: str, response: 'accept'|'reject', greeting?: str }"""
     from database import update_match_response, save_greeting
-    peer = (body.get("peer") or "").strip()
-    response = (body.get("response") or "").strip()
-    if not peer or response not in ("accept", "reject"):
-        raise HTTPException(status_code=400, detail="peer 和 response 必填")
-    await update_match_response(user, peer, response)
-    greeting = (body.get("greeting") or "").strip()
-    if greeting and response == "accept":
-        await save_greeting(user, peer, greeting)
+    if not body.peer or body.peer == user:
+        raise HTTPException(status_code=400, detail="peer 无效")
+    updated = await update_match_response(user, body.peer, body.response)
+    if not updated:
+        raise HTTPException(status_code=404, detail="没有可响应的匹配")
+    if body.greeting and body.response == "accept":
+        await save_greeting(user, body.peer, body.greeting)
     return {"status": "ok"}
 
 

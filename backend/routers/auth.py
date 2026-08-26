@@ -99,6 +99,8 @@ async def redeem_invite_api(request: Request, body: dict):
 async def logout_api(user: str = Depends(get_current_user)):
     """撤销当前账号此前签发的全部 JWT，并清除 HttpOnly 会话 Cookie。"""
     await revoke_user_sessions(user)
+    from routers.peer import ws_manager
+    await ws_manager.disconnect_user(user)
     response = JSONResponse({"status": "logged_out"})
     response.delete_cookie("fiona_token", path="/")
     return response

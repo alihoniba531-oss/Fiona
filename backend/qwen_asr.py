@@ -25,6 +25,14 @@ _MIME_TYPES = {
 }
 
 
+def request_timeout_seconds() -> int:
+    try:
+        value = int(float(os.getenv("DASHSCOPE_TIMEOUT_SECONDS", "60")))
+    except (TypeError, ValueError):
+        return 60
+    return value if 5 <= value <= 300 else 60
+
+
 def _field(value: Any, name: str, default: Any = None) -> Any:
     """Read a response field from either a mapping or an SDK object."""
     if isinstance(value, Mapping):
@@ -109,10 +117,7 @@ def _response_error(response: Any) -> str | None:
     if is_success:
         return None
 
-    code = _field(response, "code")
-    message = _field(response, "message")
-    details = ": ".join(str(value) for value in (code, message) if value)
-    return f"Qwen ASR request failed ({status_code})" + (f": {details}" if details else "")
+    return f"Qwen ASR request failed ({status_code})"
 
 
 def asr_recognize(audio_bytes: bytes, fmt: str = "wav", sample_rate: int = 16000) -> dict:
@@ -166,11 +171,12 @@ def asr_recognize(audio_bytes: bytes, fmt: str = "wav", sample_rate: int = 16000
             api_key=api_key,
             result_format="message",
             asr_options={"enable_itn": False},
+            request_timeout=request_timeout_seconds(),
         )
     except Exception as exc:
         return {
             "text": "",
-            "error": f"Qwen ASR request failed: {type(exc).__name__}: {exc}",
+            "error": f"Qwen ASR request failed: {type(exc).__name__}",
         }
 
     try:
@@ -181,7 +187,7 @@ def asr_recognize(audio_bytes: bytes, fmt: str = "wav", sample_rate: int = 16000
     except Exception as exc:
         return {
             "text": "",
-            "error": f"Qwen ASR response parsing failed: {type(exc).__name__}: {exc}",
+            "error": f"Qwen ASR response parsing failed: {type(exc).__name__}",
         }
     if not text:
         return {"text": "", "error": "Qwen ASR returned no transcription text"}

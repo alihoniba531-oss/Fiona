@@ -17,10 +17,10 @@ Fiona 是一个面向作者自用和小范围内测的 AI 陪伴与社交连接�
 
 | 层 | 当前实现 |
 |---|---|
-| Web | Next.js 16.2.6、React 19、Tailwind CSS 4、React Three Fiber |
+| Web | Next.js 16.3.3、React 19、Tailwind CSS 4、React Three Fiber |
 | API | FastAPI、Uvicorn、Pydantic、SlowAPI |
 | 模型 | DashScope / Qwen（主力、轻量、视觉、搜索、ASR、TTS） |
-| 数据 | SQLite `backend/fiona.db`，上传文件位于 `backend/uploads/` |
+| 数据 | SQLite + 本地媒体；开发默认位于 `backend/`，生产建议位于 `/var/lib/fiona/` |
 | 桌面 | Tauri 2，Windows MSI/NSIS |
 | 生产拓扑 | 单域名 Nginx，前端 `:3000`，后端 `127.0.0.1:8000` |
 
@@ -80,6 +80,9 @@ JWT_SECRET=...
 DEV_MODE=1
 ```
 
+模型客户端默认 60 秒超时、最多重试 1 次，可用 `DASHSCOPE_TIMEOUT_SECONDS` 和
+`DASHSCOPE_MAX_RETRIES` 在模板允许范围内调整。
+
 然后启动：
 
 ```bash
@@ -119,7 +122,7 @@ python manage_invites.py revoke ABCD2345
 python manage_invites.py rotate ABCD2345
 ```
 
-设置页支持退出登录和完整账户删除。删号会清除账号关联数据库记录，并立即清理无引用上传文件；失败的文件清理会进入持久化队列，在后端下次启动时重试。
+设置页支持退出登录和完整账户删除。删除消息、清空历史或删号时都会清理不再被消息/帖子引用的上传文件；失败项进入持久化队列，并在启动时及运行期间周期重试。
 
 不要提交 `backend/.env`、`backend/fiona.db`、`backend/uploads/` 或 `desktop/fiona.config.json`。
 
@@ -132,6 +135,7 @@ cd backend
 python -m pytest -q
 python -m compileall -q .
 python -m pip check
+python -m pip_audit -r requirements.txt --progress-spinner off
 ```
 
 请使用 `python -m pytest`；当前直接调用某些环境中的 `pytest` 命令可能无法找到后端顶层模块。
@@ -143,9 +147,11 @@ cd frontend
 npm run lint
 npx tsc --noEmit
 npm run build
+npm audit
 ```
 
 当前 TypeScript、Lint 和生产构建都通过；Lint 仍有非阻断警告，合并前应以 [PLAN.md](./PLAN.md) 中的当前质量状态为准。
+这些门禁已写入 `.github/workflows/quality.yml`，Windows 桌面工作流也会在打包前执行 Rust 单元测试。
 
 桌面端构建和安装见 [desktop/README.md](./desktop/README.md)。
 

@@ -126,7 +126,7 @@ def _classify_with_llm(titles: list[str]) -> dict[str, str]:
         _classify_cache[key] = (now, clean)
         return clean
     except Exception as e:
-        print(f"[hot/categorized] LLM classify failed: {type(e).__name__}: {e}", flush=True)
+        print(f"[hot/categorized] LLM classify failed type={type(e).__name__}", flush=True)
         return {}
 
 

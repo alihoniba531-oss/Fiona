@@ -84,6 +84,7 @@ def test_qwen_asr_calls_sdk_with_model_key_and_wav_data_uri(monkeypatch):
     assert kwargs["api_key"] == "unit-test-key"
     assert kwargs["result_format"] == "message"
     assert kwargs["asr_options"] == {"enable_itn": False}
+    assert kwargs["request_timeout"] == 60
 
     import dashscope
 
@@ -181,7 +182,8 @@ def test_qwen_asr_converts_sdk_exception_to_error_result(monkeypatch):
     result = qwen_asr.asr_recognize(_wav_bytes())
 
     assert result["text"] == ""
-    assert "offline sdk failure" in result["error"]
+    assert "RuntimeError" in result["error"]
+    assert "offline sdk failure" not in result["error"]
 
 
 def test_qwen_asr_converts_non_200_response_to_error_result(monkeypatch):
@@ -197,7 +199,8 @@ def test_qwen_asr_converts_non_200_response_to_error_result(monkeypatch):
     result = qwen_asr.asr_recognize(_wav_bytes())
 
     assert result["text"] == ""
-    assert "bad ASR request" in result["error"]
+    assert "400" in result["error"]
+    assert "bad ASR request" not in result["error"]
 
 
 def test_pcm_route_wraps_raw_samples_as_wav(client, dev_headers, monkeypatch):
@@ -347,3 +350,21 @@ def test_non_16k_pcm_route_resamples_from_declared_rate(
     assert captured["audio"] == converted_wav
     assert captured["fmt"] == "wav"
     assert captured["sample_rate"] == 16000
+
+
+def test_failed_ffmpeg_conversion_never_persists_source_audio(monkeypatch):
+    import routers.voice as voice_router
+
+    monkeypatch.setattr(
+        subprocess,
+        "run",
+        lambda *args, **kwargs: SimpleNamespace(returncode=1, stderr=b"bad input"),
+    )
+    monkeypatch.setattr(voice_router.shutil, "which", lambda name: "/test-bin/ffmpeg")
+
+    def forbidden_copy(*args, **kwargs):
+        raise AssertionError("failed user audio must not be copied to a persistent path")
+
+    monkeypatch.setattr(voice_router.shutil, "copy", forbidden_copy)
+    with pytest.raises(RuntimeError, match="ffmpeg audio conversion failed"):
+        voice_router._ffmpeg_to_wav(b"private invalid audio")

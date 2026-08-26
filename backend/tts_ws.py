@@ -12,6 +12,7 @@ from queue import Queue
 from fastapi import WebSocket, WebSocketDisconnect
 import dashscope
 from dashscope.audio.tts_v2 import SpeechSynthesizer, AudioFormat, ResultCallback
+from tts import dashscope_timeout_millis
 
 
 dashscope.api_key = os.environ.get("DASHSCOPE_API_KEY", "")
@@ -40,11 +41,11 @@ class _Callback(ResultCallback):
         self.queue.put(None)
 
     def on_error(self, message: str):
-        print(f"[TTS WS] synth error: {str(message)[:200]}")
+        print("[TTS WS] synth error")
         self.queue.put(None)
 
 
-async def handle_tts_ws(ws: WebSocket):
+async def handle_tts_ws(ws: WebSocket, authenticated_user: str | None = None):
     """协议（客户端 → 服务器）:
        {"type":"text","chunk":"...","voice":"longxiaobai_v2"}   增量文本
        {"type":"complete"}                                       结束标记
@@ -58,6 +59,7 @@ async def handle_tts_ws(ws: WebSocket):
     loop = asyncio.get_running_loop()
     started_at = loop.time()
     total_text_chars = 0
+    sdk_timeout_seconds = dashscope_timeout_millis() / 1000
 
     async def reject(code: int):
         nonlocal websocket_closed
@@ -89,6 +91,11 @@ async def handle_tts_ws(ws: WebSocket):
             except asyncio.TimeoutError:
                 await reject(1008)
                 break
+            if authenticated_user is not None:
+                from auth_dep import ws_authenticate
+                if await ws_authenticate(ws) != authenticated_user:
+                    await reject(4401)
+                    break
             if len(msg) > TTS_WS_MAX_MESSAGE_CHARS:
                 await reject(1009)
                 break
@@ -125,12 +132,23 @@ async def handle_tts_ws(ws: WebSocket):
                     )
                     forwarder = asyncio.create_task(forward_audio())
                 # streaming_call 阻塞写 WS，放线程
-                await loop.run_in_executor(None, synth.streaming_call, chunk)
+                await asyncio.wait_for(
+                    loop.run_in_executor(None, synth.streaming_call, chunk),
+                    timeout=sdk_timeout_seconds,
+                )
 
             elif kind == "complete":
                 if synth is not None:
-                    await loop.run_in_executor(None, synth.streaming_complete)
+                    # 标记已发起完成，超时时不要在 finally 并发调用第二次。
                     synth_completed = True
+                    await asyncio.wait_for(
+                        loop.run_in_executor(
+                            None,
+                            synth.streaming_complete,
+                            dashscope_timeout_millis(),
+                        ),
+                        timeout=sdk_timeout_seconds + 1,
+                    )
                 if forwarder is not None:
                     try:
                         await asyncio.wait_for(forwarder, timeout=15)
@@ -141,17 +159,24 @@ async def handle_tts_ws(ws: WebSocket):
     except WebSocketDisconnect:
         pass
     except Exception as e:
-        print(f"[TTS WS] handler error: {type(e).__name__}: {e}")
+        print(f"[TTS WS] handler error type={type(e).__name__}")
     finally:
         # cancel 不能唤醒已在线程池中执行的 queue.get；先放 sentinel，确保线程能退出。
         if synth is not None:
             cb.queue.put(None)
             if not synth_completed:
                 try:
-                    await loop.run_in_executor(None, synth.streaming_complete)
+                    await asyncio.wait_for(
+                        loop.run_in_executor(
+                            None,
+                            synth.streaming_complete,
+                            dashscope_timeout_millis(),
+                        ),
+                        timeout=sdk_timeout_seconds + 1,
+                    )
                     synth_completed = True
                 except Exception as e:
-                    print(f"[TTS WS] synth close error: {type(e).__name__}: {e}")
+                    print(f"[TTS WS] synth close error type={type(e).__name__}")
         if forwarder is not None and not forwarder.done():
             try:
                 await asyncio.wait_for(asyncio.shield(forwarder), timeout=1.0)

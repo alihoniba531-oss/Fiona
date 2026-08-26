@@ -16,6 +16,7 @@ from database import get_pending_upload_cleanup, init_db, mark_upload_cleanup_do
 from rate_limit import limiter
 from routers import auth, chat, hot, match, me, peer, plaza, voice
 from utils.media import UPLOADS_DIR
+from utils.background_tasks import create_background_task, shutdown_background_tasks
 from utils.request_limits import MAX_REQUEST_BODY_BYTES, RequestBodyLimitMiddleware
 
 if os.getenv("DEV_MODE", "0") == "1":
@@ -32,10 +33,11 @@ if os.getenv("DEV_MODE", "0") == "1":
         _selector_cls.select = _select_with_dev_timeout
         _selector_cls._fiona_dev_select_clamped = True
 
-@asynccontextmanager
-async def lifespan(app: FastAPI):
-    await init_db()
-    # 重试上次删号过程中因文件系统错误而未完成的媒体清理。
+_UPLOAD_CLEANUP_INTERVAL_SECONDS = 15 * 60
+
+
+async def _run_upload_cleanup_once() -> None:
+    """重试历史/删号过程中因文件系统错误而未完成的媒体清理。"""
     pending_uploads = await get_pending_upload_cleanup()
     if pending_uploads:
         from utils.media import delete_uploaded_files
@@ -43,7 +45,26 @@ async def lifespan(app: FastAPI):
         await mark_upload_cleanup_done(deleted)
         if failed:
             print(f"[cleanup] {len(failed)} upload file(s) still pending deletion")
-    yield
+
+
+async def _run_upload_cleanup_periodically() -> None:
+    while True:
+        await asyncio.sleep(_UPLOAD_CLEANUP_INTERVAL_SECONDS)
+        await _run_upload_cleanup_once()
+
+
+@asynccontextmanager
+async def lifespan(app: FastAPI):
+    await init_db()
+    await _run_upload_cleanup_once()
+    create_background_task(
+        _run_upload_cleanup_periodically(),
+        label="upload-cleanup",
+    )
+    try:
+        yield
+    finally:
+        await shutdown_background_tasks()
 
 app = FastAPI(title="Chloe API", lifespan=lifespan)
 app.add_middleware(RequestBodyLimitMiddleware, max_bytes=MAX_REQUEST_BODY_BYTES)

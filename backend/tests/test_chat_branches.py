@@ -11,11 +11,11 @@ import json
 
 import intent_router
 
-# 1x1 透明 PNG，喂给图片分支（_save_uploaded_image 会嗅探 magic bytes）
-_TINY_PNG = base64.b64encode(bytes.fromhex(
-    "89504e470d0a1a0a0000000d49484452000000010000000108060000001f15c489"
-    "0000000a49444154789c6360000002000154a24f5f0000000049454e44ae426082"
-)).decode()
+# 1x1 PNG，喂给图片分支。样本必须能通过 Pillow 的完整 CRC/结构校验。
+_TINY_PNG = (
+    "iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mNk+A8AAQUBAScY42Y"
+    "AAAAASUVORK5CYII="
+)
 
 
 def _events(body: str) -> list[dict]:
@@ -97,6 +97,18 @@ def test_chat_rejects_invalid_image_before_visual_model(client, dev_headers, mon
 
     assert response.status_code == 400
     assert "base64" in response.json()["detail"]
+
+
+def test_chat_rejects_magic_prefix_without_a_decodable_image(client, dev_headers):
+    fake_png = base64.b64encode(b"\x89PNG\r\n\x1a\nnot-an-image").decode()
+    response = client.post(
+        "/chat",
+        json={"message": "看看", "image_base64": f"data:image/png;base64,{fake_png}"},
+        headers=dev_headers,
+    )
+
+    assert response.status_code == 400
+    assert "损坏" in response.json()["detail"]
 
 
 def test_chat_rejects_message_over_limit(client, dev_headers):

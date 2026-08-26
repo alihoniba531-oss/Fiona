@@ -8,9 +8,13 @@ on:
       - '.github/workflows/build-windows-desktop.yml'
   workflow_dispatch: {}
 
+permissions:
+  contents: read
+
 jobs:
   build:
     runs-on: windows-latest
+    timeout-minutes: 45
     defaults:
       run:
         working-directory: desktop
@@ -32,7 +36,10 @@ jobs:
           workspaces: desktop/src-tauri
 
       - name: Install npm deps
-        run: npm install
+        run: npm ci
+
+      - name: Rust tests
+        run: cargo test --manifest-path src-tauri/Cargo.toml
 
       - name: Tauri build (.msi)
         run: npm run build

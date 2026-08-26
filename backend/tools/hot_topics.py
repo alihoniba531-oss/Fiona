@@ -63,7 +63,7 @@ def hot_topics(source: str = "") -> dict:
             return _err_card(label, f"接口返回 code={data.get('code')}")
         items = data.get("data") or []
     except Exception as e:
-        return _err_card(label, f"{type(e).__name__}:{str(e)[:80]}")
+        return _err_card(label, type(e).__name__)
 
     if not items:
         return _err_card(label, "没拉到数据")

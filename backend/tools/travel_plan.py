@@ -9,20 +9,16 @@ route.py 走 OSRM 算驾车导航，对"宁波 → 新德里"这种跨国旅行�
 提示 / 大致预算等多维度，给出可执行的旅行方案。
 """
 import json
-import os
 import re
 from datetime import datetime
-from openai import OpenAI
+from llm import make_dashscope_client
 
 
 _client_cache = None
 def _get_client():
     global _client_cache
     if _client_cache is None:
-        _client_cache = OpenAI(
-            api_key=os.environ.get("DASHSCOPE_API_KEY", ""),
-            base_url="https://dashscope.aliyuncs.com/compatible-mode/v1",
-        )
+        _client_cache = make_dashscope_client()
     return _client_cache
 
 
@@ -89,7 +85,7 @@ def travel_plan(query: str) -> dict:
         return {
             "type": "card",
             "source": f"旅行规划 · {q[:20]}",
-            "points": [f"规划失败：{type(e).__name__}", str(e)[:120]],
+            "points": [f"规划失败：{type(e).__name__}"],
             "error": True,
         }
 

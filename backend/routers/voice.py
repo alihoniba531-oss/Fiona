@@ -13,7 +13,7 @@ from fastapi import APIRouter, HTTPException, Query, Request, WebSocket
 from pydantic import BaseModel, Field
 
 from auth_dep import ws_authenticate
-from qwen_asr import asr_recognize
+from qwen_asr import asr_recognize, request_timeout_seconds
 from rate_limit import limiter
 
 router = APIRouter()
@@ -70,13 +70,8 @@ def _ffmpeg_to_wav(audio_bytes: bytes, input_suffix: str = ".webm") -> bytes:
             timeout=10,
         )
         if proc.returncode != 0:
-            try:
-                shutil.copy(inp.name, "/tmp/fiona-asr-bad.webm")
-            except OSError:
-                pass
-            stderr = proc.stderr.decode("utf-8", errors="replace")[-800:]
-            print(f"[ASR][ffmpeg-stderr] {stderr}")
-            print("[ASR] bad sample saved to /tmp/fiona-asr-bad.webm")
+            # 不保留失败的用户音频，也不把 ffmpeg 对不可信输入的详细输出写入日志。
+            print(f"[ASR] ffmpeg conversion failed rc={proc.returncode}")
             raise RuntimeError("ffmpeg audio conversion failed")
 
         converted_size = os.path.getsize(out.name)
@@ -111,13 +106,28 @@ async def tts_synthesize(
     """阿里云 CosyVoice v2 语音合成：text → mp3 字节流。
     SDK 在长进程里偶发 418，在独立线程跑 + 失败重试一次。"""
     import asyncio
-    from tts import synthesize
-    audio, mime = await asyncio.to_thread(synthesize, text, voice, speech_rate)
-    if not audio:
-        audio, mime = await asyncio.to_thread(synthesize, text, voice, speech_rate)
+    from tts import dashscope_timeout_millis, synthesize
+    timeout_seconds = dashscope_timeout_millis() / 1000 + 1
+    timed_out = False
+    try:
+        audio, mime = await asyncio.wait_for(
+            asyncio.to_thread(synthesize, text, voice, speech_rate),
+            timeout=timeout_seconds,
+        )
+    except asyncio.TimeoutError:
+        timed_out = True
+        audio, mime = b"", "error:timeout"
+    if not audio and not timed_out:
+        try:
+            audio, mime = await asyncio.wait_for(
+                asyncio.to_thread(synthesize, text, voice, speech_rate),
+                timeout=timeout_seconds,
+            )
+        except asyncio.TimeoutError:
+            audio, mime = b"", "error:timeout"
     if not audio:
         from fastapi.responses import JSONResponse
-        return JSONResponse({"error": mime}, status_code=502)
+        return JSONResponse({"error": "TTS synthesis failed"}, status_code=502)
     from fastapi.responses import Response
     return Response(content=audio, media_type=mime)
 
@@ -149,7 +159,7 @@ async def tts_ws_endpoint(websocket: WebSocket):
     if not user:
         await websocket.close(code=4401)
         return
-    await handle_tts_ws(websocket)
+    await handle_tts_ws(websocket, authenticated_user=user)
 
 
 class AsrRequest(BaseModel):
@@ -182,7 +192,8 @@ async def asr_recognize_endpoint(request: Request, req: AsrRequest):
             if req.sample_rate != ASR_SAMPLE_RATE:
                 audio_bytes = await asyncio.to_thread(_ffmpeg_to_wav, audio_bytes, ".wav")
         except Exception as exc:
-            return {"text": "", "error": f"PCM to WAV conversion failed: {exc}"}
+            print(f"[ASR] PCM conversion failed type={type(exc).__name__}")
+            return {"text": "", "error": "audio conversion failed"}
     else:
         try:
             audio_bytes = await asyncio.to_thread(_ffmpeg_to_wav, audio_bytes)
@@ -193,8 +204,14 @@ async def asr_recognize_endpoint(request: Request, req: AsrRequest):
             print("[ASR] ffmpeg not found")
             return {"text": "", "error": "ffmpeg not installed"}
         except Exception as exc:
-            return {"text": "", "error": str(exc)}
+            print(f"[ASR] conversion failed: {type(exc).__name__}")
+            return {"text": "", "error": "audio conversion failed"}
 
-    result = await asyncio.to_thread(asr_recognize, audio_bytes, "wav", ASR_SAMPLE_RATE)
-    print(f"[ASR] result: {result}")
+    try:
+        result = await asyncio.wait_for(
+            asyncio.to_thread(asr_recognize, audio_bytes, "wav", ASR_SAMPLE_RATE),
+            timeout=request_timeout_seconds() + 1,
+        )
+    except asyncio.TimeoutError:
+        return {"text": "", "error": "ASR request timed out"}
     return result

@@ -6,7 +6,7 @@ from fastapi.responses import JSONResponse
 from pydantic import BaseModel, Field
 
 from auth_dep import get_current_user
-from database import delete_message, get_all_messages, get_strawberry_balance
+from database import get_all_messages, get_strawberry_balance
 from model_router import token_budget
 
 router = APIRouter()
@@ -49,23 +49,27 @@ async def get_history(user: str = Depends(get_current_user)):
 
 @router.delete("/message/{message_id}")
 async def delete_one_message(message_id: int, user: str = Depends(get_current_user)):
-    from database import get_message_owner
-    owner = await get_message_owner(message_id)
-    if owner is None:
+    from database import delete_message_for_user, mark_upload_cleanup_done
+    from utils.media import delete_uploaded_files
+
+    result = await delete_message_for_user(message_id, user)
+    if result["status"] == "not_found":
         raise HTTPException(status_code=404, detail="消息不存在")
-    if owner != user:
+    if result["status"] == "forbidden":
         raise HTTPException(status_code=403, detail="无权操作")
-    await delete_message(message_id)
+    deleted_files, _ = delete_uploaded_files(result["upload_paths"])
+    await mark_upload_cleanup_done(deleted_files)
     return {"status": "deleted"}
 
 
 @router.delete("/history")
 async def clear_history(user: str = Depends(get_current_user)):
-    import aiosqlite
-    from database import DB_PATH
-    async with aiosqlite.connect(DB_PATH) as db:
-        await db.execute("DELETE FROM messages WHERE username = ?", (user,))
-        await db.commit()
+    from database import clear_message_history, mark_upload_cleanup_done
+    from utils.media import delete_uploaded_files
+
+    upload_paths = await clear_message_history(user)
+    deleted_files, _ = delete_uploaded_files(upload_paths)
+    await mark_upload_cleanup_done(deleted_files)
     return {"status": "cleared"}
 
 

@@ -44,7 +44,7 @@ async def log_event(
             )
             await db.commit()
     except Exception as e:
-        print(f"[trace] log_event failed: {type(e).__name__}: {e}", flush=True)
+        print(f"[trace] log_event failed type={type(e).__name__}", flush=True)
 
 
 @asynccontextmanager

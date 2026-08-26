@@ -1,6 +1,6 @@
 # Fiona Web
 
-Fiona 的 Web/PWA 客户端，使用 Next.js 16.2.6、React 19、Tailwind CSS 4 和 React Three Fiber。它承载 Chloe 对话、语音、匹配、真人聊天、广场、社群、画像、历史和设置。
+Fiona 的 Web/PWA 客户端，使用 Next.js 16.3.3、React 19、Tailwind CSS 4 和 React Three Fiber。它承载 Chloe 对话、语音、匹配、真人聊天、广场、社群、画像、历史和设置。
 
 项目总览见 [根 README](../README.md)，后端与数据流见 [架构文档](../docs/ARCHITECTURE.md)。
 
@@ -74,6 +74,7 @@ npm run lint
 npx tsc --noEmit
 npm run build
 npm run start
+npm audit
 ```
 
 - `npm run dev`：Turbopack 开发服务器。
@@ -81,6 +82,7 @@ npm run start
 - `npx tsc --noEmit`：独立 TypeScript 检查。
 - `npm run build`：生产构建。
 - `npm run start -- -H 127.0.0.1 -p 3000`：启动已经构建的自托管生产服务。
+- `npm audit`：检查锁定的生产与开发依赖安全公告。
 
 最近一次审计中 TypeScript、生产构建和 Lint 都通过；Lint 仍报告非阻断警告，不能因为退出码为 0 就忽略这些维护债务。
 

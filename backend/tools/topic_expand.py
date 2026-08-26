@@ -121,7 +121,7 @@ def topic_expand(title: str) -> dict:
         with urllib.request.urlopen(req, timeout=30) as r:
             resp = json.loads(r.read())
     except Exception as e:
-        return {"title": title, "error": f"{type(e).__name__}:{str(e)[:120]}"}
+        return {"title": title, "error": type(e).__name__}
 
     output = resp.get("output", {})
     choices = output.get("choices") or []

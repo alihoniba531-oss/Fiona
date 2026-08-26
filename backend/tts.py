@@ -26,6 +26,16 @@ DEFAULT_VOICE = "longxiaoxia_v2"  # 活泼少女，比 longxiaobai 更有起伏
 DEFAULT_SPEECH_RATE = 1.15        # 略快于自然语速（CosyVoice v2 支持 0.5~2.0）
 
 
+def dashscope_timeout_millis() -> int:
+    try:
+        seconds = int(float(os.getenv("DASHSCOPE_TIMEOUT_SECONDS", "60")))
+    except (TypeError, ValueError):
+        seconds = 60
+    if not 5 <= seconds <= 300:
+        seconds = 60
+    return seconds * 1000
+
+
 def synthesize(text: str, voice: str = DEFAULT_VOICE, speech_rate: float = DEFAULT_SPEECH_RATE) -> tuple[bytes, str]:
     """
     CosyVoice v2 合成，返回 (audio_bytes, mime_type)。
@@ -46,12 +56,12 @@ def synthesize(text: str, voice: str = DEFAULT_VOICE, speech_rate: float = DEFAU
             format=AudioFormat.MP3_22050HZ_MONO_256KBPS,
             speech_rate=speech_rate,
         )
-        audio = synth.call(text)
+        audio = synth.call(text, timeout_millis=dashscope_timeout_millis())
         if audio:
             return audio, "audio/mpeg"
         return b"", "error:empty_audio_returned"
     except Exception as e:
-        return b"", f"error:exception:{type(e).__name__}:{e}"
+        return b"", f"error:exception:{type(e).__name__}"
 
 
 class _StreamCallback(ResultCallback):
@@ -72,7 +82,7 @@ class _StreamCallback(ResultCallback):
         self.queue.put(None)
 
     def on_error(self, message: str):
-        self.error = str(message)[:200]
+        self.error = "synthesis_failed"
         self.queue.put(None)
 
 
@@ -98,9 +108,9 @@ async def synthesize_stream(text: str, voice: str = DEFAULT_VOICE, speech_rate: 
                 callback=cb,
             )
             synth.streaming_call(text)
-            synth.streaming_complete()
+            synth.streaming_complete(complete_timeout_millis=dashscope_timeout_millis())
         except Exception as e:
-            cb.error = f"{type(e).__name__}:{e}"
+            cb.error = type(e).__name__
             cb.queue.put(None)
 
     # SDK 调用同步阻塞，放后台线程；主线程 await 队列

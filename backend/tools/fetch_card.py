@@ -5,12 +5,10 @@
 """
 import json
 import re
-import os
 from urllib.parse import urlparse
-from openai import OpenAI
 from bs4 import BeautifulSoup
 
-from llm import MAIN_EXTRA_BODY, MAIN_MODEL
+from llm import MAIN_EXTRA_BODY, MAIN_MODEL, make_dashscope_client
 from utils.safe_http import request_public_url
 
 
@@ -40,10 +38,7 @@ _client_cache = None
 def _get_client():
     global _client_cache
     if _client_cache is None:
-        _client_cache = OpenAI(
-            api_key=os.environ.get("DASHSCOPE_API_KEY", ""),
-            base_url="https://dashscope.aliyuncs.com/compatible-mode/v1",
-        )
+        _client_cache = make_dashscope_client()
     return _client_cache
 
 
@@ -140,7 +135,7 @@ def _summarize_points(text: str, source: str) -> list:
         cleaned = [str(p).strip() for p in points if p]
         return cleaned[:5] if cleaned else ["页面读到了,但没提炼出要点"]
     except Exception as e:
-        return [f"提炼失败:{e}"]
+        return [f"提炼失败:{type(e).__name__}"]
 
 
 def fetch_card(query: str) -> dict:

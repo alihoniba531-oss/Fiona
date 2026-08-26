@@ -42,11 +42,12 @@ from tools.travel_plan import travel_plan as travel_plan_query
 from tools.web_search import web_search
 from tools.wechat_send import send_wechat_message, start_wechat_video_call, start_wechat_voice_call
 from trace import log_event, trace_span
+from utils.background_tasks import create_background_task
 from utils.media import _save_uploaded_image, delete_uploaded_files
 
 
 _STREAM_END = object()
-_background_tasks: set[asyncio.Task] = set()
+_UPSTREAM_ERROR_MESSAGE = "服务暂时不可用，请稍后再试"
 
 
 async def _iter_sync_stream(stream):
@@ -65,15 +66,12 @@ async def _iter_sync_stream(stream):
                 await asyncio.to_thread(close)
         except Exception as e:
             # 关闭失败不能覆盖原始流异常或改变 SSE 输出。
-            print(f"[chat] stream close error: {type(e).__name__}: {e}", flush=True)
+            print(f"[chat] stream close error type={type(e).__name__}", flush=True)
 
 
 def _track_background_task(coro) -> asyncio.Task:
-    """保留后台任务的强引用，完成后自动移除。"""
-    task = asyncio.create_task(coro)
-    _background_tasks.add(task)
-    task.add_done_callback(_background_tasks.discard)
-    return task
+    """兼容现有调用点，实际由应用级追踪器统一管理。"""
+    return create_background_task(coro, label="chat-postprocess")
 
 
 def _sse(obj: dict) -> str:
@@ -192,7 +190,7 @@ HARD_WORDS = ["必须", "应该", "离不开", "我以为", "一定要", "只能
 def build_hard_word_appendix(message: str) -> str:
     """检测硬词并返回要追加到 system prompt 的即时引导块；无硬词返回空串。"""
     detected_hard = [w for w in HARD_WORDS if w in message]
-    print(f"[硬词检测] message={message!r}, detected={detected_hard}")
+    print(f"[硬词检测] chars={len(message)}, detected_count={len(detected_hard)}")
     if not detected_hard:
         return ""
     first_hard = detected_hard[0]
@@ -399,9 +397,9 @@ async def stream_mirror(ctx: ChatContext, state: ChatState):
                     state.full_response += text
                     yield _sse({"text": text})
     except Exception as e:
-        state.trace["error"] = str(e)[:200]
-        print(f"[chat] mirror stream error: {type(e).__name__}: {e}", flush=True)
-        yield _sse({"error": str(e)})
+        state.trace["error"] = type(e).__name__
+        print(f"[chat] mirror stream error type={type(e).__name__}", flush=True)
+        yield _sse({"error": _UPSTREAM_ERROR_MESSAGE})
         return
     await save_message(ctx.user, "assistant", state.full_response)
     state.response_saved = True
@@ -457,7 +455,7 @@ async def stream_image(ctx: ChatContext, state: ChatState):
     except Exception as e:
         state.full_response = "图我接到了，但看的时候出了点意外，再发一次试试？"
         yield _sse({"text": state.full_response})
-        print(f"[chat] qwen-vl-max error: {type(e).__name__}: {e}", flush=True)
+        print(f"[chat] qwen-vl-max error type={type(e).__name__}", flush=True)
 
     await save_message(ctx.user, "assistant", state.full_response)
     state.response_saved = True
@@ -525,7 +523,10 @@ def recognize_intent_with_fallback(message: str, history: list[dict]) -> dict:
                 break
         if _query:
             intent_result = {"intent": "web_search", "params": {"query": _query}, "missing": []}
-    print(f"[意图识别] message={message[:60]!r}, intent={intent_result.get('intent')}, missing={intent_result.get('missing')}")
+    print(
+        f"[意图识别] chars={len(message)}, intent={intent_result.get('intent')}, "
+        f"missing={intent_result.get('missing')}"
+    )
     return intent_result
 
 
@@ -595,13 +596,13 @@ async def stream_normal(ctx: ChatContext, state: ChatState):
                 if fr:
                     _finish_reason = fr
     except Exception as e:
-        state.trace["error"] = str(e)[:200]
-        print(f"[chat] normal stream error: {type(e).__name__}: {e}", flush=True)
-        yield _sse({"error": str(e)})
+        state.trace["error"] = type(e).__name__
+        print(f"[chat] normal stream error type={type(e).__name__}", flush=True)
+        yield _sse({"error": _UPSTREAM_ERROR_MESSAGE})
         return
     if _finish_reason == "length":
         # 撞到 max_tokens 上限 —— 用户会看到回答被砍在半句话
-        print(f"[chat] truncated: user={ctx.user} model={'light' if _actually_qwen else 'main'} "
+        print(f"[chat] truncated: model={'light' if _actually_qwen else 'main'} "
               f"max_tokens={_max_tok} chars={len(state.full_response)}", flush=True)
 
     await save_message(ctx.user, "assistant", state.full_response)
@@ -680,8 +681,8 @@ async def run_chat(ctx: ChatContext):
             yield s
 
     except Exception as e:
-        yield _sse({"error": str(e)})
-        state.trace["error"] = str(e)[:200]
+        yield _sse({"error": _UPSTREAM_ERROR_MESSAGE})
+        state.trace["error"] = type(e).__name__
     finally:
         # 只有回复确实落库后才扣草莓（DEV 模式跳过）
         DEV_MODE = os.getenv("DEV_MODE", "0") == "1"

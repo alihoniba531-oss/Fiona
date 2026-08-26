@@ -86,9 +86,9 @@ type $env:USERPROFILE\.ssh\id_ed25519.pub | ssh root@<你的云IP> 'cat >> ~/.ss
 - `src-tauri\target\release\bundle\msi\`
 - `src-tauri\target\release\bundle\nsis\`
 
-GitHub Actions 的 `Build Windows Desktop` 工作流只在 `desktop/**` 或工作流文件变化时自动触发，也可以手动运行。它使用 Node 20、Rust stable、`npm install` 和 `npm run build`，上传 MSI 与 NSIS artifact。
+GitHub Actions 的 `Build Windows Desktop` 工作流只在 `desktop/**` 或工作流文件变化时自动触发，也可以手动运行。它使用 Node 20、Rust stable 和 `npm ci`，先执行 Rust 单元测试再运行 `npm run build`，最后上传 MSI 与 NSIS artifact。
 
-当前目录没有独立 `package-lock.json`，Rust 侧也没有提交 `Cargo.lock`，因此构建还不是完全可复现的。公开发布前应补齐锁文件和安装包签名流程。
+当前目录已提交独立 `package-lock.json`；Rust 侧仍没有提交 `Cargo.lock`，因此构建还不是完全可复现的。公开发布前应补齐 Cargo 锁文件和安装包签名流程。
 
 ## 安全边界
 
@@ -101,7 +101,7 @@ GitHub Actions 的 `Build Windows Desktop` 工作流只在 `desktop/**` 或工�
 - Windows 外链直接交给系统 URL 处理器，不再让 `cmd.exe` 解释输入。
 - Tauri 启动页和远程 Next.js 页面均配置了 CSP；启动页脚本与样式已外置，不再依赖内联脚本、样式或事件处理器。
 
-公开分发前仍需在 Windows CI 运行 Cargo 编译和新增 Rust 单元测试，并验证两种加载模式的 capability/CSP；安装包签名、锁文件和正式升级/回滚流程也尚未完成。因此桌面包目前仍只应在受控环境中测试。
+工作流已配置 Windows Cargo 编译与 Rust 单元测试，但本轮改动仍需推送后确认实际 CI 结果，并验证两种加载模式的 capability/CSP；安装包签名、`Cargo.lock` 和正式升级/回滚流程也尚未完成。因此桌面包目前仍只应在受控环境中测试。
 
 ## 文件说明
 

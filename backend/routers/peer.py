@@ -1,13 +1,19 @@
 # -*- coding: utf-8 -*-
 import json
+import time
+from collections import deque
 from datetime import datetime
 
-from fastapi import APIRouter, Depends, HTTPException, WebSocket, WebSocketDisconnect
+from fastapi import APIRouter, Depends, HTTPException, Query, WebSocket, WebSocketDisconnect
 
 from auth_dep import get_current_user, ws_authenticate
 from database import get_accepted_matches, get_peer_messages, save_peer_message
 
 router = APIRouter()
+
+PEER_MESSAGE_MAX_CHARS = 4000
+PEER_RATE_WINDOW_SECONDS = 60
+PEER_RATE_MAX_MESSAGES = 30
 
 
 # ── WebSocket 真人聊天 ──────────────────────────────────────────
@@ -102,6 +108,7 @@ async def peer_chat_ws(ws: WebSocket, room_id: str):
         await ws.close(code=4403)
         return
     await ws_manager.connect(room_id, username, ws)
+    recent_messages: deque[float] = deque()
     try:
         # 连接后推送历史消息
         history = await get_peer_messages(room_id, limit=100)
@@ -113,15 +120,33 @@ async def peer_chat_ws(ws: WebSocket, room_id: str):
                 raise
             except (json.JSONDecodeError, ValueError, TypeError, KeyError):
                 continue
+            # Cookie 在握手后不会自动重新鉴权；每一条有效帧都重新核对 session_version。
+            if await ws_authenticate(ws) != username:
+                await ws.close(code=4401)
+                break
             if not isinstance(data, dict):
                 continue
             raw_content = data.get("content")
             if not isinstance(raw_content, str):
                 continue
+            if len(raw_content) > PEER_MESSAGE_MAX_CHARS:
+                await ws.close(code=1009)
+                break
             content = raw_content.strip()
             if not content:
                 continue
-            await save_peer_message(room_id, username, content)
+            now = time.monotonic()
+            while recent_messages and now - recent_messages[0] >= PEER_RATE_WINDOW_SECONDS:
+                recent_messages.popleft()
+            if len(recent_messages) >= PEER_RATE_MAX_MESSAGES:
+                await ws.close(code=1008)
+                break
+            recent_messages.append(now)
+
+            # 数据库事务内再次确认双方仍接受；拒绝/删号与本次写入不会穿透。
+            if not await save_peer_message(room_id, username, content):
+                await ws.close(code=4403)
+                break
             msg = {"type": "message", "sender": username, "content": content,
                    "created_at": datetime.now().isoformat()}
             # 给自己确认
@@ -143,7 +168,11 @@ async def get_peer_rooms(user: str = Depends(get_current_user)):
 
 
 @router.get("/peer/history/{room_id}")
-async def peer_history(room_id: str, limit: int = 100, user: str = Depends(get_current_user)):
+async def peer_history(
+    room_id: str,
+    limit: int = Query(default=100, ge=1, le=500),
+    user: str = Depends(get_current_user),
+):
     await _require_peer_room_access(user, room_id)
     messages = await get_peer_messages(room_id, limit=limit)
     return {"room_id": room_id, "messages": messages}

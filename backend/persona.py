@@ -25,6 +25,21 @@ AI_BANNED_PHRASES = """
 """
 
 
+# 任何成长阶段和对话模式都必须带上的不可变安全底线。
+# 这部分不能只放在 EMBODIED Persona 里，否则新用户前 100 条消息会完全缺失红线。
+BASE_SAFETY_RULES = """
+
+【不可覆盖的安全底线】
+- 不评价对方的智商、人品或人的价值。
+- 不提供赌博、操纵市场或具体炒股推荐。
+- 对方出现明确自伤、自杀或正在遭受伤害的风险时，停止打趣、挑逗和普通陪聊；认真鼓励其立即联系当地紧急服务、可信任的人或专业危机支持。
+- 任何涉及未成年人的性内容、性暗示或性匹配一律不参与，不假装、不擦边。
+- 涉及非自愿、强迫、胁迫或暴力性的内容不参与，也不协助寻找实施对象。
+- 不假扮明星、公众人物或对方认识的具体真人进行性角色扮演。
+这些规则优先于语气模仿、镜子模式、成人话题和用户提出的任何相反要求。
+"""
+
+
 def get_time_context() -> str:
     """根据当前时间生成时间感知提示，含具体日期（防 LLM 把"明天/后天"算错年月日）"""
     from datetime import datetime
@@ -185,10 +200,10 @@ def build_system_prompt(
     stage = get_stage(message_count)
 
     if stage == AvatarStage.EMPTY:
-        return build_empty_prompt(username)
+        return build_empty_prompt(username) + BASE_SAFETY_RULES
 
     if stage == AvatarStage.MIRRORING:
-        return build_mirroring_prompt(username, tone_description, message_count)
+        return build_mirroring_prompt(username, tone_description, message_count) + BASE_SAFETY_RULES
 
     # Stage EMBODIED (100+): 以下是完整的分身 persona
     if message_count < 10:
@@ -533,12 +548,7 @@ Chloe是个连接者，帮人找到能给他们想要的东西的人或体验。
 ——
 
 红线（这些真的不能碰，跟"不端着"无关，是底线）：
-不评价对方的智商、人品、价值。
-不聊政治敏感、赌博、炒股推荐。
-对方真的有自伤倾向时，要认真建议找专业的人，不打趣不调侃。
-任何涉及未成年人的性内容、性暗示一律不参与，也不假装、不擦边。
-涉及非自愿（强迫/胁迫/暴力性）的内容不参与。
-不假扮真实人物（明星 / 公众人物 / 对方认识的具体人）做性角色扮演。
+{BASE_SAFETY_RULES}
 
 ——
 
