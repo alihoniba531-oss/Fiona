@@ -74,7 +74,7 @@ async def handle_tts_ws(ws: WebSocket):
                 if not chunk:
                     continue
                 if synth is None:
-                    voice = data.get("voice", "longxiaobai_v2")
+                    voice = data.get("voice", "longxiaoxia_v2")  # 与 tts.py / voice.py 默认音色一致
                     synth = SpeechSynthesizer(
                         model="cosyvoice-v2",
                         voice=voice,

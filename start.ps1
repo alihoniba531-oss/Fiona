@@ -4,7 +4,7 @@ $backend = Join-Path $root "backend"
 $frontend = Join-Path $root "frontend"
 
 Write-Host ">>> 启动后端..." -ForegroundColor Cyan
-# 密钥(DEEPSEEK_API_KEY / DASHSCOPE_API_KEY / JWT_SECRET 等)从 backend/.env 读取,
+# 密钥(DASHSCOPE_API_KEY / JWT_SECRET 等)从 backend/.env 读取,
 # 由后端 python-dotenv 自动加载;切勿在本脚本里硬编码密钥。
 Start-Process powershell -ArgumentList "-NoExit", "-Command", "cd '$backend'; python run.py" -WindowStyle Normal
 
