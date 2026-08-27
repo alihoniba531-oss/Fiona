@@ -9,9 +9,19 @@
      （detect_mode / recognize_intent / _create_stream_with_fallback /
       find_matches / extract_and_update / detect_matches_and_save）。
 """
+import os
+
 import pytest
 
 from _fakes import FakeStream
+
+# CI / 裸机保障：在收集阶段任何测试模块 import llm/auth 之前注入占位凭据。
+# llm.py 在模块顶层构造 DashScope 客户端（缺 DASHSCOPE_API_KEY 直接 OpenAIError），
+# auth.py 硬校验 JWT_SECRET（缺失直接 RuntimeError）；CI 不检出 .env，会当场收集崩溃。
+# 用 setdefault 注入占位值：本地存在真 .env 时 load_dotenv(override=True) 会覆盖占位，行为不变；
+# 测试本身已把出网入口全部打桩（见下方 client fixture），占位 key 不会真出网。
+os.environ.setdefault("JWT_SECRET", "fiona-ci-smoke-test-secret-0123456789")
+os.environ.setdefault("DASHSCOPE_API_KEY", "sk-fiona-ci-smoke-test-not-real")
 
 
 @pytest.fixture
