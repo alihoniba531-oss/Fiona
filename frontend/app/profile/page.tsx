@@ -1,10 +1,10 @@
 "use client";
 
 import { Suspense, useState, useEffect } from "react";
+import Link from "next/link";
 import { useSearchParams } from "next/navigation";
 import Sidebar from "@/components/Sidebar";
-import TopBar from "@/components/TopBar";
-import { Edit3, Trash2, Shield, Loader2 } from "lucide-react";
+import { ArrowUpRight, Shield, Loader2, Heart, Scale, CircleHelp, Wrench, TriangleAlert } from "lucide-react";
 import { apiFetch } from "@/lib/auth";
 
 import { API_BASE as API } from "@/lib/config";
@@ -20,9 +20,20 @@ interface Profile {
   stage?: string;
 }
 
-const Section = ({ title, children }: { title: string; children: React.ReactNode }) => (
-  <div className="bg-card border border-border rounded-2xl p-5">
-    <h3 className="text-xs font-semibold text-muted-foreground uppercase tracking-wider mb-3">{title}</h3>
+const Section = ({
+  title,
+  icon: Icon,
+  children,
+}: {
+  title: string;
+  icon: React.ComponentType<{ size?: number; className?: string; style?: React.CSSProperties }>;
+  children: React.ReactNode;
+}) => (
+  <div className="glass-card p-5">
+    <h3 className="mb-3 flex items-center gap-2 text-sm font-medium">
+      <Icon size={14} style={{ color: "var(--amber-ink)" }} />
+      {title}
+    </h3>
     {children}
   </div>
 );
@@ -30,7 +41,7 @@ const Section = ({ title, children }: { title: string; children: React.ReactNode
 const TagList = ({ items }: { items: string[] }) => (
   <div className="flex flex-wrap gap-2">
     {items.map((item) => (
-      <span key={item} className="text-xs px-3 py-1 bg-secondary text-foreground rounded-full">
+      <span key={item} className="chip">
         {item}
       </span>
     ))}
@@ -83,32 +94,31 @@ function ProfileContent() {
   const embedded = sp?.get("embed") === "1";
 
   return (
-    <div className="flex flex-col h-screen overflow-hidden bg-background">
-      {!embedded && <TopBar />}
+    <div className="flex h-screen flex-col overflow-hidden">
       <div className="flex flex-1 min-h-0">
         {!embedded && <Sidebar />}
         <div className="flex flex-col flex-1 min-w-0">
-        <header className="glass border-b border-border px-6 py-4 shrink-0">
-          <div className="flex items-center justify-between">
+        <header className="glass sticky top-0 z-[2] shrink-0 border-b px-8 pb-[18px] pt-7" style={{ borderColor: "var(--glass-border)" }}>
+          <div className="flex max-w-[976px] items-end justify-between gap-4">
             <div>
-              <h1 className="text-base font-semibold">我的画像</h1>
-              <p className="text-[11px] text-muted-foreground mt-0.5">Chloe从对话中整理的信息，每 5 轮自动更新</p>
+              <h1 className="text-xl font-medium tracking-[-0.01em]">旧社交画像</h1>
+              <p className="mt-1 text-[13px] text-muted-foreground">此前用于社交匹配的画像；新会话记忆在“我的分身”中查看</p>
             </div>
-            <div className="flex items-center gap-1 text-[11px] text-muted-foreground">
-              <Shield size={12} />
-              仅你可见
+            <div className="flex items-center gap-1.5 text-xs text-muted-foreground">
+              <Shield size={13} style={{ color: "var(--amber-ink)" }} />
+              本人查看
             </div>
           </div>
         </header>
 
-        <div className="flex-1 overflow-y-auto px-6 py-5 space-y-3">
+        <div className="flex-1 space-y-3 overflow-y-auto px-8 py-6">
           {/* Avatar & 基本信息 */}
-          <div className="flex items-center gap-4 bg-card border border-border rounded-2xl p-5">
-            <div className="w-14 h-14 rounded-full bg-primary/20 flex items-center justify-center">
-              <span className="text-primary text-xl font-bold">{username[0]}</span>
+          <div className="glass-card flex items-center gap-4 p-5">
+            <div className="grid h-14 w-14 place-items-center rounded-[6px] bg-secondary">
+              <span className="text-xl font-medium" style={{ color: "var(--amber-ink)" }}>{username[0]}</span>
             </div>
             <div className="min-w-0">
-              <p className="font-semibold truncate">{username}</p>
+              <p className="truncate font-medium">{username}</p>
               <p className="text-xs text-muted-foreground mt-0.5 truncate">
                 {[city, occupation, stage].filter(Boolean).join(" · ") || "（暂未提取到基本信息）"}
               </p>
@@ -121,49 +131,45 @@ function ProfileContent() {
               <span className="text-sm">加载中…</span>
             </div>
           ) : isEmpty ? (
-            <div className="bg-card border border-border rounded-2xl p-8 text-center">
-              <p className="text-sm text-muted-foreground mb-2">画像还没建立起来</p>
+            <div className="glass-card p-8 text-center">
+              <p className="text-sm text-muted-foreground mb-2">暂无旧社交画像</p>
               <p className="text-[11px] text-muted-foreground/70 leading-relaxed">
-                跟Chloe聊几轮你的兴趣、烦恼、最近在做的事，<br/>
-                每 5 轮她会在后台静默更新这里
+                新会话形成的私有记忆已单独保存，<br/>
+                请前往“我的分身”查看和管理。
               </p>
             </div>
           ) : (
             <>
-              <Section title="兴趣">
-                {interests.length ? <TagList items={interests} /> : <Empty hint="还没聊到" />}
+              <Section title="兴趣" icon={Heart}>
+                {interests.length ? <TagList items={interests} /> : <Empty hint="暂无记录" />}
               </Section>
-              <Section title="价值观">
-                {values.length ? <TagList items={values} /> : <Empty hint="还没聊到" />}
+              <Section title="价值观" icon={Scale}>
+                {values.length ? <TagList items={values} /> : <Empty hint="暂无记录" />}
               </Section>
-              <Section title="当前需求 / 想解决的问题">
-                {needs.length ? <TagList items={needs} /> : <Empty hint="还没聊到" />}
+              <Section title="当前需求 / 想解决的问题" icon={CircleHelp}>
+                {needs.length ? <TagList items={needs} /> : <Empty hint="暂无记录" />}
               </Section>
-              <Section title="技能 / 可分享的经验">
-                {skills.length ? <TagList items={skills} /> : <Empty hint="还没聊到" />}
+              <Section title="技能 / 可分享的经验" icon={Wrench}>
+                {skills.length ? <TagList items={skills} /> : <Empty hint="暂无记录" />}
               </Section>
-              <Section title="当前困境">
-                {struggles.length ? <TagList items={struggles} /> : <Empty hint="还没聊到" />}
+              <Section title="当前困境" icon={TriangleAlert}>
+                {struggles.length ? <TagList items={struggles} /> : <Empty hint="暂无记录" />}
               </Section>
             </>
           )}
 
-          <div className="flex items-start gap-2 px-4 py-3 bg-accent/30 rounded-xl">
-            <Shield size={13} className="text-accent-foreground mt-0.5 shrink-0" />
+          <div className="glass-card flex items-start gap-2 p-5">
+            <Shield size={13} className="mt-0.5 shrink-0" style={{ color: "var(--amber-ink)" }} />
             <p className="text-xs text-muted-foreground leading-relaxed">
-              这些信息仅用于帮你匹配合适的人，不会透露给其他用户。匹配时只说&quot;有位朋友在关注类似的事&quot;。
+              这里保留旧社交画像，不展示新会话的私有记忆。你可以在“我的分身”中查看新记忆，或清空分身记忆和已有个人画像；聊天记录会保留。
             </p>
           </div>
 
           <div className="flex gap-2 pb-4">
-            <button className="flex-1 flex items-center justify-center gap-1.5 py-2.5 rounded-xl bg-secondary text-sm text-muted-foreground hover:text-foreground transition-all">
-              <Edit3 size={14} />
-              修正信息
-            </button>
-            <button className="flex items-center justify-center gap-1.5 px-4 py-2.5 rounded-xl text-sm text-destructive/70 hover:text-destructive hover:bg-destructive/10 transition-all">
-              <Trash2 size={14} />
-              清除全部
-            </button>
+            <Link href="/agents/me" target={embedded ? "_top" : undefined} className="btn flex-1">
+              <ArrowUpRight size={14} />
+              前往我的分身管理记忆
+            </Link>
           </div>
         </div>
         </div>

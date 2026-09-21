@@ -3,7 +3,6 @@
 import { Suspense, useState, useEffect } from "react";
 import { useSearchParams } from "next/navigation";
 import Sidebar from "@/components/Sidebar";
-import TopBar from "@/components/TopBar";
 import { Trash2, User, Info, LogOut } from "lucide-react";
 import { apiFetch, clearAuth, setAuth } from "@/lib/auth";
 
@@ -92,21 +91,24 @@ function SettingsContent() {
   };
 
   return (
-    <div className="flex flex-col h-screen overflow-hidden bg-background">
-      {!embedded && <TopBar />}
+    <div className="flex h-screen flex-col overflow-hidden">
       <div className="flex flex-1 min-h-0">
         {!embedded && <Sidebar />}
         <div className="flex flex-col flex-1 min-w-0">
-          <header className="glass border-b border-border px-6 py-4 shrink-0">
-            <h1 className="text-base font-semibold">设置</h1>
-            <p className="text-[11px] text-muted-foreground mt-0.5">账号与数据管理</p>
+          <header className="glass sticky top-0 z-[2] shrink-0 border-b px-8 pb-[18px] pt-7" style={{ borderColor: "var(--glass-border)" }}>
+            <div className="flex max-w-[976px] items-end justify-between gap-4">
+              <div>
+                <h1 className="text-xl font-medium tracking-[-0.01em]">设置</h1>
+                <p className="mt-1 text-[13px] text-muted-foreground">账号与数据管理</p>
+              </div>
+            </div>
           </header>
 
-          <div className="flex-1 overflow-y-auto px-6 py-5 space-y-3 max-w-lg">
+          <div className="max-w-lg flex-1 space-y-3 overflow-y-auto px-8 py-6">
             {/* 当前身份 */}
-            <div className="bg-card border border-border rounded-2xl p-5 space-y-3">
-              <div className="flex items-center gap-2 text-xs font-semibold text-muted-foreground uppercase tracking-wider">
-                <User size={13} />
+            <div className="glass-card space-y-3 p-5">
+              <div className="flex items-center gap-2 text-sm font-medium">
+                <User size={14} style={{ color: "var(--amber-ink)" }} />
                 当前身份
               </div>
               <div className="flex flex-wrap gap-2">
@@ -114,11 +116,7 @@ function SettingsContent() {
                   <button
                     key={u}
                     onClick={() => switchUser(u)}
-                    className={`px-4 py-1.5 rounded-full text-sm transition-all ${
-                      u === username
-                        ? "bg-primary text-primary-foreground"
-                        : "bg-secondary text-muted-foreground hover:text-foreground"
-                    }`}
+                    className={`chip ${u === username ? "chip-on" : ""}`}
                   >
                     {u}
                   </button>
@@ -129,7 +127,7 @@ function SettingsContent() {
               </p>
               <button
                 onClick={logout}
-                className="flex items-center gap-2 px-4 py-2 rounded-xl text-sm text-muted-foreground hover:text-foreground hover:bg-secondary transition-all border border-border w-full"
+                className="btn w-full"
               >
                 <LogOut size={14} />
                 退出登录并撤销现有会话
@@ -137,48 +135,48 @@ function SettingsContent() {
             </div>
 
             {/* 数据管理 */}
-            <div className="bg-card border border-border rounded-2xl p-5 space-y-3">
-              <div className="flex items-center gap-2 text-xs font-semibold text-muted-foreground uppercase tracking-wider">
-                <Trash2 size={13} />
+            <div className="glass-card space-y-3 p-5">
+              <div className="flex items-center gap-2 text-sm font-medium">
+                <Trash2 size={14} style={{ color: "var(--amber-ink)" }} />
                 数据管理
               </div>
               <button
                 onClick={clearHistory}
-                className="flex items-center gap-2 px-4 py-2 rounded-xl text-sm text-destructive/80 hover:text-destructive hover:bg-destructive/10 transition-all border border-destructive/20 w-full"
+                className="btn btn-danger w-full"
               >
                 <Trash2 size={14} />
                 清空「{username}」的所有聊天记录
               </button>
               {cleared && (
-                <p className="text-xs text-green-500">已清空</p>
+                <p className="text-xs text-[color:var(--amber-ink)]">已清空</p>
               )}
-              <div className="pt-3 border-t border-border space-y-2">
-                <p className="text-xs text-destructive">永久删除账号</p>
+              <div className="space-y-2 border-t pt-3" style={{ borderColor: "var(--glass-border)" }}>
+                <p className="text-xs text-[color:var(--rec)]">永久删除账号</p>
                 <p className="text-[11px] text-muted-foreground">
-                  输入当前用户名 <span className="font-mono text-foreground">{username}</span> 确认。此操作不可恢复。
+                  输入当前用户名 <span className="readout text-foreground">{username}</span> 确认。此操作不可恢复。
                 </p>
                 <input
                   value={deleteConfirmation}
                   onChange={event => setDeleteConfirmation(event.target.value)}
                   placeholder={username}
-                  className="w-full bg-secondary rounded-xl px-4 py-2 text-sm outline-none placeholder:text-muted-foreground"
+                  className="w-full rounded-[6px] border bg-card px-3 py-[9px] text-sm outline-none placeholder:text-muted-foreground focus:border-[color:var(--amber-ink)]"
                 />
                 <button
                   onClick={deleteAccount}
                   disabled={deleteConfirmation !== username || deleting}
-                  className="flex items-center gap-2 px-4 py-2 rounded-xl text-sm text-destructive hover:bg-destructive/10 transition-all border border-destructive/30 w-full disabled:opacity-40"
+                  className="btn btn-danger w-full"
                 >
                   <Trash2 size={14} />
                   {deleting ? "正在删除…" : "永久删除账号及全部数据"}
                 </button>
-                {deleteError && <p className="text-xs text-destructive">{deleteError}</p>}
+                {deleteError && <p className="text-xs text-[color:var(--rec)]">{deleteError}</p>}
               </div>
             </div>
 
             {/* 关于 */}
-            <div className="bg-card border border-border rounded-2xl p-5 space-y-2">
-              <div className="flex items-center gap-2 text-xs font-semibold text-muted-foreground uppercase tracking-wider">
-                <Info size={13} />
+            <div className="glass-card space-y-2 p-5">
+              <div className="flex items-center gap-2 text-sm font-medium">
+                <Info size={14} style={{ color: "var(--amber-ink)" }} />
                 关于
               </div>
               <div className="space-y-1 text-[11px] text-muted-foreground">

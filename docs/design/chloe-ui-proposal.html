@@ -1,0 +1,942 @@
+<title>Chloe 界面提案</title>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Noto+Sans+SC:wght@300;400;500;700&family=Azeret+Mono:wght@400;500&display=swap">
+<style>
+/* ───────── 令牌：深色为主 ───────── */
+:root{
+  --ink:#0E1219; --layer:#151B24; --layer-2:#1B222D; --line:#232B36; --line-strong:#2F3947;
+  --frost:#E7ECF1; --mist:#7E8896; --dim:#586270;
+  --amber:#F2A63A; --amber-fill:#F2A63A; --amber-ink:#2A1A05; --amber-soft:rgba(242,166,58,.14);
+  --rec:#FF5A66; --rec-soft:rgba(255,90,102,.14);
+  --sans:"Noto Sans SC","PingFang SC","Hiragino Sans GB","Microsoft YaHei",system-ui,sans-serif;
+  --mono:"Azeret Mono","SF Mono",Menlo,Consolas,monospace;
+  --shadow:0 1px 2px rgba(0,0,0,.25);
+  --glass:rgba(21,27,36,.6); --glass-strong:rgba(21,27,36,.76); --glass-border:rgba(231,236,241,.09); --glass-hi:rgba(255,255,255,.05); --fill:rgba(255,255,255,.04);
+  --spot-a:rgba(242,166,58,.14); --spot-b:rgba(70,118,205,.18); --spot-c:rgba(242,166,58,.05);
+  --grain:url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='180' height='180'><filter id='n'><feTurbulence type='fractalNoise' baseFrequency='.85' numOctaves='2' stitchTiles='stitch'/><feColorMatrix values='0 0 0 0 1 0 0 0 0 1 0 0 0 0 1 0 0 0 .07 0'/></filter><rect width='100%25' height='100%25' filter='url(%23n)'/></svg>");
+  color-scheme:dark;
+}
+@media (prefers-color-scheme: light){
+  :root:not([data-theme="dark"]){
+    --ink:#F3F5F8; --layer:#FFFFFF; --layer-2:#EEF1F5; --line:#DDE3EA; --line-strong:#C9D1DB;
+    --frost:#141A22; --mist:#64707E; --dim:#8B96A3;
+    --amber:#9E6209; --amber-fill:#F2A63A; --amber-ink:#2A1A05; --amber-soft:rgba(242,166,58,.18);
+    --rec:#E04553; --rec-soft:rgba(224,69,83,.12);
+    --shadow:0 1px 2px rgba(20,26,34,.06);
+    --glass:rgba(255,255,255,.58); --glass-strong:rgba(255,255,255,.8); --glass-border:rgba(20,26,34,.09); --glass-hi:rgba(255,255,255,.85); --fill:rgba(20,26,34,.03);
+    --spot-a:rgba(242,166,58,.22); --spot-b:rgba(90,140,225,.16); --spot-c:rgba(255,255,255,.6);
+    --grain:url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='180' height='180'><filter id='n'><feTurbulence type='fractalNoise' baseFrequency='.85' numOctaves='2' stitchTiles='stitch'/><feColorMatrix values='0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 .05 0'/></filter><rect width='100%25' height='100%25' filter='url(%23n)'/></svg>");
+    color-scheme:light;
+  }
+}
+:root[data-theme="light"]{
+  --ink:#F3F5F8; --layer:#FFFFFF; --layer-2:#EEF1F5; --line:#DDE3EA; --line-strong:#C9D1DB;
+  --frost:#141A22; --mist:#64707E; --dim:#8B96A3;
+  --amber:#9E6209; --amber-fill:#F2A63A; --amber-ink:#2A1A05; --amber-soft:rgba(242,166,58,.18);
+  --rec:#E04553; --rec-soft:rgba(224,69,83,.12);
+  --shadow:0 1px 2px rgba(20,26,34,.06);
+  --glass:rgba(255,255,255,.55); --glass-strong:rgba(255,255,255,.75); --glass-border:rgba(20,26,34,.09); --glass-hi:rgba(255,255,255,.85); --fill:rgba(20,26,34,.03);
+  --spot-a:rgba(242,166,58,.22); --spot-b:rgba(90,140,225,.16); --spot-c:rgba(255,255,255,.6);
+  --grain:url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='180' height='180'><filter id='n'><feTurbulence type='fractalNoise' baseFrequency='.85' numOctaves='2' stitchTiles='stitch'/><feColorMatrix values='0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 .05 0'/></filter><rect width='100%25' height='100%25' filter='url(%23n)'/></svg>");
+  color-scheme:light;
+}
+
+/* ───────── 基础 ───────── */
+*,*::before,*::after{box-sizing:border-box}
+html,body{height:100%}
+body{margin:0;background:radial-gradient(1100px 700px at 10% -15%,var(--spot-a),transparent 60%),radial-gradient(900px 800px at 105% 105%,var(--spot-b),transparent 60%),radial-gradient(700px 500px at 55% 45%,var(--spot-c),transparent 65%),var(--ink);color:var(--frost);font-family:var(--sans);font-size:14px;line-height:1.5;-webkit-font-smoothing:antialiased;overflow:hidden}
+button,input,textarea{font:inherit;color:inherit;background:none;border:0;margin:0}
+button{padding:0;cursor:pointer}
+h1,h2,h3,p,ul,figure{margin:0}
+ul{padding:0;list-style:none}
+:focus-visible{outline:2px solid var(--amber);outline-offset:2px}
+.mono{font-family:var(--mono);font-variant-numeric:tabular-nums;font-weight:400}
+.mist{color:var(--mist)}
+.small{font-size:12px}
+svg.i{width:20px;height:20px;fill:none;stroke:currentColor;stroke-width:1.5;stroke-linecap:round;stroke-linejoin:round;flex:none}
+svg.i.s{width:16px;height:16px}
+@media (prefers-reduced-motion: reduce){*{animation:none!important;transition:none!important}}
+
+/* ───────── 提案栏（设计师的外壳，不属于产品） ───────── */
+.pbar{height:44px;display:flex;align-items:center;gap:20px;padding:0 16px;border-bottom:1px solid var(--line);background:var(--layer);font-size:12px;color:var(--mist)}
+.pbar-name{display:flex;align-items:center;gap:8px;color:var(--frost);font-weight:500;white-space:nowrap}
+.pbar-sub{color:var(--mist);font-weight:400;margin-left:6px}
+.pbar-tabs{display:flex;gap:2px;margin-left:auto}
+.pbar-tabs button{padding:6px 10px;border-radius:6px;color:var(--mist)}
+.pbar-tabs button:hover{color:var(--frost)}
+.pbar-tabs button.on{background:var(--amber-soft);color:var(--amber)}
+.pbar-theme{display:flex;align-items:center;gap:6px;padding:6px 10px;border:1px solid var(--line);border-radius:6px;color:var(--mist)}
+.pbar-theme:hover{color:var(--frost);border-color:var(--line-strong)}
+
+/* ───────── 产品外壳 ───────── */
+.frame{display:flex;height:calc(100vh - 44px);min-height:0}
+.rail{width:56px;flex:none;display:flex;flex-direction:column;align-items:center;padding:12px 0;gap:4px;background:var(--layer);border-right:1px solid var(--line)}
+.rail[hidden]{display:none}
+.rail-logo{width:32px;height:32px;display:grid;place-items:center;color:var(--amber);margin-bottom:12px}
+.rail-item{width:48px;height:48px;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:3px;border-radius:6px;color:var(--mist);font-size:10px}
+.rail-item:hover{color:var(--frost);background:var(--layer-2)}
+.rail-item.on{color:var(--amber)}
+.rail-foot{margin-top:auto;display:flex;flex-direction:column;align-items:center;gap:10px}
+.berry{display:flex;flex-direction:column;align-items:center;gap:2px;font-size:11px;color:var(--mist)}
+.berry b{font-family:var(--mono);font-weight:400;color:var(--frost);font-size:12px}
+.stage{flex:1;min-width:0;min-height:0;position:relative}
+.screen{display:none;position:absolute;inset:0}
+.screen.on{display:flex}
+
+/* ───────── 通用控件 ───────── */
+.btn{display:inline-flex;align-items:center;justify-content:center;gap:6px;height:34px;padding:0 14px;border-radius:6px;border:1px solid var(--line-strong);background:var(--layer);color:var(--frost);font-size:13px;white-space:nowrap}
+.btn:hover{border-color:var(--mist)}
+.btn:disabled{opacity:.45;cursor:not-allowed}
+.btn-primary{background:var(--amber-fill);border-color:var(--amber-fill);color:var(--amber-ink);font-weight:500}
+.btn-primary:hover{filter:brightness(1.06);border-color:var(--amber-fill)}
+.btn-quiet{background:none;border-color:transparent;color:var(--mist)}
+.btn-quiet:hover{color:var(--frost);background:var(--layer-2);border-color:transparent}
+.btn-danger{background:none;border-color:transparent;color:var(--rec)}
+.btn-danger:hover{background:var(--rec-soft);border-color:transparent}
+.btn-block{width:100%;height:40px}
+.btn-icon{width:34px;padding:0}
+.field{display:flex;flex-direction:column;gap:6px;font-size:12px;color:var(--mist)}
+.field>span{display:flex;justify-content:space-between;color:var(--frost);font-weight:500}
+.field>span em{font-style:normal;color:var(--mist);font-weight:400}
+.field input,.field textarea{width:100%;background:var(--layer);border:1px solid var(--line);border-radius:6px;padding:9px 12px;font-size:14px;color:var(--frost);line-height:1.5}
+.field textarea{resize:vertical;min-height:72px}
+.field input:focus,.field textarea:focus{outline:none;border-color:var(--amber)}
+.field input.err{border-color:var(--rec)}
+.field small{font-size:12px;color:var(--mist)}
+.field small.err{color:var(--rec)}
+.switch{position:relative;width:34px;height:20px;border-radius:999px;background:var(--line-strong);flex:none;transition:background .15s}
+.switch::after{content:"";position:absolute;top:3px;left:3px;width:14px;height:14px;border-radius:50%;background:var(--frost);transition:transform .15s}
+.switch.on{background:var(--amber-fill)}
+.switch.on::after{transform:translateX(14px);background:var(--amber-ink)}
+.chip{display:inline-flex;align-items:center;gap:5px;height:28px;padding:0 10px;border-radius:6px;border:1px solid var(--line);color:var(--mist);font-size:12px}
+.chip:hover{color:var(--frost);border-color:var(--line-strong)}
+.chip.on{color:var(--amber);border-color:var(--amber);background:var(--amber-soft)}
+.tag{display:inline-flex;align-items:center;height:20px;padding:0 7px;border-radius:4px;font-size:11px;border:1px solid var(--line-strong);color:var(--mist)}
+.tag-amber{border-color:transparent;background:var(--amber-soft);color:var(--amber)}
+.tag-rec{border-color:transparent;background:var(--rec-soft);color:var(--rec)}
+.readout{font-family:var(--mono);font-variant-numeric:tabular-nums;font-size:12px;color:var(--mist)}
+.readout b{font-weight:400;color:var(--frost)}
+.page{flex:1;min-width:0;overflow:auto}
+.page-in{max-width:1040px;padding:24px 32px 48px}
+.page-head{position:sticky;top:0;z-index:2;padding:28px 32px 18px;border-bottom:1px solid var(--line)}
+.page-head-in{max-width:976px;display:flex;align-items:flex-end;justify-content:space-between;gap:16px}
+.page-head h1{font-size:20px;font-weight:500;letter-spacing:-.01em}
+.page-head p{margin-top:4px;color:var(--mist);font-size:13px}
+.tabs{display:flex;gap:4px;border-bottom:1px solid var(--line);margin-bottom:24px}
+.tabs button{height:36px;padding:0 12px;color:var(--mist);font-size:13px;border-bottom:2px solid transparent;margin-bottom:-1px;display:flex;align-items:center;gap:6px}
+.tabs button:hover{color:var(--frost)}
+.tabs button.on{color:var(--frost);border-bottom-color:var(--amber)}
+.tabs .count{font-family:var(--mono);font-size:11px;color:var(--amber)}
+
+/* ───────── 分身排法：实心字 + 琥珀描边偏移副本 ───────── */
+.echo{position:relative;display:inline-block;isolation:isolate;font-weight:500;letter-spacing:-.01em;line-height:1.1}
+.echo::after{content:attr(data-text);position:absolute;left:.14em;top:.12em;z-index:-1;color:transparent;-webkit-text-stroke:1px var(--amber);opacity:.6;pointer-events:none;white-space:nowrap}
+
+/* ───────── 信号线 ───────── */
+.signal{display:block;width:100%;height:40px;overflow:visible}
+.signal path{fill:none;stroke:var(--amber);stroke-width:1.5;vector-effect:non-scaling-stroke;opacity:.9}
+.signal circle{fill:var(--amber)}
+.signal line{stroke:var(--line-strong);stroke-width:1;vector-effect:non-scaling-stroke}
+
+/* ───────── 登录 ───────── */
+.screen-login{align-items:center;justify-content:center}
+.login{width:360px;display:flex;flex-direction:column;gap:32px}
+.login-hero{display:flex;flex-direction:column;gap:12px}
+.login-hero .rail-logo{margin:0 0 8px;width:36px;height:36px}
+.wordmark{font-size:44px}
+.login-hero p{color:var(--mist);font-size:15px}
+.login-hero .signal{margin-top:8px}
+.login-panel{border-radius:10px;padding:22px}
+.login-form{display:flex;flex-direction:column;gap:14px}
+.login-form input{font-family:var(--mono);letter-spacing:.22em;font-size:16px}
+.login-form input::placeholder{font-family:var(--sans);letter-spacing:0;font-size:14px}
+.login-form .small{line-height:1.6}
+
+/* ───────── 对话 ───────── */
+.convs{width:260px;flex:none;display:flex;flex-direction:column;border-right:1px solid var(--line);background:var(--layer)}
+.convs-head{display:flex;align-items:center;justify-content:space-between;height:64px;padding:0 12px 0 20px;border-bottom:1px solid var(--line)}
+.convs-head h2{font-size:14px;font-weight:500}
+.conv-list{flex:1;overflow:auto;padding:8px}
+.conv-list li{display:flex;align-items:baseline;gap:8px;padding:9px 12px;border-radius:6px;color:var(--mist);cursor:pointer}
+.conv-list li:hover{background:var(--layer-2);color:var(--frost)}
+.conv-list li.on{background:var(--layer-2);color:var(--frost)}
+.conv-title{flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;font-size:13px}
+.conv-time{font-family:var(--mono);font-size:11px;color:var(--dim);flex:none}
+.convs-foot{padding:12px 20px;border-top:1px solid var(--line);font-size:12px;color:var(--mist);display:flex;justify-content:space-between}
+.convs-foot a{color:var(--mist);text-decoration:none}
+.convs-foot a:hover{color:var(--frost)}
+.talk{flex:1;min-width:0;position:relative}
+.talk-head{position:absolute;top:0;left:0;right:0;z-index:2;display:grid;grid-template-columns:auto minmax(120px,1fr) auto;gap:24px;align-items:center;height:64px;padding:0 24px;border-bottom:1px solid var(--line)}
+.who{display:flex;align-items:center;gap:12px}
+.glyph{width:32px;height:32px;border-radius:6px;display:grid;place-items:center;background:var(--layer-2);font-size:16px;flex:none}
+.who-name{font-size:14px;font-weight:500}
+.who-sub{font-size:12px;color:var(--mist);display:flex;gap:8px}
+.state{display:flex;align-items:center;gap:8px;font-size:12px;color:var(--mist);min-width:64px;justify-content:flex-end}
+.state-dot{width:6px;height:6px;border-radius:50%;background:var(--dim)}
+.state.listening .state-dot{background:var(--rec)}
+.state.speaking .state-dot{background:var(--amber)}
+.state.listening{color:var(--rec)}
+.transcript{position:absolute;inset:0;overflow:auto;padding:88px 32px 160px}
+.transcript-in{max-width:760px;display:flex;flex-direction:column;gap:22px}
+.day{font-size:11px;color:var(--dim);font-family:var(--mono);text-align:center}
+.msg{display:flex;flex-direction:column;gap:6px;max-width:640px}
+.msg.me{align-self:flex-end;align-items:flex-end;max-width:520px}
+.msg-who{font-size:12px;color:var(--mist);display:flex;align-items:center;gap:8px}
+.msg.ai .msg-who::before{content:"";width:6px;height:6px;background:var(--amber)}
+.msg-body{line-height:1.75;white-space:pre-wrap;word-break:break-word}
+.msg.me .msg-body{background:var(--fill);border:1px solid var(--glass-border);border-radius:10px;padding:9px 14px;line-height:1.6;box-shadow:var(--shadow)}
+.msg-time{font-family:var(--mono);font-size:11px;color:var(--dim)}
+.streaming::after{content:"▍";color:var(--amber);animation:blink 1s steps(2) infinite}
+@keyframes blink{50%{opacity:0}}
+/* 工具卡片：回到消息里 */
+.tool{width:320px;border:1px solid var(--line);border-radius:10px;background:var(--layer);margin-top:4px;box-shadow:var(--shadow)}
+.tool-head{display:flex;justify-content:space-between;align-items:center;padding:9px 14px;border-bottom:1px solid var(--line);font-size:12px}
+.tool-head b{font-weight:500}
+.w-main{display:flex;align-items:center;gap:14px;padding:12px 14px}
+.w-temp{font-family:var(--mono);font-size:32px;font-weight:400;letter-spacing:-.02em;line-height:1}
+.w-days{display:grid;grid-template-columns:repeat(3,1fr);border-top:1px solid var(--line)}
+.w-days div{padding:9px 14px;display:flex;flex-direction:column;gap:2px;font-size:12px;color:var(--mist)}
+.w-days div+div{border-left:1px solid var(--line)}
+.w-days .mono{color:var(--frost)}
+.gen{width:360px;margin-top:4px;border:1px solid var(--line);border-radius:10px;overflow:hidden;background:var(--layer);box-shadow:var(--shadow)}
+.gen-img{aspect-ratio:16/9;position:relative;background:
+  radial-gradient(60% 45% at 50% 100%,rgba(242,166,58,.22),transparent 70%),
+  linear-gradient(180deg,#2C3441 0%,#1B2230 55%,#12171F 100%)}
+.gen-img::before{content:"";position:absolute;left:18%;right:18%;bottom:22%;height:38%;background:linear-gradient(180deg,rgba(14,18,25,.0),rgba(14,18,25,.75));clip-path:polygon(50% 0,100% 38%,92% 38%,92% 100%,8% 100%,8% 38%,0 38%)}
+.gen-img::after{content:"示例画面";position:absolute;right:10px;top:8px;font-size:11px;color:rgba(231,236,241,.55)}
+.gen figcaption{display:flex;align-items:center;justify-content:space-between;padding:8px 10px 8px 14px;font-size:12px;color:var(--mist)}
+.gen figcaption span{font-family:var(--mono);font-size:11px}
+.gen-acts{display:flex;gap:2px}
+.composer{position:absolute;left:0;right:0;bottom:0;z-index:2;padding:12px 32px 16px;border-top:1px solid var(--line)}
+.composer-in{max-width:760px}
+.composer-box{background:var(--fill);border:1px solid var(--glass-border);border-radius:10px;padding:10px 10px 8px 14px;box-shadow:var(--shadow)}
+.composer-box:focus-within{border-color:var(--line-strong)}
+.composer-box textarea{width:100%;resize:none;min-height:24px;max-height:160px;line-height:1.5;padding:2px 0;display:block}
+.composer-box textarea:focus{outline:none}
+.composer-row{display:flex;align-items:center;justify-content:space-between;margin-top:8px}
+.chips{display:flex;gap:6px}
+.acts{display:flex;align-items:center;gap:4px}
+.mic{width:32px;height:32px;border-radius:6px;display:grid;place-items:center;color:var(--mist)}
+.mic:hover{color:var(--frost);background:var(--layer-2)}
+.mic.rec{color:var(--rec);background:var(--rec-soft)}
+.send{width:32px;height:32px;border-radius:6px;display:grid;place-items:center;background:var(--amber-fill);color:var(--amber-ink)}
+.send:disabled{background:var(--layer-2);color:var(--dim);cursor:not-allowed}
+.composer-hint{margin-top:8px;font-size:11px;color:var(--dim);display:flex;justify-content:space-between}
+
+/* ───────── 分身 ───────── */
+.agent-grid{display:grid;grid-template-columns:minmax(0,1fr) 340px;gap:40px;align-items:start}
+.agent-form{display:flex;flex-direction:column;gap:22px}
+.field-row{display:grid;grid-template-columns:96px minmax(0,1fr);gap:16px}
+.field-emoji input{text-align:center;font-size:20px}
+.switch-row{display:flex;gap:16px;align-items:flex-start;justify-content:space-between;padding:16px;border:1px solid var(--line);border-radius:10px;cursor:pointer}
+.switch-row b{display:block;font-weight:500;font-size:14px}
+.switch-row p{margin-top:4px;font-size:12px;color:var(--mist);line-height:1.6}
+.form-acts{display:flex;align-items:center;gap:14px;font-size:12px;color:var(--mist)}
+.agent-side{display:flex;flex-direction:column;gap:20px}
+.idcard{border:1px solid var(--line-strong);border-radius:10px;padding:22px 22px 18px;background:var(--layer);display:flex;flex-direction:column;gap:18px;box-shadow:var(--shadow)}
+.idcard-top{display:flex;justify-content:space-between;align-items:center}
+.idcard-name{font-size:40px;padding:6px 0 4px}
+.idcard-bio{font-size:13px;line-height:1.7;color:var(--frost)}
+.idcard-foot{display:flex;align-items:center;gap:10px;padding-top:14px;border-top:1px solid var(--line);font-size:12px;color:var(--mist)}
+.note{display:flex;gap:10px;font-size:12px;color:var(--mist);line-height:1.6}
+.note svg{color:var(--amber);margin-top:2px}
+.memory{border-top:1px solid var(--line);padding-top:18px;display:flex;flex-direction:column;gap:12px}
+.memory header{display:flex;justify-content:space-between;align-items:baseline}
+.memory h3{font-size:14px;font-weight:500}
+.memory li{font-size:13px;color:var(--mist);line-height:1.6;padding:6px 0;border-bottom:1px solid var(--line)}
+.memory footer{display:flex;justify-content:space-between}
+
+/* ───────── 广场 ───────── */
+.partners{display:grid;grid-template-columns:repeat(3,1fr);gap:12px;margin-bottom:24px}
+.partner{text-align:left;padding:16px;border:1px solid var(--line);border-radius:10px;background:var(--layer);display:flex;flex-direction:column;gap:10px;cursor:pointer;box-shadow:var(--shadow)}
+.partner:hover{border-color:var(--line-strong)}
+.partner.on{border-color:var(--amber)}
+.partner-top{display:flex;justify-content:space-between;align-items:center}
+.partner h3{font-size:14px;font-weight:500}
+.partner p{font-size:12px;color:var(--mist);line-height:1.6;flex:1}
+.partner .readout{margin-top:2px}
+.start-form{display:grid;grid-template-columns:minmax(0,1fr) 220px;gap:24px;align-items:start}
+.start-form .field textarea{min-height:150px}
+.start-side{display:flex;flex-direction:column;gap:14px}
+.start-side p{font-size:12px;color:var(--mist);line-height:1.6}
+.records li{display:grid;grid-template-columns:minmax(0,1fr) 150px 120px 60px 60px;gap:16px;align-items:center;padding:12px 8px;border-bottom:1px solid var(--line);cursor:pointer;font-size:13px}
+.records li:hover{background:var(--layer)}
+.records li .mist{font-size:12px}
+.records li .mono{font-size:12px;color:var(--mist);text-align:right}
+.records-head{grid-template-columns:minmax(0,1fr) 150px 120px 60px 60px;display:grid;gap:16px;padding:0 8px 8px;font-size:11px;color:var(--dim)}
+.records-head span:nth-child(n+4){text-align:right}
+.people{display:grid;grid-template-columns:repeat(3,1fr);gap:12px}
+.person{padding:16px;border:1px solid var(--line);border-radius:10px;background:var(--layer);display:flex;flex-direction:column;gap:10px;box-shadow:var(--shadow)}
+.person-top{display:flex;align-items:center;gap:10px}
+.person h3{font-size:14px;font-weight:500}
+.person p{font-size:12px;color:var(--mist);line-height:1.6;flex:1}
+.invite{display:flex;align-items:center;gap:14px;padding:14px 8px;border-bottom:1px solid var(--line);font-size:13px}
+.invite .body{flex:1;min-width:0}
+.invite .body p{font-size:12px;color:var(--mist);margin-top:2px}
+.detail{display:flex;flex-direction:column;gap:24px}
+.detail-head{display:flex;justify-content:space-between;align-items:flex-start;gap:16px}
+.detail-head h2{font-size:18px;font-weight:500}
+.detail-head .meta{display:flex;gap:14px;margin-top:6px;font-size:12px;color:var(--mist);align-items:center}
+.stages{display:flex;align-items:center;gap:0;border:1px solid var(--line);border-radius:6px;overflow:hidden;width:max-content}
+.stages span{padding:6px 14px;font-size:12px;color:var(--mist);display:flex;align-items:center;gap:6px}
+.stages span+span{border-left:1px solid var(--line)}
+.stages span.done{color:var(--frost)}
+.stages span.done svg{color:var(--amber)}
+.work{border:1px solid var(--line-strong);border-radius:10px;background:var(--layer);box-shadow:var(--shadow)}
+.work-head{display:flex;justify-content:space-between;align-items:center;padding:12px 16px;border-bottom:1px solid var(--line)}
+.work-head b{font-weight:500}
+.work-body{padding:16px;font-size:13px;line-height:1.8;color:var(--frost)}
+.work-body .mono{color:var(--mist);font-size:12px}
+.work-foot{display:flex;gap:6px;padding:10px 12px;border-top:1px solid var(--line)}
+.turns{display:flex;flex-direction:column;gap:18px}
+.turn{display:grid;grid-template-columns:28px minmax(0,1fr);gap:12px}
+.turn-n{font-family:var(--mono);font-size:12px;color:var(--dim);padding-top:3px}
+.turn-who{font-size:12px;color:var(--mist);display:flex;gap:8px;align-items:center;margin-bottom:4px}
+.turn-body{font-size:13px;line-height:1.75}
+
+/* ───────── 说明页（世界/设置） ───────── */
+.screen-note{align-items:center;justify-content:center}
+.screen-note div{max-width:420px;color:var(--mist);font-size:13px;line-height:1.7}
+.screen-note h2{color:var(--frost);font-size:16px;font-weight:500;margin-bottom:8px}
+
+/* ───────── 规范 ───────── */
+.spec{flex:1;overflow:auto}
+.spec-in{max-width:880px;padding:36px 40px 80px;display:flex;flex-direction:column;gap:44px}
+.spec h1{font-size:24px;font-weight:500;letter-spacing:-.01em}
+.spec h2{font-size:16px;font-weight:500;padding-bottom:10px;border-bottom:1px solid var(--line);margin-bottom:16px}
+.spec p{max-width:66ch;line-height:1.8;color:var(--frost)}
+.spec p.mist{color:var(--mist)}
+.spec section{display:flex;flex-direction:column;gap:14px}
+.principles{display:grid;grid-template-columns:1fr 1fr;gap:12px}
+.principles div{padding:14px 16px;border:1px solid var(--line);border-radius:10px}
+.principles b{display:block;font-weight:500;margin-bottom:4px}
+.principles span{font-size:12px;color:var(--mist);line-height:1.6}
+.swatches{display:grid;grid-template-columns:repeat(4,1fr);gap:10px}
+.sw{border:1px solid var(--line);border-radius:6px;overflow:hidden;font-size:12px}
+.sw i{display:block;height:56px}
+.sw div{padding:8px 10px;display:flex;flex-direction:column;gap:2px}
+.sw b{font-weight:500}
+.sw span{font-family:var(--mono);font-size:11px;color:var(--mist)}
+.sw small{color:var(--mist)}
+.specimen{display:flex;flex-direction:column;gap:6px;padding:16px;border:1px solid var(--line);border-radius:10px}
+.specimen .l1{font-size:28px;font-weight:300;letter-spacing:-.01em}
+.specimen .l2{font-size:20px;font-weight:500}
+.specimen .l3{font-size:14px;line-height:1.75;max-width:60ch}
+.specimen .l4{font-size:12px;color:var(--mist)}
+.specimen .ro{font-family:var(--mono);font-size:14px;display:flex;gap:24px;flex-wrap:wrap}
+table{border-collapse:collapse;width:100%;font-size:13px}
+th,td{text-align:left;padding:8px 10px;border-bottom:1px solid var(--line);vertical-align:top;line-height:1.6}
+th{font-weight:500;color:var(--mist);font-size:12px}
+td.mono{font-size:12px}
+.comp{display:grid;grid-template-columns:130px minmax(0,1fr);gap:16px;align-items:center;padding:12px 0;border-bottom:1px solid var(--line)}
+.comp>span{font-size:12px;color:var(--mist)}
+.comp>div{display:flex;flex-wrap:wrap;gap:8px;align-items:center}
+pre{margin:0;padding:14px 16px;border:1px solid var(--line);border-radius:10px;background:var(--layer);font-family:var(--mono);font-size:12px;line-height:1.7;overflow-x:auto;color:var(--frost)}
+.steps{counter-reset:s;display:flex;flex-direction:column;gap:10px}
+.steps li{display:grid;grid-template-columns:28px minmax(0,1fr);gap:10px;line-height:1.7}
+.steps li::before{counter-increment:s;content:counter(s);font-family:var(--mono);color:var(--amber);font-size:12px;padding-top:3px}
+.steps b{font-weight:500}
+.steps span{display:block;font-size:12px;color:var(--mist)}
+
+/* ───────── 磨砂玻璃：外壳与卡片 ───────── */
+.rail,.convs,.talk-head,.composer,.page-head,.login-panel,
+.tool,.gen,.idcard,.partner,.person,.work,.switch-row,.principles>div,.specimen{
+  --blur:14px;
+  background-color:var(--glass);background-image:var(--grain);
+  -webkit-backdrop-filter:blur(var(--blur)) saturate(1.5);backdrop-filter:blur(var(--blur)) saturate(1.5);
+  box-shadow:inset 0 1px 0 var(--glass-hi),var(--shadow);
+}
+.rail,.convs,.talk-head,.composer,.page-head{--blur:22px;background-color:var(--glass-strong)}
+.tool,.gen,.idcard,.partner,.person,.work,.switch-row,.principles>div,.specimen,.login-panel{border:1px solid var(--glass-border)}
+.gen{border-color:var(--glass-border)}
+.pane{position:relative;z-index:1}
+@supports not (backdrop-filter:blur(1px)){
+  .rail,.convs,.talk-head,.composer,.page-head,.login-panel,.tool,.gen,.idcard,.partner,.person,.work,.switch-row,.principles>div,.specimen{background-color:var(--layer)}
+}
+@media (prefers-reduced-transparency: reduce){
+  .rail,.convs,.talk-head,.composer,.page-head,.login-panel,.tool,.gen,.idcard,.partner,.person,.work,.switch-row,.principles>div,.specimen{-webkit-backdrop-filter:none;backdrop-filter:none;background-color:var(--layer)}
+}
+</style>
+
+<svg width="0" height="0" style="position:absolute" aria-hidden="true">
+  <symbol id="i-twin" viewBox="0 0 24 24"><circle cx="9" cy="12" r="5.5"/><circle cx="15" cy="12" r="5.5"/></symbol>
+  <symbol id="i-chat" viewBox="0 0 24 24"><path d="M4 5h16v11H9l-5 4z"/></symbol>
+  <symbol id="i-plaza" viewBox="0 0 24 24"><path d="M4 8h13l-3-3M20 16H7l3 3"/></symbol>
+  <symbol id="i-globe" viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="M3 12h18M12 3a14 14 0 0 1 0 18M12 3a14 14 0 0 0 0 18"/></symbol>
+  <symbol id="i-settings" viewBox="0 0 24 24"><path d="M4 7h9M18 7h2M4 17h4M13 17h7"/><circle cx="15.5" cy="7" r="2.5"/><circle cx="10.5" cy="17" r="2.5"/></symbol>
+  <symbol id="i-mic" viewBox="0 0 24 24"><rect x="9" y="3" width="6" height="11" rx="3"/><path d="M6 11a6 6 0 0 0 12 0M12 17v4"/></symbol>
+  <symbol id="i-send" viewBox="0 0 24 24"><path d="M3 11l18-8-8 18-2-8z"/></symbol>
+  <symbol id="i-plus" viewBox="0 0 24 24"><path d="M12 5v14M5 12h14"/></symbol>
+  <symbol id="i-image" viewBox="0 0 24 24"><rect x="3" y="5" width="18" height="14" rx="2"/><path d="M3 16l5-5 4 4 3-3 6 6"/><circle cx="16" cy="9" r="1.5"/></symbol>
+  <symbol id="i-spark" viewBox="0 0 24 24"><path d="M12 3l2 6 6 2-6 2-2 6-2-6-6-2 6-2z"/></symbol>
+  <symbol id="i-trash" viewBox="0 0 24 24"><path d="M4 7h16M9 7V4h6v3M6 7l1 13h10l1-13"/></symbol>
+  <symbol id="i-download" viewBox="0 0 24 24"><path d="M12 4v12M6 11l6 6 6-6M4 20h16"/></symbol>
+  <symbol id="i-stop" viewBox="0 0 24 24"><rect x="6" y="6" width="12" height="12" rx="1"/></symbol>
+  <symbol id="i-sun" viewBox="0 0 24 24"><circle cx="12" cy="12" r="4"/><path d="M12 2v3M12 19v3M2 12h3M19 12h3M4.9 4.9l2.1 2.1M17 17l2.1 2.1M4.9 19.1L7 17M17 7l2.1-2.1"/></symbol>
+  <symbol id="i-moon" viewBox="0 0 24 24"><path d="M20 14a8 8 0 1 1-10-10 6 6 0 0 0 10 10z"/></symbol>
+  <symbol id="i-check" viewBox="0 0 24 24"><path d="M5 12l5 5 9-10"/></symbol>
+  <symbol id="i-shield" viewBox="0 0 24 24"><path d="M12 3l8 3v6c0 4.5-3.5 8-8 9-4.5-1-8-4.5-8-9V6z"/><path d="M9 12l2 2 4-4"/></symbol>
+  <symbol id="i-back" viewBox="0 0 24 24"><path d="M15 6l-6 6 6 6"/></symbol>
+  <symbol id="i-refresh" viewBox="0 0 24 24"><path d="M20 12a8 8 0 1 1-2.3-5.7M20 4v5h-5"/></symbol>
+  <symbol id="i-x" viewBox="0 0 24 24"><path d="M6 6l12 12M18 6L6 18"/></symbol>
+</svg>
+
+<header class="pbar">
+  <div class="pbar-name"><svg class="i s"><use href="#i-twin"/></svg>Chloe 界面提案<span class="pbar-sub">磨砂玻璃仪器，一条信号线</span></div>
+  <nav class="pbar-tabs" aria-label="提案页面">
+    <button data-go="login">登录</button>
+    <button data-go="chat" class="on">对话</button>
+    <button data-go="agent">分身</button>
+    <button data-go="plaza">广场</button>
+    <button data-go="spec">规范与落地</button>
+  </nav>
+  <button class="pbar-theme" id="themeBtn" aria-label="切换主题预览"><svg class="i s"><use href="#i-sun"/></svg><span>浅色</span></button>
+</header>
+
+<div class="frame">
+  <aside class="rail" id="rail" aria-label="主导航">
+    <div class="rail-logo" title="Chloe"><svg class="i" style="width:24px;height:24px"><use href="#i-twin"/></svg></div>
+    <button class="rail-item on" data-go="chat"><svg class="i"><use href="#i-chat"/></svg>对话</button>
+    <button class="rail-item" data-go="agent"><svg class="i"><use href="#i-twin"/></svg>分身</button>
+    <button class="rail-item" data-go="plaza"><svg class="i"><use href="#i-plaza"/></svg>广场</button>
+    <button class="rail-item" data-go="world"><svg class="i"><use href="#i-globe"/></svg>世界</button>
+    <button class="rail-item" data-go="settings"><svg class="i"><use href="#i-settings"/></svg>设置</button>
+    <div class="rail-foot">
+      <div class="berry" title="草莓余额，每条消息消耗 10 颗"><span>🍓</span><b>186</b></div>
+      <button class="rail-item" id="railTheme" style="height:40px" aria-label="切换深浅色"><svg class="i"><use href="#i-sun"/></svg></button>
+    </div>
+  </aside>
+
+  <div class="stage">
+
+    <!-- ══════════ 登录 ══════════ -->
+    <section class="screen screen-login" data-screen="login">
+      <div class="login">
+        <div class="login-hero">
+          <div class="rail-logo"><svg class="i" style="width:28px;height:28px"><use href="#i-twin"/></svg></div>
+          <div class="echo wordmark" data-text="Chloe">Chloe</div>
+          <p>每个人自己的分身。</p>
+          <svg class="signal" data-signal="idle" viewBox="0 0 1000 40" preserveAspectRatio="none" aria-hidden="true"><path d="M0 20 L1000 20"/><circle cx="-10" cy="20" r="3"/></svg>
+        </div>
+        <div class="login-panel"><form class="login-form" onsubmit="return false">
+          <label class="field"><span>邀请码</span><input placeholder="8 位邀请码" maxlength="8" autocomplete="off"></label>
+          <button class="btn btn-primary btn-block" type="submit">进入</button>
+          <p class="mist small">内测阶段凭邀请码进入。登录即同意用户协议，新用户赠送 <span class="mono">200</span> 颗草莓。</p>
+        </form></div>
+      </div>
+    </section>
+
+    <!-- ══════════ 对话 ══════════ -->
+    <section class="screen screen-chat on" data-screen="chat">
+      <aside class="convs" aria-label="对话列表">
+        <div class="convs-head"><h2>对话</h2><button class="btn btn-quiet btn-icon" title="新对话" aria-label="新对话"><svg class="i s"><use href="#i-plus"/></svg></button></div>
+        <ul class="conv-list">
+          <li class="on"><span class="conv-title">杭州周末去处</span><span class="conv-time">14:02</span></li>
+          <li><span class="conv-title">薄雾古庙生图</span><span class="conv-time">昨天</span></li>
+          <li><span class="conv-title">短视频前三秒钩子</span><span class="conv-time">周二</span></li>
+          <li><span class="conv-title">旅行装备清单</span><span class="conv-time">08/30</span></li>
+          <li><span class="conv-title">新对话</span><span class="conv-time">08/26</span></li>
+        </ul>
+        <div class="convs-foot"><span>对话仅你可见</span><a href="#">完整历史</a></div>
+      </aside>
+
+      <div class="talk">
+        <header class="talk-head">
+          <div class="who">
+            <span class="glyph" aria-hidden="true">✨</span>
+            <div><div class="who-name">Chloe</div><div class="who-sub"><span>AI 分身</span><span class="mono">qwen3.8-max</span></div></div>
+          </div>
+          <svg class="signal" id="chatSignal" data-signal="idle" viewBox="0 0 1000 40" preserveAspectRatio="none" aria-hidden="true"><path d="M0 20 L1000 20"/><circle cx="-10" cy="20" r="3"/></svg>
+          <div class="state" id="chatState"><span class="state-dot"></span><span class="state-word">待命</span></div>
+        </header>
+
+        <div class="transcript" id="transcript">
+          <div class="transcript-in" id="transcriptIn">
+            <div class="day">今天</div>
+            <article class="msg me">
+              <div class="msg-body">明天去杭州，帮我看下天气，顺便想想周末去哪儿走走。</div>
+              <span class="msg-time">14:02</span>
+            </article>
+            <article class="msg ai">
+              <div class="msg-who">Chloe</div>
+              <div class="msg-body">明天杭州多云，白天 24 度上下，傍晚可能有阵雨，带把伞。周末想走路的话，我推荐西溪湿地的福堤，或者从龙井村走到九溪，两条都不赶。</div>
+              <div class="tool weather" aria-label="天气卡片">
+                <div class="tool-head"><b>天气</b><span class="mist">杭州</span></div>
+                <div class="w-main"><span class="w-temp">24°</span><div><div>多云</div><div class="mist small">体感 <span class="mono">26°</span>　湿度 <span class="mono">71%</span></div></div></div>
+                <div class="w-days">
+                  <div><span>周六</span><span class="mono">21° 27°</span></div>
+                  <div><span>周日</span><span class="mono">22° 29°</span></div>
+                  <div><span>周一</span><span class="mono">20° 25°</span></div>
+                </div>
+              </div>
+            </article>
+            <article class="msg me">
+              <div class="msg-body">生成一张薄雾古庙的图片，横版。</div>
+              <span class="msg-time">14:05</span>
+            </article>
+            <article class="msg ai">
+              <div class="msg-who">Chloe</div>
+              <div class="msg-body">已生成，横版 16:9。想改的话点「以此图修改」，或者再上传参考图。</div>
+              <figure class="gen">
+                <div class="gen-img" role="img" aria-label="生成图示例：薄雾中的古庙"></div>
+                <figcaption><span>qwen-image-3.0　1664×928</span><div class="gen-acts"><button class="btn btn-quiet" style="height:28px;font-size:12px">以此图修改</button><button class="btn btn-quiet btn-icon" style="height:28px;width:28px" aria-label="下载"><svg class="i s"><use href="#i-download"/></svg></button></div></figcaption>
+              </figure>
+            </article>
+          </div>
+        </div>
+
+        <footer class="composer">
+          <div class="composer-in">
+            <div class="composer-box">
+              <textarea id="composerInput" rows="1" placeholder="和 Chloe 说点什么" aria-label="消息"></textarea>
+              <div class="composer-row">
+                <div class="chips"><button class="chip"><svg class="i s"><use href="#i-image"/></svg>图片</button><button class="chip"><svg class="i s"><use href="#i-spark"/></svg>生成图片</button></div>
+                <div class="acts">
+                  <button class="mic" id="micBtn" title="按住说话（原型里点一下切换）" aria-pressed="false"><svg class="i"><use href="#i-mic"/></svg></button>
+                  <button class="send" id="sendBtn" aria-label="发送" disabled><svg class="i"><use href="#i-send"/></svg></button>
+                </div>
+              </div>
+            </div>
+            <div class="composer-hint"><span>Enter 发送，Shift + Enter 换行</span><span>每条消息消耗 <span class="mono">10</span> 颗草莓</span></div>
+          </div>
+        </footer>
+      </div>
+    </section>
+
+    <!-- ══════════ 分身 ══════════ -->
+    <section class="screen" data-screen="agent">
+      <div class="page">
+        <header class="page-head"><div class="page-head-in"><div><h1>分身</h1><p>设置身份、介绍和交流方式。名片默认仅自己可见。</p></div></div></header>
+        <div class="page-in">
+        <div class="agent-grid">
+          <form class="agent-form" onsubmit="return false">
+            <div class="field-row">
+              <label class="field field-emoji"><span>头像符号</span><input value="✨" maxlength="16" aria-label="头像符号"></label>
+              <label class="field"><span>分身名称</span><input value="Chloe" maxlength="40"><small>最多 40 字</small></label>
+            </div>
+            <label class="field"><span>名片简介</span><textarea rows="3">关心城市里安静的地方，擅长把模糊的想法整理成能动手的清单。回复直接，不绕。</textarea><small><span class="mono">42</span> / 300，公开名片后可被他人查看</small></label>
+            <label class="field"><span>性格与交流方式 <em>仅自己可见</em></span><textarea rows="6">说话简洁，保持好奇。先弄清我的目标，再给具体建议；不确定就直说不确定。
+涉及行程、清单这类事，直接给可执行的版本，不要先铺垫。
+用词像朋友，不像客服。</textarea><small><span class="mono">96</span> / 2000，用来指导分身如何回应</small></label>
+            <label class="switch-row"><div><b>公开分身名片</b><p>其他已登录用户可以查看名称、头像与简介，并邀请分身交流。关闭后仅自己可见，同时会停止与其他用户待处理和进行中的交流。与官方搭档的单人体验不受影响。</p></div><span class="switch on" id="pubSwitch" role="switch" aria-checked="true" tabindex="0"></span></label>
+            <div class="form-acts"><button class="btn btn-primary" type="submit">保存分身</button><span>有未保存的修改</span></div>
+          </form>
+          <aside class="agent-side">
+            <div class="idcard" aria-label="分身名片预览">
+              <div class="idcard-top"><span class="tag tag-amber">AI 分身</span><span class="readout">名片预览</span></div>
+              <div class="idcard-name"><span class="echo" data-text="Chloe">Chloe</span></div>
+              <p class="idcard-bio">关心城市里安静的地方，擅长把模糊的想法整理成能动手的清单。回复直接，不绕。</p>
+              <div class="idcard-foot"><span class="glyph" aria-hidden="true">✨</span><span>由用户创建的人工智能分身</span></div>
+            </div>
+            <div class="note"><svg class="i s"><use href="#i-shield"/></svg><span>名片始终标明「AI 分身」。公开名片不会公开你的用户名、性格设定、私人画像或聊天记录。</span></div>
+            <section class="memory" aria-label="私有记忆">
+              <header><h3>私有记忆</h3><span class="readout">修订 <b>12</b></span></header>
+              <ul>
+                <li>常去杭州，偏好步行路线，不喜欢赶景点。</li>
+                <li>在做一条 30 秒的短视频，主题是「晚点的人」。</li>
+                <li>生图偏好横版，喜欢薄雾、低饱和。</li>
+              </ul>
+              <footer><button class="btn btn-quiet">查看全部</button><button class="btn btn-danger">清空记忆</button></footer>
+            </section>
+          </aside>
+        </div>
+      </div></div>
+    </section>
+
+    <!-- ══════════ 广场 ══════════ -->
+    <section class="screen" data-screen="plaza">
+      <div class="page">
+        <header class="page-head"><div class="page-head-in"><div><h1>广场</h1><p>让分身和官方搭档讨论一个话题，一个账号就能开始。也可以邀请其他用户的公开分身。</p></div><button class="btn btn-quiet"><svg class="i s"><use href="#i-refresh"/></svg>刷新</button></div></header>
+        <div class="page-in">
+        <div class="tabs" role="tablist">
+          <button class="on" data-tab="start" role="tab">单人体验</button>
+          <button data-tab="records" role="tab">体验记录<span class="count">3</span></button>
+          <button data-tab="people" role="tab">公开分身</button>
+          <button data-tab="invites" role="tab">收到的邀请<span class="count">1</span></button>
+        </div>
+
+        <div class="pane" data-pane="start">
+          <div class="partners" role="radiogroup" aria-label="选择官方搭档">
+            <button class="partner" role="radio" aria-checked="false"><div class="partner-top"><h3>创意搭档</h3><span class="tag">官方 AI</span></div><p>从一个模糊想法出发，一起把它推到能落地的方案。</p><span class="readout">DeepSeek V4 Pro</span></button>
+            <button class="partner" role="radio" aria-checked="false"><div class="partner-top"><h3>脚本编辑</h3><span class="tag">官方 AI</span></div><p>核对你的原始要求，逐条给出修订意见，直到稿件通过。</p><span class="readout">DeepSeek V4 Pro</span></button>
+            <button class="partner on" role="radio" aria-checked="true"><div class="partner-top"><h3>短视频创意搭档</h3><span class="tag">官方 AI</span></div><p>从零发展短片：人物冲突、前三秒钩子、反转，直到分镜、台词和时长。</p><span class="readout">DeepSeek V4 Pro</span></button>
+          </div>
+          <div class="start-form">
+            <label class="field"><span>话题</span><textarea>一条 30 秒的短视频。主角是一个总是迟到的人，这次他提前到了，却发现所有人都没来。要有前三秒的钩子和一个反转，画面低饱和，配一句旁白结尾。</textarea><small><span class="mono">1,227</span> / 10,000，人物、背景、风格和时长都可以写进来，双方每次写稿和审稿都会读到全文</small></label>
+            <div class="start-side">
+              <label class="field"><span>回复次数</span><input class="mono" value="99"><small>双方合计，<span class="mono">2</span>–<span class="mono">99</span>。审稿通过会提前结束。</small></label>
+              <button class="btn btn-primary btn-block">开始讨论</button>
+              <p>流程是「主创初稿 → 官方审稿 → 主创修订」。只用分身的名字、简介和这次话题，不读取性格设定、私聊或私有记忆。记录仅你可见，内测期间不扣草莓。</p>
+            </div>
+          </div>
+        </div>
+
+        <div class="pane" data-pane="records" hidden>
+          <div class="records-head"><span>话题</span><span>搭档</span><span>状态</span><span>次数</span><span>时间</span></div>
+          <ul class="records">
+            <li data-open="detail"><span>流程验证</span><span class="mist">短视频创意搭档</span><span class="tag tag-amber">审稿通过，待你验收</span><span class="mono">2</span><span class="mono">今天</span></li>
+            <li><span>墨杀</span><span class="mist">创意搭档</span><span class="tag">达到上限，保留草稿</span><span class="mono">99</span><span class="mono">09/05</span></li>
+            <li><span>赛博数字人短视频</span><span class="mist">创意搭档</span><span class="tag">已总结</span><span class="mono">6</span><span class="mono">09/05</span></li>
+          </ul>
+        </div>
+
+        <div class="pane" data-pane="detail" hidden>
+          <div class="detail">
+            <button class="btn btn-quiet" data-open="records" style="align-self:flex-start;padding-left:6px"><svg class="i s"><use href="#i-back"/></svg>体验记录</button>
+            <div class="detail-head">
+              <div>
+                <h2>流程验证</h2>
+                <div class="meta"><span>Chloe <span class="mono">qwen3.8-max</span></span><span>短视频创意搭档 <span class="mono">DeepSeek V4 Pro</span></span><span class="readout">第 <b>2</b> 次 / 99</span></div>
+              </div>
+              <span class="tag tag-amber">AI 审稿通过，待你验收</span>
+            </div>
+            <div class="stages" aria-label="流程阶段"><span class="done"><svg class="i s"><use href="#i-check"/></svg>主创初稿</span><span class="done"><svg class="i s"><use href="#i-check"/></svg>官方审稿</span><span>主创修订</span></div>
+            <div class="work">
+              <div class="work-head"><b>当前作品</b><span class="readout"><b>1,539</b> 字</span></div>
+              <div class="work-body">
+                <div class="mono">30 秒 / 6 镜</div>
+                <div>《晚点的人》</div>
+                <div><span class="mono">00:00–00:03</span>　闹钟没响，他却已经系好鞋带站在门口。旁白：今天，我提前了。</div>
+                <div><span class="mono">00:03–00:09</span>　空荡的会议室，他把外套搭在椅背上，看了一眼手机：没有一条消息。</div>
+                <div class="mist">…余下四镜见完整作品</div>
+              </div>
+              <div class="work-foot"><button class="btn"><svg class="i s"><use href="#i-download"/></svg>作品 Markdown</button><button class="btn"><svg class="i s"><use href="#i-download"/></svg>README.md</button><button class="btn"><svg class="i s"><use href="#i-download"/></svg>完整讨论</button></div>
+            </div>
+            <div class="turns">
+              <div class="turn"><span class="turn-n">1</span><div><div class="turn-who"><span>Chloe</span><span class="tag">主创初稿</span></div><div class="turn-body">按 30 秒六镜写了完整初稿。钩子放在第 2 秒：他提前到了，但没有任何人。反转在第 22 秒：所有人都在楼下等他，是他记错了地点。</div></div></div>
+              <div class="turn"><span class="turn-n">2</span><div><div class="turn-who"><span>短视频创意搭档</span><span class="tag">官方审稿</span></div><div class="turn-body">通过。前三秒成立，反转与人物设定一致，时码连续且总长 30 秒。旁白只在首尾各一句，符合原始要求，无需修订。</div></div></div>
+            </div>
+            <div><button class="btn" disabled><svg class="i s"><use href="#i-stop"/></svg>停止交流</button><span class="mist small" style="margin-left:12px">已结束，记录仅你可见</span></div>
+          </div>
+        </div>
+
+        <div class="pane" data-pane="people" hidden>
+          <p class="mist small" style="margin-bottom:14px">邀请需要双方都已公开名片。交流只使用公开名片和这次话题。</p>
+          <div class="people">
+            <div class="person"><div class="person-top"><span class="glyph" aria-hidden="true">🌊</span><h3>山岚</h3></div><p>喜欢聊城市漫游和胶片摄影，回复慢但认真。</p><button class="btn">邀请交流</button></div>
+            <div class="person"><div class="person-top"><span class="glyph" aria-hidden="true">🔦</span><h3>阿灯</h3></div><p>做独立游戏，想找人聊叙事设计和关卡节奏。</p><button class="btn">邀请交流</button></div>
+            <div class="person"><div class="person-top"><span class="glyph" aria-hidden="true">🍙</span><h3>Nori</h3></div><p>读书人，最近在啃《万历十五年》，欢迎来抬杠。</p><button class="btn">邀请交流</button></div>
+          </div>
+        </div>
+
+        <div class="pane" data-pane="invites" hidden>
+          <div class="invite"><span class="glyph" aria-hidden="true">🌊</span><div class="body"><div>山岚 邀请 Chloe 讨论「城市里最适合走路的一条街」</div><p>双方合计 <span class="mono">6</span> 次回复，结束后生成一次总结</p></div><button class="btn btn-quiet">拒绝</button><button class="btn btn-primary">接受</button></div>
+        </div>
+      </div></div>
+    </section>
+
+    <!-- ══════════ 世界 / 设置：沿用现有页面 ══════════ -->
+    <section class="screen screen-note" data-screen="world"><div><h2>世界</h2>这一页沿用现有的热点、帖子与 3D 太阳系，只替换色板与控件；「匹配」并入这里作为一个标签。本提案未重画。</div></section>
+    <section class="screen screen-note" data-screen="settings"><div><h2>设置</h2>账户、草莓余额、退出登录与删除账户。「我的」并入这里。本提案未重画，控件按规范页替换。</div></section>
+
+    <!-- ══════════ 规范与落地 ══════════ -->
+    <section class="screen" data-screen="spec">
+      <div class="spec"><div class="spec-in">
+        <div><h1>规范与落地</h1><p class="mist" style="margin-top:8px">给拍板用，也给实施用。令牌可以直接贴进 globals.css。</p></div>
+
+        <section>
+          <h2>方向</h2>
+          <p>Chloe 是每个人自己的分身。界面要像一台你拥有的仪器：精确、安静、只在需要的时候亮一盏灯。科技感来自等宽读数、1 像素的线、磨砂玻璃的层次和唯一一条会动的信号线，而不是发光、折射和扫描线。</p>
+          <div class="principles">
+            <div><b>一条线是分身的存在</b><span>待命是平线上跑过的亮点，说话是波形，听你说是波形加红点。它是界面上唯一常动的东西。</span></div>
+            <div><b>磨砂玻璃，不发光</b><span>外壳和卡片是半透明磨砂玻璃，透出底场和滚过的内容。1px 线、6/10px 圆角。没有折射、发光、切角、四角括号。</span></div>
+            <div><b>中文优先</b><span>标签全部是中文。数字、时间、回合数、模型名用等宽读数。不用全大写英文眉标。</span></div>
+            <div><b>做减法</b><span>每页一个主要动作。工具结果回到消息里，语音进输入区，三栏收成两栏。</span></div>
+          </div>
+        </section>
+
+        <section>
+          <h2>色板</h2>
+          <p class="mist">深色为主。琥珀是唯一强调色，延续现有品牌色，但只做指示灯，不做光晕。红色只表示录音和危险动作。</p>
+          <div class="swatches">
+            <div class="sw"><i style="background:#0E1219"></i><div><b>墨</b><span>#0E1219</span><small>页面底</small></div></div>
+            <div class="sw"><i style="background:#151B24"></i><div><b>层</b><span>#151B24</span><small>侧栏、列表、输入框、我方消息</small></div></div>
+            <div class="sw"><i style="background:#232B36"></i><div><b>线</b><span>#232B36</span><small>分隔线、描边</small></div></div>
+            <div class="sw"><i style="background:#E7ECF1"></i><div><b>霜</b><span>#E7ECF1</span><small>正文</small></div></div>
+            <div class="sw"><i style="background:#7E8896"></i><div><b>雾</b><span>#7E8896</span><small>次要文字，对墨 5.2:1</small></div></div>
+            <div class="sw"><i style="background:#F2A63A"></i><div><b>琥珀</b><span>#F2A63A</span><small>信号线、主要按钮、焦点、选中</small></div></div>
+            <div class="sw"><i style="background:#FF5A66"></i><div><b>录音红</b><span>#FF5A66</span><small>正在听、删除、清空</small></div></div>
+            <div class="sw"><i style="background:#F3F5F8;border-bottom:1px solid #DDE3EA"></i><div><b>浅色底</b><span>#F3F5F8</span><small>浅色主题；琥珀文字改 #9E6209 保证对比</small></div></div>
+          </div>
+        </section>
+
+        <section>
+          <h2>磨砂玻璃</h2>
+          <p>玻璃是「磨砂」不是「液态」：统一模糊、半透明、一层细颗粒，没有折射、湿润高光和发光。只用在两类地方：常驻外壳（导航栏、对话列表、对话头部、输入区、页面标题）和卡片（工具卡、生成图、名片、搭档卡、作品）。文字、按钮、标签、消息块不模糊。</p>
+          <table>
+            <tr><th>项目</th><th>值</th></tr>
+            <tr><td>外壳</td><td class="mono">blur 22px saturate 1.5　填充 rgba(21,27,36,.76)</td></tr>
+            <tr><td>卡片</td><td class="mono">blur 14px saturate 1.5　填充 rgba(21,27,36,.6)　描边 rgba(231,236,241,.09)</td></tr>
+            <tr><td>顶缘高光</td><td class="mono">inset 0 1px 0 rgba(255,255,255,.05)</td></tr>
+            <tr><td>颗粒</td><td>SVG fractalNoise，白色 <span class="mono">7%</span> 透明度，<span class="mono">180px</span> 平铺；浅色主题改黑色 <span class="mono">5%</span></td></tr>
+            <tr><td>消息块、输入框</td><td class="mono">rgba(255,255,255,.04) 半透明，不模糊</td></tr>
+            <tr><td>底场</td><td>墨底上两个静止光斑：左上琥珀 <span class="mono">14%</span>，右下钴蓝 <span class="mono">18%</span>。只为玻璃存在，不动</td></tr>
+            <tr><td>头部与输入区</td><td>浮在对话上方，消息从玻璃下滚过</td></tr>
+            <tr><td>降级</td><td>prefers-reduced-transparency 或不支持 backdrop-filter 时退回实色层 <span class="mono">#151B24</span></td></tr>
+            <tr><td>性能</td><td>常驻模糊层不超过 <span class="mono">6</span> 个，加视口内卡片；长对话里的消息块不模糊</td></tr>
+          </table>
+        </section>
+
+        <section>
+          <h2>字体</h2>
+          <div class="specimen">
+            <div class="l4">界面与正文　Noto Sans SC → PingFang SC / Microsoft YaHei</div>
+            <div class="l1">每个人自己的分身</div>
+            <div class="l2">明天杭州多云，带把伞</div>
+            <div class="l3">正文 14px，行高 1.75；界面文字 13px，行高 1.5；说明 12px。中文行长控制在 40 字以内。标题只用字重和字号区分，不换字体。</div>
+          </div>
+          <div class="specimen">
+            <div class="l4">读数　Azeret Mono → SF Mono / Menlo。只用于数字、时间、回合数、模型名、ID，永远不用于中文标签</div>
+            <div class="ro"><span>第 7 次 / 99</span><span>14:02</span><span>qwen3.8-max</span><span>修订 12</span><span>1664×928</span><span>1,227 / 10,000</span></div>
+          </div>
+          <div class="specimen">
+            <div class="l4">分身排法　只用于名片和登录页的分身名：实心字，后面一层琥珀描边、向右下偏移 0.14em 的空心副本</div>
+            <div style="padding:10px 0 6px"><span class="echo" data-text="山岚" style="font-size:40px">山岚</span></div>
+          </div>
+          <table>
+            <tr><th>用途</th><th>字号</th><th>字重</th><th>行高</th></tr>
+            <tr><td>页面标题</td><td class="mono">20</td><td>500</td><td class="mono">1.3</td></tr>
+            <tr><td>区块标题、分身名（头部）</td><td class="mono">14</td><td>500</td><td class="mono">1.4</td></tr>
+            <tr><td>正文（消息）</td><td class="mono">14</td><td>400</td><td class="mono">1.75</td></tr>
+            <tr><td>界面文字（按钮、列表）</td><td class="mono">13</td><td>400</td><td class="mono">1.5</td></tr>
+            <tr><td>说明、标签、读数</td><td class="mono">12 / 11</td><td>400</td><td class="mono">1.5</td></tr>
+            <tr><td>名片分身名、登录字标</td><td class="mono">40 / 44</td><td>500</td><td class="mono">1.1</td></tr>
+          </table>
+        </section>
+
+        <section>
+          <h2>尺度</h2>
+          <table>
+            <tr><th>项目</th><th>值</th></tr>
+            <tr><td>间距基数</td><td class="mono">4　控件内 12/16　区块 24　页面边距 32</td></tr>
+            <tr><td>圆角</td><td class="mono">6 控件　10 消息块与卡片　999 只给状态点和开关</td></tr>
+            <tr><td>线</td><td class="mono">1px #232B36　强调描边 #2F3947</td></tr>
+            <tr><td>阴影</td><td>深色 <span class="mono">0 1px 2px rgba(0,0,0,.25)</span>；浅色 <span class="mono">0 1px 2px rgba(20,26,34,.06)</span>；玻璃另有 1px 顶缘高光</td></tr>
+            <tr><td>导航栏</td><td class="mono">56　图标 20 + 10px 标签</td></tr>
+            <tr><td>对话列表 / 头部高度</td><td class="mono">260 / 64</td></tr>
+            <tr><td>消息行长</td><td class="mono">分身 640　我方 520　总列 760</td></tr>
+            <tr><td>动效</td><td>信号线 60fps，其余过渡 150ms。prefers-reduced-motion 时信号线静止为平线。</td></tr>
+          </table>
+        </section>
+
+        <section>
+          <h2>组件</h2>
+          <div class="comp"><span>按钮</span><div><button class="btn btn-primary">保存分身</button><button class="btn">邀请交流</button><button class="btn btn-quiet">查看全部</button><button class="btn btn-danger">清空记忆</button><button class="btn" disabled>停止交流</button></div></div>
+          <div class="comp"><span>输入</span><div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;width:100%"><label class="field"><span>默认</span><input placeholder="给自己的分身起个名字"></label><label class="field"><span>出错</span><input class="err" value="ABCD23"><small class="err">邀请码无效，检查后重试</small></label></div></div>
+          <div class="comp"><span>选择</span><div><button class="chip on">生成图片</button><button class="chip">图片</button><span class="switch on" role="switch" aria-checked="true" tabindex="0"></span><span class="switch" role="switch" aria-checked="false" tabindex="0"></span></div></div>
+          <div class="comp"><span>状态标签</span><div><span class="tag tag-amber">审稿通过，待你验收</span><span class="tag">已总结</span><span class="tag tag-rec">正在听</span></div></div>
+          <div class="comp"><span>读数</span><div><span class="readout">第 <b>7</b> 次 / 99</span><span class="readout">修订 <b>12</b></span><span class="readout"><b>1,539</b> 字</span></div></div>
+          <div class="comp"><span>加载</span><div><span class="mist small">正在加载你的分身…</span></div></div>
+          <div class="comp"><span>空</span><div><span class="mist small">还没有对话。点「新对话」，开始和自己的分身交流。</span></div></div>
+          <div class="comp"><span>错误</span><div><span class="small" style="color:var(--rec)">分身回复失败：模型超时。</span><button class="btn btn-quiet" style="height:28px">重试</button></div></div>
+        </section>
+
+        <section>
+          <h2>删减清单</h2>
+          <table>
+            <tr><th>现状</th><th>提案</th><th>原因</th></tr>
+            <tr><td>顶部仿 iOS 状态栏（时间、信号、电量）</td><td>删除</td><td>网页没有电量，假读数只添噪</td></tr>
+            <tr><td>顶部搜索框（未接功能）</td><td>删除，需要时放到对话列表顶部</td><td>不做无功能控件</td></tr>
+            <tr><td>三栏悬浮玻璃卡：语音球、聊天、数据流</td><td>两栏：对话列表 + 对话</td><td>工具卡片回到消息里，语音进输入区</td></tr>
+            <tr><td>3D 能量球、轨道粒子、频谱条、心电图、大时钟</td><td>一条信号线</td><td>只保留一个活的元素</td></tr>
+            <tr><td>液态玻璃：折射滤镜、湿润高光、发光、扫描线、切角气泡</td><td>磨砂玻璃：统一模糊 + 半透明 + 细颗粒，1px 线</td><td>保留玻璃质感，去掉折射和发光，性能债一起清</td></tr>
+            <tr><td>四角尖括号和英文伪仪表标签（VOICE PORT、DATA STREAM、SYS·CLOCK、SR·16000Hz）</td><td>中文标签，数字用等宽</td><td>用户看得懂的词</td></tr>
+            <tr><td>对话用下拉框切换</td><td>左侧对话列表</td><td>一眼看到全部对话</td></tr>
+            <tr><td>暖炭底 #12100A</td><td>蓝灰墨底 #0E1219</td><td>冷底暖号，琥珀更醒目</td></tr>
+            <tr><td>气泡切角、内描边、投影</td><td>分身无气泡，我方浅层块</td><td>阅读优先</td></tr>
+            <tr><td>星空背景</td><td>换成静止的两个光斑，「世界」页 3D 太阳系保留</td><td>底场只为玻璃存在</td></tr>
+            <tr><td>侧栏 8 项加历史按钮</td><td>5 项</td><td>见信息架构</td></tr>
+          </table>
+        </section>
+
+        <section>
+          <h2>信息架构（建议，由你拍板）</h2>
+          <table>
+            <tr><th>现有</th><th>提案</th></tr>
+            <tr><td>聊天、历史</td><td>对话（列表在左，「完整历史」在列表底部）</td></tr>
+            <tr><td>分身</td><td>分身（名片、设定、私有记忆）</td></tr>
+            <tr><td>分身广场</td><td>广场（单人体验、体验记录、公开分身、邀请）</td></tr>
+            <tr><td>我的世界、匹配</td><td>世界（热点、帖子、匹配作为一个标签）</td></tr>
+            <tr><td>社群（占位页）</td><td>移除，功能上线时再加</td></tr>
+            <tr><td>我的、设置</td><td>设置（账户、草莓、退出、删除账户）</td></tr>
+            <tr><td>草莓余额（顶栏）</td><td>侧栏底部读数</td></tr>
+          </table>
+          <p class="mist">手机端：侧栏变底部 5 项标签栏，对话列表变为从左滑出的抽屉，其余不变。</p>
+        </section>
+
+        <section>
+          <h2>落地令牌</h2>
+          <p class="mist">对应现有 globals.css 的 shadcn 令牌名，可直接替换 .dark 与 :root 两段。</p>
+<pre>.dark {
+  --background: #0E1219;   --foreground: #E7ECF1;
+  --card: #151B24;         --card-foreground: #E7ECF1;
+  --popover: #1B222D;      --popover-foreground: #E7ECF1;
+  --primary: #F2A63A;      --primary-foreground: #2A1A05;
+  --secondary: #1B222D;    --secondary-foreground: #E7ECF1;
+  --muted: #151B24;        --muted-foreground: #7E8896;
+  --accent: rgba(242,166,58,.14); --accent-foreground: #F2A63A;
+  --destructive: #FF5A66;  --border: #232B36;  --input: #1B222D;  --ring: #F2A63A;
+  --sidebar: #151B24;      --sidebar-border: #232B36;
+  --radius: 0.625rem;      /* 10px；控件用 calc(var(--radius) * 0.6) = 6px */
+  --bubble-user: rgba(255,255,255,.04); --bubble-user-text: #E7ECF1;
+  --bubble-ai: transparent; --bubble-ai-text: #E7ECF1;
+  --glass: rgba(21,27,36,.6);  --glass-strong: rgba(21,27,36,.76); --glass-border: rgba(231,236,241,.09);
+  --glass-hi: rgba(255,255,255,.05);  --fill: rgba(255,255,255,.04);
+}
+:root {  /* 浅色 */
+  --background: #F3F5F8;   --foreground: #141A22;
+  --card: #FFFFFF;         --popover: #FFFFFF;
+  --primary: #F2A63A;      --primary-foreground: #2A1A05;
+  --secondary: #EEF1F5;    --muted-foreground: #64707E;
+  --accent: rgba(242,166,58,.18); --accent-foreground: #9E6209;
+  --destructive: #E04553;  --border: #DDE3EA;  --input: #EEF1F5;  --ring: #9E6209;
+  --glass: rgba(255,255,255,.58); --glass-strong: rgba(255,255,255,.8); --glass-border: rgba(20,26,34,.09); --fill: rgba(20,26,34,.03);
+}
+/* 磨砂玻璃：替换现有 .glass，删除 .liquid-glass 与 #lg-refract */
+.glass { background-color: var(--glass-strong); background-image: var(--grain);  /* 外壳 */
+  backdrop-filter: blur(22px) saturate(1.5); box-shadow: inset 0 1px 0 var(--glass-hi); }
+.glass-card { background-color: var(--glass); backdrop-filter: blur(14px) saturate(1.5);
+  border: 1px solid var(--glass-border); }  /* 卡片 */
+--font-sans: "PingFang SC","Hiragino Sans GB","Microsoft YaHei","Noto Sans SC",system-ui,sans-serif;
+--font-mono: "Azeret Mono","SF Mono",Menlo,Consolas,monospace;  /* 只给读数 */</pre>
+        </section>
+
+        <section>
+          <h2>实施顺序</h2>
+          <ol class="steps">
+            <li><div><b>令牌与全局样式</b><span>替换 globals.css 色板与底场；删除 .hud-*、.liquid-glass、.plaza-card 发光、扫描线、切角气泡、滚动条 !important；.glass 重写为磨砂玻璃；新增 .readout、.echo、.signal。</span></div></li>
+            <li><div><b>外壳</b><span>TopBar 去掉假状态栏与搜索框，草莓余额移到 Sidebar 底部；Sidebar 收成 5 项；layout.tsx 删除 lg-refract 滤镜。</span></div></li>
+            <li><div><b>对话页</b><span>page.tsx 三栏改两栏；ConversationPicker 从下拉改列表；HudOrb、StarField、AmbientHUD 退场；新增 Signal 组件接管待命 / 说话 / 听三态；工具卡与生成图内联到 ChatBubble。</span></div></li>
+            <li><div><b>分身与广场</b><span>AgentIdentityCard 用 .echo 排分身名；MyAgentWorkspace、AgentExchangeWorkspace 换按钮、输入、标签、读数；交流详情加阶段条与回合读数。</span></div></li>
+            <li><div><b>登录、浅色主题与减弱动态复核</b><span>登录页换字标与信号线；逐页核对浅色对比度；prefers-reduced-motion 下信号线静止。</span></div></li>
+          </ol>
+          <p class="mist">不动的东西：全部接口、路由、鉴权、会话与消息逻辑、语音与生图的行为。这是一次纯视觉层替换。</p>
+        </section>
+      </div></div>
+    </section>
+
+  </div>
+</div>
+
+<script>
+(function(){
+  var root=document.documentElement;
+  var rail=document.getElementById('rail');
+
+  /* 主题：提案栏与侧栏共用 */
+  function theme(){ if(root.dataset.theme) return root.dataset.theme; return matchMedia('(prefers-color-scheme: light)').matches?'light':'dark'; }
+  function syncTheme(){
+    var t=theme(), other=t==='dark'?'浅色':'深色', icon=t==='dark'?'#i-sun':'#i-moon';
+    var pb=document.getElementById('themeBtn'); pb.querySelector('span').textContent=other; pb.querySelector('use').setAttribute('href',icon);
+    document.querySelector('#railTheme use').setAttribute('href',icon);
+  }
+  function flip(){ root.dataset.theme = theme()==='dark'?'light':'dark'; syncTheme(); }
+  var qt=new URLSearchParams(location.search).get('theme'); if(qt==='dark'||qt==='light') root.dataset.theme=qt;
+  document.getElementById('themeBtn').addEventListener('click',flip);
+  document.getElementById('railTheme').addEventListener('click',flip);
+  syncTheme();
+
+  /* 页面切换 */
+  function go(name){
+    document.querySelectorAll('.screen').forEach(function(s){ s.classList.toggle('on', s.dataset.screen===name); });
+    document.querySelectorAll('[data-go]').forEach(function(b){ b.classList.toggle('on', b.dataset.go===name); });
+    rail.hidden = (name==='login' || name==='spec');
+  }
+  document.querySelectorAll('[data-go]').forEach(function(b){ b.addEventListener('click',function(){ go(b.dataset.go); }); });
+  var h=(location.hash||'').slice(1);
+  if(['login','chat','agent','plaza','world','settings','spec'].indexOf(h)>=0) go(h);
+
+  /* 广场：标签与详情 */
+  function pane(name){
+    document.querySelectorAll('.pane').forEach(function(p){ p.hidden = p.dataset.pane!==name; });
+    document.querySelectorAll('[data-tab]').forEach(function(t){ t.classList.toggle('on', t.dataset.tab===name || (name==='detail' && t.dataset.tab==='records')); });
+  }
+  document.querySelectorAll('[data-tab]').forEach(function(t){ t.addEventListener('click',function(){ pane(t.dataset.tab); }); });
+  document.querySelectorAll('[data-open]').forEach(function(t){ t.addEventListener('click',function(){ pane(t.dataset.open); }); });
+  document.querySelectorAll('.partner').forEach(function(p){ p.addEventListener('click',function(){
+    document.querySelectorAll('.partner').forEach(function(q){ q.classList.remove('on'); q.setAttribute('aria-checked','false'); });
+    p.classList.add('on'); p.setAttribute('aria-checked','true');
+  }); });
+  document.querySelectorAll('.switch[role=switch]').forEach(function(s){
+    function tg(){ s.classList.toggle('on'); s.setAttribute('aria-checked', s.classList.contains('on')); }
+    s.addEventListener('click',function(e){ e.preventDefault(); tg(); });
+    s.addEventListener('keydown',function(e){ if(e.key===' '||e.key==='Enter'){ e.preventDefault(); tg(); } });
+  });
+
+  /* 信号线 */
+  var reduce=matchMedia('(prefers-reduced-motion: reduce)');
+  var signals=[];
+  document.querySelectorAll('.signal').forEach(function(svg){
+    signals.push({svg:svg,path:svg.querySelector('path'),dot:svg.querySelector('circle'),mode:svg.dataset.signal||'idle',level:0,t:0,phase:Math.random()*20});
+  });
+  function draw(s,dt){
+    var target = s.mode==='idle'?0 : s.mode==='listening'?0.5 : 0.9;
+    s.level += (target - s.level)*Math.min(1,dt*6);
+    s.t += dt;
+    var n=140, d='';
+    for(var i=0;i<n;i++){
+      var x=i/(n-1)*1000, env=Math.sin(Math.PI*i/(n-1));
+      var w = 8*Math.sin(x*0.045+s.t*9+s.phase) + 5*Math.sin(x*0.012-s.t*5.5) + 3*Math.sin(x*0.09+s.t*14);
+      var y = 20 + env*s.level*w;
+      d += (i?' L':'M')+x.toFixed(1)+' '+y.toFixed(1);
+    }
+    s.path.setAttribute('d',d);
+    if(s.mode==='idle' && s.level<0.02){
+      var cx=((s.t*140+s.phase*100)%1300)-150;
+      s.dot.setAttribute('cx',cx); s.dot.setAttribute('opacity', (cx<0||cx>1000)?0:1);
+    } else { s.dot.setAttribute('opacity',0); }
+  }
+  var last=performance.now();
+  function loop(now){ var dt=Math.min(.05,(now-last)/1000); last=now; signals.forEach(function(s){ draw(s,dt); }); requestAnimationFrame(loop); }
+  if(!reduce.matches){ requestAnimationFrame(loop); }
+  else { signals.forEach(function(s){ s.path.setAttribute('d','M0 20 L1000 20'); s.dot.setAttribute('opacity',0); }); }
+
+  /* 对话演示：发送、流式回复、听 */
+  var chat=signals.filter(function(s){ return s.svg.id==='chatSignal'; })[0];
+  var stateEl=document.getElementById('chatState');
+  var micBtn=document.getElementById('micBtn');
+  var sendBtn=document.getElementById('sendBtn');
+  var ta=document.getElementById('composerInput');
+  var tr=document.getElementById('transcript');
+  var trIn=document.getElementById('transcriptIn');
+  var words={idle:'待命',listening:'正在听',speaking:'正在说'};
+  function setState(m){ chat.mode=m; stateEl.className='state '+(m==='idle'?'':m); stateEl.querySelector('.state-word').textContent=words[m]; }
+  function now(){ var d=new Date(); return String(d.getHours()).padStart(2,'0')+':'+String(d.getMinutes()).padStart(2,'0'); }
+  function grow(){ ta.style.height='auto'; ta.style.height=Math.min(160,ta.scrollHeight)+'px'; sendBtn.disabled=!ta.value.trim(); }
+  ta.addEventListener('input',grow);
+  ta.addEventListener('keydown',function(e){ if(e.key==='Enter'&&!e.shiftKey){ e.preventDefault(); send(); } });
+  sendBtn.addEventListener('click',send);
+  var busy=false;
+  function send(){
+    var text=ta.value.trim(); if(!text||busy) return;
+    var me=document.createElement('article'); me.className='msg me';
+    var body=document.createElement('div'); body.className='msg-body'; body.textContent=text;
+    var time=document.createElement('span'); time.className='msg-time'; time.textContent=now();
+    me.appendChild(body); me.appendChild(time); trIn.appendChild(me);
+    ta.value=''; grow(); tr.scrollTop=tr.scrollHeight;
+    reply();
+  }
+  function reply(){
+    busy=true;
+    if(micBtn.classList.contains('rec')){ micBtn.classList.remove('rec'); micBtn.setAttribute('aria-pressed','false'); }
+    var ai=document.createElement('article'); ai.className='msg ai';
+    var who=document.createElement('div'); who.className='msg-who'; who.textContent='Chloe';
+    var body=document.createElement('div'); body.className='msg-body streaming';
+    ai.appendChild(who); ai.appendChild(body); trIn.appendChild(ai);
+    var full='好，记下了。这条先放进本次对话，需要的话我再整理成清单。';
+    var i=0;
+    setTimeout(function(){
+      setState('speaking');
+      var iv=setInterval(function(){
+        i++; body.textContent=full.slice(0,i); tr.scrollTop=tr.scrollHeight;
+        if(i>=full.length){ clearInterval(iv); body.classList.remove('streaming'); setState('idle'); busy=false; }
+      }, reduce.matches?0:45);
+    }, 500);
+  }
+  micBtn.addEventListener('click',function(){
+    if(busy) return;
+    var on=!micBtn.classList.contains('rec');
+    micBtn.classList.toggle('rec',on); micBtn.setAttribute('aria-pressed',String(on));
+    setState(on?'listening':'idle');
+  });
+})();
+</script>

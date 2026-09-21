@@ -3,6 +3,7 @@
 import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { setAuth } from "@/lib/auth";
+import Signal from "@/components/Signal";
 
 import { API_BASE as API } from "@/lib/config";
 
@@ -133,122 +134,117 @@ export default function LoginPage() {
   }
 
   return (
-    <div className="min-h-screen bg-background flex items-center justify-center px-6">
-      <div className="w-full max-w-sm space-y-8">
-        {/* Logo */}
-        <div className="text-center space-y-2">
-          <div className="text-5xl">🍓</div>
-          <h1 className="text-2xl font-bold tracking-tight">Chloe</h1>
-          <p className="text-sm text-muted-foreground">你的私人 AI 助理</p>
+    <div className="flex min-h-screen items-center justify-center px-6">
+      <div className="flex w-[360px] flex-col gap-8">
+        <div className="flex flex-col gap-3">
+          <svg className="text-[color:var(--amber-ink)]" width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" aria-hidden="true">
+            <circle cx="9" cy="12" r="5.5" />
+            <circle cx="15" cy="12" r="5.5" />
+          </svg>
+          <div className="echo text-[44px]" data-text="Chloe">Chloe</div>
+          <p className="text-[15px] text-muted-foreground">每个人自己的分身。</p>
+          <Signal mode="idle" className="mt-2" />
         </div>
 
-        {/* Form */}
-        <div className="space-y-4">
-          {step === "invite" ? (
-            <>
-              <div className="space-y-1.5">
-                <label className="text-sm font-medium">邀请码</label>
-                <input
-                  type="text"
-                  placeholder="输入邀请码"
-                  value={invite}
-                  disabled={loading}
-                  onChange={e => setInvite(e.target.value.toUpperCase().replace(/\s/g, ""))}
-                  onKeyDown={e => e.key === "Enter" && handleRedeem()}
-                  className="w-full bg-secondary rounded-xl px-4 py-3 text-sm outline-none
-                             placeholder:text-muted-foreground tracking-[0.2em] font-mono"
-                  autoFocus
-                />
-              </div>
-
-              {err && <p className="text-xs text-red-400">{err}</p>}
-
-              <button
-                onClick={handleRedeem}
-                disabled={loading || !invite.trim()}
-                className="w-full py-3 rounded-xl bg-primary text-primary-foreground text-sm font-semibold
-                           disabled:opacity-40 hover:opacity-90 transition-opacity"
-              >
-                {loading ? "进入中…" : "进入"}
-              </button>
-            </>
-          ) : step === "phone" ? (
-            <>
-              <div className="space-y-1.5">
-                <label className="text-sm font-medium">手机号</label>
-                <div className="flex items-center gap-2 bg-secondary rounded-xl px-4 py-3">
-                  <span className="text-sm text-muted-foreground shrink-0">+86</span>
+        <div className="glass rounded-[10px] border p-[22px]" style={{ borderColor: "var(--glass-border)" }}>
+          <div className="flex flex-col gap-3.5">
+            {step === "invite" ? (
+              <>
+                <label className="flex flex-col gap-1.5 text-xs font-medium">邀请码
                   <input
-                    type="tel"
-                    inputMode="numeric"
-                    placeholder="请输入手机号"
-                    value={phone}
+                    type="text"
+                    placeholder="输入邀请码"
+                    value={invite}
                     disabled={loading}
-                    onChange={e => setPhone(e.target.value.replace(/\D/g, "").slice(0, 11))}
-                    onKeyDown={e => e.key === "Enter" && handleSendOtp()}
-                    className="flex-1 bg-transparent text-sm outline-none placeholder:text-muted-foreground"
+                    onChange={e => setInvite(e.target.value.toUpperCase().replace(/\s/g, ""))}
+                    onKeyDown={e => e.key === "Enter" && handleRedeem()}
+                    className="w-full rounded-[6px] border bg-card px-3 py-[9px] text-sm font-mono tracking-[0.2em] outline-none placeholder:font-sans placeholder:tracking-normal placeholder:text-muted-foreground focus:border-[color:var(--amber-ink)] disabled:opacity-50"
                     autoFocus
                   />
-                </div>
-              </div>
+                </label>
 
-              {err && <p className="text-xs text-red-400">{err}</p>}
+                {err && <p className="text-xs text-[color:var(--rec)]">{err}</p>}
 
-              <button
-                onClick={handleSendOtp}
-                disabled={loading || phone.length < 11}
-                className="w-full py-3 rounded-xl bg-primary text-primary-foreground text-sm font-semibold
-                           disabled:opacity-40 hover:opacity-90 transition-opacity"
-              >
-                {loading ? "发送中…" : "获取验证码"}
-              </button>
-            </>
-          ) : (
-            <>
-              <div className="space-y-1.5">
-                <div className="flex items-center justify-between">
-                  <label className="text-sm font-medium">验证码</label>
-                  <span className="text-xs text-muted-foreground">{phone}</span>
-                </div>
-                <input
-                  type="text"
-                  inputMode="numeric"
-                  placeholder="6 位验证码"
-                  maxLength={6}
-                  value={code}
-                  disabled={loading}
-                  onChange={e => setCode(e.target.value.replace(/\D/g, "").slice(0, 6))}
-                  onKeyDown={e => e.key === "Enter" && handleVerify()}
-                  className="w-full bg-secondary rounded-xl px-4 py-3 text-sm outline-none
-                             placeholder:text-muted-foreground tracking-[0.3em] font-mono"
-                  autoFocus
-                />
-              </div>
+                <button
+                  onClick={handleRedeem}
+                  disabled={loading || !invite.trim()}
+                  className="btn btn-primary w-full h-10"
+                >
+                  {loading ? "进入中…" : "进入"}
+                </button>
+              </>
+            ) : step === "phone" ? (
+              <>
+                <label className="flex flex-col gap-1.5 text-xs font-medium">手机号
+                  <div className="flex w-full items-center gap-2 rounded-[6px] border bg-card px-3 py-[9px] focus-within:border-[color:var(--amber-ink)]">
+                    <span className="text-sm text-muted-foreground shrink-0">+86</span>
+                    <input
+                      type="tel"
+                      inputMode="numeric"
+                      placeholder="请输入手机号"
+                      value={phone}
+                      disabled={loading}
+                      onChange={e => setPhone(e.target.value.replace(/\D/g, "").slice(0, 11))}
+                      onKeyDown={e => e.key === "Enter" && handleSendOtp()}
+                      className="min-w-0 flex-1 bg-transparent text-sm font-normal outline-none placeholder:text-muted-foreground disabled:opacity-50"
+                      autoFocus
+                    />
+                  </div>
+                </label>
 
-              {err && <p className="text-xs text-red-400">{err}</p>}
+                {err && <p className="text-xs text-[color:var(--rec)]">{err}</p>}
 
-              <button
-                onClick={handleVerify}
-                disabled={loading || code.length < 6}
-                className="w-full py-3 rounded-xl bg-primary text-primary-foreground text-sm font-semibold
-                           disabled:opacity-40 hover:opacity-90 transition-opacity"
-              >
-                {loading ? "验证中…" : "登录 / 注册"}
-              </button>
+                <button
+                  onClick={handleSendOtp}
+                  disabled={loading || phone.length < 11}
+                  className="btn btn-primary w-full h-10"
+                >
+                  {loading ? "发送中…" : "获取验证码"}
+                </button>
+              </>
+            ) : (
+              <>
+                <label className="flex flex-col gap-1.5 text-xs font-medium">
+                  <div className="flex items-center justify-between">
+                    <span>验证码</span>
+                    <span className="font-normal text-muted-foreground">{phone}</span>
+                  </div>
+                  <input
+                    type="text"
+                    inputMode="numeric"
+                    placeholder="6 位验证码"
+                    maxLength={6}
+                    value={code}
+                    disabled={loading}
+                    onChange={e => setCode(e.target.value.replace(/\D/g, "").slice(0, 6))}
+                    onKeyDown={e => e.key === "Enter" && handleVerify()}
+                    className="w-full rounded-[6px] border bg-card px-3 py-[9px] text-sm font-mono tracking-[0.3em] outline-none placeholder:font-sans placeholder:tracking-normal placeholder:text-muted-foreground focus:border-[color:var(--amber-ink)] disabled:opacity-50"
+                    autoFocus
+                  />
+                </label>
 
-              <button
-                onClick={() => { setStep("phone"); setCode(""); setErr(""); }}
-                className="w-full py-2 text-xs text-muted-foreground hover:text-foreground transition-colors"
-              >
-                换个手机号
-              </button>
-            </>
-          )}
+                {err && <p className="text-xs text-[color:var(--rec)]">{err}</p>}
+
+                <button
+                  onClick={handleVerify}
+                  disabled={loading || code.length < 6}
+                  className="btn btn-primary w-full h-10"
+                >
+                  {loading ? "验证中…" : "登录 / 注册"}
+                </button>
+
+                <button
+                  onClick={() => { setStep("phone"); setCode(""); setErr(""); }}
+                  className="btn btn-quiet w-full"
+                >
+                  换个手机号
+                </button>
+              </>
+            )}
+
+            <p className="text-xs leading-relaxed text-muted-foreground">内测阶段凭邀请码进入。登录即同意用户协议，新用户赠送 <b className="readout">200</b> 颗草莓。</p>
+          </div>
         </div>
-
-        <p className="text-center text-xs text-muted-foreground">
-          登录即同意用户协议 · 新用户赠送 200 🍓 草莓
-        </p>
 
         {/* 开发测试入口（仅本地 dev 构建可见，生产 build 时自动消失） */}
         {process.env.NODE_ENV !== "production" && (
@@ -256,7 +252,7 @@ export default function LoginPage() {
             {!showTest ? (
               <button
                 onClick={() => setShowTest(true)}
-                className="w-full py-2 text-xs text-muted-foreground/60 hover:text-muted-foreground transition-colors"
+                className="btn btn-quiet w-full"
               >
                 开发测试入口（跳过登录）
               </button>
@@ -268,12 +264,12 @@ export default function LoginPage() {
                   value={testUser}
                   onChange={e => setTestUser(e.target.value)}
                   onKeyDown={e => e.key === "Enter" && handleTestLogin()}
-                  className="w-full bg-secondary rounded-xl px-4 py-2 text-sm outline-none placeholder:text-muted-foreground"
+                  className="w-full rounded-[6px] border bg-card px-3 py-[9px] text-sm outline-none placeholder:text-muted-foreground focus:border-[color:var(--amber-ink)] disabled:opacity-50"
                 />
                 <button
                   onClick={handleTestLogin}
                   disabled={loading}
-                  className="w-full py-2 rounded-xl bg-secondary text-sm font-medium disabled:opacity-40 hover:bg-secondary/80 transition-colors"
+                  className="btn btn-quiet w-full"
                 >
                   {loading ? "进入中…" : "以测试身份进入"}
                 </button>

@@ -3,7 +3,6 @@
 import { Suspense, useState, useEffect, useRef, useCallback } from "react";
 import { useSearchParams } from "next/navigation";
 import Sidebar from "@/components/Sidebar";
-import TopBar from "@/components/TopBar";
 import Earth3D from "@/components/Earth3D";
 import { Send, User, Sparkles, MessageCircle } from "lucide-react";
 import { cn } from "@/lib/utils";
@@ -57,7 +56,7 @@ function CloudCard({
   return (
     <div
       className={cn(
-        "cloud-card liquid-glass w-80 bg-card/70 backdrop-blur-md border border-border/60 rounded-2xl px-5 py-4 shadow-lg",
+        "cloud-card glass-card w-80 px-5 py-4",
         phase === "in" && "cloud-in",
         phase === "stable" && "cloud-stable",
         phase === "out" && "cloud-out",
@@ -71,13 +70,13 @@ function CloudCard({
     >
       <div className="flex items-start gap-3">
         {/* 匿名头像 */}
-        <div className="w-10 h-10 rounded-full bg-primary/10 flex items-center justify-center shrink-0">
-          <Sparkles size={16} className="text-primary" />
+        <div className="grid h-10 w-10 shrink-0 place-items-center rounded-[6px] bg-secondary">
+          <Sparkles size={16} style={{ color: "var(--amber-ink)" }} />
         </div>
         <div className="flex-1 min-w-0">
           <div className="flex items-center gap-2 mb-1">
-            <span className="font-semibold text-sm text-foreground/60">神秘好友</span>
-            <span className="text-[10px] px-2 py-0.5 rounded-full bg-primary/10 text-primary">
+            <span className="text-sm font-medium text-foreground/70">神秘好友</span>
+            <span className="tag tag-amber">
               {match.type}
             </span>
           </div>
@@ -89,15 +88,18 @@ function CloudCard({
           <p className="text-sm text-foreground/85 leading-relaxed">{match.reason}</p>
           {/* 对方的招呼 */}
           {match.peer_greeting && (
-            <div className="flex items-start gap-1.5 mt-2 bg-secondary/60 rounded-xl px-3 py-2">
-              <MessageCircle size={11} className="text-primary mt-0.5 shrink-0" />
+            <div
+              className="mt-2 flex items-start gap-1.5 rounded-[6px] border px-3.5 py-2.5"
+              style={{ background: "var(--fill)", borderColor: "var(--glass-border)" }}
+            >
+              <MessageCircle size={11} className="mt-0.5 shrink-0" style={{ color: "var(--amber-ink)" }} />
               <p className="text-[11px] text-foreground/80 leading-relaxed">「{match.peer_greeting}」</p>
             </div>
           )}
           {match.tags.length > 0 && (
             <div className="flex flex-wrap gap-1.5 mt-2">
               {match.tags.map((t, i) => (
-                <span key={i} className="text-[10px] px-2 py-0.5 rounded-full bg-secondary text-muted-foreground">
+                <span key={i} className="chip h-6 px-2 text-[10px]">
                   {t}
                 </span>
               ))}
@@ -114,16 +116,16 @@ function CloudCard({
             onChange={e => setGreetingText(e.target.value.slice(0, 50))}
             placeholder="说点什么吧（可选，50字以内）"
             rows={2}
-            className="w-full resize-none bg-secondary/60 rounded-xl px-3 py-2 text-xs text-foreground placeholder:text-muted-foreground outline-none leading-relaxed"
+            className="w-full resize-none rounded-[6px] border bg-card px-3 py-[9px] text-xs leading-relaxed text-foreground outline-none placeholder:text-muted-foreground focus:border-[color:var(--amber-ink)]"
           />
           <div className="flex gap-2 mt-2 justify-end">
             <button
               onClick={() => setShowGreeting(false)}
-              className="text-[10px] px-3 py-1.5 rounded-full text-muted-foreground hover:bg-secondary transition-colors"
+              className="btn btn-quiet h-7 px-2.5 text-xs"
             >跳过</button>
             <button
               onClick={() => onAccept(match, greetingText)}
-              className="text-[10px] px-3 py-1.5 rounded-full bg-primary text-primary-foreground hover:opacity-90 transition-opacity"
+              className="btn btn-primary h-7 px-2.5 text-xs"
             >发送打招呼</button>
           </div>
         </div>
@@ -133,11 +135,11 @@ function CloudCard({
         <div className="flex gap-2 mt-3 justify-end">
           <button
             onClick={() => onSkip(match.id)}
-            className="text-[11px] px-3 py-1.5 rounded-full text-muted-foreground hover:bg-secondary transition-colors"
+            className="btn btn-quiet h-7 px-2.5 text-xs"
           >算了</button>
           <button
             onClick={() => setShowGreeting(true)}
-            className="text-[11px] px-3 py-1.5 rounded-full bg-primary text-primary-foreground hover:opacity-90 transition-opacity"
+            className="btn btn-primary h-7 px-2.5 text-xs"
           >认识下</button>
         </div>
       )}
@@ -230,7 +232,7 @@ function MatchContent() {
     removeCard(id);
   }, [removeCard]);
 
-  // 用户点"认识下" → accept + 可选招呼
+  // 用户点"认识下"后 accept，并携带可选招呼
   const handleAcceptMatch = useCallback(async (match: PendingMatch, greeting: string = "") => {
     apiFetch(`${API}/match/pending/${match.id}/seen`, { method: "POST" }).catch(() => {});
     try {
@@ -308,8 +310,7 @@ function MatchContent() {
   const embedded = searchParams?.get("embed") === "1";
 
   return (
-    <div className="flex flex-col h-screen overflow-hidden bg-background">
-      {!embedded && <TopBar />}
+    <div className="flex h-screen flex-col overflow-hidden">
       <div className="flex flex-1 min-h-0">
         {!embedded && <Sidebar />}
         <div className="flex flex-1 min-w-0 relative overflow-hidden">
@@ -318,19 +319,9 @@ function MatchContent() {
           <Earth3D />
 
           {/* 左侧：最近 5 个联系人 (玻璃质感，星空直接穿透) */}
-          <div
-            className="w-64 flex flex-col shrink-0 relative z-10"
-            style={{
-              background:
-                "linear-gradient(180deg, color-mix(in srgb, var(--background) 8%, transparent) 0%, color-mix(in srgb, var(--background) 14%, transparent) 100%)",
-              borderRight: "1px solid color-mix(in srgb, var(--primary) 22%, transparent)",
-              backdropFilter: "blur(4px) saturate(140%)",
-              WebkitBackdropFilter: "blur(4px) saturate(140%)",
-              boxShadow: "inset -1px 0 0 color-mix(in srgb, var(--primary) 10%, transparent), inset 0 1px 0 color-mix(in srgb, var(--primary) 6%, transparent)",
-            }}
-          >
-            <div className="px-4 py-3" style={{ borderBottom: "1px solid color-mix(in srgb, var(--primary) 15%, transparent)" }}>
-              <p className="hud-label text-[10px] tracking-wider" style={{ color: "color-mix(in srgb, var(--primary) 85%, transparent)" }}>最近聊天</p>
+          <div className="glass-card relative z-10 m-4 mr-0 flex w-64 shrink-0 flex-col overflow-hidden">
+            <div className="border-b px-4 py-3" style={{ borderColor: "var(--glass-border)" }}>
+              <p className="text-xs font-medium text-muted-foreground">最近聊天</p>
             </div>
             <div className="flex-1 overflow-y-auto py-1">
               {rooms.length === 0 ? (
@@ -343,12 +334,12 @@ function MatchContent() {
                   key={room.room_id}
                   onClick={() => openChat(room)}
                   className={cn(
-                    "w-full flex items-center gap-3 px-4 py-3 transition-all hover:bg-secondary text-left",
-                    selected?.room_id === room.room_id && "bg-secondary"
+                    "chip h-auto w-full justify-start px-4 py-3 text-left transition-colors hover:bg-secondary",
+                    selected?.room_id === room.room_id && "chip-on"
                   )}
                 >
-                  <div className="w-9 h-9 rounded-full bg-primary/10 flex items-center justify-center shrink-0">
-                    <span className="text-sm font-semibold text-primary">{room.peer[0]}</span>
+                  <div className="grid h-9 w-9 shrink-0 place-items-center rounded-[6px] bg-secondary">
+                    <span className="text-sm font-medium" style={{ color: "var(--amber-ink)" }}>{room.peer[0]}</span>
                   </div>
                   <span className="text-sm font-medium truncate">{room.peer}</span>
                 </button>
@@ -357,7 +348,7 @@ function MatchContent() {
           </div>
 
           {/* 右侧：聊天区 / 匹配卡飘动区 (Earth3D 在外层公共背景) */}
-          <div className="flex-1 flex flex-col min-w-0 relative z-10">
+          <div className={cn("relative z-10 flex min-w-0 flex-1 flex-col", selected && "glass-card m-4 overflow-hidden")}>
             {!selected ? (
               <div className="flex-1 relative overflow-hidden">
                 {pendingMatches.length === 0 ? null : (
@@ -380,11 +371,11 @@ function MatchContent() {
             ) : (
               <>
                 {/* header */}
-                <div className="glass border-b border-border px-5 py-3 shrink-0 flex items-center gap-3">
-                  <div className="w-7 h-7 rounded-full bg-primary/10 flex items-center justify-center">
-                    <span className="text-xs font-semibold text-primary">{selected.peer[0]}</span>
+                <div className="flex shrink-0 items-center gap-3 border-b px-5 py-3" style={{ borderColor: "var(--glass-border)" }}>
+                  <div className="grid h-7 w-7 place-items-center rounded-[6px] bg-secondary">
+                    <span className="text-xs font-medium" style={{ color: "var(--amber-ink)" }}>{selected.peer[0]}</span>
                   </div>
-                  <p className="text-sm font-semibold">{selected.peer}</p>
+                  <p className="text-sm font-medium">{selected.peer}</p>
                 </div>
 
                 {/* 消息列表 */}
@@ -393,13 +384,16 @@ function MatchContent() {
                     const isSelf = m.sender === username;
                     return (
                       <div key={i} className={cn("flex", isSelf ? "justify-end" : "justify-start")}>
-                        <div className={cn(
-                          "max-w-[70%] px-4 py-2 rounded-2xl text-sm leading-relaxed",
-                          isSelf
-                            ? "bg-primary text-primary-foreground rounded-br-sm"
-                            : "bg-secondary text-foreground rounded-bl-sm"
-                        )}>
-                          {m.content}
+                        <div className={cn("flex flex-col gap-1.5", isSelf ? "max-w-[520px] items-end" : "max-w-[640px] items-start")}>
+                          {!isSelf && (
+                            <div className="flex items-center gap-2 text-xs text-muted-foreground">
+                              <span className="inline-block h-1.5 w-1.5" style={{ background: "var(--amber-ink)" }} />
+                              {m.sender}
+                            </div>
+                          )}
+                          <div className={cn("text-sm", isSelf ? "bubble-user" : "bubble-ai")}>
+                            {m.content}
+                          </div>
                         </div>
                       </div>
                     );
@@ -408,8 +402,8 @@ function MatchContent() {
                 </div>
 
                 {/* 输入框 */}
-                <div className="glass border-t border-border px-4 py-3 shrink-0">
-                  <div className="flex items-end gap-2 bg-secondary rounded-2xl px-4 py-2">
+                <div className="glass shrink-0 border-t px-4 py-3" style={{ borderColor: "var(--glass-border)" }}>
+                  <div className="flex items-end gap-2 rounded-[10px] border px-3.5 py-2.5" style={{ background: "var(--fill)", borderColor: "var(--glass-border)" }}>
                     <textarea
                       value={input}
                       onChange={e => setInput(e.target.value)}
@@ -421,10 +415,7 @@ function MatchContent() {
                     <button
                       onClick={handleSend}
                       disabled={!input.trim()}
-                      className={cn(
-                        "w-8 h-8 flex items-center justify-center rounded-full transition-all mb-0.5",
-                        input.trim() ? "bg-primary text-primary-foreground hover:opacity-90" : "text-muted-foreground"
-                      )}
+                      className="btn btn-primary mb-0.5 h-8 w-8 px-0"
                     >
                       <Send size={14} />
                     </button>
@@ -441,7 +432,7 @@ function MatchContent() {
           0%, 100% { transform: translateY(0); }
           50% { transform: translateY(-3px); }
         }
-        .cloud-card.liquid-glass {
+        .cloud-card.glass-card {
           opacity: 0;
           transform: translateY(-24px) scale(0.96);
           transition: opacity 1.2s ease-out, transform 1.5s cubic-bezier(0.16, 1, 0.3, 1);

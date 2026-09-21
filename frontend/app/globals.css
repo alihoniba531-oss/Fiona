@@ -7,9 +7,9 @@
 @theme inline {
   --color-background: var(--background);
   --color-foreground: var(--foreground);
-  --font-sans: var(--font-sans);
-  --font-mono: var(--font-geist-mono);
-  --font-heading: var(--font-sans);
+  --font-sans: var(--font-sans-stack);
+  --font-mono: var(--font-mono-stack);
+  --font-heading: var(--font-sans-stack);
   --color-sidebar-ring: var(--sidebar-ring);
   --color-sidebar-border: var(--sidebar-border);
   --color-sidebar-accent-foreground: var(--sidebar-accent-foreground);
@@ -43,341 +43,241 @@
   --radius-4xl: calc(var(--radius) * 2.6);
 }
 
-/* macOS 深色主题色板 */
+/* 浅色 */
 :root {
-  --background: #f5f5f7;
-  --foreground: #1d1d1f;
-  --card: rgba(255, 255, 255, 0.72);
-  --card-foreground: #1d1d1f;
-  --popover: rgba(255, 255, 255, 0.9);
-  --popover-foreground: #1d1d1f;
-  --primary: #0a84ff;
-  --primary-foreground: #ffffff;
-  --secondary: rgba(0, 0, 0, 0.06);
-  --secondary-foreground: #1d1d1f;
-  --muted: rgba(0, 0, 0, 0.04);
-  --muted-foreground: #86868b;
-  --accent: rgba(10, 132, 255, 0.1);
-  --accent-foreground: #0a84ff;
-  --destructive: #ff3b30;
-  --border: rgba(0, 0, 0, 0.08);
-  --input: rgba(0, 0, 0, 0.06);
-  --ring: #0a84ff;
-  --radius: 0.75rem;
-  --sidebar: rgba(246, 246, 246, 0.85);
-  --sidebar-foreground: #1d1d1f;
-  --sidebar-primary: #0a84ff;
-  --sidebar-primary-foreground: #ffffff;
-  --sidebar-accent: rgba(10, 132, 255, 0.08);
-  --sidebar-accent-foreground: #0a84ff;
-  --sidebar-border: rgba(0, 0, 0, 0.08);
-  --sidebar-ring: #0a84ff;
+  --font-sans-stack: -apple-system, "PingFang SC", "Hiragino Sans GB", "Microsoft YaHei", "Noto Sans SC", system-ui, sans-serif;
+  --font-mono-stack: ui-monospace, "SF Mono", Menlo, Consolas, "Liberation Mono", monospace;
 
-  /* 气泡颜色 */
-  --bubble-user: #0a84ff;
-  --bubble-user-text: #ffffff;
-  --bubble-ai: rgba(0, 0, 0, 0.06);
-  --bubble-ai-text: #1d1d1f;
+  --background: #F3F5F8;
+  --foreground: #141A22;
+  --card: #FFFFFF;
+  --card-foreground: #141A22;
+  --popover: #FFFFFF;
+  --popover-foreground: #141A22;
+  --primary: #F2A63A;
+  --primary-foreground: #2A1A05;
+  --secondary: #EEF1F5;
+  --secondary-foreground: #141A22;
+  --muted: #EEF1F5;
+  --muted-foreground: #64707E;
+  --accent: rgba(242, 166, 58, 0.18);
+  --accent-foreground: #9E6209;
+  --destructive: #E04553;
+  --border: #DDE3EA;
+  --input: #EEF1F5;
+  --ring: #9E6209;
+  --radius: 0.625rem;
+  --sidebar: rgba(255, 255, 255, 0.8);
+  --sidebar-foreground: #141A22;
+  --sidebar-primary: #F2A63A;
+  --sidebar-primary-foreground: #2A1A05;
+  --sidebar-accent: rgba(242, 166, 58, 0.18);
+  --sidebar-accent-foreground: #9E6209;
+  --sidebar-border: #DDE3EA;
+  --sidebar-ring: #9E6209;
+
+  /* 强调色的文字版（浅色底上 #F2A63A 对比不够，文字与图标用它） */
+  --amber-ink: #9E6209;
+  --dim: #8B96A3;
+  --rec: #E04553;
+  --rec-soft: rgba(224, 69, 83, 0.12);
+
+  /* 磨砂玻璃 */
+  --glass: rgba(255, 255, 255, 0.58);
+  --glass-strong: rgba(255, 255, 255, 0.8);
+  --glass-border: rgba(20, 26, 34, 0.09);
+  --glass-hi: rgba(255, 255, 255, 0.85);
+  --fill: rgba(20, 26, 34, 0.03);
+  --grain: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='180' height='180'><filter id='n'><feTurbulence type='fractalNoise' baseFrequency='.85' numOctaves='2' stitchTiles='stitch'/><feColorMatrix values='0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 .05 0'/></filter><rect width='100%25' height='100%25' filter='url(%23n)'/></svg>");
+  --shadow: 0 1px 2px rgba(20, 26, 34, 0.06);
+
+  /* 底场光斑 */
+  --spot-a: rgba(242, 166, 58, 0.22);
+  --spot-b: rgba(90, 140, 225, 0.16);
+  --spot-c: rgba(255, 255, 255, 0.6);
+
+  /* 气泡 */
+  --bubble-user: rgba(20, 26, 34, 0.03);
+  --bubble-user-text: #141A22;
+  --bubble-ai: transparent;
+  --bubble-ai-text: #141A22;
 }
 
+/* 深色（主主题） */
 .dark {
-  /* === Warm companion HUD palette === */
-  --background: #12100a;
-  --foreground: #f4ece0;
-  --card: rgba(32, 26, 16, 0.55);
-  --card-foreground: #f4ece0;
-  --popover: rgba(24, 19, 9, 0.94);
-  --popover-foreground: #f4ece0;
-  --primary: #f2a83c;
-  --primary-foreground: #2a1806;
-  --secondary: rgba(242, 168, 60, 0.10);
-  --secondary-foreground: #e6d8bf;
-  --muted: rgba(242, 168, 60, 0.06);
-  --muted-foreground: #b0a088;
-  --accent: rgba(242, 168, 60, 0.16);
-  --accent-foreground: #f2a83c;
-  --destructive: #ff3860;
-  --border: rgba(236, 214, 176, 0.14);
-  --input: rgba(236, 214, 176, 0.10);
-  --ring: #f2a83c;
-  --sidebar: rgba(20, 16, 9, 0.94);
-  --sidebar-foreground: #f4ece0;
-  --sidebar-primary: #f2a83c;
-  --sidebar-primary-foreground: #2a1806;
-  --sidebar-accent: rgba(242, 168, 60, 0.12);
-  --sidebar-accent-foreground: #f2a83c;
-  --sidebar-border: rgba(236, 214, 176, 0.10);
-  --sidebar-ring: #f2a83c;
+  --background: #0E1219;
+  --foreground: #E7ECF1;
+  --card: #151B24;
+  --card-foreground: #E7ECF1;
+  --popover: #1B222D;
+  --popover-foreground: #E7ECF1;
+  --primary: #F2A63A;
+  --primary-foreground: #2A1A05;
+  --secondary: #1B222D;
+  --secondary-foreground: #E7ECF1;
+  --muted: #151B24;
+  --muted-foreground: #7E8896;
+  --accent: rgba(242, 166, 58, 0.14);
+  --accent-foreground: #F2A63A;
+  --destructive: #FF5A66;
+  --border: #232B36;
+  --input: #1B222D;
+  --ring: #F2A63A;
+  --sidebar: rgba(21, 27, 36, 0.76);
+  --sidebar-foreground: #E7ECF1;
+  --sidebar-primary: #F2A63A;
+  --sidebar-primary-foreground: #2A1A05;
+  --sidebar-accent: rgba(242, 166, 58, 0.14);
+  --sidebar-accent-foreground: #F2A63A;
+  --sidebar-border: #232B36;
+  --sidebar-ring: #F2A63A;
 
-  /* 气泡颜色 — 暖炭中性面，正文保持奶白 */
-  --bubble-user: rgba(242, 168, 60, 0.16);
-  --bubble-user-text: #f7efe0;
-  --bubble-ai: rgba(32, 26, 16, 0.62);
-  --bubble-ai-text: #f4ece0;
+  --amber-ink: #F2A63A;
+  --dim: #586270;
+  --rec: #FF5A66;
+  --rec-soft: rgba(255, 90, 102, 0.14);
 
-  /* HUD 强调色 */
-  --hud-cyan: #f2a83c;
-  --hud-cyan-soft: rgba(242, 168, 60, 0.35);
-  --hud-cyan-glow: rgba(242, 168, 60, 0.50);
-  --hud-amber: #f2705a;
+  --glass: rgba(21, 27, 36, 0.6);
+  --glass-strong: rgba(21, 27, 36, 0.76);
+  --glass-border: rgba(231, 236, 241, 0.09);
+  --glass-hi: rgba(255, 255, 255, 0.05);
+  --fill: rgba(255, 255, 255, 0.04);
+  --grain: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='180' height='180'><filter id='n'><feTurbulence type='fractalNoise' baseFrequency='.85' numOctaves='2' stitchTiles='stitch'/><feColorMatrix values='0 0 0 0 1 0 0 0 0 1 0 0 0 0 1 0 0 0 .07 0'/></filter><rect width='100%25' height='100%25' filter='url(%23n)'/></svg>");
+  --shadow: 0 1px 2px rgba(0, 0, 0, 0.25);
+
+  --spot-a: rgba(242, 166, 58, 0.14);
+  --spot-b: rgba(70, 118, 205, 0.18);
+  --spot-c: rgba(242, 166, 58, 0.05);
+
+  --bubble-user: rgba(255, 255, 255, 0.04);
+  --bubble-user-text: #E7ECF1;
+  --bubble-ai: transparent;
+  --bubble-ai-text: #E7ECF1;
 }
 
 @layer base {
-  * {
-    @apply border-border outline-ring/50;
-  }
+  * { @apply border-border outline-ring/50; }
   body {
-    @apply bg-background text-foreground;
-    font-family: -apple-system, BlinkMacSystemFont, "SF Pro Text", "Helvetica Neue", sans-serif;
+    @apply text-foreground;
+    font-family: var(--font-sans-stack);
     -webkit-font-smoothing: antialiased;
+    background:
+      radial-gradient(1100px 700px at 10% -15%, var(--spot-a), transparent 60%),
+      radial-gradient(900px 800px at 105% 105%, var(--spot-b), transparent 60%),
+      radial-gradient(700px 500px at 55% 45%, var(--spot-c), transparent 65%),
+      var(--background);
+    background-attachment: fixed;
   }
 }
 
-/* 毛玻璃效果 */
-.glass {
-  backdrop-filter: blur(20px) saturate(180%);
-  -webkit-backdrop-filter: blur(20px) saturate(180%);
+@layer components {
+  /* ── 磨砂玻璃：外壳（导航栏、列表、对话头部、输入区、页面标题、抽屉） ── */
+  .glass {
+    background-color: var(--glass-strong);
+    background-image: var(--grain);
+    -webkit-backdrop-filter: blur(22px) saturate(1.5);
+    backdrop-filter: blur(22px) saturate(1.5);
+    box-shadow: inset 0 1px 0 var(--glass-hi), var(--shadow);
+  }
+
+  /* ── 磨砂玻璃：卡片（工具卡、生成图、名片、搭档卡、作品块） ── */
+  .glass-card {
+    background-color: var(--glass);
+    background-image: var(--grain);
+    -webkit-backdrop-filter: blur(14px) saturate(1.5);
+    backdrop-filter: blur(14px) saturate(1.5);
+    border: 1px solid var(--glass-border);
+    border-radius: 10px;
+    box-shadow: inset 0 1px 0 var(--glass-hi), var(--shadow);
+  }
+
+  /* ── 读数：只给数字、时间、回合数、模型名、ID；永远不给中文标签 ── */
+  .readout {
+    font-family: var(--font-mono-stack);
+    font-variant-numeric: tabular-nums;
+    font-size: 12px;
+    color: var(--muted-foreground);
+  }
+  .readout b { font-weight: 400; color: var(--foreground); }
+
+  /* ── 分身排法：实心字 + 琥珀描边偏移副本，只给名片与登录页的名字 ── */
+  .echo {
+    position: relative;
+    display: inline-block;
+    isolation: isolate;
+    font-weight: 500;
+    letter-spacing: -0.01em;
+    line-height: 1.1;
+  }
+  .echo::after {
+    content: attr(data-text);
+    position: absolute;
+    left: 0.14em;
+    top: 0.12em;
+    z-index: -1;
+    color: transparent;
+    -webkit-text-stroke: 1px var(--amber-ink);
+    opacity: 0.6;
+    pointer-events: none;
+    white-space: nowrap;
+  }
+
+  /* ── 信号线 ── */
+  .signal { display: block; width: 100%; height: 40px; overflow: visible; }
+  .signal path { fill: none; stroke: var(--amber-ink); stroke-width: 1.5; vector-effect: non-scaling-stroke; opacity: 0.9; }
+  .signal circle { fill: var(--amber-ink); }
+
+  /* ── 状态点 ── */
+  .state-dot { width: 6px; height: 6px; border-radius: 50%; background: var(--dim); display: inline-block; }
+  .state-dot-listening { background: var(--rec); }
+  .state-dot-speaking { background: var(--primary); }
+
+  /* ── 按钮 / 芯片 / 标签（给还没用 components/ui 的地方） ── */
+  .btn {
+    display: inline-flex; align-items: center; justify-content: center; gap: 6px;
+    height: 34px; padding: 0 14px; border-radius: 6px;
+    border: 1px solid color-mix(in srgb, var(--border) 60%, var(--muted-foreground));
+    background: var(--card); color: var(--foreground); font-size: 13px; white-space: nowrap;
+    transition: border-color 0.15s ease, background 0.15s ease;
+  }
+  .btn:hover { border-color: var(--muted-foreground); }
+  .btn:disabled { opacity: 0.45; cursor: not-allowed; }
+  .btn-primary { background: var(--primary); border-color: var(--primary); color: var(--primary-foreground); font-weight: 500; }
+  .btn-primary:hover { filter: brightness(1.06); border-color: var(--primary); }
+  .btn-quiet { background: none; border-color: transparent; color: var(--muted-foreground); }
+  .btn-quiet:hover { color: var(--foreground); background: var(--secondary); border-color: transparent; }
+  .btn-danger { background: none; border-color: transparent; color: var(--rec); }
+  .btn-danger:hover { background: var(--rec-soft); border-color: transparent; }
+  .chip {
+    display: inline-flex; align-items: center; gap: 5px; height: 28px; padding: 0 10px;
+    border-radius: 6px; border: 1px solid var(--border); color: var(--muted-foreground); font-size: 12px;
+  }
+  .chip:hover { color: var(--foreground); }
+  .chip-on { color: var(--amber-ink); border-color: var(--amber-ink); background: var(--accent); }
+  .tag {
+    display: inline-flex; align-items: center; height: 20px; padding: 0 7px; border-radius: 4px;
+    font-size: 11px; border: 1px solid var(--border); color: var(--muted-foreground);
+  }
+  .tag-amber { border-color: transparent; background: var(--accent); color: var(--amber-ink); }
+  .tag-rec { border-color: transparent; background: var(--rec-soft); color: var(--rec); }
+
+  /* ── 消息块：分身无气泡，我方浅层块 ── */
+  .bubble-user {
+    background: var(--bubble-user); color: var(--bubble-user-text);
+    border: 1px solid var(--glass-border); border-radius: 10px;
+    padding: 9px 14px; line-height: 1.6; box-shadow: var(--shadow);
+  }
+  .bubble-ai {
+    background: var(--bubble-ai); color: var(--bubble-ai-text);
+    padding: 0; line-height: 1.75;
+  }
 }
 
-/* === 暖色 HUD 全局背景：极淡 scan line（网格让位给星空） === */
-.dark body::after {
-  content: "";
-  position: fixed;
-  inset: 0;
-  pointer-events: none;
-  z-index: 0;
-  background: linear-gradient(180deg,
-    transparent 0%,
-    rgba(242, 168, 60, 0.014) 49%,
-    rgba(242, 168, 60, 0.020) 50%,
-    rgba(242, 168, 60, 0.014) 51%,
-    transparent 100%);
-  background-size: 100% 800px;
-  background-repeat: no-repeat;
-  animation: hud-scan 18s linear infinite;
+@supports not (backdrop-filter: blur(1px)) {
+  .glass, .glass-card { background-color: var(--card); background-image: none; }
 }
-@keyframes hud-scan {
-  0%   { background-position: 0 -800px; }
-  100% { background-position: 0 100vh; }
-}
-
-/* === HUD 聊天气泡：暖中性面 + 克制发丝描边 === */
-.bubble-user,
-.bubble-ai {
-  position: relative;
-  padding: 10px 16px;
-  font-feature-settings: "tnum";
-  /* 切角形：左上、右上、右下/左下处削 8px 角 */
-  clip-path: polygon(
-    0 0,
-    calc(100% - 10px) 0, 100% 10px,
-    100% 100%,
-    10px 100%, 0 calc(100% - 10px)
-  );
-}
-.bubble-user {
-  background: var(--bubble-user);
-  color: var(--bubble-user-text);
-  box-shadow:
-    inset 0 0 0 1px rgba(242, 168, 60, 0.28),
-    0 5px 14px rgba(18, 12, 4, 0.16);
-}
-.bubble-ai {
-  background: var(--bubble-ai);
-  color: var(--bubble-ai-text);
-  backdrop-filter: blur(10px);
-  -webkit-backdrop-filter: blur(10px);
-  box-shadow:
-    inset 0 0 0 1px rgba(236, 214, 176, 0.14),
-    0 5px 14px rgba(18, 12, 4, 0.12);
-}
-.dark .bubble-ai {
-  /* 阅读气泡使用暖底并撤下毛玻璃；液态玻璃预算只留给浮层。 */
-  background: var(--bubble-ai);
-  backdrop-filter: none;
-  -webkit-backdrop-filter: none;
-}
-/* AI 气泡左上角的方块装饰（HUD reticle 标记） */
-.bubble-ai::before {
-  content: "";
-  position: absolute;
-  top: 4px;
-  left: 4px;
-  width: 4px;
-  height: 4px;
-  background: var(--hud-cyan);
-  box-shadow: 0 0 4px rgba(242, 168, 60, 0.28);
-}
-
-/* === HUD 面板：暖炭层 + 发丝描边 + 4 个角的尖括号 === */
-.hud-panel {
-  position: relative;
-  background: rgba(32, 26, 16, 0.66);
-  backdrop-filter: blur(14px) saturate(160%);
-  -webkit-backdrop-filter: blur(14px) saturate(160%);
-  border: 1px solid rgba(236, 214, 176, 0.14);
-  box-shadow: 0 10px 28px rgba(0, 0, 0, 0.24), inset 0 1px 0 rgba(255, 246, 226, 0.05);
-}
-.hud-panel::before,
-.hud-panel::after,
-.hud-panel > .hud-corner-tl,
-.hud-panel > .hud-corner-tr,
-.hud-panel > .hud-corner-bl,
-.hud-panel > .hud-corner-br {
-  pointer-events: none;
-}
-.hud-corners::before,
-.hud-corners::after {
-  content: "";
-  position: absolute;
-  width: 14px;
-  height: 14px;
-  border: 1.5px solid var(--hud-cyan);
-  box-shadow: 0 0 5px rgba(242, 168, 60, 0.24);
-}
-.hud-corners::before {
-  top: -1px;
-  left: -1px;
-  border-right: none;
-  border-bottom: none;
-}
-.hud-corners::after {
-  bottom: -1px;
-  right: -1px;
-  border-left: none;
-  border-top: none;
-}
-
-/* === HUD 浮起卡片：三块面板用 === */
-.hud-card-float {
-  position: relative;
-  background:
-    linear-gradient(180deg, rgba(40, 31, 19, 0.78) 0%, rgba(24, 19, 9, 0.84) 100%);
-  backdrop-filter: blur(18px) saturate(160%);
-  -webkit-backdrop-filter: blur(18px) saturate(160%);
-  border: 1px solid rgba(236, 214, 176, 0.17);
-  border-radius: 16px;
-  box-shadow:
-    0 12px 34px rgba(0, 0, 0, 0.42),
-    inset 0 1px 0 rgba(255, 246, 226, 0.32),
-    inset 0 -8px 16px rgba(242, 168, 60, 0.04),
-    inset 0 0 22px rgba(255, 246, 226, 0.035);
-}
-.hud-card-float::before {
-  /* 顶部高光描边 */
-  content: "";
-  position: absolute;
-  top: 0; left: 14px; right: 14px;
-  height: 1px;
-  background: linear-gradient(90deg, transparent, rgba(255, 246, 226, 0.42), transparent);
-  pointer-events: none;
-}
-
-/* === 仅深色浮层使用的液态玻璃材质 ===
-   Chromium 读取 #lg-refract 位移滤镜；WebKit 退化为纯模糊与增艳。 */
-.dark .liquid-glass {
-  --hx: 0px;
-  --hy: 0px;
-  isolation: isolate;
-  border-radius: 26px;
-  background: linear-gradient(135deg, rgba(255, 255, 255, 0.16), rgba(255, 255, 255, 0.04));
-  -webkit-backdrop-filter: blur(10px) saturate(185%) brightness(1.06);
-  backdrop-filter: blur(3px) saturate(185%) url(#lg-refract);
-  border: 1px solid rgba(255, 255, 255, 0.24);
-  box-shadow:
-    0 12px 34px rgba(0, 0, 0, 0.42),
-    inset 0 1px 0 rgba(255, 255, 255, 0.62),
-    inset 0 -8px 16px rgba(255, 255, 255, 0.06),
-    inset 0 0 24px rgba(255, 255, 255, 0.05);
-  transition: box-shadow 0.2s ease, transform 0.12s ease;
-}
-
-.dark .liquid-glass:active {
-  box-shadow:
-    0 20px 46px rgba(0, 0, 0, 0.50),
-    inset 0 1px 0 rgba(255, 255, 255, 0.72),
-    inset 0 -8px 16px rgba(255, 255, 255, 0.08),
-    inset 0 0 26px rgba(255, 255, 255, 0.07);
-}
-
-/* 湿润镜面高光：拖动组件可通过 --hx / --hy 让高光随指针偏移。 */
-.dark .liquid-glass::before {
-  content: "";
-  position: absolute;
-  inset: 0;
-  width: auto;
-  height: auto;
-  border-radius: inherit;
-  background: radial-gradient(
-    140px 96px at calc(34% + var(--hx)) calc(-6% + var(--hy)),
-    rgba(255, 255, 255, 0.42),
-    transparent 60%
-  );
-  mix-blend-mode: screen;
-  z-index: -1;
-  pointer-events: none;
-}
-
-/* 暖金底缘透光。 */
-.dark .liquid-glass::after {
-  content: "";
-  position: absolute;
-  left: 14px;
-  right: 14px;
-  bottom: 3px;
-  height: 44%;
-  border-radius: inherit;
-  background: linear-gradient(0deg, rgba(242, 168, 60, 0.16), transparent);
-  z-index: -1;
-  pointer-events: none;
-}
-
-/* === HUD 胶囊 pill（用于 tag/sort 等可点过滤器） === */
-.hud-pill {
-  font-family: var(--font-mono), "SF Mono", monospace;
-  font-size: 11px;
-  letter-spacing: 0.12em;
-  text-transform: none;
-  padding: 4px 10px;
-  border: 1px solid rgba(236, 214, 176, 0.17);
-  background: rgba(242, 168, 60, 0.06);
-  color: var(--hud-cyan);
-  border-radius: 999px;
-  cursor: pointer;
-  transition: background 0.2s ease, box-shadow 0.2s ease, transform 0.15s ease;
-  white-space: nowrap;
-  user-select: none;
-}
-.hud-pill:hover {
-  background: rgba(242, 168, 60, 0.14);
-  box-shadow: 0 0 8px rgba(242, 168, 60, 0.18);
-}
-.hud-pill-active {
-  background: #f2a83c;
-  color: #2a1806;
-  border-color: var(--hud-cyan);
-  box-shadow: 0 0 10px rgba(242, 168, 60, 0.24), inset 0 1px 0 rgba(255, 255, 255, 0.28);
-  text-shadow: none;
-}
-
-/* === Plaza 卡片：悬浮 + 发光 === */
-.plaza-card {
-  position: relative;
-  background: linear-gradient(180deg, rgba(40, 31, 19, 0.88) 0%, rgba(24, 19, 9, 0.92) 100%);
-  border: 1px solid rgba(236, 214, 176, 0.14);
-  border-radius: 14px;
-  overflow: hidden;
-  box-shadow:
-    0 0 0 1px rgba(236, 214, 176, 0.035),
-    0 8px 22px rgba(0, 0, 0, 0.4);
-  transition: transform 0.25s ease, box-shadow 0.25s ease, border-color 0.25s ease;
-}
-.plaza-card:hover {
-  transform: translateY(-3px);
-  border-color: rgba(242, 168, 60, 0.34);
-  box-shadow:
-    0 10px 28px rgba(18, 12, 4, 0.36),
-    0 14px 36px rgba(0, 0, 0, 0.55);
+@media (prefers-reduced-transparency: reduce) {
+  .glass, .glass-card { -webkit-backdrop-filter: none; backdrop-filter: none; background-color: var(--card); background-image: none; }
 }
 
 /* === 点赞爆炸动画 === */
@@ -406,253 +306,6 @@
   pointer-events: none;
 }
 
-/* === 卷帘门把手条 === */
-.shutter-handle {
-  position: relative;
-  height: 28px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  gap: 12px;
-  cursor: pointer;
-  user-select: none;
-  background:
-    linear-gradient(180deg, rgba(242, 168, 60, 0.10) 0%, rgba(242, 168, 60, 0.03) 100%);
-  border-bottom: 1px solid rgba(236, 214, 176, 0.14);
-  border-radius: 16px 16px 0 0;
-  transition: background 0.2s ease;
-}
-.shutter-handle:hover {
-  background:
-    linear-gradient(180deg, rgba(242, 168, 60, 0.18) 0%, rgba(242, 168, 60, 0.06) 100%);
-}
-.shutter-handle-grip {
-  width: 56px;
-  height: 4px;
-  border-radius: 2px;
-  background: rgba(242, 168, 60, 0.46);
-  box-shadow: 0 0 6px rgba(242, 168, 60, 0.20);
-}
-.shutter-handle .chev {
-  color: var(--hud-cyan);
-  text-shadow: 0 0 4px rgba(242, 168, 60, 0.22);
-  font-size: 10px;
-  letter-spacing: 0.18em;
-}
-
-/* === HUD 状态文本：等宽 + tracking === */
-.hud-label {
-  font-family: var(--font-mono), "SF Mono", "Menlo", monospace;
-  font-size: 10px;
-  letter-spacing: 0.14em;
-  text-transform: uppercase;
-  color: var(--hud-cyan);
-  text-shadow: 0 0 4px rgba(242, 168, 60, 0.20);
-}
-
-/* === HUD 在线指示器：呼吸点 === */
-.hud-pulse {
-  width: 8px;
-  height: 8px;
-  border-radius: 50%;
-  background: var(--hud-cyan);
-  box-shadow: 0 0 6px rgba(242, 168, 60, 0.42);
-  animation: hud-pulse 2.4s ease-in-out infinite;
-}
-@keyframes hud-pulse {
-  0%, 100% { opacity: 1; box-shadow: 0 0 6px rgba(242, 168, 60, 0.42), 0 0 0 0 rgba(242, 168, 60, 0.36); }
-  50%      { opacity: 0.68; box-shadow: 0 0 9px rgba(242, 168, 60, 0.50), 0 0 0 6px rgba(242, 168, 60, 0); }
-}
-
-/* === HUD 按钮：金属/玻璃感 === */
-.hud-btn {
-  background: linear-gradient(180deg, rgba(242, 168, 60, 0.10) 0%, rgba(242, 168, 60, 0.04) 100%);
-  border: 1px solid rgba(236, 214, 176, 0.18);
-  color: var(--hud-cyan);
-  text-shadow: 0 0 3px rgba(242, 168, 60, 0.18);
-  transition: all 0.2s ease;
-  position: relative;
-}
-.hud-btn:hover {
-  background: linear-gradient(180deg, rgba(242, 168, 60, 0.18) 0%, rgba(242, 168, 60, 0.08) 100%);
-  border-color: var(--hud-cyan);
-  box-shadow: 0 0 10px rgba(242, 168, 60, 0.20), inset 0 0 10px rgba(242, 168, 60, 0.06);
-}
-.hud-btn-active {
-  background: linear-gradient(180deg, rgba(242, 168, 60, 0.92) 0%, rgba(224, 139, 35, 0.92) 100%);
-  border-color: var(--hud-cyan);
-  color: #2a1806;
-  box-shadow: 0 0 11px rgba(242, 168, 60, 0.24), inset 0 1px 0 rgba(255,255,255,0.22);
-  text-shadow: none;
-}
-
-/* === 头像环：旋转扫描 === */
-.hud-avatar-ring {
-  position: relative;
-}
-.hud-avatar-ring::before {
-  content: "";
-  position: absolute;
-  inset: -3px;
-  border-radius: 50%;
-  border: 1px solid var(--hud-cyan-soft);
-  border-top-color: var(--hud-cyan);
-  opacity: 0.62;
-  animation: hud-rotate 7s linear infinite;
-}
-@keyframes hud-rotate {
-  to { transform: rotate(360deg); }
-}
-
-/* === 能量球：多层同心圆 + 旋转刻度环 === */
-.hud-orb-outer {
-  position: absolute;
-  inset: 0;
-  border-radius: 50%;
-  border: 1px solid rgba(242, 168, 60, 0.20);
-  /* 用 conic-gradient + repeating 做刻度感 */
-  background: conic-gradient(
-    from 0deg,
-    transparent 0deg, rgba(242, 168, 60, 0) 4deg,
-    rgba(242, 168, 60, 0.32) 4deg, rgba(242, 168, 60, 0.32) 5deg,
-    transparent 5deg
-  );
-  background-size: 100% 100%;
-  -webkit-mask: radial-gradient(circle, transparent 95px, #000 96px);
-          mask: radial-gradient(circle, transparent 95px, #000 96px);
-  animation: hud-rotate 30s linear infinite;
-}
-.hud-orb-mid {
-  position: absolute;
-  inset: 16px;
-  border-radius: 50%;
-  border: 1px dashed rgba(242, 168, 60, 0.24);
-  animation: hud-rotate 20s linear infinite reverse;
-}
-.hud-orb-pulse {
-  position: absolute;
-  inset: 30px;
-  border-radius: 50%;
-  border: 1px solid rgba(242, 168, 60, 0.28);
-  box-shadow: 0 0 18px rgba(242, 168, 60, 0.12), inset 0 0 20px rgba(242, 168, 60, 0.07);
-  animation: hud-orb-pulse 4.8s ease-in-out infinite;
-}
-@keyframes hud-orb-pulse {
-  0%, 100% { transform: scale(1); opacity: 0.55; }
-  50%      { transform: scale(1.03); opacity: 0.78; }
-}
-.hud-orb-core {
-  position: absolute;
-  inset: 50px;
-  border-radius: 50%;
-  background:
-    radial-gradient(circle at 35% 30%, rgba(255, 213, 148, 0.72), rgba(126, 70, 16, 0.88) 60%, rgba(37, 23, 7, 0.96) 100%);
-  box-shadow:
-    inset 0 0 18px rgba(242, 168, 60, 0.38),
-    0 0 24px rgba(242, 168, 60, 0.28);
-}
-.hud-orb-recording .hud-orb-pulse {
-  border-color: rgba(255, 80, 120, 0.65);
-  box-shadow: 0 0 32px rgba(255, 80, 120, 0.4), inset 0 0 32px rgba(255,80,120,0.15);
-  animation-duration: 0.9s;
-}
-.hud-orb-recording .hud-orb-core {
-  background: radial-gradient(circle at 35% 30%, rgba(255,120,140,0.7), rgba(170,30,60,0.85) 60%, rgba(60,10,20,0.95) 100%);
-  box-shadow: inset 0 0 18px rgba(255,80,120,0.55), 0 0 32px rgba(255,80,120,0.55);
-}
-
-/* === HudOrb v2：中心形变 blob + 轨道粒子 === */
-.hud-orb-v2 { position: relative; }
-
-.hud-orb-v2-blob {
-  position: absolute;
-  inset: 30%;
-  border-radius: 50% 50% 50% 50%;
-  background: radial-gradient(circle at 35% 30%,
-    rgba(255, 218, 158, 0.86) 0%,
-    rgba(242, 168, 60, 0.74) 35%,
-    rgba(132, 78, 20, 0.88) 70%,
-    rgba(42, 25, 8, 0.96) 100%);
-  box-shadow:
-    inset 0 0 24px rgba(242, 168, 60, 0.42),
-    inset 0 -8px 16px rgba(90, 48, 11, 0.50),
-    0 0 28px rgba(242, 168, 60, 0.30);
-  animation: hud-blob-morph 10s ease-in-out infinite;
-  filter: blur(0.3px);
-}
-@keyframes hud-blob-morph {
-  0%, 100% { border-radius: 50% 50% 50% 50%; transform: rotate(0deg) scale(1); }
-  25%      { border-radius: 62% 38% 70% 30% / 55% 60% 40% 45%; transform: rotate(4deg) scale(1.025); }
-  50%      { border-radius: 38% 62% 40% 60% / 65% 35% 65% 35%; transform: rotate(-2deg) scale(0.985); }
-  75%      { border-radius: 70% 30% 45% 55% / 40% 60% 40% 60%; transform: rotate(2deg) scale(1.015); }
-}
-
-/* 光晕外圈呼吸 */
-.hud-orb-v2-glow {
-  position: absolute;
-  inset: 22%;
-  border-radius: 50%;
-  background: radial-gradient(circle, rgba(242, 168, 60, 0.18) 0%, transparent 70%);
-  filter: blur(8px);
-  animation: hud-orb-glow-pulse 4.6s ease-in-out infinite;
-  pointer-events: none;
-}
-@keyframes hud-orb-glow-pulse {
-  0%, 100% { opacity: 0.45; transform: scale(1); }
-  50%      { opacity: 0.68; transform: scale(1.08); }
-}
-
-/* 轨道粒子：在 --r 半径上转圈 */
-.hud-orb-v2-particle {
-  position: absolute;
-  top: 50%; left: 50%;
-  width: 6px; height: 6px;
-  margin: -3px 0 0 -3px;
-  border-radius: 50%;
-  background: var(--hud-cyan);
-  box-shadow: 0 0 6px rgba(242, 168, 60, 0.38), 0 0 10px rgba(242, 168, 60, 0.20);
-  animation: hud-orbit 12s linear infinite;
-  pointer-events: none;
-}
-@keyframes hud-orbit {
-  from { transform: rotate(0deg) translateX(var(--r, 100px)) rotate(0deg); }
-  to   { transform: rotate(360deg) translateX(var(--r, 100px)) rotate(-360deg); }
-}
-
-/* 录音模式：偏红色 + 形变加快 */
-.hud-orb-v2-rec .hud-orb-v2-blob {
-  background: radial-gradient(circle at 35% 30%,
-    rgba(255, 200, 210, 0.9) 0%,
-    rgba(255, 100, 130, 0.85) 30%,
-    rgba(180, 30, 60, 0.9) 70%,
-    rgba(60, 0, 20, 0.95) 100%);
-  box-shadow:
-    inset 0 0 24px rgba(255,80,120,0.65),
-    0 0 36px rgba(255, 80, 120, 0.55);
-  animation: hud-blob-morph 3.8s ease-in-out infinite;
-}
-.hud-orb-v2-rec .hud-orb-v2-glow {
-  background: radial-gradient(circle, rgba(255,80,120,0.35) 0%, transparent 70%);
-}
-.hud-orb-v2-rec .hud-orb-v2-particle {
-  background: #ff6680;
-  box-shadow: 0 0 8px #ff6680, 0 0 14px rgba(255,80,120,0.7);
-}
-
-/* === 心电图扫描线 === */
-@keyframes hud-ekg {
-  0%   { stroke-dashoffset: 0; }
-  100% { stroke-dashoffset: -200; }
-}
-.hud-ekg path {
-  stroke: var(--hud-cyan);
-  stroke-width: 1.2;
-  fill: none;
-  stroke-dasharray: 200;
-  filter: drop-shadow(0 0 3px rgba(242, 168, 60, 0.24));
-  animation: hud-ekg 6s linear infinite;
-}
-
 /* === 打字机光标：暖金呼吸竖条 === */
 @keyframes blink {
   0%, 50% { opacity: 1; }
@@ -660,8 +313,7 @@
 }
 .typing-cursor::after {
   content: "▌";
-  color: var(--hud-cyan);
-  text-shadow: 0 0 4px rgba(242, 168, 60, 0.24);
+  color: var(--amber-ink);
   animation: blink 1.4s infinite;
   margin-left: 1px;
 }
@@ -778,16 +430,11 @@ html, * {
   will-change: transform, opacity;
 }
 
-/* 漂移匹配卡的组件内动画也在深色主题放慢。 */
-.dark .cloud-card {
-  animation-duration: 10s !important;
-}
-
 /* 深色 HUD 的全局减弱动态模式：常驻、状态与入场动画全部静止化。 */
 @media (prefers-reduced-motion: reduce) {
-  .dark *,
-  .dark *::before,
-  .dark *::after {
+  *,
+  *::before,
+  *::after {
     animation: none !important;
     scroll-behavior: auto !important;
     transition-duration: 0.01ms !important;

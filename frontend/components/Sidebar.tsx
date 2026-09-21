@@ -2,48 +2,73 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { MessageCircle, Sparkles, User, Settings, Moon, Sun, UsersRound, LayoutGrid, History } from "lucide-react";
-import { useState } from "react";
+import { MessageCircle, Settings, Moon, Sun, Bot, Orbit, Globe } from "lucide-react";
+import { useEffect, useState } from "react";
 import { cn } from "@/lib/utils";
+import { getUsername, updateBalance, apiFetch } from "@/lib/auth";
+
+import { API_BASE as API } from "@/lib/config";
 
 const navItems = [
-  { href: "/", icon: MessageCircle, label: "聊天" },
-  { href: "/match", icon: Sparkles, label: "匹配" },
-  { href: "/plaza", icon: LayoutGrid, label: "我的世界" },
-  { href: "/community", icon: UsersRound, label: "社群" },
-  { href: "/profile", icon: User, label: "我的" },
+  { href: "/", icon: MessageCircle, label: "对话" },
+  { href: "/agents/me", icon: Bot, label: "分身" },
+  { href: "/agents", icon: Orbit, label: "广场" },
+  { href: "/plaza", icon: Globe, label: "世界" },
   { href: "/settings", icon: Settings, label: "设置" },
 ];
 
 export default function Sidebar({
-  onHistoryClick,
   onChatClick,
+  onAgentClick,
+  agentActive,
+  onExchangeClick,
+  exchangeActive,
   onPlazaClick,
   plazaActive,
-  onMatchClick,
-  matchActive,
-  onCommunityClick,
-  communityActive,
-  onProfileClick,
-  profileActive,
   onSettingsClick,
   settingsActive,
 }: {
   onHistoryClick?: () => void;
-  onChatClick?: () => void;          // 主页传入 → 点"聊天"关闭所有抽屉
+  onChatClick?: () => void;          // 主页传入，点“对话”关闭所有抽屉
+  onAgentClick?: () => void;
+  agentActive?: boolean;
+  onExchangeClick?: () => void;
+  exchangeActive?: boolean;
   onPlazaClick?: () => void;
   plazaActive?: boolean;
-  onMatchClick?: () => void;
-  matchActive?: boolean;
-  onCommunityClick?: () => void;
-  communityActive?: boolean;
-  onProfileClick?: () => void;
-  profileActive?: boolean;
   onSettingsClick?: () => void;
   settingsActive?: boolean;
 }) {
   const pathname = usePathname();
   const [dark, setDark] = useState(true);
+  const [balance, setBalance] = useState<number | null>(null);
+
+  useEffect(() => {
+    // 每次拉余额都重读 username —— 切换身份后能看到新账号的余额
+    // 监听两个事件:跨 tab 的 storage 变化 + 同 tab 的自定义 fiona-user-changed
+    const fetchBalance = () => {
+      const username = getUsername();
+      if (!username) { setBalance(null); return; }
+      apiFetch(`${API}/strawberry`)
+        .then(r => r.json())
+        .then(data => {
+          if (typeof data?.balance === "number") {
+            setBalance(data.balance);
+            updateBalance(data.balance);
+          }
+        })
+        .catch(() => {});
+    };
+    fetchBalance();
+    const timer = setInterval(fetchBalance, 60000);
+    window.addEventListener("storage", fetchBalance);
+    window.addEventListener("fiona-user-changed", fetchBalance);
+    return () => {
+      clearInterval(timer);
+      window.removeEventListener("storage", fetchBalance);
+      window.removeEventListener("fiona-user-changed", fetchBalance);
+    };
+  }, []);
 
   const toggleTheme = () => {
     setDark(!dark);
@@ -51,50 +76,54 @@ export default function Sidebar({
   };
 
   return (
-    <aside className="glass flex flex-col items-center w-16 border-r border-border bg-sidebar py-4 gap-1 shrink-0">
+    <aside className="glass flex min-h-0 w-14 shrink-0 flex-col items-center gap-1 border-r border-border bg-sidebar py-3">
       {/* Logo */}
-      <div className="w-9 h-9 rounded-xl bg-primary flex items-center justify-center mb-4 shadow-sm">
-        <span className="text-primary-foreground text-sm font-semibold">C</span>
+      <div className="mb-3 grid h-8 w-8 shrink-0 place-items-center text-[color:var(--amber-ink)]" title="Chloe">
+        <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" aria-hidden="true">
+          <circle cx="9" cy="12" r="5.5" />
+          <circle cx="15" cy="12" r="5.5" />
+        </svg>
       </div>
 
       {/* Nav */}
-      <nav className="flex flex-col items-center gap-1 flex-1">
+      <nav className="flex min-h-0 w-full flex-col items-center gap-1 flex-1 overflow-y-auto">
         {navItems.map(({ href, icon: Icon, label }) => {
           // active 优先看抽屉状态，没传 active prop 时回退到 pathname
           const drawerActive =
+            (href === "/agents/me" && agentActive) ||
+            (href === "/agents" && exchangeActive) ||
             (href === "/plaza" && plazaActive) ||
-            (href === "/match" && matchActive) ||
-            (href === "/community" && communityActive) ||
-            (href === "/profile" && profileActive) ||
             (href === "/settings" && settingsActive);
-          const anyDrawerOpen = !!(plazaActive || matchActive || communityActive || profileActive || settingsActive);
+          const anyDrawerOpen = !!(agentActive || exchangeActive || plazaActive || settingsActive);
           // "聊天"在主页且没抽屉开时高亮；任一抽屉开时不高亮
           const chatActive = href === "/" && pathname === "/" && !anyDrawerOpen;
           const active = drawerActive || chatActive || (href !== "/" && pathname === href);
           // 抽屉模式：父组件传了对应 callback 时走按钮 + 不路由跳转
           const drawerCallback =
             href === "/" ? onChatClick :
+            href === "/agents/me" ? onAgentClick :
+            href === "/agents" ? onExchangeClick :
             href === "/plaza" ? onPlazaClick :
-            href === "/match" ? onMatchClick :
-            href === "/community" ? onCommunityClick :
-            href === "/profile" ? onProfileClick :
             href === "/settings" ? onSettingsClick :
             undefined;
           if (drawerCallback) {
             return (
               <button
                 key={href}
+                type="button"
                 onClick={drawerCallback}
+                aria-expanded={href === "/agents/me" ? !!agentActive : href === "/agents" ? !!exchangeActive : undefined}
+                aria-controls={href === "/agents/me" ? "agent-drawer" : href === "/agents" ? "exchange-drawer" : undefined}
                 className={cn(
-                  "flex flex-col items-center justify-center w-12 h-12 rounded-xl gap-0.5 transition-all duration-150",
+                  "flex h-12 w-12 shrink-0 flex-col items-center justify-center gap-0.5 rounded-[6px] transition-colors duration-150",
                   active
-                    ? "bg-accent text-accent-foreground"
+                    ? "text-[color:var(--amber-ink)]"
                     : "text-muted-foreground hover:bg-secondary hover:text-foreground"
                 )}
                 title={label}
               >
                 <Icon size={20} strokeWidth={active ? 2.2 : 1.8} />
-                <span className="text-[9px] font-medium">{label}</span>
+                <span className="text-[10px] font-medium">{label}</span>
               </button>
             );
           }
@@ -103,40 +132,46 @@ export default function Sidebar({
               key={href}
               href={href}
               className={cn(
-                "flex flex-col items-center justify-center w-12 h-12 rounded-xl gap-0.5 transition-all duration-150",
+                "flex h-12 w-12 shrink-0 flex-col items-center justify-center gap-0.5 rounded-[6px] transition-colors duration-150",
                 active
-                  ? "bg-accent text-accent-foreground"
+                  ? "text-[color:var(--amber-ink)]"
                   : "text-muted-foreground hover:bg-secondary hover:text-foreground"
               )}
               title={label}
             >
               <Icon size={20} strokeWidth={active ? 2.2 : 1.8} />
-              <span className="text-[9px] font-medium">{label}</span>
+              <span className="text-[10px] font-medium">{label}</span>
             </Link>
           );
         })}
-
-        {/* 历史聊天记录按钮 */}
-        {onHistoryClick && (
-          <button
-            onClick={onHistoryClick}
-            className="flex flex-col items-center justify-center w-12 h-12 rounded-xl gap-0.5 transition-all duration-150 text-muted-foreground hover:bg-secondary hover:text-foreground"
-            title="历史聊天记录"
-          >
-            <History size={20} strokeWidth={1.8} />
-            <span className="text-[9px] font-medium">历史</span>
-          </button>
-        )}
       </nav>
 
-      {/* 底部：深浅色切换 */}
-      <button
-        onClick={toggleTheme}
-        className="flex items-center justify-center w-10 h-10 rounded-xl text-muted-foreground hover:bg-secondary hover:text-foreground transition-all"
-        title={dark ? "切换浅色" : "切换深色"}
-      >
-        {dark ? <Sun size={18} /> : <Moon size={18} />}
-      </button>
+      <div className="flex shrink-0 flex-col items-center gap-2.5">
+        <div className="flex flex-col items-center gap-0.5 text-[11px] text-muted-foreground" title="草莓余额，每条消息消耗 10 颗">
+          <span aria-hidden="true">🍓</span>
+          <b
+            className="readout"
+            style={{
+              color: balance !== null && balance < 30
+                ? "var(--rec)"
+                : balance !== null && balance < 100
+                  ? "var(--amber-ink)"
+                  : "var(--foreground)",
+            }}
+          >
+            {balance === null ? "…" : balance}
+          </b>
+        </div>
+
+        {/* 底部：深浅色切换 */}
+        <button
+          onClick={toggleTheme}
+          className="flex h-10 w-12 shrink-0 items-center justify-center rounded-[6px] text-muted-foreground transition-colors hover:bg-secondary hover:text-foreground"
+          title={dark ? "切换浅色" : "切换深色"}
+        >
+          {dark ? <Sun size={18} /> : <Moon size={18} />}
+        </button>
+      </div>
     </aside>
   );
 }

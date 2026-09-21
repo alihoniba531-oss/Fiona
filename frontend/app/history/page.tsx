@@ -5,6 +5,8 @@ import { useSearchParams } from "next/navigation";
 import { Search, X, Download, Calendar, ChevronDown, ChevronRight } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { apiFetch } from "@/lib/auth";
+import GeneratedImage from "@/components/GeneratedImage";
+import { generatedImagePath, storedReferenceImagePaths } from "@/lib/generatedImages";
 
 import { API_BASE as API } from "@/lib/config";
 
@@ -13,6 +15,7 @@ interface Msg {
   role: "user" | "assistant";
   content: string;
   image_path: string | null;
+  reference_image_paths?: string[];
   created_at: string;
 }
 
@@ -139,22 +142,21 @@ function HistoryContent() {
   ];
 
   return (
-    <div className="min-h-screen bg-background text-foreground flex flex-col">
+    <div className="flex min-h-screen flex-col text-foreground">
 
       {/* 顶栏 */}
-      <header className="sticky top-0 z-20 glass border-b border-border px-5 py-2.5 flex items-center gap-3">
-        <div className="flex items-center gap-2 shrink-0">
-          <div className="w-7 h-7 rounded-lg bg-primary flex items-center justify-center">
-            <span className="text-primary-foreground text-xs font-semibold">C</span>
-          </div>
+      <header className="glass sticky top-0 z-20 flex items-center gap-3 border-b px-5 py-2.5" style={{ borderColor: "var(--glass-border)" }}>
+        <div className="flex shrink-0 items-center gap-2">
           <div>
-            <p className="text-sm font-semibold leading-tight">历史记录</p>
-            <p className="text-[10px] text-muted-foreground">{username} · {allMsgs.length} 条</p>
+            <p className="text-sm font-medium leading-tight">历史记录</p>
+            <p className="mt-0.5 text-xs text-muted-foreground">
+              {username} · <span className="readout"><b>{allMsgs.length}</b> 条</span>
+            </p>
           </div>
         </div>
 
         {/* 搜索 */}
-        <div className="flex-1 flex items-center gap-2 bg-secondary rounded-xl px-3 py-1.5">
+        <div className="flex flex-1 items-center gap-2 rounded-[6px] border bg-card px-3 py-[9px] focus-within:border-[color:var(--amber-ink)]">
           <Search size={13} className="text-muted-foreground shrink-0" />
           <input
             ref={searchRef}
@@ -164,7 +166,7 @@ function HistoryContent() {
             className="flex-1 bg-transparent text-sm outline-none text-foreground placeholder:text-muted-foreground min-w-0"
           />
           {query && (
-            <button onClick={() => setQuery("")} className="text-muted-foreground hover:text-foreground shrink-0">
+            <button onClick={() => setQuery("")} className="btn btn-quiet h-7 w-7 shrink-0 px-0">
               <X size={12} />
             </button>
           )}
@@ -173,30 +175,31 @@ function HistoryContent() {
         {/* 导出 */}
         <button
           onClick={handleExport}
-          className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-secondary text-xs text-muted-foreground hover:text-foreground transition-all shrink-0"
+          className="btn shrink-0"
         >
           <Download size={12} />
-          导出{filtered.length < allMsgs.length ? `(${filtered.length}条)` : ""}
+          导出
+          {filtered.length < allMsgs.length && <span className="readout">({filtered.length}条)</span>}
         </button>
       </header>
 
       <div className="flex flex-1 min-h-0">
 
         {/* 左侧：日期导航 */}
-        <aside className="w-56 shrink-0 border-r border-border flex flex-col glass">
+        <aside className="glass flex w-56 shrink-0 flex-col border-r" style={{ borderColor: "var(--glass-border)" }}>
           {/* 快捷筛选 */}
           <div className="px-3 pt-4 pb-2">
-            <p className="text-[10px] font-semibold text-muted-foreground uppercase tracking-wider px-1 mb-2">快捷筛选</p>
+            <p className="mb-2 px-1 text-xs font-medium text-muted-foreground">快捷筛选</p>
             <div className="flex flex-col gap-0.5">
               {quickLabels.map(({ key, label }) => (
                 <button
                   key={key}
                   onClick={() => applyQuick(key)}
                   className={cn(
-                    "w-full text-left px-3 py-1.5 rounded-lg text-xs transition-all",
+                    "chip h-auto w-full justify-start px-3 py-1.5 text-left",
                     quick === key && dateFrom === (key === "all" ? "" : dateFrom)
-                      ? "bg-primary text-primary-foreground font-medium"
-                      : "text-muted-foreground hover:bg-secondary hover:text-foreground"
+                      ? "chip-on"
+                      : ""
                   )}
                 >
                   {label}
@@ -206,9 +209,9 @@ function HistoryContent() {
           </div>
 
           {/* 日期区间 */}
-          <div className="px-3 py-3 border-t border-border">
-            <p className="text-[10px] font-semibold text-muted-foreground uppercase tracking-wider px-1 mb-2 flex items-center gap-1">
-              <Calendar size={10} />
+          <div className="border-t px-3 py-3" style={{ borderColor: "var(--glass-border)" }}>
+            <p className="mb-2 flex items-center gap-1 px-1 text-xs font-medium text-muted-foreground">
+              <Calendar size={12} style={{ color: "var(--amber-ink)" }} />
               自定义区间
             </p>
             <div className="space-y-1.5">
@@ -216,19 +219,19 @@ function HistoryContent() {
                 type="date"
                 value={dateFrom}
                 onChange={e => { setDateFrom(e.target.value); setQuick("all"); }}
-                className="w-full bg-secondary text-foreground text-[11px] rounded-lg px-2 py-1.5 outline-none border border-border focus:border-primary transition-colors"
+                className="readout w-full rounded-[6px] border bg-card px-3 py-[9px] text-foreground outline-none focus:border-[color:var(--amber-ink)]"
               />
               <div className="text-center text-[10px] text-muted-foreground">至</div>
               <input
                 type="date"
                 value={dateTo}
                 onChange={e => { setDateTo(e.target.value); setQuick("all"); }}
-                className="w-full bg-secondary text-foreground text-[11px] rounded-lg px-2 py-1.5 outline-none border border-border focus:border-primary transition-colors"
+                className="readout w-full rounded-[6px] border bg-card px-3 py-[9px] text-foreground outline-none focus:border-[color:var(--amber-ink)]"
               />
               {(dateFrom || dateTo) && (
                 <button
                   onClick={() => { setDateFrom(""); setDateTo(""); setQuick("all"); }}
-                  className="w-full text-[11px] text-muted-foreground hover:text-foreground py-1 transition-colors"
+                  className="btn btn-quiet h-7 w-full px-2.5 text-xs"
                 >
                   清除筛选
                 </button>
@@ -237,8 +240,8 @@ function HistoryContent() {
           </div>
 
           {/* 日期列表 */}
-          <div className="flex-1 overflow-y-auto px-3 pb-4 border-t border-border pt-3">
-            <p className="text-[10px] font-semibold text-muted-foreground uppercase tracking-wider px-1 mb-2">按日期跳转</p>
+          <div className="flex-1 overflow-y-auto border-t px-3 pb-4 pt-3" style={{ borderColor: "var(--glass-border)" }}>
+            <p className="mb-2 px-1 text-xs font-medium text-muted-foreground">按日期跳转</p>
             <div className="flex flex-col gap-0.5">
               {dateStats.map(([day, count]) => {
                 const isActive = dateFrom === day && dateTo === day;
@@ -247,14 +250,12 @@ function HistoryContent() {
                     key={day}
                     onClick={() => selectDay(day)}
                     className={cn(
-                      "w-full flex items-center justify-between px-3 py-1.5 rounded-lg text-left transition-all",
-                      isActive
-                        ? "bg-primary/10 text-primary"
-                        : "text-muted-foreground hover:bg-secondary hover:text-foreground"
+                      "chip h-auto w-full justify-between px-3 py-1.5 text-left",
+                      isActive && "chip-on"
                     )}
                   >
-                    <span className="text-[11px]">{day.slice(5)}</span>
-                    <span className="text-[10px] opacity-60">{count}</span>
+                    <span className="readout text-[11px]">{day.slice(5)}</span>
+                    <span className="readout text-[10px]">{count}</span>
                   </button>
                 );
               })}
@@ -267,10 +268,10 @@ function HistoryContent() {
           {/* 筛选结果摘要 */}
           {(query || dateFrom || dateTo) && (
             <div className="flex items-center gap-2 text-[11px] text-muted-foreground pb-1">
-              <span>筛选结果：{filtered.length} 条</span>
-              {query && <span className="bg-secondary px-2 py-0.5 rounded-full">含「{query}」</span>}
+              <span>筛选结果：<span className="readout"><b>{filtered.length}</b> 条</span></span>
+              {query && <span className="chip h-6 px-2 text-[11px]">含「{query}」</span>}
               {(dateFrom || dateTo) && (
-                <span className="bg-secondary px-2 py-0.5 rounded-full">
+                <span className="chip h-6 px-2 text-[11px]">
                   {dateFrom || "—"} 至 {dateTo || "—"}
                 </span>
               )}
@@ -287,7 +288,7 @@ function HistoryContent() {
               {(query || dateFrom || dateTo) && (
                 <button
                   onClick={() => { setQuery(""); setDateFrom(""); setDateTo(""); setQuick("all"); }}
-                  className="text-xs text-primary hover:underline mt-1"
+                  className="btn btn-quiet mt-1 h-7 px-2.5 text-xs"
                 >
                   清除所有筛选
                 </button>
@@ -296,7 +297,7 @@ function HistoryContent() {
           ) : groups.map(([day, msgs]) => {
             const open = !collapsed[day];
             return (
-              <div key={day} className="bg-card border border-border rounded-2xl overflow-hidden">
+              <div key={day} className="glass-card overflow-hidden">
                 <button
                   onClick={() => setCollapsed(p => ({ ...p, [day]: !p[day] }))}
                   className="w-full flex items-center gap-2 px-4 py-3 hover:bg-secondary/40 transition-all text-left"
@@ -305,14 +306,16 @@ function HistoryContent() {
                     ? <ChevronDown size={13} className="text-muted-foreground shrink-0" />
                     : <ChevronRight size={13} className="text-muted-foreground shrink-0" />
                   }
-                  <span className="text-[11px] font-semibold text-muted-foreground">{formatDisplayDate(day)}</span>
-                  <span className="text-[10px] text-muted-foreground/50 ml-auto">{msgs.length} 条</span>
+                  <span className="text-[13px] font-medium text-muted-foreground">{formatDisplayDate(day)}</span>
+                  <span className="readout ml-auto text-[11px]">{msgs.length} 条</span>
                 </button>
 
                 {open && (
-                  <div className="border-t border-border divide-y divide-border/50">
+                  <div className="divide-y divide-[color:var(--glass-border)] border-t" style={{ borderColor: "var(--glass-border)" }}>
                     {msgs.map(msg => {
                       const isUser = msg.role === "user";
+                      const generatedPath = generatedImagePath(msg.image_path ?? undefined);
+                      const referencePaths = isUser ? storedReferenceImagePaths(msg.reference_image_paths, msg.image_path) : [];
                       const time = parseUtcTimestamp(msg.created_at).toLocaleTimeString("zh-CN", {
                         hour: "2-digit", minute: "2-digit",
                       });
@@ -324,26 +327,27 @@ function HistoryContent() {
                         const parts = text.split(new RegExp(`(${escaped})`, "gi"));
                         return parts.map((p, i) =>
                           p.toLowerCase() === query.toLowerCase()
-                            ? <mark key={i} className="bg-yellow-400/40 text-foreground rounded px-0.5">{p}</mark>
+                            ? <mark key={i} className="bg-[color:var(--accent)] text-foreground rounded-[3px] px-0.5">{p}</mark>
                             : p
                         );
                       };
                       return (
-                        <div key={msg.id} className={cn("px-4 py-3 flex gap-3", isUser && "flex-row-reverse")}>
-                          <div className={cn(
-                            "w-7 h-7 rounded-full flex items-center justify-center text-xs font-semibold shrink-0 mt-0.5",
-                            isUser ? "bg-primary text-primary-foreground" : "bg-accent text-accent-foreground"
-                          )}>
-                            {isUser ? username[0] : "C"}
-                          </div>
-                          <div className={cn("flex flex-col gap-0.5 max-w-[80%]", isUser && "items-end")}>
-                            <div className={cn(
-                              "px-3 py-2 rounded-2xl text-sm leading-relaxed break-words whitespace-pre-wrap",
-                              isUser ? "bg-primary text-primary-foreground rounded-br-sm" : "bg-secondary text-foreground rounded-bl-sm"
-                            )}>
+                        <div key={msg.id} className={cn("flex px-4 py-3", isUser ? "justify-end" : "justify-start")}>
+                          <div className={cn("flex flex-col gap-1.5", isUser ? "max-w-[520px] items-end" : "max-w-[640px] items-start")}>
+                            {!isUser && (
+                              <div className="flex items-center gap-2 text-xs text-muted-foreground">
+                                <span className="inline-block h-1.5 w-1.5" style={{ background: "var(--amber-ink)" }} />
+                                Chloe
+                              </div>
+                            )}
+                            {!isUser && generatedPath && <GeneratedImage key={`${username}:${generatedPath}`} imageUrl={`${API}${generatedPath}`} />}
+                            {referencePaths.length > 0 && <div className="flex max-w-full flex-wrap justify-end gap-2" aria-label="本次修改的参考图片">
+                              {referencePaths.map((path, index) => <GeneratedImage key={`${username}:${path}`} imageUrl={`${API}${path}`} variant="reference" referenceIndex={index + 1} />)}
+                            </div>}
+                            <div className={cn("break-words whitespace-pre-wrap text-sm", isUser ? "bubble-user" : "bubble-ai")}>
                               {highlight(msg.content)}
                             </div>
-                            <span className="text-[9px] text-muted-foreground px-1">{time}</span>
+                            <span className="readout px-1 text-[11px]">{time}</span>
                           </div>
                         </div>
                       );
@@ -362,7 +366,7 @@ function HistoryContent() {
 export default function HistoryPage() {
   return (
     <Suspense fallback={
-      <div className="min-h-screen bg-background flex items-center justify-center text-muted-foreground text-sm">
+      <div className="flex min-h-screen items-center justify-center text-sm text-muted-foreground">
         加载中…
       </div>
     }>

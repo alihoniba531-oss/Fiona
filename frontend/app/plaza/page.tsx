@@ -3,12 +3,12 @@
 import { Suspense, useState, useEffect, useRef, useCallback } from "react";
 import { useSearchParams } from "next/navigation";
 import Sidebar from "@/components/Sidebar";
-import TopBar from "@/components/TopBar";
 import SolarSystem3D from "@/components/SolarSystem3D";
-import { Plus, Heart, ImageIcon, Video, X, Check, Sparkles, Music2, BarChart2, Cpu, BookOpen, Newspaper, Flame, TrendingUp } from "lucide-react";
+import { Plus, Heart, Video, X, Check, Sparkles, Music2, BarChart2, Cpu, BookOpen, Flame, TrendingUp, RefreshCw } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { apiFetch } from "@/lib/auth";
 import { openExternal } from "@/lib/open";
+import { useCategorizedHotTopics, useHotTopics, type HotFeedState } from "@/lib/useHotTopics";
 
 import { API_BASE as API } from "@/lib/config";
 
@@ -36,7 +36,7 @@ function timeAgo(ts: string) {
 }
 
 // ─────────────────── 帖子卡 ───────────────────
-function PostCard({ post, username }: { post: Post; username: string }) {
+function PostCard({ post }: { post: Post }) {
   const [liked, setLiked] = useState(false);
   const [likes, setLikes] = useState(post.likes);
   const [burst, setBurst] = useState(0);
@@ -55,7 +55,7 @@ function PostCard({ post, username }: { post: Post; username: string }) {
   };
 
   return (
-    <div className="plaza-card group">
+    <div className="glass-card group overflow-hidden">
       <div className="relative aspect-square bg-black/40 overflow-hidden">
         {post.media_type === "video" ? (
           <video
@@ -76,14 +76,14 @@ function PostCard({ post, username }: { post: Post; username: string }) {
 
         <div className="absolute top-2 right-2 flex flex-col items-end gap-1">
           {post.media_type === "video" && (
-            <div className="rounded-full bg-black/60 backdrop-blur-sm p-1 border border-primary/30">
-              <Video size={10} className="text-primary" />
+            <div className="rounded-[6px] border bg-black/60 p-1" style={{ borderColor: "var(--glass-border)" }}>
+              <Video size={10} style={{ color: "var(--amber-ink)" }} />
             </div>
           )}
           {post.likes >= 5 && (
-            <div className="flex items-center gap-0.5 rounded-full bg-orange-500/20 backdrop-blur-sm px-1.5 py-0.5 border border-orange-400/40">
-              <Flame size={9} className="text-orange-300" />
-              <span className="text-[9px] font-semibold text-orange-200">HOT</span>
+            <div className="tag tag-amber gap-0.5">
+              <Flame size={9} />
+              <span>热门</span>
             </div>
           )}
         </div>
@@ -91,12 +91,12 @@ function PostCard({ post, username }: { post: Post; username: string }) {
         {post.tags.length > 0 && (
           <div className="absolute bottom-2 left-2 flex flex-wrap gap-1 max-w-[80%]">
             {post.tags.slice(0, 2).map((t) => (
-              <span key={t} className="text-[9px] px-2 py-0.5 rounded-full bg-black/60 text-primary font-medium backdrop-blur-sm border border-primary/30">
+              <span key={t} className="tag border bg-black/60 text-[9px] text-white/80" style={{ borderColor: "var(--glass-border)" }}>
                 #{t}
               </span>
             ))}
             {post.tags.length > 2 && (
-              <span className="text-[9px] px-1.5 py-0.5 rounded-full bg-black/60 text-primary/70 backdrop-blur-sm border border-primary/20">
+              <span className="tag border bg-black/60 text-[9px] text-white/70" style={{ borderColor: "var(--glass-border)" }}>
                 +{post.tags.length - 2}
               </span>
             )}
@@ -112,25 +112,19 @@ function PostCard({ post, username }: { post: Post; username: string }) {
         )}
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-1.5">
-            <div
-              className="w-6 h-6 rounded-full flex items-center justify-center"
-              style={{
-                background: "radial-gradient(circle at 30% 30%, color-mix(in srgb, var(--primary) 55%, white), color-mix(in srgb, var(--primary) 70%, black))",
-                boxShadow: "inset 0 0 6px color-mix(in srgb, var(--primary) 30%, transparent), 0 0 6px color-mix(in srgb, var(--primary) 18%, transparent)",
-              }}
-            >
-              <span className="text-[9px] font-semibold text-primary-foreground tracking-wider">{(post.anon_id || "?")[0].toUpperCase()}</span>
+            <div className="grid h-6 w-6 place-items-center rounded-[6px] bg-secondary">
+              <span className="text-[9px] font-medium text-muted-foreground">{(post.anon_id || "?")[0].toUpperCase()}</span>
             </div>
-            <span className="text-[10px] text-muted-foreground hud-label">{post.anon_id}</span>
+            <span className="readout text-[10px]">{post.anon_id}</span>
           </div>
           <div className="flex items-center gap-3">
-            <span className="text-[10px] text-muted-foreground/80 tabular-nums">{timeAgo(post.created_at)}</span>
+            <span className="readout text-[10px]">{timeAgo(post.created_at)}</span>
             <button
               onClick={handleLike}
-              className={cn("relative flex items-center gap-1 transition-colors", liked ? "text-rose-400" : "text-muted-foreground hover:text-rose-300")}
+              className={cn("relative flex items-center gap-1 transition-colors", liked ? "text-[color:var(--amber-ink)]" : "text-muted-foreground hover:text-[color:var(--amber-ink)]")}
             >
               <Heart size={13} fill={liked ? "currentColor" : "none"} className={burst ? "hud-like-burst" : undefined} />
-              <span className="text-[11px] tabular-nums">{likes}</span>
+              <span className="readout text-[11px]" style={liked ? { color: "var(--amber-ink)" } : undefined}>{likes}</span>
               {burst > 0 && <span key={burst} className="hud-like-pop">+1</span>}
             </button>
           </div>
@@ -142,49 +136,73 @@ function PostCard({ post, username }: { post: Post; username: string }) {
 
 // ─────────────────── 分类热搜卡 ───────────────────
 function CategoryCard({
-  title, accent, icon: Icon, items, style, onItemClick, loaded = false,
+  title, icon: Icon, items, style, onItemClick, feed,
 }: {
   title: string;
-  accent: string;
   icon: React.ComponentType<{ size?: number; className?: string; style?: React.CSSProperties }>;
   items: string[];
   style: React.CSSProperties;
   onItemClick?: (title: string) => void;
-  loaded?: boolean;
+  feed: Omit<HotFeedState<unknown>, "data"> & { refresh: () => Promise<void> };
 }) {
-  // 去掉标题前的序号 "01. " 和尾部的 " · 12.3万"，得到纯净的话题文本
-  const cleanTitle = (raw: string): string => {
-    let s = raw.replace(/^\d+\.\s*/, "");
-    s = s.replace(/\s*·\s*[\d.]+[万亿千]?$/, "");
-    return s.trim();
-  };
+  const hasItems = items.length > 0;
+  const updateDate = feed.updatedAt ? new Date(feed.updatedAt) : null;
+  const updatedTime = updateDate && Number.isFinite(updateDate.getTime())
+    ? updateDate.toLocaleTimeString("zh-CN", { hour: "2-digit", minute: "2-digit", hour12: false })
+    : null;
+  const notice = feed.error
+    ? hasItems ? "更新失败，显示上次内容" : feed.error
+    : feed.stale ? "实时更新暂不可用，显示上次内容"
+    : feed.partial ? "部分来源暂不可用" : null;
   return (
     <div
-      className="z-20 w-[220px] hud-card-float px-3 py-2 pointer-events-auto"
-      style={{ ...style, borderColor: accent + "44" }}
+      className="glass-card w-[220px] px-3 py-2 pointer-events-auto"
+      style={style}
     >
       <div className="flex items-center gap-1.5 mb-1.5">
-        <Icon size={10} style={{ color: accent }} />
-        <span className="hud-label text-[9px]" style={{ color: accent, textShadow: `0 0 4px ${accent}55` }}>
+        <Icon size={12} style={{ color: "var(--amber-ink)" }} />
+        <span className="text-[13px] font-medium">
           {title}
         </span>
-        <span className="ml-auto w-1.5 h-1.5 rounded-full" style={{ background: accent, boxShadow: `0 0 3px ${accent}66` }} />
+        <button
+          type="button"
+          onClick={() => void feed.refresh()}
+          disabled={feed.loading}
+          aria-label={`刷新${title}`}
+          title={feed.loading ? "更新中" : "刷新热点"}
+          className="btn btn-quiet ml-auto h-7 w-7 px-0"
+        >
+          <RefreshCw size={12} className={feed.loading ? "animate-spin" : undefined} />
+        </button>
       </div>
+      {notice && (
+        <div role="status" className="mb-1.5 text-[10px] leading-relaxed text-[color:var(--rec)]">
+          {notice}
+          <button
+            type="button"
+            onClick={() => void feed.refresh()}
+            disabled={feed.loading}
+            className="btn btn-quiet ml-1.5 h-7 px-2.5 text-xs"
+          >
+            {feed.loading ? "重试中…" : "重试"}
+          </button>
+        </div>
+      )}
       <ul className="space-y-1">
-        {items.length === 0 ? (
-          <li className="text-[10px] text-muted-foreground/50">
-            {loaded ? "这会儿没相关" : "拉取中…"}
+        {!hasItems ? (
+          <li className="text-xs text-muted-foreground">
+            {feed.loading ? "拉取中…" : notice ? "暂无可显示的热点" : "暂时没有相关热点"}
           </li>
         ) : (
           items.slice(0, 4).map((it, i) => (
             <li
               key={i}
-              className="text-[11px] leading-snug text-foreground/80 flex gap-1.5 cursor-pointer hover:text-foreground transition-colors"
-              onClick={() => onItemClick?.(cleanTitle(it))}
+              className="flex cursor-pointer gap-1.5 text-xs leading-snug text-foreground/80 transition-colors hover:text-foreground"
+              onClick={() => onItemClick?.(it)}
               style={{ borderRadius: 3 }}
               title="点开查看详情"
             >
-              <span className="tabular-nums shrink-0 text-[9px] mt-0.5" style={{ color: accent + "99" }}>
+              <span className="readout mt-0.5 shrink-0 text-[11px]">
                 {String(i + 1).padStart(2, "0")}
               </span>
               <span className="truncate">{it}</span>
@@ -192,6 +210,11 @@ function CategoryCard({
           ))
         )}
       </ul>
+      {updatedTime && hasItems && (
+        <div className="readout mt-1.5 text-[10px]" title={updateDate?.toLocaleString("zh-CN")}>
+          {feed.loading ? "更新中 · " : ""}获取于 {updatedTime}
+        </div>
+      )}
     </div>
   );
 }
@@ -210,12 +233,10 @@ function PlazaContent() {
   const fileRef = useRef<HTMLInputElement>(null);
   const selectedFile = useRef<File | null>(null);
 
-  // 分类热搜数据
-  type CatMap = Record<string, string[]>;
-  const [cats, setCats] = useState<CatMap>({
-    娱乐: [], 经济: [], 生活: [], 科技: [], 文化: [],
-  });
-  const [catsLoaded, setCatsLoaded] = useState(false);
+  const hotFeed = useHotTopics("微博");
+  const trendingFeed = useHotTopics("抖音");
+  const categoryFeed = useCategorizedHotTopics();
+  const cats = categoryFeed.data;
   // 热点话题展开
   type ExpandedTopic = {
     title: string;
@@ -245,10 +266,6 @@ function PlazaContent() {
     }
   }, []);
 
-  const [hotNews,  setHotNews]  = useState<string[]>([]);
-  const [trending, setTrending] = useState<string[]>([]);
-  const [hotLoaded, setHotLoaded] = useState(false);
-  const [trendingLoaded, setTrendingLoaded] = useState(false);
   const [interests, setInterests] = useState<string[]>([]);
   const [communityItems, setCommunityItems] = useState<{ tag: string; user: string }[]>([]);
 
@@ -272,39 +289,6 @@ function PlazaContent() {
     // eslint-disable-next-line react-hooks/set-state-in-effect
     loadPosts();
   }, [loadPosts, hydrated]);
-
-  // 拉热搜 / 潮流（贴边）
-  useEffect(() => {
-    const grab = (src: string, set: (v: string[]) => void, setLoaded: (v: boolean) => void) =>
-      apiFetch(`${API}/hot/${encodeURIComponent(src)}`)
-        .then((r) => (r.ok ? r.json() : Promise.reject(new Error(`hot ${src} ${r.status}`))))
-        .then((d) => {
-          if (d.error) throw new Error(d.points?.[0] || `hot ${src} failed`);
-          // points 形如 "1. 标题 · 154万" — 去掉序号方便重新编号
-          const items: string[] = (d.points || []).map((p: string) => p.replace(/^\d+\.\s*/, ""));
-          set(items.slice(0, 5));
-        })
-        .catch(() => set([]))
-        .finally(() => setLoaded(true));
-    grab("微博", setHotNews, setHotLoaded);
-    grab("抖音", setTrending, setTrendingLoaded);
-    // 同时拉一份按类目分桶的热搜（娱乐/经济/生活/科技/文化）
-    const grabCats = () =>
-      apiFetch(`${API}/hot/categorized/all`)
-        .then((r) => (r.ok ? r.json() : Promise.reject(new Error(`hot categorized ${r.status}`))))
-        .then((d) => {
-          setCats(d.categories || {});
-          setCatsLoaded(true);
-        })
-        .catch(() => setCatsLoaded(true));  // 失败也算"已尝试"，避免永远转圈
-    grabCats();
-    const id = window.setInterval(() => {
-      grab("微博", setHotNews, setHotLoaded);
-      grab("抖音", setTrending, setTrendingLoaded);
-      grabCats();
-    }, 5 * 60_000); // 5 分钟刷一次
-    return () => window.clearInterval(id);
-  }, []);
 
   // 拉用户兴趣（当前时段 top tags）
   useEffect(() => {
@@ -375,8 +359,7 @@ function PlazaContent() {
   const embedded = searchParams?.get("embed") === "1";
 
   return (
-    <div className="flex flex-col h-screen overflow-hidden bg-background">
-      {!embedded && <TopBar />}
+    <div className="flex h-screen flex-col overflow-hidden">
       <div className="flex flex-1 min-h-0 relative">
         {!embedded && <Sidebar />}
 
@@ -392,10 +375,10 @@ function PlazaContent() {
               maxHeight: "calc(100% - 70px)", overflowY: "auto",
             }}
           >
-            <CategoryCard title="TODAY · 今日热点" accent="#ff7720" icon={Flame}      items={hotNews}        loaded={hotLoaded} style={{}} onItemClick={openTopic} />
-            <CategoryCard title="ENT · 娱乐"      accent="#ff66cc" icon={Music2}     items={cats["娱乐"] || []} loaded={catsLoaded} style={{}} onItemClick={openTopic} />
-            <CategoryCard title="ECON · 经济"     accent="#facc15" icon={BarChart2}  items={cats["经济"] || []} loaded={catsLoaded} style={{}} onItemClick={openTopic} />
-            <CategoryCard title="LIFE · 生活"     accent="#f2a83c" icon={Sparkles}   items={cats["生活"] || []} loaded={catsLoaded} style={{}} onItemClick={openTopic} />
+            <CategoryCard title="今日热点" icon={Flame} items={hotFeed.data} feed={hotFeed} style={{}} onItemClick={openTopic} />
+            <CategoryCard title="娱乐" icon={Music2} items={cats["娱乐"] || []} feed={categoryFeed} style={{}} onItemClick={openTopic} />
+            <CategoryCard title="经济" icon={BarChart2} items={cats["经济"] || []} feed={categoryFeed} style={{}} onItemClick={openTopic} />
+            <CategoryCard title="生活" icon={Sparkles} items={cats["生活"] || []} feed={categoryFeed} style={{}} onItemClick={openTopic} />
           </div>
 
           {/* 右栏：TRENDING + 科技 + 文化 */}
@@ -406,15 +389,15 @@ function PlazaContent() {
               maxHeight: "calc(100% - 70px)", overflowY: "auto",
             }}
           >
-            <CategoryCard title="TRENDING · 潮流" accent="#ff3e80" icon={TrendingUp} items={trending}           loaded={trendingLoaded} style={{}} onItemClick={openTopic} />
-            <CategoryCard title="TECH · 科技"     accent="#a78bfa" icon={Cpu}        items={cats["科技"] || []} loaded={catsLoaded} style={{}} onItemClick={openTopic} />
-            <CategoryCard title="CULT · 文化"     accent="#94e6c4" icon={BookOpen}   items={cats["文化"] || []} loaded={catsLoaded} style={{}} onItemClick={openTopic} />
+            <CategoryCard title="潮流" icon={TrendingUp} items={trendingFeed.data} feed={trendingFeed} style={{}} onItemClick={openTopic} />
+            <CategoryCard title="科技" icon={Cpu} items={cats["科技"] || []} feed={categoryFeed} style={{}} onItemClick={openTopic} />
+            <CategoryCard title="文化" icon={BookOpen} items={cats["文化"] || []} feed={categoryFeed} style={{}} onItemClick={openTopic} />
           </div>
 
           {/* 纯网格内容流 — 居中容器 + 半透明，让背景透出 */}
           <div className="relative z-10 flex-1 overflow-y-auto px-4 py-6">
             <div className="grid grid-cols-2 sm:grid-cols-3 gap-3 max-w-2xl mx-auto">
-              {posts.map((p) => <PostCard key={p.id} post={p} username={username} />)}
+              {posts.map((p) => <PostCard key={p.id} post={p} />)}
             </div>
           </div>
 
@@ -425,59 +408,60 @@ function PlazaContent() {
               style={{ top: 16, bottom: 56, left: 260, right: 260 }}
             >
             <div
-              className="liquid-glass flex flex-col hud-card-float topic-drawer-in pointer-events-auto bg-popover"
+              className="glass topic-drawer-in pointer-events-auto flex flex-col rounded-[10px] border"
               style={{
                 width: "100%",
                 maxWidth: 920,
                 overflow: "hidden",
+                borderColor: "var(--glass-border)",
               }}>
               {/* 头部 */}
-              <div className="flex items-center justify-between px-5 py-3 border-b border-primary/20 shrink-0">
+              <div className="flex shrink-0 items-center justify-between border-b px-5 py-3" style={{ borderColor: "var(--glass-border)" }}>
                 <div className="flex items-center gap-2 min-w-0">
-                  <Flame size={14} className="text-orange-400 shrink-0" />
-                  <span className="hud-label text-[10px] text-orange-300/80 shrink-0">HOT TOPIC</span>
-                  <span className="text-sm text-foreground/90 truncate ml-2">{expanded.title}</span>
+                  <Flame size={14} className="shrink-0" style={{ color: "var(--amber-ink)" }} />
+                  <span className="truncate text-[13px] font-medium">{expanded.title}</span>
                 </div>
                 <button
                   onClick={() => setExpanded(null)}
-                  className="text-primary/70 hover:text-primary text-lg leading-none px-2"
+                  className="btn btn-quiet h-7 w-7 px-0"
                   title="关闭"
-                >✕</button>
+                  aria-label="关闭话题详情"
+                ><X size={14} /></button>
               </div>
 
               {/* 内容区 */}
               <div className="flex-1 overflow-y-auto px-6 py-5 text-sm leading-relaxed space-y-4">
                 {expanding && (
-                  <div className="flex items-center gap-2 text-primary/70 text-xs">
-                    <span className="inline-block w-2 h-2 rounded-full bg-primary animate-pulse" />
+                  <div className="flex items-center gap-2 text-xs text-muted-foreground">
+                    <span className="state-dot state-dot-speaking" />
                     加载中…
                   </div>
                 )}
                 {expanded.error && (
-                  <div className="text-orange-300/90 text-xs">拉取失败：{expanded.error}</div>
+                  <div className="text-xs text-[color:var(--rec)]">拉取失败：{expanded.error}</div>
                 )}
                 {expanded.summary && (
                   <div className="text-foreground/95 text-[15px] leading-relaxed">{expanded.summary}</div>
                 )}
                 {expanded.whats_happening && (
                   <div>
-                    <div className="hud-label text-[9px] text-primary/80 mb-1.5">发生了什么</div>
+                    <div className="mb-1.5 text-xs font-medium text-muted-foreground">发生了什么</div>
                     <div className="text-foreground/85">{expanded.whats_happening}</div>
                   </div>
                 )}
                 {expanded.why_trending && (
                   <div>
-                    <div className="hud-label text-[9px] text-pink-300/80 mb-1.5">为什么上热搜</div>
+                    <div className="mb-1.5 text-xs font-medium text-muted-foreground">为什么上热搜</div>
                     <div className="text-foreground/85">{expanded.why_trending}</div>
                   </div>
                 )}
                 {expanded.key_facts && expanded.key_facts.length > 0 && (
                   <div>
-                    <div className="hud-label text-[9px] text-yellow-300/80 mb-1.5">关键事实</div>
+                    <div className="mb-1.5 text-xs font-medium text-muted-foreground">关键事实</div>
                     <ul className="space-y-1.5">
                       {expanded.key_facts.map((f, i) => (
                         <li key={i} className="flex gap-2 text-foreground/85">
-                          <span className="text-yellow-400/70 shrink-0">▸</span>
+                          <span className="mt-2 h-1.5 w-1.5 shrink-0" style={{ background: "var(--amber-ink)" }} />
                           <span>{f}</span>
                         </li>
                       ))}
@@ -486,27 +470,27 @@ function PlazaContent() {
                 )}
                 {expanded.background && (
                   <div>
-                    <div className="hud-label text-[9px] text-violet-300/80 mb-1.5">背景</div>
+                    <div className="mb-1.5 text-xs font-medium text-muted-foreground">背景</div>
                     <div className="text-foreground/75 text-[13px]">{expanded.background}</div>
                   </div>
                 )}
                 {expanded.sources && expanded.sources.length > 0 && (
-                  <div className="pt-2 border-t border-primary/15">
-                    <div className="hud-label text-[9px] text-primary/80 mb-2">来源</div>
+                  <div className="border-t pt-2" style={{ borderColor: "var(--glass-border)" }}>
+                    <div className="mb-2 text-xs font-medium text-muted-foreground">来源</div>
                     <ul className="space-y-1">
                       {expanded.sources.map((s, i) => (
                         <li key={i}>
                           {s.url ? (
                             <button
                               onClick={() => openExternal(s.url)}
-                              className="text-[12px] text-primary/80 hover:text-primary break-all text-left cursor-pointer bg-transparent border-0 p-0"
+                              className="cursor-pointer break-all border-0 bg-transparent p-0 text-left text-[12px] text-[color:var(--amber-ink)] opacity-80 hover:opacity-100"
                             >
                               {s.title || s.url}
                             </button>
                           ) : (
-                            // 链接死了（AI 编的）→ 只显示标题，加灰 + 标注
+                            // 链接死了（AI 编的）时只显示标题，加灰并标注
                             <span
-                              className="text-[12px] text-primary/40 break-all"
+                              className="break-all text-[12px] text-[color:var(--amber-ink)] opacity-40"
                               title="AI 整理时未能确认此来源原链接"
                             >
                               {s.title || "来源"}
@@ -525,25 +509,23 @@ function PlazaContent() {
 
           {/* 底部兴趣横栏 */}
           <div
-            className="z-20 flex items-center gap-3 px-4 pointer-events-none"
+            className="glass pointer-events-none z-20 flex items-center gap-3 border-t px-4"
             style={{
               position: "absolute", bottom: 0, left: 0, right: 0,
               height: 44,
-              background: "linear-gradient(0deg, color-mix(in srgb, var(--background) 82%, transparent) 0%, transparent 100%)",
-              borderTop: "1px solid color-mix(in srgb, var(--primary) 10%, transparent)",
+              borderColor: "var(--glass-border)",
             }}
           >
             {/* 左侧：我的兴趣（固定） */}
             <div className="flex items-center gap-2 shrink-0 pointer-events-auto">
-              <Sparkles size={10} className="text-primary" />
-              <span className="hud-label text-[9px] text-primary">我的兴趣</span>
+              <Sparkles size={12} style={{ color: "var(--amber-ink)" }} />
+              <span className="text-xs font-medium text-muted-foreground">我的兴趣</span>
               {interests.length > 0 ? (
                 <div className="flex gap-1">
                   {interests.map((tag) => (
                     <span
                       key={tag}
-                      className="text-[10px] px-2 py-0.5 rounded-full text-primary"
-                      style={{ background: "color-mix(in srgb, var(--primary) 10%, transparent)", border: "1px solid color-mix(in srgb, var(--primary) 22%, transparent)" }}
+                      className="chip h-6 px-2 text-[10px]"
                     >
                       {tag}
                     </span>
@@ -555,7 +537,7 @@ function PlazaContent() {
             </div>
 
             {/* 分隔线 */}
-            <div className="w-px h-5 shrink-0" style={{ background: "color-mix(in srgb, var(--primary) 20%, transparent)" }} />
+            <div className="h-5 w-px shrink-0" style={{ background: "var(--glass-border)" }} />
 
             {/* 右侧：其他用户兴趣滚动 */}
             <div className="flex-1 overflow-hidden relative">
@@ -563,7 +545,7 @@ function PlazaContent() {
                 <div className="ticker-track gap-5 items-center">
                   {[...communityItems, ...communityItems].map((item, i) => (
                     <span key={i} className="inline-flex items-center gap-1 shrink-0 mr-5">
-                      <span className="text-[9px]" style={{ color: "color-mix(in srgb, var(--primary) 45%, transparent)" }}>{item.user}</span>
+                      <span className="readout text-[9px]">{item.user}</span>
                       <span className="text-[11px] text-foreground/70">{item.tag}</span>
                     </span>
                   ))}
@@ -578,12 +560,9 @@ function PlazaContent() {
           {/* 右下角 FAB 发布（上移避开底栏）*/}
           <button
             onClick={() => fileRef.current?.click()}
-            className="z-30 w-14 h-14 rounded-full flex items-center justify-center transition-all hover:scale-110 active:scale-95 pointer-events-auto"
+            className="btn btn-primary pointer-events-auto z-30 h-14 w-14 rounded-full p-0"
             style={{
               position: "absolute", bottom: 56, right: 24,
-              background: "linear-gradient(135deg, color-mix(in srgb, var(--primary) 92%, white), color-mix(in srgb, var(--primary) 78%, black))",
-              boxShadow: "0 0 14px color-mix(in srgb, var(--primary) 30%, transparent), 0 8px 18px rgba(0,0,0,0.4), inset 0 1px 0 rgba(255,255,255,0.3)",
-              border: "1px solid color-mix(in srgb, var(--primary) 70%, transparent)",
             }}
             title="发布到我的世界"
           >
@@ -595,12 +574,14 @@ function PlazaContent() {
       <input ref={fileRef} type="file" accept="image/*,video/*" className="hidden" onChange={handleFileChange} />
 
       {showModal && (
-        <div className="fixed inset-0 z-50 bg-black/70 backdrop-blur-sm flex items-center justify-center p-4">
-          <div className="liquid-glass hud-card-float w-full max-w-sm overflow-hidden">
-            <div className="shutter-handle" style={{ cursor: "default", borderRadius: "16px 16px 0 0" }}>
-              <span className="chev">▲</span>
-              <div className="hud-label">TRANSMIT TO PLAZA</div>
-              <button onClick={handleClose} className="ml-2 text-primary/80 hover:text-primary">
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/70 p-4">
+          <div className="glass w-full max-w-sm overflow-hidden rounded-[10px] border" style={{ borderColor: "var(--glass-border)" }}>
+            <div className="flex items-center justify-between border-b px-4 py-3" style={{ borderColor: "var(--glass-border)" }}>
+              <div className="flex items-center gap-2 text-sm font-medium">
+                <Plus size={14} style={{ color: "var(--amber-ink)" }} />
+                发布到世界
+              </div>
+              <button onClick={handleClose} className="btn btn-quiet h-7 w-7 px-0" aria-label="关闭发布面板">
                 <X size={14} />
               </button>
             </div>
@@ -619,11 +600,11 @@ function PlazaContent() {
                 onChange={(e) => setCaption(e.target.value.slice(0, 100))}
                 placeholder="说点什么…（可选，100字以内）"
                 rows={2}
-                className="w-full resize-none bg-black/40 border border-primary/20 rounded-xl px-3 py-2 text-[13px] text-foreground placeholder:text-muted-foreground outline-none leading-relaxed focus:border-primary/50 transition-colors"
+                className="w-full resize-none rounded-[6px] border bg-card px-3 py-[9px] text-[13px] leading-relaxed text-foreground outline-none placeholder:text-muted-foreground focus:border-[color:var(--amber-ink)]"
               />
 
               <div>
-                <p className="hud-label mb-2 text-[10px]">SELECT TAGS · 最多 5</p>
+                <p className="mb-2 text-xs font-medium text-muted-foreground">标签 · 最多 5</p>
                 <div className="flex flex-wrap gap-1.5">
                   {ALL_TAGS.map((tag) => {
                     const selected = selectedTags.includes(tag);
@@ -631,7 +612,7 @@ function PlazaContent() {
                       <button
                         key={tag}
                         onClick={() => togglePostTag(tag)}
-                        className={cn("hud-pill flex items-center gap-1", selected && "hud-pill-active")}
+                        className={cn("chip", selected && "chip-on")}
                       >
                         {selected && <Check size={9} />}
                         #{tag}
@@ -644,12 +625,9 @@ function PlazaContent() {
               <button
                 onClick={handleSubmit}
                 disabled={uploading}
-                className={cn("w-full py-2.5 hud-btn flex items-center justify-center gap-2", !uploading && "hud-btn-active")}
-                style={{ clipPath: "polygon(0 0, calc(100% - 10px) 0, 100% 10px, 100% 100%, 10px 100%, 0 calc(100% - 10px))" }}
+                className="btn btn-primary h-10 w-full"
               >
-                <span className="hud-label" style={uploading ? undefined : { color: "inherit", textShadow: "none" }}>
-                  {uploading ? "UPLINK ·" : "TRANSMIT ▸"}
-                </span>
+                {uploading ? "正在发布…" : "发布"}
               </button>
             </div>
           </div>

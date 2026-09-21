@@ -1,8 +1,11 @@
 "use client";
 
 import { cn } from "@/lib/utils";
-import { Volume2, VolumeX, Trash2, Globe } from "lucide-react";
+import { Volume2, VolumeX, Trash2, Globe, LoaderCircle, RotateCcw } from "lucide-react";
 import { memo, useState, useEffect, useRef, useMemo } from "react";
+import GeneratedImage from "@/components/GeneratedImage";
+import { generatedImagePath, referenceImagePath, storedReferenceImagePaths, isLocalReferenceDataUrl, type ReferenceImageInput } from "@/lib/generatedImages";
+import { API_BASE as API } from "@/lib/config";
 
 // 打字机：把 target 按固定字符速率 (cps) 显示出来。
 // 历史消息首次渲染时 initial 即 target，不会重放；只有当 target 在生命周期内"增长"才动画。
@@ -26,7 +29,7 @@ function useTypewriter(target: string, enabled: boolean, cps = 45) {
       setShown((cur) => {
         const tgt = targetRef.current;
         if (cur === tgt) return cur;
-        // 前缀失配（外部突然换了内容）→ 直接同步
+        // 前缀失配（外部突然换了内容）时直接同步
         if (!tgt.startsWith(cur)) return tgt;
         const add = Math.max(1, Math.floor((dt / 1000) * cpsRef.current));
         // 防止落后过多（网络突然吐一大段时加速追赶，但不秒到）
@@ -72,6 +75,18 @@ export interface CardData {
   error?: boolean;
   subtype?: string;  // "weather" = 天气卡片专用渲染
   weather?: WeatherData;
+  items?: { title: string; url?: string }[];
+  sources?: { title: string; url: string }[];
+}
+
+export type ImageAspectRatio = "1:1" | "16:9" | "9:16";
+
+export interface ImageGenerationRetry {
+  prompt: string;
+  aspectRatio?: ImageAspectRatio;
+  referenceImages?: ReferenceImageInput[];
+  conversationId: string;
+  owner: string;
 }
 
 export interface Message {
@@ -83,19 +98,46 @@ export interface Message {
   isTyping?: boolean;
   isDivider?: boolean;
   imageUrl?: string;
+  referenceImageUrls?: string[];
+  localReferenceImageUrls?: string[];
+  generatedImage?: { width: number; height: number; model: string };
+  generationStatus?: string;
+  imageGenerationRetry?: ImageGenerationRetry;
   cardData?: CardData;  // 网页卡片(fetch_card 意图)——非空时整条消息渲染为卡片
   pendingTtsText?: string;  // 搜索类回复待询问播报的文本；非空时气泡下方出现 [帮我读]/[不用] 按钮
 }
 
 interface ChatBubbleProps {
   message: Message;
+  agentName?: string;
+  agentAvatar?: string;
   onDelete?: (id: string, dbId?: number) => void;
   onConfirmTts?: (id: string, text: string) => void;
   onDeclineTts?: (id: string) => void;
+  onRetryImage?: (request: ImageGenerationRetry) => void;
+  imageRetryDisabled?: boolean;
+  onEditImage?: (imageUrl: string) => void;
+  selectedReferenceImagePaths?: string[];
 }
 
-function ChatBubble({ message, onDelete, onConfirmTts, onDeclineTts }: ChatBubbleProps) {
+function ChatBubble({ message, agentName = "Chloe", agentAvatar = "✨", onDelete, onConfirmTts, onDeclineTts, onRetryImage, imageRetryDisabled, onEditImage, selectedReferenceImagePaths = [] }: ChatBubbleProps) {
   const isUser = message.role === "user";
+  const referenceUrls = useMemo(() => {
+    if (!isUser) return [];
+    if (message.referenceImageUrls?.length) return message.referenceImageUrls.flatMap(url => {
+      const path = referenceImagePath(url);
+      if (path) return [`${API}${path}`];
+      return message.localReferenceImageUrls?.includes(url) && isLocalReferenceDataUrl(url) ? [url] : [];
+    }).slice(0, 3);
+    return storedReferenceImagePaths(undefined, message.imageUrl).map(path => `${API}${path}`);
+  }, [isUser, message.referenceImageUrls, message.localReferenceImageUrls, message.imageUrl]);
+  const imagePath = generatedImagePath(message.imageUrl);
+  const selectedReferenceIndex = imagePath ? selectedReferenceImagePaths.indexOf(imagePath) + 1 : 0;
+  const referenceLimitReached = selectedReferenceImagePaths.length >= 3;
+  const editDisabled = imageRetryDisabled || selectedReferenceIndex > 0 || referenceLimitReached;
+  const editLabel = selectedReferenceIndex ? `已选为图${selectedReferenceIndex}` : selectedReferenceImagePaths.length ? "加入参考" : "以此图修改";
+  const editDisabledReason = selectedReferenceIndex ? `已选为图${selectedReferenceIndex}，可在输入区移除或调整顺序`
+    : referenceLimitReached ? "最多选择3张参考图，请先在输入区移除一张" : undefined;
   const [muted, setMuted] = useState(false);
   const [hovered, setHovered] = useState(false);
 
@@ -124,86 +166,81 @@ function ChatBubble({ message, onDelete, onConfirmTts, onDeclineTts }: ChatBubbl
   return (
     <div
       className={cn(
-        "flex items-start gap-2 max-w-[80%] group",
-        isUser ? "ml-auto flex-row-reverse msg-in-right" : "msg-in-left"
+        "group flex items-start gap-2",
+        isUser ? "ml-auto max-w-[520px] flex-row-reverse msg-in-right" : "max-w-[640px] msg-in-left"
       )}
       onMouseEnter={() => setHovered(true)}
       onMouseLeave={() => setHovered(false)}
     >
       {/* Avatar */}
       {!isUser && (
-        <div className="hud-avatar-ring shrink-0 mt-0.5">
-          <div
-            className="w-8 h-8 rounded-full flex items-center justify-center"
-            style={{
-              background: "radial-gradient(circle at 30% 30%, color-mix(in srgb, var(--primary) 55%, white), color-mix(in srgb, var(--primary) 70%, black))",
-              boxShadow: "inset 0 0 8px color-mix(in srgb, var(--primary) 32%, transparent), 0 0 8px color-mix(in srgb, var(--primary) 20%, transparent)",
-            }}
-          >
-            <span className="text-primary-foreground text-xs font-semibold tracking-wider">C</span>
-          </div>
+        <div className="mt-0.5 grid h-7 w-7 shrink-0 place-items-center rounded-[6px] bg-secondary text-sm" title={`${agentName} · AI 分身`}>
+          {agentAvatar}
         </div>
       )}
 
-      <div className={cn("flex flex-col gap-1", isUser && "items-end")}>
+      <div className={cn("flex min-w-0 flex-col gap-1.5", isUser && "items-end")}>
+        {!isUser && <div className="flex items-center gap-2 text-xs text-muted-foreground">
+          <span className="inline-block h-1.5 w-1.5" style={{ background: "var(--amber-ink)" }} />
+          {agentName}
+        </div>}
+
         {/* 图片（如果有） */}
-        {message.imageUrl && (
+        {message.imageUrl && !isUser && <GeneratedImage key={message.imageUrl} imageUrl={message.imageUrl} width={message.generatedImage?.width} height={message.generatedImage?.height}
+          onEdit={onEditImage && imagePath ? () => onEditImage(message.imageUrl!) : undefined} editDisabled={editDisabled}
+          editLabel={editLabel} editDisabledReason={editDisabledReason} editSelected={selectedReferenceIndex > 0} />}
+        {referenceUrls.length > 0 && <div className="flex max-w-full flex-wrap justify-end gap-2" aria-label="本次修改的参考图片">
+          {referenceUrls.map((url, index) => <GeneratedImage key={`${index}:${referenceImagePath(url) || "local"}`} imageUrl={url} variant="reference" referenceIndex={index + 1}
+            localPreview={message.localReferenceImageUrls?.includes(url)} />)}
+        </div>}
+        {message.imageUrl && isUser && referenceUrls.length === 0 && (
           // eslint-disable-next-line @next/next/no-img-element
           <img
             src={message.imageUrl}
             alt="图片"
-            className="rounded-2xl max-w-[260px] max-h-[260px] object-cover cursor-pointer hover:opacity-95 transition"
+            className="max-h-[260px] max-w-[260px] cursor-pointer rounded-[10px] object-cover transition hover:opacity-95"
             onClick={() => window.open(message.imageUrl, "_blank", "noopener,noreferrer")}
           />
+        )}
+
+        {message.generationStatus && <div role="status" className="flex items-center gap-2 text-sm text-muted-foreground">
+          <LoaderCircle size={16} className="shrink-0 animate-spin" />{message.generationStatus}
+        </div>}
+
+        {/* 文字气泡（如果有内容或正在打字，且不是卡片） */}
+        {!message.generationStatus && (message.content || message.isTyping) && message.content !== "[发了一张图片]" && (
+          <div
+            className={cn(
+              "break-words whitespace-pre-wrap text-sm",
+              isUser ? "bubble-user max-w-[520px]" : "bubble-ai max-w-[640px]",
+              (message.isTyping || stillTyping) && "typing-cursor"
+            )}
+          >
+            {isUser ? message.content : (shownContent || (message.isTyping ? "" : "…"))}
+          </div>
         )}
 
         {/* 天气卡片（weather subtype） */}
         {message.cardData?.subtype === "weather" && message.cardData.weather && (() => {
           const w = message.cardData.weather;
           return (
-            <div className="w-[340px] max-w-full rounded-2xl overflow-hidden shadow-sm"
-              style={{
-                background: "linear-gradient(135deg, #1a1a2e 0%, #16213e 50%, #0f3460 100%)",
-                color: "#e0e0e0",
-              }}
-            >
-              {/* 城市 + 当前状况 */}
-              <div className="px-4 pt-4 pb-2 flex items-center justify-between">
+            <div className="glass-card w-[320px] max-w-full overflow-hidden">
+              <div className="flex items-center justify-between border-b px-3.5 py-2 text-xs" style={{ borderColor: "var(--glass-border)" }}>
+                <b className="font-medium">天气</b>
+                <span className="text-muted-foreground">{w.location}</span>
+              </div>
+              <div className="flex items-center gap-3.5 px-3.5 py-3">
+                <span className="readout" style={{ fontSize: 32, color: "var(--foreground)" }}>{w.currentTemp}°</span>
                 <div>
-                  <div className="text-xs text-white/60">{w.location}</div>
-                  <div className="text-3xl font-light text-white mt-1">{w.currentTemp}°</div>
-                  <div className="text-xs text-white/50 mt-0.5">体感 {w.feelsLike}°</div>
-                </div>
-                <div className="text-right">
-                  {/* eslint-disable-next-line @next/next/no-img-element */}
-                  {w.conditionIcon && <img src={w.conditionIcon} alt={w.condition} className="w-12 h-12 -my-1 opacity-80" />}
-                  <div className="text-sm text-white/70">{w.condition}</div>
+                  <div>{w.condition}</div>
+                  <div className="text-xs text-muted-foreground">体感 <span className="readout">{w.feelsLike}°</span>　湿度 <span className="readout">{w.humidity}%</span></div>
                 </div>
               </div>
-
-              {/* 湿度/风速/能见度 */}
-              <div className="px-4 pb-3 flex gap-3 text-[11px] text-white/40">
-                <span>💧 {w.humidity}%</span>
-                <span>🌬 {w.windSpeed}km/h</span>
-                <span>👁 {w.visibility}km</span>
-              </div>
-
-              {/* 分割线 */}
-              <div className="mx-4 h-px bg-white/10" />
-
-              {/* 多日预报 */}
-              <div className="px-2 py-2">
-                {w.forecast.map((f, i) => (
-                  <div key={i} className="flex items-center px-2 py-1.5">
-                    <span className="text-xs text-white/60 w-10 shrink-0">{f.day}</span>
-                    {/* eslint-disable-next-line @next/next/no-img-element */}
-                    {f.icon && <img src={f.icon} alt={f.condition} className="w-5 h-5 mx-1 opacity-70" />}
-                    <span className="text-xs text-white/40 flex-1 ml-1">{f.condition}</span>
-                    <span className="text-xs text-white/70 tabular-nums">
-                      <span className="text-white/40">{f.low}°</span>
-                      {" "}
-                      <span>{f.high}°</span>
-                    </span>
+              <div className="grid grid-cols-3 border-t" style={{ borderColor: "var(--glass-border)" }}>
+                {w.forecast.slice(0, 3).map((f, i) => (
+                  <div key={i} className="flex flex-col gap-0.5 px-3.5 py-2 text-xs text-muted-foreground" style={{ borderLeft: i > 0 ? "1px solid var(--glass-border)" : undefined }}>
+                    <span>{f.day}</span>
+                    <span className="readout" style={{ color: "var(--foreground)" }}>{f.low}° {f.high}°</span>
                   </div>
                 ))}
               </div>
@@ -215,15 +252,13 @@ function ChatBubble({ message, onDelete, onConfirmTts, onDeclineTts }: ChatBubbl
         {message.cardData && message.cardData.subtype !== "weather" && message.cardData.points && message.cardData.points.length > 0 && (
           <div
             className={cn(
-              "w-[340px] max-w-full rounded-2xl border border-border/60 bg-card/80",
-              "shadow-sm overflow-hidden"
+              "glass-card w-[340px] max-w-full",
+              "overflow-hidden"
             )}
           >
-            <div className="flex items-center gap-1.5 px-4 pt-3 pb-2 border-b border-border/40">
-              <Globe size={12} className={cn(
-                message.cardData.error ? "text-orange-400" : "text-primary"
-              )} />
-              <span className="text-[11px] font-medium text-muted-foreground tracking-wide">
+            <div className="flex items-center gap-1.5 border-b px-4 pb-2 pt-3" style={{ borderColor: "var(--glass-border)" }}>
+              <Globe size={12} style={{ color: "var(--amber-ink)" }} />
+              <span className="text-[11px] font-medium text-muted-foreground">
                 {message.cardData.source || "网页"}
               </span>
               {message.cardData.url && (
@@ -235,7 +270,7 @@ function ChatBubble({ message, onDelete, onConfirmTts, onDeclineTts }: ChatBubbl
             <ul className="px-4 py-3 space-y-1.5">
               {message.cardData.points.map((point, i) => (
                 <li key={i} className="text-sm text-foreground/90 leading-relaxed flex gap-2">
-                  <span className="text-primary/60 shrink-0 mt-1">•</span>
+                  <span className="mt-1 shrink-0" style={{ color: "var(--amber-ink)" }}>•</span>
                   <span>{point}</span>
                 </li>
               ))}
@@ -243,33 +278,27 @@ function ChatBubble({ message, onDelete, onConfirmTts, onDeclineTts }: ChatBubbl
           </div>
         )}
 
-        {/* 文字气泡（如果有内容或正在打字，且不是卡片） */}
-        {!message.cardData && (message.content || message.isTyping) && message.content !== "[发了一张图片]" && (
-          <div
-            className={cn(
-              "px-4 py-2.5 text-sm leading-relaxed max-w-prose",
-              isUser ? "bubble-user" : "bubble-ai",
-              (message.isTyping || stillTyping) && "typing-cursor"
-            )}
-          >
-            {isUser ? message.content : (shownContent || (message.isTyping ? "" : "…"))}
-          </div>
-        )}
+        {message.imageGenerationRetry && onRetryImage && <button type="button"
+          disabled={imageRetryDisabled}
+          title={imageRetryDisabled ? "请等待当前操作完成，并移除待发送的图片后重试" : message.imageGenerationRetry.referenceImages?.length ? "使用原参考图顺序和修改要求重试" : "使用相同的描述和比例重新生成"}
+          onClick={() => onRetryImage(message.imageGenerationRetry!)}
+          className="btn h-7 self-start px-2.5 text-xs">
+          <RotateCcw size={12} />{message.imageGenerationRetry.referenceImages?.length ? "重新修改" : "重新生成"}
+        </button>}
 
         {/* 搜索类回复：询问是否播报 */}
         {!isUser && message.pendingTtsText && (
           <div className="flex gap-2 mt-1">
             <button
               onClick={() => onConfirmTts?.(message.id, message.pendingTtsText!)}
-              className="hud-btn flex items-center gap-1.5 px-3 py-1 text-[11px]"
-              style={{ clipPath: "polygon(0 0, calc(100% - 6px) 0, 100% 6px, 100% 100%, 6px 100%, 0 calc(100% - 6px))" }}
+              className="btn btn-quiet h-7 px-2.5 text-xs"
             >
               <Volume2 size={11} />
-              <span className="hud-label">帮我读</span>
+              <span>帮我读</span>
             </button>
             <button
               onClick={() => onDeclineTts?.(message.id)}
-              className="text-[11px] px-3 py-1 text-muted-foreground hover:text-foreground transition-colors"
+              className="btn btn-quiet h-7 px-2.5 text-xs"
             >
               不用
             </button>
@@ -283,7 +312,7 @@ function ChatBubble({ message, onDelete, onConfirmTts, onDeclineTts }: ChatBubbl
             isUser ? "flex-row-reverse" : "flex-row"
           )}
         >
-          <span className="hud-label text-[9px] opacity-70">{timeStr}</span>
+          <span className="readout text-[11px]">{timeStr}</span>
           {!isUser && (
             <button
               onClick={() => setMuted(!muted)}
