@@ -61,29 +61,28 @@ class BracketFilter:
 
 
 _env_path = os.path.join(os.path.dirname(os.path.abspath(__file__)), ".env")
-load_dotenv(dotenv_path=_env_path, override=True)
+# Explicit launch settings take precedence over the repository's local defaults.
+load_dotenv(dotenv_path=_env_path, override=False)
 
 # 主脑与轻量槽现都在百炼 DashScope；保留两个 client 按路由槽命名，
 # 将来某个槽换供应商只改这里。
 client = make_dashscope_client()
 
 # ── 模型路由槽配置 ──────────────────────────────────────────
-MAIN_MODEL      = "qwen3.8-max"   # 主力大脑（原 DeepSeek deepseek-chat）
-# qwen3.8-max 默认开思考模式：JSON 小槽位的思考会吃光小额 max_tokens
+MAIN_MODEL      = "qwen3.8-omni-flash"   # 主力大脑（2026-09-21 由 qwen3.8-max 切换；更早为 DeepSeek deepseek-chat）
+# qwen3.8-omni-flash 默认开思考模式：JSON 小槽位的思考会吃光小额 max_tokens
 # 预算并弄脏 JSON 输出；聊天槽位则徒增首字延迟。统一关掉。
 MAIN_EXTRA_BODY = {"enable_thinking": False}
 QWEN_CLIENT    = make_dashscope_client()
-# 轻量槽：qwen3.7-flash 实测首字 ~230ms，比 qwen-plus(~480ms) 快一倍，
-# 陪聊短句质量过关。它同样默认开思考模式，必须关掉——否则短陪伴回复
-# 要先等思考流，延迟回到秒级。
-QWEN_MODEL      = "qwen3.7-flash"
+# 轻量槽：日常短聊使用 qwen3.8-flash，关闭思考模式以减少回复等待。
+QWEN_MODEL      = "qwen3.8-flash"
 QWEN_EXTRA_BODY = {"enable_thinking": False}
 
 
 
 def _create_stream_with_fallback(use_qwen: bool, messages: list, **kwargs):
     """
-    轻量槽走通义 qwen3.7-flash，失败自动回退主力大脑 qwen3.8-max。
+    轻量槽走通义 qwen3.8-flash，失败自动回退主力大脑 qwen3.8-omni-flash。
     返回 (stream, actually_used_qwen)
     """
     if use_qwen:
@@ -95,8 +94,10 @@ def _create_stream_with_fallback(use_qwen: bool, messages: list, **kwargs):
                 extra_body=QWEN_EXTRA_BODY,
                 **kwargs,
             )
+            print(f"[路由] slot=light model={QWEN_MODEL}", flush=True)
             return stream, True
-        except Exception:
+        except Exception as e:
+            print(f"[路由] slot=light model={QWEN_MODEL} failed type={type(e).__name__}, fallback to main", flush=True)
             pass
     stream = client.chat.completions.create(
         model=MAIN_MODEL,
@@ -105,4 +106,5 @@ def _create_stream_with_fallback(use_qwen: bool, messages: list, **kwargs):
         extra_body=MAIN_EXTRA_BODY,
         **kwargs,
     )
+    print(f"[路由] slot=main model={MAIN_MODEL}", flush=True)
     return stream, False

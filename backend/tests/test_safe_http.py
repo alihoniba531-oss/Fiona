@@ -129,3 +129,24 @@ def test_rejects_credentials_nonstandard_ports_and_unsafe_schemes(monkeypatch):
     ]:
         with pytest.raises(safe_http.UnsafeUrlError):
             safe_http.resolve_public_url(url)
+
+
+@pytest.mark.parametrize("url", [
+    "http://127.0.0.1/private", "http://127.1/private", "http://2130706433/private",
+    "http://0x7f.0x0.0x0.0x1/private",
+    "https://localhost/", "https://printer.local/", "http://[::1]/",
+    "https://user:secret@example.com/", "https://example.com:8443/",
+    "https://example.com:0/", "javascript:alert(1)", "file:///etc/passwd",
+    "https://example.com\\@127.0.0.1/", "https://example.com/\nsecret",
+])
+def test_display_link_validation_rejects_unsafe_url_forms(url):
+    with pytest.raises(safe_http.UnsafeUrlError):
+        safe_http.validate_public_http_link(url)
+
+
+def test_display_links_do_not_weaken_fetch_dns_checks(monkeypatch):
+    monkeypatch.setattr(safe_http.socket, "getaddrinfo", lambda *a, **k: _dns_answer("198.18.0.5"))
+    url = "https://example.com/news#details"
+    assert safe_http.validate_public_http_link(url) == url
+    with pytest.raises(safe_http.UnsafeUrlError):
+        safe_http.request_public_url("HEAD", url)

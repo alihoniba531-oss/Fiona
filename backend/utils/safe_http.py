@@ -112,6 +112,48 @@ def _resolve_public_ips(hostname: str, port: int) -> tuple[str, ...]:
     return tuple(resolved)
 
 
+def validate_public_http_link(url: str) -> str:
+    """Validate a displayed external link without contacting its host.
+
+    This is not permission for a server-side fetch: DNS and redirects still need
+    resolve_public_url/request_public_url. Search-result links should not require
+    our server to access every publisher (proxy DNS and anti-bot rules may differ
+    from the user's browser).
+    """
+    if not isinstance(url, str) or not url or len(url) > MAX_URL_LENGTH:
+        raise UnsafeUrlError("URL 长度无效")
+    if url.strip() != url or any(ord(char) < 32 for char in url) or "\\" in url:
+        raise UnsafeUrlError("URL 包含无效空白或分隔符")
+    try:
+        parsed = urlsplit(url)
+        port = parsed.port
+        hostname = (parsed.hostname or "").encode("idna").decode("ascii").lower().rstrip(".")
+    except (ValueError, UnicodeError) as exc:
+        raise UnsafeUrlError("URL 格式无效") from exc
+    scheme = parsed.scheme.lower()
+    if scheme not in {"http", "https"} or not hostname:
+        raise UnsafeUrlError("只允许带主机名的 HTTP(S) URL")
+    if parsed.username is not None or parsed.password is not None:
+        raise UnsafeUrlError("URL 不能包含用户名或密码")
+    if port is not None and port != (443 if scheme == "https" else 80):
+        raise UnsafeUrlError("只允许 HTTP(S) 默认端口")
+    try:
+        literal = _normalize_ip(hostname)
+    except ValueError:
+        literal = None
+    if literal is not None:
+        if not literal.is_global:
+            raise UnsafeUrlError("目标是非公网 IP")
+    else:
+        # Also reject browser shorthand numeric IP forms (127.1, 2130706433),
+        # encoded host characters, and names reserved for local resolution.
+        if ("." not in hostname or not re.fullmatch(r"[a-z0-9.-]+", hostname)
+                or re.fullmatch(r"(?:0x[0-9a-f]+|[0-9]+)", hostname.rsplit(".", 1)[-1])
+                or hostname.endswith((".localhost", ".local", ".internal", ".lan", ".home.arpa"))):
+            raise UnsafeUrlError("目标不是有效的外部站点")
+    return urlunsplit((scheme, parsed.netloc, parsed.path or "/", parsed.query, parsed.fragment))
+
+
 def resolve_public_url(url: str) -> PublicUrlTarget:
     if not isinstance(url, str) or not url or len(url) > MAX_URL_LENGTH:
         raise UnsafeUrlError("URL 长度无效")

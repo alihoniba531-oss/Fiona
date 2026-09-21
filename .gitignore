@@ -29,6 +29,9 @@ backend/*.db
 backend/*.db.bak-*
 backend/*.sqlite
 
+# 私有交流的本地 Markdown 交付文件
+/.local-exports/
+
 # ===== 日志 =====
 backend/err.log
 backend/backend_err.txt

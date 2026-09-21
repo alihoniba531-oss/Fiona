@@ -123,8 +123,10 @@ def test_chat_rejects_message_over_limit(client, dev_headers):
 def test_chat_pending_branch(client, dev_headers, monkeypatch):
     """已有 pending intent → 补全参数后执行（fill_param 真跑，execute_intent 打桩）。"""
     import services.chat_service as chat
+    conversation = client.get("/conversations", headers=dev_headers).json()["conversations"][0]
+    state_key = ("smoke_tester", conversation["id"])
     intent_router.set_pending(
-        "smoke_tester",
+        state_key,
         {"intent": "set_reminder", "params": {"text": "喝水"}, "missing": ["minutes"]},
     )
     monkeypatch.setattr(
@@ -138,7 +140,7 @@ def test_chat_pending_branch(client, dev_headers, monkeypatch):
         assert any("30分钟后提醒你喝水" in (e.get("text") or "") for e in events)
         assert _has_done(events)
     finally:
-        intent_router.clear_pending("smoke_tester")
+        intent_router.clear_pending(state_key)
 
 
 def test_chat_intent_text(client, dev_headers, monkeypatch):

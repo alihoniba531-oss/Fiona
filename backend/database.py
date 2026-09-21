@@ -1,10 +1,30 @@
 import aiosqlite
 import os
+import re
 from datetime import datetime
 
 DB_PATH = os.getenv("FIONA_DB_PATH") or os.path.join(os.path.dirname(__file__), "fiona.db")
 
 import json as _json
+
+
+# 图片摘要（复用 VL 本轮回复文本）入库长度上限。
+IMAGE_SUMMARY_MAX_CHARS = 120
+
+# 聊天槽位状态表：pending 追问 + mode 模式，带过期时间、跨进程持久化。
+# intent_router / mode_switcher 每次访问前也会执行同一句 DDL 兜底——
+# 部分调用点（含既有测试）不经 init_db() 就直接读写槽位。
+CHAT_SLOT_STATE_DDL = """
+    CREATE TABLE IF NOT EXISTS chat_slot_state (
+        state_key       TEXT NOT NULL,
+        kind            TEXT NOT NULL,
+        owner_username  TEXT NOT NULL,
+        payload_json    TEXT NOT NULL,
+        expires_at      TIMESTAMP,
+        updated_at      TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+        PRIMARY KEY (state_key, kind)
+    )
+"""
 
 
 async def _safe_migrate(db, sql: str):
@@ -75,6 +95,10 @@ async def init_db():
         """)
         # 兼容老库：如果列不存在则添加
         await _safe_migrate(db, "ALTER TABLE messages ADD COLUMN image_path TEXT DEFAULT NULL")
+        await _safe_migrate(db, "ALTER TABLE messages ADD COLUMN reference_image_paths TEXT DEFAULT NULL")
+        # 图片内容进入长期文字记录：VL 看完图的那句回复同时作为该条 user 消息的摘要，
+        # 下一轮起注入上下文，避免"发图=对话砍两段"。
+        await _safe_migrate(db, "ALTER TABLE messages ADD COLUMN image_summary TEXT DEFAULT NULL")
         # 用户性别 + 匹配偏好（老库迁移）
         await _safe_migrate(db, "ALTER TABLE users ADD COLUMN gender TEXT DEFAULT NULL")
         await _safe_migrate(db, "ALTER TABLE users ADD COLUMN match_pref TEXT DEFAULT 'both'")
@@ -245,6 +269,10 @@ async def init_db():
                 created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
             )
         """)
+        # ── 聊天槽位状态：pending 追问 / mode 模式 ──
+        # owner_username 单独成列，"清空某用户全部槽位"才能写成等值匹配；
+        # 绝不用 LIKE/GLOB 前缀匹配 state_key——用户名含 % _ * ? 会误删他人数据。
+        await db.execute(CHAT_SLOT_STATE_DDL)
 
         # 能确定归属的旧广场帖回填 owner_username；无法匹配的历史行保持 NULL，
         # 删除账户时还会再次按当前 HMAC + 旧 MD5 别名兜底查找。
@@ -266,6 +294,18 @@ async def init_db():
         except Exception as exc:
             print(f"[init_db] post owner backfill failed type={type(exc).__name__}")
         await db.commit()
+        # New identity/conversation migrations are versioned and atomic. A failure
+        # must stop startup rather than exposing a partially migrated database.
+        from agent_store import migrate_avatar_schema
+        await migrate_avatar_schema(db)
+        from exchange_store import migrate_exchanges_schema
+        await migrate_exchanges_schema(db)
+        from exchange_store import migrate_official_exchanges_schema
+        await migrate_official_exchanges_schema(db)
+        from exchange_store import migrate_extended_official_exchanges_schema
+        await migrate_extended_official_exchanges_schema(db)
+        from exchange_store import migrate_workflow_exchanges_schema
+        await migrate_workflow_exchanges_schema(db)
 
 async def get_or_create_user(username: str) -> dict:
     async with aiosqlite.connect(DB_PATH) as db:
@@ -276,14 +316,50 @@ async def get_or_create_user(username: str) -> dict:
             row = await cursor.fetchone()
         return dict(row)
 
+def decode_image_references(value) -> list[str]:
+    """API readers expose ordered arrays, while old messages retain their single image."""
+    try:
+        paths = _json.loads(value) if isinstance(value, str) else value
+    except (TypeError, ValueError):
+        return []
+    return paths if isinstance(paths, list) and all(isinstance(path, str) for path in paths) else []
+
+
+def message_upload_paths(image_path, references) -> list[str]:
+    return list(dict.fromkeys(([image_path] if image_path else []) + decode_image_references(references)))
+
+
+def message_with_image_references(row) -> dict:
+    message = dict(row)
+    message["reference_image_paths"] = decode_image_references(message.get("reference_image_paths"))
+    return message
+
+
+async def message_references_image(db, image_path: str, *, username: str | None = None, conversation_id: str | None = None) -> bool:
+    conditions = ["""(image_path = ? OR EXISTS (
+        SELECT 1 FROM json_each(COALESCE(messages.reference_image_paths, '[]')) AS ref WHERE ref.value = ?
+    ))"""]
+    parameters = [image_path, image_path]
+    if username is not None:
+        conditions.append("username = ?")
+        parameters.append(username)
+    if conversation_id is not None:
+        conditions.append("conversation_id = ?")
+        parameters.append(conversation_id)
+    async with db.execute(
+        "SELECT 1 FROM messages WHERE " + " AND ".join(conditions) + " LIMIT 1", parameters,
+    ) as cursor:
+        return await cursor.fetchone() is not None
+
+
 async def _queue_unreferenced_uploads(db, paths: list[str]) -> list[str]:
     """把当前事务删除后已无消息/帖子引用的上传路径加入持久化清理队列。"""
     unreferenced: list[str] = []
     for path in dict.fromkeys(path for path in paths if path):
+        if await message_references_image(db, path):
+            continue
         async with db.execute(
-            """SELECT EXISTS(SELECT 1 FROM messages WHERE image_path = ?)
-                      OR EXISTS(SELECT 1 FROM posts WHERE media_path = ?)""",
-            (path, path),
+            "SELECT EXISTS(SELECT 1 FROM posts WHERE media_path = ?)", (path,),
         ) as cursor:
             referenced = (await cursor.fetchone())[0]
         if referenced:
@@ -301,7 +377,7 @@ async def delete_message_for_user(message_id: int, username: str) -> dict:
     async with aiosqlite.connect(DB_PATH) as db:
         await db.execute("BEGIN IMMEDIATE")
         async with db.execute(
-            "SELECT username, image_path FROM messages WHERE id = ?", (message_id,)
+            "SELECT username, image_path, reference_image_paths FROM messages WHERE id = ?", (message_id,)
         ) as cursor:
             row = await cursor.fetchone()
         if row is None:
@@ -314,7 +390,7 @@ async def delete_message_for_user(message_id: int, username: str) -> dict:
             "DELETE FROM messages WHERE id = ? AND username = ?",
             (message_id, username),
         )
-        upload_paths = await _queue_unreferenced_uploads(db, [row[1]])
+        upload_paths = await _queue_unreferenced_uploads(db, message_upload_paths(row[1], row[2]))
         await db.commit()
         return {"status": "deleted", "upload_paths": upload_paths}
 
@@ -324,10 +400,10 @@ async def clear_message_history(username: str) -> list[str]:
     async with aiosqlite.connect(DB_PATH) as db:
         await db.execute("BEGIN IMMEDIATE")
         async with db.execute(
-            "SELECT image_path FROM messages WHERE username = ? AND image_path IS NOT NULL",
+            "SELECT image_path, reference_image_paths FROM messages WHERE username = ?",
             (username,),
         ) as cursor:
-            paths = [row[0] for row in await cursor.fetchall() if row[0]]
+            paths = [path for row in await cursor.fetchall() for path in message_upload_paths(row[0], row[1])]
         await db.execute("DELETE FROM messages WHERE username = ?", (username,))
         upload_paths = await _queue_unreferenced_uploads(db, paths)
         await db.commit()
@@ -342,35 +418,137 @@ async def get_pending_match_owner(match_id: int) -> str | None:
             row = await cursor.fetchone()
     return row[0] if row else None
 
-async def save_message(username: str, role: str, content: str, image_path: str | None = None):
+async def save_message(
+    username: str,
+    role: str,
+    content: str,
+    image_path: str | None = None,
+    conversation_id: str | None = None,
+    *,
+    require_image_reference: bool = False,
+    reference_image_paths: list[str] | None = None,
+    new_reference_image_paths: list[str] | None = None,
+):
+    from agent_store import ResourceNotFound, _ensure_default_conversation, _owned_conversation
+
     async with aiosqlite.connect(DB_PATH) as db:
         await db.execute("BEGIN IMMEDIATE")
-        if not await _users_exist(db, username):
+        try:
+            if conversation_id is None:
+                context = await _ensure_default_conversation(db, username)
+                conversation = context["conversation"]
+            else:
+                conversation = await _owned_conversation(db, username, conversation_id)
+        except ResourceNotFound:
             await db.rollback()
             return False
+        references = reference_image_paths
+        if require_image_reference or references is not None or new_reference_image_paths is not None:
+            # Checking and retaining the reference share one write transaction.
+            # A concurrent deletion cannot remove ownership between these steps,
+            # or queue an image that the new editing request still references.
+            references = references if references is not None else ([image_path] if image_path else [])
+            if (role != "user" or not isinstance(references, list) or not 1 <= len(references) <= 3
+                or any(not isinstance(path, str) or not re.fullmatch(r"/uploads/(?:generated|reference)_[0-9a-f]{32}\.png", path) for path in references)
+                or len(set(references)) != len(references)):
+                await db.rollback()
+                raise ResourceNotFound("Reference image not found")
+            # Only the upload normalizer may supply freshly created paths here.
+            # This parameter is internal and never deserialized from a request.
+            fresh = new_reference_image_paths or []
+            if (not isinstance(fresh, list)
+                or any(not isinstance(path, str) or not re.fullmatch(r"/uploads/reference_[0-9a-f]{32}\.png", path) for path in fresh)
+                or len(set(fresh)) != len(fresh) or not set(fresh).issubset(references)):
+                await db.rollback()
+                raise ResourceNotFound("Reference image not found")
+            for path in references:
+                if path not in fresh and not await message_references_image(db, path, username=username, conversation_id=conversation["id"]):
+                    await db.rollback()
+                    raise ResourceNotFound("Reference image not found")
+            image_path = references[0]
         await db.execute(
-            "INSERT INTO messages (username, role, content, image_path) VALUES (?, ?, ?, ?)",
-            (username, role, content, image_path)
+            """INSERT INTO messages (username, role, content, image_path, conversation_id, agent_id, reference_image_paths)
+               VALUES (?, ?, ?, ?, ?, ?, ?)""",
+            (username, role, content, image_path, conversation["id"], conversation["agent_id"], _json.dumps(references) if references else None),
         )
+        await db.execute(
+            "UPDATE conversations SET updated_at = CURRENT_TIMESTAMP WHERE id = ?",
+            (conversation["id"],),
+        )
+        if role == "user":
+            title = (content.strip().splitlines() or ["新的交流"])[0][:40]
+            if image_path and content.strip() in {"", "[发了一张图片]"}:
+                title = "图片交流"
+            await db.execute(
+                """UPDATE conversations SET title = ?, auto_title = 0
+                   WHERE id = ? AND is_default = 0 AND auto_title = 1
+                   AND (SELECT COUNT(*) FROM messages WHERE conversation_id = ? AND role = 'user') = 1""",
+                (title, conversation["id"], conversation["id"]),
+            )
         await db.commit()
         return True
 
-async def get_messages(username: str, limit: int = 100) -> list[dict]:
-    """取最近 limit 条消息，用于注入上下文"""
+async def get_messages(username: str, limit: int = 100, conversation_id: str | None = None) -> list[dict]:
+    """With an ID, read only that owned conversation; None retains legacy account scope."""
     async with aiosqlite.connect(DB_PATH) as db:
+        await db.execute("BEGIN")
+        if conversation_id is not None:
+            from agent_store import _owned_conversation
+            await _owned_conversation(db, username, conversation_id)
         db.row_factory = aiosqlite.Row
+        condition = " AND conversation_id = ?" if conversation_id is not None else ""
+        parameters = (username, conversation_id, limit) if conversation_id is not None else (username, limit)
         async with db.execute(
-            "SELECT role, content, image_path, created_at FROM messages WHERE username = ? ORDER BY created_at DESC LIMIT ?",
-            (username, limit)
+            f"""SELECT role, content, image_path, reference_image_paths, image_summary, created_at FROM messages WHERE username = ?
+                {condition} ORDER BY created_at DESC, id DESC LIMIT ?""",
+            parameters,
         ) as cursor:
             rows = await cursor.fetchall()
-    return [dict(r) for r in reversed(rows)]
+    return [message_with_image_references(r) for r in reversed(rows)]
 
-async def count_messages(username: str) -> int:
+async def set_message_image_summary(
+    username: str, conversation_id: str | None, image_path: str, summary: str
+) -> bool:
+    """把 VL 看图产生的那句话挂回当初那条 user 消息，作为图片的文字摘要。
+
+    按 username + image_path 定位（conversation_id 非 None 时再加一条），只更新 role='user' 的行。
+    上传路径形如 /uploads/<uuid4 hex 32 位>.<ext>，全局唯一，可直接当定位键。
+    命中并更新返回 True，未命中返回 False；异常一律吞掉——
+    摘要写入失败绝不能影响已经成功返回给用户的回复。
+    """
+    if not image_path:
+        return False
+    truncated = (summary or "")[:IMAGE_SUMMARY_MAX_CHARS]
+    condition = " AND conversation_id = ?" if conversation_id is not None else ""
+    parameters = (
+        (truncated, username, image_path, conversation_id)
+        if conversation_id is not None
+        else (truncated, username, image_path)
+    )
+    try:
+        async with aiosqlite.connect(DB_PATH) as db:
+            cursor = await db.execute(
+                f"""UPDATE messages SET image_summary = ?
+                    WHERE username = ? AND image_path = ?{condition} AND role = 'user'""",
+                parameters,
+            )
+            await db.commit()
+            return cursor.rowcount > 0
+    except Exception as e:
+        print(f"[database] image summary write failed type={type(e).__name__}")
+        return False
+
+async def count_messages(username: str, conversation_id: str | None = None) -> int:
     """该用户的消息总数，用于成长阶段路由（区别于注入上下文的截断窗口）"""
     async with aiosqlite.connect(DB_PATH) as db:
+        await db.execute("BEGIN")
+        if conversation_id is not None:
+            from agent_store import _owned_conversation
+            await _owned_conversation(db, username, conversation_id)
+        condition = " AND conversation_id = ?" if conversation_id is not None else ""
+        parameters = (username, conversation_id) if conversation_id is not None else (username,)
         async with db.execute(
-            "SELECT COUNT(*) FROM messages WHERE username = ?", (username,)
+            f"SELECT COUNT(*) FROM messages WHERE username = ?{condition}", parameters,
         ) as cursor:
             row = await cursor.fetchone()
     return row[0] if row else 0
@@ -524,10 +702,10 @@ async def delete_account_data(username: str) -> dict:
             return {"deleted": False, "upload_paths": []}
 
         async with db.execute(
-            "SELECT image_path FROM messages WHERE username = ? AND image_path IS NOT NULL",
+            "SELECT image_path, reference_image_paths FROM messages WHERE username = ?",
             (username,),
         ) as cursor:
-            upload_paths = [row[0] for row in await cursor.fetchall() if row[0]]
+            upload_paths = [path for row in await cursor.fetchall() for path in message_upload_paths(row[0], row[1])]
 
         async with db.execute(
             """SELECT id, media_path FROM posts
@@ -587,6 +765,10 @@ async def delete_account_data(username: str) -> dict:
             (username, username),
         )
         await db.execute("DELETE FROM messages WHERE username = ?", (username,))
+        await db.execute("DELETE FROM conversations WHERE owner_username = ?", (username,))
+        from exchange_store import delete_exchanges_for_user
+        await delete_exchanges_for_user(db, username)
+        await db.execute("DELETE FROM agents WHERE owner_username = ?", (username,))
         await db.execute("DELETE FROM user_tag_prefs WHERE username = ?", (username,))
         await db.execute("DELETE FROM user_time_tag_prefs WHERE username = ?", (username,))
         await db.execute("DELETE FROM user_states WHERE username = ?", (username,))
@@ -634,13 +816,15 @@ async def get_profile(username: str) -> dict:
     except Exception:
         return {}
 
-async def update_profile(username: str, profile: dict):
+async def update_profile(username: str, profile: dict) -> bool:
+    """Update the legacy social profile. New private chats use agent_store.update_memory."""
     async with aiosqlite.connect(DB_PATH) as db:
-        await db.execute(
+        cursor = await db.execute(
             "UPDATE users SET profile_json = ? WHERE username = ?",
-            (_json.dumps(profile, ensure_ascii=False), username)
+            (_json.dumps(profile, ensure_ascii=False), username),
         )
         await db.commit()
+        return cursor.rowcount > 0
 
 async def get_all_profiles() -> list[dict]:
     """返回所有用户的 username + profile_json + gender，用于匹配"""
@@ -1358,8 +1542,8 @@ async def get_all_messages(username: str) -> list[dict]:
     async with aiosqlite.connect(DB_PATH) as db:
         db.row_factory = aiosqlite.Row
         async with db.execute(
-            "SELECT id, role, content, image_path, created_at FROM messages WHERE username = ? ORDER BY created_at ASC",
+            "SELECT id, role, content, image_path, reference_image_paths, created_at FROM messages WHERE username = ? ORDER BY created_at ASC",
             (username,)
         ) as cursor:
             rows = await cursor.fetchall()
-    return [dict(r) for r in rows]
+    return [message_with_image_references(r) for r in rows]

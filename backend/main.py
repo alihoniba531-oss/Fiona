@@ -5,6 +5,7 @@ if sys.platform == "win32":
     asyncio.set_event_loop_policy(asyncio.WindowsSelectorEventLoopPolicy())
 
 import os
+import posixpath
 from contextlib import asynccontextmanager
 from fastapi import FastAPI, Request
 from fastapi.middleware.cors import CORSMiddleware
@@ -14,7 +15,7 @@ from slowapi import _rate_limit_exceeded_handler
 from slowapi.errors import RateLimitExceeded
 from database import get_pending_upload_cleanup, init_db, mark_upload_cleanup_done
 from rate_limit import limiter
-from routers import auth, chat, hot, match, me, peer, plaza, voice
+from routers import agent_exchanges, agents, auth, cards, chat, conversations, hot, match, me, peer, plaza, voice
 from utils.media import UPLOADS_DIR
 from utils.background_tasks import create_background_task, shutdown_background_tasks
 from utils.request_limits import MAX_REQUEST_BODY_BYTES, RequestBodyLimitMiddleware
@@ -56,6 +57,8 @@ async def _run_upload_cleanup_periodically() -> None:
 @asynccontextmanager
 async def lifespan(app: FastAPI):
     await init_db()
+    from exchange_store import recover_interrupted_exchanges
+    await recover_interrupted_exchanges()
     await _run_upload_cleanup_once()
     create_background_task(
         _run_upload_cleanup_periodically(),
@@ -79,12 +82,16 @@ app.mount("/uploads", StaticFiles(directory=UPLOADS_DIR), name="uploads")
 
 app.include_router(voice.router)
 app.include_router(hot.router)
+app.include_router(cards.router)
 app.include_router(plaza.router)
 app.include_router(auth.router)
 app.include_router(peer.router)
 app.include_router(chat.router)
 app.include_router(match.router)
 app.include_router(me.router)
+app.include_router(agents.router)
+app.include_router(conversations.router)
+app.include_router(agent_exchanges.router)
 
 app.add_middleware(
     CORSMiddleware,
@@ -112,12 +119,25 @@ _AUTH_PUBLIC_PATHS = {
 }
 _AUTH_PUBLIC_PREFIXES = ("/docs", "/redoc", "/openapi.json", "/hot/")
 
+
+async def _can_view_generated_image(username: str, image_path: str) -> bool:
+    """Generated results and uploaded references inherit message ownership."""
+    import aiosqlite
+    import database
+
+    async with aiosqlite.connect(database.DB_PATH) as db:
+        return await database.message_references_image(db, image_path, username=username)
+
+
 @app.middleware("http")
 async def require_auth(request: Request, call_next):
     if request.method == "OPTIONS":  # CORS 预检
         return await call_next(request)
     path = request.url.path
-    if path.startswith("/uploads/") and os.getenv("DEV_MODE", "0") == "1":
+    # Match StaticFiles' path normalization before the DEV uploads bypass.
+    upload_path = posixpath.normpath("/" + path.lstrip("/"))
+    private_chat_image = upload_path.startswith("/uploads/") and posixpath.basename(upload_path).startswith(("generated_", "reference_", ".generated_", ".reference_"))
+    if path.startswith("/uploads/") and not private_chat_image and os.getenv("DEV_MODE", "0") == "1":
         return await call_next(request)
     if path in _AUTH_PUBLIC_PATHS or any(path.startswith(p) for p in _AUTH_PUBLIC_PREFIXES):
         return await call_next(request)
@@ -145,7 +165,18 @@ async def require_auth(request: Request, call_next):
         return response
     # 把鉴权结果挂到 request.state，路由里 Depends(get_current_user) 直接读，避免重复解码。
     request.state.user = user
-    return await call_next(request)
+    if private_chat_image and not await _can_view_generated_image(user, upload_path):
+        return JSONResponse({"detail": "图片不存在或无权访问"}, status_code=404, headers={"Cache-Control": "private, no-store"})
+    response = await call_next(request)
+    if private_chat_image:
+        # Do not retain private files in browser/shared caches after deletion/logout.
+        response.headers["Cache-Control"] = "private, no-store"
+        if response.status_code == 200 and request.query_params.get("download") == "1":
+            from urllib.parse import quote
+            response.headers["Content-Disposition"] = (
+                "attachment; filename*=UTF-8''" + quote(posixpath.basename(upload_path), safe="")
+            )
+    return response
 
 @app.get("/")
 async def root():

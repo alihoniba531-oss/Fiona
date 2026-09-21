@@ -1,18 +1,20 @@
 # Fiona / Chloe 开发上下文
 
-个人 AI 陪伴与社交连接产品，当前用于作者自用和受控小范围内测。完整说明见 `README.md`，实际数据流见 `docs/ARCHITECTURE.md`，当前风险和路线图见 `PLAN.md`。
+个人 AI 分身交流与 Skill 平台，当前第一阶段支持独立分身和持久私有会话，用于作者自用和受控小范围内测。分身互聊与 Skill 交易尚未实现。完整说明见 `README.md`，实际数据流见 `docs/ARCHITECTURE.md`，当前风险和路线图见 `PLAN.md`。
 
 ## 当前架构
 
 - `backend/`：FastAPI + SQLite `fiona.db`，入口 `main.py`，通过 `run.py` 监听 `127.0.0.1:8000`。
 - `frontend/`：Next.js 16.2.6 App Router + React 19，开发端口 3000。
 - `desktop/`：Tauri 2 Windows 壳；有配置时建 SSH 隧道，无配置时加载 `https://madchloechat.online`。
-- 模型：DashScope/Qwen；主力 `qwen3.8-max`，轻量 `qwen3.7-flash`，图片 `qwen-vl-max`，搜索/热点 `qwen-plus`，语音使用 Qwen ASR 和 DashScope TTS。
+- 模型：DashScope/Qwen；主力 `qwen3.8-omni-flash`，轻量 `qwen3.8-flash`，图片 `qwen-vl-max`，搜索/热点 `qwen-plus`，语音使用 Qwen ASR 和 DashScope TTS。
 - 数据：SQLite、`backend/uploads/`、`backend/.env` 都是本机/单机状态，不进入 Git。
 
 ## 核心模块
 
 - 聊天主流程：`backend/routers/chat.py`、`backend/services/chat_service.py`
+- 分身与会话：`backend/agent_store.py`、`backend/routers/agents.py`、`backend/routers/conversations.py`；消息必须绑定已验证的会话 ID。
+- 私有记忆：分身独立 JSON 和修订号；新会话不得写入旧社会画像或触发旧自动匹配。名片只使用显式公开字段。
 - Persona/成长状态：`backend/persona.py`、`backend/avatar_state.py`、`backend/state_probe.py`
 - 画像与匹配：`backend/extractor.py`、`backend/conversation_matcher.py`、`backend/matcher.py`
 - API：`backend/routers/` 下的 auth/chat/hot/match/me/peer/plaza/voice

@@ -86,7 +86,10 @@ def _merge(old: dict, new: dict) -> dict:
     return result
 
 
-async def extract_and_update(client, username: str, messages: list):
+async def extract_and_update(
+    client, username: str, messages: list,
+    conversation_id: str | None = None, expected_revision: int | None = None,
+):
     """
     提取画像并更新数据库，完成后触发 Layer 2 画像级匹配。
     messages 是对话历史列表，每项 {role, content}。
@@ -104,7 +107,19 @@ async def extract_and_update(client, username: str, messages: list):
     if not convo.strip():
         return
 
-    old_profile = await get_profile(username)
+    revision = None
+    if conversation_id is not None:
+        from agent_store import ResourceNotFound, get_memory_snapshot
+        try:
+            snapshot = await get_memory_snapshot(username, conversation_id)
+        except ResourceNotFound:
+            return
+        revision = snapshot["revision"]
+        if expected_revision is not None and revision != expected_revision:
+            return
+        old_profile = snapshot["profile"]
+    else:
+        old_profile = await get_profile(username)
 
     try:
         resp = await asyncio.to_thread(
@@ -121,7 +136,16 @@ async def extract_and_update(client, username: str, messages: list):
         )
         new_data = json.loads(resp.choices[0].message.content)
         merged = _merge(old_profile, new_data)
-        await update_profile(username, merged)
+        if conversation_id is not None:
+            from agent_store import update_memory
+            await update_memory(
+                username, merged, expected_revision=revision,
+                conversation_id=conversation_id,
+            )
+            # 私有记忆不能流入旧广场标签与跨账号匹配。
+            return
+        else:
+            await update_profile(username, merged)
 
         # 把新提取的兴趣映射到广场标签，记入当前时段权重
         new_interests = new_data.get("interests", []) + new_data.get("needs", [])

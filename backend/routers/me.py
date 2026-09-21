@@ -83,8 +83,8 @@ async def delete_account(
         raise HTTPException(status_code=400, detail="请输入当前用户名确认删除")
 
     from database import delete_account_data, mark_upload_cleanup_done
-    from intent_router import clear_pending
-    from mode_switcher import clear_user_mode
+    from intent_router import clear_user_pending
+    from mode_switcher import clear_all_user_modes
     from routers.peer import ws_manager
     from utils.media import delete_uploaded_files
 
@@ -92,8 +92,8 @@ async def delete_account(
     if not result["deleted"]:
         raise HTTPException(status_code=404, detail="账号不存在")
 
-    clear_pending(user)
-    clear_user_mode(user)
+    clear_user_pending(user)
+    clear_all_user_modes(user)
     await ws_manager.disconnect_user(user)
     deleted_files, failed_files = delete_uploaded_files(result["upload_paths"])
     await mark_upload_cleanup_done(deleted_files)

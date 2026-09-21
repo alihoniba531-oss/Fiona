@@ -20,6 +20,35 @@ from utils.safe_http import request_public_url
 DASHSCOPE_URL = "https://dashscope.aliyuncs.com/api/v1/services/aigc/text-generation/generation"
 
 
+def _request_search(messages: list[dict], api_key: str, *, max_tokens: int = 900) -> dict:
+    """Use the native search response so sources come from search_info, not model URLs."""
+    body = {
+        "model": "qwen-plus",
+        "input": {"messages": messages},
+        "parameters": {
+            "result_format": "message",
+            "enable_search": True,
+            "search_options": {
+                "forced_search": True,
+                "enable_source": True,
+                "enable_citation": True,
+            },
+            "max_tokens": max_tokens,
+            "temperature": 0.3,
+        },
+    }
+    req = urllib.request.Request(
+        DASHSCOPE_URL,
+        data=json.dumps(body).encode("utf-8"),
+        headers={"Authorization": f"Bearer {api_key}", "Content-Type": "application/json"},
+    )
+    with urllib.request.urlopen(req, timeout=30) as response:
+        raw = response.read(1_000_001)
+    if len(raw) > 1_000_000:
+        raise ValueError("Search response too large")
+    return json.loads(raw)
+
+
 def _build_expand_prompt() -> str:
     now = datetime.now()
     today_str = f"{now.year}年{now.month}月{now.day}日"
@@ -79,47 +108,22 @@ def topic_expand(title: str) -> dict:
         return {"title": title, "error": "DASHSCOPE_API_KEY 未设置"}
 
     now = datetime.now()
-    body = {
-        "model": "qwen-plus",
-        "input": {
-            "messages": [
-                {"role": "system", "content": _build_expand_prompt()},
-                {
-                    "role": "user",
-                    "content": (
-                        f"今天是 {now.year} 年 {now.month} 月 {now.day} 日。"
-                        f"刚刚上微博/抖音/B站/头条热搜的话题是：『{title}』。"
-                        f"用联网搜索查最近 7 天内关于这个话题的新闻，把这件事讲清楚。"
-                        f"如果搜到的全是往年同名事件，请忽略往年的、只保留今年的；"
-                        f"实在没今年的就告诉我没有，不要拿旧的糊弄。"
-                    ),
-                },
-            ],
+    messages = [
+        {"role": "system", "content": _build_expand_prompt()},
+        {
+            "role": "user",
+            "content": (
+                f"今天是 {now.year} 年 {now.month} 月 {now.day} 日。"
+                f"刚刚上微博/抖音/B站/头条热搜的话题是：『{title}』。"
+                f"用联网搜索查最近 7 天内关于这个话题的新闻，把这件事讲清楚。"
+                f"如果搜到的全是往年同名事件，请忽略往年的、只保留今年的；"
+                f"实在没今年的就告诉我没有，不要拿旧的糊弄。"
+            ),
         },
-        "parameters": {
-            "result_format": "message",
-            "enable_search": True,
-            "search_options": {
-                "forced_search": True,    # 强制走搜索，别用训练记忆
-                "enable_source": True,    # response 里返回 search_info.search_results
-                "enable_citation": True,  # content 里带 [1][2] 引用标记
-            },
-            "max_tokens": 900,
-            "temperature": 0.3,
-        },
-    }
+    ]
 
     try:
-        req = urllib.request.Request(
-            DASHSCOPE_URL,
-            data=json.dumps(body).encode("utf-8"),
-            headers={
-                "Authorization": f"Bearer {api_key}",
-                "Content-Type": "application/json",
-            },
-        )
-        with urllib.request.urlopen(req, timeout=30) as r:
-            resp = json.loads(r.read())
+        resp = _request_search(messages, api_key)
     except Exception as e:
         return {"title": title, "error": type(e).__name__}
 

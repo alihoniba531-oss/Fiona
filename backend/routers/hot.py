@@ -1,10 +1,11 @@
 # -*- coding: utf-8 -*-
 import json
+import re
 import time as _time
 
 from fastapi import APIRouter, Query, Request
 
-from llm import QWEN_CLIENT, client
+from llm import QWEN_CLIENT, QWEN_MODEL, QWEN_EXTRA_BODY
 from rate_limit import limiter
 from tools.hot_topics import hot_topics
 
@@ -76,14 +77,14 @@ def _classify_topic(title: str) -> str:
 
 # ── LLM 整批分类（5 分钟缓存）──────────────────────────────────────
 # 关键词字典覆盖不全（新词跟不上 / 顺序敏感把模糊词归错），
-# 用 qwen-plus 整批理解一次。同批标题 5 分钟内不重复调。
+# 用轻量模型整批理解一次，只返回编号，避免完整榜单重复输出标题耗尽预算。
 CATEGORIES_DISPLAY = ["娱乐", "经济", "生活", "科技", "文化"]
 _CLASSIFY_TTL = 300
 _classify_cache: dict[int, tuple[float, dict[str, str]]] = {}
 
 _BATCH_CLASSIFY_PROMPT = """你是热搜分类器，只输出 JSON 对象。
 
-给你一批热搜标题（每行一个），把每条归到下面 5 类之一：
+给你一批带编号的热搜标题，把每条归到下面 5 类之一：
 - 娱乐：明星 / 影视 / 综艺 / 音乐 / 网红 / 八卦 / 选秀
 - 经济：股市 / 楼市 / 企业 / 消费 / 就业 / 价格 / 货币 / 贸易 / 财报
 - 科技：AI / 芯片 / 互联网 / 航天 / 汽车工业 / 新能源 / 机器人 / 5G/6G / 量子 / 工业制造
@@ -92,7 +93,8 @@ _BATCH_CLASSIFY_PROMPT = """你是热搜分类器，只输出 JSON 对象。
 
 规则：
 - 一条标题只能归一类，挑最贴的
-- 严格输出 JSON：{"标题原文": "类别", ...}
+- 严格输出 JSON：{"娱乐": [1, 6], "经济": [2], "科技": [3], "文化": [4], "生活": [5]}
+- 列表只填输入中的整数编号，每个编号出现一次，不重复输出标题，不补充新闻
 - 不解释，不 markdown，不加其他文字
 - 标题列表为空时输出 {}
 """
@@ -105,29 +107,40 @@ def _classify_with_llm(titles: list[str]) -> dict[str, str]:
     key = hash(tuple(titles))
     now = _time.time()
     cached = _classify_cache.get(key)
-    if cached and now - cached[0] < _CLASSIFY_TTL:
+    if cached and now - cached[0] < (_CLASSIFY_TTL if cached[1] else 30):
         return cached[1]
+    clean: dict[str, str] = {}
     try:
-        resp = QWEN_CLIENT.chat.completions.create(
-            model="qwen-plus",
+        # 分类是辅助步骤；不能因模型重试而让已抓到的榜单一直不显示。
+        resp = QWEN_CLIENT.with_options(timeout=8.0, max_retries=0).chat.completions.create(
+            model=QWEN_MODEL,
             messages=[
                 {"role": "system", "content": _BATCH_CLASSIFY_PROMPT},
-                {"role": "user", "content": "\n".join(titles)},
+                {"role": "user", "content": "\n".join(f"{i}. {title}" for i, title in enumerate(titles, 1))},
             ],
             response_format={"type": "json_object"},
             max_tokens=2000,
             temperature=0.1,
+            extra_body=QWEN_EXTRA_BODY,
         )
         raw = resp.choices[0].message.content or "{}"
         data = json.loads(raw)
-        if not isinstance(data, dict):
-            return {}
-        clean = {str(k): str(v) for k, v in data.items() if str(v) in CATEGORIES_DISPLAY}
-        _classify_cache[key] = (now, clean)
-        return clean
+        if isinstance(data, dict):
+            assignments: dict[int, set[str]] = {}
+            for category, indices in data.items():
+                if category not in CATEGORIES_DISPLAY or not isinstance(indices, list):
+                    continue
+                for index in indices:
+                    if type(index) is int and 1 <= index <= len(titles):
+                        assignments.setdefault(index, set()).add(category)
+            clean = {titles[index - 1]: next(iter(categories))
+                     for index, categories in assignments.items() if len(categories) == 1}
     except Exception as e:
         print(f"[hot/categorized] LLM classify failed type={type(e).__name__}", flush=True)
-        return {}
+    if len(_classify_cache) >= 32:
+        _classify_cache.pop(next(iter(_classify_cache)))
+    _classify_cache[key] = (_time.time(), clean)
+    return clean
 
 
 @router.get("/hot/categorized/all")
@@ -147,12 +160,30 @@ async def hot_categorized(request: Request):
     )
 
     all_titles: list[str] = []
-    for d in results:
-        if isinstance(d, Exception) or not isinstance(d, dict):
+    source_errors: list[str] = []
+    updated_times: list[str] = []
+    stale = False
+    for source, d in zip(["微博", "抖音", "知乎", "B站", "头条"], results):
+        if isinstance(d, Exception) or not isinstance(d, dict) or d.get("error"):
+            source_errors.append(source)
             continue
-        for pt in d.get("points", []):
-            # 去掉 "1. 标题 · 热度" 里的序号
-            title = pt.split("·")[0].strip().lstrip("0123456789. ")
+        if d.get("stale"):
+            stale = True
+            source_errors.append(source)
+        if isinstance(d.get("updated_at"), str):
+            updated_times.append(d["updated_at"])
+        items = d.get("items")
+        if isinstance(items, list):
+            titles = [it.get("title", "") for it in items if isinstance(it, dict)]
+        else:
+            # 兼容旧卡片，仅移除榜单序号与末尾热度，不截掉年份或标题里的中点。
+            titles = [re.sub(r"\s+·\s+[\d.,]+\s*[万亿]?(?:\s*热度)?$", "",
+                             re.sub(r"^\s*\d+\.\s+", "", pt)).strip()
+                      for pt in d.get("points", []) if isinstance(pt, str)]
+        for title in titles:
+            if not isinstance(title, str):
+                continue
+            title = title.strip()
             if title:
                 all_titles.append(title)
 
@@ -179,4 +210,14 @@ async def hot_categorized(request: Request):
         if len(buckets[cat]) < 5:
             buckets[cat].append(title)
 
-    return {"categories": buckets}
+    error = not unique
+    message = ""
+    if error:
+        message = "热点暂时拉取失败，请稍后重试"
+    elif stale:
+        message = "部分榜单更新失败，保留上次成功获取的内容"
+    elif source_errors:
+        message = "部分来源暂不可用，已显示其他来源的热点"
+    return {"categories": buckets, "error": error, "message": message,
+            "stale": stale, "source_errors": source_errors,
+            "updated_at": min(updated_times) if updated_times else None}

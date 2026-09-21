@@ -6,20 +6,29 @@
 镜子模式：纯陪伴——只回"嗯/我在/你说/反问"，不动手、不评价、不出主意
 
 切换由 detect_mode() 自动判定，也可由用户对话信号手动切换。
-状态存内存，重启清空。
+状态落库 chat_slot_state（kind='mode'）：跨进程/重启都还在，24 小时未更新兜底过期。
+镜子模式 30 分钟的退出判定（MIRROR_TIMEOUT_MINUTES）不变，24 小时只是上限、不是替代品。
 """
 
+import contextlib
 import re
 import json
-from datetime import datetime, timedelta
+import sqlite3
+from datetime import datetime, timedelta, timezone
 from typing import Literal
 
+import database
 from llm import MAIN_EXTRA_BODY, MAIN_MODEL
 
 ModeType = Literal["friend", "mirror"]
 
-# ── 内存状态：username -> {mode, since, last_trigger} ───────────
-_mode_state: dict[str, dict] = {}
+# ── 状态键：username（账号级）或 (username, conversation_id)（会话级）──
+StateKey = str | tuple[str, str]
+
+# chat_slot_state.kind 的取值，与 intent_router 的 "pending" 各占一行、互不干扰
+SLOT_KIND = "mode"
+# 兜底上限：超过 24 小时没更新的模式状态过期，回落 friend 默认值
+MODE_TTL = timedelta(hours=24)
 
 # 镜子模式无新触发条件 + 用户开新话题超过该时长 → 切回朋友
 MIRROR_TIMEOUT_MINUTES = 30
@@ -84,38 +93,173 @@ def has_vent_signal(text: str) -> bool:
     return any(kw in text for kw in VENT_PRESCAN_KEYWORDS)
 
 
-# ── 状态读写 ────────────────────────────────────────
-
-def get_user_mode(username: str) -> dict:
-    """获取当前模式状态。新用户默认 friend"""
-    if username not in _mode_state:
-        _mode_state[username] = {
-            "mode": "friend",
-            "since": datetime.now(),
-            "last_trigger": None,
-        }
-    return _mode_state[username]
+# ── 状态读写（落库 chat_slot_state）────────────────────
+# 与 intent_router 里的同名 helper 是刻意各自一份：两个模块互不 import，
+# 谁被 reload / 打桩都不牵连另一个。改这里记得同步改那边。
 
 
-def set_user_mode(username: str, mode: ModeType, trigger_reason: str = ""):
-    """切换用户模式"""
-    _mode_state[username] = {
-        "mode": mode,
-        "since": datetime.now(),
-        "last_trigger": trigger_reason,
+def _slot_identity(key: StateKey) -> tuple[str, str]:
+    """StateKey → (state_key, owner_username)；会话级键用 \\x1f（US 控制符）拼接。"""
+    if isinstance(key, tuple):
+        username, conversation_id = key
+        return f"{username}\x1f{conversation_id}", username
+    return key, key
+
+
+@contextlib.contextmanager
+def _slot_conn():
+    """开一次 chat_slot_state 连接。
+
+    路径必须在函数体内现读 database.DB_PATH：conftest 靠 monkeypatch 该模块全局做隔离，
+    一旦在模块顶层缓存路径，测试就会写进真库 backend/fiona.db。
+    每次都先跑一遍建表 DDL 兜底——部分调用点（含既有测试）不经 init_db() 就直接读写槽位。
+    sqlite3 的 with 只管事务不管关闭，所以外面套 closing。
+    """
+    with contextlib.closing(sqlite3.connect(database.DB_PATH, timeout=5.0)) as conn:
+        conn.execute(database.CHAT_SLOT_STATE_DDL)
+        yield conn
+
+
+def _expiry_of(raw) -> datetime | None:
+    """expires_at 一律按 UTC 解读；解析不出来返回 None（当作不过期，别误删有效状态）。"""
+    if raw is None:
+        return None
+    if isinstance(raw, datetime):
+        parsed = raw
+    else:
+        try:
+            parsed = datetime.fromisoformat(str(raw))
+        except ValueError:
+            return None
+    if parsed.tzinfo is None:
+        return parsed.replace(tzinfo=timezone.utc)
+    return parsed.astimezone(timezone.utc)
+
+
+def _is_expired(raw, now_utc: datetime) -> bool:
+    expiry = _expiry_of(raw)
+    return expiry is not None and expiry <= now_utc
+
+
+def _default_mode_state() -> dict:
+    """新用户 / 无行 / 已过期 / payload 损坏时的默认状态。
+
+    只返回、绝不写库：写库会让"会话已删除"后的状态被读一次就复活。
+    """
+    return {"mode": "friend", "since": datetime.now(), "last_trigger": None}
+
+
+def _decode_mode_payload(raw) -> dict | None:
+    """payload_json → {mode, since(datetime), last_trigger}；结构不对返回 None（当作不存在）。
+
+    since 存的是 naive 本地时间的 ISO 串，读回必须还原成 naive datetime：
+    detect_mode 里有 `datetime.now() - state["since"]`，两边 tz-aware 性不一致会当场 TypeError。
+    """
+    try:
+        payload = json.loads(raw)
+    except (TypeError, ValueError):
+        return None
+    if not isinstance(payload, dict) or payload.get("mode") not in ("friend", "mirror"):
+        return None
+    raw_since = payload.get("since")
+    since = None
+    if isinstance(raw_since, str):
+        try:
+            since = datetime.fromisoformat(raw_since)
+        except ValueError:
+            since = None
+    if since is None:
+        since = datetime.now()
+    elif since.tzinfo is not None:
+        # 兜底：万一存进来的是 aware 时间，换算成本地时间再摘掉 tzinfo，保持 naive 语义
+        since = since.astimezone().replace(tzinfo=None)
+    trigger = payload.get("last_trigger")
+    return {
+        "mode": payload["mode"],
+        "since": since,
+        "last_trigger": trigger if isinstance(trigger, str) else None,
     }
 
 
-def clear_user_mode(username: str):
+def get_user_mode(username: StateKey) -> dict:
+    """获取当前模式状态。新用户默认 friend；过期行顺手删掉，不留脏数据。"""
+    state_key, _owner = _slot_identity(username)
+    now_utc = datetime.now(timezone.utc)
+    with _slot_conn() as conn:
+        row = conn.execute(
+            "SELECT payload_json, expires_at FROM chat_slot_state WHERE state_key = ? AND kind = ?",
+            (state_key, SLOT_KIND),
+        ).fetchone()
+        if row is not None:
+            state = _decode_mode_payload(row[0])
+            if state is not None and not _is_expired(row[1], now_utc):
+                return state
+            conn.execute(
+                "DELETE FROM chat_slot_state WHERE state_key = ? AND kind = ?",
+                (state_key, SLOT_KIND),
+            )
+            conn.commit()
+    return _default_mode_state()
+
+
+def set_user_mode(username: StateKey, mode: ModeType, trigger_reason: str = ""):
+    """切换用户模式，expires_at = now(UTC) + 24 小时（兜底上限）。"""
+    state_key, owner_username = _slot_identity(username)
+    now_utc = datetime.now(timezone.utc)
+    payload = {
+        "mode": mode,
+        # naive 本地时间：与改造前 datetime.now() 的语义完全一致，
+        # detect_mode 的 `datetime.now() - state["since"]` 才能正常相减
+        "since": datetime.now().isoformat(),
+        "last_trigger": trigger_reason,
+    }
+    with _slot_conn() as conn:
+        conn.execute(
+            """INSERT OR REPLACE INTO chat_slot_state
+                   (state_key, kind, owner_username, payload_json, expires_at, updated_at)
+               VALUES (?, ?, ?, ?, ?, ?)""",
+            (
+                state_key,
+                SLOT_KIND,
+                owner_username,
+                json.dumps(payload, ensure_ascii=False),
+                (now_utc + MODE_TTL).isoformat(),
+                now_utc.isoformat(),
+            ),
+        )
+        conn.commit()
+
+
+def clear_user_mode(username: StateKey):
     """清空状态（一般测试用）"""
-    _mode_state.pop(username, None)
+    state_key, _owner = _slot_identity(username)
+    with _slot_conn() as conn:
+        conn.execute(
+            "DELETE FROM chat_slot_state WHERE state_key = ? AND kind = ?",
+            (state_key, SLOT_KIND),
+        )
+        conn.commit()
+
+
+def clear_all_user_modes(username: str):
+    """删号时清理该用户所有会话的模式状态。
+
+    必须是 owner_username 等值匹配：改用 LIKE / GLOB 前缀匹配 state_key 的话，
+    用户名里的 % _ * ? 会误删别人的状态。
+    """
+    with _slot_conn() as conn:
+        conn.execute(
+            "DELETE FROM chat_slot_state WHERE kind = ? AND owner_username = ?",
+            (SLOT_KIND, username),
+        )
+        conn.commit()
 
 
 # ── 模式判定主函数 ─────────────────────────────────
 
 def detect_mode(
     client,
-    username: str,
+    username: StateKey,
     current_msg: str,
     recent_history: list[dict],
 ) -> ModeType:

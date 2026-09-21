@@ -12,7 +12,7 @@ import jwt
 from datetime import datetime, timedelta, timezone
 from dotenv import load_dotenv
 
-load_dotenv(dotenv_path=os.path.join(os.path.dirname(os.path.abspath(__file__)), ".env"), override=True)
+load_dotenv(dotenv_path=os.path.join(os.path.dirname(os.path.abspath(__file__)), ".env"), override=False)
 
 SECRET_KEY = os.getenv("JWT_SECRET")
 if not SECRET_KEY:
