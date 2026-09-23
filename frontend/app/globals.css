@@ -3,6 +3,14 @@
 @import "./shadcn-tailwind.css";
 
 @custom-variant dark (&:is(.dark *));
+/* An iframe follows the top-level shell breakpoint, not its own narrow viewport. */
+@custom-variant mobile {
+  @media (width < 48rem) {
+    &:where(:root:not([data-shell="desktop"]) *) {
+      @slot;
+    }
+  }
+}
 
 @theme inline {
   --color-background: var(--background);
@@ -402,6 +410,24 @@ html, * {
 
 .dark, .dark * {
   scrollbar-color: rgba(255, 255, 255, 0.22) transparent !important;
+}
+
+@media (width < 48rem) {
+  :root:not([data-shell="desktop"]) input,
+  :root:not([data-shell="desktop"]) textarea,
+  :root:not([data-shell="desktop"]) select {
+    font-size: max(16px, 1em);
+  }
+
+  :root:not([data-shell="desktop"]) .mobile-scrollbar-none {
+    scrollbar-width: none !important;
+  }
+  :root:not([data-shell="desktop"]) .mobile-scrollbar-none::-webkit-scrollbar,
+  :root:not([data-shell="desktop"]) .mobile-scrollbar-none *::-webkit-scrollbar {
+    width: 0 !important;
+    height: 0 !important;
+    display: none !important;
+  }
 }
 
 /* ── 广场底部 ticker 滚动动画 ── */

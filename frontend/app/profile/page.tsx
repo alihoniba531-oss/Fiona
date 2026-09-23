@@ -41,7 +41,7 @@ const Section = ({
 const TagList = ({ items }: { items: string[] }) => (
   <div className="flex flex-wrap gap-2">
     {items.map((item) => (
-      <span key={item} className="chip">
+      <span key={item} className="chip mobile:h-auto mobile:max-w-full mobile:break-all mobile:whitespace-normal">
         {item}
       </span>
     ))}
@@ -94,12 +94,12 @@ function ProfileContent() {
   const embedded = sp?.get("embed") === "1";
 
   return (
-    <div className="flex h-screen flex-col overflow-hidden">
+    <div className={`flex h-dvh flex-col overflow-hidden ${!embedded ? "mobile:pb-[calc(56px+env(safe-area-inset-bottom))]" : ""}`}>
       <div className="flex flex-1 min-h-0">
         {!embedded && <Sidebar />}
         <div className="flex flex-col flex-1 min-w-0">
-        <header className="glass sticky top-0 z-[2] shrink-0 border-b px-8 pb-[18px] pt-7" style={{ borderColor: "var(--glass-border)" }}>
-          <div className="flex max-w-[976px] items-end justify-between gap-4">
+        <header className="glass sticky top-0 z-[2] shrink-0 border-b px-8 pb-[18px] pt-7 mobile:px-4 mobile:pt-4" style={{ borderColor: "var(--glass-border)" }}>
+          <div className="flex max-w-[976px] items-end justify-between gap-4 mobile:flex-col mobile:items-start mobile:gap-2">
             <div>
               <h1 className="text-xl font-medium tracking-[-0.01em]">旧社交画像</h1>
               <p className="mt-1 text-[13px] text-muted-foreground">此前用于社交匹配的画像；新会话记忆在“我的分身”中查看</p>
@@ -111,7 +111,7 @@ function ProfileContent() {
           </div>
         </header>
 
-        <div className="flex-1 space-y-3 overflow-y-auto px-8 py-6">
+        <div className="flex-1 space-y-3 overflow-y-auto px-8 py-6 mobile:min-w-0 mobile:px-4 mobile:py-4">
           {/* Avatar & 基本信息 */}
           <div className="glass-card flex items-center gap-4 p-5">
             <div className="grid h-14 w-14 place-items-center rounded-[6px] bg-secondary">
@@ -166,7 +166,7 @@ function ProfileContent() {
           </div>
 
           <div className="flex gap-2 pb-4">
-            <Link href="/agents/me" target={embedded ? "_top" : undefined} className="btn flex-1">
+            <Link href="/agents/me" target={embedded ? "_top" : undefined} className="btn flex-1 mobile:h-auto mobile:min-h-10 mobile:whitespace-normal">
               <ArrowUpRight size={14} />
               前往我的分身管理记忆
             </Link>

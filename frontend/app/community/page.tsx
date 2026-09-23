@@ -8,11 +8,11 @@ function CommunityContent() {
   const sp = useSearchParams();
   const embedded = sp?.get("embed") === "1";
   return (
-    <div className="flex h-screen flex-col overflow-hidden">
+    <div className={`flex h-dvh flex-col overflow-hidden ${!embedded ? "mobile:pb-[calc(56px+env(safe-area-inset-bottom))]" : ""}`}>
       <div className="flex flex-1 min-h-0">
         {!embedded && <Sidebar />}
         <div className="flex flex-col flex-1 min-w-0">
-          <header className="glass sticky top-0 z-[2] shrink-0 border-b px-8 pb-[18px] pt-7" style={{ borderColor: "var(--glass-border)" }}>
+          <header className="glass sticky top-0 z-[2] shrink-0 border-b px-8 pb-[18px] pt-7 mobile:px-4 mobile:pt-4" style={{ borderColor: "var(--glass-border)" }}>
             <div className="flex max-w-[976px] items-end justify-between gap-4">
               <div>
                 <h1 className="text-xl font-medium tracking-[-0.01em]">社群</h1>
@@ -20,7 +20,7 @@ function CommunityContent() {
               </div>
             </div>
           </header>
-          <div className="flex flex-1 items-center justify-center px-8 text-center">
+          <div className="flex flex-1 items-center justify-center px-8 text-center mobile:px-4">
             <div className="glass-card p-8">
               <p className="text-sm text-muted-foreground">社群功能即将上线</p>
             </div>

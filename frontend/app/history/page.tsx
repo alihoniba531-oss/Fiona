@@ -142,21 +142,21 @@ function HistoryContent() {
   ];
 
   return (
-    <div className="flex min-h-screen flex-col text-foreground">
+    <div className="flex min-h-screen flex-col text-foreground max-md:min-h-dvh max-md:min-w-0">
 
       {/* 顶栏 */}
-      <header className="glass sticky top-0 z-20 flex items-center gap-3 border-b px-5 py-2.5" style={{ borderColor: "var(--glass-border)" }}>
-        <div className="flex shrink-0 items-center gap-2">
-          <div>
+      <header className="glass sticky top-0 z-20 flex items-center gap-3 border-b px-5 py-2.5 max-md:flex-wrap max-md:gap-2 max-md:px-4" style={{ borderColor: "var(--glass-border)" }}>
+        <div className="flex shrink-0 items-center gap-2 max-md:min-w-0 max-md:max-w-[60vw]">
+          <div className="max-md:min-w-0">
             <p className="text-sm font-medium leading-tight">历史记录</p>
-            <p className="mt-0.5 text-xs text-muted-foreground">
+            <p className="mt-0.5 text-xs text-muted-foreground max-md:truncate">
               {username} · <span className="readout"><b>{allMsgs.length}</b> 条</span>
             </p>
           </div>
         </div>
 
         {/* 搜索 */}
-        <div className="flex flex-1 items-center gap-2 rounded-[6px] border bg-card px-3 py-[9px] focus-within:border-[color:var(--amber-ink)]">
+        <div className="flex flex-1 items-center gap-2 rounded-[6px] border bg-card px-3 py-[9px] focus-within:border-[color:var(--amber-ink)] max-md:order-3 max-md:min-w-0 max-md:basis-full">
           <Search size={13} className="text-muted-foreground shrink-0" />
           <input
             ref={searchRef}
@@ -175,28 +175,28 @@ function HistoryContent() {
         {/* 导出 */}
         <button
           onClick={handleExport}
-          className="btn shrink-0"
+          className="btn shrink-0 max-md:ml-auto"
         >
           <Download size={12} />
           导出
-          {filtered.length < allMsgs.length && <span className="readout">({filtered.length}条)</span>}
+          {filtered.length < allMsgs.length && <span className="readout max-md:hidden">({filtered.length}条)</span>}
         </button>
       </header>
 
-      <div className="flex flex-1 min-h-0">
+      <div className="flex flex-1 min-h-0 max-md:min-w-0 max-md:flex-col">
 
         {/* 左侧：日期导航 */}
-        <aside className="glass flex w-56 shrink-0 flex-col border-r" style={{ borderColor: "var(--glass-border)" }}>
+        <aside className="glass flex w-56 shrink-0 flex-col border-r max-md:w-full max-md:border-r-0 max-md:border-b" style={{ borderColor: "var(--glass-border)" }}>
           {/* 快捷筛选 */}
-          <div className="px-3 pt-4 pb-2">
+          <div className="px-3 pt-4 pb-2 max-md:pt-3">
             <p className="mb-2 px-1 text-xs font-medium text-muted-foreground">快捷筛选</p>
-            <div className="flex flex-col gap-0.5">
+            <div className="flex flex-col gap-0.5 max-md:grid max-md:grid-cols-4 max-md:gap-1">
               {quickLabels.map(({ key, label }) => (
                 <button
                   key={key}
                   onClick={() => applyQuick(key)}
                   className={cn(
-                    "chip h-auto w-full justify-start px-3 py-1.5 text-left",
+                    "chip h-auto w-full justify-start px-3 py-1.5 text-left max-md:justify-center max-md:px-1",
                     quick === key && dateFrom === (key === "all" ? "" : dateFrom)
                       ? "chip-on"
                       : ""
@@ -209,24 +209,24 @@ function HistoryContent() {
           </div>
 
           {/* 日期区间 */}
-          <div className="border-t px-3 py-3" style={{ borderColor: "var(--glass-border)" }}>
+          <div className="border-t px-3 py-3 max-md:py-2" style={{ borderColor: "var(--glass-border)" }}>
             <p className="mb-2 flex items-center gap-1 px-1 text-xs font-medium text-muted-foreground">
               <Calendar size={12} style={{ color: "var(--amber-ink)" }} />
               自定义区间
             </p>
-            <div className="space-y-1.5">
+            <div className="space-y-1.5 max-md:grid max-md:grid-cols-1 max-md:gap-1.5 max-md:space-y-0">
               <input
                 type="date"
                 value={dateFrom}
                 onChange={e => { setDateFrom(e.target.value); setQuick("all"); }}
-                className="readout w-full rounded-[6px] border bg-card px-3 py-[9px] text-foreground outline-none focus:border-[color:var(--amber-ink)]"
+                className="readout w-full rounded-[6px] border bg-card px-3 py-[9px] text-foreground outline-none focus:border-[color:var(--amber-ink)] max-md:min-w-0 max-md:px-1.5"
               />
               <div className="text-center text-[10px] text-muted-foreground">至</div>
               <input
                 type="date"
                 value={dateTo}
                 onChange={e => { setDateTo(e.target.value); setQuick("all"); }}
-                className="readout w-full rounded-[6px] border bg-card px-3 py-[9px] text-foreground outline-none focus:border-[color:var(--amber-ink)]"
+                className="readout w-full rounded-[6px] border bg-card px-3 py-[9px] text-foreground outline-none focus:border-[color:var(--amber-ink)] max-md:min-w-0 max-md:px-1.5"
               />
               {(dateFrom || dateTo) && (
                 <button
@@ -240,9 +240,9 @@ function HistoryContent() {
           </div>
 
           {/* 日期列表 */}
-          <div className="flex-1 overflow-y-auto border-t px-3 pb-4 pt-3" style={{ borderColor: "var(--glass-border)" }}>
+          <div className="flex-1 overflow-y-auto border-t px-3 pb-4 pt-3 max-md:flex-none max-md:overflow-x-auto max-md:overflow-y-hidden max-md:pb-2 max-md:pt-2 mobile-scrollbar-none" style={{ borderColor: "var(--glass-border)" }}>
             <p className="mb-2 px-1 text-xs font-medium text-muted-foreground">按日期跳转</p>
-            <div className="flex flex-col gap-0.5">
+            <div className="flex flex-col gap-0.5 max-md:flex-row max-md:gap-1">
               {dateStats.map(([day, count]) => {
                 const isActive = dateFrom === day && dateTo === day;
                 return (
@@ -250,7 +250,7 @@ function HistoryContent() {
                     key={day}
                     onClick={() => selectDay(day)}
                     className={cn(
-                      "chip h-auto w-full justify-between px-3 py-1.5 text-left",
+                      "chip h-auto w-full justify-between px-3 py-1.5 text-left max-md:w-auto max-md:shrink-0 max-md:gap-2",
                       isActive && "chip-on"
                     )}
                   >
@@ -264,12 +264,12 @@ function HistoryContent() {
         </aside>
 
         {/* 右侧：消息内容 */}
-        <main className="flex-1 overflow-y-auto px-6 py-5 space-y-3">
+        <main className="flex-1 overflow-y-auto px-6 py-5 space-y-3 max-md:min-w-0 max-md:overflow-visible max-md:px-4 max-md:py-4">
           {/* 筛选结果摘要 */}
           {(query || dateFrom || dateTo) && (
-            <div className="flex items-center gap-2 text-[11px] text-muted-foreground pb-1">
+            <div className="flex items-center gap-2 text-[11px] text-muted-foreground pb-1 max-md:flex-wrap">
               <span>筛选结果：<span className="readout"><b>{filtered.length}</b> 条</span></span>
-              {query && <span className="chip h-6 px-2 text-[11px]">含「{query}」</span>}
+              {query && <span className="chip h-6 px-2 text-[11px] max-md:h-auto max-md:max-w-full max-md:break-all max-md:whitespace-normal">含「{query}」</span>}
               {(dateFrom || dateTo) && (
                 <span className="chip h-6 px-2 text-[11px]">
                   {dateFrom || "—"} 至 {dateTo || "—"}
@@ -333,7 +333,7 @@ function HistoryContent() {
                       };
                       return (
                         <div key={msg.id} className={cn("flex px-4 py-3", isUser ? "justify-end" : "justify-start")}>
-                          <div className={cn("flex flex-col gap-1.5", isUser ? "max-w-[520px] items-end" : "max-w-[640px] items-start")}>
+                          <div className={cn("flex flex-col gap-1.5 max-md:min-w-0 max-md:max-w-[85vw]", isUser ? "max-w-[520px] items-end" : "max-w-[640px] items-start")}>
                             {!isUser && (
                               <div className="flex items-center gap-2 text-xs text-muted-foreground">
                                 <span className="inline-block h-1.5 w-1.5" style={{ background: "var(--amber-ink)" }} />

@@ -167,7 +167,7 @@ function ChatBubble({ message, agentName = "Chloe", agentAvatar = "✨", onDelet
     <div
       className={cn(
         "group flex items-start gap-2",
-        isUser ? "ml-auto max-w-[520px] flex-row-reverse msg-in-right" : "max-w-[640px] msg-in-left"
+        isUser ? "ml-auto max-w-[520px] flex-row-reverse msg-in-right max-md:max-w-full" : "max-w-[640px] msg-in-left max-md:w-full max-md:max-w-full"
       )}
       onMouseEnter={() => setHovered(true)}
       onMouseLeave={() => setHovered(false)}
@@ -179,7 +179,7 @@ function ChatBubble({ message, agentName = "Chloe", agentAvatar = "✨", onDelet
         </div>
       )}
 
-      <div className={cn("flex min-w-0 flex-col gap-1.5", isUser && "items-end")}>
+      <div className={cn("flex min-w-0 flex-col gap-1.5", isUser ? "items-end" : "max-md:flex-1")}>
         {!isUser && <div className="flex items-center gap-2 text-xs text-muted-foreground">
           <span className="inline-block h-1.5 w-1.5" style={{ background: "var(--amber-ink)" }} />
           {agentName}
@@ -198,7 +198,7 @@ function ChatBubble({ message, agentName = "Chloe", agentAvatar = "✨", onDelet
           <img
             src={message.imageUrl}
             alt="图片"
-            className="max-h-[260px] max-w-[260px] cursor-pointer rounded-[10px] object-cover transition hover:opacity-95"
+            className="max-h-[260px] max-w-[260px] cursor-pointer rounded-[10px] object-cover transition hover:opacity-95 max-md:max-w-full"
             onClick={() => window.open(message.imageUrl, "_blank", "noopener,noreferrer")}
           />
         )}
@@ -212,7 +212,7 @@ function ChatBubble({ message, agentName = "Chloe", agentAvatar = "✨", onDelet
           <div
             className={cn(
               "break-words whitespace-pre-wrap text-sm",
-              isUser ? "bubble-user max-w-[520px]" : "bubble-ai max-w-[640px]",
+              isUser ? "bubble-user max-w-[520px] max-md:max-w-full" : "bubble-ai max-w-[640px] max-md:w-full max-md:max-w-full",
               (message.isTyping || stillTyping) && "typing-cursor"
             )}
           >
@@ -271,7 +271,7 @@ function ChatBubble({ message, agentName = "Chloe", agentAvatar = "✨", onDelet
               {message.cardData.points.map((point, i) => (
                 <li key={i} className="text-sm text-foreground/90 leading-relaxed flex gap-2">
                   <span className="mt-1 shrink-0" style={{ color: "var(--amber-ink)" }}>•</span>
-                  <span>{point}</span>
+                  <span className="max-md:min-w-0 max-md:break-words">{point}</span>
                 </li>
               ))}
             </ul>

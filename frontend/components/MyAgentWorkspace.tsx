@@ -95,11 +95,11 @@ function MyAgentEditor({ owner, embedded, onSaved }: { owner: string } & MyAgent
   const dirty = agent !== null && JSON.stringify(agent) !== JSON.stringify(savedAgent);
 
   return (
-    <div className={`flex ${embedded ? "h-full min-h-0" : "h-screen"} flex-col overflow-hidden`}>
+    <div className={`flex ${embedded ? "h-full min-h-0" : "h-screen max-md:h-dvh"} flex-col overflow-hidden`}>
       <div className="flex min-h-0 flex-1">
         {!embedded && <Sidebar />}
-        <main className="min-w-0 flex-1 overflow-y-auto">
-          <header className="glass sticky top-0 z-[2] border-b px-8 pb-[18px] pt-7" style={{ borderColor: "var(--glass-border)" }}>
+        <main className={`min-w-0 flex-1 overflow-y-auto ${embedded ? "" : "max-md:pb-[calc(56px+env(safe-area-inset-bottom))]"}`}>
+          <header className="glass sticky top-0 z-[2] border-b px-8 pb-[18px] pt-7 max-md:px-4 max-md:pb-4 max-md:pt-4" style={{ borderColor: "var(--glass-border)" }}>
             <div className="flex max-w-[976px] items-end justify-between gap-4">
               <div>
                 {!embedded && <Link href="/" className="mb-2 inline-flex items-center gap-1.5 text-xs text-muted-foreground hover:text-foreground"><ArrowLeft size={13} />回到对话</Link>}
@@ -108,15 +108,15 @@ function MyAgentEditor({ owner, embedded, onSaved }: { owner: string } & MyAgent
               </div>
             </div>
           </header>
-          <div className="mx-auto max-w-[1040px] px-8 py-6">
+          <div className="mx-auto max-w-[1040px] px-8 py-6 max-md:px-4 max-md:py-4">
             {!owner ? <p className="text-sm text-muted-foreground" role="status">请登录后管理自己的分身。<Link href="/login" className="ml-2 text-[color:var(--amber-ink)] underline">前往登录</Link></p> : loading ? <p className="flex items-center gap-2 text-sm text-muted-foreground" role="status"><Loader2 className="animate-spin" size={16} />正在加载你的分身…</p> : !agent ? (
               <div className="glass-card space-y-3 p-6">
                 <p role="alert" className="text-sm text-destructive">{error || "暂时无法加载分身。"}</p>
                 <button type="button" onClick={() => void loadAgent()} className="btn btn-quiet">重新加载</button>
               </div>
             ) : (
-              <div className="grid items-start gap-10 lg:grid-cols-[minmax(0,1fr)_340px]">
-                <form onSubmit={save} className="flex flex-col gap-[22px]">
+              <div className="grid items-start gap-10 lg:grid-cols-[minmax(0,1fr)_340px] max-md:gap-6">
+                <form onSubmit={save} className="flex flex-col gap-[22px] max-md:min-w-0">
                   <fieldset disabled={saving} className="flex flex-col gap-[22px]">
                     <div className="grid grid-cols-[96px_minmax(0,1fr)] gap-4">
                       <label className="text-xs font-medium">头像符号
@@ -149,7 +149,7 @@ function MyAgentEditor({ owner, embedded, onSaved }: { owner: string } & MyAgent
                     {dirty && <span className="text-xs text-muted-foreground">有未保存的修改</span>}
                   </div>
                 </form>
-                <aside className="flex flex-col gap-5">
+                <aside className="flex flex-col gap-5 max-md:min-w-0 max-md:[&_.echo]:max-w-full max-md:[&_.echo]:overflow-hidden max-md:[&_.echo]:break-all">
                   <AgentIdentityCard agent={agent} preview />
                   {savedAgent?.is_public && <Link href={`/agents/${encodeURIComponent(savedAgent.id)}`} className="inline-flex items-center gap-1.5 text-xs text-[color:var(--amber-ink)] hover:underline"><ExternalLink size={13} />查看已保存的公开名片</Link>}
                   <div className="flex gap-2.5 text-xs leading-[1.6] text-muted-foreground"><ShieldCheck size={16} className="mt-0.5 shrink-0" style={{ color: "var(--amber-ink)" }} /><p>名片始终标明“AI 分身”。公开名片不会公开你的用户名、性格设定、私人画像或聊天记录。</p></div>

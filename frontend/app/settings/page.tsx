@@ -91,11 +91,11 @@ function SettingsContent() {
   };
 
   return (
-    <div className="flex h-screen flex-col overflow-hidden">
+    <div className={`flex h-dvh flex-col overflow-hidden ${!embedded ? "mobile:pb-[calc(56px+env(safe-area-inset-bottom))]" : ""}`}>
       <div className="flex flex-1 min-h-0">
         {!embedded && <Sidebar />}
         <div className="flex flex-col flex-1 min-w-0">
-          <header className="glass sticky top-0 z-[2] shrink-0 border-b px-8 pb-[18px] pt-7" style={{ borderColor: "var(--glass-border)" }}>
+          <header className="glass sticky top-0 z-[2] shrink-0 border-b px-8 pb-[18px] pt-7 mobile:px-4 mobile:pt-4" style={{ borderColor: "var(--glass-border)" }}>
             <div className="flex max-w-[976px] items-end justify-between gap-4">
               <div>
                 <h1 className="text-xl font-medium tracking-[-0.01em]">设置</h1>
@@ -104,7 +104,7 @@ function SettingsContent() {
             </div>
           </header>
 
-          <div className="max-w-lg flex-1 space-y-3 overflow-y-auto px-8 py-6">
+          <div className="max-w-lg flex-1 space-y-3 overflow-y-auto px-8 py-6 mobile:min-w-0 mobile:px-4 mobile:py-4">
             {/* 当前身份 */}
             <div className="glass-card space-y-3 p-5">
               <div className="flex items-center gap-2 text-sm font-medium">
@@ -116,7 +116,7 @@ function SettingsContent() {
                   <button
                     key={u}
                     onClick={() => switchUser(u)}
-                    className={`chip ${u === username ? "chip-on" : ""}`}
+                    className={`chip mobile:h-auto mobile:max-w-full mobile:break-all mobile:whitespace-normal ${u === username ? "chip-on" : ""}`}
                   >
                     {u}
                   </button>
@@ -127,7 +127,7 @@ function SettingsContent() {
               </p>
               <button
                 onClick={logout}
-                className="btn w-full"
+                className="btn w-full mobile:h-auto mobile:min-h-10 mobile:break-all mobile:whitespace-normal"
               >
                 <LogOut size={14} />
                 退出登录并撤销现有会话
@@ -142,7 +142,7 @@ function SettingsContent() {
               </div>
               <button
                 onClick={clearHistory}
-                className="btn btn-danger w-full"
+                className="btn btn-danger w-full mobile:h-auto mobile:min-h-10 mobile:break-all mobile:whitespace-normal"
               >
                 <Trash2 size={14} />
                 清空「{username}」的所有聊天记录
@@ -153,7 +153,7 @@ function SettingsContent() {
               <div className="space-y-2 border-t pt-3" style={{ borderColor: "var(--glass-border)" }}>
                 <p className="text-xs text-[color:var(--rec)]">永久删除账号</p>
                 <p className="text-[11px] text-muted-foreground">
-                  输入当前用户名 <span className="readout text-foreground">{username}</span> 确认。此操作不可恢复。
+                  输入当前用户名 <span className="readout text-foreground mobile:break-all">{username}</span> 确认。此操作不可恢复。
                 </p>
                 <input
                   value={deleteConfirmation}
@@ -164,7 +164,7 @@ function SettingsContent() {
                 <button
                   onClick={deleteAccount}
                   disabled={deleteConfirmation !== username || deleting}
-                  className="btn btn-danger w-full"
+                  className="btn btn-danger w-full mobile:h-auto mobile:min-h-10 mobile:whitespace-normal"
                 >
                   <Trash2 size={14} />
                   {deleting ? "正在删除…" : "永久删除账号及全部数据"}

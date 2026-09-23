@@ -139,22 +139,22 @@ export default function GeneratedImage({ imageUrl, width, height, variant = "gen
         {previewError ? <div role="alert" className="flex flex-col items-center gap-2 p-5 text-xs text-muted-foreground">
           <ImageOff size={22} />
           <span>{previewError}</span>
-          <button type="button" onClick={retry} className="btn btn-quiet h-7 px-2.5 text-xs"><RotateCcw size={12} />重新加载</button>
-        </div> : previewSource && <button type="button" disabled={!loaded} aria-label={`放大${imageLabel}`} onClick={openPreview} className={loaded ? "block w-full focus-visible:outline-2 focus-visible:outline-[color:var(--ring)]" : "absolute inset-0 opacity-0"}>
+          <button type="button" onClick={retry} className="btn btn-quiet h-7 px-2.5 text-xs max-md:h-10 max-md:px-1"><RotateCcw size={12} />重新加载</button>
+        </div> : previewSource && <button type="button" disabled={!loaded} aria-label={`放大${imageLabel}`} onClick={openPreview} className={loaded ? "block w-full focus-visible:outline-2 focus-visible:outline-[color:var(--ring)] max-md:flex max-md:min-h-10 max-md:items-center max-md:justify-center" : "absolute inset-0 opacity-0"}>
           {/* Authenticated blob URLs do not use the Next image optimization proxy. */}
           {/* eslint-disable-next-line @next/next/no-img-element */}
           <img key={attempt} src={previewSource} alt={imageLabel} loading={localPreview ? "eager" : "lazy"} onLoad={() => setLoaded(true)} onError={() => setError("图片无法显示，请重新加载。")}
             className={cn("w-full object-contain", isReference ? compact ? "max-h-16" : "max-h-24" : "max-h-[360px]")} />
         </button>}
       </div>
-      <div className="flex items-center gap-1 border-t px-3 py-2 text-[11px]" style={{ borderColor: "var(--glass-border)" }}>
-        <span className="mr-auto shrink-0 text-muted-foreground">{isReference ? referenceLabel : "AI 生成"}</span>
-        <button type="button" aria-label={`放大${imageLabel}`} title="放大" onClick={openPreview} disabled={!loaded || !!previewError} className="btn btn-quiet h-7 px-2.5 text-xs"><Maximize2 size={12} />{!isReference && "放大"}</button>
-        <button type="button" aria-label={`下载${imageLabel}`} title="下载" onClick={download} disabled={!loaded || !!previewError} className="btn btn-quiet h-7 px-2.5 text-xs"><Download size={12} />{!isReference && "下载"}</button>
+      <div className={cn("flex items-center gap-1 border-t px-3 py-2 text-[11px]", isReference && "max-md:flex-wrap max-md:justify-between max-md:gap-0 max-md:px-2 max-md:py-1")} style={{ borderColor: "var(--glass-border)" }}>
+        <span className={cn("mr-auto shrink-0 text-muted-foreground", isReference && "max-md:mb-1 max-md:w-full")}>{isReference ? referenceLabel : "AI 生成"}</span>
+        <button type="button" aria-label={`放大${imageLabel}`} title="放大" onClick={openPreview} disabled={!loaded || !!previewError} className="btn btn-quiet h-7 px-2.5 text-xs max-md:h-10 max-md:min-w-10 max-md:px-0"><Maximize2 size={12} />{!isReference && "放大"}</button>
+        <button type="button" aria-label={`下载${imageLabel}`} title="下载" onClick={download} disabled={!loaded || !!previewError} className="btn btn-quiet h-7 px-2.5 text-xs max-md:h-10 max-md:min-w-10 max-md:px-0"><Download size={12} />{!isReference && "下载"}</button>
       </div>
       {!isReference && onEdit && <button type="button" onClick={selectForEdit} disabled={editDisabled || !loaded || !!previewError}
         title={editDisabled ? editDisabledReason || "请等待当前操作完成，并移除待发送图片后再选择" : "选择这张图作为参考，输入希望修改的地方"}
-        className={cn("btn btn-quiet h-7 w-full rounded-none border-x-0 border-b-0 border-t px-2.5 text-xs", editSelected ? "font-medium text-[color:var(--amber-ink)]" : "disabled:opacity-40")}
+        className={cn("btn btn-quiet h-7 w-full rounded-none border-x-0 border-b-0 border-t px-2.5 text-xs max-md:h-10", editSelected ? "font-medium text-[color:var(--amber-ink)]" : "disabled:opacity-40")}
         style={{ borderColor: "var(--glass-border)" }}>
         <PencilLine size={12} />{editLabel}
       </button>}
@@ -168,9 +168,9 @@ export default function GeneratedImage({ imageUrl, width, height, variant = "gen
             <div className="flex items-center gap-3">
               {!isReference && onEdit && <button type="button" onClick={selectForEdit} disabled={editDisabled || !loaded || !!previewError}
                 title={editDisabledReason}
-                className={cn("btn btn-quiet h-7 px-2.5 text-xs", editSelected && "font-medium text-[color:var(--amber-ink)]")}><PencilLine size={14} />{editLabel}</button>}
-              <button type="button" onClick={download} className="btn btn-quiet h-7 px-2.5 text-xs"><Download size={14} />下载图片</button>
-              <button type="button" autoFocus aria-label="关闭图片预览" onClick={() => setExpanded(false)} className="btn btn-quiet h-7 w-7 px-0"><X size={18} /></button>
+                className={cn("btn btn-quiet h-7 px-2.5 text-xs max-md:h-10", editSelected && "font-medium text-[color:var(--amber-ink)]")}><PencilLine size={14} />{editLabel}</button>}
+              <button type="button" onClick={download} className="btn btn-quiet h-7 px-2.5 text-xs max-md:h-10"><Download size={14} />下载图片</button>
+              <button type="button" autoFocus aria-label="关闭图片预览" onClick={() => setExpanded(false)} className="btn btn-quiet h-7 w-7 px-0 max-md:h-10 max-md:w-10"><X size={18} /></button>
             </div>
           </div>
           {/* eslint-disable-next-line @next/next/no-img-element */}

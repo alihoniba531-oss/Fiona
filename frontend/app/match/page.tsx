@@ -56,7 +56,7 @@ function CloudCard({
   return (
     <div
       className={cn(
-        "cloud-card glass-card w-80 px-5 py-4",
+        "cloud-card glass-card w-80 px-5 py-4 mobile:static! mobile:w-full mobile:min-w-0 mobile:break-words",
         phase === "in" && "cloud-in",
         phase === "stable" && "cloud-stable",
         phase === "out" && "cloud-out",
@@ -99,7 +99,7 @@ function CloudCard({
           {match.tags.length > 0 && (
             <div className="flex flex-wrap gap-1.5 mt-2">
               {match.tags.map((t, i) => (
-                <span key={i} className="chip h-6 px-2 text-[10px]">
+                <span key={i} className="chip h-6 px-2 text-[10px] mobile:h-auto mobile:max-w-full mobile:break-all mobile:whitespace-normal">
                   {t}
                 </span>
               ))}
@@ -116,7 +116,7 @@ function CloudCard({
             onChange={e => setGreetingText(e.target.value.slice(0, 50))}
             placeholder="说点什么吧（可选，50字以内）"
             rows={2}
-            className="w-full resize-none rounded-[6px] border bg-card px-3 py-[9px] text-xs leading-relaxed text-foreground outline-none placeholder:text-muted-foreground focus:border-[color:var(--amber-ink)]"
+            className="w-full resize-none rounded-[6px] border bg-card px-3 py-[9px] text-xs leading-relaxed text-foreground outline-none placeholder:text-muted-foreground focus:border-[color:var(--amber-ink)] mobile:text-base"
           />
           <div className="flex gap-2 mt-2 justify-end">
             <button
@@ -310,22 +310,22 @@ function MatchContent() {
   const embedded = searchParams?.get("embed") === "1";
 
   return (
-    <div className="flex h-screen flex-col overflow-hidden">
+    <div className={cn("flex h-screen flex-col overflow-hidden mobile:h-dvh", !embedded && "mobile:pb-[calc(56px+env(safe-area-inset-bottom))]")}>
       <div className="flex flex-1 min-h-0">
         {!embedded && <Sidebar />}
-        <div className="flex flex-1 min-w-0 relative overflow-hidden">
+        <div className="flex flex-1 min-w-0 relative overflow-hidden mobile:min-h-0 mobile:flex-col">
 
           {/* 3D 地球背景：横跨整个区域，让左栏也能透出宇宙 */}
           <Earth3D />
 
           {/* 左侧：最近 5 个联系人 (玻璃质感，星空直接穿透) */}
-          <div className="glass-card relative z-10 m-4 mr-0 flex w-64 shrink-0 flex-col overflow-hidden">
+          <div className="glass-card relative z-10 m-4 mr-0 flex w-64 shrink-0 flex-col overflow-hidden mobile:m-3 mobile:mb-0 mobile:w-auto">
             <div className="border-b px-4 py-3" style={{ borderColor: "var(--glass-border)" }}>
               <p className="text-xs font-medium text-muted-foreground">最近聊天</p>
             </div>
-            <div className="flex-1 overflow-y-auto py-1">
+            <div className="flex-1 overflow-y-auto py-1 mobile:flex mobile:flex-none mobile:overflow-x-auto mobile:overflow-y-hidden">
               {rooms.length === 0 ? (
-                <div className="flex flex-col items-center justify-center h-40 px-4 text-center gap-2">
+                <div className="flex flex-col items-center justify-center h-40 px-4 text-center gap-2 mobile:h-16 mobile:w-full">
                   <User size={28} className="text-muted-foreground/40" />
                   <p className="text-[11px] text-muted-foreground">接受匹配后会出现在这里</p>
                 </div>
@@ -334,7 +334,7 @@ function MatchContent() {
                   key={room.room_id}
                   onClick={() => openChat(room)}
                   className={cn(
-                    "chip h-auto w-full justify-start px-4 py-3 text-left transition-colors hover:bg-secondary",
+                    "chip h-auto w-full justify-start px-4 py-3 text-left transition-colors hover:bg-secondary mobile:w-auto mobile:min-w-32 mobile:shrink-0",
                     selected?.room_id === room.room_id && "chip-on"
                   )}
                 >
@@ -348,9 +348,9 @@ function MatchContent() {
           </div>
 
           {/* 右侧：聊天区 / 匹配卡飘动区 (Earth3D 在外层公共背景) */}
-          <div className={cn("relative z-10 flex min-w-0 flex-1 flex-col", selected && "glass-card m-4 overflow-hidden")}>
+          <div className={cn("relative z-10 flex min-w-0 flex-1 flex-col mobile:min-h-0", selected && "glass-card m-4 overflow-hidden mobile:m-3")}>
             {!selected ? (
-              <div className="flex-1 relative overflow-hidden">
+              <div className="flex-1 relative overflow-hidden mobile:flex mobile:min-h-0 mobile:flex-col mobile:gap-3 mobile:overflow-y-auto mobile:p-3">
                 {pendingMatches.length === 0 ? null : (
                   pendingMatches.map((m, idx) => {
                     const pos = cardPositions[m.id] ?? { x: 10 + idx * 8, y: 10 + idx * 8 };
@@ -371,27 +371,27 @@ function MatchContent() {
             ) : (
               <>
                 {/* header */}
-                <div className="flex shrink-0 items-center gap-3 border-b px-5 py-3" style={{ borderColor: "var(--glass-border)" }}>
+                <div className="flex shrink-0 items-center gap-3 border-b px-5 py-3 mobile:px-4" style={{ borderColor: "var(--glass-border)" }}>
                   <div className="grid h-7 w-7 place-items-center rounded-[6px] bg-secondary">
                     <span className="text-xs font-medium" style={{ color: "var(--amber-ink)" }}>{selected.peer[0]}</span>
                   </div>
-                  <p className="text-sm font-medium">{selected.peer}</p>
+                  <p className="text-sm font-medium mobile:min-w-0 mobile:truncate">{selected.peer}</p>
                 </div>
 
                 {/* 消息列表 */}
-                <div className="flex-1 overflow-y-auto px-5 py-4 space-y-3">
+                <div className="flex-1 overflow-y-auto px-5 py-4 space-y-3 mobile:min-h-0 mobile:px-4">
                   {messages.map((m, i) => {
                     const isSelf = m.sender === username;
                     return (
                       <div key={i} className={cn("flex", isSelf ? "justify-end" : "justify-start")}>
-                        <div className={cn("flex flex-col gap-1.5", isSelf ? "max-w-[520px] items-end" : "max-w-[640px] items-start")}>
+                        <div className={cn("flex flex-col gap-1.5 mobile:max-w-[80vw] mobile:min-w-0", isSelf ? "max-w-[520px] items-end" : "max-w-[640px] items-start")}>
                           {!isSelf && (
                             <div className="flex items-center gap-2 text-xs text-muted-foreground">
                               <span className="inline-block h-1.5 w-1.5" style={{ background: "var(--amber-ink)" }} />
                               {m.sender}
                             </div>
                           )}
-                          <div className={cn("text-sm", isSelf ? "bubble-user" : "bubble-ai")}>
+                          <div className={cn("text-sm mobile:max-w-full mobile:break-words", isSelf ? "bubble-user" : "bubble-ai")}>
                             {m.content}
                           </div>
                         </div>
@@ -402,20 +402,20 @@ function MatchContent() {
                 </div>
 
                 {/* 输入框 */}
-                <div className="glass shrink-0 border-t px-4 py-3" style={{ borderColor: "var(--glass-border)" }}>
-                  <div className="flex items-end gap-2 rounded-[10px] border px-3.5 py-2.5" style={{ background: "var(--fill)", borderColor: "var(--glass-border)" }}>
+                <div className="glass shrink-0 border-t px-4 py-3 mobile:px-3" style={{ borderColor: "var(--glass-border)" }}>
+                  <div className="flex items-end gap-2 rounded-[10px] border px-3.5 py-2.5 mobile:min-w-0" style={{ background: "var(--fill)", borderColor: "var(--glass-border)" }}>
                     <textarea
                       value={input}
                       onChange={e => setInput(e.target.value)}
                       onKeyDown={handleKey}
                       placeholder="发消息…"
                       rows={1}
-                      className="flex-1 resize-none bg-transparent text-sm outline-none py-1.5 leading-relaxed max-h-[100px] text-foreground placeholder:text-muted-foreground"
+                      className="flex-1 resize-none bg-transparent text-sm outline-none py-1.5 leading-relaxed max-h-[100px] text-foreground placeholder:text-muted-foreground mobile:min-w-0 mobile:text-base"
                     />
                     <button
                       onClick={handleSend}
                       disabled={!input.trim()}
-                      className="btn btn-primary mb-0.5 h-8 w-8 px-0"
+                      className="btn btn-primary mb-0.5 h-8 w-8 px-0 mobile:h-10 mobile:w-10 mobile:shrink-0"
                     >
                       <Send size={14} />
                     </button>

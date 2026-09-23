@@ -12,7 +12,7 @@ import AgentExchangeWorkspace from "@/components/AgentExchangeWorkspace";
 import { useConversations } from "@/lib/useConversations";
 import {
   Send, Mic, Volume2, VolumeX, ChevronDown, ChevronRight,
-  Trash2, ImagePlus, X, Clock, Sparkles, PencilLine, ArrowLeft, ArrowRight,
+  Trash2, ImagePlus, X, Clock, Sparkles, PencilLine, ArrowLeft, ArrowRight, PanelLeft, AudioLines,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { apiFetch, getUsername as readStoredUsername } from "@/lib/auth";
@@ -222,9 +222,32 @@ export default function ChatPage() {
   const [drawer, setDrawer] = useState<DrawerName>(null);
   const [worldTab, setWorldTab] = useState<"plaza" | "match">("plaza");
   const [settingsTab, setSettingsTab] = useState<"settings" | "profile">("settings");
-  const toggleDrawer = (name: Exclude<DrawerName, null>) =>
+  const [conversationPickerOpen, setConversationPickerOpen] = useState(false);
+  const [showHistory, setShowHistory] = useState(false);
+  const [strawberryBalance, setStrawberryBalance] = useState<number | null>(null);
+  const conversationListButtonRef = useRef<HTMLButtonElement>(null);
+  const conversationDialogRef = useRef<HTMLDivElement>(null);
+  const restoreConversationFocusRef = useRef(true);
+  const historyCloseButtonRef = useRef<HTMLButtonElement>(null);
+  const restoreHistoryFocusRef = useRef(false);
+  const closeMobilePanelsFromNavigation = () => {
+    restoreConversationFocusRef.current = false;
+    restoreHistoryFocusRef.current = false;
+    setConversationPickerOpen(false);
+    if (window.matchMedia("(width < 768px)").matches) setShowHistory(false);
+  };
+  const toggleDrawer = (name: Exclude<DrawerName, null>) => {
+    closeMobilePanelsFromNavigation();
     setDrawer((d) => (d === name ? null : name));
-  const closeDrawer = () => setDrawer(null);
+  };
+  const closeDrawer = () => {
+    setDrawer(null);
+    closeMobilePanelsFromNavigation();
+  };
+  const focusVisibleDrawerTrigger = (id: string) => {
+    Array.from(document.querySelectorAll<HTMLButtonElement>(`button[aria-controls="${id}"]`))
+      .find(button => button.getClientRects().length > 0)?.focus();
+  };
   const agentOpen     = drawer === "agent";
   const agentPanelRef = useRef<HTMLElement>(null);
   const exchangeOpen = drawer === "exchange";
@@ -236,7 +259,62 @@ export default function ChatPage() {
   const plazaOpen     = drawer === "plaza";
   const settingsOpen  = drawer === "settings";
   const anyDrawerOpen = drawer !== null;
-  const [showHistory, setShowHistory] = useState(false);
+  useEffect(() => {
+    if (!conversationPickerOpen) return;
+    const dialog = conversationDialogRef.current;
+    const trigger = conversationListButtonRef.current;
+    if (!dialog) return;
+    const mobileBreakpoint = window.matchMedia("(width < 768px)");
+    const onBreakpointChange = () => {
+      if (mobileBreakpoint.matches) return;
+      restoreConversationFocusRef.current = false;
+      setConversationPickerOpen(false);
+    };
+    mobileBreakpoint.addEventListener("change", onBreakpointChange);
+    if (!mobileBreakpoint.matches) {
+      onBreakpointChange();
+      return () => mobileBreakpoint.removeEventListener("change", onBreakpointChange);
+    }
+    (dialog.querySelector<HTMLElement>('button:not([disabled])') ?? dialog).focus();
+    const onKeyDown = (event: KeyboardEvent) => {
+      if (event.key === "Escape") {
+        event.preventDefault();
+        setConversationPickerOpen(false);
+        return;
+      }
+      if (event.key !== "Tab") return;
+      const focusable = Array.from(dialog.querySelectorAll<HTMLElement>('button:not([disabled]), a[href], [tabindex]:not([tabindex="-1"])'));
+      if (!focusable.length) { event.preventDefault(); dialog.focus(); return; }
+      const first = focusable[0];
+      const last = focusable[focusable.length - 1];
+      if (event.shiftKey && document.activeElement === first) { event.preventDefault(); last.focus(); }
+      else if (!event.shiftKey && document.activeElement === last) { event.preventDefault(); first.focus(); }
+    };
+    document.addEventListener("keydown", onKeyDown);
+    return () => {
+      document.removeEventListener("keydown", onKeyDown);
+      mobileBreakpoint.removeEventListener("change", onBreakpointChange);
+      if (restoreConversationFocusRef.current) trigger?.focus();
+    };
+  }, [conversationPickerOpen]);
+  useEffect(() => {
+    if (!showHistory || !restoreHistoryFocusRef.current) return;
+    const trigger = conversationListButtonRef.current;
+    historyCloseButtonRef.current?.focus();
+    const onKeyDown = (event: KeyboardEvent) => {
+      if (event.key !== "Escape" || !window.matchMedia("(width < 768px)").matches) return;
+      event.preventDefault();
+      setShowHistory(false);
+    };
+    document.addEventListener("keydown", onKeyDown);
+    return () => {
+      document.removeEventListener("keydown", onKeyDown);
+      if (restoreHistoryFocusRef.current && window.matchMedia("(width < 768px)").matches) {
+        trigger?.focus();
+      }
+      restoreHistoryFocusRef.current = false;
+    };
+  }, [showHistory]);
   const [username, setUsername] = useState("默认用户");
   const [hydrated, setHydrated] = useState(false);
   const {
@@ -1495,11 +1573,35 @@ export default function ChatPage() {
   };
 
   const signalMode = recording || inlineRecording ? "listening" : isLoading ? "speaking" : "idle";
+  const conversationPickerProps = {
+    conversations,
+    selectedId: currentConversation?.id,
+    loading: conversationLoading,
+    locked: conversationLocked,
+    canCreate: !!agent,
+    error: conversationError,
+    onSelect: (id: string) => { setConversationPickerOpen(false); void handleSelectConversation(id); },
+    onCreate: () => { setConversationPickerOpen(false); void handleNewChat(); },
+    onDelete: (id: string) => { void handleDeleteConversation(id); },
+    onRetry: () => { if (!conversationLocked) { resetConversationPresentation(); void reloadConversations(); } },
+    onHistory: () => {
+      if (conversationPickerOpen && window.matchMedia("(width < 768px)").matches) {
+        restoreConversationFocusRef.current = false;
+        restoreHistoryFocusRef.current = true;
+        setConversationPickerOpen(false);
+        setShowHistory(true);
+        return;
+      }
+      setConversationPickerOpen(false);
+      setShowHistory(value => !value);
+    },
+    onFullHistory: () => { setConversationPickerOpen(false); window.open(`/history?user=${encodeURIComponent(username)}`, "_blank", "noopener,noreferrer"); },
+  };
 
   // ── render ──
 
   return (
-    <div className="flex flex-col h-screen overflow-hidden">
+    <div className="flex flex-col h-dvh overflow-hidden">
       <div className="flex flex-1 min-h-0 relative">
         {/* ── sidebar 56px ── */}
         <Sidebar
@@ -1512,12 +1614,13 @@ export default function ChatPage() {
           plazaActive={plazaOpen}
           onSettingsClick={() => toggleDrawer("settings")}
           settingsActive={settingsOpen}
+          onBalanceChange={setStrawberryBalance}
         />
 
         {/* ── history slide-out drawer ── */}
         {showHistory && (
         <div
-          className="glass absolute left-14 top-0 bottom-0 w-64 z-50 flex flex-col animate-in slide-in-from-left duration-300"
+          className="glass absolute left-14 top-0 bottom-0 w-64 z-50 flex flex-col animate-in slide-in-from-left duration-300 max-md:left-0 max-md:bottom-[calc(56px+env(safe-area-inset-bottom))] max-md:w-[min(85vw,320px)]"
           style={{ borderRight: "1px solid var(--glass-border)", boxShadow: "8px 0 32px rgba(0,0,0,0.28)" }}
         >
           <>
@@ -1530,7 +1633,7 @@ export default function ChatPage() {
                   <button disabled={!currentConversation || conversationLocked || conversationLoading} onClick={() => currentConversation && handleDeleteConversation(currentConversation.id)} className="flex items-center gap-1 text-[11px] text-muted-foreground hover:text-destructive transition-colors disabled:opacity-40" title="删除当前对话">
                     <Trash2 size={11} />删除
                   </button>
-                  <button onClick={() => setShowHistory(false)} className="text-muted-foreground hover:text-foreground">
+                  <button ref={historyCloseButtonRef} onClick={() => setShowHistory(false)} aria-label="关闭当前对话记录" className="text-muted-foreground hover:text-foreground max-md:grid max-md:h-10 max-md:w-10 max-md:place-items-center">
                     <X size={14} />
                   </button>
                 </div>
@@ -1571,55 +1674,70 @@ export default function ChatPage() {
 
         {/* ── subtle backdrop behind drawer (does NOT cover sidebar) */}
         {showHistory && (
-          <div className="absolute left-14 top-0 bottom-0 right-0 z-40 bg-black/20 backdrop-blur-sm transition-opacity" onClick={() => setShowHistory(false)} />
+          <div className="absolute left-14 top-0 bottom-0 right-0 z-40 bg-black/20 backdrop-blur-sm transition-opacity max-md:left-0 max-md:bottom-[calc(56px+env(safe-area-inset-bottom))]" onClick={() => setShowHistory(false)} />
         )}
 
         <div className="flex flex-1 min-w-0 min-h-0">
-          <ConversationPicker conversations={conversations} selectedId={currentConversation?.id}
-            loading={conversationLoading} locked={conversationLocked} canCreate={!!agent}
-            error={conversationError} onSelect={id => void handleSelectConversation(id)}
-            onCreate={() => void handleNewChat()} onDelete={id => void handleDeleteConversation(id)}
-            onRetry={() => { if (!conversationLocked) { resetConversationPresentation(); void reloadConversations(); } }}
-            onHistory={() => setShowHistory(value => !value)}
-            onFullHistory={() => window.open(`/history?user=${encodeURIComponent(username)}`, "_blank", "noopener,noreferrer")} />
+          <ConversationPicker {...conversationPickerProps} className="max-md:hidden" />
+
+          {conversationPickerOpen && <>
+            <div className="fixed inset-x-0 top-0 bottom-[calc(56px+env(safe-area-inset-bottom))] z-[61] bg-black/20 backdrop-blur-sm md:hidden" onClick={() => setConversationPickerOpen(false)} aria-hidden="true" />
+            <div id="conversation-picker-dialog" ref={conversationDialogRef} role="dialog" aria-modal="true" aria-label="对话列表" tabIndex={-1}
+              className="fixed left-0 top-0 bottom-[calc(56px+env(safe-area-inset-bottom))] z-[62] w-[min(85vw,320px)] animate-in slide-in-from-left duration-300 outline-none md:hidden">
+              <ConversationPicker {...conversationPickerProps} />
+            </div>
+          </>}
 
           <div className="relative flex-1 min-w-0" data-chat-panel>
             <header
-              className="glass absolute inset-x-0 top-0 z-[2] grid h-16 grid-cols-[auto_minmax(120px,1fr)_auto] items-center gap-6 border-b px-6"
+              className="glass absolute inset-x-0 top-0 z-[2] grid h-16 grid-cols-[auto_minmax(120px,1fr)_auto] items-center gap-6 border-b px-6 max-md:h-20 max-md:grid-cols-[minmax(0,1fr)_auto] max-md:grid-rows-[56px_24px] max-md:gap-0 max-md:px-3"
               style={{ borderColor: "var(--glass-border)" }}
             >
-              <div className="flex items-center gap-3">
-                <span className="grid h-8 w-8 place-items-center rounded-[6px] bg-secondary text-base" aria-hidden="true">{agent?.avatar_emoji || "✨"}</span>
-                <div>
-                  <div className="text-sm font-medium">{agent?.display_name || "我的分身"}</div>
-                  <div className="flex gap-2 text-xs text-muted-foreground"><span>AI 分身</span><span>仅你可见</span></div>
+              <div className="flex items-center gap-3 max-md:min-w-0 max-md:gap-2">
+                <button ref={conversationListButtonRef} type="button" aria-label="对话列表" aria-expanded={conversationPickerOpen} aria-controls={conversationPickerOpen ? "conversation-picker-dialog" : undefined}
+                  onClick={() => { restoreConversationFocusRef.current = true; setConversationPickerOpen(true); }} className="btn btn-quiet hidden h-10 w-10 shrink-0 px-0 max-md:inline-flex">
+                  <PanelLeft size={20} />
+                </button>
+                <span className="grid h-8 w-8 place-items-center rounded-[6px] bg-secondary text-base max-md:shrink-0" aria-hidden="true">{agent?.avatar_emoji || "✨"}</span>
+                <div className="max-md:min-w-0">
+                  <div className="text-sm font-medium max-md:truncate">{agent?.display_name || "我的分身"}</div>
+                  <div className="flex gap-2 text-xs text-muted-foreground max-md:hidden"><span>AI 分身</span><span>仅你可见</span></div>
                 </div>
               </div>
-              <Signal mode={signalMode} />
-              <div className="flex items-center gap-2">
+              <Signal mode={signalMode} className="max-md:col-span-2 max-md:row-start-2 max-md:h-6" />
+              <div className="flex items-center gap-2 max-md:col-start-2 max-md:row-start-1 max-md:shrink-0 max-md:gap-1">
                 <span className="flex items-center gap-2 text-xs text-muted-foreground">
                   <span className={cn("state-dot", signalMode === "listening" && "state-dot-listening", signalMode === "speaking" && "state-dot-speaking")} />
-                  {signalMode === "listening" ? "正在听" : signalMode === "speaking" ? "正在说" : "待命"}
+                  <span className="max-md:hidden">{signalMode === "listening" ? "正在听" : signalMode === "speaking" ? "正在说" : "待命"}</span>
                 </span>
-                <button type="button" className={cn("chip", voiceOn && "chip-on")} onClick={() => setVoiceOn(!voiceOn)}>
-                  {voiceOn ? <Volume2 size={13} /> : <VolumeX size={13} />}朗读
+                <button type="button" className={cn("chip max-md:h-9 max-md:w-9 max-md:justify-center max-md:px-0", voiceOn && "chip-on")}
+                  onClick={() => setVoiceOn(!voiceOn)} aria-label="朗读">
+                  {voiceOn ? <Volume2 size={13} /> : <VolumeX size={13} />}<span className="max-md:hidden">朗读</span>
                 </button>
                 <button
                   type="button"
-                  className={cn("chip", handsFree && "chip-on")}
+                  className={cn("chip max-md:h-9 max-md:w-9 max-md:justify-center max-md:px-0", handsFree && "chip-on")}
                   onClick={() => {
                     const next = !handsFree;
                     setHandsFree(next);
                     if (next) setVoiceOn(true);
                   }}
                   disabled={conversationLoading || !currentConversation}
+                  aria-label="免提"
                   title="免提：分身说完自动开麦，你停顿 1.5 秒后自动发"
                 >
-                  免提
+                  <AudioLines size={13} className="md:hidden" /><span className="max-md:hidden">免提</span>
                 </button>
+                <span className="hidden shrink-0 items-center gap-0.5 whitespace-nowrap text-xs max-md:inline-flex" title="草莓余额，每条消息消耗 10 颗">
+                  <span aria-hidden="true">🍓</span>
+                  <b className="readout" style={{ color: strawberryBalance !== null && strawberryBalance < 30 ? "var(--rec)" : strawberryBalance !== null && strawberryBalance < 100 ? "var(--amber-ink)" : "var(--foreground)" }}>
+                    {strawberryBalance === null ? "…" : strawberryBalance}
+                  </b>
+                </span>
               </div>
             </header>
-            <div className="absolute inset-0 flex flex-col pt-16" style={{ paddingBottom: composerHeight }}>
+            <div className="absolute inset-0 flex flex-col pt-16 pb-[var(--composer-height)] max-md:pt-20 max-md:pb-[calc(var(--composer-height)+56px+env(safe-area-inset-bottom))]"
+              style={{ "--composer-height": `${composerHeight}px` } as React.CSSProperties}>
               <ChatScrollArea ref={chatScrollRef} resetKey={`${username}:${currentConversation?.id ?? "loading"}`}>
                 <div className="flex w-full max-w-[760px] flex-col gap-[22px]">
                   {hasMoreMessages && <p className="text-xs text-muted-foreground text-center">当前显示最近 500 条消息；更早记录可在历史页查看。</p>}
@@ -1635,20 +1753,20 @@ export default function ChatPage() {
                 </div>
               </ChatScrollArea>
             </div>
-            <footer ref={composerRef} className="glass absolute inset-x-0 bottom-0 z-[2] border-t px-8 pb-4 pt-3" style={{ borderColor: "var(--glass-border)" }}>
+            <footer ref={composerRef} className="glass absolute inset-x-0 bottom-0 z-[2] border-t px-8 pb-4 pt-3 max-md:bottom-[calc(56px+env(safe-area-inset-bottom))] max-md:px-3 max-md:pb-3" style={{ borderColor: "var(--glass-border)" }}>
               <div data-chat-composer className="mx-auto max-w-[760px]">
                 {referenceUploadError && <p role="alert" className="mb-2 text-xs text-destructive">{referenceUploadError}</p>}
                 {hasReferenceImages && <div className="mb-2 rounded-[10px] bg-secondary/50 p-2">
                   <div className="flex max-h-[144px] items-start gap-2 overflow-auto pb-1" aria-label="已选参考图，按编号顺序发送">
                     {selectedReferenceImages.map((image, index) => <div key={`${username}:${currentConversation?.id}:${image.id}`} className="w-[120px] shrink-0">
                       <GeneratedImage imageUrl={referencePreviewUrl(image.source)} variant="reference" referenceIndex={index + 1} compact localPreview={!!image.source.image_base64} />
-                      <div className="mt-1 flex items-center justify-between gap-1 px-1 text-muted-foreground">
+                      <div className="mt-1 flex items-center justify-between gap-1 px-1 text-muted-foreground max-md:gap-0 max-md:px-0">
                         <button type="button" aria-label={`将图${index + 1}前移`} title="前移" disabled={conversationLocked || conversationLoading || isReadingReferences || index === 0}
-                          onClick={() => moveReferenceImage(image.id, -1)} className="rounded p-1 hover:bg-secondary hover:text-foreground disabled:opacity-30"><ArrowLeft size={12} /></button>
+                          onClick={() => moveReferenceImage(image.id, -1)} className="rounded p-1 hover:bg-secondary hover:text-foreground disabled:opacity-30 max-md:grid max-md:h-10 max-md:w-10 max-md:place-items-center max-md:p-0"><ArrowLeft size={12} /></button>
                         <button type="button" aria-label={`将图${index + 1}后移`} title="后移" disabled={conversationLocked || conversationLoading || isReadingReferences || index === selectedReferenceImages.length - 1}
-                          onClick={() => moveReferenceImage(image.id, 1)} className="rounded p-1 hover:bg-secondary hover:text-foreground disabled:opacity-30"><ArrowRight size={12} /></button>
+                          onClick={() => moveReferenceImage(image.id, 1)} className="rounded p-1 hover:bg-secondary hover:text-foreground disabled:opacity-30 max-md:grid max-md:h-10 max-md:w-10 max-md:place-items-center max-md:p-0"><ArrowRight size={12} /></button>
                         <button type="button" aria-label={`移除参考图${index + 1}`} title="移除这张参考图" disabled={conversationLocked || conversationLoading || isReadingReferences}
-                          onClick={() => removeReferenceImage(image.id)} className="ml-auto rounded p-1 hover:bg-destructive/10 hover:text-destructive disabled:opacity-30"><X size={12} /></button>
+                          onClick={() => removeReferenceImage(image.id)} className="ml-auto rounded p-1 hover:bg-destructive/10 hover:text-destructive disabled:opacity-30 max-md:grid max-md:h-10 max-md:w-10 max-md:place-items-center max-md:p-0"><X size={12} /></button>
                       </div>
                     </div>)}
                   </div>
@@ -1663,7 +1781,7 @@ export default function ChatPage() {
                     {pendingImage && (
                       <div className="relative inline-block w-fit pt-1">
                         <img src={pendingImage} alt="待发送" className="rounded-xl max-h-20 max-w-[120px] object-cover border border-border" />
-                        <button type="button" aria-label="移除待发送图片" onClick={() => setPendingImage(null)} className="absolute -top-0.5 -right-0.5 w-4 h-4 rounded-full bg-background border border-border flex items-center justify-center hover:bg-destructive hover:text-white transition-colors">
+                        <button type="button" aria-label="移除待发送图片" onClick={() => setPendingImage(null)} className="absolute -top-0.5 -right-0.5 w-4 h-4 rounded-full bg-background border border-border flex items-center justify-center hover:bg-destructive hover:text-white transition-colors max-md:-right-4 max-md:h-10 max-md:w-10">
                           <X size={10} />
                         </button>
                       </div>
@@ -1673,7 +1791,7 @@ export default function ChatPage() {
                       onCompositionStart={() => { isComposingRef.current = true; }}
                       onCompositionEnd={() => { isComposingRef.current = false; }}
                       placeholder={hasReferenceImages ? "描述修改要求，可用图1、图2、图3指定各图用途…" : imageMode ? "描述想生成的画面、风格和细节…" : pendingImage ? "说点什么…（可选）" : "说点什么…"} rows={1}
-                      className="min-w-0 flex-1 resize-none bg-transparent text-sm text-foreground placeholder:text-muted-foreground outline-none py-1 leading-relaxed max-h-[80px]"
+                      className="min-w-0 flex-1 resize-none bg-transparent text-sm text-foreground placeholder:text-muted-foreground outline-none py-1 leading-relaxed max-h-[80px] max-md:text-base"
                     />
                   </div>
                   <div className="flex flex-wrap items-center justify-between gap-2">
@@ -1682,7 +1800,7 @@ export default function ChatPage() {
                       <button type="button" onClick={() => referenceFileInputRef.current?.click()}
                         disabled={conversationLocked || conversationLoading || !currentConversation || !!pendingImage || isReadingImage || isReadingReferences || selectedReferenceImages.length >= 3}
                         title={pendingImage ? "请先移除普通待发送图片" : selectedReferenceImages.length >= 3 ? "最多3张参考图，请先移除一张" : "选择 PNG、JPEG 或 WebP；每张不超过5MB，发送修改要求时才上传"}
-                        className={cn("chip", hasReferenceImages && "chip-on")}>
+                        className={cn("chip max-md:h-10", hasReferenceImages && "chip-on")}>
                         <ImagePlus size={12} />上传参考图
                       </button>
                       {isReadingReferences && <span role="status" className="text-muted-foreground">正在读取并检查参考图…</span>}
@@ -1690,20 +1808,20 @@ export default function ChatPage() {
                         <span className="chip chip-on"><PencilLine size={12} />修改图片</span>
                         <span role="status" className="text-[color:var(--amber-ink)]">参考图 {selectedReferenceImagePaths.length}/3</span>
                         <span className="text-muted-foreground">尺寸跟随图1</span>
-                        <button type="button" disabled={conversationLocked || conversationLoading || isReadingReferences} onClick={clearReferenceImages} className="ml-auto flex items-center gap-1 text-muted-foreground hover:text-foreground disabled:opacity-40"><X size={11} />全部取消</button>
+                        <button type="button" disabled={conversationLocked || conversationLoading || isReadingReferences} onClick={clearReferenceImages} className="ml-auto flex items-center gap-1 text-muted-foreground hover:text-foreground disabled:opacity-40 max-md:min-h-10"><X size={11} />全部取消</button>
                       </> : imageMode ? <>
                         <span className="chip chip-on"><Sparkles size={12} />生成图片</span>
                         <div role="group" aria-label="图片比例" className="flex items-center gap-1">
                           {(["1:1", "16:9", "9:16"] as const).map(ratio => <button key={ratio} type="button" aria-pressed={aspectRatio === ratio} disabled={isLoading}
-                            onClick={() => setAspectRatio(ratio)} className={cn("chip h-6 px-2", aspectRatio === ratio && "chip-on")}>
+                            onClick={() => setAspectRatio(ratio)} className={cn("chip h-6 px-2 max-md:h-10", aspectRatio === ratio && "chip-on")}>
                             {ratio}
                           </button>)}
                         </div>
-                        <button type="button" disabled={isLoading} onClick={() => setImageMode(false)} className="ml-auto flex items-center gap-1 text-muted-foreground hover:text-foreground disabled:opacity-40"><X size={11} />返回聊天</button>
+                        <button type="button" disabled={isLoading} onClick={() => setImageMode(false)} className="ml-auto flex items-center gap-1 text-muted-foreground hover:text-foreground disabled:opacity-40 max-md:min-h-10"><X size={11} />返回聊天</button>
                       </> : <>
                         <button type="button" onClick={() => setImageMode(true)} disabled={!!pendingImage || isReadingImage || isReadingReferences || conversationLocked || conversationLoading || !currentConversation}
                           title={pendingImage || isReadingImage ? "请先移除待发送图片，再切换到生成图片" : "用文字描述生成一张图片"}
-                          className="chip">
+                          className="chip max-md:h-10">
                           <Sparkles size={12} />生成图片
                         </button>
                         {pendingImage && <span className="text-muted-foreground">先移除待发送图片，即可切换生成模式</span>}
@@ -1713,12 +1831,13 @@ export default function ChatPage() {
                     <div className="flex items-center gap-0.5 ml-auto shrink-0">
                     <input ref={fileInputRef} type="file" accept="image/*" onChange={handlePickImage} className="hidden" />
                     <button type="button" onClick={() => fileInputRef.current?.click()} disabled={imageMode || hasReferenceImages || isReadingImage || isReadingReferences || isLoading || conversationLoading || !currentConversation}
-                      className="btn btn-quiet h-8 w-8 px-0" title={hasReferenceImages ? "取消参考后可发送看图聊天附件" : imageMode ? "返回聊天后可发送看图聊天附件" : "发送看图聊天附件"}>
+                      className="btn btn-quiet h-8 w-8 px-0 max-md:h-10 max-md:w-10" title={hasReferenceImages ? "取消参考后可发送看图聊天附件" : imageMode ? "返回聊天后可发送看图聊天附件" : "发送看图聊天附件"}>
                       <ImagePlus size={14} />
                     </button>
                     <button type="button" onClick={toggleInlineVoice}
                       disabled={conversationLoading || !currentConversation || isLoading}
-                      className={cn("btn btn-quiet h-8 w-8 px-0", inlineRecording && "text-[color:var(--rec)] bg-[color:var(--rec-soft)]")}
+                      className={cn("btn btn-quiet h-8 w-8 px-0 max-md:h-10 max-md:w-10", inlineRecording && "text-[color:var(--rec)] bg-[color:var(--rec-soft)]")}
+                      aria-label="语音转文字"
                       title="语音转文字">
                       <Mic size={14} />
                     </button>
@@ -1726,20 +1845,21 @@ export default function ChatPage() {
                       type="button"
                       onPointerDown={(e) => { e.preventDefault(); (e.target as HTMLElement).setPointerCapture(e.pointerId); setRecording(true); }}
                       onPointerUp={(e) => { e.preventDefault(); (e.target as HTMLElement).releasePointerCapture(e.pointerId); asrSessionRef.current += 1; setRecording(false); }}
-                      className={cn("btn btn-quiet h-8 px-2.5 text-xs", recording && "text-[color:var(--rec)] bg-[color:var(--rec-soft)]")}
+                      className={cn("btn btn-quiet h-8 px-2.5 text-xs max-md:h-10 max-md:w-10 max-md:px-0", recording && "text-[color:var(--rec)] bg-[color:var(--rec-soft)]")}
+                      aria-label="按住说话"
                       disabled={conversationLoading || !currentConversation || isLoading}
                     >
-                      <Mic size={14} />按住说话
+                      <Mic size={14} /><span className="max-md:hidden">按住说话</span>
                     </button>
                     <button onClick={() => handleSend()} aria-label={hasReferenceImages ? "修改图片" : imageMode ? "生成图片" : "发送消息"} disabled={isLoading || isReadingImage || isReadingReferences || conversationLoading || !currentConversation || (!input.trim() && !pendingImage)}
-                      className="grid h-8 w-8 place-items-center rounded-[6px] bg-primary text-primary-foreground disabled:bg-secondary disabled:text-[color:var(--dim)]"
+                      className="grid h-8 w-8 place-items-center rounded-[6px] bg-primary text-primary-foreground disabled:bg-secondary disabled:text-[color:var(--dim)] max-md:h-10 max-md:w-10"
                     ><Send size={14} /></button>
                     </div>
                   </div>
                 </div>
                 {voiceText && <p className="mt-2 text-xs text-muted-foreground">{voiceText}</p>}
                 <div className="mt-2 flex items-center justify-between text-xs text-muted-foreground">
-                  <span>Enter 发送，Shift + Enter 换行</span>
+                  <span className="max-md:hidden">Enter 发送，Shift + Enter 换行</span>
                   <span>每条消息消耗 <b className="readout">10</b> 颗草莓</span>
                 </div>
               </div>
@@ -1759,10 +1879,10 @@ export default function ChatPage() {
         onKeyDown={(event) => {
           if (event.key === "Escape") {
             closeDrawer();
-            document.querySelector<HTMLButtonElement>('button[aria-controls="agent-drawer"]')?.focus();
+            focusVisibleDrawerTrigger("agent-drawer");
           }
         }}
-        className="glass fixed inset-y-0 right-0 z-[55] flex flex-col outline-none"
+        className={cn("glass fixed inset-y-0 right-0 z-[55] flex flex-col outline-none max-md:left-0 max-md:bottom-[calc(56px+env(safe-area-inset-bottom))]! max-md:w-screen!", !agentOpen && "max-md:hidden")}
         style={{
           width: "min(960px, calc(100vw - 56px))",
           borderLeft: "1px solid var(--glass-border)",
@@ -1773,7 +1893,7 @@ export default function ChatPage() {
       >
         <div className="flex shrink-0 items-center justify-between border-b px-4 py-2" style={{ borderColor: "var(--glass-border)" }}>
           <span className="text-xs font-medium text-muted-foreground">分身</span>
-          <button type="button" onClick={closeDrawer} aria-label="收起分身面板" className="flex h-6 w-6 items-center justify-center rounded text-muted-foreground hover:bg-secondary hover:text-foreground">
+          <button type="button" onClick={closeDrawer} aria-label="收起分身面板" className="flex h-6 w-6 items-center justify-center rounded text-muted-foreground hover:bg-secondary hover:text-foreground max-md:h-10 max-md:w-10">
             <X size={14} />
           </button>
         </div>
@@ -1790,10 +1910,10 @@ export default function ChatPage() {
         onKeyDown={(event) => {
           if (event.key === "Escape") {
             closeDrawer();
-            document.querySelector<HTMLButtonElement>('button[aria-controls="exchange-drawer"]')?.focus();
+            focusVisibleDrawerTrigger("exchange-drawer");
           }
         }}
-        className="glass fixed inset-y-0 right-0 z-[55] flex flex-col outline-none"
+        className={cn("glass fixed inset-y-0 right-0 z-[55] flex flex-col outline-none max-md:left-0 max-md:bottom-[calc(56px+env(safe-area-inset-bottom))]! max-md:w-screen!", !exchangeOpen && "max-md:hidden")}
         style={{
           width: "min(960px, calc(100vw - 56px))",
           borderLeft: "1px solid var(--glass-border)",
@@ -1804,14 +1924,15 @@ export default function ChatPage() {
       >
         <div className="flex shrink-0 items-center justify-between border-b px-4 py-2" style={{ borderColor: "var(--glass-border)" }}>
           <span className="text-xs font-medium text-muted-foreground">分身广场</span>
-          <button type="button" onClick={closeDrawer} aria-label="收起分身广场" className="flex h-6 w-6 items-center justify-center rounded text-muted-foreground hover:bg-secondary hover:text-foreground"><X size={14} /></button>
+          <button type="button" onClick={closeDrawer} aria-label="收起分身广场" className="flex h-6 w-6 items-center justify-center rounded text-muted-foreground hover:bg-secondary hover:text-foreground max-md:h-10 max-md:w-10"><X size={14} /></button>
         </div>
         {exchangeOpen && <AgentExchangeWorkspace embedded onOpenMyAgent={() => setDrawer("agent")} />}
       </section>
 
       {/* 世界抽屉 — 从右侧滑出，覆盖 2/3 聊天区；不卸载 iframe，重开秒回原状态 */}
       <div
-        className="glass fixed z-[55] flex flex-col"
+        id="plaza-drawer"
+        className={cn("glass fixed z-[55] flex flex-col max-md:left-0 max-md:bottom-[calc(56px+env(safe-area-inset-bottom))]! max-md:w-screen!", !plazaOpen && "max-md:hidden")}
         style={{
           top: 0,
           bottom: 0,
@@ -1831,7 +1952,7 @@ export default function ChatPage() {
             <button type="button" onClick={() => setWorldTab("match")} className={cn("chip", worldTab === "match" && "chip-on")}>匹配</button>
             <button
               onClick={closeDrawer}
-              className="w-6 h-6 flex items-center justify-center rounded text-muted-foreground hover:bg-secondary hover:text-foreground"
+              className="w-6 h-6 flex items-center justify-center rounded text-muted-foreground hover:bg-secondary hover:text-foreground max-md:h-10 max-md:w-10"
               title="收起"
             >
               <X size={14} />
@@ -1843,7 +1964,8 @@ export default function ChatPage() {
 
       {/* 设置抽屉 — 「我的」作为账户标签并入设置。 */}
       <div
-        className="glass fixed z-[55] flex flex-col"
+        id="settings-drawer"
+        className={cn("glass fixed z-[55] flex flex-col max-md:left-0 max-md:bottom-[calc(56px+env(safe-area-inset-bottom))]! max-md:w-screen!", !settingsOpen && "max-md:hidden")}
         style={{
           top: 0,
           bottom: 0,
@@ -1863,7 +1985,7 @@ export default function ChatPage() {
             <button type="button" onClick={() => setSettingsTab("profile")} className={cn("chip", settingsTab === "profile" && "chip-on")}>账户</button>
             <button
               onClick={closeDrawer}
-              className="w-6 h-6 flex items-center justify-center rounded text-muted-foreground hover:bg-secondary hover:text-foreground"
+              className="w-6 h-6 flex items-center justify-center rounded text-muted-foreground hover:bg-secondary hover:text-foreground max-md:h-10 max-md:w-10"
               title="收起"
             >
               <X size={14} />
@@ -1877,7 +1999,7 @@ export default function ChatPage() {
           z-50 < 抽屉 z-55；left-14 避开 sidebar 让侧栏始终可点切换抽屉 */}
       {anyDrawerOpen && (
         <div
-          className="fixed left-14 top-0 right-0 bottom-0 z-50"
+          className="fixed left-14 top-0 right-0 bottom-0 z-50 max-md:left-0 max-md:bottom-[calc(56px+env(safe-area-inset-bottom))]"
           onClick={closeDrawer}
           aria-hidden
         />

@@ -1,7 +1,8 @@
 "use client";
 
-import { Clock, Plus, Trash2 } from "lucide-react";
+import { Clock, Moon, Plus, Sun, Trash2 } from "lucide-react";
 import { type Conversation } from "@/lib/agents";
+import { useTheme } from "@/lib/useTheme";
 
 function formatRelative(iso: string) {
   const date = new Date(/[zZ]$|[+-]\d{2}:?\d{2}$/.test(iso) ? iso : iso.replace(" ", "T") + "Z");
@@ -19,7 +20,7 @@ function formatRelative(iso: string) {
 }
 
 export default function ConversationPicker({
-  conversations, selectedId, loading, locked, canCreate, error, onSelect, onCreate, onDelete, onRetry, onHistory, onFullHistory,
+  conversations, selectedId, loading, locked, canCreate, error, onSelect, onCreate, onDelete, onRetry, onHistory, onFullHistory, className = "",
 }: {
   conversations: Conversation[];
   selectedId?: string;
@@ -33,11 +34,13 @@ export default function ConversationPicker({
   onRetry: () => void;
   onHistory?: () => void;
   onFullHistory?: () => void;
+  className?: string;
 }) {
   const disabled = loading || locked;
+  const { dark, toggleTheme } = useTheme();
   return (
     <aside
-      className="glass flex h-full w-[260px] shrink-0 flex-col border-r"
+      className={`glass flex h-full w-[260px] shrink-0 flex-col border-r max-md:w-full ${className}`}
       style={{ borderColor: "var(--glass-border)" }}
       aria-label="对话列表"
     >
@@ -45,11 +48,11 @@ export default function ConversationPicker({
         <h2 className="text-sm font-medium">对话</h2>
         <div className="flex items-center gap-1">
           {onHistory && (
-            <button type="button" className="btn btn-quiet w-[34px] px-0" title="当前对话记录" aria-label="当前对话记录" onClick={onHistory}>
+            <button type="button" className="btn btn-quiet w-[34px] px-0 max-md:h-10 max-md:w-10" title="当前对话记录" aria-label="当前对话记录" onClick={onHistory}>
               <Clock size={16} />
             </button>
           )}
-          <button type="button" className="btn btn-quiet w-[34px] px-0" title="新对话" aria-label="新对话" onClick={onCreate} disabled={disabled || !canCreate}>
+          <button type="button" className="btn btn-quiet w-[34px] px-0 max-md:h-10 max-md:w-10" title="新对话" aria-label="新对话" onClick={onCreate} disabled={disabled || !canCreate}>
             <Plus size={16} />
           </button>
         </div>
@@ -73,7 +76,7 @@ export default function ConversationPicker({
               type="button"
               aria-label="删除对话"
               title="删除对话"
-              className="text-muted-foreground opacity-0 group-hover:opacity-100 hover:text-[color:var(--rec)] focus-visible:opacity-100 disabled:opacity-40"
+              className="text-muted-foreground opacity-0 group-hover:opacity-100 hover:text-[color:var(--rec)] focus-visible:opacity-100 disabled:opacity-40 max-md:grid max-md:h-10 max-md:w-10 max-md:place-items-center max-md:opacity-100"
               onClick={() => onDelete(conversation.id)}
               disabled={disabled}
             >
@@ -93,6 +96,12 @@ export default function ConversationPicker({
       <div className="flex items-center justify-between border-t px-5 py-3 text-xs text-muted-foreground" style={{ borderColor: "var(--glass-border)" }}>
         <span>对话仅你可见</span>
         <button type="button" onClick={onFullHistory} className="hover:text-foreground">完整历史</button>
+      </div>
+      <div className="flex shrink-0 items-center justify-end border-t px-5 py-2 md:hidden" style={{ borderColor: "var(--glass-border)" }}>
+        <button type="button" onClick={toggleTheme} className="btn btn-quiet h-10 px-2.5" title={dark ? "切换浅色" : "切换深色"} aria-label={dark ? "切换浅色" : "切换深色"}>
+          {dark ? <Sun size={18} /> : <Moon size={18} />}
+          <span>主题</span>
+        </button>
       </div>
     </aside>
   );

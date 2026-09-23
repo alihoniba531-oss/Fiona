@@ -134,8 +134,8 @@ export default function LoginPage() {
   }
 
   return (
-    <div className="flex min-h-screen items-center justify-center px-6">
-      <div className="flex w-[360px] flex-col gap-8">
+    <div className="flex min-h-screen items-center justify-center px-6 max-md:min-h-dvh max-md:px-4 max-md:py-6 max-md:pb-[calc(24px+env(safe-area-inset-bottom))]">
+      <div className="flex w-[360px] flex-col gap-8 max-md:w-full max-md:min-w-0 max-md:gap-6">
         <div className="flex flex-col gap-3">
           <svg className="text-[color:var(--amber-ink)]" width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" aria-hidden="true">
             <circle cx="9" cy="12" r="5.5" />

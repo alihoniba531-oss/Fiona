@@ -111,11 +111,11 @@ function PostCard({ post }: { post: Post }) {
           <p className="text-[12px] text-foreground/85 leading-relaxed mb-1.5 line-clamp-2">{post.caption}</p>
         )}
         <div className="flex items-center justify-between">
-          <div className="flex items-center gap-1.5">
+          <div className="flex items-center gap-1.5 mobile:min-w-0">
             <div className="grid h-6 w-6 place-items-center rounded-[6px] bg-secondary">
               <span className="text-[9px] font-medium text-muted-foreground">{(post.anon_id || "?")[0].toUpperCase()}</span>
             </div>
-            <span className="readout text-[10px]">{post.anon_id}</span>
+            <span className="readout text-[10px] mobile:truncate">{post.anon_id}</span>
           </div>
           <div className="flex items-center gap-3">
             <span className="readout text-[10px]">{timeAgo(post.created_at)}</span>
@@ -156,7 +156,7 @@ function CategoryCard({
     : feed.partial ? "部分来源暂不可用" : null;
   return (
     <div
-      className="glass-card w-[220px] px-3 py-2 pointer-events-auto"
+      className="glass-card w-[220px] px-3 py-2 pointer-events-auto mobile:w-full"
       style={style}
     >
       <div className="flex items-center gap-1.5 mb-1.5">
@@ -359,16 +359,17 @@ function PlazaContent() {
   const embedded = searchParams?.get("embed") === "1";
 
   return (
-    <div className="flex h-screen flex-col overflow-hidden">
+    <div className={cn("flex h-screen flex-col overflow-hidden mobile:h-dvh", !embedded && "mobile:pb-[calc(56px+env(safe-area-inset-bottom))]")}>
       <div className="flex flex-1 min-h-0 relative">
         {!embedded && <Sidebar />}
 
-        <main className="flex flex-col flex-1 min-w-0 relative overflow-hidden">
+        <main className={cn("flex flex-col flex-1 min-w-0 relative overflow-hidden mobile:overflow-y-auto", !embedded && "mobile:pb-20")}>
           {/* 太阳系 3D 全息背景 */}
           <SolarSystem3D />
 
           {/* 左栏：TODAY + 娱乐 + 经济 + 生活 */}
           <div
+            className="mobile:static! mobile:mx-4 mobile:mt-4 mobile:shrink-0 mobile:gap-3 mobile:max-h-none! mobile:overflow-visible!"
             style={{
               position: "absolute", top: 16, left: 16, zIndex: 20,
               display: "flex", flexDirection: "column", gap: 10,
@@ -383,6 +384,7 @@ function PlazaContent() {
 
           {/* 右栏：TRENDING + 科技 + 文化 */}
           <div
+            className="mobile:static! mobile:mx-4 mobile:mt-3 mobile:shrink-0 mobile:gap-3 mobile:max-h-none! mobile:overflow-visible!"
             style={{
               position: "absolute", top: 16, right: 16, zIndex: 20,
               display: "flex", flexDirection: "column", gap: 10,
@@ -395,8 +397,8 @@ function PlazaContent() {
           </div>
 
           {/* 纯网格内容流 — 居中容器 + 半透明，让背景透出 */}
-          <div className="relative z-10 flex-1 overflow-y-auto px-4 py-6">
-            <div className="grid grid-cols-2 sm:grid-cols-3 gap-3 max-w-2xl mx-auto">
+          <div className="relative z-10 flex-1 overflow-y-auto px-4 py-6 mobile:flex-none mobile:overflow-visible">
+            <div className="grid grid-cols-2 sm:grid-cols-3 gap-3 max-w-2xl mx-auto mobile:grid-cols-1!">
               {posts.map((p) => <PostCard key={p.id} post={p} />)}
             </div>
           </div>
@@ -404,7 +406,10 @@ function PlazaContent() {
           {/* 热点话题展开层 — 居中抽屉式拉出，左右避开两侧分类卡 */}
           {expanded && (
             <div
-              className="absolute z-30 flex items-stretch justify-center pointer-events-none"
+              className={cn(
+                "absolute z-30 flex items-stretch justify-center pointer-events-none mobile:fixed! mobile:top-4! mobile:left-4! mobile:right-4!",
+                embedded ? "mobile:bottom-4!" : "mobile:bottom-[calc(56px+env(safe-area-inset-bottom)+16px)]!",
+              )}
               style={{ top: 16, bottom: 56, left: 260, right: 260 }}
             >
             <div
@@ -430,7 +435,7 @@ function PlazaContent() {
               </div>
 
               {/* 内容区 */}
-              <div className="flex-1 overflow-y-auto px-6 py-5 text-sm leading-relaxed space-y-4">
+              <div className="flex-1 overflow-y-auto px-6 py-5 text-sm leading-relaxed space-y-4 mobile:px-4">
                 {expanding && (
                   <div className="flex items-center gap-2 text-xs text-muted-foreground">
                     <span className="state-dot state-dot-speaking" />
@@ -509,7 +514,7 @@ function PlazaContent() {
 
           {/* 底部兴趣横栏 */}
           <div
-            className="glass pointer-events-none z-20 flex items-center gap-3 border-t px-4"
+            className="glass pointer-events-none z-20 flex items-center gap-3 border-t px-4 mobile:static! mobile:h-auto! mobile:min-w-0 mobile:flex-col mobile:items-stretch mobile:gap-2 mobile:py-2"
             style={{
               position: "absolute", bottom: 0, left: 0, right: 0,
               height: 44,
@@ -517,15 +522,15 @@ function PlazaContent() {
             }}
           >
             {/* 左侧：我的兴趣（固定） */}
-            <div className="flex items-center gap-2 shrink-0 pointer-events-auto">
+            <div className="flex items-center gap-2 shrink-0 pointer-events-auto mobile:min-w-0 mobile:w-full">
               <Sparkles size={12} style={{ color: "var(--amber-ink)" }} />
               <span className="text-xs font-medium text-muted-foreground">我的兴趣</span>
               {interests.length > 0 ? (
-                <div className="flex gap-1">
+                <div className="flex gap-1 mobile:min-w-0 mobile:overflow-x-auto">
                   {interests.map((tag) => (
                     <span
                       key={tag}
-                      className="chip h-6 px-2 text-[10px]"
+                      className="chip h-6 px-2 text-[10px] mobile:shrink-0 mobile:whitespace-nowrap"
                     >
                       {tag}
                     </span>
@@ -537,10 +542,10 @@ function PlazaContent() {
             </div>
 
             {/* 分隔线 */}
-            <div className="h-5 w-px shrink-0" style={{ background: "var(--glass-border)" }} />
+            <div className="h-5 w-px shrink-0 mobile:hidden" style={{ background: "var(--glass-border)" }} />
 
             {/* 右侧：其他用户兴趣滚动 */}
-            <div className="flex-1 overflow-hidden relative">
+            <div className="flex-1 overflow-hidden relative mobile:min-h-4">
               {communityItems.length > 0 && (
                 <div className="ticker-track gap-5 items-center">
                   {[...communityItems, ...communityItems].map((item, i) => (
@@ -560,7 +565,10 @@ function PlazaContent() {
           {/* 右下角 FAB 发布（上移避开底栏）*/}
           <button
             onClick={() => fileRef.current?.click()}
-            className="btn btn-primary pointer-events-auto z-30 h-14 w-14 rounded-full p-0"
+            className={cn(
+              "btn btn-primary pointer-events-auto z-30 h-14 w-14 rounded-full p-0 mobile:fixed! mobile:right-4!",
+              embedded ? "mobile:bottom-16!" : "mobile:bottom-[calc(56px+env(safe-area-inset-bottom)+64px)]!",
+            )}
             style={{
               position: "absolute", bottom: 56, right: 24,
             }}
@@ -574,8 +582,14 @@ function PlazaContent() {
       <input ref={fileRef} type="file" accept="image/*,video/*" className="hidden" onChange={handleFileChange} />
 
       {showModal && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/70 p-4">
-          <div className="glass w-full max-w-sm overflow-hidden rounded-[10px] border" style={{ borderColor: "var(--glass-border)" }}>
+        <div className={cn("fixed inset-0 z-50 flex items-center justify-center bg-black/70 p-4", !embedded && "mobile:bottom-[calc(56px+env(safe-area-inset-bottom))]!")}>
+          <div
+            className={cn(
+              "glass w-full max-w-sm overflow-hidden rounded-[10px] border mobile:overflow-y-auto",
+              embedded ? "mobile:max-h-[calc(100dvh-2rem)]" : "mobile:max-h-[calc(100dvh-2rem-56px-env(safe-area-inset-bottom))]",
+            )}
+            style={{ borderColor: "var(--glass-border)" }}
+          >
             <div className="flex items-center justify-between border-b px-4 py-3" style={{ borderColor: "var(--glass-border)" }}>
               <div className="flex items-center gap-2 text-sm font-medium">
                 <Plus size={14} style={{ color: "var(--amber-ink)" }} />
@@ -600,7 +614,7 @@ function PlazaContent() {
                 onChange={(e) => setCaption(e.target.value.slice(0, 100))}
                 placeholder="说点什么…（可选，100字以内）"
                 rows={2}
-                className="w-full resize-none rounded-[6px] border bg-card px-3 py-[9px] text-[13px] leading-relaxed text-foreground outline-none placeholder:text-muted-foreground focus:border-[color:var(--amber-ink)]"
+                className="w-full resize-none rounded-[6px] border bg-card px-3 py-[9px] text-[13px] leading-relaxed text-foreground outline-none placeholder:text-muted-foreground focus:border-[color:var(--amber-ink)] mobile:text-base"
               />
 
               <div>

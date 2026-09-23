@@ -133,7 +133,7 @@ export default forwardRef<ChatScrollHandle, Props>(function ChatScrollArea({ chi
           if (["ArrowUp", "PageUp", "Home"].includes(event.key) || (event.key === " " && event.shiftKey && target === event.currentTarget)) noteScrollIntent(-1);
           if (["ArrowDown", "PageDown", "End"].includes(event.key) || (event.key === " " && !event.shiftKey && target === event.currentTarget)) noteScrollIntent(1);
         }}>
-        <div ref={contentRef} className="space-y-4 px-6 py-4" data-chat-scroll-content>{children}</div>
+        <div ref={contentRef} className="space-y-4 px-6 py-4 max-md:px-4" data-chat-scroll-content>{children}</div>
       </div>
       {showLatest && <button type="button" onClick={scrollToLatest}
         className="absolute bottom-3 left-1/2 z-20 flex -translate-x-1/2 items-center gap-1.5 rounded-full border border-border bg-background/95 px-3 py-1.5 text-xs text-muted-foreground shadow-sm hover:text-foreground focus-visible:outline-2 focus-visible:outline-primary">
