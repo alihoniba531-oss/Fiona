@@ -4,6 +4,8 @@ src-tauri/gen/
 *.log
 # 含云端 SSH 信息，不入库
 fiona.config.json
-# dist/index.html 占位是必需的（prod build 用），不忽略；忽略其他可能的临时文件
+# 启动页必需的 index.html、main.js、style.css 必须入库；忽略 dist/ 下其他临时文件
 dist/*
 !dist/index.html
+!dist/main.js
+!dist/style.css

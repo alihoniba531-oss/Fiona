@@ -2,7 +2,7 @@
 
 Tauri 2 桌面壳 + 可选 SSH 隧道。双击安装后的应用即可加载 Web 客户端：开发者模式连接云端开发服务，用户模式直接打开公网 `https://madchloechat.online`。
 
-桌面包不内置完整的 Next.js 应用；`dist/index.html` 是启动/跳转载体。整个产品的架构和发布阻断项分别见 [架构文档](../docs/ARCHITECTURE.md) 和 [PLAN.md](../PLAN.md)。
+桌面包不内置完整的 Next.js 应用；`dist/index.html`、`dist/main.js` 和 `dist/style.css` 一起组成启动/跳转页，三个文件都必须入库。整个产品的架构和发布阻断项分别见 [架构文档](../docs/ARCHITECTURE.md) 和 [PLAN.md](../PLAN.md)。
 
 ## 两条获取路径，选一条
 
@@ -87,6 +87,8 @@ type $env:USERPROFILE\.ssh\id_ed25519.pub | ssh root@<你的云IP> 'cat >> ~/.ss
 - `src-tauri\target\release\bundle\nsis\`
 
 GitHub Actions 的 `Build Windows Desktop` 工作流只在 `desktop/**` 或工作流文件变化时自动触发，也可以手动运行。它使用 Node 20、Rust stable 和 `npm ci`，先执行 Rust 单元测试再运行 `npm run build`，最后上传 MSI 与 NSIS artifact。
+
+启动页的 `dist/index.html`、`dist/main.js` 和 `dist/style.css` 是手写静态文件，必须随代码入库，不能依赖本机文件生成。质量检查从仓库根目录运行 `node desktop/scripts/check-dist-assets.mjs`；Windows 工作流在 `desktop/` 下运行 `node scripts/check-dist-assets.mjs`。两者都会检查启动页引用的本地文件是否存在、是否被 Git 忽略，以及页面是否包含会被 CSP 拦截的内联脚本或样式。
 
 当前目录已提交独立 `package-lock.json`；Rust 侧仍没有提交 `Cargo.lock`，因此构建还不是完全可复现的。公开发布前应补齐 Cargo 锁文件和安装包签名流程。
 

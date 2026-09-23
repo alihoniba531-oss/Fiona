@@ -27,6 +27,9 @@ jobs:
         with:
           node-version: 20
 
+      - name: Check desktop startup assets
+        run: node scripts/check-dist-assets.mjs
+
       - name: Setup Rust stable
         uses: dtolnay/rust-toolchain@stable
 
