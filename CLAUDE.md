@@ -50,8 +50,9 @@ npm run build
 
 - `backend/.env.example` 是后端配置模板。
 - 生产必须 `DEV_MODE=0`，设置真实 `DASHSCOPE_API_KEY` 和强 `JWT_SECRET`。
-- 内测登录使用邀请码，`backend/seed_invites.py` 创建绑定用户名的码。
-- `backend/manage_invites.py` 查看、撤销和轮换邀请码；这些操作会使绑定账号的旧会话失效。
+- 内测登录使用邀请码，`backend/seed_invites.py` 原子分配不会与现有用户或邀请码绑定名冲突的 `testerNN` 用户名。
+- `backend/manage_invites.py` 查看、撤销和轮换邀请码；这些操作会使绑定账号的旧会话失效。`backend/manage_strawberries.py` 可查看、补充或设置草莓。三个脚本在导入数据库前加载服务环境文件，生产执行时明确传 `--env-file /etc/fiona/fiona.env`，并核对输出的数据库绝对路径；只有首次建库才传 `--init-db`。
+- 生产私聊每次实际交付结算 10 颗草莓，并发预扣原子化；`STRAWBERRY_DAILY_REFILL` 默认关闭，可按 Asia/Shanghai 自然日补到下限。`DEV_MODE=1` 跳过预扣。
 - 浏览器 JWT 只在 `HttpOnly` Cookie 中；HTTP/WebSocket 每次鉴权都核对数据库会话版本，不能恢复 query token 或 JavaScript 可读存储。
 - `DEV_MODE=1` 才开放测试登录和 `X-Dev-User`。
 - 单域名环境不设置 `NEXT_PUBLIC_API_BASE`；前端相对 `/api` 由 Next rewrite 或生产 Nginx 转发。
@@ -71,7 +72,8 @@ npm run build
 - Layer 2 双边卡片、双方偏好验证、手动匹配输出约束和跨用户画像最小化已完成；候选原始消息不得进入匹配模型。
 - 完整账户删除会清理数据库关联记录、关闭真人连接，并通过持久化队列重试无引用上传文件；关键后台写入必须继续防止删号后重建数据。
 - 总请求体、Chat/图片、ASR、TTS、帖子和分页已有应用层边界；模型并发、真实 usage 与持久化成本控制仍未完成。
-- 模型预算是进程内估算，不等同于供应商真实账单；草莓扣费原子性与持久化成本控制按当前决定暂缓，不要误写为已完成。
+- 模型预算是进程内估算，不等同于供应商真实账单；草莓预扣、退款及每日补给已实现原子化，真实 usage 与持久化成本控制仍待完成。
+- 私聊非危机轮的所有 system 消息合计恰好包含一次基础安全规则，放在最后一条 system 消息末尾；请求朗读时，朗读强约束仍作为当前 user 消息后的独立 system 消息。危机轮跳过普通模式与工具，固定附上求助资源且不计费。分身交流每条 system 消息也带基础安全规则。测试在收集阶段强制使用会话临时数据库与上传目录。
 - 前端主页面和常驻抽屉 iframe 有已知性能与维护债务。
 - Persona、成人内容、AI 身份披露、年龄与危机处理政策必须在扩大内测前统一。
 

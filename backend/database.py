@@ -1,9 +1,40 @@
 import aiosqlite
 import os
 import re
-from datetime import datetime
+import secrets
+from datetime import datetime, timedelta, timezone
+from zoneinfo import ZoneInfo
 
 DB_PATH = os.getenv("FIONA_DB_PATH") or os.path.join(os.path.dirname(__file__), "fiona.db")
+STRAWBERRY_COST_PER_REPLY = 10
+_INVALID_REFILL_WARNED = False
+
+
+def strawberry_daily_refill() -> int:
+    """Return the configured daily floor, treating invalid settings as disabled."""
+    global _INVALID_REFILL_WARNED
+    raw = os.getenv("STRAWBERRY_DAILY_REFILL", "0")
+    try:
+        if not re.fullmatch(r"[0-9]+", raw):
+            raise ValueError("not a nonnegative integer")
+        amount = int(raw)
+        if amount > 2**63 - 1:
+            raise OverflowError("outside SQLite integer range")
+        return amount
+    except (ValueError, OverflowError):
+        pass
+    if not _INVALID_REFILL_WARNED:
+        print("[strawberry] STRAWBERRY_DAILY_REFILL 无效，已关闭每日补给")
+        _INVALID_REFILL_WARNED = True
+    return 0
+
+
+def _today_shanghai() -> str:
+    try:
+        tz = ZoneInfo("Asia/Shanghai")
+    except Exception:
+        tz = timezone(timedelta(hours=8))
+    return datetime.now(tz).date().isoformat()
 
 import json as _json
 
@@ -220,6 +251,7 @@ async def init_db():
             ("strawberry_balance", "INTEGER DEFAULT 200"),
         ]:
             await _safe_migrate(db, f"ALTER TABLE users ADD COLUMN {_col} {_def}")
+        await _safe_migrate(db, "ALTER TABLE users ADD COLUMN strawberry_refill_date TEXT DEFAULT NULL")
         await _safe_migrate(db, "CREATE UNIQUE INDEX IF NOT EXISTS idx_users_phone ON users(phone) WHERE phone IS NOT NULL")
         # ── OTP 验证码表 ──
         await db.execute("""
@@ -563,6 +595,50 @@ async def create_invite(code: str, username: str, note: str | None = None) -> bo
         await db.commit()
     return cur.rowcount > 0
 
+
+async def create_tester_invites(count: int) -> list[tuple[str, str]]:
+    """Allocate tester names and codes under one writer lock."""
+    if not 1 <= count <= 200:
+        raise ValueError("count must be 1..200")
+    alphabet = "ABCDEFGHJKMNPQRSTUVWXYZ23456789"
+    created: list[tuple[str, str]] = []
+    async with aiosqlite.connect(DB_PATH) as db:
+        await db.execute("BEGIN IMMEDIATE")
+        async with db.execute(
+            "SELECT username FROM users WHERE username LIKE 'tester%' "
+            "UNION SELECT username FROM invite_codes WHERE username LIKE 'tester%'"
+        ) as cursor:
+            names = await cursor.fetchall()
+        number = max(
+            (int(match.group(1)) for (name,) in names if (match := re.fullmatch(r"tester([0-9]+)", name))),
+            default=0,
+        ) + 1
+        while len(created) < count:
+            username = f"tester{number:02d}"
+            async with db.execute(
+                "SELECT 1 FROM users WHERE username = ? "
+                "UNION SELECT 1 FROM invite_codes WHERE username = ? LIMIT 1",
+                (username, username),
+            ) as cursor:
+                exists = await cursor.fetchone()
+            if exists:
+                number += 1
+                continue
+            while True:
+                code = "".join(secrets.choice(alphabet) for _ in range(8))
+                try:
+                    await db.execute(
+                        "INSERT INTO invite_codes (code, username, note) VALUES (?, ?, ?)",
+                        (code, username, f"内测 #{number}"),
+                    )
+                    break
+                except aiosqlite.IntegrityError:
+                    continue
+            created.append((code, username))
+            number += 1
+        await db.commit()
+    return created
+
 async def redeem_invite(code: str) -> str | None:
     """原子兑换一个未撤销的邀请码；记录首次/最近使用时间和使用次数。"""
     async with aiosqlite.connect(DB_PATH) as db:
@@ -772,6 +848,7 @@ async def delete_account_data(username: str) -> dict:
         await db.execute("DELETE FROM user_tag_prefs WHERE username = ?", (username,))
         await db.execute("DELETE FROM user_time_tag_prefs WHERE username = ?", (username,))
         await db.execute("DELETE FROM user_states WHERE username = ?", (username,))
+        await db.execute("DELETE FROM chat_slot_state WHERE owner_username = ?", (username,))
         await db.execute("DELETE FROM events WHERE username = ?", (username,))
         await db.execute("DELETE FROM invite_codes WHERE username = ?", (username,))
         if user_row["phone"]:
@@ -1485,28 +1562,65 @@ async def get_or_create_user_by_phone(phone: str) -> dict:
         return dict(row)
 
 
+async def _apply_daily_refill(db, username: str, amount: int) -> None:
+    if amount <= 0:
+        return
+    today = _today_shanghai()
+    await db.execute(
+        """UPDATE users
+           SET strawberry_balance = MAX(strawberry_balance, ?),
+               strawberry_refill_date = ?
+           WHERE username = ? AND strawberry_refill_date IS NOT ?""",
+        (amount, today, username, today),
+    )
+
+
 async def get_strawberry_balance(username: str) -> int:
     async with aiosqlite.connect(DB_PATH) as db:
+        refill = strawberry_daily_refill()
+        if refill:
+            await db.execute("BEGIN IMMEDIATE")
+            await _apply_daily_refill(db, username, refill)
         async with db.execute(
             "SELECT strawberry_balance FROM users WHERE username = ?", (username,)
         ) as cursor:
             row = await cursor.fetchone()
+        if refill:
+            await db.commit()
     return row[0] if row else 0
 
 
-async def deduct_strawberry(username: str, amount: int = 10) -> int:
-    """扣除草莓，返回扣后余额。余额不足时扣到 0 并返回 0。"""
+async def reserve_strawberries(username: str, amount: int) -> int | None:
+    """Refill if due, then atomically reserve only when funds cover the full price."""
+    if amount <= 0:
+        raise ValueError("amount must be positive")
     async with aiosqlite.connect(DB_PATH) as db:
-        await db.execute(
-            "UPDATE users SET strawberry_balance = MAX(0, strawberry_balance - ?) WHERE username = ?",
-            (amount, username)
-        )
-        await db.commit()
+        await db.execute("BEGIN IMMEDIATE")
+        await _apply_daily_refill(db, username, strawberry_daily_refill())
         async with db.execute(
-            "SELECT strawberry_balance FROM users WHERE username = ?", (username,)
+            """UPDATE users SET strawberry_balance = strawberry_balance - ?
+               WHERE username = ? AND strawberry_balance >= ?
+               RETURNING strawberry_balance""",
+            (amount, username, amount),
         ) as cursor:
             row = await cursor.fetchone()
-    return row[0] if row else 0
+        await db.commit()
+    return int(row[0]) if row else None
+
+
+async def refund_strawberries(username: str, amount: int) -> int:
+    """Restore a reservation; deleted accounts remain deleted."""
+    if amount <= 0:
+        raise ValueError("amount must be positive")
+    async with aiosqlite.connect(DB_PATH) as db:
+        async with db.execute(
+            """UPDATE users SET strawberry_balance = strawberry_balance + ?
+               WHERE username = ? RETURNING strawberry_balance""",
+            (amount, username),
+        ) as cursor:
+            row = await cursor.fetchone()
+        await db.commit()
+    return int(row[0]) if row else 0
 
 
 async def add_strawberry(username: str, amount: int) -> int:

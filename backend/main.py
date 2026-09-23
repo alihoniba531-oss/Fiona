@@ -16,7 +16,7 @@ from slowapi.errors import RateLimitExceeded
 from database import get_pending_upload_cleanup, init_db, mark_upload_cleanup_done
 from rate_limit import limiter
 from routers import agent_exchanges, agents, auth, cards, chat, conversations, hot, match, me, peer, plaza, voice
-from utils.media import UPLOADS_DIR
+from utils import media
 from utils.background_tasks import create_background_task, shutdown_background_tasks
 from utils.request_limits import MAX_REQUEST_BODY_BYTES, RequestBodyLimitMiddleware
 
@@ -78,7 +78,7 @@ app.add_middleware(RequestBodyLimitMiddleware, max_bytes=MAX_REQUEST_BODY_BYTES)
 app.state.limiter = limiter
 app.add_exception_handler(RateLimitExceeded, _rate_limit_exceeded_handler)
 
-app.mount("/uploads", StaticFiles(directory=UPLOADS_DIR), name="uploads")
+app.mount("/uploads", StaticFiles(directory=media.UPLOADS_DIR), name="uploads")
 
 app.include_router(voice.router)
 app.include_router(hot.router)

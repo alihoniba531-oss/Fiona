@@ -2,6 +2,8 @@
 import json
 import re
 
+from persona import BASE_SAFETY_RULES
+
 
 WORKFLOW_VERSION = "draft_review_v1"
 DRAFT_OUTPUT_TOKENS = 8192
@@ -107,7 +109,7 @@ def build_workflow_messages(context, initiator, recipient, role_instruction, *, 
         preview_length = min(80, limit // 5)
         payload["draft_line_index"] = [{"line": index, "start": line[:preview_length]}
                                        for index, line in enumerate(draft.splitlines(), 1) if line.strip()][:500]
-        return [{"role": "system", "content": common + task + role_instruction},
+        return [{"role": "system", "content": common + task + role_instruction + BASE_SAFETY_RULES},
                 {"role": "user", "content": json.dumps(payload, ensure_ascii=False)}]
 
     messages = render(400)

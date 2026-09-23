@@ -76,7 +76,8 @@ async def verify_otp_api(body: dict):
     if not ok:
         raise HTTPException(status_code=401, detail="验证码错误或已过期")
     user = await get_or_create_user_by_phone(phone)
-    return _login_response(user, user.get("strawberry_balance", 200))
+    balance = await get_strawberry_balance(user["username"])
+    return _login_response(user, balance)
 
 
 @router.post("/auth/redeem-invite")

@@ -1,53 +1,46 @@
 # -*- coding: utf-8 -*-
-"""生成内测邀请码。
+"""生成内测邀请码，只打印本次创建的码。"""
 
-用法：
-    python3 seed_invites.py [数量]      # 默认 10
-
-每个码绑定一个用户名（tester01、tester02…），打印出来发给测试者。
-重复运行只新增、不重建已有码；末尾会列出全部码 + 是否已用。
-"""
+import argparse
 import asyncio
-import secrets
 import sys
 
-from database import init_db, create_invite, list_invites
-
-# 去掉易混字符 0/O/1/I/L，避免测试者输错
-_ALPHABET = "ABCDEFGHJKMNPQRSTUVWXYZ23456789"
+from admin_env import AdminConfigError, admin_options_parser, configure_database, parse_admin_options
 
 
-def _gen_code(n: int = 8) -> str:
-    return "".join(secrets.choice(_ALPHABET) for _ in range(n))
+async def main(argv: list[str] | None = None) -> int:
+    options, remaining = parse_admin_options(argv)
+    parser = argparse.ArgumentParser(
+        description="生成 Fiona 内测邀请码", parents=[admin_options_parser()]
+    )
+    parser.add_argument("count", nargs="?", type=int, default=10, help="新建数量（1–200，默认 10）")
+    args = parser.parse_args(remaining)
+    if not 1 <= args.count <= 200:
+        parser.error("数量必须在 1–200 之间")
 
+    try:
+        db_path = configure_database(options.env_file, init_db=options.init_db)
+    except AdminConfigError as exc:
+        print(exc, file=sys.stderr)
+        return 2
 
-async def main() -> None:
-    count = int(sys.argv[1]) if len(sys.argv) > 1 else 10
-    await init_db()
+    import database
 
-    existing = await list_invites()
-    start = len(existing) + 1
+    database.DB_PATH = str(db_path)
 
-    created = []
-    for i in range(start, start + count):
-        username = f"tester{i:02d}"
-        # 极小概率撞码，撞了就重抽，保证拿到 count 个
-        while True:
-            code = _gen_code()
-            if await create_invite(code, username, note=f"内测 #{i}"):
-                break
-        created.append((code, username))
-
-    print(f"\n新增 {len(created)} 个邀请码：\n")
+    await database.init_db()
+    created = await database.create_tester_invites(args.count)
+    print(f"新增 {len(created)} 个邀请码：")
     for code, username in created:
-        print(f"  {code}   →  {username}")
+        print(f"{code}  {username}")
 
-    print("\n当前全部邀请码：")
-    for r in await list_invites():
-        status = "已撤销" if r["revoked_at"] else ("已用" if r["redeemed_at"] else "未用")
-        print(f"  {r['code']}   {r['username']:<10} [{status}]")
-    print()
+    invites = await database.list_invites()
+    unused = sum(not row["revoked_at"] and not row["redeemed_at"] for row in invites)
+    used = sum(not row["revoked_at"] and bool(row["redeemed_at"]) for row in invites)
+    revoked = sum(bool(row["revoked_at"]) for row in invites)
+    print(f"统计：总数 {len(invites)} / 未用 {unused} / 已用 {used} / 已撤销 {revoked}")
+    return 0
 
 
 if __name__ == "__main__":
-    asyncio.run(main())
+    raise SystemExit(asyncio.run(main()))

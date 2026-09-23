@@ -93,7 +93,16 @@ JWT_SECRET=<足够长的随机字符串>
 DEV_MODE=0
 FIONA_DB_PATH=/var/lib/fiona/fiona.db
 FIONA_UPLOADS_DIR=/var/lib/fiona/uploads
+STRAWBERRY_DAILY_REFILL=0
 ```
+
+| 环境变量 | 用途 |
+|---|---|
+| `FIONA_DB_PATH` | 服务和管理脚本使用的 SQLite 数据库路径 |
+| `FIONA_UPLOADS_DIR` | 上传文件目录 |
+| `STRAWBERRY_DAILY_REFILL` | 每位用户每天（Asia/Shanghai）首次经登录、`GET /strawberry` 或聊天预扣时补到至少该数量；`0` 关闭，建议值由运维决定 |
+
+草莓正常回复每条 10 颗，预扣后只对实际交付的模型回复、图片或成功真实工具结算；失败、追问及桌面占位工具会退还。`DEV_MODE=1` 不预扣。每日补给不会降低较高余额，同一自然日仅执行一次。
 
 可以使用下面的命令在服务器上生成 JWT Secret：
 
@@ -320,20 +329,28 @@ systemctl status fiona fiona-web
 
 当前 `npm run lint` 已恢复为绿色，但仍有非阻断警告。发布者必须人工查看 Lint 输出，不能把生产构建成功等同于所有维护债务已经清零。
 
-数据库兼容 DDL 会在后端启动时执行。本轮会增加 `users.session_version`、邀请码撤销/用量字段、`posts.owner_username` 和 `upload_cleanup_queue`。后端启动还会回填可识别的旧帖子 owner，并重试队列中的文件清理。由于当前没有版本化迁移和自动回滚，任何涉及 `database.py` 的发布都必须先同时备份数据库与上传目录。
+数据库兼容 DDL 会在后端启动时执行。既有迁移增加了 `users.session_version`、邀请码撤销/用量字段、`posts.owner_username` 和 `upload_cleanup_queue`；本次增加可空列 `users.strawberry_refill_date`。后端启动还会回填可识别的旧帖子 owner，并重试队列中的文件清理。由于当前没有通用迁移和自动回滚，任何涉及 `database.py` 的发布都必须先同时备份数据库与上传目录。
 
-## 邀请码与会话运维
+## 邀请码、会话与草莓运维
 
-在后端目录运行本机管理命令：
+在后端目录运行本机管理命令。明确传入服务使用的环境文件；脚本会在导入数据库模块前读取它，并向 stderr 显示配置文件路径与解析后的数据库绝对路径。命令行 `--env-file` 优先于 `FIONA_ENV_FILE`；未指定时依次尝试可读的 `/etc/fiona/fiona.env`、`backend/.env`。进程中已设置的环境变量仍优先。运行账号必须能读取配置文件并写入实际数据库。
+
+三个脚本进入初始化路径时会执行与服务启动相同的兼容 DDL（只加列/索引），并可能执行旧帖 owner 回填及版本化迁移；对已有数据库运行发码、邀请码管理或草莓 `grant/set`，即使未传 `--init-db` 也会进入此路径。请先备份数据库再运行这些命令。`manage_strawberries.py list` 默认跳过初始化与迁移，以只读连接查看库内原始余额和最近补给日期，不触发每日补给；显式传 `--init-db` 时则会初始化数据库。`grant`、`set` 先应用当日补给再修改余额。
 
 ```bash
 cd /opt/fiona/backend
-.venv/bin/python manage_invites.py list
-.venv/bin/python manage_invites.py revoke ABCD2345
-.venv/bin/python manage_invites.py rotate ABCD2345
+.venv/bin/python seed_invites.py 10 --env-file /etc/fiona/fiona.env
+.venv/bin/python manage_invites.py list --env-file /etc/fiona/fiona.env
+.venv/bin/python manage_invites.py revoke ABCD2345 --env-file /etc/fiona/fiona.env
+.venv/bin/python manage_invites.py rotate ABCD2345 --env-file /etc/fiona/fiona.env
+.venv/bin/python manage_strawberries.py list --env-file /etc/fiona/fiona.env
+.venv/bin/python manage_strawberries.py grant tester01 50 --env-file /etc/fiona/fiona.env
+.venv/bin/python manage_strawberries.py set tester01 200 --env-file /etc/fiona/fiona.env
 ```
 
-撤销和轮换会使绑定账号当前所有 JWT 失效，操作前应确认目标用户名；轮换命令会打印新码，应只通过受控渠道发给对应测试者。邀请码仍可重复用于登录，因此不应公开写入日志、工单或群聊。
+数据库文件不存在时，管理脚本以退出码 2 拒绝操作，不会创建空库；仅首次初始化新库时使用 `--init-db`。`seed_invites.py` 每次只输出本次新建的码及其用户名，用户名编号取已存在用户和邀请码绑定名的最大 `testerNN` 编号之后，删号不会使新码撞上存量账号。`grant` 增加 1–100000 颗，`set` 将余额设为 0–100000；不存在的用户名返回退出码 1。
+
+撤销和轮换会使绑定账号当前所有 JWT 失效，操作前应确认目标用户名；发码和轮换命令会打印新码，应只通过受控渠道发给对应测试者。邀请码仍可重复用于登录，因此不应公开写入日志、工单或群聊。
 
 ## 日志与故障排查
 

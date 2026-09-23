@@ -27,11 +27,13 @@ _SEARCH_PROMPT = """你是一个搜索结果整理器。你需要联网搜索用
 
 【输出格式 - 严格 JSON，不加任何其他文字】
 {
+  "success": true,
   "points": ["要点1", "要点2", "要点3"],
   "sources": [{"title": "来源标题", "url": "https://..."}]
 }
 
 【规则】
+- success: 只有搜到可用的具体信息时才为 true；没有结果、搜索失败或无法核实内容时为 false
 - points: 3-5 条，每条具体到事实/数字/时间/地点，不要笼统空话
 - 如果是航班/票务/天气类，给出具体数字（价格、时间、温度等）
 - 如果搜不到任何信息，points 写 ["没搜到相关信息"]，sources 留空数组
@@ -109,6 +111,7 @@ def web_search(query: str) -> dict:
             "type": "card",
             "source": f"搜索:{query[:20]}",
             "points": lines[:5] or ["没搜到"],
+            "error": True,
         }
 
     raw_points = data.get("points") if isinstance(data, dict) else None
@@ -143,4 +146,5 @@ def web_search(query: str) -> dict:
         "url": first_url,
         "points": points[:5],
         "sources": sources[:5],  # 前端将来想展示来源列表也能用
+        "error": data.get("success") is not True,
     }

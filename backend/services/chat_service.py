@@ -13,7 +13,6 @@
 """
 import asyncio
 import json
-import os
 import re
 from contextlib import aclosing
 from dataclasses import dataclass, field
@@ -25,13 +24,15 @@ from fastapi import HTTPException
 from avatar_state import AvatarStage, build_tone_description, extract_tone_profile, get_stage
 from agent_store import ResourceNotFound, get_memory_snapshot, resolve_chat_conversation
 from conversation_matcher import detect_and_save as detect_matches_and_save
-from database import count_messages, deduct_strawberry, get_messages, save_message, set_message_image_summary
+from database import (STRAWBERRY_COST_PER_REPLY, count_messages, get_messages,
+                      refund_strawberries, save_message, set_message_image_summary)
 from extractor import extract_and_update
 from intent_router import ask_missing, clear_pending, explicit_image_intent, fill_param, get_pending, image_aspect_ratio, image_edit_requires_reference, image_generation_discussion, recognize_intent, set_pending
 from llm import QWEN_CLIENT, _create_stream_with_fallback, client
 from mode_switcher import apply_mode_prompt, detect_mode, get_user_mode
 from model_router import choose_model, token_budget
-from persona import build_system_prompt
+from persona import BASE_SAFETY_RULES, build_system_prompt
+from safety import CRISIS_GUIDANCE, CRISIS_RESOURCE_NOTE, detect_crisis
 from tools.fetch_card import fetch_card as _fetch_card_impl
 from tools.hot_topics import hot_topics
 from tools.image_generation import ImageGenerationError, edit_image, generate_image
@@ -56,6 +57,44 @@ _IMAGE_GENERATION_USERS: set[str] = set()
 _IMAGE_HEARTBEAT_SECONDS = 10
 # 视觉分支拼进 VL 请求的历史条数上限（T2a）。
 _VL_HISTORY_TURNS = 10
+_BILLABLE_TOOLS = frozenset({
+    "web_search", "hot_topics", "route", "travel_plan", "fetch_card", "get_datetime",
+})
+
+
+def _without_safety(prompt: str) -> str:
+    return prompt.replace(BASE_SAFETY_RULES.strip(), "").strip()
+
+
+def _final_system_prompt(
+    prompt: str, *, crisis: bool = False, trailing_system: bool = False,
+) -> str:
+    """Put the safety rules on the final system message sent to the model."""
+    prompt = _without_safety(prompt).replace(CRISIS_GUIDANCE.strip(), "").strip()
+    if trailing_system:
+        return prompt
+    return prompt + "\n\n" + BASE_SAFETY_RULES.strip() + (
+        "\n\n" + CRISIS_GUIDANCE.strip() if crisis else ""
+    )
+
+
+def _has_trailing_system(ctx: "ChatContext") -> bool:
+    return bool(ctx.messages and ctx.messages[-1]["role"] == "system")
+
+
+def _tool_billable(intent: str, result) -> bool:
+    if intent not in _BILLABLE_TOOLS:
+        return False
+    if isinstance(result, dict):
+        return result.get("type") == "card" and not result.get("error", False) and not result.get("stale", False)
+    return intent == "get_datetime" and isinstance(result, str) and bool(result.strip())
+
+
+def _crisis_resource_event(state: "ChatState") -> str:
+    state.crisis_resource_sent = True
+    text = "\n\n" + CRISIS_RESOURCE_NOTE
+    state.full_response += text
+    return _sse({"text": text})
 
 
 def _upstream_error_message(error: Exception) -> str:
@@ -325,6 +364,15 @@ class ChatState:
     full_response: str = ""
     sys_prompt_final: str = ""
     response_saved: bool = False
+    billable: bool = False
+    crisis: bool = False
+    crisis_resource_sent: bool = False
+
+
+@dataclass
+class ChatRunTracker:
+    """Lets the ASGI response refund if streaming never starts."""
+    started: bool = False
 
 
 def _prepare_edit_references(sources) -> tuple[list[str], list[str]]:
@@ -439,7 +487,9 @@ async def build_context(req, user: str) -> ChatContext:
         tone_description=tone_description,
         agent=agent,
     )
-    system_prompt += build_hard_word_appendix(req.message)
+    crisis = detect_crisis(req.message)
+    if not crisis:
+        system_prompt += build_hard_word_appendix(req.message)
 
     # 图片摘要只注入给模型的这份副本；history 保持原始行（信号计算/画像提取/意图识别都在读它），
     # 数据库里的 content 与前端气泡一律不变。全角括号与半角占位符 [发了一张图片] 区分。
@@ -452,7 +502,7 @@ async def build_context(req, user: str) -> ChatContext:
 
     # qwen 对"播报/朗读/念出来"这类词的训练倾向太强（自动解释 TTS 机制、教对方开手机朗读），
     # 顶部 persona 禁令压不住。在 user 消息后贴一条强约束 system，离生成位置最近、attention 最大。
-    if re.search(r"(播报|朗读|口播|念出来|读出来|念一[下遍]|读一[下遍]|大声[念读])", req.message or ""):
+    if not crisis and re.search(r"(播报|朗读|口播|念出来|读出来|念一[下遍]|读一[下遍]|大声[念读])", req.message or ""):
         messages.append({
             "role": "system",
             "content": (
@@ -461,6 +511,7 @@ async def build_context(req, user: str) -> ChatContext:
                 "绝对禁止：解释 TTS/朗读机制；说『我没法播报』『我没有朗读功能』『我的语音是文字不是声波』；"
                 "给『语音稿』让对方复制；列 iPhone/安卓/Chrome 朗读步骤；说『手把手教你』。"
                 "对方听得见你说话，跟机制无关，不用解释。"
+                "\n\n" + BASE_SAFETY_RULES.strip()
             ),
         })
 
@@ -545,6 +596,7 @@ async def stream_generated_image(ctx: ChatContext, state: ChatState, prompt: str
             except asyncio.CancelledError:
                 await save_task
                 raise
+        state.billable = True
         if editing:
             generated = {**generated, "reference_image_path": references[0], "reference_image_paths": references}
         yield _sse({"generated_image": generated})
@@ -598,10 +650,15 @@ async def stream_mirror(ctx: ChatContext, state: ChatState):
         print(f"[chat] mirror stream error type={type(e).__name__}", flush=True)
         yield _sse({"error": _upstream_error_message(e)})
         return
-    await _save_response(ctx, state)
+    if state.full_response.strip():
+        await _save_response(ctx, state)
+        state.billable = True
     yield _sse({"done": True})
-    if not _actually_qwen:
-        token_budget.add(ctx.user, len(state.full_response) // 2)
+    try:
+        if not _actually_qwen:
+            token_budget.add(ctx.user, len(state.full_response) // 2)
+    except Exception as e:
+        print(f"[chat] post-delivery accounting failed type={type(e).__name__}", flush=True)
 
 
 async def stream_image(ctx: ChatContext, state: ChatState):
@@ -616,14 +673,14 @@ async def stream_image(ctx: ChatContext, state: ChatState):
             _mime = "png"
     _img_b64 = _img_raw.split(",", 1)[1] if "," in _img_raw else _img_raw
 
-    vl_system = (
-        state.sys_prompt_final
+    vl_system = _final_system_prompt((
+        _without_safety(state.sys_prompt_final).replace(CRISIS_GUIDANCE.strip(), "").strip()
         + "\n\n【临时】对方刚发了张图给你。你能看到。按当前分身的表达风格，"
         "**一两句话**讲图里跟当前话题相关的关键信息——"
         "不要 OCR 逐字段念，不要说『这张图显示...』『从图中可以看出...』这种主持人腔，"
         "就像朋友凑过来扫一眼，挑最有意思 / 最相关的一两点说出来。"
         "如果对方文字里问了具体问题（『这是什么』『多少钱』『几点』），先回答那个。"
-    )
+    ), crisis=state.crisis, trailing_system=_has_trailing_system(ctx))
 
     # 三段：system + 最近若干条纯文本历史 + 当前多模态 user（本轮只发这一张图）。
     vl_messages = [{"role": "system", "content": vl_system}]
@@ -636,6 +693,8 @@ async def stream_image(ctx: ChatContext, state: ChatState):
         {"type": "image_url", "image_url": {"url": f"data:image/{_mime};base64,{_img_b64}"}},
         {"type": "text", "text": ctx.user_content},
     ]})
+    if _has_trailing_system(ctx):
+        vl_messages.append(ctx.messages[-1])
 
     try:
         stream = await asyncio.to_thread(
@@ -655,14 +714,22 @@ async def stream_image(ctx: ChatContext, state: ChatState):
     except Exception as e:
         state.trace["error"] = type(e).__name__
         print(f"[chat] qwen-vl-max error type={type(e).__name__}", flush=True)
+        if state.crisis:
+            yield _crisis_resource_event(state)
         yield _sse({"error": _upstream_error_message(e)})
         return
 
-    await _save_response(ctx, state)
+    image_summary = state.full_response
+    if state.crisis:
+        yield _crisis_resource_event(state)
+    if state.full_response.strip():
+        await _save_response(ctx, state)
+        if not state.crisis and image_summary.strip():
+            state.billable = True
     # 摘要直接复用 VL 本轮已生成的回复，不再额外调用任何模型；写失败绝不能影响已返回的 SSE。
     try:
         await set_message_image_summary(
-            ctx.user, ctx.conversation_id, ctx.uploaded_image_path, state.full_response,
+            ctx.user, ctx.conversation_id, ctx.uploaded_image_path, image_summary,
         )
     except Exception as e:
         print(f"[chat] image summary write failed type={type(e).__name__}", flush=True)
@@ -708,6 +775,7 @@ async def stream_pending(ctx: ChatContext, state: ChatState, pending: dict):
             state.full_response = result
             yield _sse({"text": result})
         await _save_response(ctx, state)
+        state.billable = _tool_billable(filled["intent"], result)
         yield _sse({"done": True})
     else:
         # 还缺参数，继续追问
@@ -787,13 +855,16 @@ async def stream_intent(ctx: ChatContext, state: ChatState, intent_result: dict)
         else:
             state.full_response = result
             yield _sse({"text": result})
+        tool_billable = _tool_billable(intent_result["intent"], result)
     else:
         # 意图明确，但缺参数，存 pending 并追问
         set_pending(ctx.state_key, intent_result)
         question = ask_missing(intent_result["missing"][0])
         state.full_response = question
         yield _sse({"text": question})
+        tool_billable = False
     await _save_response(ctx, state)
+    state.billable = tool_billable
     yield _sse({"done": True})
 
 
@@ -834,6 +905,8 @@ async def stream_normal(ctx: ChatContext, state: ChatState):
     except Exception as e:
         state.trace["error"] = type(e).__name__
         print(f"[chat] normal stream error type={type(e).__name__}", flush=True)
+        if state.crisis:
+            yield _crisis_resource_event(state)
         yield _sse({"error": _upstream_error_message(e)})
         return
     if _finish_reason == "length":
@@ -841,38 +914,47 @@ async def stream_normal(ctx: ChatContext, state: ChatState):
         print(f"[chat] truncated: model={'light' if _actually_qwen else 'main'} "
               f"max_tokens={_max_tok} chars={len(state.full_response)}", flush=True)
 
-    await _save_response(ctx, state)
+    model_response = state.full_response
+    if state.crisis:
+        yield _crisis_resource_event(state)
+    if state.full_response.strip():
+        await _save_response(ctx, state)
+        if not state.crisis and model_response.strip():
+            state.billable = True
     yield _sse({"done": True})
 
-    # 主力大脑实际使用时计入预算（含轻量槽失败回退的情况）
-    if not _actually_qwen:
-        token_budget.add(ctx.user, len(state.full_response) // 2)
-
-    # ── 每 5 轮后台静默提取画像（不阻塞返回）──
-    if ctx.message_count > 0 and ctx.message_count % 5 == 0:
-        all_msgs = await get_messages(ctx.user, limit=60, conversation_id=ctx.conversation_id)
-        _track_background_task(extract_and_update(
-            client, ctx.user, all_msgs, conversation_id=ctx.conversation_id,
-            expected_revision=ctx.memory_revision,
-        ))
-
-    # 分身私有会话不产生对外匹配信号；旧调用保留原兼容路径。
-    if ctx.conversation_id is None:
-        _track_background_task(
-            detect_matches_and_save(
-                client,
-                ctx.user,
-                ctx.user_content,
-                ctx.history + [{"role": "user", "content": ctx.user_content}],
-                message_count=ctx.message_count,
+    try:
+        # These follow-up tasks cannot change the already delivered answer.
+        if not _actually_qwen:
+            token_budget.add(ctx.user, len(state.full_response) // 2)
+        if ctx.message_count > 0 and ctx.message_count % 5 == 0:
+            all_msgs = await get_messages(ctx.user, limit=60, conversation_id=ctx.conversation_id)
+            _track_background_task(extract_and_update(
+                client, ctx.user, all_msgs, conversation_id=ctx.conversation_id,
+                expected_revision=ctx.memory_revision,
+            ))
+        if ctx.conversation_id is None:
+            _track_background_task(
+                detect_matches_and_save(
+                    client,
+                    ctx.user,
+                    ctx.user_content,
+                    ctx.history + [{"role": "user", "content": ctx.user_content}],
+                    message_count=ctx.message_count,
+                )
             )
-        )
+    except Exception as e:
+        print(f"[chat] post-delivery follow-up failed type={type(e).__name__}", flush=True)
 
 
 # ────────────────────────── 4. 编排 ──────────────────────────
 
-async def run_chat(ctx: ChatContext):
-    """按模式/图片/pending/意图/普通的顺序派发到对应分支，统一收尾扣费 + 埋点。"""
+async def run_chat(
+    ctx: ChatContext, *, reserved: bool = False, crisis: bool | None = None,
+    tracker: ChatRunTracker | None = None,
+):
+    """Dispatch one chat turn and settle a reservation against actual delivery."""
+    crisis = detect_crisis(ctx.message) if crisis is None else crisis
     state = ChatState(trace={
         "mode": None,
         "intent": None,
@@ -882,8 +964,25 @@ async def run_chat(ctx: ChatContext):
         "message_count": ctx.message_count,
         "conversation_id": ctx.conversation_id,
         "agent_id": ctx.agent.get("id"),
+        "crisis": crisis,
     })
+    state.crisis = crisis
     try:
+        if tracker is not None:
+            tracker.started = True
+        if crisis:
+            # Keep existing pending parameters and mode untouched. A crisis turn
+            # always reaches a support reply before ordinary chat routing.
+            await _ensure_active_conversation(ctx)
+            state.trace["mode"] = "crisis"
+            state.sys_prompt_final = _final_system_prompt(ctx.system_prompt, crisis=True)
+            if ctx.has_image:
+                async for event in stream_image(ctx, state):
+                    yield event
+            else:
+                async for event in stream_normal(ctx, state):
+                    yield event
+            return
         if ctx.request_mode == "image_edit" and ctx.reference_sources_submitted:
             # Acknowledge the durable paths even if the provider is busy or
             # fails, so retries can reuse uploads instead of resending bytes.
@@ -936,7 +1035,10 @@ async def run_chat(ctx: ChatContext):
         mode = await asyncio.to_thread(detect_mode, client, ctx.state_key, ctx.message, ctx.history)
         await _ensure_active_conversation(ctx)
         state.trace["mode"] = mode
-        state.sys_prompt_final = apply_mode_prompt(ctx.system_prompt, mode)
+        state.sys_prompt_final = _final_system_prompt(
+            apply_mode_prompt(_without_safety(ctx.system_prompt), mode),
+            trailing_system=_has_trailing_system(ctx),
+        )
 
         if mode == "mirror":
             async for s in stream_mirror(ctx, state):
@@ -970,20 +1072,31 @@ async def run_chat(ctx: ChatContext):
             yield s
 
     except ResourceNotFound:
-        clear_pending(ctx.state_key)
-        from mode_switcher import clear_user_mode
-        clear_user_mode(ctx.state_key)
+        if not crisis:
+            clear_pending(ctx.state_key)
+            from mode_switcher import clear_user_mode
+            clear_user_mode(ctx.state_key)
+        if crisis and not state.crisis_resource_sent:
+            yield _crisis_resource_event(state)
         yield _sse({"error": "会话已删除或不可用"})
         state.trace["error"] = "ResourceNotFound"
     except Exception as e:
+        if crisis and not state.crisis_resource_sent:
+            yield _crisis_resource_event(state)
         yield _sse({"error": _upstream_error_message(e)})
         state.trace["error"] = type(e).__name__
     finally:
-        # 只有回复确实落库后才扣草莓（DEV 模式跳过）
-        DEV_MODE = os.getenv("DEV_MODE", "0") == "1"
-        if state.full_response and state.response_saved and not DEV_MODE:
-            await deduct_strawberry(ctx.user, 10)
-        # ── 写 chat 汇总事件 ──
-        state.trace["resp_chars"] = len(state.full_response)
-        await log_event(ctx.user, "chat", payload=state.trace,
-                        success=("error" not in state.trace))
+        with anyio.CancelScope(shield=True):
+            if reserved and not state.billable:
+                try:
+                    await refund_strawberries(ctx.user, STRAWBERRY_COST_PER_REPLY)
+                except Exception as e:
+                    state.trace["refund_failed"] = True
+                    print(f"[chat] refund failed type={type(e).__name__}", flush=True)
+            # ── 写 chat 汇总事件 ──
+            state.trace["resp_chars"] = len(state.full_response)
+            try:
+                await log_event(ctx.user, "chat", payload=state.trace,
+                                success=("error" not in state.trace))
+            except Exception as e:
+                print(f"[chat] trace write failed type={type(e).__name__}", flush=True)

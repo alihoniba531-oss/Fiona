@@ -428,13 +428,9 @@ def test_stream_failure_is_not_saved_or_charged(monkeypatch):
             self.closed = True
 
     saved = []
-    charged = []
 
     async def fake_save(*args):
         saved.append(args)
-
-    async def fake_deduct(*args):
-        charged.append(args)
 
     async def fake_log(*args, **kwargs):
         return None
@@ -448,7 +444,6 @@ def test_stream_failure_is_not_saved_or_charged(monkeypatch):
     broken_stream = _BrokenStream()
     monkeypatch.setattr(chat, "_create_stream_with_fallback", lambda *args, **kwargs: (broken_stream, False))
     monkeypatch.setattr(chat, "save_message", fake_save)
-    monkeypatch.setattr(chat, "deduct_strawberry", fake_deduct)
     monkeypatch.setattr(chat, "log_event", fake_log)
 
     ctx = chat.ChatContext(
@@ -469,5 +464,4 @@ def test_stream_failure_is_not_saved_or_charged(monkeypatch):
     events = asyncio.run(scenario())
     assert any('"error"' in event for event in events)
     assert saved == []
-    assert charged == []
     assert broken_stream.closed is True

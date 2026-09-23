@@ -10,6 +10,7 @@ from exchange_workflow import (
 from exchange_models import get_deepseek_client, get_exchange_model, select_exchange_slot
 from llm import MAIN_EXTRA_BODY, MAIN_MODEL, client
 from official_agents import get_official_exchange_instruction, get_official_workflow_instruction
+from persona import BASE_SAFETY_RULES
 from utils.background_tasks import create_background_task
 
 
@@ -90,7 +91,7 @@ def build_exchange_messages(context, *, summary=False):
 
     def render():
         return [
-            {"role": "system", "content": instruction},
+            {"role": "system", "content": instruction + BASE_SAFETY_RULES},
             {"role": "user", "content": json.dumps(payload, ensure_ascii=False)},
         ]
 
@@ -144,7 +145,7 @@ def _safe_error(error):
     if isinstance(error, TimeoutError):
         return "本次交流生成超时，请稍后重新发起。"
     if getattr(error, "status_code", None) == 402:
-        return "模型服务余额不足，请充值后重新发起讨论。"
+        return "模型服务余额不足，暂时无法生成回复。请联系平台管理员恢复模型服务后重试。"
     if getattr(error, "status_code", None) == 401:
         return "模型服务密钥验证失败，请检查对应模型的 API 配置。"
     return GENERIC_ERROR

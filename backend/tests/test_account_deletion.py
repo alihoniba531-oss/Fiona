@@ -1,5 +1,6 @@
 # -*- coding: utf-8 -*-
 import asyncio
+import sqlite3
 
 
 def test_account_deletion_removes_relations_and_uploads(client, dev_headers, tmp_path, monkeypatch):
@@ -129,3 +130,41 @@ def test_account_deletion_requires_exact_username(client, dev_headers):
     )
     assert response.status_code == 400
     assert asyncio.run(database.get_session_version("smoke_tester")) is not None
+
+
+def test_direct_account_deletion_clears_chat_slots_before_username_reuse(client):
+    import database
+    from intent_router import get_pending, set_pending
+    from mode_switcher import get_user_mode, set_user_mode
+
+    username = "tester99"
+    other_user = "tester99_extra"
+    old_conversation = (username, "old-conversation")
+    asyncio.run(database.get_or_create_user(username))
+    asyncio.run(database.get_or_create_user(other_user))
+    pending = {"intent": "route", "params": {}, "missing": ["origin"]}
+    set_pending(username, pending)
+    set_pending(old_conversation, pending)
+    set_user_mode(username, "mirror", "manual")
+    set_user_mode(old_conversation, "mirror", "manual")
+    set_pending(other_user, pending)
+    set_user_mode(other_user, "mirror", "manual")
+
+    def slot_count(owner):
+        with sqlite3.connect(database.DB_PATH) as connection:
+            return connection.execute(
+                "SELECT COUNT(*) FROM chat_slot_state WHERE owner_username = ?",
+                (owner,),
+            ).fetchone()[0]
+
+    assert slot_count(username) == 4
+    assert slot_count(other_user) == 2
+    assert asyncio.run(database.delete_account_data(username))["deleted"]
+    assert slot_count(username) == 0
+    assert slot_count(other_user) == 2
+
+    asyncio.run(database.get_or_create_user(username))
+    assert get_pending(username) is None
+    assert get_pending(old_conversation) is None
+    assert get_user_mode(username)["mode"] == "friend"
+    assert get_user_mode(old_conversation)["mode"] == "friend"

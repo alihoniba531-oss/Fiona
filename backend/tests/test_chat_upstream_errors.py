@@ -113,14 +113,6 @@ def test_empty_choice_frames_complete_without_hiding_real_stream_errors(
             self.close_count += 1
 
     provider_stream = ProviderStream()
-    charges = []
-    original_deduct = chat.deduct_strawberry
-
-    async def counted_deduct(username, amount):
-        charges.append((username, amount))
-        return await original_deduct(username, amount)
-
-    monkeypatch.setattr(chat, "deduct_strawberry", counted_deduct)
     monkeypatch.setattr(chat, "_create_stream_with_fallback", lambda *a, **k: (provider_stream, False))
     payload = {"message": "普通测试消息", "conversation_id": conversation["id"]}
     if branch == "mirror":
@@ -140,12 +132,10 @@ def test_empty_choice_frames_complete_without_hiding_real_stream_errors(
         assert events == [{"text": "真实结构"}, {"error": "服务暂时不可用，请稍后再试"}]
         assert "private raw stream failure marker" not in response.text
         assert [message["role"] for message in saved] == ["user"]
-        assert charges == []
         assert asyncio.run(database.get_strawberry_balance(user)) == balance_before
     else:
         assert events == [{"text": "真实结构"}, {"text": "回复"}, {"done": True}]
         assert [(message["role"], message["content"]) for message in saved] == [
             ("user", payload["message"]), ("assistant", "真实结构回复"),
         ]
-        assert charges == [(user, 10)]
         assert asyncio.run(database.get_strawberry_balance(user)) == balance_before - 10

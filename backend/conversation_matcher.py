@@ -14,11 +14,12 @@
 import json
 import asyncio
 import aiosqlite
+import database
 
 from llm import MAIN_EXTRA_BODY, MAIN_MODEL
 from database import (
     get_profile, get_all_profiles, was_recently_matched, save_match,
-    save_pending_match, get_user_settings, DB_PATH,
+    save_pending_match, get_user_settings,
 )
 from utils.match_privacy import minimized_match_profile
 
@@ -722,7 +723,7 @@ async def _has_recent_layer2_match(username: str, hours: int = 24) -> bool:
     """检查该用户在最近 N 小时内是否已有画像级（layer2）匹配推送，避免频繁打扰。
     早期版本用 triggered_by_message_id IS NULL 判定，但 layer1 给 B 端的卡片也是 NULL，
     会让经常被人匹配的用户自己的 layer2 永远跑不起来。改用显式 match_layer 字段。"""
-    async with aiosqlite.connect(DB_PATH) as db:
+    async with aiosqlite.connect(database.DB_PATH) as db:
         async with db.execute(
             """SELECT COUNT(*) FROM pending_matches
                WHERE username = ? AND match_layer = 'layer2'

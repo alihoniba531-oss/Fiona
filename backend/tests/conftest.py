@@ -2,14 +2,23 @@
 """
 冒烟测试公共夹具。
 
-两个核心隔离手段，保证测试既不碰真库、也不打真网络：
-  1. DB 隔离：把 database.DB_PATH 指到临时文件，再触发 lifespan 跑 init_db()。
-     database.py 里所有函数都在调用时读模块全局 DB_PATH，所以改这一个值就够。
-  2. LLM/网络隔离：DEV_MODE=1 + monkeypatch main 里所有会出网的入口
+三个核心隔离手段，保证测试不碰真库、真实上传目录和外网：
+  1. 收集阶段强制设置会话临时 FIONA_DB_PATH/FIONA_UPLOADS_DIR；逐用例
+     还会把 database.DB_PATH 指到自己的临时库，再触发 lifespan 跑 init_db()。
+  2. 任何模块导入之前固定上传目录，避免导入期把路径绑定到 backend/uploads/。
+  3. LLM/网络隔离：DEV_MODE=1 + monkeypatch main 里所有会出网的入口
      （detect_mode / recognize_intent / _create_stream_with_fallback /
       find_matches / extract_and_update / detect_matches_and_save）。
 """
 import os
+import tempfile
+import atexit
+
+# 收集测试模块之前固定隔离路径；部分模块在导入时就读取这些环境变量。
+_test_paths = tempfile.TemporaryDirectory(prefix="fiona-pytest-")
+atexit.register(_test_paths.cleanup)
+os.environ["FIONA_DB_PATH"] = os.path.join(_test_paths.name, "test.db")
+os.environ["FIONA_UPLOADS_DIR"] = os.path.join(_test_paths.name, "uploads")
 
 import pytest
 

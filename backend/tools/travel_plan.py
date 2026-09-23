@@ -26,6 +26,7 @@ _PROMPT = """你是一个旅行规划助手。用户给出起点、终点、可�
 
 【输出格式 - 严格 JSON】
 {
+  "success": true,
   "headline": "一句话主线方案（如：宁波栎社→上海浦东→德里英迪拉，全程约18小时，含中转）",
   "points": [
     "交通推荐：建议方式 + 关键航班号/车次 + 大致时长 + 起飞/发车时段",
@@ -39,6 +40,7 @@ _PROMPT = """你是一个旅行规划助手。用户给出起点、终点、可�
 }
 
 【规则】
+- success: 只有形成可执行且有依据的方案时才为 true；没有方案、搜索失败或无法核实时为 false
 - points: 3-6 条，每条必须有具体内容（航班号、时刻、价格、天数），不要笼统
 - 跨国/跨大区时必含签证项；同城/同省驾车时直接给路线即可
 - sources 给真实搜到的链接；编不出真实 URL 就留空数组
@@ -101,6 +103,7 @@ def travel_plan(query: str) -> dict:
             "type": "card",
             "source": f"旅行规划 · {q[:20]}",
             "points": lines[:6] or ["没规划出方案"],
+            "error": True,
         }
 
     headline = (data.get("headline") or "").strip() if isinstance(data, dict) else ""
@@ -140,6 +143,7 @@ def travel_plan(query: str) -> dict:
         "url": first_url,
         "points": points[:6],
         "sources": sources[:5],
+        "error": data.get("success") is not True,
     }
 
 

@@ -102,7 +102,7 @@ def _extract_main_text(html: str, max_chars: int = 5000) -> str:
     return text[:max_chars]
 
 
-def _summarize_points(text: str, source: str) -> list:
+def _summarize_points(text: str, source: str) -> tuple[list[str], bool]:
     """用 LLM 提炼成 3-5 条要点"""
     prompt = (
         f"下面是从网页抓到的文本(来源:{source})。\n"
@@ -114,28 +114,27 @@ def _summarize_points(text: str, source: str) -> list:
         "- 新闻页:事件、关键人物、影响\n"
         "- 社交内容:话题、主要观点、为什么火\n"
         "\n"
-        "输出 JSON: {\"points\": [\"要点1\", \"要点2\", ...]}\n"
+        "输出 JSON: {\"success\": true, \"points\": [\"要点1\", \"要点2\", ...]}\n"
+        "只有确实提炼出网页事实时 success 才为 true；网页无法理解或没有有效信息时为 false。\n"
         "只输出 JSON,不要任何其他文字。\n"
         "\n"
         "网页文本:\n" + text
     )
-    try:
-        client = _get_client()
-        resp = client.chat.completions.create(
-            model=MAIN_MODEL,
-            messages=[{"role": "user", "content": prompt}],
-            temperature=0.3,
-            max_tokens=400,
-            response_format={"type": "json_object"},
-            extra_body=MAIN_EXTRA_BODY,
-        )
-        content = resp.choices[0].message.content or "{}"
-        data = json.loads(content)
-        points = data.get("points", [])
-        cleaned = [str(p).strip() for p in points if p]
-        return cleaned[:5] if cleaned else ["页面读到了,但没提炼出要点"]
-    except Exception as e:
-        return [f"提炼失败:{type(e).__name__}"]
+    client = _get_client()
+    resp = client.chat.completions.create(
+        model=MAIN_MODEL,
+        messages=[{"role": "user", "content": prompt}],
+        temperature=0.3,
+        max_tokens=400,
+        response_format={"type": "json_object"},
+        extra_body=MAIN_EXTRA_BODY,
+    )
+    content = resp.choices[0].message.content or "{}"
+    data = json.loads(content)
+    points = data.get("points", []) if isinstance(data, dict) else []
+    points = points if isinstance(points, list) else []
+    cleaned = [str(p).strip() for p in points if p]
+    return cleaned[:5], isinstance(data, dict) and data.get("success") is True
 
 
 def fetch_card(query: str) -> dict:
@@ -177,10 +176,26 @@ def fetch_card(query: str) -> dict:
             "error": True,
         }
 
-    points = _summarize_points(text, source)
+    try:
+        points, succeeded = _summarize_points(text, source)
+    except Exception as e:
+        return {
+            "type": "card",
+            "source": source,
+            "points": [f"提炼失败:{type(e).__name__}"],
+            "error": True,
+        }
+    if not points:
+        return {
+            "type": "card",
+            "source": source,
+            "points": ["页面读到了,但没提炼出要点"],
+            "error": True,
+        }
     return {
         "type": "card",
         "source": source,
         "url": url,
         "points": points,
+        "error": not succeeded,
     }

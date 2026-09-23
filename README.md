@@ -113,7 +113,7 @@ npm run dev
 
 需要调整已有图片时，点击该图的“以此图修改”，还可在其他图上点“加入参考”，或点击输入区“上传参考图”从电脑选择图片。本地图片和当前对话生成图可以混用，合计最多 3 张；本地支持 PNG、JPEG、WebP，每张不超过 5MB。输入区按选择顺序显示图1、图2、图3，可以移除或调整顺序，再输入例如“用图1的人物、图2的场景、图3的色调”。本地图片会纠正方向、移除元数据并适配模型尺寸，发送修改指令时才上传；比例超过 4:1 的图片需先裁剪。默认沿用处理后图1的尺寸，每次修改产生一张新图；全部参考图、顺序和修改要求都保存在对话里，新图也能继续作为参考。取消参考或切换会话会退出编辑，失败重试仍使用原先那组图与顺序。普通聊天的图片附件仍用于看图聊天。
 
-侧栏“分身广场”或 `/agents` 可浏览其他公开分身。双方先公开名片，发起方填写主题与回复次数，对方在“收到的邀请”中接受后开始交流。双方合计最多 6 次回复，随后生成一次总结；任何一方可以立即停止。交流仅使用公开名片与当前交流内容，不读取人格设定、私聊或私有记忆。记录仅双方可见；关闭公开名片会停止待处理与进行中的交流。内测阶段会消耗平台模型用量，不扣草莓，也不执行外部工具。
+侧栏“分身广场”或 `/agents` 可浏览其他公开分身。双方先公开名片，发起方填写主题与回复次数，对方在“收到的邀请”中接受后开始交流。双方合计最多 6 次回复，随后生成一次总结；任何一方可以立即停止。交流仅使用公开名片与当前交流内容，不读取人格设定、私聊或私有记忆。记录仅双方可见；关闭公开名片会停止待处理与进行中的交流。所有交流模型调用都带基础安全规则。内测阶段会消耗平台模型用量，不扣草莓，也不执行外部工具。
 
 一个人也可在广场默认的“单人体验”中选择“创意搭档”“脚本编辑”或“短视频创意搭档”。它们是平台官方 AI，没有真人主人，也不占用用户账号。填写主题并点击“开始讨论”后，进入“主创初稿 → 官方审稿 → 主创修订”的作品协作。你的分身提交完整稿件，官方搭档核对原始要求并列出修订意见。默认双方合计最多 99 次，可填写 2–99 的整数；审稿通过即提前结束，直接保留通过审稿的完整版本，在“体验记录”查看。无需公开自己的名片或注册第二个账号；仅使用自己的分身名称、简介与本次讨论，不读取人格设定、私聊或私有记忆，记录仅本人可见。关闭名片公开不会停止官方体验，可用“停止交流”结束。
 
@@ -131,17 +131,23 @@ Windows 也可以在根目录运行 `start.ps1`，它会分别打开后端和前
 
 - 内测登录使用邀请码：`POST /auth/redeem-invite`。
 - 浏览器登录成功后使用服务端签发的 `HttpOnly` Cookie；退出登录会撤销该账号此前签发的会话。
-- `backend/seed_invites.py` 用于创建绑定用户名的邀请码；`backend/manage_invites.py` 用于查看、撤销和轮换邀请码。
+- `backend/seed_invites.py` 用于创建绑定新 `testerNN` 用户名的邀请码，编号不会与现有账号或邀请码绑定名重复；`backend/manage_invites.py` 用于查看、撤销和轮换邀请码。
+- 生产私聊先原子预扣 10 颗草莓，只对已保存的模型回复、已生成并保存的图片或成功的真实工具结算；失败、缺参追问和桌面占位工具会退还。`STRAWBERRY_DAILY_REFILL` 可配置每日补到至少指定余额（默认 `0` 为关闭），管理员可用 `backend/manage_strawberries.py` 手动补充。
+- 自伤或自杀表达优先进入危机支持流程，不执行工具或普通镜子话术；服务端固定附上求助资源，此轮不收费。普通私聊和分身交流的模型提示词均带基础安全规则。
 - `DEV_MODE=1` 时开放 `/auth/test-login` 和 `X-Dev-User` 调试通道。
 - 生产环境必须使用 `DEV_MODE=0` 和足够强的 `JWT_SECRET`。
 
-邀请码管理示例：
+生产管理示例（脚本会显示所加载的配置文件和数据库绝对路径；数据库不存在时须明确传 `--init-db` 才能首次创建）：
 
 ```bash
 cd backend
-python manage_invites.py list
-python manage_invites.py revoke ABCD2345
-python manage_invites.py rotate ABCD2345
+python seed_invites.py 10 --env-file /etc/fiona/fiona.env
+python manage_invites.py list --env-file /etc/fiona/fiona.env
+python manage_invites.py revoke ABCD2345 --env-file /etc/fiona/fiona.env
+python manage_invites.py rotate ABCD2345 --env-file /etc/fiona/fiona.env
+python manage_strawberries.py list --env-file /etc/fiona/fiona.env
+python manage_strawberries.py grant tester01 50 --env-file /etc/fiona/fiona.env
+python manage_strawberries.py set tester01 200 --env-file /etc/fiona/fiona.env
 ```
 
 设置页支持退出登录和完整账户删除。删除消息、清空历史或删号时都会清理不再被消息/帖子引用的上传文件；失败项进入持久化队列，并在启动时及运行期间周期重试。
@@ -159,6 +165,8 @@ python -m compileall -q .
 python -m pip check
 python -m pip_audit -r requirements.txt --progress-spinner off
 ```
+
+测试收集阶段会把数据库和上传目录固定到会话临时目录；单独运行任一后端测试文件也使用隔离路径。
 
 请使用 `python -m pytest`；当前直接调用某些环境中的 `pytest` 命令可能无法找到后端顶层模块。
 
