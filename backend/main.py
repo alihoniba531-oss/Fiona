@@ -117,7 +117,11 @@ _AUTH_PUBLIC_PATHS = {
     "/plaza/feed",
     "/plaza/community-interests",
 }
-_AUTH_PUBLIC_PREFIXES = ("/docs", "/redoc", "/openapi.json", "/hot/")
+_AUTH_PUBLIC_PREFIXES = ("/hot/",)
+# 热点展开会触发联网模型调用，不能匿名消耗额度；其余 /hot/* 只读榜单保持公开。
+_AUTH_REQUIRED_PATHS = {"/hot/expand"}
+# 交互式 API 文档只在 DEV_MODE=1 开放；生产环境一律 404，不对公网暴露接口清单。
+_API_DOCS_PREFIXES = ("/docs", "/redoc", "/openapi.json")
 
 
 async def _can_view_generated_image(username: str, image_path: str) -> bool:
@@ -139,7 +143,13 @@ async def require_auth(request: Request, call_next):
     private_chat_image = upload_path.startswith("/uploads/") and posixpath.basename(upload_path).startswith(("generated_", "reference_", ".generated_", ".reference_"))
     if path.startswith("/uploads/") and not private_chat_image and os.getenv("DEV_MODE", "0") == "1":
         return await call_next(request)
-    if path in _AUTH_PUBLIC_PATHS or any(path.startswith(p) for p in _AUTH_PUBLIC_PREFIXES):
+    if path.startswith(_API_DOCS_PREFIXES):
+        if os.getenv("DEV_MODE", "0") != "1":
+            return JSONResponse({"detail": "Not Found"}, status_code=404)
+        return await call_next(request)
+    if path in _AUTH_PUBLIC_PATHS or (
+        path.startswith(_AUTH_PUBLIC_PREFIXES) and path.rstrip("/") not in _AUTH_REQUIRED_PATHS
+    ):
         return await call_next(request)
     from auth_dep import authenticate_token
     user = None

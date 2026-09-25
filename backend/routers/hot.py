@@ -3,8 +3,9 @@ import json
 import re
 import time as _time
 
-from fastapi import APIRouter, Query, Request
+from fastapi import APIRouter, Depends, Query, Request
 
+from auth_dep import get_current_user
 from llm import QWEN_CLIENT, QWEN_MODEL, QWEN_EXTRA_BODY
 from rate_limit import limiter
 from tools.hot_topics import hot_topics
@@ -14,10 +15,15 @@ router = APIRouter()
 
 @router.get("/hot/expand")
 @limiter.limit("20/minute")
-async def hot_expand(request: Request, title: str = Query(default="", max_length=200)):
+async def hot_expand(
+    request: Request,
+    title: str = Query(default="", max_length=200),
+    _user: str = Depends(get_current_user),
+):
     """把一个热搜标题展开成结构化内容卡（千问联网检索）。
     注意：此路由必须注册在 /hot/{source} 之前，否则被泛匹配吃掉。
-    限流 20/分钟/IP：匿名可访问且触发 LLM 联网外呼，防钱包型 DoS；request 供 slowapi 取 key。"""
+    会触发 LLM 联网外呼，必须登录（中间件与本依赖双重校验），
+    另限流 20/分钟/IP 防刷；request 供 slowapi 取 key。"""
     import asyncio
     from tools.topic_expand import topic_expand
     return await asyncio.to_thread(topic_expand, title)
