@@ -2,6 +2,8 @@
 
 本文把仓库当前采用的“单机、单域名、Nginx + systemd”拓扑写成可执行的基线。当前约定的线上域名是 `madchloechat.online`，只读代码目录是 `/opt/fiona`，运行状态位于 `/var/lib/fiona`。
 
+> **2026-09-25：线上服务已下线。** 原 `madchloechat.online` 服务器已关闭，当前没有任何在线部署，详见文末[下线记录](#下线记录)。本文其余内容保留为重新部署时的参考基线。
+
 > 仓库无法证明外部服务器此刻的真实配置。首次使用或接手服务器时，必须先核对 Nginx、systemd、证书、数据库和上传目录，再按本文操作。
 
 ## 目标拓扑
@@ -406,3 +408,18 @@ systemctl stop fiona
 - 已处理 [PLAN.md](../PLAN.md) 中所有标为“发布阻断”的项目。
 - 已用一次性测试账号验证完整账户删除和失败文件清理重试。
 - 已确认成人内容、未成年人和危机干预政策与代码一致。
+
+## 下线记录
+
+**2026-09-25**：作者确认原线上服务器已关闭。下线方案为“先备份，再删除服务、数据与密钥”，包括以下步骤：
+
+1. 停止服务后，备份 SQLite、上传目录和历史备份，并拷贝到服务器以外保存。备份存放位置不记录在仓库中；备份不包含 `/etc/fiona/fiona.env`。
+2. 删除 `fiona`、`fiona-web` 两个 systemd 服务、Nginx 站点、TLS 证书、代码目录、`/var/lib/fiona`、`/etc/fiona`、`/var/backups/fiona` 以及 `fiona` 服务账号。
+
+截至同日，仍有以下事项需要作者在仓库之外处理：
+
+- 域名 `madchloechat.online` 的 DNS A 记录仍指向原服务器 IP。云主机释放后，这个 IP 可能被分配给其他用户，应删除或改掉这条解析。
+- 已安装的 Windows 桌面端在用户模式下仍会加载 `https://madchloechat.online`，远程 capability 也仍对该域名开放两个外链命令（见 `desktop/src-tauri/capabilities/remote-links.json`）。域名到期前应通知测试者卸载桌面端；如果以后放弃这个域名，重新发布桌面端时需要同时更换默认地址和 capability 白名单。
+- 在 DashScope、DeepSeek 后台删除本项目使用的 API Key。
+
+重新上线时，按本文“首次安装”一节重新部署，并用新的 `JWT_SECRET` 和新的模型密钥。

@@ -2,6 +2,8 @@
 
 Tauri 2 桌面壳 + 可选 SSH 隧道。双击安装后的应用即可加载 Web 客户端：开发者模式连接云端开发服务，用户模式直接打开公网 `https://madchloechat.online`。
 
+> 公网服务 `madchloechat.online` 已于 2026-09-25 下线。用户模式（没有配置文件）目前无法加载任何页面，只有开发者模式连自己的服务时才可用。已安装的测试者建议卸载，详见[部署手册的下线记录](../docs/DEPLOYMENT.md#下线记录)。
+
 桌面包不内置完整的 Next.js 应用；`dist/index.html`、`dist/main.js` 和 `dist/style.css` 一起组成启动/跳转页，三个文件都必须入库。整个产品的架构和发布阻断项分别见 [架构文档](../docs/ARCHITECTURE.md) 和 [PLAN.md](../PLAN.md)。
 
 ## 两条获取路径，选一条

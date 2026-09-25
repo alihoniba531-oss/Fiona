@@ -187,7 +187,9 @@ npm audit
 
 ## 部署
 
-当前目标生产形态是同一台服务器上的 Nginx + systemd：
+> 原线上服务 `madchloechat.online` 已于 2026-09-25 下线，当前没有在线部署。下线记录见[生产部署手册](./docs/DEPLOYMENT.md#下线记录)。
+
+重新部署时的目标形态是同一台服务器上的 Nginx + systemd：
 
 - `/` → Next.js `127.0.0.1:3000`
 - `/api/` → FastAPI `127.0.0.1:8000`，并移除 `/api` 前缀

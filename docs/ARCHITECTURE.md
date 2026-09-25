@@ -191,7 +191,7 @@ Layer 2 会为双方创建待接受卡片；Layer 1、Layer 2 和手动匹配都
 `desktop/` 是 Tauri 2 壳，不内置完整 Web 前端：
 
 - 找到 `fiona.config.json`：建立 SSH 本地端口转发，加载 `http://localhost:<port>`。
-- 没有配置文件：加载 `https://madchloechat.online`。
+- 没有配置文件：加载 `https://madchloechat.online`。线上服务已于 2026-09-25 下线，这个模式目前打不开任何页面。
 
 本地隧道页面只拥有诊断、后端探测和日志相关 capability；远程页面只拥有两个受 Rust 层 HTTP(S) 校验保护的外链命令。Windows 外链不经过 `cmd.exe`，Tauri 启动页和远程 Next.js 页面均已配置 CSP。公开分发前仍需完成 [PLAN.md](../PLAN.md) 中的 Windows/Rust 构建复核、签名和发布验证。
 
