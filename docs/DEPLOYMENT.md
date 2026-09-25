@@ -400,7 +400,7 @@ systemctl stop fiona
 - `DEV_MODE=0`，`JWT_SECRET` 不是开发默认值。
 - HTTPS 正常，登录响应的 `fiona_token` Cookie 带 `Secure`、`HttpOnly` 和 `SameSite=Lax`；HTTP/WebSocket URL 中没有 Token。
 - `/etc/fiona/fiona.env`、`/var/lib/fiona` 和备份目录不可被 Nginx 静态暴露。
-- `/api/docs` 是否需要在公网关闭或额外保护。
+- 未登录访问 `/api/docs`、`/api/openapi.json` 返回 404（`DEV_MODE=0` 时后端关闭 API 文档），`/api/hot/expand` 返回 401（后端始终要求登录）；无需 Nginx 额外配置。
 - Nginx 请求体、连接、速率和超时限制符合当前容量。
 - 桌面端发布前已完成 Tauri capability、URL opener 和 CSP 整改。
 - 已处理 [PLAN.md](../PLAN.md) 中所有标为“发布阻断”的项目。

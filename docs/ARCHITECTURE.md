@@ -146,7 +146,7 @@ HTTP 默认经过 `backend/main.py` 的鉴权中间件，身份来源优先级�
 2. `fiona_token` Cookie
 3. `DEV_MODE=1` 时的 `X-Dev-User`/`dev_user`
 
-当前公开范围包括根健康响应、认证入口、API 文档、`/hot/*`，以及 Plaza 的标签、Feed 和社群兴趣三个只读端点。WebSocket 不经过 HTTP 中间件，由具体端点单独认证。
+当前公开范围包括根健康响应、认证入口、`/hot/*` 中的只读榜单，以及 Plaza 的标签、Feed 和社群兴趣三个只读端点。`/hot/expand` 会触发联网模型调用，中间件和路由依赖都要求登录。API 文档（`/docs`、`/redoc`、`/openapi.json`）只在 `DEV_MODE=1` 时开放，生产环境返回 404。WebSocket 不经过 HTTP 中间件，由具体端点单独认证。
 
 生产 JWT 使用 HS256，默认有效期 30 天，浏览器端只存于 `HttpOnly`、`SameSite=Lax` Cookie。JWT 带账号会话版本，每次 HTTP 请求和 WebSocket 握手都会与数据库核对；退出登录、撤销或轮换邀请码会使旧会话立即失效。邀请码仍绑定用户名并允许重复登录，但兑换会原子记录用量。`backend/seed_invites.py` 在单个写事务中按用户表和邀请码表的最大 `testerNN` 编号分配新用户名，避免删号后与存量账号撞名；`backend/manage_invites.py` 可查看、撤销和轮换。管理脚本先加载服务环境配置，并拒绝在未明确 `--init-db` 时创建不存在的数据库。
 
