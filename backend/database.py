@@ -3,9 +3,10 @@ import os
 import re
 import secrets
 from datetime import datetime, timedelta, timezone
+from pathlib import Path
 from zoneinfo import ZoneInfo
 
-DB_PATH = os.getenv("FIONA_DB_PATH") or os.path.join(os.path.dirname(__file__), "fiona.db")
+DB_PATH = str(Path(os.getenv("FIONA_DB_PATH") or Path(__file__).resolve().parent / "fiona.db").expanduser().resolve())
 SQLITE_BUSY_TIMEOUT = 5.0
 STRAWBERRY_COST_PER_REPLY = 10
 _INVALID_REFILL_WARNED = False

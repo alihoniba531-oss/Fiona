@@ -11,7 +11,7 @@ from auth_dep import get_current_user
 from exchange_exports import export_filename, render_exchange_markdown
 from official_agents import list_official_agents
 from rate_limit import limiter
-from services.exchange_service import start_exchange
+from services.exchange_service import cancel_exchange, start_exchange
 
 
 router = APIRouter(prefix="/agent-exchanges", tags=["agent-exchanges"])
@@ -121,6 +121,9 @@ async def _transition(user, exchange_id, action):
         raise HTTPException(status_code=409, detail=str(exc)) from None
     if run_token is not None:
         start_exchange(exchange_id, run_token)
+    elif action == "stop":
+        await cancel_exchange(exchange_id)
+        details = await exchange_store.exchange_details(user, exchange_id)
     return details
 
 

@@ -5,23 +5,24 @@ import { useSearchParams } from "next/navigation";
 import Sidebar from "@/components/Sidebar";
 import { Trash2, User, Info, LogOut } from "lucide-react";
 import { apiFetch, clearAuth, setAuth } from "@/lib/auth";
+import { useAccountIdentity } from "@/lib/useAccountIdentity";
 
 import { API_BASE as API } from "@/lib/config";
 
 function SettingsContent() {
   const sp = useSearchParams();
   const embedded = sp?.get("embed") === "1";
-  const [username, setUsername] = useState("默认用户");
+  const username = useAccountIdentity();
   const [allUsers, setAllUsers] = useState<string[]>([]);
   const [cleared, setCleared] = useState(false);
+  const [clearError, setClearError] = useState("");
   const [deleteConfirmation, setDeleteConfirmation] = useState("");
   const [deleting, setDeleting] = useState(false);
   const [deleteError, setDeleteError] = useState("");
+  const [loggingOut, setLoggingOut] = useState(false);
+  const [logoutError, setLogoutError] = useState("");
 
   useEffect(() => {
-    const u = localStorage.getItem("fiona_user");
-    // eslint-disable-next-line react-hooks/set-state-in-effect
-    if (u) setUsername(u);
     // /users 端点仅在后端 DEV_MODE=1 时开放；prod 直接 404，前端把列表留空即可。
     apiFetch(`${API}/users`).then(r => r.ok ? r.json() : { users: [] }).then(d => setAllUsers(d.users || [])).catch(() => {});
   }, []);
@@ -37,14 +38,23 @@ function SettingsContent() {
     if (!response.ok) return;
     const data = await response.json();
     setAuth(data.username, data.balance ?? 200);
-    setUsername(data.username);
   };
 
   const clearHistory = async () => {
+    if (!username) return;
     if (!confirm(`确定清空「${username}」的所有聊天记录？此操作不可恢复。`)) return;
-    await apiFetch(`${API}/history`, { method: "DELETE" }).catch(() => {});
-    setCleared(true);
-    setTimeout(() => setCleared(false), 3000);
+    setClearError("");
+    try {
+      const response = await apiFetch(`${API}/history`, { method: "DELETE" });
+      if (!response.ok) {
+        setClearError("清空失败，请重试");
+        return;
+      }
+      setCleared(true);
+      setTimeout(() => setCleared(false), 3000);
+    } catch {
+      setClearError("网络错误，请重试");
+    }
   };
 
   const redirectTop = (path: string) => {
@@ -57,13 +67,37 @@ function SettingsContent() {
   };
 
   const logout = async () => {
-    await apiFetch(`${API}/auth/logout`, { method: "POST" }).catch(() => null);
-    clearAuth();
-    redirectTop("/login?reason=logout");
+    if (loggingOut) return;
+    setLoggingOut(true);
+    setLogoutError("");
+    try {
+      const response = await apiFetch(
+        `${API}/auth/logout`,
+        { method: "POST" },
+        { redirectOnUnauthorized: false },
+      );
+      if (response.status === 401) {
+        // The server has already rejected this session; there is nothing left
+        // to revoke, so remove the stale local identity and show login.
+        clearAuth();
+        redirectTop("/login?reason=logout");
+        return;
+      }
+      if (!response.ok) {
+        setLogoutError("退出失败，会话仍可能有效。请重试。");
+        return;
+      }
+      clearAuth();
+      redirectTop("/login?reason=logout");
+    } catch {
+      setLogoutError("网络错误，退出未完成。请重试。");
+    } finally {
+      setLoggingOut(false);
+    }
   };
 
   const deleteAccount = async () => {
-    if (deleteConfirmation !== username || deleting) return;
+    if (!username || deleteConfirmation !== username || deleting) return;
     if (!confirm(`将永久删除「${username}」的账号、聊天、画像、匹配、帖子和上传文件。确定继续？`)) return;
     setDeleting(true);
     setDeleteError("");
@@ -112,7 +146,7 @@ function SettingsContent() {
                 当前身份
               </div>
               <div className="flex flex-wrap gap-2">
-                {(allUsers.length ? allUsers : [username]).map(u => (
+                {(allUsers.length ? allUsers : username ? [username] : []).map(u => (
                   <button
                     key={u}
                     onClick={() => switchUser(u)}
@@ -121,17 +155,20 @@ function SettingsContent() {
                     {u}
                   </button>
                 ))}
+                {!username && <span className="text-xs text-muted-foreground">正在加载身份…</span>}
               </div>
               <p className="text-[11px] text-muted-foreground/60">
                 当前使用服务端 HttpOnly 会话；开发环境仍可切换测试身份。
               </p>
               <button
                 onClick={logout}
+                disabled={loggingOut}
                 className="btn w-full mobile:h-auto mobile:min-h-10 mobile:break-all mobile:whitespace-normal"
               >
                 <LogOut size={14} />
-                退出登录并撤销现有会话
+                {loggingOut ? "正在退出…" : "退出登录并撤销现有会话"}
               </button>
+              {logoutError && <p role="alert" className="text-xs text-[color:var(--rec)]">{logoutError}</p>}
             </div>
 
             {/* 数据管理 */}
@@ -142,28 +179,31 @@ function SettingsContent() {
               </div>
               <button
                 onClick={clearHistory}
+                disabled={!username}
                 className="btn btn-danger w-full mobile:h-auto mobile:min-h-10 mobile:break-all mobile:whitespace-normal"
               >
                 <Trash2 size={14} />
-                清空「{username}」的所有聊天记录
+                {username ? `清空「${username}」的所有聊天记录` : "正在加载身份…"}
               </button>
               {cleared && (
                 <p className="text-xs text-[color:var(--amber-ink)]">已清空</p>
               )}
+              {clearError && <p role="alert" className="text-xs text-[color:var(--rec)]">{clearError}</p>}
               <div className="space-y-2 border-t pt-3" style={{ borderColor: "var(--glass-border)" }}>
                 <p className="text-xs text-[color:var(--rec)]">永久删除账号</p>
                 <p className="text-[11px] text-muted-foreground">
-                  输入当前用户名 <span className="readout text-foreground mobile:break-all">{username}</span> 确认。此操作不可恢复。
+                  {username ? <>输入当前用户名 <span className="readout text-foreground mobile:break-all">{username}</span> 确认。此操作不可恢复。</> : "正在加载身份，加载完成后才能删除账号。"}
                 </p>
                 <input
                   value={deleteConfirmation}
                   onChange={event => setDeleteConfirmation(event.target.value)}
-                  placeholder={username}
+                  placeholder={username || "正在加载身份…"}
+                  disabled={!username}
                   className="w-full rounded-[6px] border bg-card px-3 py-[9px] text-sm outline-none placeholder:text-muted-foreground focus:border-[color:var(--amber-ink)]"
                 />
                 <button
                   onClick={deleteAccount}
-                  disabled={deleteConfirmation !== username || deleting}
+                  disabled={!username || deleteConfirmation !== username || deleting}
                   className="btn btn-danger w-full mobile:h-auto mobile:min-h-10 mobile:whitespace-normal"
                 >
                   <Trash2 size={14} />

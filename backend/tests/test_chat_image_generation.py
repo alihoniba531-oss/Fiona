@@ -34,6 +34,24 @@ def image_stub(monkeypatch, tmp_path):
     return calls, path
 
 
+@pytest.fixture
+def confirmed_image_intent(monkeypatch):
+    import services.chat_service as chat
+
+    def classify(_client, message, _history):
+        if message == "帮我生成图片":
+            return {"intent": "generate_image", "params": {}, "missing": ["prompt"]}
+        if message in {
+            "帮我生成一张青灰薄雾古庙图片，横版16:9",
+            "画一只趴在窗台的猫",
+            "请帮我做一张咖啡店海报，竖版",
+        }:
+            return {"intent": "generate_image", "params": {"prompt": message}, "missing": []}
+        return {"intent": None}
+
+    monkeypatch.setattr(chat, "recognize_intent", classify)
+
+
 def new_conversation(client, headers):
     return client.post("/conversations", json={}, headers=headers).json()["conversation"]["id"]
 
@@ -61,7 +79,7 @@ def test_explicit_mode_uses_full_prompt_and_saves_image_in_fixed_conversation(cl
     ("画一只趴在窗台的猫", "1:1"),
     ("请帮我做一张咖啡店海报，竖版", "9:16"),
 ])
-def test_natural_request_precedes_mirror_and_old_pending(client, dev_headers, image_stub, monkeypatch, prompt, ratio):
+def test_natural_request_precedes_mirror_and_old_pending(client, dev_headers, image_stub, confirmed_image_intent, monkeypatch, prompt, ratio):
     import services.chat_service as chat
     from intent_router import set_pending, get_pending
     conversation = new_conversation(client, dev_headers)
@@ -84,7 +102,7 @@ def test_image_discussion_does_not_trigger_generation(client, dev_headers, image
     assert not any("generated_image" in item for item in output)
 
 
-def test_image_prompt_question_then_description_generates_only_description(client, dev_headers, image_stub):
+def test_image_prompt_question_then_description_generates_only_description(client, dev_headers, image_stub, confirmed_image_intent):
     conversation = new_conversation(client, dev_headers)
     first = events(client.post("/chat", headers=dev_headers, json={"conversation_id": conversation, "message": "帮我生成图片"}))
     assert image_stub[0] == []
@@ -93,8 +111,61 @@ def test_image_prompt_question_then_description_generates_only_description(clien
     assert image_stub[0] == [("青灰薄雾中的悬崖古庙", "1:1")]
 
 
+@pytest.mark.parametrize("message", [
+    "帮我生成图片", "帮我生成一张图片", "画一张图", "给我画一幅画",
+])
+@pytest.mark.parametrize("model_missing", [[], ["prompt"]])
+def test_empty_scene_candidate_asks_without_charge_then_generates_from_followup(
+    client, dev_headers, image_stub, monkeypatch, message, model_missing,
+):
+    import database
+    import services.chat_service as chat
+    from auth import create_token
+    from intent_router import explicit_image_intent, get_pending
+
+    candidate = explicit_image_intent(message)
+    assert candidate is not None and candidate["missing"] == ["prompt"]
+    conversation = new_conversation(client, dev_headers)
+    key = (dev_headers["X-Dev-User"], conversation)
+    before = asyncio.run(database.get_strawberry_balance(key[0]))
+    version = asyncio.run(database.get_session_version(key[0]))
+    classified = []
+
+    def classify(_client, text, _history):
+        classified.append(text)
+        if text == message:
+            # A short model prompt cannot fill a subject absent from user text.
+            return {"intent": "generate_image", "params": {"prompt": "模型猜的猫"},
+                    "missing": model_missing}
+        return {"intent": None, "params": {}, "missing": []}
+
+    monkeypatch.setattr(chat, "recognize_intent", classify)
+    monkeypatch.setenv("DEV_MODE", "0")
+    headers = {"Authorization": f"Bearer {create_token(key[0], version)}"}
+    first = events(client.post("/chat", headers=headers, json={
+        "conversation_id": conversation, "message": message,
+    }))
+    assert classified == [message]
+    assert first[0]["text"] == "想生成什么画面？可以告诉我主体、场景和风格。"
+    assert first[-1] == {"done": True}
+    assert not any("generated_image" in item or item.get("status") == "generating_image" for item in first)
+    assert image_stub[0] == []
+    assert get_pending(key) == {"intent": "generate_image", "params": {}, "missing": ["prompt"]}
+    assert asyncio.run(database.get_strawberry_balance(key[0])) == before
+
+    scene = "青灰薄雾中的悬崖古庙"
+    second = events(client.post("/chat", headers=headers, json={
+        "conversation_id": conversation, "message": scene,
+    }))
+    assert classified == [message, scene]
+    assert image_stub[0] == [(scene, "1:1")]
+    assert sum("generated_image" in item for item in second) == 1
+    assert get_pending(key) is None
+    assert asyncio.run(database.get_strawberry_balance(key[0])) == before - 10
+
+
 @pytest.mark.parametrize("reply", ["取消", "不要画了", "不用生成了", "取消，先聊别的", "你能生成图片吗", "今天天气如何", "先聊别的", "谢谢"])
-def test_pending_image_request_can_be_cancelled_or_left(client, dev_headers, image_stub, reply):
+def test_pending_image_request_can_be_cancelled_or_left(client, dev_headers, image_stub, confirmed_image_intent, reply):
     from intent_router import get_pending
     conversation = new_conversation(client, dev_headers)
     events(client.post("/chat", headers=dev_headers, json={"conversation_id": conversation, "message": "帮我生成图片"}))

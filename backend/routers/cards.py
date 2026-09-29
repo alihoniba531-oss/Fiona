@@ -7,6 +7,7 @@ from pydantic import BaseModel, ConfigDict, Field, field_validator
 from auth_dep import get_current_user
 from rate_limit import limiter
 from tools.card_detail import card_detail, detail_error
+from utils.slow_pool import run_slow
 
 
 router = APIRouter(prefix="/cards", tags=["cards"])
@@ -35,7 +36,7 @@ async def get_card_detail(
 ):
     try:
         return await asyncio.wait_for(
-            asyncio.to_thread(card_detail, body.title, body.context),
+            run_slow(card_detail, body.title, body.context),
             timeout=DETAIL_TIMEOUT_SECONDS,
         )
     except TimeoutError:

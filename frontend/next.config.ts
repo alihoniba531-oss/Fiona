@@ -2,6 +2,14 @@ import type { NextConfig } from "next";
 
 const isDevelopment = process.env.NODE_ENV === "development";
 const backendOrigin = (process.env.FIONA_BACKEND_ORIGIN || "http://localhost:8000").replace(/\/+$/, "");
+const allowedDevOrigins = [
+  "127.0.0.1",
+  "localhost",
+  ...(process.env.FIONA_ALLOWED_DEV_ORIGINS || "")
+    .split(",")
+    .map(origin => origin.trim())
+    .filter(Boolean),
+];
 function configuredApiOrigins() {
   const raw = process.env.NEXT_PUBLIC_API_BASE?.trim();
   if (!raw) return { http: "", websocket: "" };
@@ -37,7 +45,7 @@ const contentSecurityPolicy = [
 ].join("; ");
 
 const nextConfig: NextConfig = {
-  allowedDevOrigins: ["*"],
+  allowedDevOrigins,
   // Three 5MB reference images occupy about 20MB after base64 encoding.
   experimental: { proxyClientMaxBodySize: "25mb" },
   async headers() {

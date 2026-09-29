@@ -13,12 +13,18 @@
 import os
 import tempfile
 import atexit
+from pathlib import Path
+
+# Tests use isolated paths and placeholder credentials. Do not let legacy
+# module-level dotenv calls inspect backend/.env during collection.
+os.environ["PYTHON_DOTENV_DISABLED"] = "1"
 
 # 收集测试模块之前固定隔离路径；部分模块在导入时就读取这些环境变量。
 _test_paths = tempfile.TemporaryDirectory(prefix="fiona-pytest-")
 atexit.register(_test_paths.cleanup)
-os.environ["FIONA_DB_PATH"] = os.path.join(_test_paths.name, "test.db")
-os.environ["FIONA_UPLOADS_DIR"] = os.path.join(_test_paths.name, "uploads")
+_isolated_root = Path(_test_paths.name).resolve()
+os.environ["FIONA_DB_PATH"] = str(_isolated_root / "test.db")
+os.environ["FIONA_UPLOADS_DIR"] = str(_isolated_root / "uploads")
 
 import pytest
 
@@ -74,7 +80,7 @@ def client(tmp_path, monkeypatch):
     monkeypatch.setattr(match, "find_matches", _no_matches)
 
     from fastapi.testclient import TestClient
-    with TestClient(main.app) as c:  # 进入即触发 lifespan → init_db() 建临时库
+    with TestClient(main.app, base_url="http://127.0.0.1", client=("127.0.0.1", 50000)) as c:  # 进入即触发 lifespan → init_db() 建临时库
         yield c
 
 

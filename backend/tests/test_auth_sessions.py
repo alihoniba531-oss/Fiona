@@ -83,7 +83,9 @@ def test_logout_closes_existing_peer_websocket(client):
     asyncio.run(seed())
     assert client.post("/auth/redeem-invite", json={"code": "PEERWS01"}).status_code == 200
 
-    with client.websocket_connect("/ws/peer/peer_ws_friend__peer_ws_user") as websocket:
+    # Starlette resolves relative WebSocket URLs against ws://testserver even
+    # when this fixture's HTTP base URL is 127.0.0.1, dropping its host cookie.
+    with client.websocket_connect("ws://127.0.0.1/ws/peer/peer_ws_friend__peer_ws_user") as websocket:
         assert websocket.receive_json()["type"] == "history"
         assert client.post("/auth/logout").status_code == 200
         with pytest.raises(WebSocketDisconnect) as closed:

@@ -3,9 +3,9 @@ import os
 from dataclasses import dataclass
 from functools import lru_cache
 
-from openai import OpenAI
+from openai import AsyncOpenAI
 
-from llm import MAIN_EXTRA_BODY, MAIN_MODEL
+from llm import MAIN_EXTRA_BODY, MAIN_MODEL, _float_env
 
 
 @dataclass(frozen=True)
@@ -33,12 +33,22 @@ def get_exchange_model(slot: str = "main") -> ExchangeModel:
 
 
 @lru_cache(maxsize=1)
-def get_deepseek_client() -> OpenAI:
+def get_async_main_client() -> AsyncOpenAI:
+    return AsyncOpenAI(
+        api_key=os.getenv("DASHSCOPE_API_KEY"),
+        base_url="https://dashscope.aliyuncs.com/compatible-mode/v1",
+        timeout=_float_env("DASHSCOPE_TIMEOUT_SECONDS", 60.0, minimum=5.0, maximum=300.0),
+        max_retries=0,
+    )
+
+
+@lru_cache(maxsize=1)
+def get_async_deepseek_client() -> AsyncOpenAI:
     key = os.getenv("DEEPSEEK_API_KEY", "").strip()
     if not key:
         raise ValueError("DeepSeek API key is not configured")
     # Credentials go only to the official DeepSeek endpoint, never to a caller URL.
-    return OpenAI(api_key=key, base_url="https://api.deepseek.com", timeout=45.0, max_retries=0)
+    return AsyncOpenAI(api_key=key, base_url="https://api.deepseek.com", timeout=45.0, max_retries=0)
 
 
 def select_exchange_slot(context: dict, *, summary: bool = False) -> str:

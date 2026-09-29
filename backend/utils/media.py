@@ -29,6 +29,14 @@ _MIME_SNIFF = [
 _VIDEO_SNIFF = [
     (b"\x1a\x45\xdf\xa3", "webm"),
 ]
+_IMAGE_BMFF_BRANDS = {
+    b"heic", b"heix", b"hevc", b"hevx", b"heis", b"hevm",
+    b"mif1", b"mif2", b"msf1", b"miaf", b"avif", b"avis",
+}
+_VIDEO_BMFF_BRANDS = {
+    b"isom", b"iso2", b"iso4", b"iso5", b"iso6", b"mp41", b"mp42",
+    b"avc1", b"dash", b"M4V ", b"qt  ",
+}
 _MAX_PLAZA_IMAGE_BYTES = 5 * 1024 * 1024
 _MAX_PLAZA_VIDEO_BYTES = 20 * 1024 * 1024
 _MAX_IMAGE_PIXELS = 40_000_000
@@ -60,16 +68,28 @@ def _sniff_image_ext(data: bytes) -> str | None:
     return None
 
 
+def _bmff_brands(data: bytes) -> list[bytes]:
+    if len(data) < 12 or data[4:8] != b"ftyp":
+        return []
+    box_size = int.from_bytes(data[:4], "big")
+    end = min(len(data), box_size) if box_size >= 16 else len(data)
+    return [data[8:12], *(data[i:i + 4] for i in range(16, end - 3, 4))]
+
+
 def _sniff_video_ext(data: bytes) -> str | None:
     """嗅探常见短视频格式。返回保存扩展名，不信任用户上传的文件名。"""
     for magic, ext in _VIDEO_SNIFF:
         if data.startswith(magic):
             return ext
-    if len(data) >= 12 and data[4:8] == b"ftyp":
-        brand = data[8:12]
+    brands = _bmff_brands(data)
+    if brands:
+        brand = brands[0]
+        if any(item in _IMAGE_BMFF_BRANDS for item in brands):
+            return None
         if brand == b"qt  ":
             return "mov"
-        return "mp4"
+        if brand in _VIDEO_BMFF_BRANDS or brand.startswith((b"3gp", b"3g2")):
+            return "mp4"
     return None
 
 
@@ -82,10 +102,15 @@ async def _save_plaza_upload(file: UploadFile) -> tuple[str, str]:
     media_type = "image"
     limit = _MAX_PLAZA_IMAGE_BYTES
     if not ext:
-        ext = _sniff_video_ext(first[:16])
+        ext = _sniff_video_ext(first)
         media_type = "video"
         limit = _MAX_PLAZA_VIDEO_BYTES
     if not ext:
+        if any(brand in _IMAGE_BMFF_BRANDS for brand in _bmff_brands(first)):
+            raise HTTPException(
+                status_code=400,
+                detail="暂不支持 HEIC/AVIF，请转成 JPG 或 PNG 后再发",
+            )
         raise HTTPException(status_code=400, detail="只支持常见图片或短视频格式")
 
     fname = f"plaza_{_uuid.uuid4().hex}.{ext}"

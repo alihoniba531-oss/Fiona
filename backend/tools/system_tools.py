@@ -1,5 +1,5 @@
 # -*- coding: utf-8 -*-
-from datetime import datetime
+from utils.beijing_time import beijing_now
 
 
 def open_url(site: str) -> str:
@@ -13,7 +13,7 @@ def take_screenshot() -> str:
 
 
 def get_datetime() -> str:
-    now = datetime.now()
+    now = beijing_now()
     weekdays = ["周一", "周二", "周三", "周四", "周五", "周六", "周日"]
     weekday = weekdays[now.weekday()]
     return f"{now.year}年{now.month}月{now.day}日 {weekday} {now.strftime('%H:%M')}"

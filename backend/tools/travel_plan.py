@@ -10,8 +10,8 @@ route.py 走 OSRM 算驾车导航，对"宁波 → 新德里"这种跨国旅行�
 """
 import json
 import re
-from datetime import datetime
 from llm import make_dashscope_client
+from utils.beijing_time import beijing_now
 
 
 _client_cache = None
@@ -51,7 +51,7 @@ _PROMPT = """你是一个旅行规划助手。用户给出起点、终点、可�
 def _today_directive() -> str:
     """注入"今天日期 + 禁止过期措辞"指令 —— 防止模型按训练截止时段（约 2024）输出
     核酸/健康宝/绿码这种已废止的疫情措辞。"""
-    now = datetime.now()
+    now = beijing_now()
     today = now.strftime("%Y-%m-%d")
     weekday = "周" + "一二三四五六日"[now.weekday()]
     return (

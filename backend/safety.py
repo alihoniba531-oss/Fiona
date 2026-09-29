@@ -6,6 +6,8 @@ This is a routing aid rather than a diagnosis. It never logs matched text.
 import re
 from typing import Literal
 
+from utils.traditional_chinese import normalize_traditional
+
 
 CRISIS_GUIDANCE = """
 
@@ -75,7 +77,7 @@ _POSSIBLE_PATTERNS = tuple(re.compile(pattern) for pattern in (
 
 def assess_crisis(text: str) -> Literal["high", "possible"] | None:
     """Return high for direct danger, possible for related talk, else None."""
-    normalized = re.sub(r"\s+", "", text or "").lower().replace("’", "'")
+    normalized = normalize_traditional(re.sub(r"\s+", "", text or "").lower().replace("’", "'"))
     if not normalized:
         return None
     # Remove common idioms before checking risk words, so a separate explicit

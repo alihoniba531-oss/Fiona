@@ -12,10 +12,13 @@
 from __future__ import annotations
 
 from dataclasses import dataclass
+from concurrent.futures import ThreadPoolExecutor, TimeoutError as FutureTimeoutError
 import ipaddress
 import re
 import socket
 import ssl
+from threading import Timer
+import time
 from typing import Any, Mapping
 from urllib.parse import urljoin, urlsplit, urlunsplit
 
@@ -27,6 +30,10 @@ DEFAULT_MAX_REDIRECTS = 3
 _REDIRECT_STATUSES = {301, 302, 303, 307, 308}
 _ALLOWED_METHODS = {"GET", "HEAD"}
 _SENSITIVE_HEADERS = {"authorization", "cookie", "host", "proxy-authorization"}
+# DNS work can remain stuck in the OS resolver after the caller's deadline.
+# Leave headroom so a few such lookups cannot queue every other user's fetch.
+DNS_RESOLVER_WORKERS = 32
+_resolver_pool = ThreadPoolExecutor(max_workers=DNS_RESOLVER_WORKERS, thread_name_prefix="fiona-dns")
 
 
 class UnsafeUrlError(ValueError):
@@ -35,6 +42,10 @@ class UnsafeUrlError(ValueError):
 
 class ResponseTooLargeError(ValueError):
     """响应体超过调用方允许的大小。"""
+
+
+class PublicUrlTimeoutError(TimeoutError):
+    """公网抓取超过整个调用的墙钟时限。"""
 
 
 @dataclass(frozen=True)
@@ -68,6 +79,31 @@ class PublicHttpResponse:
             return self.body.decode(encoding, errors="replace")
         except LookupError:
             return self.body.decode("utf-8", errors="replace")
+
+
+class _DeadlineHTTPPool(urllib3.HTTPConnectionPool):
+    def _new_conn(self):
+        connection = super()._new_conn()
+        self._fiona_active_connection = connection
+        return connection
+
+
+class _DeadlineHTTPSPool(urllib3.HTTPSConnectionPool):
+    def _new_conn(self):
+        connection = super()._new_conn()
+        self._fiona_active_connection = connection
+        return connection
+
+
+def _abort_pool_socket(pool: Any) -> None:
+    connection = getattr(pool, "_fiona_active_connection", None)
+    sock = getattr(connection, "sock", None)
+    if sock is not None:
+        try:
+            sock.shutdown(socket.SHUT_RDWR)
+        except OSError:
+            pass
+        sock.close()
 
 
 def _normalize_ip(raw: str) -> ipaddress.IPv4Address | ipaddress.IPv6Address:
@@ -218,25 +254,36 @@ def _open_pinned(
         "block": True,
     }
     if target.scheme == "https":
-        pool = urllib3.HTTPSConnectionPool(
+        pool = _DeadlineHTTPSPool(
             **common,
             assert_hostname=target.hostname,
             server_hostname=target.hostname,
             ssl_context=ssl.create_default_context(),
         )
     else:
-        pool = urllib3.HTTPConnectionPool(**common)
+        pool = _DeadlineHTTPPool(**common)
 
-    response = pool.urlopen(
-        method,
-        target.request_target,
-        headers=headers,
-        redirect=False,
-        retries=False,
-        preload_content=False,
-        decode_content=True,
-        assert_same_host=False,
-    )
+    # Socket read timeouts are idle timeouts. An absolute watchdog closes the
+    # socket even if response headers (or compressed bytes) drip continuously.
+    timer = Timer(timeout, _abort_pool_socket, args=(pool,))
+    timer.daemon = True
+    pool._fiona_deadline_timer = timer
+    timer.start()
+    try:
+        response = pool.urlopen(
+            method,
+            target.request_target,
+            headers=headers,
+            redirect=False,
+            retries=False,
+            preload_content=False,
+            decode_content=True,
+            assert_same_host=False,
+        )
+    except BaseException:
+        timer.cancel()
+        pool.close()
+        raise
     return response, pool
 
 
@@ -246,9 +293,19 @@ def _request_once(
     *,
     headers: Mapping[str, str] | None,
     timeout: float,
+    deadline: float,
     max_bytes: int,
 ) -> PublicHttpResponse:
-    target = resolve_public_url(url)
+    remaining = _remaining(deadline)
+    # getaddrinfo has no portable cancellation API. Keep resolver work in a
+    # small separate pool so its OS timeout cannot retain a fetch worker.
+    resolution = _resolver_pool.submit(resolve_public_url, url)
+    try:
+        target = resolution.result(timeout=remaining)
+    except FutureTimeoutError as exc:
+        resolution.cancel()
+        raise PublicUrlTimeoutError("公网抓取超过总时限") from exc
+    remaining = _remaining(deadline)
     outbound_headers = {
         key: value
         for key, value in (headers or {}).items()
@@ -260,7 +317,8 @@ def _request_once(
     pool = None
     try:
         # 连接这里使用已校验的字面 IP；不会让连接层再次解析 hostname。
-        raw, pool = _open_pinned(target, target.ips[0], method, outbound_headers, timeout)
+        raw, pool = _open_pinned(target, target.ips[0], method, outbound_headers, min(timeout, remaining))
+        _remaining(deadline)
         response_headers = {str(key): str(value) for key, value in raw.headers.items()}
         content_length = next(
             (value for key, value in response_headers.items() if key.lower() == "content-length"),
@@ -277,7 +335,26 @@ def _request_once(
 
         body = b""
         if method != "HEAD" and max_bytes > 0:
-            body = raw.read(max_bytes + 1, decode_content=True)
+            if not hasattr(raw, "read1"):
+                # A few small test doubles implement only the old read API.
+                body = raw.read(max_bytes + 1, decode_content=True)
+            else:
+                chunks: list[bytes] = []
+                size = 0
+                # read1 returns after one network read rather than waiting for
+                # the requested size. A drip feed cannot reset the deadline.
+                while True:
+                    remaining = _remaining(deadline)
+                    _set_response_read_timeout(raw, min(timeout, remaining))
+                    chunk = raw.read1(min(16_384, max_bytes + 1 - size), decode_content=True)
+                    _remaining(deadline)
+                    if not chunk:
+                        break
+                    chunks.append(chunk)
+                    size += len(chunk)
+                    if size > max_bytes:
+                        raise ResponseTooLargeError("响应体超过大小限制")
+                body = b"".join(chunks)
             if len(body) > max_bytes:
                 raise ResponseTooLargeError("响应体超过大小限制")
 
@@ -287,10 +364,22 @@ def _request_once(
             headers=response_headers,
             body=body,
         )
+    except (urllib3.exceptions.TimeoutError, socket.timeout) as exc:
+        raise PublicUrlTimeoutError("公网抓取超过总时限") from exc
+    except Exception as exc:
+        if time.monotonic() >= deadline:
+            raise PublicUrlTimeoutError("公网抓取超过总时限") from exc
+        raise
     finally:
         if raw is not None:
+            close = getattr(raw, "close", None)
+            if close is not None:
+                close()
             raw.release_conn()
         if pool is not None:
+            timer = getattr(pool, "_fiona_deadline_timer", None)
+            if timer is not None:
+                timer.cancel()
             pool.close()
 
 
@@ -310,13 +399,16 @@ def request_public_url(
     if timeout <= 0 or max_bytes < 0 or max_redirects < 0:
         raise ValueError("timeout/max_bytes/max_redirects 参数无效")
 
+    deadline = time.monotonic() + timeout
     current_url = url
     for redirect_count in range(max_redirects + 1):
+        _remaining(deadline)
         response = _request_once(
             method,
             current_url,
             headers=headers,
             timeout=timeout,
+            deadline=deadline,
             max_bytes=max_bytes,
         )
         if not follow_redirects or response.status_code not in _REDIRECT_STATUSES:
@@ -330,3 +422,22 @@ def request_public_url(
         current_url = urljoin(response.url, location)
 
     raise UnsafeUrlError("重定向次数超过限制")
+
+
+def _remaining(deadline: float) -> float:
+    remaining = deadline - time.monotonic()
+    if remaining <= 0:
+        raise PublicUrlTimeoutError("公网抓取超过总时限")
+    return remaining
+
+
+def _set_response_read_timeout(response: Any, timeout: float) -> None:
+    # urllib3 has no public per-chunk timeout setter. Its checked-out socket
+    # remains attached to the response until release_conn().
+    connection = getattr(response, "connection", None)
+    sock = getattr(connection, "sock", None)
+    if sock is None:
+        sock = getattr(getattr(getattr(response, "_fp", None), "fp", None), "raw", None)
+        sock = getattr(sock, "_sock", None)
+    if sock is not None:
+        sock.settimeout(timeout)

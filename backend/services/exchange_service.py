@@ -1,14 +1,18 @@
 """Finite, tool-free avatar exchanges, driven by durable authorization."""
 import asyncio
 import json
+import logging
+from contextlib import suppress
 
 import exchange_store
 from exchange_workflow import (
     DRAFT_OUTPUT_TOKENS, REVIEW_OUTPUT_TOKENS, WORKFLOW_TIMEOUT_SECONDS,
     build_workflow_messages, is_workflow, next_stage, prepare_workflow_result,
 )
-from exchange_models import get_deepseek_client, get_exchange_model, select_exchange_slot
-from llm import MAIN_EXTRA_BODY, MAIN_MODEL, client
+from exchange_models import (
+    get_async_deepseek_client, get_async_main_client,
+    get_exchange_model, select_exchange_slot,
+)
 from official_agents import get_official_exchange_instruction, get_official_workflow_instruction
 from persona import BASE_SAFETY_RULES
 from utils.background_tasks import create_background_task
@@ -24,7 +28,14 @@ MESSAGE_OVERHEAD_TOKENS = 1024
 MODEL_TIMEOUT_SECONDS = 45
 MAX_CONTENT_CHARS = 1200
 GENERIC_ERROR = "分身交流暂时无法完成，请稍后重新发起。"
+SETTLEMENT_MAX_ATTEMPTS = 3
+SETTLEMENT_RETRY_DELAY_SECONDS = 0.05
 _exchange_tasks: dict[str, asyncio.Task] = {}
+logger = logging.getLogger(__name__)
+
+
+class ExchangeRevoked(Exception):
+    """The DB authorization for an in-flight provider request was revoked."""
 
 
 def _public_profile(card):
@@ -113,11 +124,10 @@ def build_exchange_messages(context, *, summary=False):
 async def generate_exchange_reply(messages: list[dict], *, max_tokens: int, provider: str = "main") -> dict:
     """One provider request, no retry/fallback, tools, private persona or memory lookup."""
     config = get_exchange_model(provider)
-    base_client = get_deepseek_client() if config.provider == "deepseek" else client
+    base_client = get_async_deepseek_client() if config.provider == "deepseek" else get_async_main_client()
     timeout = WORKFLOW_TIMEOUT_SECONDS if max_tokens >= REVIEW_OUTPUT_TOKENS else MODEL_TIMEOUT_SECONDS
     provider_client = base_client.with_options(timeout=timeout, max_retries=0)
-    response = await asyncio.to_thread(
-        provider_client.chat.completions.create,
+    kwargs = dict(
         model=config.model,
         messages=messages,
         max_tokens=max_tokens,
@@ -125,6 +135,7 @@ async def generate_exchange_reply(messages: list[dict], *, max_tokens: int, prov
         temperature=0.7,
         stream=False,
     )
+    response = await provider_client.chat.completions.create(**kwargs)
     content = response.choices[0].message.content
     if not isinstance(content, str) or not content.strip():
         raise ValueError("Provider returned empty exchange content")
@@ -139,6 +150,27 @@ async def generate_exchange_reply(messages: list[dict], *, max_tokens: int, prov
     }
 
 
+async def _generate_while_authorized(exchange_id: str, run_token: str, messages: list[dict],
+                                     *, max_tokens: int, provider: str) -> dict:
+    """Poll revocations made outside this router, such as hiding an agent."""
+    upstream = asyncio.create_task(generate_exchange_reply(messages, max_tokens=max_tokens, provider=provider))
+    try:
+        while True:
+            done, _ = await asyncio.wait({upstream}, timeout=0.25)
+            if done:
+                return await upstream
+            if not await exchange_store.is_exchange_running(exchange_id, run_token):
+                upstream.cancel()
+                with suppress(asyncio.CancelledError):
+                    await upstream
+                raise ExchangeRevoked()
+    finally:
+        if not upstream.done():
+            upstream.cancel()
+            with suppress(asyncio.CancelledError):
+                await upstream
+
+
 def _safe_error(error):
     if getattr(error, "code", None) == "Arrearage":
         return "模型服务账户欠费，暂时无法生成回复。请联系平台管理员恢复模型服务后重试。"
@@ -149,6 +181,30 @@ def _safe_error(error):
     if getattr(error, "status_code", None) == 401:
         return "模型服务密钥验证失败，请检查对应模型的 API 配置。"
     return GENERIC_ERROR
+
+
+async def _settle_cancelled_exchange(exchange_id: str, run_token: str) -> None:
+    """Keep a stopped exchange's HTTP response independent of DB cleanup errors.
+
+    A failed cleanup leaves the reserved call in durable storage. Startup recovery
+    accounts for reserved calls even when the exchange is already stopped.
+    """
+    for attempt in range(1, SETTLEMENT_MAX_ATTEMPTS + 1):
+        try:
+            await exchange_store.stop_and_discard_reserved_calls(
+                exchange_id, run_token, exchange_store.RESTART_REASON,
+            )
+            return
+        except Exception:
+            logger.log(
+                logging.ERROR if attempt == SETTLEMENT_MAX_ATTEMPTS else logging.WARNING,
+                "Cancelled exchange settlement failed for %s (attempt %d/%d); %s",
+                exchange_id, attempt, SETTLEMENT_MAX_ATTEMPTS,
+                "startup recovery will settle the reserved call" if attempt == SETTLEMENT_MAX_ATTEMPTS else "retrying",
+                exc_info=True,
+            )
+            if attempt < SETTLEMENT_MAX_ATTEMPTS:
+                await asyncio.sleep(SETTLEMENT_RETRY_DELAY_SECONDS * attempt)
 
 
 async def run_exchange(exchange_id: str, run_token: str):
@@ -189,7 +245,8 @@ async def run_exchange(exchange_id: str, run_token: str):
                 return
             try:
                 result = await asyncio.wait_for(
-                    generate_exchange_reply(messages, max_tokens=output_limit, provider=slot),
+                    _generate_while_authorized(exchange_id, run_token, messages,
+                                               max_tokens=output_limit, provider=slot),
                     timeout=(WORKFLOW_TIMEOUT_SECONDS if workflow else MODEL_TIMEOUT_SECONDS) + 5,
                 )
                 if not isinstance(result, dict) or not isinstance(result.get("content"), str) or not result["content"].strip():
@@ -207,9 +264,17 @@ async def run_exchange(exchange_id: str, run_token: str):
             if not published or summary:
                 return
     except asyncio.CancelledError:
-        # A provider request may already be on the wire. Its reservation remains
-        # charged as uncertain until restart recovery; no late reply is published.
-        await exchange_store.stop_running_exchange(exchange_id, run_token, exchange_store.RESTART_REASON)
+        # The provider Task has been cancelled first, including its HTTP call.
+        # A second cancellation must not interrupt settlement. The database
+        # finds every reserved call by exchange ID, including a reservation
+        # committed just before reserve_model_call was itself cancelled.
+        settlement = asyncio.create_task(_settle_cancelled_exchange(exchange_id, run_token))
+        while not settlement.done():
+            try:
+                await asyncio.shield(settlement)
+            except asyncio.CancelledError:
+                continue
+        settlement.result()
         raise
     except Exception as exc:
         if call_id is not None:
@@ -238,4 +303,14 @@ def start_exchange(exchange_id: str, run_token: str) -> asyncio.Task:
 async def wait_for_exchange(exchange_id: str):
     task = _exchange_tasks.get(exchange_id)
     if task is not None:
+        await asyncio.shield(task)
+
+
+async def cancel_exchange(exchange_id: str) -> None:
+    task = _exchange_tasks.get(exchange_id)
+    if task is None or task.done():
+        return
+    if task.cancelling() == 0:
+        task.cancel()
+    with suppress(asyncio.CancelledError):
         await asyncio.shield(task)

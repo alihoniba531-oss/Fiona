@@ -93,8 +93,8 @@ def build_agent_prompt(
 
 def get_time_context() -> str:
     """根据当前时间生成时间感知提示，含具体日期（防 LLM 把"明天/后天"算错年月日）"""
-    from datetime import datetime
-    now = datetime.now()
+    from utils.beijing_time import beijing_now
+    now = beijing_now()
     h = now.hour
     weekdays = ["周一", "周二", "周三", "周四", "周五", "周六", "周日"]
     date_str = f"今天是 {now.year} 年 {now.month} 月 {now.day} 日 {weekdays[now.weekday()]}。"
@@ -155,10 +155,11 @@ def _build_special_date_note(profile: dict) -> str:
     格式：用户画像里 special_dates = ["MM-DD 描述", ...]
     """
     from datetime import date as _date
+    from utils.beijing_time import beijing_now
     special_dates = profile.get("special_dates", []) if profile else []
     if not special_dates:
         return ""
-    today = _date.today()
+    today = beijing_now().date()
     notes = []
     for entry in special_dates:
         entry = (entry or "").strip()

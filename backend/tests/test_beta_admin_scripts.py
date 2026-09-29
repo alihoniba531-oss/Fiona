@@ -20,6 +20,7 @@ def _environment(**updates: str) -> dict[str, str]:
     env = os.environ.copy()
     env.pop("FIONA_DB_PATH", None)
     env.pop("FIONA_ENV_FILE", None)
+    env.pop("PYTHON_DOTENV_DISABLED", None)
     env.pop("STRAWBERRY_DAILY_REFILL", None)
     env.update(updates)
     return env

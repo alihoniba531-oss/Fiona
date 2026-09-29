@@ -66,6 +66,12 @@ interface ImageReferenceSelection {
   conversationId: string;
 }
 
+interface PreparedTtsAudio {
+  audio: HTMLAudioElement;
+  ready: Promise<boolean>;
+  abort: () => void;
+}
+
 function imageAspectRatioFromPrompt(prompt: string): ImageAspectRatio {
   // Match backend intent_router.image_aspect_ratio so retries preserve natural-language ratios.
   if (/9\s*[:：]\s*16|竖[版屏幅]/.test(prompt)) return "9:16";
@@ -316,14 +322,14 @@ export default function ChatPage() {
       restoreHistoryFocusRef.current = false;
     };
   }, [showHistory]);
-  const [username, setUsername] = useState("默认用户");
+  const [username, setUsername] = useState("");
   const [hydrated, setHydrated] = useState(false);
   const {
     agent, conversations, current: currentConversation, messages, setMessages,
     loading: conversationLoading, error: conversationError, reload: reloadConversations,
     hasMoreMessages, updateAgent,
     createConversation, selectConversation, deleteConversation, refreshList, getSelectionVersion,
-  } = useConversations(username, hydrated);
+  } = useConversations(username, hydrated && !!username);
   const [allUsers, setAllUsers] = useState<string[]>([]);
   const [voiceOn, setVoiceOn] = useState(false);
   const [handsFree, setHandsFree] = useState(false);
@@ -357,7 +363,8 @@ export default function ChatPage() {
   const handsFreeRef = useRef(false);
   const asrSessionRef = useRef(0);
   const ttsAudioRef = useRef<HTMLAudioElement | null>(null);
-  const ttsPreloadRef = useRef<HTMLAudioElement | null>(null);  // 预取下一句音频，消除句间空隙
+  const ttsCurrentRef = useRef<PreparedTtsAudio | null>(null);
+  const ttsPreloadRef = useRef<PreparedTtsAudio | null>(null);  // 预取下一句音频，消除句间空隙
   const ttsQueueRef = useRef<string[]>([]);
   const ttsPlayingRef = useRef(false);
   const playNextInQueueRef = useRef<() => void>(() => {});
@@ -400,7 +407,7 @@ export default function ChatPage() {
   // Keep the account label in sync with same-origin settings and other tabs.
   useEffect(() => {
     const hydrate = () => {
-      setUsername(readStoredUsername() || "默认用户");
+      setUsername(readStoredUsername());
       setHydrated(true);
     };
     const onStorage = (event: StorageEvent) => {
@@ -460,9 +467,9 @@ export default function ChatPage() {
   }, []);
 
   useEffect(() => {
-    if (!hydrated) return;
+    if (!hydrated || !username) return;
     loadPeerRooms();
-  }, [loadPeerRooms, hydrated]);
+  }, [loadPeerRooms, hydrated, username]);
 
   // Poll pending matches
   useEffect(() => {
@@ -721,20 +728,34 @@ export default function ChatPage() {
   }, [getSelectionVersion]);
 
   // ── 流式 TTS 队列：按句送合成、顺序播放，**预取下一句消除句间空隙** ──
-  // 同源 <audio> 会自动携带 HttpOnly Cookie；仅开发构建保留 dev_user 兜底。
-  const mkTtsAudio = useCallback((text: string): HTMLAudioElement => {
-    const params = new URLSearchParams({
-      text: text.slice(0, 300),
-      voice: "longxiaoxia_v2",
-      speech_rate: "1.15",
-    });
-    if (process.env.NODE_ENV !== "production") {
-      const u = typeof window !== "undefined" ? localStorage.getItem("fiona_user") : null;
-      if (u) params.set("dev_user", u);
-    }
-    const a = new Audio(`${API}/tts/stream?${params.toString()}`);
-    a.preload = "auto";
-    return a;
+  // 私聊原文仅进入 POST 请求体；<audio> 用一次性票据保留流式播放。
+  const mkTtsAudio = useCallback((text: string): PreparedTtsAudio => {
+    const audio = new Audio();
+    audio.preload = "auto";
+    const controller = new AbortController();
+    const session = ttsSessionRef.current;
+    const speechText = text.slice(0, 300);
+    const ready = (async () => {
+      try {
+        const response = await apiFetch(`${API}/tts/ticket`, {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ text: speechText, voice: "longxiaoxia_v2", speech_rate: 1.15 }),
+          signal: controller.signal,
+        });
+        if (controller.signal.aborted || session !== ttsSessionRef.current) return false;
+        if (!response.ok) return false;
+        const data = await response.json();
+        if (controller.signal.aborted || session !== ttsSessionRef.current) return false;
+        if (typeof data.ticket !== "string" || !data.ticket) return false;
+        audio.src = `${API}/tts/stream?ticket=${encodeURIComponent(data.ticket)}`;
+        audio.load();
+        return true;
+      } catch {
+        return false;
+      }
+    })();
+    return { audio, ready, abort: () => controller.abort() };
   }, []);
 
   // 当前句正在播时，把队头那句的音频提前 fetch 好，下一句结束时立刻接上
@@ -743,18 +764,16 @@ export default function ChatPage() {
     if (ttsPreloadRef.current) return;
     const next = ttsQueueRef.current.shift();
     if (!next) return;
-    const a = mkTtsAudio(next);
-    a.load();
-    ttsPreloadRef.current = a;
+    ttsPreloadRef.current = mkTtsAudio(next);
   }, [mkTtsAudio]);
 
   const playNextInQueue = useCallback(() => {
     if (ttsPlayingRef.current) return;
 
     // 优先用已预取的，否则现 fetch
-    let audio = ttsPreloadRef.current;
+    let prepared = ttsPreloadRef.current;
     ttsPreloadRef.current = null;
-    if (!audio) {
+    if (!prepared) {
       const next = ttsQueueRef.current.shift();
       if (!next) {
         if (streamDoneRef.current && handsFreeRef.current) {
@@ -762,11 +781,13 @@ export default function ChatPage() {
         }
         return;
       }
-      audio = mkTtsAudio(next);
+      prepared = mkTtsAudio(next);
     }
 
+    const { audio } = prepared;
     ttsPlayingRef.current = true;
     ttsAudioRef.current = audio;
+    ttsCurrentRef.current = prepared;
     // 立刻把"再下一句"也预取，与当前播放重叠
     tryPrefetch();
 
@@ -776,11 +797,16 @@ export default function ChatPage() {
       done = true;
       ttsPlayingRef.current = false;
       ttsAudioRef.current = null;
+      ttsCurrentRef.current = null;
       playNextInQueueRef.current();
     };
     audio.addEventListener("ended", onDone, { once: true });
     audio.addEventListener("error", onDone, { once: true });
-    audio.play().catch(onDone);
+    prepared.ready.then(ready => {
+      if (ttsAudioRef.current !== audio) return;
+      if (!ready) { onDone(); return; }
+      audio.play().catch(onDone);
+    }).catch(onDone);
   }, [startHandsFreeRecording, mkTtsAudio, tryPrefetch]);
 
   useEffect(() => {
@@ -840,13 +866,18 @@ export default function ChatPage() {
 
   const clearTtsQueue = useCallback(() => {
     ttsQueueRef.current = [];
+    ttsCurrentRef.current?.abort();
+    ttsCurrentRef.current = null;
     if (ttsAudioRef.current) {
-      try { ttsAudioRef.current.pause(); } catch (_) {}
+      const audio = ttsAudioRef.current;
       ttsAudioRef.current = null;
+      try { audio.pause(); audio.removeAttribute("src"); audio.load(); } catch (_) {}
     }
     if (ttsPreloadRef.current) {
-      try { ttsPreloadRef.current.pause(); } catch (_) {}
+      const prepared = ttsPreloadRef.current;
       ttsPreloadRef.current = null;
+      prepared.abort();
+      try { prepared.audio.pause(); prepared.audio.removeAttribute("src"); prepared.audio.load(); } catch (_) {}
     }
     ttsPlayingRef.current = false;
   }, []);
@@ -1092,7 +1123,7 @@ export default function ChatPage() {
 
   const handleSend = async (textOverride?: string, imageRetry?: ImageGenerationRetry) => {
     const text = (textOverride ?? input).trim();
-    if ((!text && !pendingImage) || isLoading || chatAbortRef.current || conversationLoading || !currentConversation || isReadingImage || referenceReadControllerRef.current) return;
+    if (!username || (!text && !pendingImage) || isLoading || chatAbortRef.current || conversationLoading || !currentConversation || isReadingImage || referenceReadControllerRef.current) return;
     if (imageRetry && pendingImage) return;
     if (imageRetry && (imageRetry.owner !== username || imageRetry.conversationId !== currentConversation.id)) return;
     const sentImage = pendingImage;
@@ -1112,7 +1143,7 @@ export default function ChatPage() {
     chatAbortRef.current = chatController;
     const isCurrentStream = () => !chatController.signal.aborted
       && chatAbortRef.current === chatController && selectionVersion === getSelectionVersion()
-      && (readStoredUsername() || "默认用户") === username;
+      && readStoredUsername() === username;
 
     const userMsg: Message = {
       id: Date.now().toString(),
@@ -1454,7 +1485,7 @@ export default function ChatPage() {
   const handlePickImage = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     e.target.value = "";
-    if (!file || imageMode || hasReferenceImages || referenceReadControllerRef.current || isLoading || conversationLoading || !currentConversation) return;
+    if (!username || !file || imageMode || hasReferenceImages || referenceReadControllerRef.current || isLoading || conversationLoading || !currentConversation) return;
     if (!file.type.startsWith("image/")) {
       alert("只能上传图片");
       return;
@@ -1481,7 +1512,7 @@ export default function ChatPage() {
   const handlePickReferenceImages = async (event: React.ChangeEvent<HTMLInputElement>) => {
     const files = Array.from(event.target.files ?? []);
     event.target.value = "";
-    if (!files.length || conversationLocked || chatAbortRef.current || conversationLoading || !currentConversation
+    if (!username || !files.length || conversationLocked || chatAbortRef.current || conversationLoading || !currentConversation
       || pendingImage || isReadingImage || referenceReadControllerRef.current) return;
     const remaining = 3 - selectedReferenceImages.length;
     if (files.length > remaining) {
@@ -1501,7 +1532,7 @@ export default function ChatPage() {
     const selectionVersion = getSelectionVersion();
     const conversationId = currentConversation.id;
     const isCurrentRead = () => referenceReadControllerRef.current === controller && !controller.signal.aborted
-      && selectionVersion === getSelectionVersion() && (readStoredUsername() || "默认用户") === username;
+      && selectionVersion === getSelectionVersion() && readStoredUsername() === username;
     setIsReadingReferences(true);
     setReferenceUploadError("");
     try {
@@ -1535,6 +1566,7 @@ export default function ChatPage() {
 
   const openPeerChat = useCallback(
     (room: PeerRoom) => {
+      if (!username) return;
       if (wsRef.current) {
         wsRef.current.close();
         wsRef.current = null;
@@ -1545,7 +1577,7 @@ export default function ChatPage() {
 
       // WebSocket 握手自动携带同源 HttpOnly Cookie；开发构建可用 dev_user。
       const devAuth = process.env.NODE_ENV !== "production"
-        ? `?dev_user=${encodeURIComponent(readStoredUsername() || username)}`
+        ? `?dev_user=${encodeURIComponent(readStoredUsername())}`
         : "";
       const ws = new WebSocket(`${WS_BASE}/ws/peer/${room.room_id}${devAuth}`);
       wsRef.current = ws;
@@ -1602,7 +1634,7 @@ export default function ChatPage() {
       setConversationPickerOpen(false);
       setShowHistory(value => !value);
     },
-    onFullHistory: () => { setConversationPickerOpen(false); window.open(`/history?user=${encodeURIComponent(username)}`, "_blank", "noopener,noreferrer"); },
+    onFullHistory: () => { if (!username) return; setConversationPickerOpen(false); window.open(`/history?user=${encodeURIComponent(username)}`, "_blank", "noopener,noreferrer"); },
   };
 
   // ── render ──
@@ -1966,7 +1998,11 @@ export default function ChatPage() {
             </button>
           </div>
         </div>
-        <iframe src={worldTab === "plaza" ? "/plaza?embed=1" : "/match?embed=1"} className="flex-1 w-full border-0" />
+        {username ? (
+          <iframe src={worldTab === "plaza" ? "/plaza?embed=1" : "/match?embed=1"} className="flex-1 w-full border-0" />
+        ) : (
+          <div role="status" className="flex-1 p-5 text-sm text-muted-foreground">正在加载身份…</div>
+        )}
       </div>
 
       {/* 设置抽屉 — 「我的」作为账户标签并入设置。 */}
@@ -1999,7 +2035,11 @@ export default function ChatPage() {
             </button>
           </div>
         </div>
-        <iframe src={settingsTab === "settings" ? "/settings?embed=1" : "/profile?embed=1"} className="flex-1 w-full border-0" />
+        {username ? (
+          <iframe src={settingsTab === "settings" ? "/settings?embed=1" : "/profile?embed=1"} className="flex-1 w-full border-0" />
+        ) : (
+          <div role="status" className="flex-1 p-5 text-sm text-muted-foreground">正在加载身份…</div>
+        )}
       </div>
 
       {/* 抽屉外部点击关闭 — 任一右侧抽屉打开时铺一层透明背板，盖在抽屉之下、聊天区之上。

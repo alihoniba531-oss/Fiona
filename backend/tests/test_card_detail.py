@@ -242,7 +242,7 @@ def test_route_timeout_is_bounded_and_retryable(detail_client, monkeypatch):
     async def blocked_thread(*args):
         await asyncio.sleep(1)
 
-    monkeypatch.setattr(cards.asyncio, "to_thread", blocked_thread)
+    monkeypatch.setattr(cards, "run_slow", blocked_thread)
     monkeypatch.setattr(cards, "DETAIL_TIMEOUT_SECONDS", 0.001)
     response = detail_client.post("/cards/detail", json={"title": "标题"})
     assert response.status_code == 200

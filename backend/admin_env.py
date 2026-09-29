@@ -7,6 +7,7 @@ from pathlib import Path
 import sys
 
 from dotenv import load_dotenv
+from utils.dotenv_config import DotenvSelectionError, select_dotenv_path
 
 
 class AdminConfigError(Exception):
@@ -30,28 +31,18 @@ def parse_admin_options(argv: list[str] | None = None) -> tuple[argparse.Namespa
 def configure_database(env_file: Path | None, *, init_db: bool) -> Path:
     """在导入 database 前加载配置，报告并核对实际数据库路径。"""
     backend_dir = Path(__file__).resolve().parent
-    selected: Path | None = None
-    explicit = env_file or os.environ.get("FIONA_ENV_FILE")
-    if explicit:
-        selected = Path(explicit).expanduser().resolve()
-    else:
-        for candidate in (Path("/etc/fiona/fiona.env"), backend_dir / ".env"):
-            if candidate.is_file() and os.access(candidate, os.R_OK):
-                selected = candidate.resolve()
-                break
-
     config_error = None
     loaded: Path | None = None
-    if selected:
-        if not selected.is_file() or not os.access(selected, os.R_OK):
-            config_error = f"配置文件不存在或不可读：{selected}"
-        else:
-            try:
-                load_dotenv(dotenv_path=selected, override=False)
-            except OSError:
-                config_error = f"配置文件不存在或不可读：{selected}"
-            else:
-                loaded = selected
+    selected: Path | None = None
+    try:
+        selected = select_dotenv_path(env_file, backend_dir=backend_dir)
+        if selected is not None:
+            load_dotenv(dotenv_path=selected, override=False)
+            loaded = selected
+    except (DotenvSelectionError, OSError) as error:
+        config_error = str(error) if isinstance(error, DotenvSelectionError) else (
+            f"配置文件不存在或不可读：{selected}"
+        )
 
     db_path = Path(os.environ.get("FIONA_DB_PATH") or backend_dir / "fiona.db").expanduser().resolve()
     os.environ["FIONA_DB_PATH"] = str(db_path)

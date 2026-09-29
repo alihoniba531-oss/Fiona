@@ -11,8 +11,8 @@ v0.3: 用通义千问 enable_search 替代 Playwright + VL 截图方案。
 """
 import json
 import re
-from datetime import datetime
 from llm import make_dashscope_client
+from utils.beijing_time import beijing_now
 
 
 _search_client_cache = None
@@ -47,7 +47,7 @@ _SEARCH_PROMPT = """你是一个搜索结果整理器。你需要联网搜索用
 def _today_directive() -> str:
     """注入"今天日期 + 禁止过期措辞"指令 —— 防止模型按训练截止时段输出
     核酸/健康宝/绿码这种已废止的疫情措辞，或用陈年价格/政策回答。"""
-    now = datetime.now()
+    now = beijing_now()
     today = now.strftime("%Y-%m-%d")
     weekday = "周" + "一二三四五六日"[now.weekday()]
     return (

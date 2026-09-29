@@ -7,6 +7,7 @@ import SolarSystem3D from "@/components/SolarSystem3D";
 import { Plus, Heart, Video, X, Check, Sparkles, Music2, BarChart2, Cpu, BookOpen, Flame, TrendingUp, RefreshCw } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { apiFetch } from "@/lib/auth";
+import { useAccountIdentity } from "@/lib/useAccountIdentity";
 import { openExternal } from "@/lib/open";
 import { useCategorizedHotTopics, useHotTopics, type HotFeedState } from "@/lib/useHotTopics";
 
@@ -223,13 +224,13 @@ function CategoryCard({
 function PlazaContent() {
   const [posts, setPosts] = useState<Post[]>([]);
   const [uploading, setUploading] = useState(false);
+  const [submitError, setSubmitError] = useState("");
   const [showModal, setShowModal] = useState(false);
   const [preview, setPreview] = useState<string | null>(null);
   const [previewType, setPreviewType] = useState<"image" | "video">("image");
   const [caption, setCaption] = useState("");
   const [selectedTags, setSelectedTags] = useState<string[]>([]);
-  const [username, setUsername] = useState("默认用户");
-  const [hydrated, setHydrated] = useState(false);
+  const username = useAccountIdentity();
   const fileRef = useRef<HTMLInputElement>(null);
   const selectedFile = useRef<File | null>(null);
 
@@ -269,13 +270,6 @@ function PlazaContent() {
   const [interests, setInterests] = useState<string[]>([]);
   const [communityItems, setCommunityItems] = useState<{ tag: string; user: string }[]>([]);
 
-  useEffect(() => {
-    const u = localStorage.getItem("fiona_user");
-    // eslint-disable-next-line react-hooks/set-state-in-effect
-    if (u) setUsername(u);
-    setHydrated(true);
-  }, []);
-
   const loadPosts = useCallback(async () => {
     try {
       const params = new URLSearchParams({ limit: "30" });
@@ -285,14 +279,13 @@ function PlazaContent() {
     } catch {}
   }, []);
   useEffect(() => {
-    if (!hydrated) return; // 等 localStorage hydrate 完再拉，免得用"默认用户"先拉一次
     // eslint-disable-next-line react-hooks/set-state-in-effect
-    loadPosts();
-  }, [loadPosts, hydrated]);
+    void loadPosts();
+  }, [loadPosts]);
 
   // 拉用户兴趣（当前时段 top tags）
   useEffect(() => {
-    if (!hydrated || !username) return;
+    if (!username) return;
     apiFetch(`${API}/plaza/time-prefs`)
       .then((r) => r.json())
       .then((d) => {
@@ -305,16 +298,16 @@ function PlazaContent() {
         setInterests(arr.map((x) => `#${x.tag}`));
       })
       .catch(() => {});
-  }, [username, hydrated]);
+  }, [username]);
 
   // 拉社区其他用户兴趣（底部 ticker）
   useEffect(() => {
-    if (!hydrated || !username) return;
+    if (!username) return;
     apiFetch(`${API}/plaza/community-interests`)
       .then((r) => r.json())
       .then((d) => setCommunityItems(d.items || []))
       .catch(() => {});
-  }, [username, hydrated]);
+  }, [username]);
 
   const togglePostTag = (tag: string) => {
     setSelectedTags((prev) =>
@@ -325,6 +318,7 @@ function PlazaContent() {
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (!file) return;
+    setSubmitError("");
     selectedFile.current = file;
     setPreviewType(file.type.startsWith("video/") ? "video" : "image");
     setPreview(URL.createObjectURL(file));
@@ -332,22 +326,31 @@ function PlazaContent() {
   };
 
   const handleSubmit = async () => {
-    if (!selectedFile.current || uploading) return;
+    if (!selectedFile.current || uploading || !username) return;
     setUploading(true);
+    setSubmitError("");
     try {
       const form = new FormData();
       form.append("caption", caption);
       form.append("tags", JSON.stringify(selectedTags));
       form.append("file", selectedFile.current);
-      await apiFetch(`${API}/plaza/post`, { method: "POST", body: form });
+      const response = await apiFetch(`${API}/plaza/post`, { method: "POST", body: form });
+      if (!response.ok) {
+        const body = await response.json().catch(() => null);
+        throw new Error(typeof body?.detail === "string" ? body.detail : `发布失败（${response.status}），请重试`);
+      }
       handleClose();
       await loadPosts();
-    } catch {}
-    setUploading(false);
+    } catch (error) {
+      setSubmitError(error instanceof Error ? error.message : "发布失败，请重试");
+    } finally {
+      setUploading(false);
+    }
   };
 
   const handleClose = () => {
     setShowModal(false);
+    setSubmitError("");
     setPreview(null);
     setCaption("");
     setSelectedTags([]);
@@ -636,12 +639,13 @@ function PlazaContent() {
                 </div>
               </div>
 
+              {submitError && <p role="alert" className="text-xs text-[color:var(--rec)]">{submitError}</p>}
               <button
                 onClick={handleSubmit}
-                disabled={uploading}
+                disabled={uploading || !username}
                 className="btn btn-primary h-10 w-full"
               >
-                {uploading ? "正在发布…" : "发布"}
+                {uploading ? "正在发布…" : !username ? "正在获取账号信息…" : "发布"}
               </button>
             </div>
           </div>

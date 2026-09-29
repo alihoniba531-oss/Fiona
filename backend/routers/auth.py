@@ -5,7 +5,7 @@ from fastapi import APIRouter, Depends, HTTPException, Request
 from fastapi.responses import JSONResponse
 
 from auth import TOKEN_EXPIRE_DAYS, create_token, make_otp
-from auth_dep import get_current_user
+from auth_dep import get_current_user, is_loopback_client
 from database import (check_and_consume_otp, get_or_create_user, get_or_create_user_by_phone,
                       get_strawberry_balance, redeem_invite, revoke_user_sessions, save_otp)
 from rate_limit import limiter
@@ -33,10 +33,10 @@ def _login_response(user: dict, balance: int) -> JSONResponse:
 # ── 认证端点 ────────────────────────────────────────────────────
 
 @router.post("/auth/send-otp")
-async def send_otp_api(body: dict):
+async def send_otp_api(request: Request, body: dict):
     # OTP 这条线是死入口：send_sms 仍是 stub（只 print 不真发），且无限流、错码不删码可爆破。
     # 接真实短信服务商 + 限流 + 错误次数上限后再开放；当前仅 DEV_MODE=1 放行，生产 404 堵死。
-    if os.getenv("DEV_MODE", "0") != "1":
+    if os.getenv("DEV_MODE", "0") != "1" or not is_loopback_client(request):
         raise HTTPException(status_code=404, detail="Not Found")
     phone = (body.get("phone") or "").strip()
     if not phone or len(phone) < 8:
@@ -50,10 +50,10 @@ async def send_otp_api(body: dict):
 
 
 @router.post("/auth/test-login")
-async def test_login(body: dict | None = None):
+async def test_login(request: Request, body: dict | None = None):
     """开发测试入口：传 {"username": "alice"} 直接拿 JWT，不走短信验证。
     仅 DEV_MODE=1 时启用；生产环境（DEV_MODE 关掉）返回 404 把口子堵上。"""
-    if os.getenv("DEV_MODE", "0") != "1":
+    if os.getenv("DEV_MODE", "0") != "1" or not is_loopback_client(request):
         raise HTTPException(status_code=404, detail="Not Found")
     body = body or {}
     username = (body.get("username") or "tester").strip() or "tester"
@@ -63,10 +63,10 @@ async def test_login(body: dict | None = None):
 
 
 @router.post("/auth/verify-otp")
-async def verify_otp_api(body: dict):
+async def verify_otp_api(request: Request, body: dict):
     # 同上：OTP 验证是死入口，错码不删码可在 300s 窗口内爆破。
     # 接真实短信 + 限流 + 错误次数上限后再开放；当前仅 DEV_MODE=1 放行，生产 404 堵死。
-    if os.getenv("DEV_MODE", "0") != "1":
+    if os.getenv("DEV_MODE", "0") != "1" or not is_loopback_client(request):
         raise HTTPException(status_code=404, detail="Not Found")
     phone = (body.get("phone") or "").strip()
     code  = (body.get("code")  or "").strip()

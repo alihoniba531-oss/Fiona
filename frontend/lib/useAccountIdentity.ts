@@ -1,7 +1,7 @@
 "use client";
 
 import { useCallback, useEffect, useRef, useSyncExternalStore } from "react";
-import { getUsername } from "@/lib/auth";
+import { ensureAccountIdentity, getUsername } from "@/lib/auth";
 
 function subscribeAccount(onChange: () => void) {
   const onStorage = (event: StorageEvent) => {
@@ -18,6 +18,7 @@ function subscribeAccount(onChange: () => void) {
 const serverIdentity = () => "";
 
 export function useAccountIdentity() {
+  useEffect(() => { void ensureAccountIdentity(); }, []);
   return useSyncExternalStore(subscribeAccount, getUsername, serverIdentity);
 }
 

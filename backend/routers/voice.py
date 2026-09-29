@@ -4,15 +4,20 @@ import base64
 import binascii
 import io
 import os
+import re
+import secrets
 import shutil
 import subprocess
 import tempfile
+import threading
+import time
 import wave
+from dataclasses import dataclass, field, replace
 
-from fastapi import APIRouter, HTTPException, Query, Request, WebSocket
+from fastapi import APIRouter, Depends, HTTPException, Query, Request, WebSocket
 from pydantic import BaseModel, Field
 
-from auth_dep import ws_authenticate
+from auth_dep import get_current_user, ws_authenticate
 from qwen_asr import asr_recognize, request_timeout_seconds
 from rate_limit import limiter
 
@@ -22,6 +27,186 @@ ASR_MAX_SOURCE_BYTES = 10 * 1024 * 1024
 ASR_MAX_BASE64_CHARS = 4 * ((ASR_MAX_SOURCE_BYTES + 2) // 3) + 8
 ASR_MAX_DURATION_SECONDS = 120
 ASR_MAX_WAV_BYTES = 5 * 1024 * 1024
+TTS_TICKET_TTL_SECONDS = 60
+TTS_MAX_TICKET_USES = 4
+TTS_MAX_PENDING_TICKETS = 2048
+TTS_MAX_CACHED_AUDIO_BYTES = 64 * 1024 * 1024
+TTS_MAX_AUDIO_BYTES_PER_TICKET = 8 * 1024 * 1024
+
+
+class TtsTicketRequest(BaseModel):
+    text: str = Field(min_length=1, max_length=2000)
+    voice: str = Field(default="longxiaoxia_v2", min_length=1, max_length=64, pattern=r"^[A-Za-z0-9_-]+$")
+    speech_rate: float = Field(default=1.15, ge=0.5, le=2.0)
+
+
+@dataclass
+class _TtsAudioBuild:
+    done: threading.Event = field(default_factory=threading.Event)
+    audio: bytes | None = None
+
+
+@dataclass(frozen=True)
+class _TtsTicket:
+    user: str
+    text: str
+    voice: str
+    speech_rate: float
+    expires_at: float
+    uses: int = 0
+    cached_audio: bytes | None = None
+    audio_build: _TtsAudioBuild | None = None
+
+
+_tts_tickets: dict[str, _TtsTicket] = {}
+_tts_tickets_lock = threading.Lock()
+
+
+def _use_tts_ticket(ticket: str, user: str) -> _TtsTicket:
+    with _tts_tickets_lock:
+        entry = _tts_tickets.get(ticket)
+        if entry is None:
+            raise HTTPException(status_code=404, detail="朗读票据不存在或已失效")
+        if time.monotonic() >= entry.expires_at:
+            _tts_tickets.pop(ticket, None)
+            raise HTTPException(status_code=404, detail="朗读票据已过期")
+        if entry.user != user:
+            raise HTTPException(status_code=404, detail="朗读票据不存在或已失效")
+        if entry.uses >= TTS_MAX_TICKET_USES:
+            raise HTTPException(status_code=404, detail="朗读票据已用完")
+        _tts_tickets[ticket] = replace(entry, uses=entry.uses + 1)
+        return entry
+
+
+def _claim_tts_audio(ticket: str, entry: _TtsTicket) -> tuple[bytes | None, _TtsAudioBuild | None, bool]:
+    """Share one synthesis across playback probes, even when they overlap."""
+    with _tts_tickets_lock:
+        current = _tts_tickets.get(ticket) or entry
+        if current.cached_audio is not None:
+            return current.cached_audio, None, False
+        build = current.audio_build
+        if build is not None and not build.done.is_set():
+            return None, build, False
+        build = _TtsAudioBuild()
+        if ticket in _tts_tickets:
+            _tts_tickets[ticket] = replace(current, audio_build=build)
+        return None, build, True
+
+
+def _complete_tts_audio(ticket: str, build: _TtsAudioBuild, audio: bytes | None) -> None:
+    with _tts_tickets_lock:
+        current = _tts_tickets.get(ticket)
+        if current is not None and current.audio_build is build:
+            # An oversized response is never retained by the ticket table.
+            if audio and len(audio) <= min(TTS_MAX_AUDIO_BYTES_PER_TICKET, TTS_MAX_CACHED_AUDIO_BYTES) and current.expires_at > time.monotonic():
+                used = sum(len(item.cached_audio or b"") for item in _tts_tickets.values())
+                for key, item in list(_tts_tickets.items()):
+                    if used + len(audio) <= TTS_MAX_CACHED_AUDIO_BYTES:
+                        break
+                    if key == ticket or item.cached_audio is None:
+                        continue
+                    used -= len(item.cached_audio)
+                    # Keep the ticket valid for WebKit's follow-up request.
+                    # Clearing the completed build also releases its copy of
+                    # the bytes, so the cache budget remains a real bound.
+                    _tts_tickets[key] = replace(item, cached_audio=None, audio_build=None)
+                _tts_tickets[ticket] = replace(current, cached_audio=audio, audio_build=None)
+            else:
+                _tts_tickets[ticket] = replace(current, audio_build=None)
+        build.audio = audio
+        build.done.set()
+
+
+async def _get_tts_audio(ticket: str, entry: _TtsTicket) -> bytes | None:
+    from tts import dashscope_timeout_millis, synthesize
+
+    cached, build, creator = _claim_tts_audio(ticket, entry)
+    if cached is not None:
+        return cached
+    assert build is not None
+    if not creator:
+        await asyncio.to_thread(build.done.wait)
+        return build.audio
+    audio: bytes | None = None
+    try:
+        payload, _ = await asyncio.wait_for(
+            asyncio.to_thread(synthesize, entry.text, entry.voice, entry.speech_rate),
+            timeout=dashscope_timeout_millis() / 1000 + 1,
+        )
+        if payload and len(payload) <= TTS_MAX_AUDIO_BYTES_PER_TICKET:
+            audio = payload
+    except Exception:
+        pass
+    finally:
+        _complete_tts_audio(ticket, build, audio)
+    return audio
+
+
+_RANGE_RE = re.compile(r"^bytes=(\d{0,20})-(\d{0,20})$", re.IGNORECASE)
+
+
+def _is_zero_open_range(header: str) -> bool:
+    """An initial bytes=0- playback can stream without knowing the final length."""
+    match = _RANGE_RE.fullmatch(header.strip())
+    return bool(match and match.group(1) and int(match.group(1)) == 0 and not match.group(2))
+
+
+def _parse_byte_range(header: str, total: int | None = None) -> tuple[int, int] | None:
+    match = _RANGE_RE.fullmatch(header.strip())
+    if match is None or not any(match.groups()):
+        return None
+    if total is None:
+        return 0, 0  # Valid syntax; actual bounds need the synthesized length.
+    if total <= 0:
+        return None
+    start_text, end_text = match.groups()
+    if not start_text:
+        suffix = int(end_text)
+        if suffix <= 0:
+            return None
+        return max(0, total - suffix), total - 1
+    start = int(start_text)
+    end = min(int(end_text), total - 1) if end_text else total - 1
+    if start >= total or end < start:
+        return None
+    return start, end
+
+
+def _range_not_satisfiable(total: int | None = None):
+    from fastapi.responses import Response
+
+    headers = {"Accept-Ranges": "bytes", "Cache-Control": "private, no-store"}
+    if total is not None:
+        headers["Content-Range"] = f"bytes */{total}"
+    return Response(
+        status_code=416,
+        headers=headers,
+    )
+
+
+def _validate_ticket_query(request: Request) -> None:
+    # Reject legacy text URLs, including one appended to an otherwise valid ticket.
+    if any(key != "ticket" for key in request.query_params):
+        raise HTTPException(status_code=400, detail="朗读请求只接受票据")
+
+
+@router.post("/tts/ticket")
+@limiter.limit("20/minute")
+async def tts_ticket(request: Request, body: TtsTicketRequest, user: str = Depends(get_current_user)):
+    """Store private text in memory and return a short-lived playback ticket."""
+    text = body.text.strip()
+    if not text:
+        raise HTTPException(status_code=400, detail="朗读文本不能为空")
+    now = time.monotonic()
+    ticket = secrets.token_urlsafe(32)
+    with _tts_tickets_lock:
+        for key, entry in list(_tts_tickets.items()):
+            if entry.expires_at <= now:
+                _tts_tickets.pop(key, None)
+        if len(_tts_tickets) >= TTS_MAX_PENDING_TICKETS:
+            _tts_tickets.pop(next(iter(_tts_tickets)))
+        _tts_tickets[ticket] = _TtsTicket(user, text, body.voice, body.speech_rate, now + TTS_TICKET_TTL_SECONDS)
+    return {"ticket": ticket, "expires_in": TTS_TICKET_TTL_SECONDS}
 
 
 def _pcm_to_wav(audio_bytes: bytes, sample_rate: int = ASR_SAMPLE_RATE) -> bytes:
@@ -96,58 +281,88 @@ def _ffmpeg_to_wav(audio_bytes: bytes, input_suffix: str = ".webm") -> bytes:
 
 
 @router.get("/tts/synthesize")
-@limiter.limit("20/minute")
 async def tts_synthesize(
     request: Request,
-    text: str = Query(min_length=1, max_length=2000),
-    voice: str = Query(default="longxiaoxia_v2", min_length=1, max_length=64, pattern=r"^[A-Za-z0-9_-]+$"),
-    speech_rate: float = Query(default=1.15, ge=0.5, le=2.0),
+    ticket: str = Query(min_length=1, max_length=128),
+    user: str = Depends(get_current_user),
 ):
-    """阿里云 CosyVoice v2 语音合成：text → mp3 字节流。
-    SDK 在长进程里偶发 418，在独立线程跑 + 失败重试一次。"""
-    import asyncio
-    from tts import dashscope_timeout_millis, synthesize
-    timeout_seconds = dashscope_timeout_millis() / 1000 + 1
-    timed_out = False
-    try:
-        audio, mime = await asyncio.wait_for(
-            asyncio.to_thread(synthesize, text, voice, speech_rate),
-            timeout=timeout_seconds,
-        )
-    except asyncio.TimeoutError:
-        timed_out = True
-        audio, mime = b"", "error:timeout"
-    if not audio and not timed_out:
-        try:
-            audio, mime = await asyncio.wait_for(
-                asyncio.to_thread(synthesize, text, voice, speech_rate),
-                timeout=timeout_seconds,
-            )
-        except asyncio.TimeoutError:
-            audio, mime = b"", "error:timeout"
+    """阿里云 CosyVoice v2 语音合成：短期票据 → mp3 字节。"""
+    _validate_ticket_query(request)
+    entry = _use_tts_ticket(ticket, user)
+    audio = await _get_tts_audio(ticket, entry)
     if not audio:
         from fastapi.responses import JSONResponse
         return JSONResponse({"error": "TTS synthesis failed"}, status_code=502)
     from fastapi.responses import Response
-    return Response(content=audio, media_type=mime)
+    return Response(content=audio, media_type="audio/mpeg", headers={"Cache-Control": "private, no-store"})
 
 
 @router.get("/tts/stream")
-@limiter.limit("20/minute")
 async def tts_stream(
     request: Request,
-    text: str = Query(min_length=1, max_length=2000),
-    voice: str = Query(default="longxiaoxia_v2", min_length=1, max_length=64, pattern=r"^[A-Za-z0-9_-]+$"),
-    speech_rate: float = Query(default=1.15, ge=0.5, le=2.0),
+    ticket: str = Query(min_length=1, max_length=128),
+    user: str = Depends(get_current_user),
 ):
-    """CosyVoice 流式合成：边合成边返回 mp3 chunks（chunked transfer）。
-    浏览器 <audio> 元素天然支持流式 mp3，首音 ~300ms。"""
+    """Closed ranges need a finite MP3 length; first zero-open playback streams."""
     from tts import synthesize_stream
-    from fastapi.responses import StreamingResponse
+    from fastapi.responses import Response, StreamingResponse
+    _validate_ticket_query(request)
+    range_header = request.headers.get("range")
+    if range_header is not None and _parse_byte_range(range_header) is None:
+        return _range_not_satisfiable()
+    entry = _use_tts_ticket(ticket, user)
+    with _tts_tickets_lock:
+        cached = _tts_tickets.get(ticket)
+        has_cached_audio = cached is not None and cached.cached_audio is not None
+    if range_header is not None and (has_cached_audio or not _is_zero_open_range(range_header)):
+        audio = await _get_tts_audio(ticket, entry)
+        if not audio:
+            return Response(status_code=502)
+        byte_range = _parse_byte_range(range_header, len(audio))
+        if byte_range is None:
+            return _range_not_satisfiable(len(audio))
+        start, end = byte_range
+        return Response(
+            content=audio[start:end + 1],
+            status_code=206,
+            media_type="audio/mpeg",
+            headers={
+                "Accept-Ranges": "bytes",
+                "Content-Range": f"bytes {start}-{end}/{len(audio)}",
+                "Content-Length": str(end - start + 1),
+                "Cache-Control": "private, no-store",
+            },
+        )
+
+    async def stream_and_cache():
+        cached, build, creator = _claim_tts_audio(ticket, entry)
+        if cached is not None:
+            yield cached
+            return
+        assert build is not None
+        if not creator:
+            await asyncio.to_thread(build.done.wait)
+            if build.audio:
+                yield build.audio
+            return
+        chunks: list[bytes] = []
+        size = 0
+        complete = False
+        try:
+            async for chunk in synthesize_stream(entry.text, entry.voice, entry.speech_rate):
+                if size <= TTS_MAX_AUDIO_BYTES_PER_TICKET:
+                    size += len(chunk)
+                    if size <= TTS_MAX_AUDIO_BYTES_PER_TICKET:
+                        chunks.append(chunk)
+                yield chunk
+            complete = True
+        finally:
+            _complete_tts_audio(ticket, build, b"".join(chunks) if complete and size <= TTS_MAX_AUDIO_BYTES_PER_TICKET else None)
+
     return StreamingResponse(
-        synthesize_stream(text, voice, speech_rate),
+        stream_and_cache(),
         media_type="audio/mpeg",
-        headers={"Cache-Control": "no-cache"},
+        headers={"Cache-Control": "private, no-store"},
     )
 
 

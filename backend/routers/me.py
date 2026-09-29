@@ -3,11 +3,11 @@ import asyncio
 
 import os
 
-from fastapi import APIRouter, Depends, HTTPException
+from fastapi import APIRouter, Depends, HTTPException, Request
 from fastapi.responses import JSONResponse
 from pydantic import BaseModel, Field
 
-from auth_dep import get_current_user
+from auth_dep import get_current_user, is_loopback_client
 from database import get_all_messages, get_strawberry_balance
 from model_router import token_budget
 
@@ -132,9 +132,9 @@ async def get_strawberry(user: str = Depends(get_current_user)):
 
 # ── 用户列表（仅 DEV_MODE 开放，供本地切换身份用）─────────────
 @router.get("/users")
-async def list_users():
+async def list_users(request: Request):
     """DEV_MODE=1 时返回所有用户列表，便于本地切身份调试；生产环境返回 404 隐藏。"""
-    if os.getenv("DEV_MODE", "0") != "1":
+    if os.getenv("DEV_MODE", "0") != "1" or not is_loopback_client(request):
         raise HTTPException(status_code=404, detail="Not Found")
     import aiosqlite
     from database import DB_PATH, SQLITE_BUSY_TIMEOUT

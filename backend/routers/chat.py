@@ -59,6 +59,20 @@ def _text_stream(*events: dict) -> StreamingResponse:
     return StreamingResponse(stream(), media_type="text/event-stream")
 
 
+def _crisis_error_stream(crisis: str | None, detail: str) -> StreamingResponse:
+    events = []
+    if crisis == "high":
+        events.append({"crisis": True})
+    events.extend(({"text": CRISIS_RESOURCE_NOTE}, {"error": detail}))
+    return _text_stream(*events)
+
+
+def _precheck_error_detail(error: Exception) -> str:
+    if isinstance(error, HTTPException):
+        return str(error.detail)
+    return "服务暂时不可用，请稍后再试"
+
+
 class _ReservedChatResponse(StreamingResponse):
     """Close the chat generator and refund if ASGI never entered it."""
 
@@ -83,33 +97,45 @@ class _ReservedChatResponse(StreamingResponse):
 @router.post("/chat")
 @limiter.limit("30/minute")
 async def chat(request: Request, req: ChatRequest, user: str = Depends(get_current_user)):
-    has_image = bool(req.image_base64)
-    if sum(value is not None for value in (req.reference_image_path, req.reference_image_paths, req.reference_images)) > 1:
-        raise HTTPException(status_code=400, detail="请使用一组参考图，不要同时提交两种引用格式")
-    references = req.reference_image_paths or ([req.reference_image_path] if req.reference_image_path else [])
-    if req.reference_images is not None:
-        references = [source.image_path for source in req.reference_images if source.image_path is not None]
-    if len(references) != len(set(references)):
-        raise HTTPException(status_code=400, detail="同一张图片无需重复加入参考")
-    if req.mode == "image_edit":
-        if not references and not req.reference_images:
-            raise HTTPException(status_code=400, detail="请先上传参考图，或在生成的图片上点击「以此图修改」")
-        if has_image:
-            raise HTTPException(status_code=400, detail="修改参考图时请先移除待上传的图片")
-        if not req.message.strip():
-            raise HTTPException(status_code=400, detail="请先输入希望修改的内容")
-    elif references or req.reference_images:
-        raise HTTPException(status_code=400, detail="参考图仅用于图片修改，请选择「以此图修改」")
-    if req.mode == "image" and has_image:
-        raise HTTPException(status_code=400, detail="生成图片时请先移除待发送的图片，再描述想生成的画面")
-    if not req.message.strip() and not has_image:
-        raise HTTPException(status_code=400, detail="message 和图片不能同时为空")
-
+    # Pydantic's request-body validation runs before this handler. Every
+    # validation we control here must happen after crisis classification.
     crisis = assess_crisis(req.message)
+    has_image = bool(req.image_base64)
+    try:
+        if sum(value is not None for value in (req.reference_image_path, req.reference_image_paths, req.reference_images)) > 1:
+            raise HTTPException(status_code=400, detail="请使用一组参考图，不要同时提交两种引用格式")
+        references = req.reference_image_paths or ([req.reference_image_path] if req.reference_image_path else [])
+        if req.reference_images is not None:
+            references = [source.image_path for source in req.reference_images if source.image_path is not None]
+        if len(references) != len(set(references)):
+            raise HTTPException(status_code=400, detail="同一张图片无需重复加入参考")
+        if req.mode == "image_edit":
+            if not references and not req.reference_images:
+                raise HTTPException(status_code=400, detail="请先上传参考图，或在生成的图片上点击「以此图修改」")
+            if has_image:
+                raise HTTPException(status_code=400, detail="修改参考图时请先移除待上传的图片")
+            if not req.message.strip():
+                raise HTTPException(status_code=400, detail="请先输入希望修改的内容")
+        elif references or req.reference_images:
+            raise HTTPException(status_code=400, detail="参考图仅用于图片修改，请选择「以此图修改」")
+        if req.mode == "image" and has_image:
+            raise HTTPException(status_code=400, detail="生成图片时请先移除待发送的图片，再描述想生成的画面")
+        if not req.message.strip() and not has_image:
+            raise HTTPException(status_code=400, detail="message 和图片不能同时为空")
+    except HTTPException as error:
+        if crisis is not None:
+            return _crisis_error_stream(crisis, str(error.detail))
+        raise
+
     reserved = False
     dev_mode = os.getenv("DEV_MODE", "0") == "1"
     if not dev_mode:
-        remaining = await reserve_strawberries(user, STRAWBERRY_COST_PER_REPLY)
+        try:
+            remaining = await reserve_strawberries(user, STRAWBERRY_COST_PER_REPLY)
+        except Exception as error:
+            if crisis is not None:
+                return _crisis_error_stream(crisis, _precheck_error_detail(error))
+            raise
         if remaining is None:
             if crisis == "high":
                 return _text_stream({"crisis": True}, {"text": CRISIS_RESOURCE_NOTE}, {"done": True})
@@ -118,6 +144,8 @@ async def chat(request: Request, req: ChatRequest, user: str = Depends(get_curre
                 f"今天的草莓用完了，明天会自动补到 {refill} 颗；急用请联系管理员补充 🍓"
                 if refill else "草莓不足，内测期间请联系管理员补充 🍓"
             )
+            if crisis == "possible":
+                return _crisis_error_stream(crisis, message)
             return _text_stream({"error": message})
         reserved = True
 
@@ -126,14 +154,26 @@ async def chat(request: Request, req: ChatRequest, user: str = Depends(get_curre
         ctx = await build_context(req, user)
     except ResourceNotFound:
         if reserved:
-            await _refund_before_stream(user)
+            try:
+                await _refund_before_stream(user)
+            except Exception as refund_error:
+                if crisis is None:
+                    raise
+                print(f"[chat] precheck refund failed type={type(refund_error).__name__}", flush=True)
         detail = "参考图不存在或不属于当前对话" if req.mode == "image_edit" else "会话不存在"
-        if crisis == "high":
-            return _text_stream({"crisis": True}, {"text": CRISIS_RESOURCE_NOTE}, {"error": detail})
+        if crisis is not None:
+            return _crisis_error_stream(crisis, detail)
         raise HTTPException(status_code=404, detail=detail) from None
-    except BaseException:
+    except BaseException as error:
         if reserved:
-            await _refund_before_stream(user)
+            try:
+                await _refund_before_stream(user)
+            except Exception as refund_error:
+                if crisis is None:
+                    raise
+                print(f"[chat] precheck refund failed type={type(refund_error).__name__}", flush=True)
+        if crisis is not None and isinstance(error, Exception):
+            return _crisis_error_stream(crisis, _precheck_error_detail(error))
         raise
     headers = {"Cache-Control": "no-cache", "X-Accel-Buffering": "no"}
     if reserved:

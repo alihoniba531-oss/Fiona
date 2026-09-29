@@ -519,14 +519,14 @@ def test_provider_boundary_keeps_long_document_and_reports_truncation(monkeypatc
             assert kwargs["max_retries"] == 0
             return self
 
-        def create(self, **kwargs):
+        async def create(self, **kwargs):
             calls.append(kwargs)
             return SimpleNamespace(
                 choices=[SimpleNamespace(message=SimpleNamespace(content=manuscript), finish_reason="length")],
                 usage=SimpleNamespace(prompt_tokens=17, completion_tokens=8192),
             )
 
-    monkeypatch.setattr(service, "client", FakeProvider())
+    monkeypatch.setattr(service, "get_async_main_client", FakeProvider)
     result = asyncio.run(service.generate_exchange_reply([{"role": "user", "content": "完整稿"}], max_tokens=8192))
     assert result["content"] == manuscript and result["content"].endswith("PROVIDER_END_MARKER")
     assert result["finish_reason"] == "length"

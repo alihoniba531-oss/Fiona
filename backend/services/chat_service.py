@@ -48,6 +48,7 @@ from trace import log_event, trace_span
 from utils.background_tasks import create_background_task
 from utils.media import _save_uploaded_image, delete_uploaded_files
 from utils.reference_images import prepare_reference_upload
+from utils.slow_pool import run_slow
 
 
 _STREAM_END = object()
@@ -93,13 +94,18 @@ def _tool_billable(intent: str, result) -> bool:
 def _crisis_resource_event(state: "ChatState") -> str:
     state.crisis_resource_sent = True
     text = "\n\n" + CRISIS_RESOURCE_NOTE
-    state.full_response += text
+    if not state.full_response.endswith(CRISIS_RESOURCE_NOTE):
+        state.full_response += text
     return _sse({"text": text})
 
 
+def _needs_crisis_resource(state: "ChatState") -> bool:
+    return state.crisis_level in {"high", "possible"} and not state.crisis_resource_sent
+
+
 async def _save_text_reply(ctx: "ChatContext", state: "ChatState"):
-    """Append possible-risk resources after a text reply and persist both."""
-    if state.crisis_level == "possible" and not state.crisis_resource_sent:
+    """Append crisis resources after a text reply and persist both."""
+    if _needs_crisis_resource(state):
         yield _crisis_resource_event(state)
     await _save_response(ctx, state)
 
@@ -563,7 +569,9 @@ async def _ensure_active_conversation(ctx: ChatContext) -> None:
 
 # ────────────────────────── 3. 五条流式分支 ──────────────────────────
 
-async def stream_generated_image(ctx: ChatContext, state: ChatState, prompt: str):
+async def stream_generated_image(
+    ctx: ChatContext, state: ChatState, prompt: str, *, aspect_ratio: str | None = None,
+):
     """生成图先保存到固定会话，再交给页面；中断和删除均不留下孤立附件。"""
     await _ensure_active_conversation(ctx)
     editing = ctx.request_mode == "image_edit"
@@ -571,6 +579,8 @@ async def stream_generated_image(ctx: ChatContext, state: ChatState, prompt: str
     state.trace.update({"intent": tool, "tool": tool})
     if ctx.user in _IMAGE_GENERATION_USERS:
         state.trace["error"] = "ImageGenerationBusy"
+        if _needs_crisis_resource(state):
+            yield _crisis_resource_event(state)
         yield _sse({"error": "已有图片正在生成，请等待完成后再试"})
         return
     _IMAGE_GENERATION_USERS.add(ctx.user)
@@ -587,7 +597,14 @@ async def stream_generated_image(ctx: ChatContext, state: ChatState, prompt: str
         else:
             yield _sse({"status": "generating_image", "message": "正在生成图片，请稍候…"})
             # 只发送本次画面描述，不夹带人设、私有记忆或其他会话内容。
-            task = asyncio.create_task(generate_image(prompt, ctx.aspect_ratio or image_aspect_ratio(prompt)))
+            if ctx.request_mode == "image":
+                # 图片按钮的用户选项保留最高优先级。
+                ratio = ctx.aspect_ratio or aspect_ratio or image_aspect_ratio(prompt)
+            else:
+                # 自然语言请求先读原文；chat 请求附带的比例字段不能
+                # 覆盖写在画面描述里的横版、竖版或正方形要求。
+                ratio = image_aspect_ratio(prompt, fallback=aspect_ratio or ctx.aspect_ratio or "1:1")
+            task = asyncio.create_task(generate_image(prompt, ratio))
         while not task.done():
             done, _ = await asyncio.wait({task}, timeout=_IMAGE_HEARTBEAT_SECONDS)
             if not done:
@@ -596,7 +613,11 @@ async def stream_generated_image(ctx: ChatContext, state: ChatState, prompt: str
         image_path = generated["image_path"]
         await _ensure_active_conversation(ctx)
         state.trace["model"] = generated["model"]
-        state.full_response = "图片已修改。" if editing else "图片已生成。"
+        image_reply = "图片已修改。" if editing else "图片已生成。"
+        state.full_response = image_reply
+        resource_needed = _needs_crisis_resource(state)
+        if resource_needed:
+            state.full_response += "\n\n" + CRISIS_RESOURCE_NOTE
         # 若客户端恰好在落库期间离开，先确认事务结果，避免误删已持久化的图。
         save_task = asyncio.create_task(_save_response(ctx, state, image_path=image_path))
         with anyio.CancelScope(shield=True):
@@ -609,10 +630,15 @@ async def stream_generated_image(ctx: ChatContext, state: ChatState, prompt: str
         if editing:
             generated = {**generated, "reference_image_path": references[0], "reference_image_paths": references}
         yield _sse({"generated_image": generated})
-        yield _sse({"text": state.full_response})
+        yield _sse({"text": image_reply})
+        if resource_needed:
+            state.crisis_resource_sent = True
+            yield _sse({"text": "\n\n" + CRISIS_RESOURCE_NOTE})
         yield _sse({"done": True})
     except ImageGenerationError as exc:
         state.trace["error"] = "ImageGenerationError"
+        if _needs_crisis_resource(state):
+            yield _crisis_resource_event(state)
         yield _sse({"error": str(exc)})
     finally:
         with anyio.CancelScope(shield=True):
@@ -657,12 +683,18 @@ async def stream_mirror(ctx: ChatContext, state: ChatState):
     except Exception as e:
         state.trace["error"] = type(e).__name__
         print(f"[chat] mirror stream error type={type(e).__name__}", flush=True)
+        if _needs_crisis_resource(state):
+            yield _crisis_resource_event(state)
+            await _save_response(ctx, state)
         yield _sse({"error": _upstream_error_message(e)})
         return
     if state.full_response.strip():
         async for event in _save_text_reply(ctx, state):
             yield event
         state.billable = True
+    elif _needs_crisis_resource(state):
+        yield _crisis_resource_event(state)
+        await _save_response(ctx, state)
     yield _sse({"done": True})
     try:
         if not _actually_qwen:
@@ -724,20 +756,21 @@ async def stream_image(ctx: ChatContext, state: ChatState):
     except Exception as e:
         state.trace["error"] = type(e).__name__
         print(f"[chat] qwen-vl-max error type={type(e).__name__}", flush=True)
-        if state.crisis:
+        if _needs_crisis_resource(state):
             yield _crisis_resource_event(state)
             await _save_response(ctx, state)
         yield _sse({"error": _upstream_error_message(e)})
         return
 
     image_summary = state.full_response
-    if state.crisis:
-        yield _crisis_resource_event(state)
     if state.full_response.strip():
         async for event in _save_text_reply(ctx, state):
             yield event
         if image_summary.strip():
             state.billable = True
+    elif _needs_crisis_resource(state):
+        yield _crisis_resource_event(state)
+        await _save_response(ctx, state)
     # 摘要直接复用 VL 本轮已生成的回复，不再额外调用任何模型；写失败绝不能影响已返回的 SSE。
     try:
         await set_message_image_summary(
@@ -773,7 +806,7 @@ async def stream_pending(ctx: ChatContext, state: ChatState, pending: dict):
         state.trace["tool"] = filled["intent"]
         async with trace_span(ctx.user, "tool_call", filled["intent"], payload={"via": "pending_fill"}):
             await _ensure_active_conversation(ctx)
-            result = await asyncio.to_thread(execute_intent, filled["intent"], filled["params"])
+            result = await run_slow(execute_intent, filled["intent"], filled["params"])
         if isinstance(result, dict) and result.get("type") == "card":
             # 卡片数据走专门 SSE 事件
             yield _sse({"card": result})
@@ -803,8 +836,10 @@ async def stream_pending(ctx: ChatContext, state: ChatState, pending: dict):
 
 
 def recognize_intent_with_fallback(message: str, history: list[dict]) -> dict:
-    """意图识别（JSON mode）+ 正则兜底搜索措辞。同步，调用方负责 to_thread。"""
+    """意图识别（JSON mode）+ 生图讨论拦截与搜索措辞兜底。同步，调用方负责 to_thread。"""
     intent_result = recognize_intent(client, message, history)
+    # 能力咨询、教程或取消都不是一次新的生图授权。候选确认与普通意图
+    # 路径共用此入口，避免意图模型误判后直接触发付费生成。
     if intent_result.get("intent") == "generate_image" and image_generation_discussion(message):
         intent_result = {"intent": None}
     # LLM 意图路由偶尔把"我查一下 XX"误判为 null——正则补一刀。
@@ -847,9 +882,16 @@ async def stream_intent(ctx: ChatContext, state: ChatState, intent_result: dict)
                 yield event
             yield _sse({"done": True})
         else:
+            params = intent_result.get("params") or {}
             # 分类器的短 JSON 不能替换或截断用户完整的画面要求。
+            prompt = ctx.message.strip()
+            ratio = params.get("aspect_ratio") if isinstance(params, dict) else None
+            if not isinstance(ratio, str) or ratio not in {"1:1", "16:9", "9:16"}:
+                ratio = None
+            # 原文写明的比例优先；原文没有比例时才采用合法的模型比例。
+            ratio = image_aspect_ratio(prompt, fallback=ratio or "1:1")
             await asyncio.to_thread(clear_pending, ctx.state_key)
-            async for event in stream_generated_image(ctx, state, ctx.message.strip()):
+            async for event in stream_generated_image(ctx, state, prompt, aspect_ratio=ratio):
                 yield event
         return
     if not intent_result["missing"]:
@@ -857,7 +899,7 @@ async def stream_intent(ctx: ChatContext, state: ChatState, intent_result: dict)
         state.trace["tool"] = intent_result["intent"]
         async with trace_span(ctx.user, "tool_call", intent_result["intent"], payload={"via": "direct"}):
             await _ensure_active_conversation(ctx)
-            result = await asyncio.to_thread(execute_intent, intent_result["intent"], intent_result["params"])
+            result = await run_slow(execute_intent, intent_result["intent"], intent_result["params"])
         if isinstance(result, dict) and result.get("type") == "card":
             # 卡片数据走专门 SSE 事件
             yield _sse({"card": result})
@@ -922,7 +964,7 @@ async def stream_normal(ctx: ChatContext, state: ChatState):
     except Exception as e:
         state.trace["error"] = type(e).__name__
         print(f"[chat] normal stream error type={type(e).__name__}", flush=True)
-        if state.crisis:
+        if _needs_crisis_resource(state):
             yield _crisis_resource_event(state)
             await _save_response(ctx, state)
         yield _sse({"error": _upstream_error_message(e)})
@@ -933,13 +975,14 @@ async def stream_normal(ctx: ChatContext, state: ChatState):
               f"max_tokens={_max_tok} chars={len(state.full_response)}", flush=True)
 
     model_response = state.full_response
-    if state.crisis:
-        yield _crisis_resource_event(state)
     if state.full_response.strip():
         async for event in _save_text_reply(ctx, state):
             yield event
         if model_response.strip():
             state.billable = True
+    elif _needs_crisis_resource(state):
+        yield _crisis_resource_event(state)
+        await _save_response(ctx, state)
     yield _sse({"done": True})
 
     try:
@@ -1012,8 +1055,6 @@ async def run_chat(
                 async for event in stream_normal(ctx, state):
                     yield event
             return
-        # 用户明确请求生成图片时，优先执行；避免被情绪陪聊或旧 pending 参数吞掉。
-        image_intent = explicit_image_intent(ctx.message) if not ctx.has_image else None
         if ctx.request_mode in {"image", "image_edit"}:
             await asyncio.to_thread(clear_pending, ctx.state_key)
             state.trace["mode"] = ctx.request_mode
@@ -1029,19 +1070,59 @@ async def run_chat(
                 yield event
             yield _sse({"done": True})
             return
-        if image_intent:
-            state.trace["mode"] = "image"
-            async for event in stream_intent(ctx, state, image_intent):
-                yield event
-            return
+        # 正则只提名候选。模型确认在旧 pending 和镜子模式之前进行；
+        # 确认结果留给后续路由复用，单轮不会为同一句话再识别一次。
+        intent_result = None
+        intent_checked = False
+        image_candidate = explicit_image_intent(ctx.message) if not ctx.has_image else None
+        image_candidate_rejected = False
+        if image_candidate:
+            try:
+                intent_result = await asyncio.to_thread(
+                    recognize_intent_with_fallback, ctx.message, ctx.history,
+                )
+            except Exception as error:
+                print(f"[chat] image candidate classification failed type={type(error).__name__}", flush=True)
+                intent_result = {"intent": None}
+            if not isinstance(intent_result, dict):
+                intent_result = {"intent": None}
+            intent_checked = True
+            await _ensure_active_conversation(ctx)
+            state.trace["intent"] = intent_result.get("intent")
+            if intent_result.get("intent") == "generate_image":
+                params = intent_result.get("params")
+                params = dict(params) if isinstance(params, dict) else {}
+                # 正则或模型任一方认为画面主体为空，就沿用基线追问。
+                # 模型短 prompt 不得覆盖正则的空画面判断；有画面时仍
+                # 使用用户完整原话，不以模型提取的 prompt 替换。
+                needs_prompt = (
+                    "prompt" in (image_candidate.get("missing") or [])
+                    or "prompt" in (intent_result.get("missing") or [])
+                )
+                intent_result = {
+                    **intent_result, "params": params,
+                    "missing": ["prompt"] if needs_prompt else [],
+                }
+                state.trace["mode"] = "image"
+                async for event in stream_intent(ctx, state, intent_result):
+                    yield event
+                return
+            image_candidate_rejected = intent_result.get("intent") is None
         image_pending = await asyncio.to_thread(get_pending, ctx.state_key)
-        if not ctx.has_image and image_pending and image_pending.get("intent") == "generate_image":
+        if (not ctx.has_image and image_pending
+            and image_pending.get("intent") == "generate_image"
+            and not image_candidate_rejected):
             if re.match(r"^(?:算了|取消|不用了|不画了|不要了|停止|别画了)[吧了。！!\s]*$", ctx.message.strip()):
                 async for event in stream_pending(ctx, state, image_pending):
                     yield event
                 return
             # 新的工具请求优先于旧的画面追问，例如“先查一下天气”。
-            replacement = await asyncio.to_thread(recognize_intent_with_fallback, ctx.message, ctx.history)
+            if intent_checked:
+                replacement = intent_result
+            else:
+                replacement = await asyncio.to_thread(recognize_intent_with_fallback, ctx.message, ctx.history)
+                intent_result = replacement
+                intent_checked = True
             if replacement.get("intent") and replacement["intent"] != "generate_image":
                 await asyncio.to_thread(clear_pending, ctx.state_key)
                 async for event in stream_intent(ctx, state, replacement):
@@ -1079,13 +1160,14 @@ async def run_chat(
 
         # ── 1. 检查是否有等待补全参数的 pending intent ──
         pending = await asyncio.to_thread(get_pending, ctx.state_key)
-        if pending:
+        if pending and not (image_candidate_rejected and pending.get("intent") == "generate_image"):
             async for s in stream_pending(ctx, state, pending):
                 yield s
             return
 
         # ── 2. 意图识别（JSON mode，带上下文）──
-        intent_result = await asyncio.to_thread(recognize_intent_with_fallback, ctx.message, ctx.history)
+        if not intent_checked:
+            intent_result = await asyncio.to_thread(recognize_intent_with_fallback, ctx.message, ctx.history)
         await _ensure_active_conversation(ctx)
         state.trace["intent"] = intent_result.get("intent")
         if intent_result["intent"] is not None:
@@ -1102,12 +1184,12 @@ async def run_chat(
             await asyncio.to_thread(clear_pending, ctx.state_key)
             from mode_switcher import clear_user_mode
             await asyncio.to_thread(clear_user_mode, ctx.state_key)
-        if high_crisis and not state.crisis_resource_sent:
+        if _needs_crisis_resource(state):
             yield _crisis_resource_event(state)
         yield _sse({"error": "会话已删除或不可用"})
         state.trace["error"] = "ResourceNotFound"
     except Exception as e:
-        if high_crisis and not state.crisis_resource_sent:
+        if _needs_crisis_resource(state):
             yield _crisis_resource_event(state)
         yield _sse({"error": _upstream_error_message(e)})
         state.trace["error"] = type(e).__name__

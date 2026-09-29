@@ -21,7 +21,7 @@ class FakeClient:
         self.options.append(kwargs)
         return self
 
-    def create(self, **kwargs):
+    async def create(self, **kwargs):
         self.calls.append(kwargs)
         if self.failure:
             raise self.failure
@@ -61,8 +61,8 @@ def test_generate_routes_to_the_selected_sdk_and_records_public_provider_metadat
     monkeypatch.setenv("OFFICIAL_EXCHANGE_PROVIDER", official_provider)
     monkeypatch.setenv("OFFICIAL_EXCHANGE_MODEL", override)
     main_client, deepseek_client = FakeClient(), FakeClient()
-    monkeypatch.setattr(service, "client", main_client)
-    monkeypatch.setattr(service, "get_deepseek_client", lambda: deepseek_client)
+    monkeypatch.setattr(service, "get_async_main_client", lambda: main_client)
+    monkeypatch.setattr(service, "get_async_deepseek_client", lambda: deepseek_client)
     messages = [{"role": "user", "content": "本次交流内容"}]
     result = asyncio.run(service.generate_exchange_reply(messages, max_tokens=512, provider=slot))
     config = exchange_models.get_exchange_model(slot)
@@ -89,35 +89,35 @@ def test_missing_deepseek_credentials_do_not_fall_back_to_main(monkeypatch):
     import exchange_models
     import services.exchange_service as service
 
-    exchange_models.get_deepseek_client.cache_clear()
+    exchange_models.get_async_deepseek_client.cache_clear()
     monkeypatch.setenv("OFFICIAL_EXCHANGE_PROVIDER", "deepseek")
     monkeypatch.delenv("DEEPSEEK_API_KEY", raising=False)
     main_client = FakeClient()
-    monkeypatch.setattr(service, "client", main_client)
-    monkeypatch.setattr(service, "get_deepseek_client", exchange_models.get_deepseek_client)
+    monkeypatch.setattr(service, "get_async_main_client", lambda: main_client)
+    monkeypatch.setattr(service, "get_async_deepseek_client", exchange_models.get_async_deepseek_client)
     try:
         with pytest.raises(ValueError, match="not configured"):
             asyncio.run(service.generate_exchange_reply([], max_tokens=512, provider="official"))
         assert main_client.calls == []
     finally:
-        exchange_models.get_deepseek_client.cache_clear()
+        exchange_models.get_async_deepseek_client.cache_clear()
 
 
-def test_deepseek_client_uses_only_server_key_and_fixed_official_endpoint(monkeypatch):
+def test_async_deepseek_client_uses_only_server_key_and_fixed_official_endpoint(monkeypatch):
     import exchange_models
 
     calls = []
     marker = object()
     monkeypatch.setenv("DEEPSEEK_API_KEY", "  TEST_ONLY_DEEPSEEK_KEY  ")
     monkeypatch.setenv("DEEPSEEK_BASE_URL", "https://untrusted.invalid")
-    monkeypatch.setattr(exchange_models, "OpenAI", lambda **kwargs: calls.append(kwargs) or marker)
-    exchange_models.get_deepseek_client.cache_clear()
+    monkeypatch.setattr(exchange_models, "AsyncOpenAI", lambda **kwargs: calls.append(kwargs) or marker)
+    exchange_models.get_async_deepseek_client.cache_clear()
     try:
-        assert exchange_models.get_deepseek_client() is marker
-        assert exchange_models.get_deepseek_client() is marker
+        assert exchange_models.get_async_deepseek_client() is marker
+        assert exchange_models.get_async_deepseek_client() is marker
         assert calls == [{"api_key": "TEST_ONLY_DEEPSEEK_KEY", "base_url": "https://api.deepseek.com", "timeout": 45.0, "max_retries": 0}]
     finally:
-        exchange_models.get_deepseek_client.cache_clear()
+        exchange_models.get_async_deepseek_client.cache_clear()
 
 
 def test_deepseek_failure_is_not_retried_or_sent_to_main(monkeypatch):
@@ -126,8 +126,8 @@ def test_deepseek_failure_is_not_retried_or_sent_to_main(monkeypatch):
     monkeypatch.setenv("OFFICIAL_EXCHANGE_PROVIDER", "deepseek")
     main_client, deepseek_client = FakeClient(), FakeClient()
     deepseek_client.failure = RuntimeError("fake provider failure")
-    monkeypatch.setattr(service, "client", main_client)
-    monkeypatch.setattr(service, "get_deepseek_client", lambda: deepseek_client)
+    monkeypatch.setattr(service, "get_async_main_client", lambda: main_client)
+    monkeypatch.setattr(service, "get_async_deepseek_client", lambda: deepseek_client)
     with pytest.raises(RuntimeError, match="fake provider failure"):
         asyncio.run(service.generate_exchange_reply([], max_tokens=512, provider="official"))
     assert len(deepseek_client.calls) == 1 and main_client.calls == []

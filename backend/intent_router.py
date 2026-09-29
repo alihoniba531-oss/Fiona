@@ -77,6 +77,12 @@ INTENT_PROMPT = """你是意图识别器，只输出JSON，不输出任何其他
 "你能生成图片吗" / "生图多少钱" / "怎么生成图片" / "帮我写生图提示词" → null
 "不要画了" / "你刚才画的不好" / "我昨天画了一张图" → null
 "修改刚才的图片" / "把这张图的天空改成黄昏" / "引用原图继续调整" → null（需要先点击图片上的「以此图修改」，不能当作没有参考图的文生图）
+谈论生图这件事本身不是生图命令：价格、扣费、耗时、难度的陈述或反问，已生成结果的评价或抱怨，回忆、愿望、第三人称叙述，以及"……可以不"、"哪有那么难"、"不就行了"等口语反问，一律返回 null。
+即使这些话包含"画一张"、"生成一张"等词，也不要执行生图；只有当前明确让你动手画图的祈使请求才返回 generate_image。
+"做张封面竟然收了我八颗草莓" / "生成海报得等半天吧" / "画幅风景真有这么难？" → null
+"刚出的头像颜色太暗了" / "小时候她一直盼着有人给她画海边的家" / "隔壁同学说他画过一整本漫画" → null
+"做个头像可以不" / "画幅山水哪有那么难" / "弄张海报不就行了" → null（谈论或反问，不是新的执行请求）
+"画一只戴围巾的企鹅" / "帮我生成一张日落灯塔插画" / "能帮我画一辆雨中的自行车吗" → generate_image（明确请求现在动手）
 不要把解释、评价、教程、代码、提示词、搜索现有图片误判成实际生成。
 
 【fetch_card 默认走这条 - 信息以卡片在Chloe里呈现,不打开浏览器】
@@ -119,12 +125,14 @@ MISSING_QUESTIONS = {
 }
 
 
-def image_aspect_ratio(message: str) -> str:
+def image_aspect_ratio(message: str, fallback: str = "1:1") -> str:
     if re.search(r"9\s*[:：]\s*16|竖[版屏幅]", message):
         return "9:16"
     if re.search(r"16\s*[:：]\s*9|横[版屏幅]", message):
         return "16:9"
-    return "1:1"
+    if re.search(r"1\s*[:：]\s*1|正方形", message):
+        return "1:1"
+    return fallback
 
 
 def image_generation_discussion(message: str) -> bool:
@@ -132,32 +140,44 @@ def image_generation_discussion(message: str) -> bool:
     text = message.strip()
     return bool(
         re.match(r"^(?:请)?(?:别|不要|不用|不需要|取消|停止)", text)
-        or re.match(r"^(?:你)?(?:会|可以|能|能不能|能否)(?:帮我)?(?:生成|画|绘制|制作)(?:图片|图像|画画|图)(?:吗|么)?[？?。！!\s]*$", text)
+        or re.match(r"^(?:你)?(?:会|可以|能|能不能|能否)(?:帮我)?(?:生成(?:图片|图像|图)|画画|画(?:图片|图像|图)|绘制(?:图片|图像|图)|制作(?:图片|图像|图))(?:吗|么)?[？?。！!\s]*$", text)
         or re.match(r"^(?:怎么|如何|为什么|为啥|能否介绍|介绍一下)", text)
         or re.search(r"(?:生图|生成图片|生成图像|绘图)(?:的|有哪些|有什么|用什么|使用什么)?(?:功能|接口|API|模型|价格|费用|教程|方法)", text, re.I)
         or re.search(r"(?:写|提供|解释|优化|修改|生成)(?:一下|一段|一份|个|一[个份])?[^。！？!?]{0,12}(?:提示词|教程|代码)", text)
     )
 
 
+_IMAGE_REQUEST_PREFIX = (
+    r"(?:请(?:帮我|给我|为我|替我)?|麻烦(?:你)?(?:帮我|给我|为我|替我)?|"
+    r"(?:你)?(?:能不能|能否|可以|能)(?:帮我|给我|为我|替我)|"
+    r"帮我|给我|为我|替我|我想让你|我想要你|你帮我)"
+)
+_IMAGE_OBJECT = re.compile(
+    r"图片|图像|插画|插图|漫画|海报|壁纸|头像|封面|照片|贺卡|表情包|"
+    r"画作|配图|油画|水彩(?:画)?|素描|速写|国画|简笔画"
+)
 def explicit_image_intent(message: str) -> dict | None:
-    """仅抢先识别明确绘图命令，避免长画面描述被陪聊模式或搜索吞掉。"""
+    """提名可能的画图请求；是否执行必须由意图模型确认。"""
     text = message.strip()
-    if image_generation_discussion(text):
-        return None
-    # 提示词、教程和能力咨询是普通对话；否定/引述也不能触发付费生成。
-    if re.search(r"(?:提示词|教程|接口|API|代码|方法|功能)(?:怎么|如何|能否|是否|[？?]|$)", text, re.I):
-        return None
-    if re.match(r"^(?:请)?(?:别|不要|不用|不需要|取消|停止)", text):
-        return None
-    prefix = r"^(?:(?:请|麻烦你?|能不能|能否|可以|能)(?:帮我|给我|为我)?|帮我|给我|为我|替我|我想让你|我想要你|你帮我)?\s*"
-    matched = re.match(prefix + r"(?:生成|绘制|画|做|创作|制作)(?:一下|一幅|一张|一个|一只|一副|个|张|幅)?\s*(.*)", text, re.S)
+    matched = re.match(
+        rf"^(?P<request>{_IMAGE_REQUEST_PREFIX})?\s*"
+        r"(?P<verb>生成|绘制|画|做|创作|制作)(?:一下)?\s*"
+        r"(?P<count>(?:一|两|俩|几|数)?[张幅副个只套款页条座朵棵位头匹辆片组束间])?\s*"
+        r"(?P<subject>.*)$",
+        text, re.S,
+    )
     if not matched:
         return None
-    if re.search(r"(?:提示词|教程|接口|API|代码|方法|功能)", matched.group(1)[:30], re.I):
+    subject = matched.group("subject").strip()
+    request = matched.group("request")
+    has_image_object = bool(_IMAGE_OBJECT.search(subject))
+    # 只用结构提名，不从疑问、抱怨或评价词猜测用户意图。
+    if matched.group("verb") in {"画", "绘制"}:
+        if not matched.group("count") and not has_image_object:
+            return None
+    elif not has_image_object or not (matched.group("count") or request):
         return None
-    if not re.match(prefix + r"(?:画|绘制)", text) and not re.search(r"图片|图像|海报|插画|壁纸|头像|封面|照片|一[张幅副].*图", text, re.S):
-        return None
-    subject = re.sub(r"^(?:一[张幅副个])?(?:图片|图像|画|图)?[。！!？?，,:：\s]*$", "", matched.group(1)).strip()
+    subject = re.sub(r"^(?:图片|图像|画|图)?[。！!？?，,:：\s]*$", "", subject).strip()
     return {"intent": "generate_image", "params": {
         "prompt": text, "aspect_ratio": image_aspect_ratio(text),
     }, "missing": [] if subject else ["prompt"]}

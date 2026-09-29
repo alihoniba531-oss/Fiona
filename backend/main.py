@@ -6,19 +6,38 @@ if sys.platform == "win32":
 
 import os
 import posixpath
+from concurrent.futures import ThreadPoolExecutor
 from contextlib import asynccontextmanager
+from dotenv import load_dotenv
+from utils.dotenv_config import DotenvSelectionError, select_dotenv_path
+
+# Read the selected dotenv before database, media, auth, or model modules bind
+# configuration at import time. Process environment always wins.
+_selected_dotenv = select_dotenv_path()
+if _selected_dotenv is not None:
+    try:
+        load_dotenv(dotenv_path=_selected_dotenv, override=False)
+    except OSError as error:
+        raise DotenvSelectionError(f"配置文件不存在或不可读：{_selected_dotenv}") from error
+# Legacy auth/llm imports also call load_dotenv at module scope. The selected
+# file is already loaded; disable those redundant reads (including a different
+# local .env when FIONA_ENV_FILE points at an isolated test or deployment file).
+os.environ["PYTHON_DOTENV_DISABLED"] = "1"
+
 from fastapi import FastAPI, Request
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse
 from fastapi.staticfiles import StaticFiles
 from slowapi import _rate_limit_exceeded_handler
 from slowapi.errors import RateLimitExceeded
+from auth_dep import is_loopback_client
 from database import get_pending_upload_cleanup, init_db, mark_upload_cleanup_done
 from rate_limit import limiter
 from routers import agent_exchanges, agents, auth, cards, chat, conversations, hot, match, me, peer, plaza, voice
 from utils import media
 from utils.background_tasks import create_background_task, shutdown_background_tasks
 from utils.request_limits import MAX_REQUEST_BODY_BYTES, RequestBodyLimitMiddleware
+from utils.slow_pool import shutdown_slow_pool
 
 if os.getenv("DEV_MODE", "0") == "1":
     import selectors as _selectors
@@ -35,6 +54,14 @@ if os.getenv("DEV_MODE", "0") == "1":
         _selector_cls._fiona_dev_select_clamped = True
 
 _UPLOAD_CLEANUP_INTERVAL_SECONDS = 15 * 60
+
+
+def _default_pool_workers() -> int:
+    try:
+        workers = int(os.getenv("FIONA_DEFAULT_POOL_WORKERS", "32"))
+    except ValueError:
+        workers = 32
+    return workers if 1 <= workers <= 256 else 32
 
 
 async def _run_upload_cleanup_once() -> None:
@@ -56,6 +83,9 @@ async def _run_upload_cleanup_periodically() -> None:
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
+    asyncio.get_running_loop().set_default_executor(
+        ThreadPoolExecutor(max_workers=_default_pool_workers(), thread_name_prefix="fiona-chat")
+    )
     await init_db()
     from exchange_store import recover_interrupted_exchanges
     await recover_interrupted_exchanges()
@@ -68,6 +98,7 @@ async def lifespan(app: FastAPI):
         yield
     finally:
         await shutdown_background_tasks()
+        shutdown_slow_pool()
 
 app = FastAPI(title="Chloe API", lifespan=lifespan)
 app.add_middleware(RequestBodyLimitMiddleware, max_bytes=MAX_REQUEST_BODY_BYTES)
@@ -141,10 +172,13 @@ async def require_auth(request: Request, call_next):
     # Match StaticFiles' path normalization before the DEV uploads bypass.
     upload_path = posixpath.normpath("/" + path.lstrip("/"))
     private_chat_image = upload_path.startswith("/uploads/") and posixpath.basename(upload_path).startswith(("generated_", "reference_", ".generated_", ".reference_"))
-    if path.startswith("/uploads/") and not private_chat_image and os.getenv("DEV_MODE", "0") == "1":
+    if (path.startswith("/uploads/") and not private_chat_image
+            and os.getenv("DEV_MODE", "0") == "1" and is_loopback_client(request)):
         return await call_next(request)
     if path.startswith(_API_DOCS_PREFIXES):
         if os.getenv("DEV_MODE", "0") != "1":
+            return JSONResponse({"detail": "Not Found"}, status_code=404)
+        if not is_loopback_client(request):
             return JSONResponse({"detail": "Not Found"}, status_code=404)
         return await call_next(request)
     if path in _AUTH_PUBLIC_PATHS or (
@@ -160,7 +194,7 @@ async def require_auth(request: Request, call_next):
         cookie_token = request.cookies.get("fiona_token")
         if cookie_token:
             user = await authenticate_token(cookie_token)
-    if not user and os.getenv("DEV_MODE", "0") == "1":
+    if not user and os.getenv("DEV_MODE", "0") == "1" and is_loopback_client(request):
         from urllib.parse import unquote
         dev = request.headers.get("x-dev-user") or request.query_params.get("dev_user")
         if dev:

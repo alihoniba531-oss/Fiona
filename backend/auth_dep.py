@@ -9,6 +9,7 @@ DEV_MODE=1 时支持 X-Dev-User 头跳过 JWT —— 和前端 proxy.ts 在
 NODE_ENV=development 时跳过路由门禁对称，本地起服务不用每次过 OTP。
 """
 import os
+import ipaddress
 from urllib.parse import unquote
 from fastapi import Header, HTTPException, WebSocket, Request
 from auth import decode_token_claims
@@ -16,6 +17,20 @@ from auth import decode_token_claims
 
 def _dev_mode() -> bool:
     return os.getenv("DEV_MODE", "0") == "1"
+
+
+def is_loopback_client(connection: Request | WebSocket) -> bool:
+    """Only the socket peer can authorize a DEV shortcut; proxy headers cannot."""
+    client = connection.client
+    if client is None:
+        return False
+    try:
+        address = ipaddress.ip_address(client.host)
+    except ValueError:
+        return False
+    if isinstance(address, ipaddress.IPv6Address) and address.ipv4_mapped:
+        return address.ipv4_mapped.is_loopback
+    return address.is_loopback
 
 
 async def authenticate_token(token: str | None) -> str | None:
@@ -61,7 +76,7 @@ async def get_current_user(
     u = await authenticate_token(request.cookies.get("fiona_token"))
     if u:
         return u
-    if _dev_mode():
+    if _dev_mode() and is_loopback_client(request):
         v = _decode_dev_user(x_dev_user)
         if v:
             return v
@@ -86,7 +101,7 @@ async def get_optional_user(
     u = await authenticate_token(request.cookies.get("fiona_token"))
     if u:
         return u
-    if _dev_mode():
+    if _dev_mode() and is_loopback_client(request):
         v = _decode_dev_user(x_dev_user)
         if v:
             return v
@@ -102,7 +117,7 @@ async def ws_authenticate(websocket: WebSocket) -> str | None:
     u = await authenticate_token(token)
     if u:
         return u
-    if _dev_mode():
+    if _dev_mode() and is_loopback_client(websocket):
         dev_user = params.get("dev_user")
         if dev_user and dev_user.strip():
             return dev_user.strip()

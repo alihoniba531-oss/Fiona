@@ -9,6 +9,7 @@ from auth_dep import get_current_user
 from llm import QWEN_CLIENT, QWEN_MODEL, QWEN_EXTRA_BODY
 from rate_limit import limiter
 from tools.hot_topics import hot_topics
+from utils.slow_pool import run_slow
 
 router = APIRouter()
 
@@ -24,9 +25,8 @@ async def hot_expand(
     注意：此路由必须注册在 /hot/{source} 之前，否则被泛匹配吃掉。
     会触发 LLM 联网外呼，必须登录（中间件与本依赖双重校验），
     另限流 20/分钟/IP 防刷；request 供 slowapi 取 key。"""
-    import asyncio
     from tools.topic_expand import topic_expand
-    return await asyncio.to_thread(topic_expand, title)
+    return await run_slow(topic_expand, title)
 
 
 @router.get("/hot/{source}")
@@ -34,8 +34,7 @@ async def hot_expand(
 async def hot_endpoint(request: Request, source: str = "微博"):
     """直接给前端拉热搜（广场角落 HUD 用）。source: 微博 / 知乎 / 抖音 / B站 / 头条
     限流 20/分钟/IP：匿名可访问且触发外呼，防刷爆；request 供 slowapi 取 key。"""
-    import asyncio
-    return await asyncio.to_thread(hot_topics, source)
+    return await run_slow(hot_topics, source)
 
 
 # ── 热搜分类关键词表 ──────────────────────────────────────────────
@@ -157,11 +156,11 @@ async def hot_categorized(request: Request):
     多源并行拉，单源失败不影响其他。"""
     import asyncio
     results = await asyncio.gather(
-        asyncio.to_thread(hot_topics, "微博"),
-        asyncio.to_thread(hot_topics, "抖音"),
-        asyncio.to_thread(hot_topics, "知乎"),
-        asyncio.to_thread(hot_topics, "B站"),
-        asyncio.to_thread(hot_topics, "头条"),
+        run_slow(hot_topics, "微博"),
+        run_slow(hot_topics, "抖音"),
+        run_slow(hot_topics, "知乎"),
+        run_slow(hot_topics, "B站"),
+        run_slow(hot_topics, "头条"),
         return_exceptions=True,
     )
 
@@ -202,7 +201,7 @@ async def hot_categorized(request: Request):
             unique.append(t)
 
     # LLM 整批分类（带缓存）；漏归 / 失败的标题走关键词 fallback
-    llm_map = await asyncio.to_thread(_classify_with_llm, unique)
+    llm_map = await run_slow(_classify_with_llm, unique)
     _fallback_map = {"历史": "文化", "哲学": "文化", "时事": "生活"}
 
     buckets: dict[str, list[str]] = {c: [] for c in CATEGORIES_DISPLAY}

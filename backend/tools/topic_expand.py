@@ -13,9 +13,9 @@ import json
 import os
 import re
 import urllib.request
-from datetime import datetime
 
 from utils.safe_http import request_public_url
+from utils.beijing_time import beijing_now
 
 DASHSCOPE_URL = "https://dashscope.aliyuncs.com/api/v1/services/aigc/text-generation/generation"
 
@@ -50,7 +50,7 @@ def _request_search(messages: list[dict], api_key: str, *, max_tokens: int = 900
 
 
 def _build_expand_prompt() -> str:
-    now = datetime.now()
+    now = beijing_now()
     today_str = f"{now.year}年{now.month}月{now.day}日"
     return f"""你是热点话题解读者。用户给你一个**今天**上了微博/抖音/B站/头条热搜的话题标题，
 你联网搜索后，把这件**正在发生**的事讲清楚。
@@ -107,7 +107,7 @@ def topic_expand(title: str) -> dict:
     if not api_key:
         return {"title": title, "error": "DASHSCOPE_API_KEY 未设置"}
 
-    now = datetime.now()
+    now = beijing_now()
     messages = [
         {"role": "system", "content": _build_expand_prompt()},
         {

@@ -363,7 +363,9 @@ def _unavailable_reason(row):
 
 
 async def _count_participation(db, username, *, running_only=False):
-    status = "status = 'running'" if running_only else "status IN ('pending','running')"
+    # A stopped exchange still owns a user slot until its in-flight provider
+    # request has actually disconnected and its reservation is settled.
+    status = "(status = 'running' OR inflight_call_id IS NOT NULL)" if running_only else "status IN ('pending','running')"
     count = await _one(db, f"""SELECT COUNT(*) AS n FROM agent_exchanges
         WHERE {status} AND (initiator_username = ? OR (kind = 'peer' AND recipient_username = ?))""",
         (username, username))
@@ -557,6 +559,12 @@ async def load_running_exchange(exchange_id, run_token):
         return context
 
 
+async def is_exchange_running(exchange_id, run_token):
+    async with aiosqlite.connect(database.DB_PATH, timeout=database.SQLITE_BUSY_TIMEOUT) as db:
+        row = await _one(db, "SELECT 1 FROM agent_exchanges WHERE id = ? AND status = 'running' AND run_token = ?", (exchange_id, run_token))
+        return row is not None
+
+
 async def reserve_model_call(
     exchange_id, run_token, expected_turn_count, kind, input_limit, output_limit, *, provider="", model="",
 ):
@@ -681,7 +689,7 @@ async def finish_model_call(exchange_id, run_token, call_id, expected_turn_count
                 error = INVALID_WORKFLOW_REASON
         await db.execute("""UPDATE agent_exchange_calls SET status = ?, input_tokens = ?, output_tokens = ?,
             estimated = ?, completed_at = CURRENT_TIMESTAMP WHERE id = ?""",
-            ("failed" if error else "succeeded" if valid else "discarded", input_tokens, output_tokens, int(estimated), call_id))
+            ("discarded" if not valid else "failed" if error else "succeeded", input_tokens, output_tokens, int(estimated), call_id))
         await db.execute("""UPDATE agent_exchanges SET input_tokens = input_tokens + ?, output_tokens = output_tokens + ?,
             estimated = MAX(estimated, ?), budget_used = budget_used - ? + ?,
             reserved_tokens = MAX(0, reserved_tokens - ?),
@@ -720,4 +728,40 @@ async def stop_running_exchange(exchange_id, run_token, reason):
         await db.execute("""UPDATE agent_exchanges SET status = 'stopped', run_token = NULL, error = ?,
             updated_at = CURRENT_TIMESTAMP WHERE id = ? AND status = 'running' AND run_token = ?""",
             (reason, exchange_id, run_token))
+        await db.commit()
+
+
+async def stop_and_discard_reserved_calls(exchange_id, run_token, reason):
+    """Atomically release a cancelled run, even if reservation never returned its ID."""
+    async with aiosqlite.connect(database.DB_PATH, timeout=database.SQLITE_BUSY_TIMEOUT) as db:
+        await db.execute("BEGIN IMMEDIATE")
+        row = await _one(db, "SELECT status, run_token FROM agent_exchanges WHERE id = ?", (exchange_id,))
+        # A participant stop clears run_token first. An exchange never restarts,
+        # so NULL still identifies this run; a different live token does not.
+        if row is None or row["run_token"] not in (None, run_token):
+            await db.rollback()
+            return
+        if row["status"] == "running":
+            await db.execute("""UPDATE agent_exchanges SET status = 'stopped', run_token = NULL,
+                error = ?, updated_at = CURRENT_TIMESTAMP WHERE id = ? AND run_token = ?""",
+                (reason, exchange_id, run_token))
+        totals = await _one(db, """SELECT COUNT(*) AS n, COALESCE(SUM(reserved_tokens), 0) AS reserved,
+            COALESCE(SUM(input_limit), 0) AS input, COALESCE(SUM(output_limit), 0) AS output
+            FROM agent_exchange_calls WHERE exchange_id = ? AND status = 'reserved'""", (exchange_id,))
+        if totals["n"]:
+            await db.execute("""UPDATE agent_exchange_calls SET status = 'discarded', estimated = 1,
+                input_tokens = input_limit, output_tokens = output_limit,
+                completed_at = CURRENT_TIMESTAMP
+                WHERE exchange_id = ? AND status = 'reserved'""", (exchange_id,))
+            await db.execute("""UPDATE agent_exchanges SET
+                input_tokens = input_tokens + ?, output_tokens = output_tokens + ?,
+                budget_used = budget_used - ? + ? + ?,
+                reserved_tokens = MAX(0, reserved_tokens - ?),
+                inflight_call_id = NULL, estimated = 1, updated_at = CURRENT_TIMESTAMP
+                WHERE id = ?""", (totals["input"], totals["output"], totals["reserved"],
+                          totals["input"], totals["output"], totals["reserved"], exchange_id))
+        else:
+            # Also repair a stale pointer left by a partially interrupted finish.
+            await db.execute("""UPDATE agent_exchanges SET inflight_call_id = NULL,
+                reserved_tokens = 0 WHERE id = ?""", (exchange_id,))
         await db.commit()
