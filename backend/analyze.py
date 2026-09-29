@@ -14,6 +14,7 @@ import argparse
 import json
 import os
 import sqlite3
+from database import SQLITE_BUSY_TIMEOUT
 from collections import Counter, defaultdict
 from datetime import datetime, timedelta
 from statistics import mean, median
@@ -81,7 +82,7 @@ def main():
     since = datetime.now() - timedelta(days=args.days)
     since_ts = since.strftime("%Y-%m-%d %H:%M:%S")
 
-    conn = sqlite3.connect(DB_PATH)
+    conn = sqlite3.connect(DB_PATH, timeout=SQLITE_BUSY_TIMEOUT)
     # 兜底：events 表不存在时（后端还没启动过新版），给出明确提示
     has_events = conn.execute(
         "SELECT name FROM sqlite_master WHERE type='table' AND name='events'"

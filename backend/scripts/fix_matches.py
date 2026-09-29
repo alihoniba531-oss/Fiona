@@ -5,7 +5,7 @@ import database
 import aiosqlite
 
 async def fix():
-    async with aiosqlite.connect(database.DB_PATH) as db:
+    async with aiosqlite.connect(database.DB_PATH, timeout=database.SQLITE_BUSY_TIMEOUT) as db:
         await db.execute('DELETE FROM pending_matches')
         await db.execute(
             '''INSERT INTO pending_matches (username, peer_username, interest_topic, reason, type, tags_json, seen)

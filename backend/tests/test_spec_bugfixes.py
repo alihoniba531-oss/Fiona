@@ -395,10 +395,15 @@ def test_outer_chat_stream_closes_sync_stream_when_consumer_stops(monkeypatch):
     assert asyncio.run(scenario()) is True
 
 
-def test_stream_failure_is_not_saved_or_charged(monkeypatch):
+def test_stream_failure_is_not_saved_or_charged(tmp_path, monkeypatch):
     monkeypatch.setenv("DEV_MODE", "0")
     monkeypatch.setenv("DASHSCOPE_API_KEY", "x")
+    import database
     import services.chat_service as chat
+
+    # Slot reads now rely on the table created at startup, not per-read DDL.
+    monkeypatch.setattr(database, "DB_PATH", str(tmp_path / "stream-failure.db"))
+    asyncio.run(database.init_db())
 
     class _Delta:
         content = "半句"

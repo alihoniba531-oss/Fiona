@@ -9,12 +9,13 @@ T4 验收：聊天槽位状态（pending 追问 / mode 模式）的持久化与�
   4. 元组键与字符串键互不串扰
   5. 按用户清空是 owner_username 等值匹配，不误删 "alice%" / "alice_bob"
   6. mode 24 小时兜底过期
-外加：TTL 解析回落、往返一致、默认值不落库（不复活）、损坏 payload、免 init_db 兜底建表。
+外加：TTL 解析回落、往返一致、默认值不落库（不复活）、损坏 payload、仅 init_db 建表。
 """
 import contextlib
 import importlib
 import json
 import sqlite3
+import threading
 from datetime import datetime, timedelta, timezone
 
 import pytest
@@ -83,9 +84,8 @@ def test_init_db_creates_chat_slot_state(slot_db):
     assert columns == ["state_key", "kind", "owner_username", "payload_json", "expires_at", "updated_at"]
 
 
-def test_slot_table_is_bootstrapped_without_init_db(tmp_path, monkeypatch):
-    """既有测试（如 test_chat_branches.py:128）不经 init_db() 就直接调 set_pending，
-    所以每次访问前都要兜底 CREATE TABLE IF NOT EXISTS。"""
+def test_slot_helpers_do_not_run_ddl_on_each_connection(tmp_path, monkeypatch):
+    """建表只在 init_db()；槽位请求连接不得重复执行 DDL。"""
     import database
     import intent_router
     import mode_switcher
@@ -94,17 +94,14 @@ def test_slot_table_is_bootstrapped_without_init_db(tmp_path, monkeypatch):
     monkeypatch.setattr(database, "DB_PATH", str(raw))
     assert not raw.exists()
 
-    intent_router.set_pending("alice", {"intent": "route", "params": {}, "missing": ["origin"]})
-    assert intent_router.get_pending("alice")["intent"] == "route"
-    mode_switcher.set_user_mode("alice", "mirror", "manual")
-    assert mode_switcher.get_user_mode("alice")["mode"] == "mirror"
+    with pytest.raises(sqlite3.OperationalError, match="no such table"):
+        intent_router.set_pending("alice", {"intent": "route", "params": {}, "missing": ["origin"]})
+    with pytest.raises(sqlite3.OperationalError, match="no such table"):
+        mode_switcher.set_user_mode("alice", "mirror", "manual")
 
     with contextlib.closing(sqlite3.connect(str(raw))) as conn:
         tables = {row[0] for row in conn.execute("SELECT name FROM sqlite_master WHERE type='table'")}
-    assert tables == {"chat_slot_state"}
-    # 两种 kind 各自落一行，且 owner_username 都是 alice
-    assert sorted(row[1] for row in _rows(str(raw))) == ["mode", "pending"]
-    assert {row[2] for row in _rows(str(raw))} == {"alice"}
+    assert tables == set()
 
 
 # ── §4.3 第 1 条：pending 过期即弃 ───────────────────
@@ -410,3 +407,92 @@ def test_corrupt_payload_is_treated_as_absent_not_an_error(slot_db):
     mode_switcher.set_user_mode("bob", "mirror", "manual")
     _rewrite_payload(slot_db, "mode", "bob", {"mode": "pirate", "since": datetime.now().isoformat()})
     assert mode_switcher.get_user_mode("bob")["mode"] == "friend"
+
+
+@pytest.mark.parametrize("kind", ["pending", "mode"])
+def test_expired_slot_cleanup_preserves_concurrent_replacement(slot_db, monkeypatch, kind):
+    """Reader A sees an expired row; writer B replaces it before A deletes it."""
+    import intent_router
+    import mode_switcher
+
+    key = ("alice", "conv1")
+    if kind == "pending":
+        module = intent_router
+        old_payload = {"intent": "route", "params": {}, "missing": ["origin"]}
+        fresh_payload = {"intent": "hot_topics", "params": {}, "missing": []}
+        module.set_pending(key, old_payload)
+        read_slot = lambda: module.get_pending(key)
+        write_fresh = lambda: module.set_pending(key, fresh_payload)
+        expected_reader = None
+        expected_fresh = fresh_payload
+    else:
+        module = mode_switcher
+        module.set_user_mode(key, "mirror", "old")
+        read_slot = lambda: module.get_user_mode(key)
+        write_fresh = lambda: module.set_user_mode(key, "mirror", "fresh")
+        expected_reader = "friend"
+        expected_fresh = "fresh"
+
+    _expire_rows(slot_db, kind)
+    stale_expiry = _rows(slot_db, kind)[0][4]
+    reader_paused = threading.Event()
+    writer_done = threading.Event()
+    original_is_expired = module._is_expired
+
+    def pause_after_read(raw, now_utc):
+        if raw == stale_expiry:
+            reader_paused.set()
+            assert writer_done.wait(timeout=5), "writer did not replace the expired slot"
+        return original_is_expired(raw, now_utc)
+
+    monkeypatch.setattr(module, "_is_expired", pause_after_read)
+    reader_result = []
+    reader_error = []
+
+    def read_old_slot():
+        try:
+            reader_result.append(read_slot())
+        except BaseException as exc:
+            reader_error.append(exc)
+
+    reader = threading.Thread(target=read_old_slot)
+    reader.start()
+    try:
+        assert reader_paused.wait(timeout=5), "reader did not observe the expired slot"
+        write_fresh()
+    finally:
+        writer_done.set()
+        reader.join(timeout=5)
+
+    assert not reader.is_alive()
+    assert not reader_error, reader_error
+    assert len(reader_result) == 1
+    if kind == "pending":
+        assert reader_result[0] is expected_reader
+        assert read_slot() == expected_fresh
+    else:
+        assert reader_result[0]["mode"] == expected_reader
+        assert read_slot()["last_trigger"] == expected_fresh
+
+
+@pytest.mark.parametrize("module_name", ["intent_router", "mode_switcher"])
+def test_sync_slot_connection_rejects_running_event_loop_before_open(slot_db, monkeypatch, module_name):
+    """A missed to_thread call must fail in production as well as tests."""
+    import asyncio
+
+    module = importlib.import_module(module_name)
+
+    def forbidden_connect(*args, **kwargs):
+        pytest.fail("sqlite3.connect reached the event-loop thread")
+
+    async def probe():
+        with pytest.raises(RuntimeError, match="event loop"):
+            with module._slot_conn():
+                pass
+
+    with monkeypatch.context() as patch:
+        patch.setattr(module.sqlite3, "connect", forbidden_connect)
+        asyncio.run(probe())
+
+    with module._slot_conn() as conn:
+        assert conn.execute("SELECT 1").fetchone() == (1,)

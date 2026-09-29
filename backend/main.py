@@ -129,7 +129,7 @@ async def _can_view_generated_image(username: str, image_path: str) -> bool:
     import aiosqlite
     import database
 
-    async with aiosqlite.connect(database.DB_PATH) as db:
+    async with aiosqlite.connect(database.DB_PATH, timeout=database.SQLITE_BUSY_TIMEOUT) as db:
         return await database.message_references_image(db, image_path, username=username)
 
 

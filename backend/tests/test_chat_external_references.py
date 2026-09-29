@@ -441,7 +441,8 @@ def test_failed_edit_keeps_accepted_paths_and_retry_reuses_them_without_reupload
 
     monkeypatch.setattr(chat, "edit_image", fail)
     monkeypatch.setenv("DEV_MODE", "0")
-    headers = {"Authorization": f"Bearer {create_token('smoke_tester')}"}
+    version = asyncio.run(database.get_session_version("smoke_tester"))
+    headers = {"Authorization": f"Bearer {create_token('smoke_tester', version)}"}
     payload = edit_payload(conversation, [
         {"image_base64": encoded_image()}, {"image_base64": encoded_image("JPEG")},
     ])

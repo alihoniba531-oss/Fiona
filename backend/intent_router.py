@@ -1,4 +1,5 @@
 # -*- coding: utf-8 -*-
+import asyncio
 import contextlib
 import json
 import os
@@ -207,11 +208,16 @@ def _slot_conn():
 
     路径必须在函数体内现读 database.DB_PATH：conftest 靠 monkeypatch 该模块全局做隔离，
     一旦在模块顶层缓存路径，测试就会写进真库 backend/fiona.db。
-    每次都先跑一遍建表 DDL 兜底——部分调用点（含既有测试）不经 init_db() 就直接读写槽位。
+    chat_slot_state 由 init_db() 建表，请求期间不执行 DDL。
     sqlite3 的 with 只管事务不管关闭，所以外面套 closing。
     """
-    with contextlib.closing(sqlite3.connect(database.DB_PATH, timeout=5.0)) as conn:
-        conn.execute(database.CHAT_SLOT_STATE_DDL)
+    try:
+        asyncio.get_running_loop()
+    except RuntimeError:
+        pass
+    else:
+        raise RuntimeError("Synchronous chat slot SQLite access on event loop; use asyncio.to_thread")
+    with contextlib.closing(sqlite3.connect(database.DB_PATH, timeout=database.SQLITE_BUSY_TIMEOUT)) as conn:
         yield conn
 
 
@@ -252,8 +258,8 @@ def get_pending(username: StateKey) -> dict | None:
             data = None
         if not isinstance(data, dict) or _is_expired(row[1], datetime.now(timezone.utc)):
             conn.execute(
-                "DELETE FROM chat_slot_state WHERE state_key = ? AND kind = ?",
-                (state_key, SLOT_KIND),
+                "DELETE FROM chat_slot_state WHERE state_key = ? AND kind = ? AND expires_at IS ?",
+                (state_key, SLOT_KIND, row[1]),
             )
             conn.commit()
             return None

@@ -36,7 +36,7 @@ def test_upstream_error_is_sanitized_and_never_saved_or_charged(
     assert balance_before > 0
     # Exercise actual balance checking and deduction, not DEV_MODE's skip path.
     monkeypatch.setenv("DEV_MODE", "0")
-    headers = {"Authorization": f"Bearer {create_token(user)}"}
+    headers = {"Authorization": f"Bearer {create_token(user, asyncio.run(database.get_session_version(user)))}"}
     raw_detail = "Arrearage raw-secret-marker private upstream account details"
     provider_response = httpx.Response(
         400, request=httpx.Request("POST", "https://provider.invalid/chat/completions"),
@@ -89,7 +89,7 @@ def test_empty_choice_frames_complete_without_hiding_real_stream_errors(
     user = conversation["owner_username"]
     balance_before = asyncio.run(database.get_strawberry_balance(user))
     monkeypatch.setenv("DEV_MODE", "0")
-    headers = {"Authorization": f"Bearer {create_token(user)}"}
+    headers = {"Authorization": f"Bearer {create_token(user, asyncio.run(database.get_session_version(user)))}"}
 
     def frame(choices, **kwargs):
         return ChatCompletionChunk(

@@ -113,7 +113,8 @@ def test_generation_error_has_no_success_attachment_or_charge(client, dev_header
     async def fail(*args):
         raise chat.ImageGenerationError("图片生成等待超时，请稍后再试。")
     monkeypatch.setattr(chat, "generate_image", fail)
-    headers = {"Authorization": f"Bearer {create_token('smoke_tester')}"}
+    version = asyncio.run(database.get_session_version("smoke_tester"))
+    headers = {"Authorization": f"Bearer {create_token('smoke_tester', version)}"}
     output = events(client.post("/chat", headers=headers, json={"conversation_id": conversation, "message": "古庙", "mode": "image"}))
     assert output == [{"status": "generating_image", "message": "正在生成图片，请稍候…"}, {"error": "图片生成等待超时，请稍后再试。"}]
     assert asyncio.run(database.get_strawberry_balance("smoke_tester")) == balance

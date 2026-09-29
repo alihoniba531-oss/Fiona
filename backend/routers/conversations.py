@@ -1,4 +1,6 @@
 """Persistent private conversations; public cards never grant chat access."""
+import asyncio
+
 from fastapi import APIRouter, Depends, HTTPException, Query
 from pydantic import BaseModel, ConfigDict, Field, field_validator
 
@@ -64,8 +66,8 @@ async def remove_conversation(conversation_id: str, user: str = Depends(get_curr
     from mode_switcher import clear_user_mode
 
     state_key = (user, conversation_id)
-    clear_pending(state_key)
-    clear_user_mode(state_key)
+    await asyncio.to_thread(clear_pending, state_key)
+    await asyncio.to_thread(clear_user_mode, state_key)
     deleted_files, failed_files = delete_uploaded_files(result["upload_paths"])
     await mark_upload_cleanup_done(deleted_files)
     return {"status": "deleted", "file_cleanup_complete": not failed_files}

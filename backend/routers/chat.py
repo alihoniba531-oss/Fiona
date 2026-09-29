@@ -10,10 +10,10 @@ from pydantic import BaseModel, ConfigDict, Field, model_validator
 
 from auth_dep import get_current_user
 from agent_store import ResourceNotFound
-from database import (STRAWBERRY_COST_PER_REPLY, get_strawberry_balance,
-                      refund_strawberries, reserve_strawberries, strawberry_daily_refill)
+from database import (STRAWBERRY_COST_PER_REPLY, refund_strawberries,
+                      reserve_strawberries, strawberry_daily_refill)
 from rate_limit import limiter
-from safety import CRISIS_RESOURCE_NOTE, detect_crisis
+from safety import CRISIS_RESOURCE_NOTE, assess_crisis
 from services.chat_service import ChatRunTracker, build_context, run_chat
 from utils.media import MAX_IMAGE_BASE64_CHARS
 
@@ -105,16 +105,14 @@ async def chat(request: Request, req: ChatRequest, user: str = Depends(get_curre
     if not req.message.strip() and not has_image:
         raise HTTPException(status_code=400, detail="message 和图片不能同时为空")
 
-    crisis = detect_crisis(req.message)
+    crisis = assess_crisis(req.message)
     reserved = False
     dev_mode = os.getenv("DEV_MODE", "0") == "1"
-    if crisis:
-        # A user in crisis can reach support without spending strawberries.
-        if not dev_mode and await get_strawberry_balance(user) < STRAWBERRY_COST_PER_REPLY:
-            return _text_stream({"text": CRISIS_RESOURCE_NOTE}, {"done": True})
-    elif not dev_mode:
+    if not dev_mode:
         remaining = await reserve_strawberries(user, STRAWBERRY_COST_PER_REPLY)
         if remaining is None:
+            if crisis == "high":
+                return _text_stream({"crisis": True}, {"text": CRISIS_RESOURCE_NOTE}, {"done": True})
             refill = strawberry_daily_refill()
             message = (
                 f"今天的草莓用完了，明天会自动补到 {refill} 颗；急用请联系管理员补充 🍓"
@@ -130,6 +128,8 @@ async def chat(request: Request, req: ChatRequest, user: str = Depends(get_curre
         if reserved:
             await _refund_before_stream(user)
         detail = "参考图不存在或不属于当前对话" if req.mode == "image_edit" else "会话不存在"
+        if crisis == "high":
+            return _text_stream({"crisis": True}, {"text": CRISIS_RESOURCE_NOTE}, {"error": detail})
         raise HTTPException(status_code=404, detail=detail) from None
     except BaseException:
         if reserved:

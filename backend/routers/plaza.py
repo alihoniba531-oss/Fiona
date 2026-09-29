@@ -59,9 +59,9 @@ async def community_interests(user: str | None = Depends(get_optional_user)):
     """返回其他用户的兴趣标签，用于广场底部滚动展示（匿名）。
     已登录则排除自己；匿名则全量返回。"""
     import aiosqlite
-    from database import DB_PATH
+    from database import DB_PATH, SQLITE_BUSY_TIMEOUT
     exclude = user or ""
-    async with aiosqlite.connect(DB_PATH) as db:
+    async with aiosqlite.connect(DB_PATH, timeout=SQLITE_BUSY_TIMEOUT) as db:
         db.row_factory = aiosqlite.Row
         async with db.execute(
             "SELECT username, tag, score FROM user_tag_prefs WHERE username != ? AND score > 0 ORDER BY score DESC LIMIT 80",

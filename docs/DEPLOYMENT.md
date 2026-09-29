@@ -104,7 +104,7 @@ STRAWBERRY_DAILY_REFILL=0
 | `FIONA_UPLOADS_DIR` | 上传文件目录 |
 | `STRAWBERRY_DAILY_REFILL` | 每位用户每天（Asia/Shanghai）首次经登录、`GET /strawberry` 或聊天预扣时补到至少该数量；`0` 关闭，建议值由运维决定 |
 
-草莓正常回复每条 10 颗，预扣后只对实际交付的模型回复、图片或成功真实工具结算；失败、追问及桌面占位工具会退还。`DEV_MODE=1` 不预扣。每日补给不会降低较高余额，同一自然日仅执行一次。
+草莓正常回复每条 10 颗，预扣后只对实际交付的模型回复、图片或成功真实工具结算；失败、追问及桌面占位工具会退还。明确危机轮余额足够时也按交付计费，余额不足时不调用模型、免费送达求助资源；可能相关的轮次正常计费。`DEV_MODE=1` 不预扣。每日补给不会降低较高余额，同一自然日仅执行一次。
 
 可以使用下面的命令在服务器上生成 JWT Secret：
 
@@ -300,14 +300,20 @@ curl --fail https://madchloechat.online/api/
 
 ## 日常发布
 
-每次发布前先记录当前提交并备份状态：
+每次发布前先停止后端写入、记录当前提交并备份状态。以下命令由有权读取备份目录的运维账号执行；SQLite CLI 可能创建 `-wal`/`-shm`，在重新启动服务前把数据库及伴生文件属主修正为服务账号：
 
 ```bash
 cd /opt/fiona
+systemctl stop fiona
 git rev-parse HEAD
 sqlite3 /var/lib/fiona/fiona.db ".backup '/var/backups/fiona/fiona-$(date +%Y%m%d-%H%M%S).db'"
 tar -C /var/lib/fiona -czf "/var/backups/fiona/uploads-$(date +%Y%m%d-%H%M%S).tar.gz" uploads
+for db_file in /var/lib/fiona/fiona.db /var/lib/fiona/fiona.db-wal /var/lib/fiona/fiona.db-shm; do
+    if [ -e "$db_file" ]; then chown fiona:fiona "$db_file"; fi
+done
 ```
+
+后端初始化时会开启 SQLite WAL 模式。发布、日常运行和手工导出时都必须用上面的 `sqlite3 .backup`（或 SQLite 在线备份 API）生成一致快照，不能只复制 `fiona.db` 主文件：未检查点的已提交数据可能仍在 `fiona.db-wal`。媒体目录仍需与数据库快照按同一时间点配套保管。不要把 `fiona.db-wal`、`fiona.db-shm` 当成可独立恢复的备份。
 
 然后更新、验证和重启：
 
@@ -331,13 +337,13 @@ systemctl status fiona fiona-web
 
 当前 `npm run lint` 已恢复为绿色，但仍有非阻断警告。发布者必须人工查看 Lint 输出，不能把生产构建成功等同于所有维护债务已经清零。
 
-数据库兼容 DDL 会在后端启动时执行。既有迁移增加了 `users.session_version`、邀请码撤销/用量字段、`posts.owner_username` 和 `upload_cleanup_queue`；本次增加可空列 `users.strawberry_refill_date`。后端启动还会回填可识别的旧帖子 owner，并重试队列中的文件清理。由于当前没有通用迁移和自动回滚，任何涉及 `database.py` 的发布都必须先同时备份数据库与上传目录。
+数据库兼容 DDL 会在后端启动时执行。既有迁移增加了 `users.session_version`、邀请码撤销/用量字段、`posts.owner_username`、`upload_cleanup_queue` 和可空列 `users.strawberry_refill_date`；本次新增 `retired_usernames(username TEXT PRIMARY KEY, retired_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP)` 表，并启用持久的 WAL 模式与统一的 SQLite busy timeout。新账号初始 `session_version` 为随机正整数，旧账号版本保持原值，不强制重新登录；删号事务记录退役用户名，之后的 `testerNN` 发码跳过它。后端启动还会回填可识别的旧帖子 owner，并重试队列中的文件清理。由于当前没有通用迁移和自动回滚，任何涉及 `database.py` 的发布都必须先同时备份数据库与上传目录。
 
 ## 邀请码、会话与草莓运维
 
-在后端目录运行本机管理命令。明确传入服务使用的环境文件；脚本会在导入数据库模块前读取它，并向 stderr 显示配置文件路径与解析后的数据库绝对路径。命令行 `--env-file` 优先于 `FIONA_ENV_FILE`；未指定时依次尝试可读的 `/etc/fiona/fiona.env`、`backend/.env`。进程中已设置的环境变量仍优先。运行账号必须能读取配置文件并写入实际数据库。
+在后端目录运行本机管理命令。明确传入服务使用的环境文件；脚本会在导入数据库模块前读取它，并向 stderr 显示配置文件路径与解析后的数据库绝对路径。命令行 `--env-file` 优先于 `FIONA_ENV_FILE`；未指定时依次尝试可读的 `/etc/fiona/fiona.env`、`backend/.env`。进程中已设置的环境变量仍优先。运行账号必须能读取配置文件并写入实际数据库。当前示例的环境文件为 `root:root 0600`，因此用有读取权限的运维账号执行管理脚本时，应先停止 `fiona` 服务；命令结束后按下方步骤修正数据库、`-wal`、`-shm` 属主，再启动服务，避免运维账号创建的伴生文件阻止服务账号写入。若需不停服在线执行，应先提供服务账号可读的受控配置及可写的备份目的地，并以服务账号运行数据库命令。
 
-三个脚本进入初始化路径时会执行与服务启动相同的兼容 DDL（只加列/索引），并可能执行旧帖 owner 回填及版本化迁移；对已有数据库运行发码、邀请码管理或草莓 `grant/set`，即使未传 `--init-db` 也会进入此路径。请先备份数据库再运行这些命令。`manage_strawberries.py list` 默认跳过初始化与迁移，以只读连接查看库内原始余额和最近补给日期，不触发每日补给；显式传 `--init-db` 时则会初始化数据库。`grant`、`set` 先应用当日补给再修改余额。
+三个脚本进入初始化路径时会执行与服务启动相同的兼容 DDL（只加列、建表或索引），并可能启用 WAL、执行旧帖 owner 回填及版本化迁移；对已有数据库运行发码、邀请码管理或草莓 `grant/set`，即使未传 `--init-db` 也会进入此路径。请先用 `.backup` 备份数据库、同时备份媒体，再运行这些命令。`manage_strawberries.py list` 默认跳过初始化与迁移，以只读连接查看库内原始余额和最近补给日期，不触发每日补给；显式传 `--init-db` 时则会初始化数据库。`grant`、`set` 先应用当日补给再修改余额。
 
 ```bash
 cd /opt/fiona/backend
@@ -350,7 +356,16 @@ cd /opt/fiona/backend
 .venv/bin/python manage_strawberries.py set tester01 200 --env-file /etc/fiona/fiona.env
 ```
 
-数据库文件不存在时，管理脚本以退出码 2 拒绝操作，不会创建空库；仅首次初始化新库时使用 `--init-db`。`seed_invites.py` 每次只输出本次新建的码及其用户名，用户名编号取已存在用户和邀请码绑定名的最大 `testerNN` 编号之后，删号不会使新码撞上存量账号。`grant` 增加 1–100000 颗，`set` 将余额设为 0–100000；不存在的用户名返回退出码 1。
+以上为独立操作示例，并非要依次执行所有命令。使用运维账号执行任一数据库操作后，在重新启动服务前检查并修正属主：
+
+```bash
+for db_file in /var/lib/fiona/fiona.db /var/lib/fiona/fiona.db-wal /var/lib/fiona/fiona.db-shm; do
+    if [ -e "$db_file" ]; then chown fiona:fiona "$db_file"; fi
+done
+systemctl start fiona
+```
+
+数据库文件不存在时，管理脚本以退出码 2 拒绝操作，不会创建空库；仅首次初始化新库时使用 `--init-db`。`seed_invites.py` 每次只输出本次新建的码及其用户名，用户名编号取已存在用户、邀请码绑定名和退役用户名的最大 `testerNN` 编号之后，删号不会回收编号。`grant` 增加 1–100000 颗，`set` 将余额设为 0–100000；不存在的用户名返回退出码 1。
 
 撤销和轮换会使绑定账号当前所有 JWT 失效，操作前应确认目标用户名；发码和轮换命令会打印新码，应只通过受控渠道发给对应测试者。邀请码仍可重复用于登录，因此不应公开写入日志、工单或群聊。
 
@@ -395,7 +410,22 @@ journalctl -u fiona-web -f
 systemctl stop fiona
 ```
 
-确认备份文件和目标路径后再执行恢复，并在恢复完成后重新启动、检查日志和跑完整冒烟测试。生产数据库恢复属于破坏性操作，不应在没有确认备份的情况下临时尝试。
+确认没有其他进程仍在使用旧库，检查 `/var/lib/fiona/` 下是否残留 `fiona.db-wal`、`fiona.db-shm`。若要保全旧库中尚未检查点的数据，**先对旧库**执行 `PRAGMA wal_checkpoint(TRUNCATE)`，必要时再用 `.backup` 另存旧库；若确定只需要恢复到既有快照时间点，可跳过旧库检查点。两种情况都要在覆盖主文件前删除旧 `-wal` 和 `-shm`。SQLite 否则可能把旧 WAL 帧回放到恢复后的主文件，带回备份时间点之后的数据或造成损坏。
+
+核对快照文件和目标路径后执行以下步骤；把示例快照名换成实际已验证的 `.backup` 文件。`PRAGMA integrity_check` 必须输出 `ok`，并确认数据库及新生成的伴生文件属主为 `fiona:fiona`，才可启动旧代码：
+
+```bash
+ls -l /var/lib/fiona/fiona.db /var/lib/fiona/fiona.db-wal /var/lib/fiona/fiona.db-shm 2>/dev/null || true
+# 仅当需要保全旧库未检查点的数据时，先对旧库执行：
+sqlite3 /var/lib/fiona/fiona.db "PRAGMA wal_checkpoint(TRUNCATE)"
+# 如需留存回滚前状态，此时再用 sqlite3 .backup 对旧库另存快照。
+rm -f /var/lib/fiona/fiona.db-wal /var/lib/fiona/fiona.db-shm
+install -o fiona -g fiona -m 0600 /var/backups/fiona/fiona-YYYYMMDD-HHMMSS.db /var/lib/fiona/fiona.db
+sudo -u fiona sqlite3 /var/lib/fiona/fiona.db "PRAGMA integrity_check"
+ls -l /var/lib/fiona/fiona.db /var/lib/fiona/fiona.db-wal /var/lib/fiona/fiona.db-shm 2>/dev/null || true
+```
+
+再恢复同一时间点的 `/var/lib/fiona/uploads/` 备份，重启服务、检查日志并跑完整冒烟测试。生产数据库恢复属于破坏性操作，不应在没有确认备份的情况下临时尝试。
 
 ## 发布前安全检查
 

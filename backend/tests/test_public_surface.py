@@ -1,5 +1,7 @@
 # -*- coding: utf-8 -*-
 """匿名公网暴露面：会调用模型的热点展开必须登录，生产环境不暴露 API 文档。"""
+import asyncio
+
 import pytest
 
 
@@ -20,12 +22,15 @@ def expand_calls(monkeypatch):
 
 
 def _production_headers(client, dev_headers, monkeypatch):
+    import database
     from auth import create_token
 
     # 先在 DEV_MODE 下建号，再切到生产模式并改用真实 JWT。
     assert client.get("/profile", headers=dev_headers).status_code == 200
     monkeypatch.setenv("DEV_MODE", "0")
-    return {"Authorization": f"Bearer {create_token(dev_headers['X-Dev-User'])}"}
+    user = dev_headers["X-Dev-User"]
+    version = asyncio.run(database.get_session_version(user))
+    return {"Authorization": f"Bearer {create_token(user, version)}"}
 
 
 @pytest.mark.parametrize("path", ["/hot/expand?title=x", "/hot/expand/?title=x"])

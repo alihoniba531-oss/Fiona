@@ -32,7 +32,7 @@ from llm import QWEN_CLIENT, _create_stream_with_fallback, client
 from mode_switcher import apply_mode_prompt, detect_mode, get_user_mode
 from model_router import choose_model, token_budget
 from persona import BASE_SAFETY_RULES, build_system_prompt
-from safety import CRISIS_GUIDANCE, CRISIS_RESOURCE_NOTE, detect_crisis
+from safety import CRISIS_GUIDANCE, CRISIS_RESOURCE_NOTE, assess_crisis
 from tools.fetch_card import fetch_card as _fetch_card_impl
 from tools.hot_topics import hot_topics
 from tools.image_generation import ImageGenerationError, edit_image, generate_image
@@ -95,6 +95,13 @@ def _crisis_resource_event(state: "ChatState") -> str:
     text = "\n\n" + CRISIS_RESOURCE_NOTE
     state.full_response += text
     return _sse({"text": text})
+
+
+async def _save_text_reply(ctx: "ChatContext", state: "ChatState"):
+    """Append possible-risk resources after a text reply and persist both."""
+    if state.crisis_level == "possible" and not state.crisis_resource_sent:
+        yield _crisis_resource_event(state)
+    await _save_response(ctx, state)
 
 
 def _upstream_error_message(error: Exception) -> str:
@@ -255,6 +262,7 @@ def build_hard_word_appendix(message: str) -> str:
     joined_hard = "、".join(detected_hard)
     return (
         "\n\n【⚠️ 即时引导 — 本轮的核心动作】\n"
+        "若对方流露自伤、自杀、绝望或其他危机信号，忽略本附录的反问要求，按安全底线先提供支持。\n"
         f"用户这条消息里出现了硬词：{joined_hard}。\n"
         "\n"
         f"硬词意味着对方头脑里有一个绷紧的判断（『{first_hard}』）。\n"
@@ -366,6 +374,7 @@ class ChatState:
     response_saved: bool = False
     billable: bool = False
     crisis: bool = False
+    crisis_level: str | None = None
     crisis_resource_sent: bool = False
 
 
@@ -487,8 +496,8 @@ async def build_context(req, user: str) -> ChatContext:
         tone_description=tone_description,
         agent=agent,
     )
-    crisis = detect_crisis(req.message)
-    if not crisis:
+    crisis = assess_crisis(req.message)
+    if crisis is None:
         system_prompt += build_hard_word_appendix(req.message)
 
     # 图片摘要只注入给模型的这份副本；history 保持原始行（信号计算/画像提取/意图识别都在读它），
@@ -502,7 +511,7 @@ async def build_context(req, user: str) -> ChatContext:
 
     # qwen 对"播报/朗读/念出来"这类词的训练倾向太强（自动解释 TTS 机制、教对方开手机朗读），
     # 顶部 persona 禁令压不住。在 user 消息后贴一条强约束 system，离生成位置最近、attention 最大。
-    if not crisis and re.search(r"(播报|朗读|口播|念出来|读出来|念一[下遍]|读一[下遍]|大声[念读])", req.message or ""):
+    if crisis != "high" and re.search(r"(播报|朗读|口播|念出来|读出来|念一[下遍]|读一[下遍]|大声[念读])", req.message or ""):
         messages.append({
             "role": "system",
             "content": (
@@ -623,10 +632,10 @@ async def stream_mirror(ctx: ChatContext, state: ChatState):
     """镜子模式：跳过意图识别 + 工具调用，直走简化 Persona。"""
     # 只有用户明确手动切镜子（说"别给建议"之类）才清 pending；
     # 自动判定（连续短情绪 / LLM 判定发泄）可能误伤——用户也许只是在补工具参数
-    _mode_state = get_user_mode(ctx.state_key)
+    _mode_state = await asyncio.to_thread(get_user_mode, ctx.state_key)
     _trigger = (_mode_state.get("last_trigger") or "")
     if _trigger.startswith("manual"):
-        clear_pending(ctx.state_key)
+        await asyncio.to_thread(clear_pending, ctx.state_key)
     _slot = choose_model(ctx.user, ctx.user_content, "mirror", len(ctx.history))
     state.trace["model"] = _slot
     try:
@@ -651,7 +660,8 @@ async def stream_mirror(ctx: ChatContext, state: ChatState):
         yield _sse({"error": _upstream_error_message(e)})
         return
     if state.full_response.strip():
-        await _save_response(ctx, state)
+        async for event in _save_text_reply(ctx, state):
+            yield event
         state.billable = True
     yield _sse({"done": True})
     try:
@@ -716,6 +726,7 @@ async def stream_image(ctx: ChatContext, state: ChatState):
         print(f"[chat] qwen-vl-max error type={type(e).__name__}", flush=True)
         if state.crisis:
             yield _crisis_resource_event(state)
+            await _save_response(ctx, state)
         yield _sse({"error": _upstream_error_message(e)})
         return
 
@@ -723,8 +734,9 @@ async def stream_image(ctx: ChatContext, state: ChatState):
     if state.crisis:
         yield _crisis_resource_event(state)
     if state.full_response.strip():
-        await _save_response(ctx, state)
-        if not state.crisis and image_summary.strip():
+        async for event in _save_text_reply(ctx, state):
+            yield event
+        if image_summary.strip():
             state.billable = True
     # 摘要直接复用 VL 本轮已生成的回复，不再额外调用任何模型；写失败绝不能影响已返回的 SSE。
     try:
@@ -742,16 +754,17 @@ async def stream_pending(ctx: ChatContext, state: ChatState, pending: dict):
     if pending.get("intent") == "generate_image" and re.match(
         r"^(?:算了|取消|不用了|不画了|不要了|停止|别画了)[吧了。！!\s]*$", ctx.message.strip(),
     ):
-        clear_pending(ctx.state_key)
+        await asyncio.to_thread(clear_pending, ctx.state_key)
         state.full_response = "好，已取消。"
-        await _save_response(ctx, state)
         yield _sse({"text": state.full_response})
+        async for event in _save_text_reply(ctx, state):
+            yield event
         yield _sse({"done": True})
         return
     filled = fill_param(pending, ctx.message)
     if not filled["missing"]:
         # 参数补全，执行
-        clear_pending(ctx.state_key)
+        await asyncio.to_thread(clear_pending, ctx.state_key)
         if filled["intent"] == "generate_image":
             async for event in stream_generated_image(ctx, state, ctx.message.strip()):
                 yield event
@@ -774,16 +787,18 @@ async def stream_pending(ctx: ChatContext, state: ChatState, pending: dict):
         else:
             state.full_response = result
             yield _sse({"text": result})
-        await _save_response(ctx, state)
+        async for event in _save_text_reply(ctx, state):
+            yield event
         state.billable = _tool_billable(filled["intent"], result)
         yield _sse({"done": True})
     else:
         # 还缺参数，继续追问
-        set_pending(ctx.state_key, filled)
+        await asyncio.to_thread(set_pending, ctx.state_key, filled)
         question = ask_missing(filled["missing"][0])
         state.full_response = question
         yield _sse({"text": question})
-        await _save_response(ctx, state)
+        async for event in _save_text_reply(ctx, state):
+            yield event
         yield _sse({"done": True})
 
 
@@ -825,14 +840,15 @@ async def stream_intent(ctx: ChatContext, state: ChatState, intent_result: dict)
     await _ensure_active_conversation(ctx)
     if intent_result["intent"] == "generate_image":
         if intent_result.get("missing"):
-            set_pending(ctx.state_key, {"intent": "generate_image", "params": {}, "missing": ["prompt"]})
+            await asyncio.to_thread(set_pending, ctx.state_key, {"intent": "generate_image", "params": {}, "missing": ["prompt"]})
             state.full_response = ask_missing("prompt")
-            await _save_response(ctx, state)
             yield _sse({"text": state.full_response})
+            async for event in _save_text_reply(ctx, state):
+                yield event
             yield _sse({"done": True})
         else:
             # 分类器的短 JSON 不能替换或截断用户完整的画面要求。
-            clear_pending(ctx.state_key)
+            await asyncio.to_thread(clear_pending, ctx.state_key)
             async for event in stream_generated_image(ctx, state, ctx.message.strip()):
                 yield event
         return
@@ -858,12 +874,13 @@ async def stream_intent(ctx: ChatContext, state: ChatState, intent_result: dict)
         tool_billable = _tool_billable(intent_result["intent"], result)
     else:
         # 意图明确，但缺参数，存 pending 并追问
-        set_pending(ctx.state_key, intent_result)
+        await asyncio.to_thread(set_pending, ctx.state_key, intent_result)
         question = ask_missing(intent_result["missing"][0])
         state.full_response = question
         yield _sse({"text": question})
         tool_billable = False
-    await _save_response(ctx, state)
+    async for event in _save_text_reply(ctx, state):
+        yield event
     state.billable = tool_billable
     yield _sse({"done": True})
 
@@ -907,6 +924,7 @@ async def stream_normal(ctx: ChatContext, state: ChatState):
         print(f"[chat] normal stream error type={type(e).__name__}", flush=True)
         if state.crisis:
             yield _crisis_resource_event(state)
+            await _save_response(ctx, state)
         yield _sse({"error": _upstream_error_message(e)})
         return
     if _finish_reason == "length":
@@ -918,8 +936,9 @@ async def stream_normal(ctx: ChatContext, state: ChatState):
     if state.crisis:
         yield _crisis_resource_event(state)
     if state.full_response.strip():
-        await _save_response(ctx, state)
-        if not state.crisis and model_response.strip():
+        async for event in _save_text_reply(ctx, state):
+            yield event
+        if model_response.strip():
             state.billable = True
     yield _sse({"done": True})
 
@@ -950,11 +969,14 @@ async def stream_normal(ctx: ChatContext, state: ChatState):
 # ────────────────────────── 4. 编排 ──────────────────────────
 
 async def run_chat(
-    ctx: ChatContext, *, reserved: bool = False, crisis: bool | None = None,
+    ctx: ChatContext, *, reserved: bool = False, crisis: str | bool | None = None,
     tracker: ChatRunTracker | None = None,
 ):
     """Dispatch one chat turn and settle a reservation against actual delivery."""
-    crisis = detect_crisis(ctx.message) if crisis is None else crisis
+    crisis_level = assess_crisis(ctx.message) if crisis is None else (
+        "high" if crisis is True else None if crisis is False else crisis
+    )
+    high_crisis = crisis_level == "high"
     state = ChatState(trace={
         "mode": None,
         "intent": None,
@@ -964,13 +986,20 @@ async def run_chat(
         "message_count": ctx.message_count,
         "conversation_id": ctx.conversation_id,
         "agent_id": ctx.agent.get("id"),
-        "crisis": crisis,
+        "crisis": crisis_level,
     })
-    state.crisis = crisis
+    state.crisis = high_crisis
+    state.crisis_level = crisis_level
     try:
         if tracker is not None:
             tracker.started = True
-        if crisis:
+        if high_crisis:
+            yield _sse({"crisis": True})
+        if ctx.request_mode == "image_edit" and ctx.reference_sources_submitted:
+            # New references are already durable; acknowledge them before any
+            # support or ordinary reply so the client can reuse the paths.
+            yield _sse({"type": "reference_images", "reference_image_paths": ctx.reference_image_paths})
+        if high_crisis:
             # Keep existing pending parameters and mode untouched. A crisis turn
             # always reaches a support reply before ordinary chat routing.
             await _ensure_active_conversation(ctx)
@@ -983,24 +1012,21 @@ async def run_chat(
                 async for event in stream_normal(ctx, state):
                     yield event
             return
-        if ctx.request_mode == "image_edit" and ctx.reference_sources_submitted:
-            # Acknowledge the durable paths even if the provider is busy or
-            # fails, so retries can reuse uploads instead of resending bytes.
-            yield _sse({"type": "reference_images", "reference_image_paths": ctx.reference_image_paths})
         # 用户明确请求生成图片时，优先执行；避免被情绪陪聊或旧 pending 参数吞掉。
         image_intent = explicit_image_intent(ctx.message) if not ctx.has_image else None
         if ctx.request_mode in {"image", "image_edit"}:
-            clear_pending(ctx.state_key)
+            await asyncio.to_thread(clear_pending, ctx.state_key)
             state.trace["mode"] = ctx.request_mode
             async for event in stream_generated_image(ctx, state, ctx.message.strip()):
                 yield event
             return
         if not ctx.has_image and image_edit_requires_reference(ctx.message):
-            clear_pending(ctx.state_key)
+            await asyncio.to_thread(clear_pending, ctx.state_key)
             state.trace["mode"] = "image_edit_selection"
             state.full_response = "请先点击要修改的图片上的「以此图修改」，再输入修改要求。我会参考你选中的那张图生成新版本，并保留原图。"
-            await _save_response(ctx, state)
             yield _sse({"text": state.full_response})
+            async for event in _save_text_reply(ctx, state):
+                yield event
             yield _sse({"done": True})
             return
         if image_intent:
@@ -1008,7 +1034,7 @@ async def run_chat(
             async for event in stream_intent(ctx, state, image_intent):
                 yield event
             return
-        image_pending = get_pending(ctx.state_key)
+        image_pending = await asyncio.to_thread(get_pending, ctx.state_key)
         if not ctx.has_image and image_pending and image_pending.get("intent") == "generate_image":
             if re.match(r"^(?:算了|取消|不用了|不画了|不要了|停止|别画了)[吧了。！!\s]*$", ctx.message.strip()):
                 async for event in stream_pending(ctx, state, image_pending):
@@ -1017,7 +1043,7 @@ async def run_chat(
             # 新的工具请求优先于旧的画面追问，例如“先查一下天气”。
             replacement = await asyncio.to_thread(recognize_intent_with_fallback, ctx.message, ctx.history)
             if replacement.get("intent") and replacement["intent"] != "generate_image":
-                clear_pending(ctx.state_key)
+                await asyncio.to_thread(clear_pending, ctx.state_key)
                 async for event in stream_intent(ctx, state, replacement):
                     yield event
                 return
@@ -1025,7 +1051,7 @@ async def run_chat(
                 or ctx.message.strip("。！! ") in {"谢谢", "好的", "好", "嗯"}
                 or re.match(r"^(?:先聊|聊点|换个话题|先不|算了|取消)", ctx.message.strip())
                 or (not replacement.get("intent") and re.search(r"如何|怎么样|为什么|多少钱|几点|几号|[吗么？?]", ctx.message))):
-                clear_pending(ctx.state_key)
+                await asyncio.to_thread(clear_pending, ctx.state_key)
             else:
                 async for event in stream_pending(ctx, state, image_pending):
                     yield event
@@ -1052,7 +1078,7 @@ async def run_chat(
             return
 
         # ── 1. 检查是否有等待补全参数的 pending intent ──
-        pending = get_pending(ctx.state_key)
+        pending = await asyncio.to_thread(get_pending, ctx.state_key)
         if pending:
             async for s in stream_pending(ctx, state, pending):
                 yield s
@@ -1072,16 +1098,16 @@ async def run_chat(
             yield s
 
     except ResourceNotFound:
-        if not crisis:
-            clear_pending(ctx.state_key)
+        if not high_crisis:
+            await asyncio.to_thread(clear_pending, ctx.state_key)
             from mode_switcher import clear_user_mode
-            clear_user_mode(ctx.state_key)
-        if crisis and not state.crisis_resource_sent:
+            await asyncio.to_thread(clear_user_mode, ctx.state_key)
+        if high_crisis and not state.crisis_resource_sent:
             yield _crisis_resource_event(state)
         yield _sse({"error": "会话已删除或不可用"})
         state.trace["error"] = "ResourceNotFound"
     except Exception as e:
-        if crisis and not state.crisis_resource_sent:
+        if high_crisis and not state.crisis_resource_sent:
             yield _crisis_resource_event(state)
         yield _sse({"error": _upstream_error_message(e)})
         state.trace["error"] = type(e).__name__

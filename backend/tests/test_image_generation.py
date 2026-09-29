@@ -811,9 +811,9 @@ def test_generated_images_require_owner_in_dev_and_production(client, monkeypatc
         await database.get_or_create_user("image_other")
 
     asyncio.run(seed())
-    owner_cookie = create_token("image_owner")
+    owner_cookie = create_token("image_owner", asyncio.run(database.get_session_version("image_owner")))
     assert asyncio.run(database.save_message("image_owner", "assistant", "你的图片", url)) is True
-    other_cookie = create_token("image_other")
+    other_cookie = create_token("image_other", asyncio.run(database.get_session_version("image_other")))
     client.cookies.clear()
     monkeypatch.setenv("DEV_MODE", dev_mode)
 

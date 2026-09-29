@@ -278,7 +278,8 @@ def test_failed_edit_has_no_success_attachment_or_charge_and_keeps_source(
 
     monkeypatch.setattr(chat, "edit_image", fail)
     monkeypatch.setenv("DEV_MODE", "0")
-    headers = {"Authorization": f"Bearer {create_token('smoke_tester')}"}
+    version = asyncio.run(database.get_session_version("smoke_tester"))
+    headers = {"Authorization": f"Bearer {create_token('smoke_tester', version)}"}
     output = events(edit_request(client, headers, conversation, reference, "只修改晨雾"))
 
     assert output == [

@@ -409,7 +409,7 @@ async def detect_and_save(
 
     # 0. 镜子模式下不触发匹配——用户在发泄/情绪中，推匹配只会被忽略或觉得被打扰
     from mode_switcher import get_user_mode
-    if get_user_mode(username).get("mode") == "mirror":
+    if (await asyncio.to_thread(get_user_mode, username)).get("mode") == "mirror":
         return 0
 
     # 0.1. 阶段门控：对话越深，匹配越精
@@ -723,7 +723,7 @@ async def _has_recent_layer2_match(username: str, hours: int = 24) -> bool:
     """检查该用户在最近 N 小时内是否已有画像级（layer2）匹配推送，避免频繁打扰。
     早期版本用 triggered_by_message_id IS NULL 判定，但 layer1 给 B 端的卡片也是 NULL，
     会让经常被人匹配的用户自己的 layer2 永远跑不起来。改用显式 match_layer 字段。"""
-    async with aiosqlite.connect(database.DB_PATH) as db:
+    async with aiosqlite.connect(database.DB_PATH, timeout=database.SQLITE_BUSY_TIMEOUT) as db:
         async with db.execute(
             """SELECT COUNT(*) FROM pending_matches
                WHERE username = ? AND match_layer = 'layer2'

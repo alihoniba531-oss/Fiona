@@ -1,4 +1,6 @@
 # -*- coding: utf-8 -*-
+import asyncio
+
 import os
 
 from fastapi import APIRouter, Depends, HTTPException
@@ -92,8 +94,8 @@ async def delete_account(
     if not result["deleted"]:
         raise HTTPException(status_code=404, detail="账号不存在")
 
-    clear_user_pending(user)
-    clear_all_user_modes(user)
+    await asyncio.to_thread(clear_user_pending, user)
+    await asyncio.to_thread(clear_all_user_modes, user)
     await ws_manager.disconnect_user(user)
     deleted_files, failed_files = delete_uploaded_files(result["upload_paths"])
     await mark_upload_cleanup_done(deleted_files)
@@ -135,8 +137,8 @@ async def list_users():
     if os.getenv("DEV_MODE", "0") != "1":
         raise HTTPException(status_code=404, detail="Not Found")
     import aiosqlite
-    from database import DB_PATH
-    async with aiosqlite.connect(DB_PATH) as db:
+    from database import DB_PATH, SQLITE_BUSY_TIMEOUT
+    async with aiosqlite.connect(DB_PATH, timeout=SQLITE_BUSY_TIMEOUT) as db:
         db.row_factory = aiosqlite.Row
         async with db.execute("SELECT username FROM users ORDER BY created_at") as cursor:
             rows = await cursor.fetchall()

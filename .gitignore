@@ -28,6 +28,13 @@ backend/*.db
 # 备份文件如 fiona.db.bak-20260518-183540
 backend/*.db.bak-*
 backend/*.sqlite
+# SQLite WAL/回滚日志伴生文件（含未落盘的明文数据），任何位置都不上传
+*.db-wal
+*.db-shm
+*.db-journal
+*.sqlite-wal
+*.sqlite-shm
+*.sqlite-journal
 
 # 私有交流的本地 Markdown 交付文件
 /.local-exports/

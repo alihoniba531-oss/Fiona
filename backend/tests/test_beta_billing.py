@@ -32,7 +32,8 @@ def _prepare(client, dev_headers, monkeypatch, balance=10):
     asyncio.run(set_balance())
     monkeypatch.setenv("DEV_MODE", "0")
     monkeypatch.setenv("STRAWBERRY_DAILY_REFILL", "0")
-    return user, conversation, {"Authorization": f"Bearer {create_token(user)}"}
+    version = asyncio.run(database.get_session_version(user))
+    return user, conversation, {"Authorization": f"Bearer {create_token(user, version)}"}
 
 
 def _balance(user):

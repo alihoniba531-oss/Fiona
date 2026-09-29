@@ -48,6 +48,7 @@ interface PendingMatch {
 
 interface ChatStreamEvent {
   type?: "reference_images";
+  crisis?: boolean;
   reference_image_paths?: string[];
   tool?: unknown;
   text?: string;
@@ -1262,6 +1263,12 @@ export default function ChatPage() {
             data = JSON.parse(line.slice(5).trimStart());
           } catch {
             continue; // 损坏的事件跳过，不要让一条坏事件拖死整个流
+          }
+          if (data.crisis === true) {
+            generatingImage = false;
+            editingImage = false;
+            setMessages((prev) => prev.map((m) => m.id === replyId
+              ? { ...m, generationStatus: undefined, imageGenerationRetry: undefined } : m));
           }
           if (data.tool) {
             // Keep focus in the avatar form while a background reply continues.

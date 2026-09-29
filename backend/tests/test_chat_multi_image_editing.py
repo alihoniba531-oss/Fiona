@@ -362,7 +362,8 @@ def test_failed_multi_edit_does_not_charge_or_publish_success_and_keeps_all_sour
 
     monkeypatch.setattr(chat, "edit_image", fail)
     monkeypatch.setenv("DEV_MODE", "0")
-    headers = {"Authorization": f"Bearer {create_token('smoke_tester')}"}
+    version = asyncio.run(database.get_session_version("smoke_tester"))
+    headers = {"Authorization": f"Bearer {create_token('smoke_tester', version)}"}
     output = events(edit_request(client, headers, conversation, references, "融合三张参考图"))
 
     assert edit_stub.calls == [("融合三张参考图", references, None)]

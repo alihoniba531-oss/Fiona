@@ -40,14 +40,15 @@ async def main(argv: list[str] | None = None) -> int:
         return 2
 
     import aiosqlite
+    import database
 
     if args.command == "list":
         if options.init_db:
-            import database
-
             database.DB_PATH = str(db_path)
             await database.init_db()
-        async with aiosqlite.connect(f"{db_path.as_uri()}?mode=ro", uri=True) as db:
+        async with aiosqlite.connect(
+            f"{db_path.as_uri()}?mode=ro", uri=True, timeout=database.SQLITE_BUSY_TIMEOUT,
+        ) as db:
             async with db.execute("PRAGMA table_info(users)") as cursor:
                 columns = {row[1] for row in await cursor.fetchall()}
             if not {"username", "strawberry_balance"} <= columns:
@@ -67,8 +68,6 @@ async def main(argv: list[str] | None = None) -> int:
             print(f"{username}  {balance}  {refill_date or '-'}")
         return 0
 
-    import database
-
     database.DB_PATH = str(db_path)
     await database.init_db()
     if args.command == "grant":
@@ -80,7 +79,7 @@ async def main(argv: list[str] | None = None) -> int:
             return 1
     else:
         await database.get_strawberry_balance(args.username)
-        async with aiosqlite.connect(database.DB_PATH) as db:
+        async with aiosqlite.connect(database.DB_PATH, timeout=database.SQLITE_BUSY_TIMEOUT) as db:
             async with db.execute(
                 "UPDATE users SET strawberry_balance = ? WHERE username = ? "
                 "RETURNING strawberry_balance",

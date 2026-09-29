@@ -50,10 +50,10 @@ npm run build
 
 - `backend/.env.example` 是后端配置模板。
 - 生产必须 `DEV_MODE=0`，设置真实 `DASHSCOPE_API_KEY` 和强 `JWT_SECRET`。
-- 内测登录使用邀请码，`backend/seed_invites.py` 原子分配不会与现有用户或邀请码绑定名冲突的 `testerNN` 用户名。
+- 内测登录使用邀请码，`backend/seed_invites.py` 原子分配不会与现有用户、邀请码绑定名或已退役用户名冲突的 `testerNN` 用户名；删号后的编号不回收。
 - `backend/manage_invites.py` 查看、撤销和轮换邀请码；这些操作会使绑定账号的旧会话失效。`backend/manage_strawberries.py` 可查看、补充或设置草莓。三个脚本在导入数据库前加载服务环境文件，生产执行时明确传 `--env-file /etc/fiona/fiona.env`，并核对输出的数据库绝对路径；只有首次建库才传 `--init-db`。
 - 生产私聊每次实际交付结算 10 颗草莓，并发预扣原子化；`STRAWBERRY_DAILY_REFILL` 默认关闭，可按 Asia/Shanghai 自然日补到下限。`DEV_MODE=1` 跳过预扣。
-- 浏览器 JWT 只在 `HttpOnly` Cookie 中；HTTP/WebSocket 每次鉴权都核对数据库会话版本，不能恢复 query token 或 JavaScript 可读存储。
+- 浏览器 JWT 只在 `HttpOnly` Cookie 中；新账号的会话版本使用随机正整数，既有账号版本保持原值，HTTP/WebSocket 每次鉴权都核对数据库会话版本，不能恢复 query token 或 JavaScript 可读存储。
 - `DEV_MODE=1` 才开放测试登录和 `X-Dev-User`。
 - 单域名环境不设置 `NEXT_PUBLIC_API_BASE`；前端相对 `/api` 由 Next rewrite 或生产 Nginx 转发。
 
@@ -62,7 +62,7 @@ npm run build
 - Nginx 443：`/` → Next.js 3000，`/api/` → FastAPI 8000 并移除前缀，`/uploads/` → FastAPI。
 - systemd：`fiona` 启动后端，`fiona-web` 启动 `next start`。
 - 原线上服务器（域名 `madchloechat.online`）已于 2026-09-25 关闭，当前没有在线部署；下线记录见 `docs/DEPLOYMENT.md`。重新部署时以部署手册为准，不要假定任何服务器仍在运行。
-- 所有生产命令、备份和回滚步骤以 `docs/DEPLOYMENT.md` 为准；仓库文档不能证明外部服务器的即时状态。
+- 所有生产命令、备份和回滚步骤以 `docs/DEPLOYMENT.md` 为准；SQLite 启用 WAL 后须用 `sqlite3 .backup` 或在线备份 API 获取一致快照，不能只复制主数据库文件。仓库文档不能证明外部服务器的即时状态。
 
 ## 当前重要边界
 
@@ -73,7 +73,7 @@ npm run build
 - 完整账户删除会清理数据库关联记录、关闭真人连接，并通过持久化队列重试无引用上传文件；关键后台写入必须继续防止删号后重建数据。
 - 总请求体、Chat/图片、ASR、TTS、帖子和分页已有应用层边界；模型并发、真实 usage 与持久化成本控制仍未完成。
 - 模型预算是进程内估算，不等同于供应商真实账单；草莓预扣、退款及每日补给已实现原子化，真实 usage 与持久化成本控制仍待完成。
-- 私聊非危机轮的所有 system 消息合计恰好包含一次基础安全规则，放在最后一条 system 消息末尾；请求朗读时，朗读强约束仍作为当前 user 消息后的独立 system 消息。危机轮跳过普通模式与工具，固定附上求助资源且不计费。分身交流每条 system 消息也带基础安全规则。测试在收集阶段强制使用会话临时数据库与上传目录。
+- 私聊未命中危机信号的轮次，所有 system 消息合计恰好包含一次基础安全规则，放在最后一条 system 消息末尾；请求朗读时，朗读强约束仍作为当前 user 消息后的独立 system 消息。明确危机轮跳过普通模式、工具与待补参数，固定附上求助资源；余额足够时照常预扣并按交付结算，余额不足时免费返回资源且不调用模型。可能相关的轮次保留普通处理和计费，文字回复末尾附资源。图片模式的明确危机轮按文字回复显示。分身交流每条 system 消息也带基础安全规则。测试在收集阶段强制使用会话临时数据库与上传目录。
 - 前端主页面和常驻抽屉 iframe 有已知性能与维护债务。
 - Persona、成人内容、AI 身份披露、年龄与危机处理政策必须在扩大内测前统一。
 
