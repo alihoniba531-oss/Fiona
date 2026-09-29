@@ -153,22 +153,23 @@ async def generate_exchange_reply(messages: list[dict], *, max_tokens: int, prov
 async def _generate_while_authorized(exchange_id: str, run_token: str, messages: list[dict],
                                      *, max_tokens: int, provider: str) -> dict:
     """Poll revocations made outside this router, such as hiding an agent."""
-    upstream = asyncio.create_task(generate_exchange_reply(messages, max_tokens=max_tokens, provider=provider))
-    try:
-        while True:
-            done, _ = await asyncio.wait({upstream}, timeout=0.25)
-            if done:
-                return await upstream
-            if not await exchange_store.is_exchange_running(exchange_id, run_token):
+    async with exchange_store.exchange_running_checker(exchange_id, run_token) as is_running:
+        upstream = asyncio.create_task(generate_exchange_reply(messages, max_tokens=max_tokens, provider=provider))
+        try:
+            while True:
+                done, _ = await asyncio.wait({upstream}, timeout=0.25)
+                if done:
+                    return await upstream
+                if not await is_running():
+                    upstream.cancel()
+                    with suppress(asyncio.CancelledError):
+                        await upstream
+                    raise ExchangeRevoked()
+        finally:
+            if not upstream.done():
                 upstream.cancel()
                 with suppress(asyncio.CancelledError):
                     await upstream
-                raise ExchangeRevoked()
-    finally:
-        if not upstream.done():
-            upstream.cancel()
-            with suppress(asyncio.CancelledError):
-                await upstream
 
 
 def _safe_error(error):

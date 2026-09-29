@@ -1033,6 +1033,7 @@ async def run_chat(
     })
     state.crisis = high_crisis
     state.crisis_level = crisis_level
+    missing_conversation = False
     try:
         if tracker is not None:
             tracker.started = True
@@ -1180,14 +1181,11 @@ async def run_chat(
             yield s
 
     except ResourceNotFound:
-        if not high_crisis:
-            await asyncio.to_thread(clear_pending, ctx.state_key)
-            from mode_switcher import clear_user_mode
-            await asyncio.to_thread(clear_user_mode, ctx.state_key)
+        missing_conversation = True
+        state.trace["error"] = "ResourceNotFound"
         if _needs_crisis_resource(state):
             yield _crisis_resource_event(state)
         yield _sse({"error": "会话已删除或不可用"})
-        state.trace["error"] = "ResourceNotFound"
     except Exception as e:
         if _needs_crisis_resource(state):
             yield _crisis_resource_event(state)
@@ -1195,6 +1193,18 @@ async def run_chat(
         state.trace["error"] = type(e).__name__
     finally:
         with anyio.CancelScope(shield=True):
+            # SSE consumers can close immediately after the error event. Finish
+            # stale-conversation cleanup even when the generator is closed there.
+            if missing_conversation and not high_crisis:
+                try:
+                    await asyncio.to_thread(clear_pending, ctx.state_key)
+                except Exception as e:
+                    print(f"[chat] clear_pending failed type={type(e).__name__}", flush=True)
+                try:
+                    from mode_switcher import clear_user_mode
+                    await asyncio.to_thread(clear_user_mode, ctx.state_key)
+                except Exception as e:
+                    print(f"[chat] clear_user_mode failed type={type(e).__name__}", flush=True)
             if reserved and not state.billable:
                 try:
                     await refund_strawberries(ctx.user, STRAWBERRY_COST_PER_REPLY)

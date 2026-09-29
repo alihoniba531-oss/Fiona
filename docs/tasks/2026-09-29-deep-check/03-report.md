@@ -4,29 +4,59 @@
 
 ## 文件清单
 
-相对基线修改了 **42 个已跟踪文件**：
+按 `git diff --stat 12b6bf0 27e6806` 统计，deep-check 提交相对 09-25 加固提交改动 **69 个文件**，其中 **45 个修改、24 个新增**：
 
 - 后端实现与配置：`backend/.env.example`、`backend/admin_env.py`、`backend/auth_dep.py`、`backend/database.py`、`backend/exchange_models.py`、`backend/exchange_store.py`、`backend/intent_router.py`、`backend/main.py`、`backend/persona.py`、`backend/routers/agent_exchanges.py`、`backend/routers/auth.py`、`backend/routers/cards.py`、`backend/routers/chat.py`、`backend/routers/hot.py`、`backend/routers/me.py`、`backend/routers/voice.py`、`backend/safety.py`、`backend/services/chat_service.py`、`backend/services/exchange_service.py`、`backend/tools/card_detail.py`、`backend/tools/system_tools.py`、`backend/tools/topic_expand.py`、`backend/tools/travel_plan.py`、`backend/tools/web_search.py`、`backend/utils/media.py`、`backend/utils/safe_http.py`。
-- 既有测试与夹具：`backend/tests/conftest.py`、`backend/tests/test_auth_sessions.py`、`backend/tests/test_beta_admin_scripts.py`、`backend/tests/test_card_detail.py`。
+- 既有测试与夹具：`backend/tests/conftest.py`、`backend/tests/test_auth_sessions.py`、`backend/tests/test_beta_admin_scripts.py`、`backend/tests/test_card_detail.py`、`backend/tests/test_chat_image_generation.py`、`backend/tests/test_exchange_models.py`、`backend/tests/test_exchange_workflow.py`。
 - 前端：`frontend/app/page.tsx`、`frontend/app/plaza/page.tsx`、`frontend/app/settings/page.tsx`、`frontend/lib/auth.ts`、`frontend/lib/useAccountIdentity.ts`、`frontend/next.config.ts`、`frontend/package.json`（仅 `scripts`）。
 - 文档：`README.md`、`docs/DEPLOYMENT.md`、`docs/ARCHITECTURE.md`、`CLAUDE.md`、`PLAN.md`。
 
-新建 **14 个文件**：`backend/utils/beijing_time.py`、`backend/utils/slow_pool.py`、`backend/utils/traditional_chinese.py`；`backend/tests/test_beijing_time.py`、`test_crisis_resource_paths.py`、`test_dev_loopback.py`、`test_early_env_loading.py`、`test_exchange_isolation.py`、`test_image_intent_precision.py`、`test_plaza_media_brands.py`、`test_safe_http_deadline.py`、`test_traditional_crisis.py`、`test_tts_private_tickets.py`（以上测试均在 `backend/tests/`）；以及本报告。原先未跟踪的 09-25 任务文件、`test_beta_session_revival.py`、`test_event_loop_slots.py` 和本目录 `00-findings.md`、`02-spec.md` 未修改。
+新建的 **24 个文件**：`backend/utils/beijing_time.py`、`backend/utils/dotenv_config.py`、`backend/utils/slow_pool.py`、`backend/utils/traditional_chinese.py`；`backend/tests/test_beijing_time.py`、`test_crisis_resource_paths.py`、`test_dev_loopback.py`、`test_early_env_loading.py`、`test_exchange_isolation.py`、`test_image_intent_precision.py`、`test_plaza_media_brands.py`、`test_safe_http_deadline.py`、`test_traditional_crisis.py`、`test_tts_private_tickets.py`（以上测试均在 `backend/tests/`）；`docs/tasks/2026-09-29-deep-check/00-findings.md`、`02-spec.md`、`03-report.md`、`04-review.md`、`04-review-round2.md`、`04-review-round3.md`、`05-fix-round1.md`、`05-fix-round2.md`、`05-fix-round3.md`、`05-fix-round4.md`（上述文档均在该 deep-check 目录）。原先未跟踪的 09-25 任务文件、`test_beta_session_revival.py` 和 `test_event_loop_slots.py` 不在上述提交差异中。
 
 ## T1–T10 对应关系
 
 | 任务 | 实现与设计选择 | 新增测试函数 |
 |---|---|---|
-| T1 | `explicit_image_intent` 以祈使前缀、绘画动词、量词及图片对象作正向判定；询价、时长、难度、方法、评价及文字产物请求交给模型意图识别。`run_chat` 的抢先接线保留。 | `test_explicit_image_requests`（14 例，含 README 示例）、`test_image_comments_and_questions_are_not_early_commands`（24 例）、`test_comment_reaches_model_intent_classifier_without_image_generation`、`test_direct_image_request_bypasses_model_intent_classifier`。 |
+| T1 | `explicit_image_intent` 以祈使前缀、绘画动词、量词及图片对象作正向判定；询价、时长、难度、方法、评价及文字产物请求交给模型意图识别。`run_chat` 的抢先接线保留。 | `test_image_request_is_only_a_candidate`（20 例，含 README 示例）、`test_image_discussion_with_null_model_never_generates`（35 例）、`test_comment_reaches_model_intent_classifier_without_image_generation`、`test_model_confirmed_candidate_generates_once_and_charges`。 |
 | T2 | `request_public_url` 用单个 monotonic 截止时间覆盖 DNS、连接、响应头、正文和重定向；DNS 放在最多 4 工作线程的独立解析池，连接/滴流头由绝对计时器关闭 socket，正文逐块读取并按剩余时间设置读超时。超时抛 `PublicUrlTimeoutError`，调用方仍按普通抓取失败处理。 | `test_drip_response_obeys_total_wall_clock_deadline`、`test_drip_headers_obey_total_wall_clock_deadline`、`test_slow_resolution_obeys_total_wall_clock_deadline`、`test_fast_response_and_redirect_still_work`。 |
 | T3 | 交流上游改用 `AsyncOpenAI`；停止或撤销取消在途 Task，取消后的调用按 discarded 处理，未结束的调用继续占用同用户额度，防止开始→停止循环穿透上限。聊天工具、热点和卡片移入有界慢调用池。默认池 `FIONA_DEFAULT_POOL_WORKERS=32`，给小 CPU 主机的聊天槽位与流读取留余量；慢池 `FIONA_SLOW_POOL_WORKERS=16`，最多再排队 16 个等待执行的任务，隔离外部慢调用。两者可通过环境变量调节。 | `test_eight_exchanges_and_eight_drip_cards_leave_chat_responsive`、`test_stop_disconnects_async_upstream_and_releases_user_slot`、`test_rapid_start_stop_never_exceeds_one_inflight_call_per_owner`、`test_revoking_public_agent_cancels_inflight_provider_call`。 |
-| T4 | 内置繁简表仅归一危机分类的局部文本；原文继续入库、送模型、显示。映射含规格列出的常见繁体/异体。 | `test_traditional_explicit_risk_is_high`、`test_traditional_related_talk_is_possible`、`test_traditional_everyday_talk_is_not_crisis`、`test_crisis_rule_character_variants_normalize_back_to_rule_characters`（检查 210 个规则汉字中可反查的 74 字/77 变体）、`test_specified_traditional_variants_are_mapped`、`test_crisis_normalization_keeps_original_message_available`、`test_traditional_crisis_chat_persists_and_sends_original`。 |
+| T4 | 内置繁简表仅归一危机分类的局部文本；原文继续入库、送模型、显示。映射含规格列出的常见繁体/异体。 | `test_traditional_explicit_risk_is_high`、`test_traditional_related_talk_is_possible`、`test_traditional_everyday_talk_is_not_crisis`、`test_crisis_rule_character_variants_normalize_back_to_rule_characters`（检查 `safety.py` 的 **296** 个规则汉字：有映射 **114** 字、无异体白名单 **182** 字）、`test_specified_traditional_variants_are_mapped`、`test_crisis_normalization_keeps_original_message_available`、`test_traditional_crisis_chat_persists_and_sends_original`。 |
 | T5 | 路由内校验前先判级；high 和 possible 在文字、上游错误/空回复、余额不足、会话不存在、预检异常、图片成功/失败、工具、待补和镜子模式的服务端收尾中恰好送达一次资源。high 首事件仍为 `crisis=true`；possible 零余额时先发资源文本再发余额错误且不调用模型、不扣费。失败保留退款语义。 | `test_crisis_normal_reply_provider_error_and_empty_refund`、`test_crisis_zero_balance_never_calls_model`、`test_crisis_precheck_failures_refund_and_stream_resources`、`test_crisis_request_validation_still_streams_resources`、`test_crisis_vision_reply_paths`、`test_possible_crisis_image_generation_and_edit_paths`、`test_high_image_modes_use_support_reply_while_possible_uses_generation`、`test_crisis_tool_pending_and_mirror_paths`（high/possible 各 3 路）、`test_crisis_run_chat_failure_refunds_and_streams_resources`、`test_crisis_classification_used_by_test_corpus`。 |
-| T6 | 私聊朗读改为鉴权 `POST /tts/ticket` 传请求体，再以只含随机 ticket 的 GET 流式播放；票据绑定用户、一次性、60 秒有效，进程内保存。前端保留 `<audio>` 流播和下一句预取；丢失/过期会跳过该句。换票限额 20/min，播放不再另扣限额，与原每句流接口 20/min 持平。旧 `text` 查询参数拒绝。 | `test_tts_ticket_requires_login`、`test_tts_ticket_single_use_and_bound_to_user`、`test_tts_ticket_expires_and_legacy_text_query_is_rejected`、`test_tts_synthesize_consumes_same_ticket_once`。 |
+| T6 | 私聊朗读改为鉴权 `POST /tts/ticket` 传请求体，再以只含随机 ticket 的 GET 流式播放；票据绑定用户、一次性、60 秒有效，进程内保存。前端保留 `<audio>` 流播和下一句预取；丢失/过期会跳过该句。换票限额 20/min，播放不再另扣限额，与原每句流接口 20/min 持平。旧 `text` 查询参数拒绝。 | `test_tts_ticket_requires_login`、`test_tts_ticket_range_probe_then_playback_and_bound_to_user`、`test_tts_ticket_expires_and_legacy_text_query_is_rejected`、`test_tts_synthesize_shares_ticket_use_limit_with_stream`。 |
 | T7 | `/auth/logout` 仅 2xx 才清本地身份并跳转；失败留页提示重试。缺本地用户名时以 Cookie 向 `/profile` 做一次回填，401 按既有登录失效处理；主页、设置与广场不再以“默认用户”执行账号操作，主页抽屉待回填后挂载。 | 前端没有测试框架，按规格未新增测试依赖；手工步骤见下节。 |
 | T8 | `npm run dev` 绑定 `127.0.0.1`，`dev:lan` 显式开放；`allowedDevOrigins` 默认仅本机，额外来源由 `FIONA_ALLOWED_DEV_ORIGINS` 配置。DEV 鉴权、测试登录/OTP、`/users`、WebSocket `dev_user`、开发文档及媒体旁路按 ASGI `client.host` 判断回环，不信任代理头；生产 JWT 行为保持。 | `test_dev_http_shortcuts_reject_remote_peer_even_with_proxy_headers`、`test_dev_websocket_user_query_rejects_remote_peer`、`test_production_authentication_still_accepts_valid_cookie_from_remote`。 |
 | T9 | 服务在导入数据库等模块前按 `FIONA_ENV_FILE` 或默认 `backend/.env` 加载 dotenv，显式环境变量优先；管理脚本使用同一默认与 DB 路径规则。广场 ISO BMFF 只接受已知视频 brand，HEIC/AVIF 给中文转码提示，未知 brand 拒绝。发布失败显示后端 `detail`，保留弹窗文案与标签。面向用户的五个工具及 Persona 使用 `Asia/Shanghai`，内部计时不动。 | `test_selected_dotenv_is_loaded_before_database_and_uploads_import`；`test_image_bmff_brands_are_not_videos`、`test_known_video_bmff_brands_are_accepted`、`test_quicktime_brand_is_mov_and_unknown_brand_is_rejected`、`test_image_compatible_brand_overrides_video_major_brand`、`test_plaza_rejects_image_bmff_with_conversion_hint`；`test_user_facing_dates_use_beijing_when_process_is_new_york`。发布弹窗按规格用手工步骤验证。 |
 | T10 | 部署前置条件补 ffmpeg、`sqlite3` CLI、SQLite ≥3.35 的安装/自检；备份命令先设 `umask 077`，产物权限按 600 创建。README、架构、CLAUDE、PLAN 与环境变量模板同步本任务行为；部署继续明确单后端进程。 | 文档与配置差异检查见下节。 |
+
+文件数与清单核对命令：`git diff --stat 12b6bf0 27e6806`、`git diff --name-status 12b6bf0 27e6806`。规则字覆盖数及主表测试名用以下脚本核对，输出为 `296 114 182`，T1–T10 引用的不存在测试名为 `[]`：
+
+```bash
+python3 - <<'PY'
+import ast
+import re
+from pathlib import Path
+
+root = Path('.')
+rules = {c for n in ast.walk(ast.parse((root / 'backend/safety.py').read_text()))
+         if isinstance(n, ast.Constant) and isinstance(n.value, str)
+         for c in n.value if '\u4e00' <= c <= '\u9fff'}
+tree = ast.parse((root / 'backend/tests/test_traditional_crisis.py').read_text())
+def assigned(name):
+    return next(n.value for n in tree.body if isinstance(n, ast.Assign)
+                and any(isinstance(t, ast.Name) and t.id == name for t in n.targets))
+mapped = ast.literal_eval(assigned('RULE_CHARACTER_VARIANTS'))
+whitelist = set(ast.literal_eval(assigned('NO_VARIANT_RULE_CHARACTERS').args[0]))
+print(len(rules), len(rules & mapped.keys()), len(rules & whitelist))
+
+tests = {n.name for p in (root / 'backend/tests').glob('test_*.py')
+         for n in ast.walk(ast.parse(p.read_text()))
+         if isinstance(n, (ast.FunctionDef, ast.AsyncFunctionDef)) and n.name.startswith('test_')}
+report = (root / 'docs/tasks/2026-09-29-deep-check/03-report.md').read_text()
+rows = [line for line in report.splitlines() if re.match(r'^\| T(?:[1-9]|10) \|', line)]
+print([(row.split('|')[1].strip(), name) for row in rows
+       for name in re.findall(r'`(test_[^`]+)`', row) if name not in tests])
+PY
+```
 
 ## 验收实测
 
@@ -44,7 +74,7 @@
 
 测试前后 `ls backend/uploads | sort | shasum` 均为 `ccf9c1525240498c5b94e47a220a87a64f587eac`；`shasum backend/*.db` 均为 `fiona.db 403a086c4ec0cf28493fc9fa37b2b6eee528b261`、`local-avatar.db e6c4397d06f78f8182d3a93b5f597ed63cb4e564`，真实数据未变。
 
-`git diff --name-only 656b7cfbd5de9e2f47664cfc0d1272ff8a45f16f` 的 42 个文件及本次新增的 14 个文件均在 §2.1 白名单内。`git diff 656b7cfbd5de9e2f47664cfc0d1272ff8a45f16f -- backend/requirements.txt backend/requirements-dev.txt frontend/package-lock.json desktop frontend/AGENTS.md` 无输出；`frontend/package.json` 差异仅在 `scripts`。未运行 `next dev`。
+`git diff --name-only 12b6bf0 27e6806` 的 69 个文件（45 个修改、24 个新增）列于上文。`git diff 656b7cfbd5de9e2f47664cfc0d1272ff8a45f16f -- backend/requirements.txt backend/requirements-dev.txt frontend/package-lock.json desktop frontend/AGENTS.md` 无输出；`frontend/package.json` 差异仅在 `scripts`。未运行 `next dev`。
 
 私聊 URL 扫描实用命令：`rg -n 'tts/stream\?\$\{|text=\$\{|params\.set\("text"|text: text' frontend backend -g '!frontend/node_modules/**' -g '!frontend/.next/**' -g '!backend/.venv/**'`。输出为空，`rg` 退出码 1（无匹配）。
 
@@ -66,7 +96,7 @@ T3 基线失败另作了两种只读验证：将基线提交的 `backend` 用 `g
 
 | 返修项 | 本轮修改的文件 | 实现与测试 |
 |---|---|---|
-| R1 | `backend/intent_router.py`、`backend/tests/test_image_intent_precision.py` | 删除按价格、时长等话题列举的 `_IMAGE_META_QUERY`。对无请求前缀的句子按疑问词、疑问语气、评价和感叹标记保守判断；带请求前缀保留礼貌问句的明确请求。扩充条、座、朵等量词和油画、水彩、素描等画种。原语料全部保留，追加返修单的 5 条正例、8 条反例及 4 条句式护栏。参数化测试 `test_explicit_image_requests`、`test_image_comments_and_questions_are_not_early_commands` 和两条端到端测试均通过；该文件共 **57 passed**。 |
+| R1 | `backend/intent_router.py`、`backend/tests/test_image_intent_precision.py` | 删除按价格、时长等话题列举的 `_IMAGE_META_QUERY`。对无请求前缀的句子按疑问词、疑问语气、评价和感叹标记保守判断；带请求前缀保留礼貌问句的明确请求。扩充条、座、朵等量词和油画、水彩、素描等画种。原语料全部保留，追加返修单的 5 条正例、8 条反例及 4 条句式护栏。现有对应参数化测试为 `test_image_request_is_only_a_candidate`、`test_image_discussion_with_null_model_never_generates`；该轮文件共 **57 passed**。 |
 | R2 | `backend/routers/voice.py`、`backend/tests/test_tts_private_tickets.py`、`docs/ARCHITECTURE.md`、`docs/DEPLOYMENT.md` | 同一用户可在票据签发后 **60 秒内最多使用 4 次**，`/tts/stream` 与 `/tts/synthesize` 共用计数；跨用户、过期、超限为 404。计数和签发由锁保护。对 `Range: bytes=0-1` 探测仍返回 **200 全量流**，随后同 URL 正式 GET 可再次成功；返修单明确允许服务器忽略 Range，保持流式响应，避免为组装 206 而缓存整段音频。朗读原文仍只经 POST 请求体传输，票据 URL 不含原文；20/min 换票限额未收紧。`test_tts_ticket_requires_login`、`test_tts_ticket_range_probe_then_playback_and_bound_to_user`、`test_tts_ticket_expires_and_legacy_text_query_is_rejected`、`test_tts_ticket_expires_after_range_probe`、`test_tts_synthesize_shares_ticket_use_limit_with_stream` 共 **5 passed**。部署与架构文档改为“短时、限次票据”。 |
 | R3 | `backend/services/exchange_service.py`、`backend/exchange_models.py`、`backend/tests/test_exchange_models.py`、`backend/tests/test_exchange_workflow.py` | 交流上游无条件调用异步 `get_async_main_client` / `get_async_deepseek_client` 并 `await ...create()`；删除基于 getter/client 身份识别测试替身的分支、同步 DeepSeek getter 和 `run_slow` 同步回退。直接测试 SDK 边界的假客户端改为异步。`test_generate_routes_to_the_selected_sdk_and_records_public_provider_metadata`、`test_async_deepseek_client_uses_only_server_key_and_fixed_official_endpoint`、`test_deepseek_failure_is_not_retried_or_sent_to_main`、`test_provider_boundary_keeps_long_document_and_reports_truncation`，以及 `test_exchange_isolation.py` 等 8 个交流相关测试文件合并运行，**226 passed**。 |
 

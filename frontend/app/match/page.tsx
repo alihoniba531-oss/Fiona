@@ -6,7 +6,8 @@ import Sidebar from "@/components/Sidebar";
 import Earth3D from "@/components/Earth3D";
 import { Send, User, Sparkles, MessageCircle } from "lucide-react";
 import { cn } from "@/lib/utils";
-import { apiFetch, getUsername as readStoredUsername } from "@/lib/auth";
+import { apiFetch } from "@/lib/auth";
+import { useAccountIdentity, useAccountRequest } from "@/lib/useAccountIdentity";
 
 import { API_BASE as API, WS_BASE } from "@/lib/config";
 
@@ -147,9 +148,8 @@ function CloudCard({
   );
 }
 
-function MatchContent() {
-  const [username, setUsername] = useState("默认用户");
-  const [hydrated, setHydrated] = useState(false);
+function MatchForAccount({ username }: { username: string }) {
+  const { isCurrentOwner } = useAccountRequest(username);
   const [rooms, setRooms] = useState<Room[]>([]);
   const [selected, setSelected] = useState<Room | null>(null);
   const [messages, setMessages] = useState<PeerMsg[]>([]);
@@ -160,39 +160,31 @@ function MatchContent() {
   const selectedRoomIdRef = useRef<string | null>(null);
   const bottomRef = useRef<HTMLDivElement>(null);
 
-  // 启动后从 localStorage 读取当前身份
-  useEffect(() => {
-    const u = localStorage.getItem("fiona_user");
-    // eslint-disable-next-line react-hooks/set-state-in-effect
-    if (u) setUsername(u);
-    setHydrated(true);
-  }, []);
-
   // 加载 rooms
   const loadRooms = useCallback(() => {
+    if (!isCurrentOwner()) return;
     apiFetch(`${API}/peer/rooms`)
       .then(r => r.json())
-      .then(data => setRooms((data.rooms || []).slice(0, 5)))
+      .then(data => { if (isCurrentOwner()) setRooms((data.rooms || []).slice(0, 5)); })
       .catch(() => {});
-  }, []);
+  }, [isCurrentOwner]);
 
   // 拉取最近5个已接受匹配
   useEffect(() => {
-    if (!hydrated) return;
     loadRooms();
-  }, [loadRooms, hydrated]);
+  }, [loadRooms]);
 
   // 轮询 pending matches（对话内匹配卡）
   useEffect(() => {
-    if (!hydrated || !username) return;
     let mounted = true;
     const lastIds = new Set<number>();
 
     async function poll() {
+      if (!isCurrentOwner()) return;
       try {
         const r = await apiFetch(`${API}/match/pending`);
         const data = await r.json();
-        if (!mounted) return;
+        if (!mounted || !isCurrentOwner()) return;
         const incoming: PendingMatch[] = data.pending || [];
         // 只把新出现的卡加进 state；已经在 state 的不重复
         setPendingMatches(prev => {
@@ -219,7 +211,7 @@ function MatchContent() {
     poll();
     const timer = setInterval(poll, 8000); // 每 8s 查一次新匹配
     return () => { mounted = false; clearInterval(timer); };
-  }, [username, hydrated]);
+  }, [isCurrentOwner]);
 
   const removeCard = useCallback((id: number) => {
     setPendingMatches(prev => prev.filter(p => p.id !== id));
@@ -258,6 +250,7 @@ function MatchContent() {
 
   // 切换联系人：加载历史 + 连 WebSocket
   const openChat = useCallback((room: Room) => {
+    if (!isCurrentOwner()) return;
     const roomId = room.room_id;
     selectedRoomIdRef.current = roomId;
     if (wsRef.current) wsRef.current.close();
@@ -267,24 +260,24 @@ function MatchContent() {
     apiFetch(`${API}/peer/history/${roomId}`)
       .then(r => r.json())
       .then(data => {
-        if (selectedRoomIdRef.current === roomId && data.room_id === roomId) {
+        if (isCurrentOwner() && selectedRoomIdRef.current === roomId && data.room_id === roomId) {
           setMessages(data.messages || []);
         }
       })
       .catch(() => {});
 
     const devAuth = process.env.NODE_ENV !== "production"
-      ? `?dev_user=${encodeURIComponent(readStoredUsername() || username)}`
+      ? `?dev_user=${encodeURIComponent(username)}`
       : "";
     const ws = new WebSocket(`${WS_BASE}/ws/peer/${roomId}${devAuth}`);
     ws.onmessage = (e) => {
-      if (selectedRoomIdRef.current !== roomId || wsRef.current !== ws) return;
+      if (!isCurrentOwner() || selectedRoomIdRef.current !== roomId || wsRef.current !== ws) return;
       const msg = JSON.parse(e.data) as PeerWsEvent;
       if (msg.type === "history") return;
       if (msg.type === "message") setMessages(prev => [...prev, msg]);
     };
     wsRef.current = ws;
-  }, [username]);
+  }, [isCurrentOwner, username]);
 
   useEffect(() => {
     bottomRef.current?.scrollIntoView({ behavior: "smooth" });
@@ -458,9 +451,17 @@ function MatchContent() {
   );
 }
 
+function MatchContent() {
+  const username = useAccountIdentity();
+  if (!username) {
+    return <div role="status" className="flex h-dvh items-center justify-center text-sm text-muted-foreground">加载中…</div>;
+  }
+  return <MatchForAccount key={username} username={username} />;
+}
+
 export default function MatchPage() {
   return (
-    <Suspense fallback={null}>
+    <Suspense fallback={<div role="status" className="flex h-dvh items-center justify-center text-sm text-muted-foreground">加载中…</div>}>
       <MatchContent />
     </Suspense>
   );

@@ -1,12 +1,13 @@
 "use client";
 
 import { useState, useEffect, useRef, useMemo, Suspense } from "react";
-import { useSearchParams } from "next/navigation";
+import { useRouter, useSearchParams } from "next/navigation";
 import { Search, X, Download, Calendar, ChevronDown, ChevronRight } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { apiFetch } from "@/lib/auth";
 import GeneratedImage from "@/components/GeneratedImage";
 import { generatedImagePath, storedReferenceImagePaths } from "@/lib/generatedImages";
+import { useAccountIdentity, useAccountRequest } from "@/lib/useAccountIdentity";
 
 import { API_BASE as API } from "@/lib/config";
 
@@ -38,10 +39,8 @@ function formatDisplayDate(isoDate: string) {
   });
 }
 
-function HistoryContent() {
-  const params = useSearchParams();
-  const username = params.get("user") || (typeof window !== "undefined" ? localStorage.getItem("fiona_user") : null) || "默认用户";
-
+function HistoryForAccount({ username }: { username: string }) {
+  const { beginRequest, isCurrentOwner } = useAccountRequest(username);
   const [allMsgs, setAllMsgs] = useState<Msg[]>([]);
   const [loading, setLoading] = useState(true);
   const [query, setQuery] = useState("");
@@ -52,14 +51,14 @@ function HistoryContent() {
   const searchRef = useRef<HTMLInputElement>(null);
 
   useEffect(() => {
-    // 历史记录端点已收紧为"当前登录用户"，路径里的 ?user= 参数已无意义但保留 UI 不变。
-    // 后端通过鉴权头识别用户。
-    apiFetch(`${API}/history`)
+    const request = beginRequest();
+    if (!request) return;
+    apiFetch(`${API}/history`, { signal: request.signal })
       .then(r => r.json())
-      .then(d => setAllMsgs(d.messages || []))
+      .then(d => { if (request.isCurrent()) setAllMsgs(d.messages || []); })
       .catch(() => {})
-      .finally(() => setLoading(false));
-  }, [username]);
+      .finally(() => { if (request.isCurrent()) setLoading(false); });
+  }, [beginRequest]);
 
   // 计算每天的消息数，生成日期列表（降序）
   const dateStats = useMemo(() => {
@@ -122,6 +121,7 @@ function HistoryContent() {
   }, [filtered]);
 
   const handleExport = () => {
+    if (!isCurrentOwner()) return;
     const lines = filtered.map(m =>
       `[${parseUtcTimestamp(m.created_at).toLocaleString("zh-CN", { hour12: false })}] ${m.role === "user" ? username : "Chloe"}: ${m.content}`
     );
@@ -150,7 +150,7 @@ function HistoryContent() {
           <div className="max-md:min-w-0">
             <p className="text-sm font-medium leading-tight">历史记录</p>
             <p className="mt-0.5 text-xs text-muted-foreground max-md:truncate">
-              {username} · <span className="readout"><b>{allMsgs.length}</b> 条</span>
+              {username} · <span className="readout"><b>{loading ? "…" : allMsgs.length}</b> 条</span>
             </p>
           </div>
         </div>
@@ -363,10 +363,30 @@ function HistoryContent() {
   );
 }
 
+function HistoryContent() {
+  const params = useSearchParams();
+  const router = useRouter();
+  const identity = useAccountIdentity();
+  const requestedUser = params.get("user");
+
+  useEffect(() => {
+    if (!identity || requestedUser === null || requestedUser === identity) return;
+    const url = new URL(window.location.href);
+    url.searchParams.delete("user");
+    router.replace(`${url.pathname}${url.search}${url.hash}`, { scroll: false });
+  }, [identity, requestedUser, router]);
+
+  if (!identity) {
+    return <div role="status" className="flex min-h-screen items-center justify-center text-sm text-muted-foreground">加载中…</div>;
+  }
+  const username = requestedUser === identity ? requestedUser : identity;
+  return <HistoryForAccount key={username} username={username} />;
+}
+
 export default function HistoryPage() {
   return (
     <Suspense fallback={
-      <div className="flex min-h-screen items-center justify-center text-sm text-muted-foreground">
+      <div role="status" className="flex min-h-screen items-center justify-center text-sm text-muted-foreground">
         加载中…
       </div>
     }>

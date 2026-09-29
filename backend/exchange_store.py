@@ -1,5 +1,6 @@
 """Persistent authorization, bounded work reservations and public-only exchanges."""
 import json
+from contextlib import asynccontextmanager
 from uuid import uuid4
 
 import aiosqlite
@@ -559,10 +560,25 @@ async def load_running_exchange(exchange_id, run_token):
         return context
 
 
-async def is_exchange_running(exchange_id, run_token):
+@asynccontextmanager
+async def exchange_running_checker(exchange_id, run_token):
+    """Reuse one read connection while polling an in-flight provider call.
+
+    Each SELECT runs outside a long-lived transaction so a stop committed by
+    another connection is visible at the next poll.
+    """
     async with aiosqlite.connect(database.DB_PATH, timeout=database.SQLITE_BUSY_TIMEOUT) as db:
-        row = await _one(db, "SELECT 1 FROM agent_exchanges WHERE id = ? AND status = 'running' AND run_token = ?", (exchange_id, run_token))
-        return row is not None
+        async def is_running():
+            row = await _one(db, "SELECT 1 FROM agent_exchanges WHERE id = ? AND status = 'running' AND run_token = ?", (exchange_id, run_token))
+            return row is not None
+
+        yield is_running
+
+
+async def is_exchange_running(exchange_id, run_token):
+    """One-off authorization check for callers without an in-flight poller."""
+    async with exchange_running_checker(exchange_id, run_token) as is_running:
+        return await is_running()
 
 
 async def reserve_model_call(

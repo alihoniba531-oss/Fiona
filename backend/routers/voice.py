@@ -42,8 +42,48 @@ class TtsTicketRequest(BaseModel):
 
 @dataclass
 class _TtsAudioBuild:
+    prewarm: bool = False
     done: threading.Event = field(default_factory=threading.Event)
     audio: bytes | None = None
+    prewarm_task: asyncio.Task | None = None
+    waiters: list[tuple[asyncio.AbstractEventLoop, asyncio.Future[None]]] = field(default_factory=list)
+    waiters_lock: threading.Lock = field(default_factory=threading.Lock)
+
+    async def wait(self) -> bytes | None:
+        """Wait without occupying a worker, including from a different request loop."""
+        loop = asyncio.get_running_loop()
+        waiter = loop.create_future()
+        with self.waiters_lock:
+            if self.done.is_set():
+                return self.audio
+            self.waiters.append((loop, waiter))
+        try:
+            await waiter
+        finally:
+            with self.waiters_lock:
+                if (loop, waiter) in self.waiters:
+                    self.waiters.remove((loop, waiter))
+        return self.audio
+
+    def finish(self, audio: bytes | None) -> None:
+        with self.waiters_lock:
+            if self.done.is_set():
+                return
+            self.audio = audio
+            self.done.set()
+            waiters = self.waiters
+            self.waiters = []
+        for loop, waiter in waiters:
+            try:
+                loop.call_soon_threadsafe(_wake_tts_waiter, waiter)
+            except RuntimeError:
+                # A disconnected request may have closed its event loop.
+                pass
+
+
+def _wake_tts_waiter(waiter: asyncio.Future[None]) -> None:
+    if not waiter.done():
+        waiter.set_result(None)
 
 
 @dataclass(frozen=True)
@@ -62,6 +102,21 @@ _tts_tickets: dict[str, _TtsTicket] = {}
 _tts_tickets_lock = threading.Lock()
 
 
+def _cancel_tts_prewarm(entry: _TtsTicket) -> None:
+    """Wake any playback waiter and cancel synthesis for an invalidated ticket."""
+    build = entry.audio_build
+    if build is None or build.prewarm_task is None:
+        return
+    build.finish(None)
+    task = build.prewarm_task
+    if not task.done():
+        try:
+            task.get_loop().call_soon_threadsafe(task.cancel)
+        except RuntimeError:
+            # The request loop has already closed; the ticket no longer owns it.
+            pass
+
+
 def _use_tts_ticket(ticket: str, user: str) -> _TtsTicket:
     with _tts_tickets_lock:
         entry = _tts_tickets.get(ticket)
@@ -69,6 +124,7 @@ def _use_tts_ticket(ticket: str, user: str) -> _TtsTicket:
             raise HTTPException(status_code=404, detail="朗读票据不存在或已失效")
         if time.monotonic() >= entry.expires_at:
             _tts_tickets.pop(ticket, None)
+            _cancel_tts_prewarm(entry)
             raise HTTPException(status_code=404, detail="朗读票据已过期")
         if entry.user != user:
             raise HTTPException(status_code=404, detail="朗读票据不存在或已失效")
@@ -96,9 +152,9 @@ def _claim_tts_audio(ticket: str, entry: _TtsTicket) -> tuple[bytes | None, _Tts
 def _complete_tts_audio(ticket: str, build: _TtsAudioBuild, audio: bytes | None) -> None:
     with _tts_tickets_lock:
         current = _tts_tickets.get(ticket)
-        if current is not None and current.audio_build is build:
+        if current is not None and current.audio_build is build and current.expires_at > time.monotonic():
             # An oversized response is never retained by the ticket table.
-            if audio and len(audio) <= min(TTS_MAX_AUDIO_BYTES_PER_TICKET, TTS_MAX_CACHED_AUDIO_BYTES) and current.expires_at > time.monotonic():
+            if audio and len(audio) <= min(TTS_MAX_AUDIO_BYTES_PER_TICKET, TTS_MAX_CACHED_AUDIO_BYTES):
                 used = sum(len(item.cached_audio or b"") for item in _tts_tickets.values())
                 for key, item in list(_tts_tickets.items()):
                     if used + len(audio) <= TTS_MAX_CACHED_AUDIO_BYTES:
@@ -113,25 +169,29 @@ def _complete_tts_audio(ticket: str, build: _TtsAudioBuild, audio: bytes | None)
                 _tts_tickets[ticket] = replace(current, cached_audio=audio, audio_build=None)
             else:
                 _tts_tickets[ticket] = replace(current, audio_build=None)
-        build.audio = audio
-        build.done.set()
+        else:
+            # An expired or evicted ticket cannot retain audio in the table.
+            # A request admitted while valid still receives its on-demand result.
+            if current is not None and current.audio_build is build and current.expires_at <= time.monotonic():
+                _tts_tickets.pop(ticket, None)
+            if build.prewarm:
+                audio = None
+        build.finish(audio)
 
 
-async def _get_tts_audio(ticket: str, entry: _TtsTicket) -> bytes | None:
+async def _build_tts_audio(ticket: str, entry: _TtsTicket, build: _TtsAudioBuild) -> bytes | None:
     from tts import dashscope_timeout_millis, synthesize
 
-    cached, build, creator = _claim_tts_audio(ticket, entry)
-    if cached is not None:
-        return cached
-    assert build is not None
-    if not creator:
-        await asyncio.to_thread(build.done.wait)
-        return build.audio
     audio: bytes | None = None
     try:
+        timeout = dashscope_timeout_millis() / 1000 + 1
+        if build.prewarm:
+            timeout = min(timeout, entry.expires_at - time.monotonic())
+        if timeout <= 0:
+            return None
         payload, _ = await asyncio.wait_for(
             asyncio.to_thread(synthesize, entry.text, entry.voice, entry.speech_rate),
-            timeout=dashscope_timeout_millis() / 1000 + 1,
+            timeout=timeout,
         )
         if payload and len(payload) <= TTS_MAX_AUDIO_BYTES_PER_TICKET:
             audio = payload
@@ -139,7 +199,23 @@ async def _get_tts_audio(ticket: str, entry: _TtsTicket) -> bytes | None:
         pass
     finally:
         _complete_tts_audio(ticket, build, audio)
-    return audio
+    return build.audio
+
+
+async def _get_tts_audio(ticket: str, entry: _TtsTicket) -> bytes | None:
+    cached, build, creator = _claim_tts_audio(ticket, entry)
+    if cached is not None:
+        return cached
+    assert build is not None
+    if not creator:
+        return await build.wait()
+    return await _build_tts_audio(ticket, entry, build)
+
+
+def _is_webkit_user_agent(user_agent: str) -> bool:
+    return "AppleWebKit" in user_agent and not any(
+        engine in user_agent for engine in ("Chrome/", "Chromium/", "Edg/")
+    )
 
 
 _RANGE_RE = re.compile(r"^bytes=(\d{0,20})-(\d{0,20})$", re.IGNORECASE)
@@ -199,13 +275,25 @@ async def tts_ticket(request: Request, body: TtsTicketRequest, user: str = Depen
         raise HTTPException(status_code=400, detail="朗读文本不能为空")
     now = time.monotonic()
     ticket = secrets.token_urlsafe(32)
+    prewarm = _is_webkit_user_agent(request.headers.get("user-agent", ""))
+    build = _TtsAudioBuild(prewarm=True) if prewarm else None
+    issued_entry = _TtsTicket(
+        user, text, body.voice, body.speech_rate, now + TTS_TICKET_TTL_SECONDS,
+        audio_build=build,
+    )
     with _tts_tickets_lock:
-        for key, entry in list(_tts_tickets.items()):
-            if entry.expires_at <= now:
+        for key, existing in list(_tts_tickets.items()):
+            if existing.expires_at <= now:
                 _tts_tickets.pop(key, None)
+                _cancel_tts_prewarm(existing)
         if len(_tts_tickets) >= TTS_MAX_PENDING_TICKETS:
-            _tts_tickets.pop(next(iter(_tts_tickets)))
-        _tts_tickets[ticket] = _TtsTicket(user, text, body.voice, body.speech_rate, now + TTS_TICKET_TTL_SECONDS)
+            evicted = _tts_tickets.pop(next(iter(_tts_tickets)))
+            _cancel_tts_prewarm(evicted)
+        _tts_tickets[ticket] = issued_entry
+        if build is not None:
+            task = asyncio.create_task(_build_tts_audio(ticket, issued_entry, build))
+            build.prewarm_task = task
+            task.add_done_callback(lambda completed: setattr(build, "prewarm_task", None))
     return {"ticket": ticket, "expires_in": TTS_TICKET_TTL_SECONDS}
 
 
@@ -313,8 +401,8 @@ async def tts_stream(
     entry = _use_tts_ticket(ticket, user)
     with _tts_tickets_lock:
         cached = _tts_tickets.get(ticket)
-        has_cached_audio = cached is not None and cached.cached_audio is not None
-    if range_header is not None and (has_cached_audio or not _is_zero_open_range(range_header)):
+        has_cached_or_pending_audio = cached is not None and (cached.cached_audio is not None or cached.audio_build is not None)
+    if range_header is not None and (has_cached_or_pending_audio or not _is_zero_open_range(range_header)):
         audio = await _get_tts_audio(ticket, entry)
         if not audio:
             return Response(status_code=502)
@@ -341,9 +429,9 @@ async def tts_stream(
             return
         assert build is not None
         if not creator:
-            await asyncio.to_thread(build.done.wait)
-            if build.audio:
-                yield build.audio
+            audio = await build.wait()
+            if audio:
+                yield audio
             return
         chunks: list[bytes] = []
         size = 0

@@ -6,6 +6,7 @@ import { useSearchParams } from "next/navigation";
 import Sidebar from "@/components/Sidebar";
 import { ArrowUpRight, Shield, Loader2, Heart, Scale, CircleHelp, Wrench, TriangleAlert } from "lucide-react";
 import { apiFetch } from "@/lib/auth";
+import { useAccountIdentity, useAccountRequest } from "@/lib/useAccountIdentity";
 
 import { API_BASE as API } from "@/lib/config";
 
@@ -52,29 +53,20 @@ const Empty = ({ hint }: { hint: string }) => (
   <p className="text-xs text-muted-foreground/60 italic">{hint}</p>
 );
 
-function ProfileContent() {
-  const [username, setUsername] = useState("默认用户");
-  const [hydrated, setHydrated] = useState(false);
+function ProfileForAccount({ username }: { username: string }) {
+  const { beginRequest } = useAccountRequest(username);
   const [profile, setProfile] = useState<Profile | null>(null);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    const u = localStorage.getItem("fiona_user");
-    // eslint-disable-next-line react-hooks/set-state-in-effect
-    if (u) setUsername(u);
-    setHydrated(true);
-  }, []);
-
-  useEffect(() => {
-    if (!hydrated) return; // 等 localStorage 读完再拉，避免用"默认用户"拉一次空 profile
-    // eslint-disable-next-line react-hooks/set-state-in-effect
-    setLoading(true);
-    apiFetch(`${API}/profile`)
+    const request = beginRequest();
+    if (!request) return;
+    apiFetch(`${API}/profile`, { signal: request.signal })
       .then(r => r.json())
-      .then(data => setProfile(data.profile || {}))
-      .catch(() => setProfile({}))
-      .finally(() => setLoading(false));
-  }, [username, hydrated]);
+      .then(data => { if (request.isCurrent()) setProfile(data.profile || {}); })
+      .catch(() => { if (request.isCurrent()) setProfile({}); })
+      .finally(() => { if (request.isCurrent()) setLoading(false); });
+  }, [beginRequest]);
 
   const interests = profile?.interests || [];
   const values = profile?.values || [];
@@ -178,9 +170,17 @@ function ProfileContent() {
   );
 }
 
+function ProfileContent() {
+  const username = useAccountIdentity();
+  if (!username) {
+    return <div role="status" className="flex h-dvh items-center justify-center text-sm text-muted-foreground">加载中…</div>;
+  }
+  return <ProfileForAccount key={username} username={username} />;
+}
+
 export default function ProfilePage() {
   return (
-    <Suspense fallback={null}>
+    <Suspense fallback={<div role="status" className="flex h-dvh items-center justify-center text-sm text-muted-foreground">加载中…</div>}>
       <ProfileContent />
     </Suspense>
   );

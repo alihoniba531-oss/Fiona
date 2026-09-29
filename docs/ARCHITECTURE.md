@@ -58,7 +58,7 @@ Browser / Tauri WebView
 |---|---|
 | `routers/auth.py` | 邀请码、开发登录、预留 OTP |
 | `routers/chat.py` | `/chat` SSE 对话入口 |
-| `routers/voice.py` | ASR、TTS、TTS WebSocket；朗读文本经鉴权 POST 换短时、限次票据。无 Range 请求返回流式 200；首次 `Range: bytes=0-` 且无缓存时也流式返回 200，以保留 Chromium/WebView2 的首音速度。闭区间 Range 合成后缓存并返回有限长度的 206；已有缓存的票据对 Range 请求读缓存返回 206 |
+| `routers/voice.py` | ASR、TTS、TTS WebSocket；朗读文本经鉴权 POST 换短时、限次票据。WebKit 在换票时后台预热非流式合成，后续 Range 请求等待或读取同一份音频。无 Range 请求返回流式 200；首次 `Range: bytes=0-` 且无缓存或预热任务时也流式返回 200，以保留 Chromium/WebView2 的首音速度。闭区间 Range 合成后缓存并返回有限长度的 206；已有缓存的票据对 Range 请求读缓存返回 206 |
 | `routers/hot.py` | 热点源、分类和详情展开 |
 | `routers/match.py` | 匹配生成、待接受卡片和响应 |
 | `routers/peer.py` | 真人房间、历史和 WebSocket |
