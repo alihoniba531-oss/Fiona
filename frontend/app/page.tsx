@@ -16,6 +16,7 @@ import {
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { apiFetch, getUsername as readStoredUsername } from "@/lib/auth";
+import { requestTtsTicket, type TtsBackoff } from "@/lib/ttsTicket";
 import { generatedImagePath, referenceImagePath, referencePreviewUrl, isLocalReferenceDataUrl, type ReferenceImageInput } from "@/lib/generatedImages";
 import { readLocalReferenceImage, MAX_REFERENCE_FILE_BYTES, REFERENCE_FILE_TYPES } from "@/lib/localReferenceImages";
 
@@ -75,6 +76,8 @@ interface PreparedTtsAudio {
   controller: AbortController;
   listeners: AbortController | null;
   cancelled: boolean;
+  waitingUntil: number | null;
+  ticketAt: number | null;
 }
 
 interface TtsAudioSlot {
@@ -83,6 +86,11 @@ interface TtsAudioSlot {
   unlocked: boolean;
   primeAttempt: object | null;
 }
+
+// 后端票据 60 秒过期，留出开始播放的余量；正常预取票的年龄不超过上一句的
+// 播放时长，一般不会触发重换。普通单段最长约 250 字、约 39 秒；「帮我读」
+// 可到 300 字、约 47 秒，超过阈值只会多换一张票、多一个小空档，不会丢句。
+const TTS_PRELOAD_MAX_TICKET_AGE_MS = 45_000;
 
 let silentTtsWavUri: string | null = null;
 function getSilentTtsWavUri(): string {
@@ -383,6 +391,8 @@ export default function ChatPage() {
   const [isReadingImage, setIsReadingImage] = useState(false);
   const [isReadingReferences, setIsReadingReferences] = useState(false);
   const [referenceUploadError, setReferenceUploadError] = useState("");
+  const [ttsWaitUntil, setTtsWaitUntil] = useState<number | null>(null);
+  const [ttsWaitNow, setTtsWaitNow] = useState(0);
   const imageReaderRef = useRef<FileReader | null>(null);
   const referenceReadControllerRef = useRef<AbortController | null>(null);
   const chatScrollRef = useRef<ChatScrollHandle>(null);
@@ -408,6 +418,7 @@ export default function ChatPage() {
   const ttsQueueRef = useRef<string[]>([]);
   const ttsPlayingRef = useRef(false);
   const [ttsPlaybackBlocked, setTtsPlaybackBlocked] = useState(false);
+  const ttsBackoffRef = useRef<TtsBackoff>({ until: 0 });
   const playNextInQueueRef = useRef<() => void>(() => {});
   const ttsSessionRef = useRef(0);
   const ttsStoppedSessionRef = useRef<number | null>(null);
@@ -417,6 +428,12 @@ export default function ChatPage() {
   const mediaRecorderRef = useRef<MediaRecorder | null>(null);
   const audioCtxRef = useRef<AudioContext | null>(null);
   const chatAbortRef = useRef<AbortController | null>(null);
+
+  useEffect(() => {
+    if (ttsWaitUntil === null) return;
+    const timer = window.setInterval(() => setTtsWaitNow(Date.now()), 1000);
+    return () => window.clearInterval(timer);
+  }, [ttsWaitUntil]);
 
   // ---- peer chat state (not rendered in UI) ----
   const [peerRooms, setPeerRooms] = useState<PeerRoom[]>([]);
@@ -835,23 +852,33 @@ export default function ChatPage() {
     const session = ttsSessionRef.current;
     const prepared: PreparedTtsAudio = {
       text, slot, audio: slot.audio, session, ready: Promise.resolve(false),
-      controller, listeners: null, cancelled: false,
+      controller, listeners: null, cancelled: false, waitingUntil: null, ticketAt: null,
     };
     slot.owner = prepared;
     const canUse = () => slot.owner === prepared && !prepared.cancelled
       && !controller.signal.aborted && session === ttsSessionRef.current;
     prepared.ready = (async () => {
       try {
-        const response = await apiFetch(`${API}/tts/ticket`, {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ text: text.slice(0, 300), voice: "longxiaoxia_v2", speech_rate: 1.15 }),
+        const ticket = await requestTtsTicket({
+          text: text.slice(0, 300),
           signal: controller.signal,
+          backoff: ttsBackoffRef.current,
+          isStale: () => !canUse(),
+          onWait: until => {
+            prepared.waitingUntil = until;
+            if (ttsCurrentRef.current === prepared) {
+              setTtsWaitNow(Date.now());
+              setTtsWaitUntil(until);
+            }
+          },
+          onWaitEnd: () => {
+            prepared.waitingUntil = null;
+            if (ttsCurrentRef.current === prepared) setTtsWaitUntil(null);
+          },
         });
-        if (!canUse() || !response.ok) return false;
-        const data = await response.json();
-        if (!canUse() || typeof data.ticket !== "string" || !data.ticket) return false;
-        slot.audio.src = `${API}/tts/stream?ticket=${encodeURIComponent(data.ticket)}`;
+        if (!canUse() || !ticket) return false;
+        slot.audio.src = `${API}/tts/stream?ticket=${encodeURIComponent(ticket)}`;
+        prepared.ticketAt = Date.now();
         if (!canUse()) return false;
         slot.audio.load();
         return true;
@@ -879,6 +906,7 @@ export default function ChatPage() {
     ttsCurrentRef.current = null;
     ttsPlayingRef.current = false;
     setTtsPlaybackBlocked(false);
+    setTtsWaitUntil(null);
     releaseTtsAudio(prepared);
     playNextInQueueRef.current();
   }, [releaseTtsAudio]);
@@ -923,6 +951,12 @@ export default function ChatPage() {
     // 优先用已预取的，否则现 fetch
     let prepared = ttsPreloadRef.current;
     ttsPreloadRef.current = null;
+    if (prepared && prepared.ticketAt !== null
+      && Date.now() - prepared.ticketAt > TTS_PRELOAD_MAX_TICKET_AGE_MS) {
+      releaseTtsAudio(prepared);
+      ttsQueueRef.current.unshift(prepared.text);
+      prepared = null;
+    }
     if (!prepared) {
       const next = ttsQueueRef.current[0];
       if (!next) {
@@ -938,6 +972,8 @@ export default function ChatPage() {
 
     ttsPlayingRef.current = true;
     ttsCurrentRef.current = prepared;
+    if (prepared.waitingUntil !== null) setTtsWaitNow(Date.now());
+    setTtsWaitUntil(prepared.waitingUntil);
     // 立刻把"再下一句"也预取，与当前播放重叠
     tryPrefetch();
     prepared.ready.then(ready => {
@@ -945,7 +981,7 @@ export default function ChatPage() {
       if (!ready) { finishCurrentTts(prepared); return; }
       playPreparedTts(prepared);
     }).catch(() => finishCurrentTts(prepared));
-  }, [startHandsFreeRecording, mkTtsAudio, tryPrefetch, finishCurrentTts, playPreparedTts]);
+  }, [startHandsFreeRecording, mkTtsAudio, tryPrefetch, finishCurrentTts, playPreparedTts, releaseTtsAudio]);
 
   useEffect(() => {
     playNextInQueueRef.current = playNextInQueue;
@@ -1011,6 +1047,7 @@ export default function ChatPage() {
     ttsPreloadRef.current = null;
     ttsPlayingRef.current = false;
     setTtsPlaybackBlocked(false);
+    setTtsWaitUntil(null);
     if (current) releaseTtsAudio(current);
     if (preload) releaseTtsAudio(preload);
     // A click that clears the queue may have just primed an otherwise idle slot: stop the silent
@@ -1995,6 +2032,13 @@ export default function ChatPage() {
                     <button type="button" onClick={resumeBlockedTts} className="btn btn-quiet h-7 shrink-0 px-2.5 text-xs max-md:h-9">
                       <Volume2 size={13} />点此播放
                     </button>
+                    <button type="button" onClick={stopTtsByUser} className="btn btn-quiet h-7 shrink-0 px-2.5 text-xs max-md:h-9">不听了</button>
+                  </div>}
+                  {ttsWaitUntil !== null && <div className="mb-2 flex min-w-0 items-center gap-1 text-xs">
+                    <span className="min-w-0 flex-1 text-muted-foreground">
+                      <span aria-hidden="true">朗读限速中，{Math.max(1, Math.ceil((ttsWaitUntil - ttsWaitNow) / 1000))} 秒后接着读</span>
+                      <span className="sr-only">朗读限速中，稍后自动接着读</span>
+                    </span>
                     <button type="button" onClick={stopTtsByUser} className="btn btn-quiet h-7 shrink-0 px-2.5 text-xs max-md:h-9">不听了</button>
                   </div>}
                 </div>

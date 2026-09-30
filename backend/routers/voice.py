@@ -15,11 +15,13 @@ import wave
 from dataclasses import dataclass, field, replace
 
 from fastapi import APIRouter, Depends, HTTPException, Query, Request, WebSocket
+from fastapi.responses import JSONResponse
 from pydantic import BaseModel, Field
 
+import rate_limit
 from auth_dep import get_current_user, ws_authenticate
 from qwen_asr import asr_recognize, request_timeout_seconds
-from rate_limit import limiter
+from rate_limit import check_and_hit, limiter
 
 router = APIRouter()
 ASR_SAMPLE_RATE = 16000
@@ -28,6 +30,11 @@ ASR_MAX_BASE64_CHARS = 4 * ((ASR_MAX_SOURCE_BYTES + 2) // 3) + 8
 ASR_MAX_DURATION_SECONDS = 120
 ASR_MAX_WAV_BYTES = 5 * 1024 * 1024
 TTS_TICKET_TTL_SECONDS = 60
+TTS_TICKET_USER_REQUESTS = "120/minute"
+TTS_TICKET_USER_CHARS = "2000/minute"
+TTS_TICKET_IP_REQUESTS = "240/minute"
+TTS_TICKET_IP_CHARS = "6000/minute"
+TTS_TICKET_MAX_CHARS = 300
 TTS_MAX_TICKET_USES = 4
 TTS_MAX_PENDING_TICKETS = 2048
 TTS_MAX_CACHED_AUDIO_BYTES = 64 * 1024 * 1024
@@ -267,12 +274,32 @@ def _validate_ticket_query(request: Request) -> None:
 
 
 @router.post("/tts/ticket")
-@limiter.limit("20/minute")
 async def tts_ticket(request: Request, body: TtsTicketRequest, user: str = Depends(get_current_user)):
     """Store private text in memory and return a short-lived playback ticket."""
     text = body.text.strip()
     if not text:
         raise HTTPException(status_code=400, detail="朗读文本不能为空")
+    ip = rate_limit._client_ip(request)
+    char_cost = min(len(text), TTS_TICKET_MAX_CHARS)
+    checks = [
+        (TTS_TICKET_USER_REQUESTS, ("tts_ticket", "user", user, "count"), 1),
+        (TTS_TICKET_USER_CHARS, ("tts_ticket", "user", user, "chars"), char_cost),
+        (TTS_TICKET_IP_REQUESTS, ("tts_ticket", "ip", ip, "count"), 1),
+        (TTS_TICKET_IP_CHARS, ("tts_ticket", "ip", ip, "chars"), char_cost),
+    ]
+    def log_rejection(identifiers: tuple[str, ...], retry_after: int) -> None:
+        print(
+            f"[TTS限流] scope={identifiers[1]} kind={identifiers[3]} "
+            f"retry_after={retry_after}", flush=True
+        )
+
+    retry_after = check_and_hit(checks, on_reject=log_rejection)
+    if retry_after is not None:
+        return JSONResponse(
+            status_code=429,
+            headers={"Retry-After": str(retry_after)},
+            content={"detail": "朗读请求太频繁，请稍后再试", "retry_after": retry_after},
+        )
     now = time.monotonic()
     ticket = secrets.token_urlsafe(32)
     prewarm = _is_webkit_user_agent(request.headers.get("user-agent", ""))

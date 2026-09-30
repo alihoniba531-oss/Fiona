@@ -3,6 +3,11 @@
 # 单独成模块是为了避开循环 import：routers/* 在 main.py 里 include 之前就被 import，
 # 若把 limiter 定义在 main.py，各 router 反过来 import main 会成环。
 # 这里只放纯粹的 limiter 实例，main 和各 router 都从这里 import。
+import math
+import time
+from collections.abc import Callable
+
+from limits import parse
 from slowapi import Limiter
 from slowapi.util import get_remote_address
 
@@ -28,3 +33,32 @@ def _client_ip(request) -> str:
 
 
 limiter = Limiter(key_func=_client_ip)
+
+
+def check_and_hit(
+    checks: list[tuple[str, tuple[str, ...], int]],
+    on_reject: Callable[[tuple[str, ...], int], None] | None = None,
+) -> int | None:
+    """Check every quota before charging any of them; return seconds to retry."""
+    if not limiter.enabled:
+        return None
+
+    parsed = [(parse(limit), identifiers, cost) for limit, identifiers, cost in checks]
+    failed = [
+        (item, identifiers)
+        for item, identifiers, cost in parsed
+        if not limiter.limiter.test(item, *identifiers, cost=cost)
+    ]
+    if failed:
+        reset_time = max(
+            limiter.limiter.get_window_stats(item, *identifiers).reset_time
+            for item, identifiers in failed
+        )
+        retry_after = max(1, math.ceil(reset_time - time.time()))
+        if on_reject is not None:
+            on_reject(failed[0][1], retry_after)
+        return retry_after
+
+    for item, identifiers, cost in parsed:
+        limiter.limiter.hit(item, *identifiers, cost=cost)
+    return None
