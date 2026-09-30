@@ -67,9 +67,49 @@ interface ImageReferenceSelection {
 }
 
 interface PreparedTtsAudio {
+  text: string;
+  slot: TtsAudioSlot;
   audio: HTMLAudioElement;
+  session: number;
   ready: Promise<boolean>;
-  abort: () => void;
+  controller: AbortController;
+  listeners: AbortController | null;
+  cancelled: boolean;
+}
+
+interface TtsAudioSlot {
+  audio: HTMLAudioElement;
+  owner: PreparedTtsAudio | null;
+  unlocked: boolean;
+  primeAttempt: object | null;
+}
+
+let silentTtsWavUri: string | null = null;
+function getSilentTtsWavUri(): string {
+  if (silentTtsWavUri) return silentTtsWavUri;
+  // 40 ms of 8 kHz, unsigned 8-bit mono PCM silence.
+  const samples = 320;
+  const wav = new Uint8Array(44 + samples);
+  const view = new DataView(wav.buffer);
+  const label = (offset: number, value: string) => {
+    for (let i = 0; i < value.length; i++) wav[offset + i] = value.charCodeAt(i);
+  };
+  label(0, "RIFF");
+  view.setUint32(4, 36 + samples, true);
+  label(8, "WAVE");
+  label(12, "fmt ");
+  view.setUint32(16, 16, true);
+  view.setUint16(20, 1, true);
+  view.setUint16(22, 1, true);
+  view.setUint32(24, 8000, true);
+  view.setUint32(28, 8000, true);
+  view.setUint16(32, 1, true);
+  view.setUint16(34, 8, true);
+  label(36, "data");
+  view.setUint32(40, samples, true);
+  wav.fill(128, 44);
+  silentTtsWavUri = `data:audio/wav;base64,${btoa(String.fromCharCode(...wav))}`;
+  return silentTtsWavUri;
 }
 
 function imageAspectRatioFromPrompt(prompt: string): ImageAspectRatio {
@@ -362,13 +402,15 @@ export default function ChatPage() {
   const handleSendRef = useRef<(text?: string) => Promise<void>>(async () => {});
   const handsFreeRef = useRef(false);
   const asrSessionRef = useRef(0);
-  const ttsAudioRef = useRef<HTMLAudioElement | null>(null);
+  const ttsAudioPoolRef = useRef<TtsAudioSlot[] | null>(null);
   const ttsCurrentRef = useRef<PreparedTtsAudio | null>(null);
   const ttsPreloadRef = useRef<PreparedTtsAudio | null>(null);  // 预取下一句音频，消除句间空隙
   const ttsQueueRef = useRef<string[]>([]);
   const ttsPlayingRef = useRef(false);
+  const [ttsPlaybackBlocked, setTtsPlaybackBlocked] = useState(false);
   const playNextInQueueRef = useRef<() => void>(() => {});
   const ttsSessionRef = useRef(0);
+  const ttsStoppedSessionRef = useRef<number | null>(null);
   const streamDoneRef = useRef(true);
   const synthRef = useRef<SpeechSynthesis | null>(null);
   const nlsWsRef = useRef<WebSocket | null>(null);
@@ -729,43 +771,151 @@ export default function ChatPage() {
 
   // ── 流式 TTS 队列：按句送合成、顺序播放，**预取下一句消除句间空隙** ──
   // 私聊原文仅进入 POST 请求体；<audio> 用一次性票据保留流式播放。
-  const mkTtsAudio = useCallback((text: string): PreparedTtsAudio => {
-    const audio = new Audio();
-    audio.preload = "auto";
+  const getTtsAudioPool = useCallback((): TtsAudioSlot[] => {
+    if (!ttsAudioPoolRef.current) {
+      // The only audio creation site: one pool of two elements for this component's lifetime.
+      ttsAudioPoolRef.current = Array.from({ length: 2 }, () => {
+        const audio = document.createElement("audio");
+        audio.preload = "auto";
+        return { audio, owner: null, unlocked: false, primeAttempt: null };
+      });
+    }
+    return ttsAudioPoolRef.current;
+  }, []);
+
+  const primeTtsAudio = useCallback(() => {
+    const silentSrc = getSilentTtsWavUri();
+    for (const slot of getTtsAudioPool()) {
+      if (slot.owner || slot.unlocked || slot.primeAttempt) continue;
+      const attempt = {};
+      slot.primeAttempt = attempt;
+      slot.audio.src = silentSrc;
+      const finish = (error?: unknown) => {
+        if (slot.primeAttempt !== attempt) return;
+        if (!error || !(typeof error === "object" && error !== null && "name" in error && error.name === "NotAllowedError")) {
+          slot.unlocked = true;
+        }
+        slot.primeAttempt = null;
+        if (!slot.owner && slot.audio.getAttribute("src") === silentSrc) {
+          slot.audio.pause();
+          slot.audio.removeAttribute("src");
+          slot.audio.load();
+        }
+      };
+      try {
+        // This call must happen synchronously in the gesture, before any ticket request.
+        Promise.resolve(slot.audio.play()).then(() => finish(), finish);
+      } catch (error) {
+        finish(error);
+      }
+    }
+  }, [getTtsAudioPool]);
+
+  const releaseTtsAudio = useCallback((prepared: PreparedTtsAudio) => {
+    prepared.cancelled = true;
+    prepared.controller.abort();
+    prepared.listeners?.abort();
+    prepared.listeners = null;
+    const { slot } = prepared;
+    if (slot.owner !== prepared) return;
+    slot.owner = null;
+    slot.audio.pause();
+    slot.audio.removeAttribute("src");
+    slot.audio.load();
+  }, []);
+
+  const mkTtsAudio = useCallback((text: string): PreparedTtsAudio | null => {
+    const slot = getTtsAudioPool().find(candidate => !candidate.owner);
+    if (!slot) return null;
+    // A real sentence takes over a priming element only after silencing and clearing it.
+    slot.audio.pause();
+    slot.audio.removeAttribute("src");
+    slot.audio.load();
     const controller = new AbortController();
     const session = ttsSessionRef.current;
-    const speechText = text.slice(0, 300);
-    const ready = (async () => {
+    const prepared: PreparedTtsAudio = {
+      text, slot, audio: slot.audio, session, ready: Promise.resolve(false),
+      controller, listeners: null, cancelled: false,
+    };
+    slot.owner = prepared;
+    const canUse = () => slot.owner === prepared && !prepared.cancelled
+      && !controller.signal.aborted && session === ttsSessionRef.current;
+    prepared.ready = (async () => {
       try {
         const response = await apiFetch(`${API}/tts/ticket`, {
           method: "POST",
           headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ text: speechText, voice: "longxiaoxia_v2", speech_rate: 1.15 }),
+          body: JSON.stringify({ text: text.slice(0, 300), voice: "longxiaoxia_v2", speech_rate: 1.15 }),
           signal: controller.signal,
         });
-        if (controller.signal.aborted || session !== ttsSessionRef.current) return false;
-        if (!response.ok) return false;
+        if (!canUse() || !response.ok) return false;
         const data = await response.json();
-        if (controller.signal.aborted || session !== ttsSessionRef.current) return false;
-        if (typeof data.ticket !== "string" || !data.ticket) return false;
-        audio.src = `${API}/tts/stream?ticket=${encodeURIComponent(data.ticket)}`;
-        audio.load();
+        if (!canUse() || typeof data.ticket !== "string" || !data.ticket) return false;
+        slot.audio.src = `${API}/tts/stream?ticket=${encodeURIComponent(data.ticket)}`;
+        if (!canUse()) return false;
+        slot.audio.load();
         return true;
       } catch {
         return false;
       }
     })();
-    return { audio, ready, abort: () => controller.abort() };
-  }, []);
+    return prepared;
+  }, [getTtsAudioPool]);
 
   // 当前句正在播时，把队头那句的音频提前 fetch 好，下一句结束时立刻接上
   const tryPrefetch = useCallback(() => {
     if (!ttsPlayingRef.current) return;
     if (ttsPreloadRef.current) return;
-    const next = ttsQueueRef.current.shift();
+    const next = ttsQueueRef.current[0];
     if (!next) return;
-    ttsPreloadRef.current = mkTtsAudio(next);
+    const prepared = mkTtsAudio(next);
+    if (!prepared) return;
+    ttsQueueRef.current.shift();
+    ttsPreloadRef.current = prepared;
   }, [mkTtsAudio]);
+
+  const finishCurrentTts = useCallback((prepared: PreparedTtsAudio) => {
+    if (ttsCurrentRef.current !== prepared || prepared.slot.owner !== prepared || prepared.cancelled) return;
+    ttsCurrentRef.current = null;
+    ttsPlayingRef.current = false;
+    setTtsPlaybackBlocked(false);
+    releaseTtsAudio(prepared);
+    playNextInQueueRef.current();
+  }, [releaseTtsAudio]);
+
+  const playPreparedTts = useCallback((prepared: PreparedTtsAudio) => {
+    if (ttsCurrentRef.current !== prepared || prepared.slot.owner !== prepared || prepared.cancelled) return;
+    if (prepared.controller.signal.aborted || prepared.session !== ttsSessionRef.current) {
+      finishCurrentTts(prepared);
+      return;
+    }
+    if (!prepared.listeners) {
+      // The ticket src is already installed; these listeners belong only to this sentence.
+      const listeners = new AbortController();
+      prepared.listeners = listeners;
+      prepared.audio.addEventListener("ended", () => finishCurrentTts(prepared), { signal: listeners.signal });
+      prepared.audio.addEventListener("error", () => finishCurrentTts(prepared), { signal: listeners.signal });
+    }
+    let playback: Promise<void>;
+    try {
+      playback = prepared.audio.play();
+    } catch (error) {
+      playback = Promise.reject(error);
+    }
+    void playback.then(() => {
+      if (ttsCurrentRef.current === prepared && prepared.slot.owner === prepared && !prepared.cancelled) {
+        prepared.slot.unlocked = true;
+      }
+    }).catch(error => {
+      if (ttsCurrentRef.current !== prepared || prepared.slot.owner !== prepared || prepared.cancelled) return;
+      if (error && typeof error === "object" && "name" in error && error.name === "NotAllowedError"
+        && prepared.session === ttsSessionRef.current) {
+        setTtsPlaybackBlocked(true);
+      } else {
+        finishCurrentTts(prepared);
+      }
+    });
+  }, [finishCurrentTts]);
 
   const playNextInQueue = useCallback(() => {
     if (ttsPlayingRef.current) return;
@@ -774,7 +924,7 @@ export default function ChatPage() {
     let prepared = ttsPreloadRef.current;
     ttsPreloadRef.current = null;
     if (!prepared) {
-      const next = ttsQueueRef.current.shift();
+      const next = ttsQueueRef.current[0];
       if (!next) {
         if (streamDoneRef.current && handsFreeRef.current) {
           startHandsFreeRecording();
@@ -782,32 +932,20 @@ export default function ChatPage() {
         return;
       }
       prepared = mkTtsAudio(next);
+      if (!prepared) return;
+      ttsQueueRef.current.shift();
     }
 
-    const { audio } = prepared;
     ttsPlayingRef.current = true;
-    ttsAudioRef.current = audio;
     ttsCurrentRef.current = prepared;
     // 立刻把"再下一句"也预取，与当前播放重叠
     tryPrefetch();
-
-    let done = false;
-    const onDone = () => {
-      if (done || ttsAudioRef.current !== audio) return;
-      done = true;
-      ttsPlayingRef.current = false;
-      ttsAudioRef.current = null;
-      ttsCurrentRef.current = null;
-      playNextInQueueRef.current();
-    };
-    audio.addEventListener("ended", onDone, { once: true });
-    audio.addEventListener("error", onDone, { once: true });
     prepared.ready.then(ready => {
-      if (ttsAudioRef.current !== audio) return;
-      if (!ready) { onDone(); return; }
-      audio.play().catch(onDone);
-    }).catch(onDone);
-  }, [startHandsFreeRecording, mkTtsAudio, tryPrefetch]);
+      if (ttsCurrentRef.current !== prepared || prepared.slot.owner !== prepared || prepared.cancelled) return;
+      if (!ready) { finishCurrentTts(prepared); return; }
+      playPreparedTts(prepared);
+    }).catch(() => finishCurrentTts(prepared));
+  }, [startHandsFreeRecording, mkTtsAudio, tryPrefetch, finishCurrentTts, playPreparedTts]);
 
   useEffect(() => {
     playNextInQueueRef.current = playNextInQueue;
@@ -854,6 +992,7 @@ export default function ChatPage() {
   const enqueueSpeech = useCallback((text: string, sessionId: number) => {
     if (!voiceOn) return;
     if (sessionId !== ttsSessionRef.current) return;
+    if (ttsStoppedSessionRef.current === sessionId) return;
     const t = normalizeForTTS(text.trim());
     if (!t) return;
     ttsQueueRef.current.push(t);
@@ -866,21 +1005,64 @@ export default function ChatPage() {
 
   const clearTtsQueue = useCallback(() => {
     ttsQueueRef.current = [];
-    ttsCurrentRef.current?.abort();
+    const current = ttsCurrentRef.current;
+    const preload = ttsPreloadRef.current;
     ttsCurrentRef.current = null;
-    if (ttsAudioRef.current) {
-      const audio = ttsAudioRef.current;
-      ttsAudioRef.current = null;
-      try { audio.pause(); audio.removeAttribute("src"); audio.load(); } catch (_) {}
-    }
-    if (ttsPreloadRef.current) {
-      const prepared = ttsPreloadRef.current;
-      ttsPreloadRef.current = null;
-      prepared.abort();
-      try { prepared.audio.pause(); prepared.audio.removeAttribute("src"); prepared.audio.load(); } catch (_) {}
-    }
+    ttsPreloadRef.current = null;
     ttsPlayingRef.current = false;
-  }, []);
+    setTtsPlaybackBlocked(false);
+    if (current) releaseTtsAudio(current);
+    if (preload) releaseTtsAudio(preload);
+    // A click that clears the queue may have just primed an otherwise idle slot: stop the silent
+    // audio but keep primeAttempt so finish() still classifies the resulting AbortError as unlocked (spec 3.2).
+    for (const slot of ttsAudioPoolRef.current ? getTtsAudioPool() : []) {
+      if (slot.owner || !slot.primeAttempt) continue;
+      slot.audio.pause();
+      slot.audio.removeAttribute("src");
+      slot.audio.load();
+    }
+  }, [releaseTtsAudio, getTtsAudioPool]);
+
+  // 用户显式停止（不听了 / 关朗读）：同一条流式回复的后续分句不再入队；
+  // 若打断的是正在进行的朗读且流已结束、免提开着，补一次开麦，免提循环不能因此停住。
+  const stopTtsByUser = useCallback(() => {
+    const wasPlaying = ttsPlayingRef.current;
+    ttsStoppedSessionRef.current = ttsSessionRef.current;
+    clearTtsQueue();
+    if (wasPlaying && streamDoneRef.current && handsFreeRef.current) startHandsFreeRecording();
+  }, [clearTtsQueue, startHandsFreeRecording]);
+
+  const resumeBlockedTts = useCallback(() => {
+    const current = ttsCurrentRef.current;
+    if (!current || !ttsPlaybackBlocked) return;
+    const preload = ttsPreloadRef.current;
+    if (preload && !preload.slot.unlocked) {
+      ttsPreloadRef.current = null;
+      ttsQueueRef.current.unshift(preload.text);
+      releaseTtsAudio(preload);
+    }
+    primeTtsAudio();
+    // Replay this ticket directly in the same gesture; do not fetch or load it again.
+    playPreparedTts(current);
+    setTtsPlaybackBlocked(false);
+    tryPrefetch();
+  }, [ttsPlaybackBlocked, releaseTtsAudio, primeTtsAudio, playPreparedTts, tryPrefetch]);
+
+  useEffect(() => {
+    const onGesture = () => {
+      if (voiceOn && ttsAudioPoolRef.current?.some(slot => !slot.owner && !slot.unlocked && !slot.primeAttempt)) {
+        primeTtsAudio();
+      }
+    };
+    document.addEventListener("click", onGesture, true);
+    document.addEventListener("keydown", onGesture, true);
+    document.addEventListener("touchend", onGesture, true);
+    return () => {
+      document.removeEventListener("click", onGesture, true);
+      document.removeEventListener("keydown", onGesture, true);
+      document.removeEventListener("touchend", onGesture, true);
+    };
+  }, [voiceOn, primeTtsAudio]);
 
   // keep handsFreeRef in sync with state for closures that capture once
   useEffect(() => { handsFreeRef.current = handsFree; }, [handsFree]);
@@ -1009,6 +1191,7 @@ export default function ChatPage() {
   // 搜索类回复："帮我读" — 把搁置的 tip 文本送进 TTS 队列开始播放
   // 用户显式点击就是想听；即使朗读关闭也自动开启并播放（绕开 enqueueSpeech 的 voiceOn 守卫）
   const handleConfirmTts = useCallback((id: string, text: string) => {
+    primeTtsAudio();
     if (!voiceOn) setVoiceOn(true);
     ttsSessionRef.current += 1;
     streamDoneRef.current = true;
@@ -1018,7 +1201,7 @@ export default function ChatPage() {
       if (!ttsPlayingRef.current) playNextInQueue();
     }
     setMessages((prev) => prev.map((m) => (m.id === id ? { ...m, pendingTtsText: undefined } : m)));
-  }, [normalizeForTTS, playNextInQueue, voiceOn, setMessages]);
+  }, [normalizeForTTS, playNextInQueue, voiceOn, setMessages, primeTtsAudio]);
 
   // 搜索类回复："不用" — 直接清掉 pending 文本
   const handleDeclineTts = useCallback((id: string) => {
@@ -1750,7 +1933,16 @@ export default function ChatPage() {
                   <span className="max-md:hidden">{signalMode === "listening" ? "正在听" : signalMode === "speaking" ? "正在说" : "待命"}</span>
                 </span>
                 <button type="button" className={cn("chip max-md:h-9 max-md:w-9 max-md:justify-center max-md:px-0", voiceOn && "chip-on")}
-                  onClick={() => setVoiceOn(!voiceOn)} aria-label="朗读">
+                  onClick={() => {
+                    if (voiceOn) {
+                      stopTtsByUser();
+                      setVoiceOn(false);
+                    } else {
+                      ttsStoppedSessionRef.current = null;
+                      primeTtsAudio();
+                      setVoiceOn(true);
+                    }
+                  }} aria-label="朗读">
                   {voiceOn ? <Volume2 size={13} /> : <VolumeX size={13} />}<span className="max-md:hidden">朗读</span>
                 </button>
                 <button
@@ -1759,7 +1951,10 @@ export default function ChatPage() {
                   onClick={() => {
                     const next = !handsFree;
                     setHandsFree(next);
-                    if (next) setVoiceOn(true);
+                    if (next) {
+                      primeTtsAudio();
+                      setVoiceOn(true);
+                    }
                   }}
                   disabled={conversationLoading || !currentConversation}
                   aria-label="免提"
@@ -1794,6 +1989,15 @@ export default function ChatPage() {
             </div>
             <footer ref={composerRef} className="glass absolute inset-x-0 bottom-0 z-[2] border-t px-8 pb-4 pt-3 max-md:bottom-[calc(56px+env(safe-area-inset-bottom))] max-md:px-3 max-md:pb-3" style={{ borderColor: "var(--glass-border)" }}>
               <div data-chat-composer className="mx-auto max-w-[760px]">
+                <div role="status" aria-live="polite">
+                  {ttsPlaybackBlocked && <div className="mb-2 flex min-w-0 items-center gap-1 text-xs">
+                    <span className="min-w-0 flex-1 text-muted-foreground">浏览器拦下了自动朗读</span>
+                    <button type="button" onClick={resumeBlockedTts} className="btn btn-quiet h-7 shrink-0 px-2.5 text-xs max-md:h-9">
+                      <Volume2 size={13} />点此播放
+                    </button>
+                    <button type="button" onClick={stopTtsByUser} className="btn btn-quiet h-7 shrink-0 px-2.5 text-xs max-md:h-9">不听了</button>
+                  </div>}
+                </div>
                 {referenceUploadError && <p role="alert" className="mb-2 text-xs text-destructive">{referenceUploadError}</p>}
                 {hasReferenceImages && <div className="mb-2 rounded-[10px] bg-secondary/50 p-2">
                   <div className="flex max-h-[144px] items-start gap-2 overflow-auto pb-1" aria-label="已选参考图，按编号顺序发送">
