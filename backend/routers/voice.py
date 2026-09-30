@@ -29,7 +29,7 @@ ASR_MAX_SOURCE_BYTES = 10 * 1024 * 1024
 ASR_MAX_BASE64_CHARS = 4 * ((ASR_MAX_SOURCE_BYTES + 2) // 3) + 8
 ASR_MAX_DURATION_SECONDS = 120
 ASR_MAX_WAV_BYTES = 5 * 1024 * 1024
-TTS_TICKET_TTL_SECONDS = 60
+TTS_TICKET_TTL_SECONDS = 150
 TTS_TICKET_USER_REQUESTS = "120/minute"
 TTS_TICKET_USER_CHARS = "2000/minute"
 TTS_TICKET_IP_REQUESTS = "240/minute"
@@ -37,6 +37,9 @@ TTS_TICKET_IP_CHARS = "6000/minute"
 TTS_TICKET_MAX_CHARS = 300
 TTS_MAX_TICKET_USES = 4
 TTS_MAX_PENDING_TICKETS = 2048
+# 有效期变长后，同一来源可持有更多未过期票据，全局 FIFO 可能挤掉别人的播放票据。
+# 前端同时只持有当前句和预取句两张，且它们总是用户最新签发的，正常使用不会淘汰正在用的票据。
+TTS_MAX_PENDING_TICKETS_PER_USER = 64
 TTS_MAX_CACHED_AUDIO_BYTES = 64 * 1024 * 1024
 TTS_MAX_AUDIO_BYTES_PER_TICKET = 8 * 1024 * 1024
 
@@ -313,6 +316,10 @@ async def tts_ticket(request: Request, body: TtsTicketRequest, user: str = Depen
             if existing.expires_at <= now:
                 _tts_tickets.pop(key, None)
                 _cancel_tts_prewarm(existing)
+        user_tickets = [key for key, existing in _tts_tickets.items() if existing.user == user]
+        for key in user_tickets[:max(0, len(user_tickets) - TTS_MAX_PENDING_TICKETS_PER_USER + 1)]:
+            evicted = _tts_tickets.pop(key)
+            _cancel_tts_prewarm(evicted)
         if len(_tts_tickets) >= TTS_MAX_PENDING_TICKETS:
             evicted = _tts_tickets.pop(next(iter(_tts_tickets)))
             _cancel_tts_prewarm(evicted)

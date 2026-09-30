@@ -77,7 +77,7 @@ interface PreparedTtsAudio {
   listeners: AbortController | null;
   cancelled: boolean;
   waitingUntil: number | null;
-  ticketAt: number | null;
+  ticketExpiresAt: number | null;
 }
 
 interface TtsAudioSlot {
@@ -87,10 +87,14 @@ interface TtsAudioSlot {
   primeAttempt: object | null;
 }
 
-// 后端票据 60 秒过期，留出开始播放的余量；正常预取票的年龄不超过上一句的
-// 播放时长，一般不会触发重换。普通单段最长约 250 字、约 39 秒；「帮我读」
-// 可到 300 字、约 47 秒，超过阈值只会多换一张票、多一个小空档，不会丢句。
-const TTS_PRELOAD_MAX_TICKET_AGE_MS = 45_000;
+// 以后端 expires_in 为准，剩余不足 15 秒视为不够用，留出开始播放和首个
+// Range 请求的余量；按 150 秒有效期，正常流程不会触发。
+const TTS_TICKET_MIN_REMAINING_MS = 15_000;
+
+function isTicketStale(prepared: PreparedTtsAudio): boolean {
+  return prepared.ticketExpiresAt !== null
+    && prepared.ticketExpiresAt - Date.now() < TTS_TICKET_MIN_REMAINING_MS;
+}
 
 let silentTtsWavUri: string | null = null;
 function getSilentTtsWavUri(): string {
@@ -852,7 +856,7 @@ export default function ChatPage() {
     const session = ttsSessionRef.current;
     const prepared: PreparedTtsAudio = {
       text, slot, audio: slot.audio, session, ready: Promise.resolve(false),
-      controller, listeners: null, cancelled: false, waitingUntil: null, ticketAt: null,
+      controller, listeners: null, cancelled: false, waitingUntil: null, ticketExpiresAt: null,
     };
     slot.owner = prepared;
     const canUse = () => slot.owner === prepared && !prepared.cancelled
@@ -877,8 +881,8 @@ export default function ChatPage() {
           },
         });
         if (!canUse() || !ticket) return false;
-        slot.audio.src = `${API}/tts/stream?ticket=${encodeURIComponent(ticket)}`;
-        prepared.ticketAt = Date.now();
+        slot.audio.src = `${API}/tts/stream?ticket=${encodeURIComponent(ticket.ticket)}`;
+        prepared.ticketExpiresAt = Date.now() + ticket.expiresInMs;
         if (!canUse()) return false;
         slot.audio.load();
         return true;
@@ -951,8 +955,7 @@ export default function ChatPage() {
     // 优先用已预取的，否则现 fetch
     let prepared = ttsPreloadRef.current;
     ttsPreloadRef.current = null;
-    if (prepared && prepared.ticketAt !== null
-      && Date.now() - prepared.ticketAt > TTS_PRELOAD_MAX_TICKET_AGE_MS) {
+    if (prepared && isTicketStale(prepared)) {
       releaseTtsAudio(prepared);
       ttsQueueRef.current.unshift(prepared.text);
       prepared = null;
@@ -1078,12 +1081,28 @@ export default function ChatPage() {
       ttsQueueRef.current.unshift(preload.text);
       releaseTtsAudio(preload);
     }
+    if (isTicketStale(current)) {
+      ttsCurrentRef.current = null;
+      ttsPlayingRef.current = false;
+      const remainingPreload = ttsPreloadRef.current;
+      if (remainingPreload) {
+        ttsPreloadRef.current = null;
+        ttsQueueRef.current.unshift(remainingPreload.text);
+        releaseTtsAudio(remainingPreload);
+      }
+      ttsQueueRef.current.unshift(current.text);
+      releaseTtsAudio(current);
+      primeTtsAudio();
+      setTtsPlaybackBlocked(false);
+      playNextInQueue();
+      return;
+    }
     primeTtsAudio();
     // Replay this ticket directly in the same gesture; do not fetch or load it again.
     playPreparedTts(current);
     setTtsPlaybackBlocked(false);
     tryPrefetch();
-  }, [ttsPlaybackBlocked, releaseTtsAudio, primeTtsAudio, playPreparedTts, tryPrefetch]);
+  }, [ttsPlaybackBlocked, releaseTtsAudio, primeTtsAudio, playPreparedTts, tryPrefetch, playNextInQueue]);
 
   useEffect(() => {
     const onGesture = () => {

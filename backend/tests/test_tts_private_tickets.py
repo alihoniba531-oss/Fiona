@@ -36,7 +36,7 @@ def test_tts_ticket_range_probe_then_playback_and_bound_to_user(client, monkeypa
     issued = client.post("/tts/ticket", headers=owner, json={"text": "私聊内容"})
     assert issued.status_code == 200
     ticket = issued.json()["ticket"]
-    assert issued.json()["expires_in"] <= 60
+    assert issued.json()["expires_in"] == 150
     assert "私聊内容" not in ticket
 
     denied = client.get("/tts/stream", headers=other, params={"ticket": ticket})

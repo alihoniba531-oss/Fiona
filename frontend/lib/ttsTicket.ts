@@ -59,7 +59,7 @@ function waitUntil(until: number, signal: AbortSignal): Promise<void> {
 
 export async function requestTtsTicket({
   text, signal, backoff, isStale, onWait, onWaitEnd,
-}: TtsTicketRequestOptions): Promise<string | null> {
+}: TtsTicketRequestOptions): Promise<{ ticket: string; expiresInMs: number } | null> {
   const cancelled = () => signal.aborted || isStale();
   let hasWaited = false;
 
@@ -97,7 +97,10 @@ export async function requestTtsTicket({
       const data: unknown = await response.json();
       if (cancelled()) return null;
       if (!data || typeof data !== "object" || !("ticket" in data)) return null;
-      return typeof data.ticket === "string" && data.ticket ? data.ticket : null;
+      if (typeof data.ticket !== "string" || !data.ticket) return null;
+      const expiresIn = "expires_in" in data && typeof data.expires_in === "number"
+        && Number.isFinite(data.expires_in) && data.expires_in > 0 ? data.expires_in : 60;
+      return { ticket: data.ticket, expiresInMs: Math.min(600_000, Math.max(1_000, expiresIn * 1_000)) };
     }
     return null;
   } catch {
