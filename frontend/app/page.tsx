@@ -415,6 +415,7 @@ export default function ChatPage() {
   const isComposingRef = useRef(false);
   const handleSendRef = useRef<(text?: string) => Promise<void>>(async () => {});
   const handsFreeRef = useRef(false);
+  const handsFreeRecRef = useRef<{ recorder: MediaRecorder | null; discard: boolean } | null>(null);
   const asrSessionRef = useRef(0);
   const ttsAudioPoolRef = useRef<TtsAudioSlot[] | null>(null);
   const ttsCurrentRef = useRef<PreparedTtsAudio | null>(null);
@@ -717,15 +718,19 @@ export default function ChatPage() {
 
   // ── 免提模式：朗读完自动录音，静音 1.5s 自动停 + 自动发 ──
   const startHandsFreeRecording = useCallback(async () => {
-    if (!handsFreeRef.current) return;
+    if (!handsFreeRef.current || handsFreeRecRef.current) return;
     const selectionVersion = getSelectionVersion();
+    const rec: { recorder: MediaRecorder | null; discard: boolean } = { recorder: null, discard: false };
+    handsFreeRecRef.current = rec;
     try {
       const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
-      if (selectionVersion !== getSelectionVersion() || !handsFreeRef.current) {
+      if (rec.discard || selectionVersion !== getSelectionVersion() || !handsFreeRef.current) {
         stream.getTracks().forEach(track => track.stop());
+        if (handsFreeRecRef.current === rec) handsFreeRecRef.current = null;
         return;
       }
       const mr = new MediaRecorder(stream, { mimeType: 'audio/webm;codecs=opus' });
+      rec.recorder = mr;
       const chunks: Blob[] = [];
       mr.ondataavailable = (e) => { if (e.data.size > 0) chunks.push(e.data); };
 
@@ -765,9 +770,10 @@ export default function ChatPage() {
       };
 
       mr.onstop = async () => {
+        if (handsFreeRecRef.current === rec) handsFreeRecRef.current = null;
         stream.getTracks().forEach(t => t.stop());
         audioCtx.close().catch(() => {});
-        if (selectionVersion !== getSelectionVersion() || !handsFreeRef.current) return;
+        if (rec.discard || selectionVersion !== getSelectionVersion() || !handsFreeRef.current) return;
         if (!hasSpoken) return;
         const blob = new Blob(chunks, { type: 'audio/webm' });
         if (blob.size < 100) return;
@@ -787,8 +793,22 @@ export default function ChatPage() {
 
       mr.start();
       requestAnimationFrame(tick);
-    } catch (e) { console.error('[handsfree] mic error', e); }
+    } catch (e) {
+      if (handsFreeRecRef.current === rec) handsFreeRecRef.current = null;
+      console.error('[handsfree] mic error', e);
+    }
   }, [getSelectionVersion]);
+
+  const stopHandsFreeRecording = useCallback(({ discard }: { discard: boolean }) => {
+    const rec = handsFreeRecRef.current;
+    if (!rec) return;
+    if (discard) rec.discard = true;
+    if (!rec.recorder) {
+      if (discard && handsFreeRecRef.current === rec) handsFreeRecRef.current = null;
+      return;
+    }
+    if (rec.recorder.state === 'recording') rec.recorder.stop();
+  }, []);
 
   // ── 流式 TTS 队列：按句送合成、顺序播放，**预取下一句消除句间空隙** ──
   // 私聊原文仅进入 POST 请求体；<audio> 用一次性票据保留流式播放。
@@ -1247,17 +1267,22 @@ export default function ChatPage() {
   // 搜索类回复："帮我读" — 把搁置的 tip 文本送进 TTS 队列开始播放
   // 用户显式点击就是想听；即使朗读关闭也自动开启并播放（绕开 enqueueSpeech 的 voiceOn 守卫）
   const handleConfirmTts = useCallback((id: string, text: string) => {
+    stopHandsFreeRecording({ discard: true });
+    clearTtsQueue();
     primeTtsAudio();
-    if (!voiceOn) setVoiceOn(true);
+    if (!voiceOn) {
+      ttsStoppedSessionRef.current = null;
+      setVoiceOn(true);
+    }
     ttsSessionRef.current += 1;
     streamDoneRef.current = true;
     const t = normalizeForTTS(text.trim());
     if (t) {
       ttsQueueRef.current.push(t);
-      if (!ttsPlayingRef.current) playNextInQueue();
+      playNextInQueue();
     }
     setMessages((prev) => prev.map((m) => (m.id === id ? { ...m, pendingTtsText: undefined } : m)));
-  }, [normalizeForTTS, playNextInQueue, voiceOn, setMessages, primeTtsAudio]);
+  }, [normalizeForTTS, playNextInQueue, voiceOn, setMessages, primeTtsAudio, clearTtsQueue, stopHandsFreeRecording]);
 
   // 搜索类回复："不用" — 直接清掉 pending 文本
   const handleDeclineTts = useCallback((id: string) => {
@@ -1413,6 +1438,7 @@ export default function ChatPage() {
     if (textOverride === undefined && textareaRef.current) textareaRef.current.style.height = "auto";
 
     // ── 流式 TTS：新一轮先清队列并创建 session，再按句切（首句激进、碰逗号也切）──
+    stopHandsFreeRecording({ discard: true });
     clearTtsQueue();
     ttsSessionRef.current += 1;
     const mySession = ttsSessionRef.current;
@@ -2008,6 +2034,7 @@ export default function ChatPage() {
                     const next = !handsFree;
                     setHandsFree(next);
                     if (next) {
+                      ttsStoppedSessionRef.current = null;
                       primeTtsAudio();
                       setVoiceOn(true);
                     }
