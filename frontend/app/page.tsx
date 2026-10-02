@@ -387,6 +387,7 @@ export default function ChatPage() {
   const [handsFree, setHandsFree] = useState(false);
   const [recording, setRecording] = useState(false);
   const [inlineRecording, setInlineRecording] = useState(false);
+  const [micNotice, setMicNotice] = useState<string | null>(null);
   const [voiceText, setVoiceText] = useState("");
   const [pendingImage, setPendingImage] = useState<string | null>(null);
   const [imageMode, setImageMode] = useState(false);
@@ -682,8 +683,10 @@ export default function ChatPage() {
       setInlineRecording(false);
     } else {
       // Start recording
+      let stream: MediaStream | null = null;
       try {
-        const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+        stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+        setMicNotice(null);
         if (selectionVersion !== getSelectionVersion()) {
           stream.getTracks().forEach(track => track.stop());
           return;
@@ -693,7 +696,7 @@ export default function ChatPage() {
         inlineChunksRef.current = [];
         mr.ondataavailable = (e) => { if (e.data.size > 0) inlineChunksRef.current.push(e.data); };
         mr.onstop = async () => {
-          stream.getTracks().forEach(t => t.stop());
+          stream?.getTracks().forEach(t => t.stop());
           if (selectionVersion !== getSelectionVersion()) return;
           const blob = new Blob(inlineChunksRef.current, { type: 'audio/webm' });
           if (blob.size < 100) return;
@@ -712,7 +715,13 @@ export default function ChatPage() {
         };
         mr.start();
         setInlineRecording(true);
-      } catch (_) {}
+      } catch (e) {
+        stream?.getTracks().forEach(track => track.stop());
+        const errorName = (e as { name?: string } | null)?.name;
+        setMicNotice(errorName === "NotAllowedError" || errorName === "SecurityError"
+          ? "没有麦克风权限，请在浏览器里允许使用麦克风"
+          : "麦克风用不了");
+      }
     }
   }, [inlineRecording, getSelectionVersion]);
 
@@ -722,8 +731,11 @@ export default function ChatPage() {
     const selectionVersion = getSelectionVersion();
     const rec: { recorder: MediaRecorder | null; discard: boolean } = { recorder: null, discard: false };
     handsFreeRecRef.current = rec;
+    let stream: MediaStream | null = null;
+    let audioCtx: AudioContext | null = null;
     try {
-      const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+      stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+      setMicNotice(null);
       if (rec.discard || selectionVersion !== getSelectionVersion() || !handsFreeRef.current) {
         stream.getTracks().forEach(track => track.stop());
         if (handsFreeRecRef.current === rec) handsFreeRecRef.current = null;
@@ -734,7 +746,7 @@ export default function ChatPage() {
       const chunks: Blob[] = [];
       mr.ondataavailable = (e) => { if (e.data.size > 0) chunks.push(e.data); };
 
-      const audioCtx = new AudioContext();
+      audioCtx = new AudioContext();
       const source = audioCtx.createMediaStreamSource(stream);
       const analyser = audioCtx.createAnalyser();
       analyser.fftSize = 2048;
@@ -771,8 +783,8 @@ export default function ChatPage() {
 
       mr.onstop = async () => {
         if (handsFreeRecRef.current === rec) handsFreeRecRef.current = null;
-        stream.getTracks().forEach(t => t.stop());
-        audioCtx.close().catch(() => {});
+        stream?.getTracks().forEach(t => t.stop());
+        audioCtx?.close().catch(() => {});
         if (rec.discard || selectionVersion !== getSelectionVersion() || !handsFreeRef.current) return;
         if (!hasSpoken) return;
         const blob = new Blob(chunks, { type: 'audio/webm' });
@@ -794,8 +806,19 @@ export default function ChatPage() {
       mr.start();
       requestAnimationFrame(tick);
     } catch (e) {
+      stream?.getTracks().forEach(track => track.stop());
+      audioCtx?.close().catch(() => {});
       if (handsFreeRecRef.current === rec) handsFreeRecRef.current = null;
-      console.error('[handsfree] mic error', e);
+      setHandsFree(false);
+      const errorName = (e as { name?: string } | null)?.name;
+      setMicNotice((errorName === "NotAllowedError" || errorName === "SecurityError"
+        ? "没有麦克风权限，请在浏览器里允许使用麦克风"
+        : "麦克风用不了") + "，免提已关闭");
+      if (errorName === "NotAllowedError" || errorName === "SecurityError" || errorName === "NotFoundError") {
+        console.warn('[handsfree] mic error', e);
+      } else {
+        console.error('[handsfree] mic error', e);
+      }
     }
   }, [getSelectionVersion]);
 
@@ -807,7 +830,10 @@ export default function ChatPage() {
       if (discard && handsFreeRecRef.current === rec) handsFreeRecRef.current = null;
       return;
     }
-    if (rec.recorder.state === 'recording') rec.recorder.stop();
+    if (rec.recorder.state === 'recording') {
+      rec.recorder.stop();
+      if (discard && handsFreeRecRef.current === rec) handsFreeRecRef.current = null;
+    }
   }, []);
 
   // ── 流式 TTS 队列：按句送合成、顺序播放，**预取下一句消除句间空隙** ──
@@ -1275,7 +1301,7 @@ export default function ChatPage() {
       setVoiceOn(true);
     }
     ttsSessionRef.current += 1;
-    streamDoneRef.current = true;
+    if (!chatAbortRef.current) streamDoneRef.current = true;
     const t = normalizeForTTS(text.trim());
     if (t) {
       ttsQueueRef.current.push(t);
@@ -2034,7 +2060,8 @@ export default function ChatPage() {
                     const next = !handsFree;
                     setHandsFree(next);
                     if (next) {
-                      ttsStoppedSessionRef.current = null;
+                      setMicNotice(null);
+                      if (!voiceOn) ttsStoppedSessionRef.current = null;
                       primeTtsAudio();
                       setVoiceOn(true);
                     }
@@ -2086,6 +2113,10 @@ export default function ChatPage() {
                       <span className="sr-only">朗读限速中，稍后自动接着读</span>
                     </span>
                     <button type="button" onClick={stopTtsByUser} className="btn btn-quiet h-7 shrink-0 px-2.5 text-xs max-md:h-9">不听了</button>
+                  </div>}
+                  {micNotice && <div className="mb-2 flex min-w-0 items-center gap-1 text-xs">
+                    <span className="min-w-0 flex-1 text-muted-foreground">{micNotice}</span>
+                    <button type="button" onClick={() => setMicNotice(null)} className="btn btn-quiet h-7 shrink-0 px-2.5 text-xs max-md:h-9">知道了</button>
                   </div>}
                 </div>
                 {referenceUploadError && <p role="alert" className="mb-2 text-xs text-destructive">{referenceUploadError}</p>}

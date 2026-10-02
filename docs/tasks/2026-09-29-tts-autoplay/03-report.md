@@ -1150,3 +1150,630 @@ PASS npm ci --offline and all specification 5.1 command outputs/exit codes are r
 - **F2.4 已接受的现有时机偏离**：申请中丢弃时同步复位 ref，旧 getUserMedia 返回后只停轨道、不创建录音机；这是 04-review-round3.md 第 2.2 节已接受的方案，本轮逐字保留。05-fix-round2.md 和 02-spec.md 的措辞同步由返修单作者负责，本轮不修改。相关 iOS Safari 两次申请在途的 O8 真机风险仍待确认。
 - **浏览器验收仍由 Claude 主会话执行**：按 3.0 硬规则没有启动浏览器。第 3.3 节 TYPED-SILENT、TYPED-SPEAK（含在 9abbf677 上先失败的正控）及不退化矩阵尚未在本轮实测；本报告的调用效果为代码推导，不能替代 stop 事件 300ms、30 秒计时、ASR 完整文本和并发上限的真实浏览器证据。
 - **O1–O10 全部未做**：没有改入口幂等保护、stopHandsFreeRecording、stopTtsByUser、门槛、F1/F3 或票据相关代码，也没有借本轮修正其他已知问题。
+
+
+## 第 4 轮返修
+
+日期：2026-10-02。依据 `05-fix-round4.md` 第 0–2 节，仅实现 F4–F7。开工 HEAD 为 `b38beca`；开工 `frontend/app/page.tsx` SHA-1 为 `88de85ce3685a666ead0099f4aaac384e412b0d1`，与返修单基线一致。
+
+### 修改文件与范围
+
+- `frontend/app/page.tsx`：F4 丢弃录音即时释放占用标记；F5 保留已停止标记；F6 在途聊天不提前标流结束；F7 两个用户麦克风入口的提示及资源清理。
+- `docs/tasks/2026-09-29-tts-autoplay/03-report.md`：仅在原文末尾追加本节；开工时报告的全部字节保持为最终文件前缀。
+
+没有修改已有测试、依赖、package.json、lockfile、后端、globals.css 或 AGENTS.md；没有读取 `.env*`、下载、真实网络调用、启动浏览器、运行 `next dev`，也没有 commit/stash/checkout/reset 等 git 状态写入。子代理均未传 model 或 effort 参数；源码只有主代理修改，另由只读代理复核，验证代理仅写仓库外临时目录。
+
+### F4–F7 行号与前后代码
+
+以下修改前行号均对应返修单基线 `b38beca`，修改后行号对应本轮最终 `page.tsx`。
+
+#### F4：recording 分支 stop() 后立即按身份释放
+
+修改前（b38beca，810–810 行）：
+
+```tsx
+    if (rec.recorder.state === 'recording') rec.recorder.stop();
+```
+
+修改后（本轮，833–836 行）：
+
+```tsx
+    if (rec.recorder.state === 'recording') {
+      rec.recorder.stop();
+      if (discard && handsFreeRecRef.current === rec) handsFreeRecRef.current = null;
+    }
+```
+
+`onstop` 首行的身份比较复位（基线 772 → 当前 785）逐字保留；discard 守卫（基线 775 → 当前 788）仍在 ASR 之前。`stop()` 同步令旧 MediaRecorder 变为 inactive，然后才释放占用引用；旧轨道仍由旧 `onstop` 释放。后来新开的录音由新 rec 对象占用，旧 `onstop` 的身份比较不会清掉它。
+
+#### F5：仅朗读原本关闭时重置已停止标记
+
+修改前（b38beca，2033–2041 行）：
+
+```tsx
+                  onClick={() => {
+                    const next = !handsFree;
+                    setHandsFree(next);
+                    if (next) {
+                      ttsStoppedSessionRef.current = null;
+                      primeTtsAudio();
+                      setVoiceOn(true);
+                    }
+                  }}
+```
+
+修改后（本轮，2059–2067 行）：
+
+```tsx
+                  onClick={() => {
+                    const next = !handsFree;
+                    setHandsFree(next);
+                    if (next) {
+                      setMicNotice(null);
+                      if (!voiceOn) ttsStoppedSessionRef.current = null;
+                      primeTtsAudio();
+                      setVoiceOn(true);
+                    }
+```
+
+新增的 `setMicNotice(null)` 同时对应 F7 的“再次点免提打开清除提示”。`primeTtsAudio()` 与 `setVoiceOn(true)` 保留；voiceOn 已为 true 时不会清除本条回复的已停止标记。
+
+#### F6：存在在途 /chat 时保持原 streamDone 状态
+
+修改前（b38beca，1278–1278 行）：
+
+```tsx
+    streamDoneRef.current = true;
+```
+
+修改后（本轮，1304–1304 行）：
+
+```tsx
+    if (!chatAbortRef.current) streamDoneRef.current = true;
+```
+
+卡片读完后的现有队列空分支（当前 1012–1013）仍要求 `streamDoneRef.current && handsFreeRef.current`；聊天 `finally`（1744–1753）仍设置流结束并按队列播放状态推进。读完早于 EOF 时因此不开麦；EOF 或卡片结束后由现有门控及 730 行录音占用引用防止重复录音。此时序由代码复核和离线桩验证覆盖，真实浏览器场景仍由主会话验收。
+
+#### F7：新增 micNotice 状态
+
+修改前（b38beca，无 行）：
+
+```tsx
+（基线没有此状态或提示行）
+```
+
+修改后（本轮，390–390 行）：
+
+```tsx
+  const [micNotice, setMicNotice] = useState<string | null>(null);
+```
+
+#### F7：内联入口取得 stream 后立即清提示
+
+修改前（b38beca，685–686 行）：
+
+```tsx
+      try {
+        const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+```
+
+修改后（本轮，686–689 行）：
+
+```tsx
+      let stream: MediaStream | null = null;
+      try {
+        stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+        setMicNotice(null);
+```
+
+#### F7：内联入口失败清轨道并显示分类提示
+
+修改前（b38beca，715–715 行）：
+
+```tsx
+      } catch (_) {}
+```
+
+修改后（本轮，718–724 行）：
+
+```tsx
+      } catch (e) {
+        stream?.getTracks().forEach(track => track.stop());
+        const errorName = (e as { name?: string } | null)?.name;
+        setMicNotice(errorName === "NotAllowedError" || errorName === "SecurityError"
+          ? "没有麦克风权限，请在浏览器里允许使用麦克风"
+          : "麦克风用不了");
+      }
+```
+
+#### F7：免提资源提升到 try 外，取得 stream 后清提示
+
+修改前（b38beca，725–726 行）：
+
+```tsx
+    try {
+      const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+```
+
+修改后（本轮，734–738 行）：
+
+```tsx
+    let stream: MediaStream | null = null;
+    let audioCtx: AudioContext | null = null;
+    try {
+      stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+      setMicNotice(null);
+```
+
+#### F7：AudioContext 改为给外层资源变量赋值
+
+修改前（b38beca，737–737 行）：
+
+```tsx
+      const audioCtx = new AudioContext();
+```
+
+修改后（本轮，749–749 行）：
+
+```tsx
+      audioCtx = new AudioContext();
+```
+
+#### F7：免提失败清理、关闭免提、提示及日志分级
+
+修改前（b38beca，796–799 行）：
+
+```tsx
+    } catch (e) {
+      if (handsFreeRecRef.current === rec) handsFreeRecRef.current = null;
+      console.error('[handsfree] mic error', e);
+    }
+```
+
+修改后（本轮，808–822 行）：
+
+```tsx
+    } catch (e) {
+      stream?.getTracks().forEach(track => track.stop());
+      audioCtx?.close().catch(() => {});
+      if (handsFreeRecRef.current === rec) handsFreeRecRef.current = null;
+      setHandsFree(false);
+      const errorName = (e as { name?: string } | null)?.name;
+      setMicNotice((errorName === "NotAllowedError" || errorName === "SecurityError"
+        ? "没有麦克风权限，请在浏览器里允许使用麦克风"
+        : "麦克风用不了") + "，免提已关闭");
+      if (errorName === "NotAllowedError" || errorName === "SecurityError" || errorName === "NotFoundError") {
+        console.warn('[handsfree] mic error', e);
+      } else {
+        console.error('[handsfree] mic error', e);
+      }
+    }
+```
+
+#### F7：保持免提 onstop 身份复位及清理路径
+
+修改前（b38beca，771–775 行）：
+
+```tsx
+
+      mr.onstop = async () => {
+        if (handsFreeRecRef.current === rec) handsFreeRecRef.current = null;
+        stream.getTracks().forEach(t => t.stop());
+        audioCtx.close().catch(() => {});
+```
+
+修改后（本轮，784–788 行）：
+
+```tsx
+      mr.onstop = async () => {
+        if (handsFreeRecRef.current === rec) handsFreeRecRef.current = null;
+        stream?.getTracks().forEach(t => t.stop());
+        audioCtx?.close().catch(() => {});
+        if (rec.discard || selectionVersion !== getSelectionVersion() || !handsFreeRef.current) return;
+```
+
+#### F7：内联 onstop 保持轨道清理
+
+修改前（b38beca，696–696 行）：
+
+```tsx
+          stream.getTracks().forEach(t => t.stop());
+```
+
+修改后（本轮，699–699 行）：
+
+```tsx
+          stream?.getTracks().forEach(t => t.stop());
+```
+
+#### F7：常驻 status 容器中追加提示及知道了按钮
+
+修改前（b38beca，无 行）：
+
+```tsx
+（基线没有此状态或提示行）
+```
+
+修改后（本轮，2117–2120 行）：
+
+```tsx
+                  {micNotice && <div className="mb-2 flex min-w-0 items-center gap-1 text-xs">
+                    <span className="min-w-0 flex-1 text-muted-foreground">{micNotice}</span>
+                    <button type="button" onClick={() => setMicNotice(null)} className="btn btn-quiet h-7 shrink-0 px-2.5 text-xs max-md:h-9">知道了</button>
+                  </div>}
+```
+
+提示位于既有常驻 `<div role="status" aria-live="polite">`（当前 2102）中，排在自动播放被拒和朗读限速两条提示之后；外层、文字、按钮的类名与返修单完全一致。仅 micNotice 非空时渲染新增行，不显示时无新增 DOM 或占位；没有焦点操作。页面预申请（当前 585–587）和按住说话 `startNlsAsr` 完全未改。内联录音原无控制台日志，保留只提示及清理；既有 `[handsfree]` 日志按 F7 指定错误名分为 warn / error。
+
+### micNotice 的全部设置与清除点
+
+| 类型 | 当前行号 | 触发与内容 |
+| --- | --- | --- |
+| 初始化 | 390 | `useState<string | null>(null)`。 |
+| 设置 | 721–723 | 内联录音启动失败：NotAllowedError/SecurityError 为「没有麦克风权限，请在浏览器里允许使用麦克风」；其他任何错误为「麦克风用不了」。 |
+| 设置 | 814–816 | 免提录音启动失败：相同分类，句末加「，免提已关闭」，812 行调用 `setHandsFree(false)`。 |
+| 清除 | 689 | 内联入口 getUserMedia 成功，随后会话失效早退也已清除。 |
+| 清除 | 738 | 免提入口 getUserMedia 成功，随后 discard/会话失效/免提关闭早退也已清除。 |
+| 清除 | 2063 | 用户再次点免提打开。 |
+| 清除 | 2119 | 用户点「知道了」。 |
+
+没有其他 micNotice 设置或清除点；不因页面预申请、按住说话、自动计时或朗读状态变化清除提示。
+
+### F7 资源释放的每条路径
+
+| 入口 / 路径 | stream 轨道 | AudioContext | ref / 后续 |
+| --- | --- | --- | --- |
+| 免提：mediaDevices 缺失、getUserMedia 同步抛错或 Promise 拒绝 | stream 尚为 null，809 行可选清理无需处理。 | 尚为 null，810 行无需处理。 | 811 行仅按 rec 身份复位；812 行关闭免提；814 行提示。 |
+| 免提：getUserMedia 成功，但 discard、会话切换或免提已关闭 | 740 行停止全部轨道。 | 尚未创建。 | 741 行按 rec 身份复位并早退，不创建录音机。 |
+| 免提：MediaRecorder 构造失败（含格式不支持） | 809 行停止已取得 stream 的全部轨道。 | 尚未创建。 | 同一 catch 关闭免提并提示；不遗漏 RECTHROW 的轨道。 |
+| 免提：AudioContext 构造失败 | 809 行停止全部轨道。 | 构造没有成功赋值，无已取得 context。 | 同一 catch 按身份复位、关闭免提、提示。 |
+| 免提：context 创建后，createMediaStreamSource/createAnalyser/connect、后续初始化、mr.start 或首次 requestAnimationFrame 抛错 | 809 行停止全部轨道。 | 810 行调用已创建 context 的 close()，Promise 拒绝处理沿用既有静默 catch。 | 811 行只复位本次 rec；812 行关闭免提；分类提示及日志。 |
+| 免提：正常 stop / discard 后的 onstop | 786 行停止旧 stream 的全部轨道。 | 787 行 close()。 | 785 行身份复位，788 行 discard 仍阻止送 ASR；旧 stop 不误清新录音。 |
+| 内联：mediaDevices 缺失或 getUserMedia 拒绝 | stream 尚为 null，719 行可选清理无需处理。 | 此入口不创建 AudioContext。 | 721 行分类提示，不涉及免提开关。 |
+| 内联：取得 stream 后，MediaRecorder 构造、回调初始化或 mr.start 抛错 | 719 行停止全部轨道。 | 此入口不创建 AudioContext。 | 721 行分类提示；不留下已取得的麦克风轨道。 |
+| 内联：取得 stream 后会话失效早退 / 正常 onstop | 分别在 691 / 699 行停止全部轨道。 | 此入口不创建 AudioContext。 | 原有会话及 ASR 守卫保持不变。 |
+
+预期环境错误 `NotAllowedError`、`SecurityError`、`NotFoundError` 在 817–818 行使用 `console.warn`；其余错误在 820 行使用 `console.error`。资源清理在显示提示和日志之前执行。
+
+### 规格 5.1 自检环境与原样输出
+
+仓库外前端克隆为 `/private/tmp/tts-autoplay-round4.qo85031f/fe`，使用真实的离线安装 node_modules 目录，没有链接仓库依赖。克隆命令：
+
+```bash
+rsync -a --exclude node_modules --exclude .next --exclude '.env*' frontend/ /private/tmp/tts-autoplay-round4.qo85031f/fe/
+```
+
+克隆退出码 0，输出为空。依赖安装及前端三项自检统一使用 `NEXT_TELEMETRY_DISABLED=1`、`npm_config_offline=true`、`npm_config_update_notifier=false`、`npm_config_audit=false`。npm user/global config 使用临时空文件以避免加载现有配置，安装命令本身始终为 `npm ci --offline`。第一次配置文件去重失败及重跑输出均在下面逐字记录。原始输出以合并 stdout/stderr 保存，报告直接嵌入日志字节（含构建进度的 CR），没有删减警告或改写行号。
+
+#### 前端克隆：`npm ci --offline`（首次：配置解析失败）
+
+原样输出：
+
+~~~text
+Exit prior to config file resolving
+cause
+double-loading config "/dev/null" as "global", previously loaded as "user"
+
+~~~
+
+退出码：1。
+
+#### 前端克隆：`npm ci --offline`（空配置重跑）
+
+原样输出：
+
+~~~text
+
+added 426 packages in 4s
+
+150 packages are looking for funding
+  run `npm fund` for details
+npm warn allow-scripts 1 package has install scripts not yet covered by allowScripts:
+npm warn allow-scripts   unrs-resolver@1.11.1 (postinstall: napi-postinstall unrs-resolver 1.11.1 check)
+npm warn allow-scripts
+npm warn allow-scripts Run `npm approve-scripts --allow-scripts-pending` to review, or `npm approve-scripts <pkg>` to allow.
+
+~~~
+
+退出码：0。
+
+#### 前端克隆：`npx tsc --noEmit`
+
+原样输出：
+
+~~~text
+
+~~~
+
+退出码：0。
+
+#### 前端克隆：`npm run lint -- --max-warnings=28`
+
+原样输出：
+
+~~~text
+
+> frontend@0.1.0 lint
+> eslint --max-warnings=28
+
+
+/private/tmp/tts-autoplay-round4.qo85031f/fe/app/page.tsx
+   136:10  warning  'MiniCloudCard' is defined but never used                                                                                                                                                                                                                                                @typescript-eslint/no-unused-vars
+   227:7   warning  'DEMO_MESSAGES' is assigned a value but never used                                                                                                                                                                                                                                       @typescript-eslint/no-unused-vars
+   385:10  warning  'allUsers' is assigned a value but never used                                                                                                                                                                                                                                            @typescript-eslint/no-unused-vars
+   433:9   warning  'nlsWsRef' is assigned a value but never used                                                                                                                                                                                                                                            @typescript-eslint/no-unused-vars
+   434:9   warning  'mediaRecorderRef' is assigned a value but never used                                                                                                                                                                                                                                    @typescript-eslint/no-unused-vars
+   435:9   warning  'audioCtxRef' is assigned a value but never used                                                                                                                                                                                                                                         @typescript-eslint/no-unused-vars
+   445:10  warning  'peerRooms' is assigned a value but never used                                                                                                                                                                                                                                           @typescript-eslint/no-unused-vars
+   446:10  warning  'activePeer' is assigned a value but never used                                                                                                                                                                                                                                          @typescript-eslint/no-unused-vars
+   447:10  warning  'pendingMatches' is assigned a value but never used                                                                                                                                                                                                                                      @typescript-eslint/no-unused-vars
+   448:10  warning  'cardPositions' is assigned a value but never used                                                                                                                                                                                                                                       @typescript-eslint/no-unused-vars
+   451:10  warning  'peerConnected' is assigned a value but never used                                                                                                                                                                                                                                       @typescript-eslint/no-unused-vars
+   457:10  warning  'myGender' is assigned a value but never used                                                                                                                                                                                                                                            @typescript-eslint/no-unused-vars
+   458:10  warning  'matchPref' is assigned a value but never used                                                                                                                                                                                                                                           @typescript-eslint/no-unused-vars
+   714:20  warning  '_' is defined but never used                                                                                                                                                                                                                                                            @typescript-eslint/no-unused-vars
+   803:18  warning  '_' is defined but never used                                                                                                                                                                                                                                                            @typescript-eslint/no-unused-vars
+  1227:9   warning  'saveUserSettings' is assigned a value but never used                                                                                                                                                                                                                                    @typescript-eslint/no-unused-vars
+  1247:9   warning  'handleCardExpire' is assigned a value but never used                                                                                                                                                                                                                                    @typescript-eslint/no-unused-vars
+  1255:9   warning  'handleAcceptCard' is assigned a value but never used                                                                                                                                                                                                                                    @typescript-eslint/no-unused-vars
+  1276:9   warning  'handleSkipCard' is assigned a value but never used                                                                                                                                                                                                                                      @typescript-eslint/no-unused-vars
+  1318:9   warning  'handleClearChat' is assigned a value but never used                                                                                                                                                                                                                                     @typescript-eslint/no-unused-vars
+  1414:9   warning  The 'handleSend' function makes the dependencies of useEffect Hook (at line 1759) change on every render. To fix this, wrap the definition of 'handleSend' in its own useCallback() Hook                                                                                                 react-hooks/exhaustive-deps
+  1858:9   warning  'openPeerChat' is assigned a value but never used                                                                                                                                                                                                                                        @typescript-eslint/no-unused-vars
+  1898:9   warning  'handlePeerKeyDown' is assigned a value but never used                                                                                                                                                                                                                                   @typescript-eslint/no-unused-vars
+  2147:25  warning  Using `<img>` could result in slower LCP and higher bandwidth. Consider using `<Image />` from `next/image` or a custom image loader to automatically optimize images. This may incur additional usage or cost from your provider. See: https://nextjs.org/docs/messages/no-img-element  @next/next/no-img-element
+
+/private/tmp/tts-autoplay-round4.qo85031f/fe/app/plaza/page.tsx
+  610:21  warning  Using `<img>` could result in slower LCP and higher bandwidth. Consider using `<Image />` from `next/image` or a custom image loader to automatically optimize images. This may incur additional usage or cost from your provider. See: https://nextjs.org/docs/messages/no-img-element  @next/next/no-img-element
+
+✖ 25 problems (0 errors, 25 warnings)
+
+
+~~~
+
+退出码：0。
+
+#### 前端克隆：`npm run build`
+
+原样输出：
+
+~~~text
+
+> frontend@0.1.0 build
+> next build
+
+▲ Next.js 16.3.8 (Turbopack)
+✓ Running next.config.ts took 758ms
+- Experiments (use with caution):
+  · proxyClientMaxBodySize: "25mb"
+
+  Creating an optimized production build ...
+(node:25182) [DEP0205] DeprecationWarning: `module.register()` is deprecated. Use `module.registerHooks()` instead.
+(Use `node --trace-deprecation ...` to show where the warning was created)
+✓ Compiled successfully in 2.1s
+  Running TypeScript ...
+  Finished TypeScript in 2.4s ...
+  Collecting page data using 16 workers ...
+  Generating static pages using 16 workers (0/14) ...
+  Generating static pages using 16 workers (3/14) 
+  Generating static pages using 16 workers (6/14) 
+  Generating static pages using 16 workers (10/14) 
+✓ Generating static pages using 16 workers (14/14) in 301ms
+  Finalizing page optimization ...
+
+Route (app)
+┌ ○ /
+├ ○ /_not-found
+├ ○ /agents
+├ ƒ /agents/[id]
+├ ○ /agents/me
+├ ○ /community
+├ ○ /history
+├ ○ /login
+├ ○ /manifest.webmanifest
+├ ○ /match
+├ ○ /plaza
+├ ○ /profile
+└ ○ /settings
+
+
+ƒ Proxy (Middleware)
+
+○  (Static)   prerendered as static content
+ƒ  (Dynamic)  server-rendered on demand
+
+
+~~~
+
+退出码：0。
+
+最终安装、TypeScript、lint、build 均退出码 0；lint 为 **25 条警告、0 错误**，满足本轮不超过 26 条的要求（沿用规格命令的 `--max-warnings=28`，另核对实际输出）。克隆 `page.tsx` 与仓库 SHA-1 同为 `4c490b9677f1c73f75d470dc393a4d963d6565ef`。已有 unrs-resolver 的 allow-scripts 提醒和构建 DEP0205 均原样保留，未执行 approve-scripts 或更新依赖。
+
+下面逐条记录规格 5.1 的全部仓库根命令，随后是补充的精确 Audio 构造及源码 diff 检查。宽泛 grep 的 AudioContext 命中、预存工作区项、数据库旧记录不一致如实保留，详见本节「未决问题」。
+
+#### 仓库根：`git status --porcelain`
+
+原样输出：
+
+~~~text
+ M docs/tasks/2026-09-29-tts-autoplay/02-spec.md
+ M docs/tasks/2026-09-29-tts-autoplay/03-report.md
+ M frontend/app/page.tsx
+?? docs/tasks/2026-09-29-tts-autoplay/05-fix-round4.md
+
+~~~
+
+退出码：0。
+
+#### 仓库根：`grep -n "new Audio" frontend/app/page.tsx`
+
+原样输出：
+
+~~~text
+749:      audioCtx = new AudioContext();
+
+~~~
+
+退出码：0。
+
+#### 仓库根：`grep -rn "new Audio\|createElement(\"audio\")" frontend/app frontend/lib`
+
+原样输出：
+
+~~~text
+frontend/app/page.tsx:749:      audioCtx = new AudioContext();
+frontend/app/page.tsx:845:        const audio = document.createElement("audio");
+
+~~~
+
+退出码：0。
+
+#### 仓库根：`shasum backend/local-avatar.db backend/fiona.db`
+
+原样输出：
+
+~~~text
+c389b0bcd357bb7d29a81c7d890a577be459fddb  backend/local-avatar.db
+403a086c4ec0cf28493fc9fa37b2b6eee528b261  backend/fiona.db
+
+~~~
+
+退出码：0。
+
+#### 仓库根：`git diff --stat -- frontend/AGENTS.md backend/`
+
+原样输出：
+
+~~~text
+
+~~~
+
+退出码：0。
+
+#### 仓库根：`grep -nE 'new Audio\s*\(' frontend/app/page.tsx`
+
+原样输出：
+
+~~~text
+
+~~~
+
+退出码：1。
+
+#### 仓库根：`git diff --check -- frontend/app/page.tsx`
+
+原样输出：
+
+~~~text
+
+~~~
+
+退出码：0。
+
+### 离线行为验证与范围自检
+
+补充验证仅在仓库外新增 Node 脚本，从实际 page.tsx 用 TypeScript AST 提取回调并转译，在 vm 和确定性 API 桩中执行。没有修改或复写已有测试输入、断言，没有运行浏览器或真实网络。覆盖 F4 丢弃即时复位、旧 onstop 不清新 owner、不送 ASR及并发上限；F5 两种 voiceOn 状态的实际免提按钮和后续入队/EOF；F6 卡片先结束、EOF 先结束和无在途请求三种顺序；F7 两入口错误分类、资源构造/初始化/start/rAF 失败释放和成功清提示。
+
+命令：`node /private/tmp/tts-autoplay-round4.qo85031f/behavior-checks.cjs`。
+
+原样输出：
+
+~~~text
+Source: /Users/yangjing/Desktop/ai-workspace/Fiona/frontend/app/page.tsx
+Method: TypeScript AST extraction of actual callbacks, transpileModule, Node vm and deterministic browser API stubs; no browser or network.
+PASS F4 discard stop is synchronous; old onstop keeps newer owner; discarded spoken blob is not sent to ASR; recording concurrency <= 1
+PASS F4 stop without discard keeps owner until matching onstop
+PASS F7 inline getUserMedia NotAllowedError: correct notice, handsfree off and warn/error classification
+PASS F7 handsfree getUserMedia NotAllowedError: correct notice, handsfree off and warn/error classification
+PASS F7 inline getUserMedia SecurityError: correct notice, handsfree off and warn/error classification
+PASS F7 handsfree getUserMedia SecurityError: correct notice, handsfree off and warn/error classification
+PASS F7 inline getUserMedia NotFoundError: correct notice, handsfree off and warn/error classification
+PASS F7 handsfree getUserMedia NotFoundError: correct notice, handsfree off and warn/error classification
+PASS F7 inline getUserMedia NotReadableError: correct notice, handsfree off and warn/error classification
+PASS F7 handsfree getUserMedia NotReadableError: correct notice, handsfree off and warn/error classification
+PASS F7 inline getUserMedia TypeError: correct notice, handsfree off and warn/error classification
+PASS F7 handsfree getUserMedia TypeError: correct notice, handsfree off and warn/error classification
+PASS F7 inline getUserMedia UnknownError: correct notice, handsfree off and warn/error classification
+PASS F7 handsfree getUserMedia UnknownError: correct notice, handsfree off and warn/error classification
+PASS F7 inline absent mediaDevices: TypeError caught with generic notice
+PASS F7 handsfree absent mediaDevices: TypeError caught with generic notice
+PASS F7 inline MediaRecorder constructor throws after GUM: all three tracks stopped
+PASS F7 handsfree MediaRecorder constructor throws after GUM: all three tracks stopped
+PASS F7 inline recorder.start throws after GUM: all tracks stopped
+PASS F7 handsfree audioContext throws after GUM: all tracks stopped, created AudioContext closed, owner cleared
+PASS F7 handsfree source throws after GUM: all tracks stopped, created AudioContext closed, owner cleared
+PASS F7 handsfree analyser throws after GUM: all tracks stopped, created AudioContext closed, owner cleared
+PASS F7 handsfree connect throws after GUM: all tracks stopped, created AudioContext closed, owner cleared
+PASS F7 handsfree start throws after GUM: all tracks stopped, created AudioContext closed, owner cleared
+PASS F7 handsfree raf throws after GUM: all tracks stopped, created AudioContext closed, owner cleared
+PASS F7 rejected AudioContext.close promise is handled during failure cleanup
+PASS F7 inline successful GUM clears prior notice; successful recording starts
+PASS F7 handsfree successful GUM clears prior notice; successful recording starts
+PASS F7 superseded handsfree GUM success stops tracks before recorder/context creation and clears notice
+PASS F5 actual handsfree onClick preserves stopped session when voiceOn=true; later enqueue blocked; EOF opens mic once; notice cleared
+PASS F5 actual handsfree onClick clears stopped marker when voiceOn=false and opens reading
+PASS F6 actual handleConfirmTts/playNext/finish/chat-finally (card-before-eof): mic never precedes EOF, opens exactly once
+PASS F6 actual handleConfirmTts/playNext/finish/chat-finally (eof-before-card): mic never precedes EOF, opens exactly once
+PASS F6 actual handleConfirmTts/playNext/finish/chat-finally (no-request): mic never precedes EOF, opens exactly once
+RESULT 34/34 checks passed
+Limits: deterministic callback-level stubs only; no browser autoplay policy, real media hardware, React DOM/layout/focus, real event-loop timing, screenshots, network, or complete round-3 browser matrix tested.
+
+~~~
+
+退出码：0；34/34 通过。
+
+这些是实际回调级的桩验证，不是浏览器验收，不能证明自动播放策略、真实 MediaRecorder 事件时延、React DOM 焦点/布局、硬件轨道、截图或第 3 轮完整矩阵。F6 的“恰好一次”是确定性桩覆盖结果，真实浏览器时序仍待主会话确认。
+
+独立只读审查确认：源码 diff 仅包含 F4–F7，onstop 首行和 discard 守卫保留；提示位置、所有类名、按钮 type、权限/其他错误的提示文字均符合原文。按住说话、预申请、两元素池、换票限流/429 退避、票据 TTL 150 秒和按剩余有效期重换票的代码未改。
+
+范围检查将开工时的 917 个可检查文件与最终内容比对（排除 `.git`、依赖/构建缓存、虚拟环境和 `.env*`，不读取被排除项），并核对报告前缀、克隆包文件和原始日志：
+
+~~~text
+PASS opening snapshot: 917 files checked; only page.tsx and appended 03-report.md changed; 915 other files unchanged
+PASS report preserves all opening bytes and only appends one 第 4 轮返修 section
+PASS pre-request mic, press-and-hold, TTS pool/ticket/backoff/TTL and full handleSend/chat-finally remain byte-identical
+PASS F4/F5/F6 specified guards present; micNotice has exactly 2 setting calls and 4 clearing calls
+PASS git status preserves the two pre-existing task-document entries and adds only the two whitelist changes; raw status deviation is reported
+PASS clone has final source and unchanged package/lock/AGENTS files; node_modules is offline-installed; clone has no .env files
+PASS both npm ci attempts and every specification 5.1 command have verbatim logs/exit codes in the appended report; final lint has 25 warnings, 0 errors
+PASS database hashes are unchanged from opening snapshot; old spec local-avatar.db hash mismatch is preserved and reported
+PASS offline actual-callback behavior checks passed 34/34; browser/DOM/hardware/full regression limits are stated separately
+
+~~~
+
+退出码：0。相对于开工快照，只有两个白名单文件发生内容变化，另外 915 个文件未变化；没有新增或删除仓库文件。报告原始 1152 行的全部字节保留；本轮最终源码 SHA-1 为 `4c490b9677f1c73f75d470dc393a4d963d6565ef`。范围复核也确认 `handleSend`（包括聊天 finally）及原有录音/朗读保护区域逐字未变。
+
+### 未决问题
+
+没有影响 F4–F7 实现的新未决事项，未发现本轮实现偏离返修单第 1 节。以下既有状态、验证差异及待办全部在本栏记录，不能将本轮自检描述为每项规格字面要求都已满足：
+
+- **git status 的字面白名单要求未满足**：开工前已有 ` M docs/tasks/2026-09-29-tts-autoplay/02-spec.md` 和 `?? docs/tasks/2026-09-29-tts-autoplay/05-fix-round4.md`。本轮原样保留它们，未修改、清理、回滚或写 git 状态；最终 status 另外仅增加两个白名单文件。本轮内容变更严格限定白名单，但完整 status 仍包含这两个预存项。
+- **规格 5.1 两条宽泛 grep 保留既有 AudioContext 命中**：`grep -n "new Audio"` 仍在当前 749 行命中 `audioCtx = new AudioContext()`，第一条没有达到旧规格字面“0 行”；另一条除 AudioContext 外只命中 845 行元素池创建。没有为文本检查改成 window.AudioContext 或做范围外改动；精确 `new Audio\s*\(` 检查无匹配、退出码 1。组件生命周期内真实 audio 元素仍只由原有池创建两次。
+- **数据库与旧规格记录的基线差异**：`backend/local-avatar.db` 开工 SHA-1 已为 `c389b0bcd357bb7d29a81c7d890a577be459fddb`，与 02-spec 的 `172d800a…` 不同；本轮前后完全相同，没有改数据库。`backend/fiona.db` 前后均为旧规格记录的 `403a086c4ec0cf28493fc9fa37b2b6eee528b261`。后端/AGENTS diff 为空，不为满足旧哈希回滚文件。
+- **克隆建立方式相对 02-spec 原命令的差异**：按第 4 轮返修单及用户要求使用 `npm ci --offline` 安装真实依赖目录，覆盖旧规格的 node_modules 软链方式；为遵守不读 `.env*`，rsync 额外排除 `.env*`。这些验证选择已自行处理，不改变仓库或实现范围。
+- **首次离线安装失败已经处理，但保留失败证据**：最初把 npm user/global config 同指 `/dev/null`，npm 在配置去重阶段退出 1；改为两份不同的临时空配置后，以原命令 `npm ci --offline` 重跑退出 0。两次原样输出和退出码均已贴出。未联网、下载或更改依赖文件。
+- **浏览器验收及第 3 轮完整回归待主会话**：严格遵守不启动浏览器、不运行 next dev。FASTFAIL、STOPHF、CSTREAMHF、MICDENY-HF、MICDENY-INLINE、MICNOTFOUND、RECTHROW 的浏览器实测（包括先在 b38beca 确认失败）以及 `batch_r3.sh` 全部矩阵、截图逐字节比较未由本轮代理执行；34/34 离线回调桩结果不能替代它们。
+- **既有已接受行为的记录**：此前报告中的 F2.4“申请中 discard 时同步复位 ref”实现逐字保留，未以本轮为由更改已接受的时机或处理此前 O8 真机验证待办。除本单 F4–F7 外没有处理其他复核项。
+
+
+**报告基线行号勘误（已纠正，仍只追加）**：最后独立复核发现本轮 F4 说明误写了两处基线行号；“onstop 首行身份比较复位（基线 772 → 当前 785）”应为 **基线 773 → 当前 785**，“discard 守卫（基线 775 → 当前 788）”应为 **基线 776 → 当前 788**。源码和当前行号均正确，没有实现变更。为严格遵守报告只在末尾追加，保留此前文字并在本「未决问题」栏明确纠正；F7 onstop 对应的完整前后代码补充如下，以此处基线行号为准：
+
+修改前（b38beca，772–776 行）：
+
+```tsx
+      mr.onstop = async () => {
+        if (handsFreeRecRef.current === rec) handsFreeRecRef.current = null;
+        stream.getTracks().forEach(t => t.stop());
+        audioCtx.close().catch(() => {});
+        if (rec.discard || selectionVersion !== getSelectionVersion() || !handsFreeRef.current) return;
+```
+
+修改后（本轮，784–788 行）：
+
+```tsx
+      mr.onstop = async () => {
+        if (handsFreeRecRef.current === rec) handsFreeRecRef.current = null;
+        stream?.getTracks().forEach(t => t.stop());
+        audioCtx?.close().catch(() => {});
+        if (rec.discard || selectionVersion !== getSelectionVersion() || !handsFreeRef.current) return;
+```
