@@ -72,5 +72,10 @@ jobs:
         run: npx tsc --noEmit
       - name: Production build
         run: npm run build
-      - name: Vulnerability audit
+      - name: Vulnerability audit (production dependencies, blocking)
+        run: npm audit --audit-level=high --omit=dev
+      - name: Vulnerability audit (all dependencies, report only)
+        # Dev-only tooling advisories without an upstream fix should not block
+        # merges; they stay visible here until they can be upgraded.
+        continue-on-error: true
         run: npm audit --audit-level=high
