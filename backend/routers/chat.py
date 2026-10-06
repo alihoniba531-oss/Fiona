@@ -44,6 +44,7 @@ class ChatRequest(BaseModel):
     conversation_id: str | None = Field(default=None, min_length=1, max_length=64)
     mode: Literal["chat", "image", "image_edit"] = "chat"
     aspect_ratio: Literal["1:1", "16:9", "9:16"] | None = None
+    image_model: Literal["qwen-image-3.0", "seedream-5.0-flash"] | None = None
     reference_image_path: str | None = Field(
         default=None, max_length=64, pattern=r"^/uploads/(?:generated|reference)_[0-9a-f]{32}\.png$",
     )

@@ -35,7 +35,7 @@ from persona import BASE_SAFETY_RULES, build_system_prompt
 from safety import CRISIS_GUIDANCE, CRISIS_RESOURCE_NOTE, assess_crisis, is_informational_crisis_context
 from tools.fetch_card import fetch_card as _fetch_card_impl
 from tools.hot_topics import hot_topics
-from tools.image_generation import ImageGenerationError, edit_image, generate_image
+from tools.image_generation import DEFAULT_IMAGE_MODEL, ImageGenerationError, edit_image, generate_image
 from tools.open_app import open_application
 from tools.reminder import set_reminder
 from tools.route import route as route_query
@@ -362,6 +362,7 @@ class ChatContext:
     reference_image_paths: list[str] = field(default_factory=list)
     reference_sources_submitted: bool = False
     uploaded_image_path: str | None = None
+    image_model: str | None = None
 
     @property
     def state_key(self) -> str | tuple[str, str]:
@@ -561,6 +562,7 @@ async def build_context(req, user: str, *, crisis_resolver=None) -> ChatContext:
         reference_image_paths=list(reference_image_paths),
         reference_sources_submitted=getattr(req, "reference_images", None) is not None,
         uploaded_image_path=image_path if has_image else None,
+        image_model=getattr(req, "image_model", None),
     )
 
 
@@ -588,7 +590,7 @@ async def stream_generated_image(
     await _ensure_active_conversation(ctx)
     editing = ctx.request_mode == "image_edit"
     tool = "edit_image" if editing else "generate_image"
-    state.trace.update({"intent": tool, "tool": tool})
+    state.trace.update({"intent": tool, "tool": tool, "image_model": ctx.image_model or DEFAULT_IMAGE_MODEL})
     if ctx.user in _IMAGE_GENERATION_USERS:
         state.trace["error"] = "ImageGenerationBusy"
         if _needs_crisis_resource(state):
@@ -605,7 +607,13 @@ async def stream_generated_image(
                 raise ImageGenerationError("请先在生成的图片上点击「以此图修改」")
             yield _sse({"status": "editing_image", "message": "正在按要求修改参考图，请稍候…"})
             # 引用在预检时校验并保存，按图1/图2/图3的原顺序发送，不夹带其他上下文。
-            task = asyncio.create_task(edit_image(prompt, references[0] if len(references) == 1 else references, ctx.aspect_ratio))
+            if ctx.image_model in {None, DEFAULT_IMAGE_MODEL}:
+                task = asyncio.create_task(edit_image(prompt, references[0] if len(references) == 1 else references, ctx.aspect_ratio))
+            else:
+                task = asyncio.create_task(edit_image(
+                    prompt, references[0] if len(references) == 1 else references, ctx.aspect_ratio,
+                    model_id=ctx.image_model,
+                ))
         else:
             yield _sse({"status": "generating_image", "message": "正在生成图片，请稍候…"})
             # 只发送本次画面描述，不夹带人设、私有记忆或其他会话内容。
@@ -616,7 +624,10 @@ async def stream_generated_image(
                 # 自然语言请求先读原文；chat 请求附带的比例字段不能
                 # 覆盖写在画面描述里的横版、竖版或正方形要求。
                 ratio = image_aspect_ratio(prompt, fallback=aspect_ratio or ctx.aspect_ratio or "1:1")
-            task = asyncio.create_task(generate_image(prompt, ratio))
+            if ctx.image_model in {None, DEFAULT_IMAGE_MODEL}:
+                task = asyncio.create_task(generate_image(prompt, ratio))
+            else:
+                task = asyncio.create_task(generate_image(prompt, ratio, model_id=ctx.image_model))
         while not task.done():
             done, _ = await asyncio.wait({task}, timeout=_IMAGE_HEARTBEAT_SECONDS)
             if not done:
@@ -649,6 +660,10 @@ async def stream_generated_image(
         yield _sse({"done": True})
     except ImageGenerationError as exc:
         state.trace["error"] = "ImageGenerationError"
+        if exc.provider_status is not None:
+            state.trace["provider_status"] = exc.provider_status
+        if exc.provider_code is not None:
+            state.trace["provider_code"] = exc.provider_code
         if _needs_crisis_resource(state):
             yield _crisis_resource_event(state)
         yield _sse({"error": str(exc)})

@@ -110,6 +110,9 @@ STRAWBERRY_DAILY_REFILL=0
 
 | 环境变量 | 用途 |
 |---|---|
+| `QWEN_IMAGE_MODEL` | 默认生图和修图模型，默认 `qwen-image-3.0`，使用 `DASHSCOPE_API_KEY` |
+| `ARK_API_KEY` | 可选 Seedream 生图和修图的火山方舟密钥，仅服务端读取；须先在方舟控制台开通 Seedream 5.0 Flash |
+| `SEEDREAM_IMAGE_MODEL` | Seedream 真实模型名，默认 `doubao-seedream-5-0-flash-260915`，调用时读取 |
 | `FIONA_CRISIS_MODEL_ENABLED` | 危机模型复核默认开启，仅 `0` 关闭；规则高危不复核，模型只能升档 |
 | `FIONA_CRISIS_MODEL_TIMEOUT_SECONDS` | 独立危机客户端超时，默认 `2.0` 秒，合法范围 `0.5–10`，无效值回落默认；不重试，失败按规则结果走 |
 | `FIONA_DB_PATH` | 服务和管理脚本使用的 SQLite 数据库路径 |
@@ -133,6 +136,8 @@ journalctl -u fiona | grep -c '\[crisis-model\] level='
 ```
 
 回落比例为 `failed / (failed + level)`；`failed` 包括超时、调用出错和解析失败，规则高危直通等未调用模型的轮次不计入分母。分母为 0 时无可统计结果；回落比例超过 10% 时，考虑把 `FIONA_CRISIS_MODEL_TIMEOUT_SECONDS` 调到 `3` 秒，再观察延迟与回落比例。
+
+图片模式默认 Qwen Image 3.0，也可选择 Seedream 5.0 Flash；登录后的 `/image-models` 只检查密钥是否配置，不探测模型权限。未开通时返回安全错误，不自动切换供应商。隐私数据流：Qwen 生图和修图将本轮描述及参考图发送给阿里云 DashScope；Seedream 将相同数据发送给字节跳动火山引擎，不发送聊天历史或私有记忆。两个图片模型每次都扣 10 颗草莓，失败照常退款。
 
 草莓正常回复每条 10 颗，预扣后只对实际交付的模型回复、图片或成功真实工具结算；失败、追问及桌面占位工具会退还。明确危机轮余额足够时也按交付计费，余额不足时不调用回复模型、免费送达求助资源；可能相关的轮次正常计费，余额不足时先免费送达求助资源再返回余额错误。`DEV_MODE=1` 不预扣。每日补给不会降低较高余额，同一自然日仅执行一次。
 
@@ -530,7 +535,7 @@ journalctl -u fiona -u fiona-web -u fiona-backup -n 200 --no-pager
 systemctl --failed
 ```
 
-可在 `fiona.service`、`fiona-web.service` 和 `fiona-backup.service` 的 `[Unit]` drop-in 中设置 `OnFailure=fiona-alert@%n.service`，由作者配置对应的通知 oneshot unit；凭据放在受控环境文件，不写进仓库。后端启动失败退出 3、备份步骤失败非零退出，便于 systemd 记录 failed 并触发通知。发布前由作者手动在 **DashScope 和 DeepSeek 控制台设置消费告警**，并确认通知接收人和阈值。
+可在 `fiona.service`、`fiona-web.service` 和 `fiona-backup.service` 的 `[Unit]` drop-in 中设置 `OnFailure=fiona-alert@%n.service`，由作者配置对应的通知 oneshot unit；凭据放在受控环境文件，不写进仓库。后端启动失败退出 3、备份步骤失败非零退出，便于 systemd 记录 failed 并触发通知。发布前由作者手动在 **DashScope、DeepSeek 和火山引擎控制台设置消费告警**，并确认通知接收人和阈值。
 
 systemd < 254 时，服务自动重启期间不会进入 failed 状态。仅设 `RestartSec=3` 可能一直重启，无法触发 `OnFailure`。在自动重启的后端和前端 unit 的 `[Unit]` 中配置 `StartLimitIntervalSec=300`、`StartLimitBurst=5`，限制 300 秒内最多启动 5 次，后续重试被拒绝后进入 failed；用 `systemctl daemon-reload` 应用配置，再在目标机验证启动失败通知。外部 GET 拨测仍须独立启用。
 
@@ -598,7 +603,7 @@ sudo -u fiona env FIONA_UPLOADS_DIR=/var/lib/fiona/uploads \
 - Nginx 请求体、连接、速率和超时限制符合当前容量。
 - 已检查所有反代入口覆盖 X-Real-IP 并追加 X-Forwarded-For，`FIONA_TRUSTED_PROXIES` 只包含真实代理。
 - 已演练旧备份迁移和媒体恢复，启用定时备份与异地保存，确认外部 `/api/health` 拨测与 systemd 失败通知。
-- 作者已在 DashScope 和 DeepSeek 控制台手动设置消费告警，确认阈值和接收人。
+- 作者已在 DashScope、DeepSeek 和火山引擎控制台手动设置消费告警，确认阈值和接收人。
 - 桌面端发布前已完成 Tauri capability、URL opener 和 CSP 整改。
 - 已处理 [PLAN.md](../PLAN.md) 中所有标为“发布阻断”的项目。
 - 已用一次性测试账号验证完整账户删除和失败文件清理重试。

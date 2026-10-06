@@ -80,10 +80,12 @@ export interface CardData {
 }
 
 export type ImageAspectRatio = "1:1" | "16:9" | "9:16";
+export type ImageModelId = "qwen-image-3.0" | "seedream-5.0-flash";
 
 export interface ImageGenerationRetry {
   prompt: string;
   aspectRatio?: ImageAspectRatio;
+  imageModel?: ImageModelId;
   referenceImages?: ReferenceImageInput[];
   conversationId: string;
   owner: string;
@@ -280,7 +282,7 @@ function ChatBubble({ message, agentName = "Chloe", agentAvatar = "✨", onDelet
 
         {message.imageGenerationRetry && onRetryImage && <button type="button"
           disabled={imageRetryDisabled}
-          title={imageRetryDisabled ? "请等待当前操作完成，并移除待发送的图片后重试" : message.imageGenerationRetry.referenceImages?.length ? "使用原参考图顺序和修改要求重试" : "使用相同的描述和比例重新生成"}
+          title={imageRetryDisabled ? "请等待当前操作完成，并移除待发送的图片后重试" : message.imageGenerationRetry.referenceImages?.length ? "使用原参考图顺序和修改要求，以当前选择的模型重新修改" : "使用相同的描述和比例，以当前选择的模型重新生成"}
           onClick={() => onRetryImage(message.imageGenerationRetry!)}
           className="btn h-7 self-start px-2.5 text-xs">
           <RotateCcw size={12} />{message.imageGenerationRetry.referenceImages?.length ? "重新修改" : "重新生成"}

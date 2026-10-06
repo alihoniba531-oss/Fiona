@@ -2,7 +2,7 @@
 
 import { useState, useRef, useEffect, useCallback } from "react";
 import Sidebar from "@/components/Sidebar";
-import ChatBubble, { type Message, type CardData, type WeatherForecastDay, type ImageAspectRatio, type ImageGenerationRetry } from "@/components/ChatBubble";
+import ChatBubble, { type Message, type CardData, type WeatherForecastDay, type ImageAspectRatio, type ImageModelId, type ImageGenerationRetry } from "@/components/ChatBubble";
 import GeneratedImage from "@/components/GeneratedImage";
 import ConversationPicker from "@/components/ConversationPicker";
 import ChatScrollArea, { type ChatScrollHandle } from "@/components/ChatScrollArea";
@@ -66,6 +66,19 @@ interface ImageReferenceSelection {
   owner: string;
   conversationId: string;
 }
+
+const DEFAULT_IMAGE_MODEL = "qwen-image-3.0";
+const IMAGE_MODEL_STORAGE_KEY = "fiona_image_model";
+interface ImageModelOption {
+  id: ImageModelId;
+  label: string;
+  shortLabel: string;
+  available: boolean;
+}
+const FALLBACK_IMAGE_MODELS: ImageModelOption[] = [
+  { id: DEFAULT_IMAGE_MODEL, label: "Qwen Image 3.0", shortLabel: "Qwen 3.0", available: true },
+  { id: "seedream-5.0-flash", label: "Seedream 5.0 Flash", shortLabel: "Seedream 5.0 Flash", available: true },
+];
 
 interface PreparedTtsAudio {
   text: string;
@@ -391,6 +404,11 @@ export default function ChatPage() {
   const [voiceText, setVoiceText] = useState("");
   const [pendingImage, setPendingImage] = useState<string | null>(null);
   const [imageMode, setImageMode] = useState(false);
+  const [preferredImageModel, setPreferredImageModel] = useState<ImageModelId>(DEFAULT_IMAGE_MODEL);
+  const [imageModels, setImageModels] = useState(FALLBACK_IMAGE_MODELS);
+  // Availability changes only the current selection, preserving the user's preference.
+  const imageModel = imageModels.find(model => model.id === preferredImageModel)?.available
+    ? preferredImageModel : DEFAULT_IMAGE_MODEL;
   const [referenceImages, setReferenceImages] = useState<ImageReferenceSelection | null>(null);
   const [aspectRatio, setAspectRatio] = useState<ImageAspectRatio>("1:1");
   const [isReadingImage, setIsReadingImage] = useState(false);
@@ -486,6 +504,50 @@ export default function ChatPage() {
       window.removeEventListener("fiona-user-changed", hydrate);
     };
   }, []);
+
+  useEffect(() => {
+    let cancelled = false;
+    void Promise.resolve().then(() => {
+      if (cancelled) return;
+      let storedModel: ImageModelId = DEFAULT_IMAGE_MODEL;
+      try {
+        const stored = localStorage.getItem(IMAGE_MODEL_STORAGE_KEY);
+        const option = FALLBACK_IMAGE_MODELS.find(model => model.id === stored);
+        if (option) storedModel = option.id;
+      } catch {
+        // Keep the default when browser storage is unavailable.
+      }
+      setPreferredImageModel(storedModel);
+    });
+    return () => { cancelled = true; };
+  }, []);
+
+  useEffect(() => {
+    if (!hydrated || !username) return;
+    let cancelled = false;
+    apiFetch(`${API}/image-models`)
+      .then(async response => {
+        if (!response.ok) throw new Error("Image models unavailable");
+        const data = await response.json() as { models?: { id?: unknown; label?: unknown; available?: unknown }[] };
+        if (!Array.isArray(data.models)) throw new Error("Invalid image models");
+        const options = data.models;
+        return FALLBACK_IMAGE_MODELS.map(option => {
+          const model = options.find(candidate => candidate && candidate.id === option.id);
+          if (!model || typeof model.available !== "boolean" || typeof model.label !== "string") {
+            throw new Error("Invalid image model");
+          }
+          return { ...option, label: model.label, available: model.available };
+        });
+      })
+      .then(models => {
+        if (cancelled) return;
+        setImageModels(models);
+      })
+      .catch(() => {
+        if (!cancelled) setImageModels(FALLBACK_IMAGE_MODELS);
+      });
+    return () => { cancelled = true; };
+  }, [hydrated, username]);
 
   // Load all users
   useEffect(() => {
@@ -1432,6 +1494,7 @@ export default function ChatPage() {
         ? image.image_base64 !== undefined || referenceImagePath(image.image_path) !== image.image_path
         : !image.image_base64 || !isLocalReferenceDataUrl(image.image_base64)))) return;
     const requestMode = requestReferenceImages.length ? "image_edit" : (imageRetry || imageMode) && !sentImage ? "image" : "chat";
+    const requestImageModel = imageModel;
     const requestAspectRatio = imageRetry ? imageRetry.aspectRatio
       : requestMode === "image_edit" ? undefined
       : requestMode === "image" ? aspectRatio : imageAspectRatioFromPrompt(text);
@@ -1534,6 +1597,7 @@ export default function ChatPage() {
           message: text,
           image_base64: sentImage || undefined,
           mode: requestMode,
+          image_model: requestImageModel,
           aspect_ratio: requestMode !== "chat" ? requestAspectRatio : undefined,
           reference_images: requestReferenceImages.length ? requestReferenceImages : undefined,
         }),
@@ -1737,7 +1801,7 @@ export default function ChatPage() {
         generationStatus: undefined,
         isTyping: false,
         imageGenerationRetry: generatingImage && !generatedImageReceived ? {
-          prompt: text, aspectRatio: requestAspectRatio,
+          prompt: text, aspectRatio: requestAspectRatio, imageModel: requestImageModel,
           referenceImages: requestReferenceImages.length ? requestReferenceImages.map(image => ({ ...image })) : undefined,
           owner: username, conversationId: currentConversation.id,
         } : undefined,
@@ -1938,6 +2002,23 @@ export default function ChatPage() {
   };
 
   // ── render ──
+
+  const imageModelGroup = (
+    <div role="group" aria-label="图片模型" className="flex items-center gap-1">
+      {imageModels.map(model => <button key={model.id} type="button" aria-pressed={imageModel === model.id} disabled={isLoading || !model.available}
+        title={model.available ? model.label : "管理员尚未配置此模型"} onClick={() => {
+          setPreferredImageModel(model.id);
+          try {
+            localStorage.setItem(IMAGE_MODEL_STORAGE_KEY, model.id);
+          } catch {
+            // The preference still works in memory when storage is unavailable.
+          }
+        }}
+        className={cn("chip h-6 px-2 max-md:h-10", imageModel === model.id && "chip-on")}>
+        {model.shortLabel}
+      </button>)}
+    </div>
+  );
 
   return (
     <div className="flex flex-col h-dvh overflow-hidden">
@@ -2181,6 +2262,7 @@ export default function ChatPage() {
                         <span className="chip chip-on"><PencilLine size={12} />修改图片</span>
                         <span role="status" className="text-[color:var(--amber-ink)]">参考图 {selectedReferenceImagePaths.length}/3</span>
                         <span className="text-muted-foreground">尺寸跟随图1</span>
+                        {imageModelGroup}
                         <button type="button" disabled={conversationLocked || conversationLoading || isReadingReferences} onClick={clearReferenceImages} className="ml-auto flex items-center gap-1 text-muted-foreground hover:text-foreground disabled:opacity-40 max-md:min-h-10"><X size={11} />全部取消</button>
                       </> : imageMode ? <>
                         <span className="chip chip-on"><Sparkles size={12} />生成图片</span>
@@ -2190,6 +2272,7 @@ export default function ChatPage() {
                             {ratio}
                           </button>)}
                         </div>
+                        {imageModelGroup}
                         <button type="button" disabled={isLoading} onClick={() => setImageMode(false)} className="ml-auto flex items-center gap-1 text-muted-foreground hover:text-foreground disabled:opacity-40 max-md:min-h-10"><X size={11} />返回聊天</button>
                       </> : <>
                         <button type="button" onClick={() => setImageMode(true)} disabled={!!pendingImage || isReadingImage || isReadingReferences || conversationLocked || conversationLoading || !currentConversation}

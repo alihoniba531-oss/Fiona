@@ -37,7 +37,7 @@ import aiosqlite
 import database
 from database import get_pending_upload_cleanup, init_db, mark_upload_cleanup_done
 from rate_limit import limiter
-from routers import agent_exchanges, agents, auth, cards, chat, conversations, hot, match, me, peer, plaza, voice
+from routers import agent_exchanges, agents, auth, cards, chat, conversations, hot, image_models, match, me, peer, plaza, voice
 from utils import media
 from utils.background_tasks import create_background_task, shutdown_background_tasks
 from utils.request_limits import MAX_REQUEST_BODY_BYTES, RequestBodyLimitMiddleware
@@ -147,6 +147,7 @@ app.include_router(plaza.router)
 app.include_router(auth.router)
 app.include_router(peer.router)
 app.include_router(chat.router)
+app.include_router(image_models.router)
 app.include_router(match.router)
 app.include_router(me.router)
 app.include_router(agents.router)
