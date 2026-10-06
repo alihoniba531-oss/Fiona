@@ -123,3 +123,15 @@ def is_informational_crisis_context(text: str) -> bool:
 def detect_crisis(text: str) -> bool:
     """Compatibility gate for callers that only need the high level."""
     return assess_crisis(text) == "high"
+
+
+def combine_crisis_levels(
+    rule: Literal["high", "possible"] | None,
+    model: Literal["high", "possible", "none"] | None,
+) -> Literal["high", "possible"] | None:
+    """Let model review raise the rule level, never lower it."""
+    if rule == "high" or model == "high":
+        return "high"
+    if rule == "possible" or model == "possible":
+        return "possible"
+    return rule

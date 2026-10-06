@@ -37,6 +37,7 @@ from _fakes import FakeStream
 # 测试本身已把出网入口全部打桩（见下方 client fixture），占位 key 不会真出网。
 os.environ.setdefault("JWT_SECRET", "fiona-ci-smoke-test-secret-0123456789")
 os.environ.setdefault("DASHSCOPE_API_KEY", "sk-fiona-ci-smoke-test-not-real")
+os.environ.setdefault("FIONA_CRISIS_MODEL_ENABLED", "0")
 
 
 @pytest.fixture

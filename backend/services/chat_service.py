@@ -438,7 +438,7 @@ async def _persist_edit_references(req, user: str, conversation_id: str, user_co
             delete_uploaded_files(fresh)
 
 
-async def build_context(req, user: str) -> ChatContext:
+async def build_context(req, user: str, *, crisis_resolver=None) -> ChatContext:
     """预检装配（不含余额检查 —— 那个要在 handler 早返回）。
     req 需有 .message 和 .image_base64，可带 .conversation_id。"""
     has_image = bool(req.image_base64)
@@ -513,7 +513,8 @@ async def build_context(req, user: str) -> ChatContext:
         tone_description=tone_description,
         agent=agent,
     )
-    crisis = assess_crisis(req.message)
+    # Context I/O overlaps model review; resolve only when prompts need its level.
+    crisis = await crisis_resolver() if crisis_resolver is not None else assess_crisis(req.message)
     if crisis is None:
         system_prompt += build_hard_word_appendix(req.message)
 
