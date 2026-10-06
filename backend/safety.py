@@ -53,11 +53,11 @@ _METHOD_QUERY = re.compile(
 _HIGH_PATTERNS = tuple(re.compile(pattern) for pattern in (
     r"(?:我|自己|本人).{0,10}(?:想死(?![你他她它])|要死(?!了|[你他她它])|去死|不想(?:再)?活(?!得)|活不下去|自杀|轻生)",
     r"(?:好想死|不如死了算了|生无可恋.{0,8}想死|活着没意思.{0,8}(?:想死|自杀)|活着好累.{0,8}不想再活)",
-    r"(?:不想(?:再)?活(?!得)|活不下去|活着没(?:有)?(?:意思|劲).{0,8}(?:不如死|想死|自杀)|(?<![你他她它])不如死了|(?<![你他她它])(?:想|要|打算|准备|计划|考虑).{0,4}(?:自杀|轻生|去死|死了算了)|(?:想|打算|准备|考虑|(?<![现正实])在|(?<![只需重主])要)结束(?:自己|我|这)?(?:的)?(?:生命|一切))",
+    r"(?:不想(?:再)?活(?!得)|活不下去|活着没(?:有)?(?:意思|劲).{0,8}(?:不如死|想死|自杀)|(?<![你他她它])不如死了|(?<![你他她它])(?:想|要|打算|准备|(?<![设统])计(?:划|画|畫)|考虑).{0,4}(?:自杀|轻生|去死|死了算了)|(?:想|打算|准备|考虑|(?<![现正实])在|(?<![只需重主])要)结束(?:自己|我|这)?(?:的)?(?:生命|一切))",
     r"(?:我|自己|本人).{0,8}没有活下去的理由",
     r"(?:我|自己|本人).{0,10}(?:想结束这一切|结束(?:自己|我)(?:的)?生命|伤害(?:我)?自己|割(?:了)?(?:我)?自己|了结(?:我)?自己|自我了断|杀了(?:我)?自己|把(?:我)?自己杀了|自残|自伤)|想结束(?:自己|我)(?:的)?生命",
     r"(?:我|自己|本人).{0,6}(?:割腕|上吊|吞药|跳楼(?![价机]))",
-    r"(?:想|要|准备|打算|计划|考虑).{0,8}(?:割腕|跳楼(?![价机])|跳下去|上吊|吞药|跳河|跳江|跳海|自残|自伤|伤害自己)",
+    r"(?:想|要|准备|打算|(?<![设统])计(?:划|画|畫)|考虑).{0,8}(?:割腕|跳楼(?![价机])|跳下去|上吊|吞药|跳河|跳江|跳海|自残|自伤|伤害自己)",
     r"(?:楼上|楼顶|窗户|桥上).{0,8}跳下去",
     r"(?:我|本人|自己).{0,10}(?:写好遗书|遗书写好|(?:攒|准备|买|吞|吃|服).{0,5}安眠药)",
     r"(?:吞|吃|服)(?:了|下|光)?.{0,4}(?:一整?瓶|半瓶|一把|整瓶|全部|所有|很多|好多)安眠药",
@@ -75,9 +75,13 @@ _POSSIBLE_PATTERNS = tuple(re.compile(pattern) for pattern in (
 ))
 
 
+def _normalize_crisis_text(text: str) -> str:
+    return normalize_traditional(re.sub(r"\s+", "", text or "").lower().replace("’", "'"))
+
+
 def assess_crisis(text: str) -> Literal["high", "possible"] | None:
     """Return high for direct danger, possible for related talk, else None."""
-    normalized = normalize_traditional(re.sub(r"\s+", "", text or "").lower().replace("’", "'"))
+    normalized = _normalize_crisis_text(text)
     if not normalized:
         return None
     # Remove common idioms before checking risk words, so a separate explicit
@@ -107,6 +111,13 @@ def assess_crisis(text: str) -> Literal["high", "possible"] | None:
     if any(pattern.search(stripped) for pattern in _POSSIBLE_PATTERNS):
         return "possible"
     return "possible" if joking_phrase or contextual_mention else None
+
+
+def is_informational_crisis_context(text: str) -> bool:
+    """Allow existing informational/help routing only for a possible-level turn."""
+    return assess_crisis(text) == "possible" and bool(
+        _CONTEXTUAL_MENTIONS[3].search(_normalize_crisis_text(text))
+    )
 
 
 def detect_crisis(text: str) -> bool:

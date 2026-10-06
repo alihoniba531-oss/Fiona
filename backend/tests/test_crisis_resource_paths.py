@@ -322,22 +322,21 @@ def test_crisis_tool_pending_and_mirror_paths(client, dev_headers, monkeypatch, 
     }))
     _assert_resource_once(events, level)
     assert events[-1] == {"done": True}
-    assert _balance(user) == before - (0 if path == "pending" and level == "possible" else 10)
+    assert _balance(user) == before - 10
     if level == "high":
         assert mode_calls == intent_calls == tool_calls == fill_calls == []
         assert model_calls == [700]
         if path == "pending":
             assert get_pending((user, conversation))["intent"] == "route"
     elif path == "tool":
-        assert mode_calls == intent_calls == [1]
-        assert len(tool_calls) == 1
-        assert fill_calls == model_calls == []
-        assert any("现在是下午三点" in event.get("text", "") for event in events)
+        assert mode_calls == [1]
+        assert intent_calls == tool_calls == fill_calls == []
+        assert model_calls == [700]
     elif path == "pending":
         assert mode_calls == [1]
-        assert fill_calls == [message]
-        assert intent_calls == tool_calls == model_calls == []
-        assert get_pending((user, conversation))["intent"] == "route"
+        assert intent_calls == tool_calls == fill_calls == []
+        assert model_calls == [700]
+        assert get_pending((user, conversation)) == {"intent": "route", "params": {}, "missing": ["origin"]}
     else:
         assert mode_calls == [1]
         assert model_calls == [80]

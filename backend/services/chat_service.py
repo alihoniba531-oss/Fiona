@@ -32,7 +32,7 @@ from llm import QWEN_CLIENT, _create_stream_with_fallback, client
 from mode_switcher import apply_mode_prompt, detect_mode, get_user_mode
 from model_router import choose_model, token_budget
 from persona import BASE_SAFETY_RULES, build_system_prompt
-from safety import CRISIS_GUIDANCE, CRISIS_RESOURCE_NOTE, assess_crisis
+from safety import CRISIS_GUIDANCE, CRISIS_RESOURCE_NOTE, assess_crisis, is_informational_crisis_context
 from tools.fetch_card import fetch_card as _fetch_card_impl
 from tools.hot_topics import hot_topics
 from tools.image_generation import ImageGenerationError, edit_image, generate_image
@@ -665,13 +665,13 @@ async def stream_generated_image(
                 delete_uploaded_files([image_path])
             _IMAGE_GENERATION_USERS.discard(ctx.user)
 
-async def stream_mirror(ctx: ChatContext, state: ChatState):
+async def stream_mirror(ctx: ChatContext, state: ChatState, *, preserve_pending: bool = False):
     """镜子模式：跳过意图识别 + 工具调用，直走简化 Persona。"""
     # 只有用户明确手动切镜子（说"别给建议"之类）才清 pending；
     # 自动判定（连续短情绪 / LLM 判定发泄）可能误伤——用户也许只是在补工具参数
     _mode_state = await asyncio.to_thread(get_user_mode, ctx.state_key)
     _trigger = (_mode_state.get("last_trigger") or "")
-    if _trigger.startswith("manual"):
+    if _trigger.startswith("manual") and not preserve_pending:
         await asyncio.to_thread(clear_pending, ctx.state_key)
     _slot = choose_model(ctx.user, ctx.user_content, "mirror", len(ctx.history))
     state.trace["model"] = _slot
@@ -1031,6 +1031,7 @@ async def run_chat(
         "high" if crisis is True else None if crisis is False else crisis
     )
     high_crisis = crisis_level == "high"
+    skip_tools = crisis_level == "possible" and not is_informational_crisis_context(ctx.message)
     state = ChatState(trace={
         "mode": None,
         "intent": None,
@@ -1086,7 +1087,7 @@ async def run_chat(
         # 确认结果留给后续路由复用，单轮不会为同一句话再识别一次。
         intent_result = None
         intent_checked = False
-        image_candidate = explicit_image_intent(ctx.message) if not ctx.has_image else None
+        image_candidate = explicit_image_intent(ctx.message) if not ctx.has_image and not skip_tools else None
         image_candidate_rejected = False
         if image_candidate:
             try:
@@ -1120,7 +1121,7 @@ async def run_chat(
                     yield event
                 return
             image_candidate_rejected = intent_result.get("intent") is None
-        image_pending = await asyncio.to_thread(get_pending, ctx.state_key)
+        image_pending = None if skip_tools else await asyncio.to_thread(get_pending, ctx.state_key)
         if (not ctx.has_image and image_pending
             and image_pending.get("intent") == "generate_image"
             and not image_candidate_rejected):
@@ -1160,13 +1161,21 @@ async def run_chat(
         )
 
         if mode == "mirror":
-            async for s in stream_mirror(ctx, state):
+            mirror_stream = stream_mirror(ctx, state, preserve_pending=True) if skip_tools else stream_mirror(ctx, state)
+            async for s in mirror_stream:
                 yield s
             return
 
         # ── 朋友模式：保留现有完整逻辑 ──
         if ctx.has_image:
             async for s in stream_image(ctx, state):
+                yield s
+            return
+
+        if skip_tools:
+            # Possible crisis turns keep pending intact and use an ordinary
+            # reply; only information or help-seeking context keeps tools.
+            async for s in stream_normal(ctx, state):
                 yield s
             return
 

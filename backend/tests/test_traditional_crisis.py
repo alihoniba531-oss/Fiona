@@ -33,13 +33,16 @@ RULE_CHARACTER_VARIANTS = {
     "简": "簡", "系": "係繫", "紧": "緊", "级": "級", "线": "線", "联": "聯",
     "认": "認", "评": "評", "询": "詢", "语": "語", "诺": "諾", "轮": "輪",
     "边": "邊", "达": "達", "镜": "鏡", "险": "險",
+    "设": "設", "统": "統",
 }
 
 # Rule characters without a traditional/alternate form used by this classifier.
 # This is intentionally a literal whitelist, independent of safety.py and of
 # RULE_CHARACTER_VARIANTS, so any newly added Chinese rule character fails review.
 NO_VARIANT_RULE_CHARACTERS = frozenset(
-    "一上下不中主也事人什他以任伴何作保信停像先光全再切判到割助半危即去友反受可同吞否吧命和哈哥哪回在地多大天她好如妹姐子孩安完室害家密小少就工巧己式弟很得循心必忙快怎思急想意感我或所打扛承技把持挑接援支救教整文新方明是普暖最有朋服本束果某查根槽止正死永求江河法活海爸理瓶生甩由疼痛的目直看眠短研硬磕究窗立笑算累考者聊背能腕自致舞表要解象趣跳身逗通道那部都醒重防陪需高鼓"
+    # 画/畫 appear literally in the plan-word pattern; 畫 is deliberately not mapped
+    # (see test_plan_word_does_not_cross_word_boundaries).
+    "一上下不中主也事人什他以任伴何作保信停像先光全再切判到割助半危即去友反受可同吞否吧命和哈哥哪回在地多大天她好如妹姐子孩安完室害家密小少就工巧己式弟很得循心必忙快怎思急想意感我或所打扛承技把持挑接援支救教整文新方明是普暖最有朋服本束果某查根槽止正死永求江河法活海爸理瓶生甩由疼痛的目直看眠短研硬磕究窗立笑算累考者聊背能腕自致舞表要解象趣跳身逗通道那部都醒重防陪需高鼓画畫"
 )
 
 
@@ -146,7 +149,7 @@ def test_traditional_variants_match_simplified_crisis_level(traditional, simplif
 
 
 @pytest.mark.parametrize("message,expected", [
-    ("計畫下週跳樓", "possible"),
+    ("計畫下週跳樓", "high"),
     ("我想死妳", None),
 ])
 def test_word_level_plan_and_second_person_variant(message, expected):

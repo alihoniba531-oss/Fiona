@@ -135,6 +135,8 @@ SIMPLIFIED_TO_TRADITIONAL_VARIANTS: dict[str, str] = {
     "还": "還",
     "国": "國",
     "拨": "撥",
+    "设": "設",
+    "统": "統",
 }
 
 _TRANSLATION = str.maketrans({
