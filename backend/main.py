@@ -6,6 +6,8 @@ if sys.platform == "win32":
 
 import os
 import posixpath
+import time
+from pathlib import Path
 from concurrent.futures import ThreadPoolExecutor
 from contextlib import asynccontextmanager
 from dotenv import load_dotenv
@@ -31,6 +33,8 @@ from fastapi.staticfiles import StaticFiles
 from slowapi import _rate_limit_exceeded_handler
 from slowapi.errors import RateLimitExceeded
 from auth_dep import is_loopback_client
+import aiosqlite
+import database
 from database import get_pending_upload_cleanup, init_db, mark_upload_cleanup_done
 from rate_limit import limiter
 from routers import agent_exchanges, agents, auth, cards, chat, conversations, hot, match, me, peer, plaza, voice
@@ -54,6 +58,8 @@ if os.getenv("DEV_MODE", "0") == "1":
         _selector_cls._fiona_dev_select_clamped = True
 
 _UPLOAD_CLEANUP_INTERVAL_SECONDS = 15 * 60
+_UPLOAD_TEMP_MAX_AGE_SECONDS = 60 * 60
+_HEALTH_TIMEOUT_SECONDS = 3.0
 
 
 def _default_pool_workers() -> int:
@@ -75,10 +81,32 @@ async def _run_upload_cleanup_once() -> None:
             print(f"[cleanup] {len(failed)} upload file(s) still pending deletion")
 
 
+def _cleanup_stale_upload_temporaries() -> None:
+    """删除强制退出留下的上传临时文件，不触碰正在处理的上传。"""
+    cutoff = time.time() - _UPLOAD_TEMP_MAX_AGE_SECONDS
+    try:
+        with os.scandir(media.UPLOADS_DIR) as entries:
+            for entry in entries:
+                if not entry.name.startswith(".upload_"):
+                    continue
+                try:
+                    if entry.is_file(follow_symlinks=False) and entry.stat(follow_symlinks=False).st_mtime < cutoff:
+                        os.unlink(entry.path)
+                except FileNotFoundError:
+                    pass
+                except OSError as error:
+                    print(f"[cleanup] upload temporary cleanup failed type={type(error).__name__}")
+    except OSError as error:
+        print(f"[cleanup] upload temporary cleanup failed type={type(error).__name__}")
+
+
 async def _run_upload_cleanup_periodically() -> None:
     while True:
         await asyncio.sleep(_UPLOAD_CLEANUP_INTERVAL_SECONDS)
-        await _run_upload_cleanup_once()
+        try:
+            await _run_upload_cleanup_once()
+        except Exception as error:
+            print(f"[cleanup] upload cleanup failed type={type(error).__name__}")
 
 
 @asynccontextmanager
@@ -86,6 +114,7 @@ async def lifespan(app: FastAPI):
     asyncio.get_running_loop().set_default_executor(
         ThreadPoolExecutor(max_workers=_default_pool_workers(), thread_name_prefix="fiona-chat")
     )
+    await asyncio.to_thread(_cleanup_stale_upload_temporaries)
     await init_db()
     from exchange_store import recover_interrupted_exchanges
     await recover_interrupted_exchanges()
@@ -105,7 +134,7 @@ app.add_middleware(RequestBodyLimitMiddleware, max_bytes=MAX_REQUEST_BODY_BYTES)
 
 # ── 限流（slowapi）────────────────────────────────────────────────
 # 不设全局 default_limits，免误伤 /uploads、TTS 流等；只在具体端点上挂 @limiter.limit。
-# key_func 走 rate_limit.py 里从 X-Forwarded-For 取真实 IP（nginx 反代后面）。
+# key_func 由 rate_limit.py 校验受信任代理；uvicorn 可能已改写 client.host。
 app.state.limiter = limiter
 app.add_exception_handler(RateLimitExceeded, _rate_limit_exceeded_handler)
 
@@ -140,6 +169,7 @@ app.add_middleware(
 # WebSocket 握手不走 HTTP middleware，各 ws 端点用 ws_authenticate 单独鉴权。
 _AUTH_PUBLIC_PATHS = {
     "/",
+    "/health",
     "/auth/send-otp",
     "/auth/verify-otp",
     "/auth/test-login",
@@ -166,13 +196,16 @@ async def _can_view_generated_image(username: str, image_path: str) -> bool:
 
 @app.middleware("http")
 async def require_auth(request: Request, call_next):
+    path = request.url.path
+    # Match StaticFiles' path normalization when identifying private/hidden uploads.
+    upload_path = posixpath.normpath("/" + path.lstrip("/"))
+    hidden_upload = upload_path.startswith("/uploads/") and any(
+        part.startswith(".") for part in upload_path.split("/")[2:]
+    )
     if request.method == "OPTIONS":  # CORS 预检
         return await call_next(request)
-    path = request.url.path
-    # Match StaticFiles' path normalization before the DEV uploads bypass.
-    upload_path = posixpath.normpath("/" + path.lstrip("/"))
     private_chat_image = upload_path.startswith("/uploads/") and posixpath.basename(upload_path).startswith(("generated_", "reference_", ".generated_", ".reference_"))
-    if (path.startswith("/uploads/") and not private_chat_image
+    if (path.startswith("/uploads/") and not private_chat_image and not hidden_upload
             and os.getenv("DEV_MODE", "0") == "1" and is_loopback_client(request)):
         return await call_next(request)
     if path.startswith(_API_DOCS_PREFIXES):
@@ -209,6 +242,8 @@ async def require_auth(request: Request, call_next):
         return response
     # 把鉴权结果挂到 request.state，路由里 Depends(get_current_user) 直接读，避免重复解码。
     request.state.user = user
+    if hidden_upload:
+        return JSONResponse({"detail": "Not Found"}, status_code=404)
     if private_chat_image and not await _can_view_generated_image(user, upload_path):
         return JSONResponse({"detail": "图片不存在或无权访问"}, status_code=404, headers={"Cache-Control": "private, no-store"})
     response = await call_next(request)
@@ -225,3 +260,57 @@ async def require_auth(request: Request, call_next):
 @app.get("/")
 async def root():
     return {"status": "ok", "name": "Chloe API"}
+
+
+async def _check_health() -> list[str]:
+    """检查本机持久化状态，只收集检查项名称。"""
+    from agent_store import MIGRATION_VERSION
+    from exchange_store import (
+        MIGRATION_VERSION as EXCHANGE_MIGRATION_VERSION,
+        OFFICIAL_MIGRATION_VERSION,
+        EXTENDED_OFFICIAL_MIGRATION_VERSION,
+        WORKFLOW_MIGRATION_VERSION,
+    )
+
+    expected_versions = {
+        MIGRATION_VERSION,
+        EXCHANGE_MIGRATION_VERSION,
+        OFFICIAL_MIGRATION_VERSION,
+        EXTENDED_OFFICIAL_MIGRATION_VERSION,
+        WORKFLOW_MIGRATION_VERSION,
+    }
+    failed = []
+    try:
+        if not os.access(database.DB_PATH, os.W_OK):
+            raise PermissionError("database is not writable")
+        uri = Path(database.DB_PATH).resolve().as_uri() + "?mode=rw"
+        async with aiosqlite.connect(uri, uri=True, timeout=1.0) as db:
+            try:
+                async with db.execute("SELECT version FROM schema_migrations") as cursor:
+                    versions = {row[0] for row in await cursor.fetchall()}
+                async with db.execute(
+                    "SELECT 1 FROM sqlite_master WHERE type = 'table' AND name = 'users'"
+                ) as cursor:
+                    users_exists = await cursor.fetchone() is not None
+                if not expected_versions.issubset(versions) or not users_exists:
+                    failed.append("schema")
+            except Exception:
+                failed.append("schema")
+    except Exception:
+        failed.append("database")
+    if not os.path.isdir(media.UPLOADS_DIR) or not os.access(media.UPLOADS_DIR, os.W_OK):
+        failed.append("uploads")
+    return failed
+
+
+@app.get("/health")
+@app.head("/health")
+async def health():
+    """在总时限内检查本机持久化状态，只返回检查项名称。"""
+    try:
+        failed = await asyncio.wait_for(_check_health(), timeout=_HEALTH_TIMEOUT_SECONDS)
+    except asyncio.TimeoutError:
+        failed = ["database"]
+    if failed:
+        return JSONResponse({"status": "error", "failed": failed}, status_code=503)
+    return {"status": "ok"}

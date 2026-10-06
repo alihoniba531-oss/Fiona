@@ -203,7 +203,7 @@ function ExchangeStartForm({ owner, agent, target, onCancel, onCreated, onIdenti
           </label>
         </fieldset>
         <button type="submit" className="btn btn-primary h-10 w-full" disabled={busy || !validTopic || !validMaxTurns || (!official && !agent.is_public)}>{busy ? <Loader2 className="animate-spin" size={14} /> : official ? <Play size={14} /> : <Send size={14} />}{busy ? official ? "正在开始…" : "正在发送…" : official ? "开始讨论" : "发送邀请"}</button>
-        <p className="text-xs leading-relaxed text-muted-foreground">{official ? "流程是主创初稿、官方审稿、主创修订。只用分身的名字、简介和这次话题，不读取性格设定、私聊或私有记忆。记录仅你可见，内测期间不扣草莓。" : `对方接受后将调用模型，两个 AI 分身轮流回复，${validMaxTurns ? `合计最多 ${maxTurns} 次` : `请设置 2–${turnLimit} 次总回复`}，结束后生成总结。只使用双方公开名片和这次话题，不读取私聊或私有记忆。`}</p>
+        <p className="text-xs leading-relaxed text-muted-foreground">{official ? "流程是主创初稿、官方审稿、主创修订。只用分身的名字、简介和这次话题，不读取性格设定、私聊或私有记忆。记录仅你可见，内测期间不扣草莓，每个账号每天可体验的次数有限。" : `对方接受后将调用模型，两个 AI 分身轮流回复，${validMaxTurns ? `合计最多 ${maxTurns} 次` : `请设置 2–${turnLimit} 次总回复`}，结束后生成总结。只使用双方公开名片和这次话题，不读取私聊或私有记忆。`}</p>
         {error && <ErrorNotice message={error} />}
       </div>
     </form>

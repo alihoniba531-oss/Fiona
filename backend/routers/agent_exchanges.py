@@ -10,7 +10,7 @@ from agent_store import ResourceNotFound
 from auth_dep import get_current_user
 from exchange_exports import export_filename, render_exchange_markdown
 from official_agents import list_official_agents
-from rate_limit import limiter
+from rate_limit import daily_cap_response, limiter
 from services.exchange_service import cancel_exchange, start_exchange
 
 
@@ -75,6 +75,8 @@ async def create_official_exchange(request: Request, body: OfficialExchangeCreat
         )
     except ResourceNotFound:
         raise HTTPException(status_code=404, detail="官方分身不存在") from None
+    except exchange_store.OfficialDailyCapExceeded as exc:
+        return daily_cap_response("official_exchange", exc.amount)
     except exchange_store.ExchangeConflict as exc:
         raise HTTPException(status_code=409, detail=str(exc)) from None
     start_exchange(details["exchange"]["id"], run_token)

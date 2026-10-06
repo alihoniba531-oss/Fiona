@@ -710,6 +710,10 @@ export default function ChatPage() {
             });
             const data = await res.json();
             if (selectionVersion !== getSelectionVersion()) return;
+            if (res.status === 429 && "retry_after" in data) {
+              setMicNotice(data.error);
+              return;
+            }
             if (data.text) handleSendRef.current(data.text);
           } catch (_) {}
         };
@@ -799,6 +803,11 @@ export default function ChatPage() {
           });
           const data = await res.json();
           if (selectionVersion !== getSelectionVersion() || !handsFreeRef.current) return;
+          if (res.status === 429 && "retry_after" in data) {
+            setHandsFree(false);
+            setMicNotice(data.error.replace(/。$/, "") + "，免提已关闭");
+            return;
+          }
           if (data.text) handleSendRef.current(data.text);
         } catch (_) {}
       };

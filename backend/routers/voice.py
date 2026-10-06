@@ -14,12 +14,12 @@ import time
 import wave
 from dataclasses import dataclass, field, replace
 
-from fastapi import APIRouter, Depends, HTTPException, Query, Request, WebSocket
+from fastapi import APIRouter, Depends, HTTPException, Query, Request
 from fastapi.responses import JSONResponse
 from pydantic import BaseModel, Field
 
 import rate_limit
-from auth_dep import get_current_user, ws_authenticate
+from auth_dep import get_current_user
 from qwen_asr import asr_recognize, request_timeout_seconds
 from rate_limit import check_and_hit, limiter
 
@@ -488,17 +488,6 @@ async def tts_stream(
     )
 
 
-@router.websocket("/tts/ws")
-async def tts_ws_endpoint(websocket: WebSocket):
-    """持久化 TTS WebSocket：边喂文本边吐音频字节。首音 ~500ms。"""
-    from tts_ws import handle_tts_ws
-    user = await ws_authenticate(websocket)
-    if not user:
-        await websocket.close(code=4401)
-        return
-    await handle_tts_ws(websocket, authenticated_user=user)
-
-
 class AsrRequest(BaseModel):
     audio: str = Field(max_length=ASR_MAX_BASE64_CHARS)  # base64 编码的 PCM/压缩音频
     format: str = Field(default="pcm", min_length=1, max_length=16, pattern=r"^[A-Za-z0-9_+.-]+$")
@@ -507,7 +496,7 @@ class AsrRequest(BaseModel):
 
 @router.post("/asr/recognize")
 @limiter.limit("10/minute")
-async def asr_recognize_endpoint(request: Request, req: AsrRequest):
+async def asr_recognize_endpoint(request: Request, req: AsrRequest, user: str = Depends(get_current_user)):
     """一句话识别：接收 base64 音频并以 WAV 调用 Qwen3-ASR-Flash。"""
     try:
         audio_bytes = base64.b64decode(req.audio, validate=True)
@@ -544,6 +533,11 @@ async def asr_recognize_endpoint(request: Request, req: AsrRequest):
             print(f"[ASR] conversion failed: {type(exc).__name__}")
             return {"text": "", "error": "audio conversion failed"}
 
+    if not os.environ.get("DASHSCOPE_API_KEY", "").strip():
+        return {"text": "", "error": "DASHSCOPE_API_KEY not set"}
+    rejected = rate_limit.check_daily_cap("asr", user)
+    if rejected is not None:
+        return rejected
     try:
         result = await asyncio.wait_for(
             asyncio.to_thread(asr_recognize, audio_bytes, "wav", ASR_SAMPLE_RATE),

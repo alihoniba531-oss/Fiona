@@ -457,7 +457,18 @@ async def build_context(req, user: str) -> ChatContext:
     reference_image_paths = getattr(req, "reference_image_paths", None) or ([reference_image_path] if reference_image_path else [])
     reference_image_path = reference_image_paths[0] if reference_image_paths else None
     if has_image:
-        image_path, validated_image = _save_uploaded_image(req.image_base64)
+        upload_task = asyncio.create_task(asyncio.to_thread(_save_uploaded_image, req.image_base64))
+        try:
+            image_path, validated_image = await asyncio.shield(upload_task)
+        except asyncio.CancelledError:
+            def clean_cancelled_upload(task):
+                if not task.cancelled():
+                    try:
+                        delete_uploaded_files([task.result()[0]])
+                    except Exception:
+                        pass
+            upload_task.add_done_callback(clean_cancelled_upload)
+            raise
 
     user_content = req.message.strip() or "[发了一张图片]"
 

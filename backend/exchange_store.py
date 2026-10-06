@@ -6,6 +6,7 @@ from uuid import uuid4
 import aiosqlite
 
 import database
+import rate_limit
 from agent_store import ResourceNotFound, _one
 from official_agents import get_official_agent
 
@@ -38,6 +39,14 @@ INVALID_WORKFLOW_REASON = "创作流程返回了无效结果，本次交流已�
 
 class ExchangeConflict(ValueError):
     """A valid participant requested an action unavailable in the current state."""
+
+
+class OfficialDailyCapExceeded(ValueError):
+    """An account has already created its configured daily official quota."""
+
+    def __init__(self, amount: int):
+        self.amount = amount
+        super().__init__("official daily cap exceeded")
 
 
 async def migrate_exchanges_schema(db):
@@ -461,6 +470,14 @@ async def create_official_exchange(username, official_agent_id, topic, max_turns
         initiator = await _public_identity(db, username=username)
         if initiator is None:
             raise ExchangeConflict("请先创建自己的分身，再开始官方体验。")
+        if rate_limit.daily_caps_enabled():
+            amount = rate_limit.daily_cap("official_exchange")
+            used = await _one(db, """SELECT COUNT(*) AS count FROM agent_exchanges
+                WHERE kind = 'official' AND initiator_username = ?
+                AND date(created_at, '+8 hours') = ?""",
+                (username, database._today_shanghai()))
+            if used["count"] >= amount:
+                raise OfficialDailyCapExceeded(amount)
         # No public flag requirement or mutation: these basic details remain in
         # the owner's exchange, and the official role has no account identity.
         pair_key = f"official|{initiator['id']}|{official_agent_id}"

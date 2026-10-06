@@ -1,12 +1,19 @@
 # -*- coding: utf-8 -*-
+import asyncio
 import base64
 import binascii
 import io
 import os
+import shutil
+import subprocess
+import tempfile
+import threading
 import warnings
+import weakref
 
+import anyio
 from fastapi import HTTPException, UploadFile
-from PIL import Image
+from PIL import Image, ImageOps
 
 # 本地开发默认写仓库内；生产可通过环境变量把可变数据移出只读代码目录。
 UPLOADS_DIR = os.getenv("FIONA_UPLOADS_DIR") or os.path.join(
@@ -41,6 +48,11 @@ _MAX_PLAZA_IMAGE_BYTES = 5 * 1024 * 1024
 _MAX_PLAZA_VIDEO_BYTES = 20 * 1024 * 1024
 _MAX_IMAGE_PIXELS = 40_000_000
 _PIL_FORMAT_BY_EXT = {"png": "PNG", "jpg": "JPEG", "gif": "GIF", "webp": "WEBP"}
+_MAX_ANIMATION_FRAMES = 300
+_MAX_ANIMATION_PIXELS = 200_000_000
+_REENCODE_SLOTS = threading.BoundedSemaphore(2)
+_PLAZA_REENCODE_SLOTS = weakref.WeakKeyDictionary()
+_CHAT_REENCODE_TIMEOUT = 10
 
 
 def _validate_decodable_image(source, ext: str) -> None:
@@ -49,7 +61,9 @@ def _validate_decodable_image(source, ext: str) -> None:
         with warnings.catch_warnings():
             warnings.simplefilter("error", Image.DecompressionBombWarning)
             with Image.open(source) as image:
-                if image.format != _PIL_FORMAT_BY_EXT.get(ext):
+                if image.format != _PIL_FORMAT_BY_EXT.get(ext) and not (
+                    ext == "jpg" and image.format == "MPO"
+                ):
                     raise ValueError("image format does not match signature")
                 width, height = image.size
                 if width <= 0 or height <= 0 or width * height > _MAX_IMAGE_PIXELS:
@@ -57,6 +71,163 @@ def _validate_decodable_image(source, ext: str) -> None:
                 image.verify()
     except Exception as exc:
         raise HTTPException(status_code=400, detail="图片内容损坏或尺寸过大") from exc
+
+
+def _strip_image_metadata(source, ext: str, *, slot_timeout: float | None = None) -> bytes:
+    """重建像素后编码；只携带明确允许的 ICC 和动画播放参数。"""
+    if not _REENCODE_SLOTS.acquire(timeout=slot_timeout):
+        raise HTTPException(status_code=503, detail="服务器繁忙，请稍后再发图片")
+    frames = []
+    try:
+        _validate_decodable_image(source, ext)
+        if hasattr(source, "seek"):
+            source.seek(0)
+        try:
+            with warnings.catch_warnings():
+                warnings.simplefilter("error", Image.DecompressionBombWarning)
+                with Image.open(source) as image:
+                    animated = ext in {"gif", "webp"} and getattr(image, "n_frames", 1) > 1
+                    frame_count = image.n_frames if animated else 1
+                    if animated and (
+                        frame_count > _MAX_ANIMATION_FRAMES
+                        or frame_count * image.width * image.height > _MAX_ANIMATION_PIXELS
+                    ):
+                        raise HTTPException(status_code=400, detail="动图帧数过多，请压缩后再发")
+                    icc = image.info.get("icc_profile")
+                    loop = image.info.get("loop")
+                    durations = []
+                    gif_transparency = False
+                    canvas_width, canvas_height = image.size
+                    for index in range(frame_count):
+                        image.seek(index)
+                        if image.width * image.height > _MAX_IMAGE_PIXELS:
+                            raise ValueError("image dimensions exceed limit")
+                        canvas_width = max(canvas_width, image.width)
+                        canvas_height = max(canvas_height, image.height)
+                        if animated and frame_count * canvas_width * canvas_height > _MAX_ANIMATION_PIXELS:
+                            raise HTTPException(status_code=400, detail="动图帧数过多，请压缩后再发")
+                        image.load()
+                        durations.append(image.info.get("duration", 0))
+                        # exif_transpose copies even when no rotation is needed.
+                        oriented = ImageOps.exif_transpose(image) if image.getexif().get(274, 1) in range(2, 9) else image
+                        converted = None
+                        try:
+                            mode = oriented.mode
+                            if mode == "P":
+                                mode = "RGBA" if "transparency" in oriented.info else "RGB"
+                            elif ext == "png" and "transparency" in oriented.info and mode in {"RGB", "L"}:
+                                mode = "RGBA" if mode == "RGB" else "LA"
+                            if ext == "jpg" and mode not in {"RGB", "L", "CMYK"}:
+                                mode = "RGB"
+                            converted = oriented.convert(mode) if mode != oriented.mode else oriented
+                            if oriented is not image and converted is not oriented:
+                                oriented.close()
+                            rebuilt = Image.new(mode, converted.size)
+                            rebuilt.paste(converted)
+                            frames.append(rebuilt)
+                            if ext == "gif" and mode == "RGBA" and rebuilt.getextrema()[3][0] < 255:
+                                gif_transparency = True
+                        finally:
+                            if converted is not None and converted is not image:
+                                converted.close()
+                            if oriented is not image:
+                                oriented.close()
+                    options = {"icc_profile": icc} if icc else {}
+                    if ext in {"jpg", "webp"}:
+                        options["quality"] = 90
+                    if animated:
+                        options.update(save_all=True, append_images=frames[1:], duration=durations)
+                        if loop is not None:
+                            options["loop"] = loop
+                        if ext == "gif" and gif_transparency:
+                            # Composed transparent canvases must erase old pixels.
+                            # Opaque frames retain Pillow's frame differences.
+                            options["disposal"] = 2
+                    output = io.BytesIO()
+                    frames[0].save(output, format=_PIL_FORMAT_BY_EXT[ext], **options)
+                    return output.getvalue()
+        except HTTPException:
+            raise
+        except Exception as exc:
+            raise HTTPException(status_code=400, detail="图片内容损坏或尺寸过大") from exc
+    finally:
+        for frame in frames:
+            frame.close()
+        _REENCODE_SLOTS.release()
+
+
+def _strip_video_metadata(source: str, destination: str, ext: str) -> None:
+    """只映射视频与首条音轨，保留压缩流及旋转矩阵，移除标签和定位轨。"""
+    with _REENCODE_SLOTS:
+        executable = shutil.which("ffmpeg")
+        if not executable:
+            raise HTTPException(status_code=503, detail="服务器暂时无法处理视频，请改发图片")
+        container = {"mp4": "mp4", "mov": "mov", "webm": "webm"}[ext]
+        argv = [
+            executable, "-nostdin", "-y", "-i", str(source),
+            "-map", "0:V:0", "-map", "0:a:0?", "-c", "copy",
+            "-map_metadata", "-1", "-map_metadata:s", "-1", "-map_chapters", "-1",
+            "-dn", "-sn", "-fflags", "+bitexact",
+        ]
+        if ext == "mp4":
+            argv.extend(["-movflags", "+faststart"])
+        argv.extend(["-f", container, str(destination)])
+        try:
+            subprocess.run(argv, check=True, capture_output=True, timeout=30)
+            if not os.path.isfile(destination) or not os.path.getsize(destination):
+                raise ValueError("empty video output")
+        except (OSError, subprocess.SubprocessError, ValueError) as exc:
+            raise HTTPException(status_code=400, detail="视频处理失败，请转成 MP4 后再发") from exc
+
+
+def _upload_temporary() -> str:
+    descriptor, path = tempfile.mkstemp(prefix=".upload_", dir=UPLOADS_DIR)
+    os.close(descriptor)
+    return path
+
+
+def _unlink_upload(path: str | None) -> None:
+    if path:
+        try:
+            os.unlink(path)
+        except OSError:
+            pass
+
+
+def _process_upload(source: str, destination: str, ext: str, media_type: str) -> None:
+    if media_type == "video":
+        _strip_video_metadata(source, destination, ext)
+    else:
+        data = _strip_image_metadata(source, ext)
+        with open(destination, "wb") as output:
+            output.write(data)
+
+
+async def _process_upload_off_loop(source: str, destination: str, ext: str, media_type: str) -> None:
+    loop = asyncio.get_running_loop()
+    slots = _PLAZA_REENCODE_SLOTS.setdefault(loop, asyncio.Semaphore(2))
+    await slots.acquire()
+    worker = asyncio.create_task(asyncio.to_thread(_process_upload, source, destination, ext, media_type))
+
+    def finished(task):
+        slots.release()
+        if not task.cancelled():
+            task.exception()
+
+    worker.add_done_callback(finished)
+    try:
+        await asyncio.shield(worker)
+    except asyncio.CancelledError:
+        # Anyio cancellation keeps firing at every await unless shielded. A
+        # second explicit asyncio cancellation falls back to deferred cleanup.
+        try:
+            with anyio.CancelScope(shield=True):
+                await asyncio.shield(worker)
+        except (asyncio.CancelledError, Exception):
+            pass
+        worker.add_done_callback(lambda _: (_unlink_upload(source), _unlink_upload(destination)))
+        raise
+
 
 def _sniff_image_ext(data: bytes) -> str | None:
     """嗅探前 12 字节判图片类型。不是已知图片格式返回 None。"""
@@ -116,8 +287,13 @@ async def _save_plaza_upload(file: UploadFile) -> tuple[str, str]:
     fname = f"plaza_{_uuid.uuid4().hex}.{ext}"
     fpath = os.path.join(UPLOADS_DIR, fname)
     total = 0
+    source = None
+    destination = None
+    saved = False
     try:
-        with open(fpath, "wb") as f:
+        source = _upload_temporary()
+        destination = _upload_temporary()
+        with open(source, "wb") as f:
             if first:
                 total += len(first)
                 if total > limit:
@@ -131,28 +307,17 @@ async def _save_plaza_upload(file: UploadFile) -> tuple[str, str]:
                 if total > limit:
                     raise HTTPException(status_code=413, detail="文件太大")
                 f.write(chunk)
-    except Exception:
-        try:
-            os.unlink(fpath)
-        except OSError:
-            pass
-        raise
-    if total == 0:
-        try:
-            os.unlink(fpath)
-        except OSError:
-            pass
-        raise HTTPException(status_code=400, detail="文件为空")
-    if media_type == "image":
-        try:
-            _validate_decodable_image(fpath, ext)
-        except Exception:
-            try:
-                os.unlink(fpath)
-            except OSError:
-                pass
-            raise
-    return f"/uploads/{fname}", media_type
+        if total == 0:
+            raise HTTPException(status_code=400, detail="文件为空")
+        await _process_upload_off_loop(source, destination, ext, media_type)
+        os.replace(destination, fpath)
+        saved = True
+        return f"/uploads/{fname}", media_type
+    finally:
+        _unlink_upload(source)
+        _unlink_upload(destination)
+        if not saved:
+            _unlink_upload(fpath)
 
 
 def _save_uploaded_image(image_base64: str) -> tuple[str, str]:
@@ -180,21 +345,30 @@ def _save_uploaded_image(image_base64: str) -> tuple[str, str]:
     ext = _sniff_image_ext(img_data[:12])
     if not ext:
         raise HTTPException(status_code=400, detail="只支持 PNG、JPEG、GIF 或 WebP 图片")
-    _validate_decodable_image(io.BytesIO(img_data), ext)
+    img_data = _strip_image_metadata(io.BytesIO(img_data), ext, slot_timeout=_CHAT_REENCODE_TIMEOUT)
 
     import uuid as _uuid
     fname = f"{_uuid.uuid4().hex}.{ext}"
     fpath = os.path.join(UPLOADS_DIR, fname)
+    temporary = None
+    saved = False
+    mime = "jpeg" if ext == "jpg" else ext
+    normalized = base64.b64encode(img_data).decode("ascii")
+    result = (f"/uploads/{fname}", f"data:image/{mime};base64,{normalized}")
     try:
-        with open(fpath, "wb") as f:
+        temporary = _upload_temporary()
+        with open(temporary, "wb") as f:
             f.write(img_data)
+        os.replace(temporary, fpath)
+        saved = True
     except OSError as exc:
         print(f"[upload] save failed type={type(exc).__name__}", flush=True)
         raise HTTPException(status_code=500, detail="图片保存失败") from exc
-
-    mime = "jpeg" if ext == "jpg" else ext
-    normalized = base64.b64encode(img_data).decode("ascii")
-    return f"/uploads/{fname}", f"data:image/{mime};base64,{normalized}"
+    finally:
+        _unlink_upload(temporary)
+        if not saved:
+            _unlink_upload(fpath)
+    return result
 
 
 def delete_uploaded_files(paths: list[str]) -> tuple[list[str], list[str]]:

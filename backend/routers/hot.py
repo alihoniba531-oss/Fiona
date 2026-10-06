@@ -1,5 +1,6 @@
 # -*- coding: utf-8 -*-
 import json
+import os
 import re
 import time as _time
 
@@ -7,7 +8,7 @@ from fastapi import APIRouter, Depends, Query, Request
 
 from auth_dep import get_current_user
 from llm import QWEN_CLIENT, QWEN_MODEL, QWEN_EXTRA_BODY
-from rate_limit import limiter
+from rate_limit import check_daily_cap, limiter
 from tools.hot_topics import hot_topics
 from utils.slow_pool import run_slow
 
@@ -26,6 +27,14 @@ async def hot_expand(
     会触发 LLM 联网外呼，必须登录（中间件与本依赖双重校验），
     另限流 20/分钟/IP 防刷；request 供 slowapi 取 key。"""
     from tools.topic_expand import topic_expand
+    title = title.strip()
+    if not title:
+        return {"title": "", "error": "标题为空"}
+    if not os.environ.get("DASHSCOPE_API_KEY", ""):
+        return {"title": title, "error": "DASHSCOPE_API_KEY 未设置"}
+    rejected = check_daily_cap("hot_expand", _user)
+    if rejected is not None:
+        return rejected
     return await run_slow(topic_expand, title)
 
 

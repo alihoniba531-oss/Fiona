@@ -1,11 +1,12 @@
 """On-demand details for individual entries in Chloe's information cards."""
 import asyncio
+import os
 
 from fastapi import APIRouter, Depends, Request
 from pydantic import BaseModel, ConfigDict, Field, field_validator
 
 from auth_dep import get_current_user
-from rate_limit import limiter
+from rate_limit import check_daily_cap, limiter
 from tools.card_detail import card_detail, detail_error
 from utils.slow_pool import run_slow
 
@@ -34,6 +35,11 @@ class CardDetailRequest(BaseModel):
 async def get_card_detail(
     request: Request, body: CardDetailRequest, user: str = Depends(get_current_user),
 ):
+    if not os.environ.get("DASHSCOPE_API_KEY", ""):
+        return detail_error(body.title, "详情搜索暂不可用，请稍后重试")
+    rejected = check_daily_cap("card_detail", user)
+    if rejected is not None:
+        return rejected
     try:
         return await asyncio.wait_for(
             run_slow(card_detail, body.title, body.context),
