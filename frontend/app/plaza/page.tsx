@@ -579,7 +579,11 @@ function PlazaContent() {
               "ceramic-card w-full max-w-sm overflow-hidden rounded-[18px] mobile:overflow-y-auto",
               embedded ? "mobile:max-h-[calc(100dvh-2rem)]" : "mobile:max-h-[calc(100dvh-2rem-var(--tabbar-h)-env(safe-area-inset-bottom))]",
             )}
-            style={{ borderColor: "var(--rule)" }}
+            style={{
+              borderColor: "var(--rule)",
+              backdropFilter: "var(--bd)",
+              WebkitBackdropFilter: "var(--bd)",
+            }}
           >
             <div className="flex items-center justify-between border-b px-4 py-3" style={{ borderColor: "var(--rule)" }}>
               <div className="flex items-center gap-2 text-sm font-medium">
