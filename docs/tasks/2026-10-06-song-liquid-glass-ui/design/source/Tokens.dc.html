@@ -1,0 +1,520 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<title>Chloe 宋式规范</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin="">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Noto+Serif+SC:wght@300;400;500;600&amp;display=swap">
+<style>
+body{margin:0}
+</style>
+</helmet>
+<div style="--paper:{{t.paper}};--hi:{{t.hi}};--slip:{{t.slip}};--deep:{{t.deep}};--ink:{{t.ink}};--ink2:{{t.ink2}};--ink3:{{t.ink3}};--rule:{{t.rule}};--rule2:{{t.rule2}};--seal:{{t.seal}};--glyph:{{t.glyph}};--btn:{{t.btn}};--btnink:{{t.btnink}};--weave:{{t.weave}};--sky:{{t.sky}};--water:{{t.water}};--m1:{{t.m1}};--m2:{{t.m2}};--m3:{{t.m3}};--m4:{{t.m4}};--mist:{{t.mist}};--ripple:{{t.ripple}};--glass:{{t.glass}};--glass2:{{t.glass2}};--thin:{{t.thin}};--thin2:{{t.thin2}};--chip:{{t.chip}};--mount:{{t.mount}};--pool:{{t.pool}};--sheen:{{t.sheen}};--rim:{{t.rim}};--lip:{{t.lip}};--lipdk:{{t.lipdk}};--carve:{{t.carve}};--etch:{{t.etch}};--spec:{{t.spec}};--bloom:{{t.bloom}};--drop:{{t.drop}};--fur:{{t.fur}};--blur:{{t.blur}};--blur-strong:{{t.blurS}};--sat:{{t.sat}};--bri:{{t.bri}};--bd:{{t.bd}};--bd-strong:{{t.bdS}};--lens:{{t.lens}};--art:{{t.art}};--n-paper:{{t.nPaper}};--n-hi:{{t.nHi}};--n-slip:{{t.nSlip}};--n-ink:{{t.nInk}};--n-ink2:{{t.nInk2}};--n-rule2:{{t.nRule2}};--n-seal:{{t.nSeal}};--n-sky:{{t.nSky}};--n-water:{{t.nWater}};--n-m1:{{t.nM1}};--n-m2:{{t.nM2}};--n-m3:{{t.nM3}};--n-m4:{{t.nM4}};--n-mist:{{t.nMist}};--n-ripple:{{t.nRipple}};--n-weave:{{t.nWeave}};--n-glass:{{t.nGlass}};--n-thin:{{t.nThin}};--n-pool:{{t.nPool}};--n-sheen:{{t.nSheen}};--n-rim:{{t.nRim}};--n-lip:{{t.nLip}};--n-lipdk:{{t.nLipdk}};--n-spec:{{t.nSpec}};--n-bloom:{{t.nBloom}};--n-drop:{{t.nDrop}};--n-fur:{{t.nFur}};--n-sat:{{t.nSat}};--n-bri:{{t.nBri}}; position: relative; width: 1440px; height: 900px; box-sizing: border-box; padding: 20px; display: flex; gap: 14px; overflow: hidden; font-family: 'Noto Serif SC', 'Songti SC', 'STSong', serif; color: var(--ink); background-color: var(--paper)">
+
+  <!-- 规范页：与「对话」同一套影青釉。两方釉片（左：色 / 字 / 件，右：材质）压在同一幅绢本烟雨平远上；
+       玻璃层次、令牌、素瓷退路与 Chat.dc.html 定稿一致（透镜层 → 釉层 backdrop → 釉色底 → 釉色 → 顶边高光，全部 border-radius: inherit）。
+       本页只有昼；「材质」里的夜间小样用根元素上的 --n-* 令牌（四套 THEMES 都有）在小样外框上局部改写同名变量，配方标记与昼间小样逐字相同。
+       素瓷（solid 属性 / 减少透明度 / 增强对比度）：令牌切到 daySolid —— 釉片不透明、--bd 为 none、透镜隐藏、背景画减半，小样一并转为素瓷。 -->
+
+  <!-- 玻璃后面：绢本烟雨平远（与对话页同源：同一组主山、远山、烟、水；本页不画汀洲，见下） -->
+  <div aria-hidden="true" style="position: absolute; left: 0; top: 0; right: 0; bottom: 0; z-index: 0; pointer-events: none; background-image: linear-gradient(to top, var(--water) 0, var(--water) 306px, var(--paper) 378px, var(--sky) 900px)"></div>
+  <svg aria-hidden="true" width="1440" height="900" viewBox="0 0 1440 900" style="position: absolute; left: 0; bottom: 0; z-index: 0; display: block; overflow: visible; pointer-events: none; opacity: var(--art)">
+    <defs>
+      <filter id="yqt-wet-near" x="-5%" y="-10%" width="110%" height="120%">
+        <feTurbulence type="fractalNoise" baseFrequency="0.018 0.05" numOctaves="3" seed="4" result="n"></feTurbulence>
+        <feDisplacementMap in="SourceGraphic" in2="n" scale="7" xChannelSelector="R" yChannelSelector="G" result="d"></feDisplacementMap>
+        <feGaussianBlur in="d" stdDeviation="0.7"></feGaussianBlur>
+      </filter>
+      <radialGradient id="yqt-mistg">
+        <stop offset="0" style="stop-color: var(--mist); stop-opacity: 1"></stop>
+        <stop offset="0.42" style="stop-color: var(--mist); stop-opacity: 0.72"></stop>
+        <stop offset="0.75" style="stop-color: var(--mist); stop-opacity: 0.24"></stop>
+        <stop offset="1" style="stop-color: var(--mist); stop-opacity: 0"></stop>
+      </radialGradient>
+      <linearGradient id="yqt-fade-main" gradientUnits="userSpaceOnUse" x1="0" y1="196" x2="0" y2="500">
+        <stop offset="0" stop-color="#fff"></stop>
+        <stop offset="0.45" stop-color="#fff" stop-opacity="0.62"></stop>
+        <stop offset="1" stop-color="#fff" stop-opacity="0"></stop>
+      </linearGradient>
+      <linearGradient id="yqt-fade-near" gradientUnits="userSpaceOnUse" x1="0" y1="388" x2="0" y2="566">
+        <stop offset="0" stop-color="#fff"></stop>
+        <stop offset="1" stop-color="#fff" stop-opacity="0"></stop>
+      </linearGradient>
+      <mask id="yqt-mk-main" maskUnits="userSpaceOnUse" x="-200" y="0" width="1100" height="900"><rect x="-200" y="0" width="1100" height="900" fill="url(#yqt-fade-main)"></rect></mask>
+      <mask id="yqt-mk-near" maskUnits="userSpaceOnUse" x="-200" y="0" width="1100" height="900"><rect x="-200" y="0" width="1100" height="900" fill="url(#yqt-fade-near)"></rect></mask>
+    </defs>
+    <g mask="url(#yqt-mk-main)">
+      <path filter="url(#yqt-wet-near)" d="M-60 620 L -60 306 C -20 300, 10 290, 40 270 C 70 250, 100 226, 134 208 C 160 194, 184 196, 206 210 C 226 222, 246 230, 270 236 C 296 242, 318 254, 340 268 C 372 288, 404 310, 436 334 C 466 358, 494 388, 524 420 C 554 452, 596 478, 660 500 L 660 620 Z" style="fill: var(--m2)"></path>
+    </g>
+    <g mask="url(#yqt-mk-near)">
+      <path filter="url(#yqt-wet-near)" d="M-60 620 L -60 432 C -10 424, 30 404, 76 396 C 118 389, 150 402, 188 414 C 230 427, 270 434, 312 446 C 346 456, 374 470, 404 488 C 434 506, 468 528, 520 566 L 520 620 Z" style="fill: var(--m3)"></path>
+    </g>
+    <g>
+      <ellipse cx="330" cy="512" rx="520" ry="62" style="fill: url(#yqt-mistg); opacity: 0.95"></ellipse>
+      <ellipse cx="190" cy="352" rx="290" ry="30" style="fill: url(#yqt-mistg); opacity: 0.55"></ellipse>
+    </g>
+    <g style="fill: var(--ripple)">
+      <path d="M396 664 q 60 -1.5 120 0 q -60 0.83 -120 0 Z"></path>
+      <path d="M404 770 q 48 -1.4 96 0 q -48 0.77 -96 0 Z"></path>
+    </g>
+  </svg>
+  <svg aria-hidden="true" width="1440" height="900" viewBox="0 0 1440 900" style="position: absolute; left: 0; bottom: 0; z-index: 0; display: block; overflow: visible; pointer-events: none; opacity: var(--art)">
+    <defs>
+      <filter id="yqt-wet-far" x="-5%" y="-10%" width="110%" height="120%">
+        <feTurbulence type="fractalNoise" baseFrequency="0.012 0.04" numOctaves="2" seed="11" result="n"></feTurbulence>
+        <feDisplacementMap in="SourceGraphic" in2="n" scale="9" xChannelSelector="R" yChannelSelector="G" result="d"></feDisplacementMap>
+        <feGaussianBlur in="d" stdDeviation="2.2"></feGaussianBlur>
+      </filter>
+      <radialGradient id="yqt-mistg-r">
+        <stop offset="0" style="stop-color: var(--mist); stop-opacity: 1"></stop>
+        <stop offset="0.42" style="stop-color: var(--mist); stop-opacity: 0.72"></stop>
+        <stop offset="0.75" style="stop-color: var(--mist); stop-opacity: 0.24"></stop>
+        <stop offset="1" style="stop-color: var(--mist); stop-opacity: 0"></stop>
+      </radialGradient>
+      <linearGradient id="yqt-fade-far" gradientUnits="userSpaceOnUse" x1="0" y1="490" x2="0" y2="584">
+        <stop offset="0" stop-color="#fff"></stop>
+        <stop offset="1" stop-color="#fff" stop-opacity="0"></stop>
+      </linearGradient>
+      <mask id="yqt-mk-far" maskUnits="userSpaceOnUse" x="300" y="0" width="1900" height="900"><rect x="300" y="0" width="1900" height="900" fill="url(#yqt-fade-far)"></rect></mask>
+    </defs>
+    <g mask="url(#yqt-mk-far)">
+      <path filter="url(#yqt-wet-far)" d="M600 566 C 660 554, 720 542, 780 535 C 826 530, 852 512, 890 507 C 924 503, 948 518, 982 520 C 1024 522, 1056 498, 1098 492 C 1132 488, 1158 503, 1196 509 C 1250 517, 1302 528, 1362 536 C 1440 546, 1560 550, 1760 554 L 1760 600 L 600 600 Z" style="fill: var(--m1)"></path>
+    </g>
+    <!-- 本页不画汀洲：右釉片下半满是说明文字，洲脊压在字下会脏；挪出釉片又只剩页边缝里一截断山。右侧只留远山、烟和水纹 -->
+    <g>
+      <ellipse cx="1080" cy="580" rx="820" ry="54" style="fill: url(#yqt-mistg-r); opacity: 0.88"></ellipse>
+      <ellipse cx="1240" cy="824" rx="400" ry="30" style="fill: url(#yqt-mistg-r); opacity: 0.72"></ellipse>
+    </g>
+    <g style="fill: var(--ripple)">
+      <path d="M1282 612 q 55 -1.5 110 0 q -55 0.83 -110 0 Z"></path>
+      <path d="M1254 676 q 60 -1.6 120 0 q -60 0.9 -120 0 Z"></path>
+      <path d="M1264 848 q 65 -1.6 130 0 q -65 0.88 -130 0 Z"></path>
+    </g>
+  </svg>
+  <svg aria-hidden="true" width="100%" height="100%" style="position: absolute; left: 0; top: 0; width: 100%; height: 100%; z-index: 0; display: block; pointer-events: none; mix-blend-mode: overlay; opacity: 0.1">
+    <filter id="yqt-grain" x="0" y="0" width="100%" height="100%" color-interpolation-filters="sRGB">
+      <feTurbulence type="fractalNoise" baseFrequency="0.9" numOctaves="1" seed="3" stitchTiles="stitch"></feTurbulence>
+      <feColorMatrix type="matrix" values="1 0 0 0 0  1 0 0 0 0  1 0 0 0 0  0 0 0 0 1"></feColorMatrix>
+    </filter>
+    <rect width="100%" height="100%" filter="url(#yqt-grain)"></rect>
+  </svg>
+  <div aria-hidden="true" style="position: absolute; left: 0; top: 0; right: 0; bottom: 0; z-index: 0; pointer-events: none; background-image: repeating-linear-gradient(0deg, var(--weave) 0 1px, transparent 1px 3px), repeating-linear-gradient(90deg, var(--weave) 0 1px, transparent 1px 3px)"></div>
+  <!-- 透镜滤镜（仅 Chromium）：与对话页 yqd-lens 同参（内收 3、模糊 7、scale 32，口沿约 20px 内弯折，最大约 16px） -->
+  <svg aria-hidden="true" width="0" height="0" style="position: absolute; width: 0; height: 0; overflow: hidden">
+    <defs>
+      <filter id="yqt-lens" x="0" y="0" width="1" height="1" color-interpolation-filters="sRGB">
+        <feFlood flood-color="#fff" result="f0"></feFlood>
+        <feMorphology in="f0" operator="erode" radius="3" result="f"></feMorphology>
+        <feGaussianBlur in="f" stdDeviation="7" result="a"></feGaussianBlur>
+        <feOffset in="a" dx="-2" result="ax1"></feOffset>
+        <feOffset in="a" dx="2" result="ax2"></feOffset>
+        <feComposite in="ax1" in2="ax2" operator="arithmetic" k2="1.6" k3="-1.6" k4="0.5" result="gx"></feComposite>
+        <feOffset in="a" dy="-2" result="ay1"></feOffset>
+        <feOffset in="a" dy="2" result="ay2"></feOffset>
+        <feComposite in="ay1" in2="ay2" operator="arithmetic" k2="1.6" k3="-1.6" k4="0.5" result="gy"></feComposite>
+        <feColorMatrix in="gx" type="matrix" values="0 0 0 1 0  0 0 0 0 0  0 0 0 0 0  0 0 0 0 1" result="rx"></feColorMatrix>
+        <feColorMatrix in="gy" type="matrix" values="0 0 0 0 0  0 0 0 1 0  0 0 0 0 0  0 0 0 0 1" result="ry"></feColorMatrix>
+        <feComposite in="rx" in2="ry" operator="arithmetic" k2="1" k3="1" result="m0"></feComposite>
+        <feGaussianBlur in="m0" stdDeviation="1.2" result="m1"></feGaussianBlur>
+        <feColorMatrix in="m1" type="matrix" values="1 0 0 0 0  0 1 0 0 0  0 0 0 0 0.5  0 0 0 0 1" result="map"></feColorMatrix>
+        <feDisplacementMap in="SourceGraphic" in2="map" scale="32" xChannelSelector="R" yChannelSelector="G"></feDisplacementMap>
+      </filter>
+      <!-- 小样釉片（126×88，约为左釉片的三分之一）：透镜按比例缩小——内收 2、模糊 3.5、scale 14，口沿约 10px 内弯折，最大约 6px -->
+      <filter id="yqt-lens-s" x="0" y="0" width="1" height="1" color-interpolation-filters="sRGB">
+        <feFlood flood-color="#fff" result="f0"></feFlood>
+        <feMorphology in="f0" operator="erode" radius="2" result="f"></feMorphology>
+        <feGaussianBlur in="f" stdDeviation="3.5" result="a"></feGaussianBlur>
+        <feOffset in="a" dx="-2" result="ax1"></feOffset>
+        <feOffset in="a" dx="2" result="ax2"></feOffset>
+        <feComposite in="ax1" in2="ax2" operator="arithmetic" k2="1.6" k3="-1.6" k4="0.5" result="gx"></feComposite>
+        <feOffset in="a" dy="-2" result="ay1"></feOffset>
+        <feOffset in="a" dy="2" result="ay2"></feOffset>
+        <feComposite in="ay1" in2="ay2" operator="arithmetic" k2="1.6" k3="-1.6" k4="0.5" result="gy"></feComposite>
+        <feColorMatrix in="gx" type="matrix" values="0 0 0 1 0  0 0 0 0 0  0 0 0 0 0  0 0 0 0 1" result="rx"></feColorMatrix>
+        <feColorMatrix in="gy" type="matrix" values="0 0 0 0 0  0 0 0 1 0  0 0 0 0 0  0 0 0 0 1" result="ry"></feColorMatrix>
+        <feComposite in="rx" in2="ry" operator="arithmetic" k2="1" k3="1" result="m0"></feComposite>
+        <feGaussianBlur in="m0" stdDeviation="1.2" result="m1"></feGaussianBlur>
+        <feColorMatrix in="m1" type="matrix" values="1 0 0 0 0  0 1 0 0 0  0 0 0 0 0.5  0 0 0 0 1" result="map"></feColorMatrix>
+        <feDisplacementMap in="SourceGraphic" in2="map" scale="14" xChannelSelector="R" yChannelSelector="G"></feDisplacementMap>
+      </filter>
+    </defs>
+  </svg>
+
+  <!-- 左釉片：色 / 字 / 件（与对话页左釉片同一配方；件与件之间用刻线 carve + etch 分开） -->
+  <div style="position: relative; z-index: 2; flex: 0 0 836px; box-sizing: border-box; padding: 26px 28px 28px; display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); grid-template-rows: auto minmax(0, 1fr); border-radius: 18px; box-shadow: 0 1px 2px var(--drop), 0 28px 56px -36px var(--drop)">
+    <div aria-hidden="true" style="position: absolute; left: 0; top: 0; right: 0; bottom: 0; z-index: -1; border-radius: inherit; pointer-events: none; display: var(--lens); backdrop-filter: url(#yqt-lens)"></div>
+    <div aria-hidden="true" style="position: absolute; left: 0; top: 0; right: 0; bottom: 0; z-index: -1; border-radius: inherit; pointer-events: none; -webkit-backdrop-filter: var(--bd); backdrop-filter: var(--bd); -webkit-mask-image: linear-gradient(to right, transparent 3px, #000 17px, #000 calc(100% - 17px), transparent calc(100% - 3px)), linear-gradient(to bottom, transparent 3px, #000 17px, #000 calc(100% - 17px), transparent calc(100% - 3px)); mask-image: linear-gradient(to right, transparent 3px, #000 17px, #000 calc(100% - 17px), transparent calc(100% - 3px)), linear-gradient(to bottom, transparent 3px, #000 17px, #000 calc(100% - 17px), transparent calc(100% - 3px)); -webkit-mask-composite: source-in; mask-composite: intersect"></div>
+    <div aria-hidden="true" style="position: absolute; left: 0; top: 0; right: 0; bottom: 0; z-index: -1; border-radius: inherit; pointer-events: none; background: var(--glass); -webkit-mask-image: linear-gradient(to right, rgba(0,0,0,var(--thin)) 0, #000 12px, #000 calc(100% - 12px), rgba(0,0,0,var(--thin)) 100%), linear-gradient(to bottom, rgba(0,0,0,var(--thin)) 0, #000 12px, #000 calc(100% - 12px), rgba(0,0,0,var(--thin)) 100%); mask-image: linear-gradient(to right, rgba(0,0,0,var(--thin)) 0, #000 12px, #000 calc(100% - 12px), rgba(0,0,0,var(--thin)) 100%), linear-gradient(to bottom, rgba(0,0,0,var(--thin)) 0, #000 12px, #000 calc(100% - 12px), rgba(0,0,0,var(--thin)) 100%); -webkit-mask-composite: source-in; mask-composite: intersect"></div>
+    <div aria-hidden="true" style="position: absolute; left: 0; top: 0; right: 0; bottom: 0; z-index: -1; border-radius: inherit; pointer-events: none; background-image: radial-gradient(ellipse 90% 24% at 24% 0%, var(--sheen), transparent 70%), linear-gradient(to bottom, transparent 72%, var(--pool) 135%); box-shadow: inset 0 0 0 1px var(--rim), inset 0 1px 0 var(--lip), inset 0 -1px 0 var(--lipdk), inset 0 0 24px -8px var(--pool)"></div>
+    <div aria-hidden="true" style="position: absolute; left: 22px; top: 0; z-index: -1; width: 42%; height: 1px; border-radius: inherit; pointer-events: none; background-image: linear-gradient(90deg, transparent, var(--spec) 28%, var(--spec) 50%, transparent)"></div>
+    <div aria-hidden="true" style="position: absolute; left: 22px; top: 1px; z-index: -1; width: 42%; height: 4px; border-radius: inherit; pointer-events: none; opacity: var(--bloom); background-image: linear-gradient(90deg, transparent, var(--spec) 28%, var(--spec) 50%, transparent); -webkit-mask-image: linear-gradient(to bottom, #000, transparent); mask-image: linear-gradient(to bottom, #000, transparent)"></div>
+
+  <!-- 色 -->
+  <section style="grid-column: 1 / 3; grid-row: 1; display: grid; grid-template-columns: auto auto; justify-content: space-between; column-gap: 20px; padding-bottom: 20px; border-bottom: 1px solid var(--carve); box-shadow: 0 1px 0 var(--etch)">
+    <h2 style="grid-column: 1; grid-row: 1; margin: 0; font-size: 22px; font-weight: 500; letter-spacing: 0.24em">色</h2>
+    <div style="grid-column: 1; grid-row: 2; margin-top: 14px; font-size: 13px; letter-spacing: 0.1em; color: var(--ink2)">昼：汝窑天青</div>
+    <div style="grid-column: 1; grid-row: 3; margin-top: 10px; padding: 12px 12px; border-radius: 10px; background: var(--paper); box-shadow: inset 0 0 0 1px var(--rim), inset 0 1px 0 var(--lip), inset 0 -1px 0 var(--lipdk), 0 0 0 1px var(--carve); display: grid; grid-template-columns: repeat(3, auto); gap: 10px 12px">
+      <div style="display: flex; gap: 8px; align-items: center"><span style="flex: 0 0 auto; width: 34px; height: 34px; border-radius: 4px; background: var(--paper); border: 1px solid var(--rule2); box-sizing: border-box"></span><span style="font-size: 13px; line-height: 1.5">月白　地<br><span style="color: var(--ink2); font-size: 12px">#E8EEEA</span></span></div>
+      <div style="display: flex; gap: 8px; align-items: center"><span style="flex: 0 0 auto; width: 34px; height: 34px; border-radius: 4px; background: var(--hi); border: 1px solid var(--rule2); box-sizing: border-box"></span><span style="font-size: 13px; line-height: 1.5">素绢　纸面<br><span style="color: var(--ink2); font-size: 12px">#F4F7F4</span></span></div>
+      <div style="display: flex; gap: 8px; align-items: center"><span style="flex: 0 0 auto; width: 34px; height: 34px; border-radius: 4px; background: var(--slip)"></span><span style="font-size: 13px; line-height: 1.5">天青　浮签<br><span style="color: var(--ink2); font-size: 12px">#D5E0DA</span></span></div>
+      <div style="display: flex; gap: 8px; align-items: center"><span style="flex: 0 0 auto; width: 34px; height: 34px; border-radius: 4px; background: var(--ink)"></span><span style="font-size: 13px; line-height: 1.5">墨　正文<br><span style="color: var(--ink2); font-size: 12px">#1F2926</span></span></div>
+      <div style="display: flex; gap: 8px; align-items: center"><span style="flex: 0 0 auto; width: 34px; height: 34px; border-radius: 4px; background: var(--ink2)"></span><span style="font-size: 13px; line-height: 1.5">淡墨　次要<br><span style="color: var(--ink2); font-size: 12px">#56635E</span></span></div>
+      <div style="display: flex; gap: 8px; align-items: center"><span style="flex: 0 0 auto; width: 34px; height: 34px; border-radius: 4px; background: var(--seal)"></span><span style="font-size: 13px; line-height: 1.5">朱　印与危险<br><span style="color: var(--ink2); font-size: 12px">#A8322A</span></span></div>
+    </div>
+
+    <div style="grid-column: 2; grid-row: 2; margin-top: 14px; font-size: 13px; letter-spacing: 0.1em; color: var(--ink2)">夜：建盏黑釉</div>
+    <div style="grid-column: 2; grid-row: 3; margin-top: 10px; padding: 12px 12px; border-radius: 10px; background: var(--n-paper); box-shadow: inset 0 0 0 1px var(--n-rim), inset 0 1px 0 var(--n-lip), inset 0 -1px 0 var(--n-lipdk), 0 1px 2px var(--drop); display: grid; grid-template-columns: repeat(3, auto); gap: 10px 12px">
+      <div style="display: flex; gap: 8px; align-items: center"><span style="flex: 0 0 auto; width: 34px; height: 34px; border-radius: 4px; background: var(--n-paper); border: 1px solid var(--n-rule2); box-sizing: border-box"></span><span style="font-size: 13px; line-height: 1.5; color: var(--n-ink)">黑釉　地<br><span style="color: var(--n-ink2); font-size: 12px">#161412</span></span></div>
+      <div style="display: flex; gap: 8px; align-items: center"><span style="flex: 0 0 auto; width: 34px; height: 34px; border-radius: 4px; background: var(--n-hi); border: 1px solid var(--n-rule2); box-sizing: border-box"></span><span style="font-size: 13px; line-height: 1.5; color: var(--n-ink)">釉面　纸面<br><span style="color: var(--n-ink2); font-size: 12px">#1E1B18</span></span></div>
+      <div style="display: flex; gap: 8px; align-items: center"><span style="flex: 0 0 auto; width: 34px; height: 34px; border-radius: 4px; background: var(--n-slip)"></span><span style="font-size: 13px; line-height: 1.5; color: var(--n-ink)">兔毫　浮签<br><span style="color: var(--n-ink2); font-size: 12px">#2A2622</span></span></div>
+      <div style="display: flex; gap: 8px; align-items: center"><span style="flex: 0 0 auto; width: 34px; height: 34px; border-radius: 4px; background: var(--n-ink)"></span><span style="font-size: 13px; line-height: 1.5; color: var(--n-ink)">月白　正文<br><span style="color: var(--n-ink2); font-size: 12px">#E7E3DA</span></span></div>
+      <div style="display: flex; gap: 8px; align-items: center"><span style="flex: 0 0 auto; width: 34px; height: 34px; border-radius: 4px; background: var(--n-ink2)"></span><span style="font-size: 13px; line-height: 1.5; color: var(--n-ink)">灰釉　次要<br><span style="color: var(--n-ink2); font-size: 12px">#A8A195</span></span></div>
+      <div style="display: flex; gap: 8px; align-items: center"><span style="flex: 0 0 auto; width: 34px; height: 34px; border-radius: 4px; background: var(--n-seal)"></span><span style="font-size: 13px; line-height: 1.5; color: var(--n-ink)">朱　印与危险<br><span style="color: var(--n-ink2); font-size: 12px">#BF4537</span></span></div>
+    </div>
+    <p style="grid-column: 1 / 3; grid-row: 4; margin: 14px 0 0; font-size: 12.5px; line-height: 1.85; color: var(--ink2)">分隔一律用 12% 的墨色细线；不用阴影、不用毛玻璃、不发光。</p>
+  </section>
+
+  <!-- 字 -->
+  <section style="grid-column: 1; grid-row: 2; min-width: 0; box-sizing: border-box; padding: 20px 28px 0 0; border-right: 1px solid var(--carve); box-shadow: 1px 0 0 var(--etch)">
+    <h2 style="margin: 0; font-size: 22px; font-weight: 500; letter-spacing: 0.24em">字</h2>
+    <div style="margin-top: 16px; font-size: 13px; letter-spacing: 0.1em; color: var(--ink2)">思源宋体，一套字从题名用到说明</div>
+    <div style="margin-top: 12px; display: flex; align-items: baseline; gap: 20px; padding-bottom: 14px; border-bottom: 1px solid var(--rule)">
+      <span style="font-size: 76px; font-weight: 300; line-height: 1">Chloe</span>
+      <span style="font-size: 12px; color: var(--ink2)">题名 76，细</span>
+    </div>
+    <div style="display: flex; align-items: baseline; gap: 20px; padding: 11px 0; border-bottom: 1px solid var(--rule)">
+      <span style="font-size: 30px; font-weight: 500; letter-spacing: 0.24em">分身</span>
+      <span style="font-size: 12px; color: var(--ink2)">页名 30，中，字距 0.24em</span>
+    </div>
+    <div style="display: flex; align-items: baseline; gap: 20px; padding: 11px 0; border-bottom: 1px solid var(--rule)">
+      <span style="font-size: 18px; font-weight: 500; letter-spacing: 0.18em">私有记忆</span>
+      <span style="font-size: 12px; color: var(--ink2)">节名 16–18，中</span>
+    </div>
+    <div style="padding: 11px 0; border-bottom: 1px solid var(--rule)">
+      <p style="margin: 0; font-size: 16.5px; line-height: 1.95">讲究些的人家会焚一炉香，点一盏茶，看雨打芭蕉。城里的茶坊反倒热闹，说书人照常开讲。</p>
+      <div style="margin-top: 6px; font-size: 12px; color: var(--ink2)">分身正文 16.5，行距 1.95，每行不超过 36 字</div>
+    </div>
+    <div style="padding: 11px 0; border-bottom: 1px solid var(--rule)">
+      <p style="margin: 0; font-size: 13px; line-height: 1.85; color: var(--ink2)">名片始终标明“AI 分身”。公开名片不会公开你的用户名。</p>
+      <div style="margin-top: 6px; font-size: 12px; color: var(--ink2)">说明 13，淡墨；时间与数字用等宽数字，不用等宽字体</div>
+    </div>
+    <div style="display: flex; gap: 36px; padding: 12px 0 0">
+      <span style="box-sizing: border-box; writing-mode: vertical-rl; font-size: 15px; letter-spacing: 0.32em; padding: 10px 0 10px 9px; border-left: 1.5px solid var(--ink); font-weight: 500; color: var(--ink)">对话</span>
+      <span style="box-sizing: border-box; writing-mode: vertical-rl; font-size: 15px; letter-spacing: 0.32em; padding: 10px 0 10px 9px; border-left: 1.5px solid transparent; color: var(--ink2)">分身</span>
+      <span style="font-size: 12px; color: var(--ink2); align-self: center">桌面导航竖排，当前项左侧一道墨线</span>
+    </div>
+  </section>
+
+  <!-- 件 -->
+  <section style="grid-column: 2; grid-row: 2; min-width: 0; box-sizing: border-box; padding: 20px 0 0 28px">
+    <h2 style="margin: 0; font-size: 22px; font-weight: 500; letter-spacing: 0.24em">件</h2>
+    <div style="margin-top: 16px; font-size: 13px; letter-spacing: 0.1em; color: var(--ink2)">印：一屏只盖一方，只给分身身份</div>
+    <div style="margin-top: 12px; display: flex; align-items: flex-end; gap: 26px">
+      <svg width="56" height="56" viewBox="0 0 36 36" role="img" aria-label="品牌印" style="display: block; transform: rotate(-2deg)">
+        <defs>
+          <filter id="worn-t1" x="-10%" y="-10%" width="120%" height="120%">
+            <feTurbulence type="fractalNoise" baseFrequency="0.85" numOctaves="2" seed="4"></feTurbulence>
+            <feDisplacementMap in="SourceGraphic" scale="1.4"></feDisplacementMap>
+          </filter>
+        </defs>
+        <g filter="url(#worn-t1)">
+          <rect x="2" y="2" width="32" height="32" rx="2" style="fill: var(--seal)"></rect>
+          <circle cx="14.6" cy="18" r="6.8" style="fill: none; stroke: var(--glyph); stroke-width: 1.9"></circle>
+          <circle cx="21.4" cy="18" r="6.8" style="fill: none; stroke: var(--glyph); stroke-width: 1.9"></circle>
+        </g>
+      </svg>
+      <svg width="38" height="38" viewBox="0 0 36 36" role="img" aria-label="分身印" style="display: block; transform: rotate(2deg)">
+        <defs>
+          <filter id="worn-t2" x="-10%" y="-10%" width="120%" height="120%">
+            <feTurbulence type="fractalNoise" baseFrequency="0.85" numOctaves="2" seed="9"></feTurbulence>
+            <feDisplacementMap in="SourceGraphic" scale="1.3"></feDisplacementMap>
+          </filter>
+        </defs>
+        <g filter="url(#worn-t2)">
+          <rect x="2" y="2" width="32" height="32" rx="2" style="fill: var(--seal)"></rect>
+          <path d="M18 8.5 C19 15.5 20.5 17 27.5 18 C20.5 19 19 20.5 18 27.5 C17 20.5 15.5 19 8.5 18 C15.5 17 17 15.5 18 8.5 Z" style="fill: var(--glyph)"></path>
+        </g>
+      </svg>
+      <svg width="30" height="30" viewBox="0 0 36 36" role="img" aria-label="导航墨标" style="display: block">
+        <circle cx="14" cy="18" r="8" style="fill: none; stroke: var(--ink); stroke-width: 1.4"></circle>
+        <circle cx="22" cy="18" r="8" style="fill: none; stroke: var(--ink); stroke-width: 1.4"></circle>
+      </svg>
+    </div>
+    <div style="margin-top: 8px; display: flex; gap: 26px; font-size: 12px; color: var(--ink2)">
+      <span style="width: 56px">登录</span><span style="width: 38px">分身</span><span>导航用墨，不用朱</span>
+    </div>
+
+    <div style="margin-top: 24px; font-size: 13px; letter-spacing: 0.1em; color: var(--ink2)">远山：语音状态线</div>
+    <div style="margin-top: 8px; display: grid; grid-template-columns: 56px minmax(0, 1fr); gap: 8px 14px; align-items: center; font-size: 13px">
+      <span>待命</span>
+      <svg viewBox="0 0 600 36" preserveAspectRatio="none" aria-hidden="true" style="width: 100%; height: 30px">
+        <path d="M0 30 C 60 29.5, 110 28.5, 160 27.5 C 190 27, 205 22, 222 21 C 234 20.3, 240 15, 250 13.5 C 258 12.4, 263 16, 270 16.8 C 280 18, 287 10, 298 7.5 C 307 5.5, 313 8, 320 11 C 330 15, 342 17.5, 360 20 C 384 23, 404 24.5, 430 24 C 452 23.6, 466 20.5, 484 20.5 C 504 20.5, 530 25, 600 27" vector-effect="non-scaling-stroke" style="fill: none; stroke: var(--rule2); stroke-width: 1"></path>
+        <path d="M120 34 C 200 33, 250 31.5, 290 30 C 312 29.2, 322 25.5, 338 24.6 C 352 24, 360 27.5, 374 28.6 C 400 30.5, 450 31.6, 600 32.5" vector-effect="non-scaling-stroke" style="fill: none; stroke: var(--ink2); stroke-width: 1; opacity: 0.6"></path>
+      </svg>
+      <span>说话</span>
+      <svg viewBox="0 0 600 36" preserveAspectRatio="none" aria-hidden="true" style="width: 100%; height: 30px">
+        <path d="M0 30 C 50 29, 90 24, 120 20 C 140 17, 150 8, 166 6 C 178 4.6, 186 14, 198 15 C 214 16, 222 3, 240 2 C 256 1.2, 266 12, 280 14 C 300 17, 312 6, 330 5 C 348 4, 360 16, 380 18 C 402 20, 420 10, 440 11 C 470 12.5, 520 24, 600 27" vector-effect="non-scaling-stroke" style="fill: none; stroke: var(--rule2); stroke-width: 1"></path>
+        <path d="M60 34 C 130 33, 180 28, 220 25 C 240 23.5, 252 18, 270 18 C 290 18, 300 25, 320 25.5 C 344 26, 356 19, 378 19.5 C 404 20, 450 30, 600 32.5" vector-effect="non-scaling-stroke" style="fill: none; stroke: var(--ink); stroke-width: 1.1"></path>
+      </svg>
+      <span>在听</span>
+      <svg viewBox="0 0 600 36" preserveAspectRatio="none" aria-hidden="true" style="width: 100%; height: 30px">
+        <path d="M0 30 C 60 29.5, 110 28.5, 160 27.5 C 190 27, 205 22, 222 21 C 234 20.3, 240 15, 250 13.5 C 258 12.4, 263 16, 270 16.8 C 280 18, 287 10, 298 7.5 C 307 5.5, 313 8, 320 11 C 330 15, 342 17.5, 360 20 C 384 23, 404 24.5, 430 24 C 452 23.6, 466 20.5, 484 20.5 C 504 20.5, 530 25, 600 27" vector-effect="non-scaling-stroke" style="fill: none; stroke: var(--rule2); stroke-width: 1"></path>
+        <path d="M120 34 C 180 33.5, 220 32, 250 31 C 262 30.6, 268 27, 276 27 C 284 27, 288 30.5, 296 30.5 C 304 30.5, 308 26, 316 26 C 324 26, 328 30, 336 30 C 344 30, 348 27.5, 356 27.5 C 366 27.5, 380 31, 400 31.5 C 450 32.5, 520 32.8, 600 33" vector-effect="non-scaling-stroke" style="fill: none; stroke: var(--seal); stroke-width: 1"></path>
+      </svg>
+    </div>
+    <p style="margin: 8px 0 0; font-size: 12.5px; line-height: 1.85; color: var(--ink2)">全站唯一的常驻动效。待命静止；说话时山势起伏；在听时近山轻颤，用朱色表示正在收音。系统设为减弱动态时三态都静止。</p>
+
+    <div style="margin-top: 20px; font-size: 13px; letter-spacing: 0.1em; color: var(--ink2)">按钮与浮签</div>
+    <div style="margin-top: 10px; display: flex; flex-wrap: wrap; align-items: center; gap: 14px">
+      <button type="button" style="height: 40px; padding: 0 24px; border: 0; border-radius: 8px; background: var(--btn); color: var(--btnink); font-family: inherit; font-size: 13px; letter-spacing: 0.24em">发送</button>
+      <button type="button" style="height: 40px; padding: 0 18px; border: 1px solid var(--rule2); border-radius: 8px; background: transparent; color: var(--ink); font-family: inherit; font-size: 13px; letter-spacing: 0.12em">朗读</button>
+      <button type="button" style="height: 40px; padding: 0 6px; border: 0; background: transparent; color: var(--ink2); font-family: inherit; font-size: 13px">生成图片</button>
+      <button type="button" style="height: 40px; padding: 0 6px; border: 0; background: transparent; color: var(--seal); font-family: inherit; font-size: 13px">清空记忆</button>
+    </div>
+    <p style="margin: 14px 0 0; display: inline-block; padding: 11px 18px; border-radius: 10px; background-color: var(--chip); box-shadow: inset 0 0 0 1px var(--rim), inset 0 1px 0 var(--lip), inset 0 -1px 0 var(--lipdk); font-size: 15.5px; line-height: 1.8">我的话是贴在页边的一张浮签。</p>
+  </section>
+  </div>
+
+  <!-- 材质：右釉片（同一配方）。小样是画中开的一扇窗：一方釉片压在一段远山上，昼夜各一 -->
+  <section style="position: relative; z-index: 2; flex: 1 1 0; min-width: 0; box-sizing: border-box; padding: 26px 28px 28px; border-radius: 18px; box-shadow: 0 1px 2px var(--drop), 0 28px 56px -36px var(--drop)">
+    <div aria-hidden="true" style="position: absolute; left: 0; top: 0; right: 0; bottom: 0; z-index: -1; border-radius: inherit; pointer-events: none; display: var(--lens); backdrop-filter: url(#yqt-lens)"></div>
+    <div aria-hidden="true" style="position: absolute; left: 0; top: 0; right: 0; bottom: 0; z-index: -1; border-radius: inherit; pointer-events: none; -webkit-backdrop-filter: var(--bd); backdrop-filter: var(--bd); -webkit-mask-image: linear-gradient(to right, transparent 3px, #000 17px, #000 calc(100% - 17px), transparent calc(100% - 3px)), linear-gradient(to bottom, transparent 3px, #000 17px, #000 calc(100% - 17px), transparent calc(100% - 3px)); mask-image: linear-gradient(to right, transparent 3px, #000 17px, #000 calc(100% - 17px), transparent calc(100% - 3px)), linear-gradient(to bottom, transparent 3px, #000 17px, #000 calc(100% - 17px), transparent calc(100% - 3px)); -webkit-mask-composite: source-in; mask-composite: intersect"></div>
+    <div aria-hidden="true" style="position: absolute; left: 0; top: 0; right: 0; bottom: 0; z-index: -1; border-radius: inherit; pointer-events: none; background: var(--glass); -webkit-mask-image: linear-gradient(to right, rgba(0,0,0,var(--thin)) 0, #000 12px, #000 calc(100% - 12px), rgba(0,0,0,var(--thin)) 100%), linear-gradient(to bottom, rgba(0,0,0,var(--thin)) 0, #000 12px, #000 calc(100% - 12px), rgba(0,0,0,var(--thin)) 100%); mask-image: linear-gradient(to right, rgba(0,0,0,var(--thin)) 0, #000 12px, #000 calc(100% - 12px), rgba(0,0,0,var(--thin)) 100%), linear-gradient(to bottom, rgba(0,0,0,var(--thin)) 0, #000 12px, #000 calc(100% - 12px), rgba(0,0,0,var(--thin)) 100%); -webkit-mask-composite: source-in; mask-composite: intersect"></div>
+    <div aria-hidden="true" style="position: absolute; left: 0; top: 0; right: 0; bottom: 0; z-index: -1; border-radius: inherit; pointer-events: none; background-image: radial-gradient(ellipse 90% 24% at 24% 0%, var(--sheen), transparent 70%), linear-gradient(to bottom, transparent 72%, var(--pool) 135%); box-shadow: inset 0 0 0 1px var(--rim), inset 0 1px 0 var(--lip), inset 0 -1px 0 var(--lipdk), inset 0 0 24px -8px var(--pool)"></div>
+    <div aria-hidden="true" style="position: absolute; left: 22px; top: 0; z-index: -1; width: 46%; height: 1px; border-radius: inherit; pointer-events: none; background-image: linear-gradient(90deg, transparent, var(--spec) 28%, var(--spec) 50%, transparent)"></div>
+    <div aria-hidden="true" style="position: absolute; left: 22px; top: 1px; z-index: -1; width: 46%; height: 4px; border-radius: inherit; pointer-events: none; opacity: var(--bloom); background-image: linear-gradient(90deg, transparent, var(--spec) 28%, var(--spec) 50%, transparent); -webkit-mask-image: linear-gradient(to bottom, #000, transparent); mask-image: linear-gradient(to bottom, #000, transparent)"></div>
+
+    <h2 style="margin: 0; font-size: 22px; font-weight: 500; letter-spacing: 0.24em">材质</h2>
+    <div style="margin-top: 16px; font-size: 13px; letter-spacing: 0.1em; color: var(--ink2)">影青釉：玻璃即瓷釉，只上在框架件，正文仍落在绢上<span style="display: block; margin-top: 4px; font-size: 12px; letter-spacing: 0.04em">色节「不用阴影、不用毛玻璃、不发光」只管正文与分隔线，框架釉片不在此列</span></div>
+
+    <div style="margin-top: 12px; display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); gap: 14px">
+      <!-- 昼小样 -->
+      <figure style="margin: 0">
+        <div aria-hidden="true" style="position: relative; height: 132px; border-radius: 12px; overflow: hidden; background-image: linear-gradient(to top, var(--water) 0, var(--water) 22%, var(--paper) 42%, var(--sky) 100%); box-shadow: 0 0 0 1px var(--carve)">
+          <svg width="100%" height="100%" viewBox="0 8 240 132" preserveAspectRatio="xMidYMax slice" style="position: absolute; left: 0; top: 0; display: block">
+            <defs>
+              <filter id="yqt-sd-wet" x="-5%" y="-10%" width="110%" height="120%">
+                <feTurbulence type="fractalNoise" baseFrequency="0.06 0.16" numOctaves="3" seed="4" result="n"></feTurbulence>
+                <feDisplacementMap in="SourceGraphic" in2="n" scale="3.5" xChannelSelector="R" yChannelSelector="G" result="d"></feDisplacementMap>
+                <feGaussianBlur in="d" stdDeviation="0.35"></feGaussianBlur>
+              </filter>
+              <filter id="yqt-sd-far" x="-5%" y="-20%" width="110%" height="140%">
+                <feTurbulence type="fractalNoise" baseFrequency="0.05 0.14" numOctaves="2" seed="11" result="n"></feTurbulence>
+                <feDisplacementMap in="SourceGraphic" in2="n" scale="4" xChannelSelector="R" yChannelSelector="G" result="d"></feDisplacementMap>
+                <feGaussianBlur in="d" stdDeviation="1"></feGaussianBlur>
+              </filter>
+              <radialGradient id="yqt-sd-mist">
+                <stop offset="0" style="stop-color: var(--mist); stop-opacity: 1"></stop>
+                <stop offset="0.42" style="stop-color: var(--mist); stop-opacity: 0.72"></stop>
+                <stop offset="0.75" style="stop-color: var(--mist); stop-opacity: 0.24"></stop>
+                <stop offset="1" style="stop-color: var(--mist); stop-opacity: 0"></stop>
+              </radialGradient>
+              <linearGradient id="yqt-sd-fade" gradientUnits="userSpaceOnUse" x1="0" y1="50" x2="0" y2="142">
+                <stop offset="0" stop-color="#fff"></stop>
+                <stop offset="0.5" stop-color="#fff" stop-opacity="0.62"></stop>
+                <stop offset="1" stop-color="#fff" stop-opacity="0"></stop>
+              </linearGradient>
+              <linearGradient id="yqt-sd-crest" gradientUnits="userSpaceOnUse" x1="0" y1="50" x2="0" y2="112">
+                <stop offset="0" style="stop-color: var(--m4)"></stop>
+                <stop offset="1" style="stop-color: var(--m2)"></stop>
+              </linearGradient>
+              <linearGradient id="yqt-sd-fadefar" gradientUnits="userSpaceOnUse" x1="0" y1="72" x2="0" y2="106">
+                <stop offset="0" stop-color="#fff"></stop>
+                <stop offset="1" stop-color="#fff" stop-opacity="0"></stop>
+              </linearGradient>
+              <mask id="yqt-sd-mk" maskUnits="userSpaceOnUse" x="-20" y="0" width="280" height="150"><rect x="-20" y="0" width="280" height="150" fill="url(#yqt-sd-fade)"></rect></mask>
+              <mask id="yqt-sd-mkfar" maskUnits="userSpaceOnUse" x="-20" y="0" width="280" height="150"><rect x="-20" y="0" width="280" height="150" fill="url(#yqt-sd-fadefar)"></rect></mask>
+            </defs>
+            <g mask="url(#yqt-sd-mkfar)">
+              <path filter="url(#yqt-sd-far)" d="M120 94 C 140 90, 152 82, 166 80 C 178 78, 186 84, 198 84 C 212 84, 222 76, 236 75 C 246 74, 256 78, 266 80 L 266 120 L 120 120 Z" style="fill: var(--m1)"></path>
+            </g>
+            <g mask="url(#yqt-sd-mk)">
+              <path filter="url(#yqt-sd-wet)" d="M-12 150 L -12 124 C 0 116, 12 104, 22 90 C 30 78, 40 64, 52 56 C 60 51, 72 50, 84 53 C 100 57, 116 66, 132 76 C 146 85, 160 96, 180 106 C 204 116, 228 120, 252 122 L 252 150 Z" style="fill: url(#yqt-sd-crest)"></path>
+              <path filter="url(#yqt-sd-wet)" d="M-12 150 L -12 122 C 10 116, 34 112, 62 114 C 92 116, 118 122, 146 128 C 170 133, 196 140, 228 150 Z" style="fill: var(--m3)"></path>
+            </g>
+            <ellipse cx="128" cy="124" rx="170" ry="16" style="fill: url(#yqt-sd-mist); opacity: 0.92"></ellipse>
+            <ellipse cx="66" cy="94" rx="80" ry="7" style="fill: url(#yqt-sd-mist); opacity: 0.5"></ellipse>
+            <g style="fill: var(--ripple)">
+              <path d="M168 128 q 22 -1 44 0 q -22 0.6 -44 0 Z"></path>
+              <path d="M190 135 q 16 -0.8 32 0 q -16 0.5 -32 0 Z"></path>
+            </g>
+          </svg>
+          <div style="position: absolute; left: 0; top: 0; right: 0; bottom: 0; background-image: repeating-linear-gradient(0deg, var(--weave) 0 1px, transparent 1px 3px), repeating-linear-gradient(90deg, var(--weave) 0 1px, transparent 1px 3px)"></div>
+          <div style="position: absolute; left: 22px; top: 18px; z-index: 1; width: 126px; height: 88px; border-radius: 10px; box-shadow: 0 1px 2px var(--drop), 0 16px 30px -20px var(--drop)">
+            <div style="position: absolute; left: 0; top: 0; right: 0; bottom: 0; z-index: -1; border-radius: inherit; pointer-events: none; display: var(--lens); backdrop-filter: url(#yqt-lens-s)"></div>
+            <div style="position: absolute; left: 0; top: 0; right: 0; bottom: 0; z-index: -1; border-radius: inherit; pointer-events: none; -webkit-backdrop-filter: var(--bd); backdrop-filter: var(--bd); -webkit-mask-image: linear-gradient(to right, transparent 2px, #000 10px, #000 calc(100% - 10px), transparent calc(100% - 2px)), linear-gradient(to bottom, transparent 2px, #000 10px, #000 calc(100% - 10px), transparent calc(100% - 2px)); mask-image: linear-gradient(to right, transparent 2px, #000 10px, #000 calc(100% - 10px), transparent calc(100% - 2px)), linear-gradient(to bottom, transparent 2px, #000 10px, #000 calc(100% - 10px), transparent calc(100% - 2px)); -webkit-mask-composite: source-in; mask-composite: intersect"></div>
+            <div style="position: absolute; left: 0; top: 0; right: 0; bottom: 0; z-index: -1; border-radius: inherit; pointer-events: none; background: var(--glass); -webkit-mask-image: linear-gradient(to right, rgba(0,0,0,var(--thin)) 0, #000 8px, #000 calc(100% - 8px), rgba(0,0,0,var(--thin)) 100%), linear-gradient(to bottom, rgba(0,0,0,var(--thin)) 0, #000 8px, #000 calc(100% - 8px), rgba(0,0,0,var(--thin)) 100%); mask-image: linear-gradient(to right, rgba(0,0,0,var(--thin)) 0, #000 8px, #000 calc(100% - 8px), rgba(0,0,0,var(--thin)) 100%), linear-gradient(to bottom, rgba(0,0,0,var(--thin)) 0, #000 8px, #000 calc(100% - 8px), rgba(0,0,0,var(--thin)) 100%); -webkit-mask-composite: source-in; mask-composite: intersect"></div>
+            <div style="position: absolute; left: 0; top: 0; right: 0; bottom: 0; z-index: -1; border-radius: inherit; pointer-events: none; background-image: radial-gradient(ellipse 90% 40% at 24% 0%, var(--sheen), transparent 70%), linear-gradient(to bottom, transparent 64%, var(--pool) 135%); box-shadow: inset 0 0 0 1px var(--rim), inset 0 1px 0 var(--lip), inset 0 -1px 0 var(--lipdk), inset 0 0 18px -7px var(--pool)"></div>
+            <div style="position: absolute; left: 14px; top: 0; z-index: -1; width: 52%; height: 1px; border-radius: inherit; pointer-events: none; background-image: linear-gradient(90deg, transparent, var(--spec) 28%, var(--spec) 50%, transparent)"></div>
+            <div style="position: absolute; left: 14px; top: 1px; z-index: -1; width: 52%; height: 4px; border-radius: inherit; pointer-events: none; opacity: var(--bloom); background-image: linear-gradient(90deg, transparent, var(--spec) 28%, var(--spec) 50%, transparent); -webkit-mask-image: linear-gradient(to bottom, #000, transparent); mask-image: linear-gradient(to bottom, #000, transparent)"></div>
+          </div>
+        </div>
+        <figcaption style="margin-top: 8px; font-size: 12px; letter-spacing: 0.04em; color: var(--ink2)"><span style="color: var(--ink)">昼</span>　口沿透景，往里积青</figcaption>
+      </figure>
+
+      <!-- 夜小样：同一标记，外框上把同名变量改写为 --n-* -->
+      <figure style="--paper: var(--n-paper); --sky: var(--n-sky); --water: var(--n-water); --m1: var(--n-m1); --m2: var(--n-m2); --m3: var(--n-m3); --m4: var(--n-m4); --mist: var(--n-mist); --ripple: var(--n-ripple); --weave: var(--n-weave); --glass: var(--n-glass); --thin: var(--n-thin); --pool: var(--n-pool); --sheen: var(--n-sheen); --rim: var(--n-rim); --lip: var(--n-lip); --lipdk: var(--n-lipdk); --spec: var(--n-spec); --bloom: var(--n-bloom); --drop: var(--n-drop); --fur: var(--n-fur); --sat: var(--n-sat); --bri: var(--n-bri); --bd: {{t.bd}}; margin: 0">
+        <div aria-hidden="true" style="position: relative; height: 132px; border-radius: 12px; overflow: hidden; background-image: linear-gradient(to top, var(--water) 0, var(--water) 22%, var(--paper) 42%, var(--sky) 100%); box-shadow: 0 0 0 1px var(--carve)">
+          <svg width="100%" height="100%" viewBox="0 8 240 132" preserveAspectRatio="xMidYMax slice" style="position: absolute; left: 0; top: 0; display: block">
+            <defs>
+              <filter id="yqt-sn-wet" x="-5%" y="-10%" width="110%" height="120%">
+                <feTurbulence type="fractalNoise" baseFrequency="0.06 0.16" numOctaves="3" seed="4" result="n"></feTurbulence>
+                <feDisplacementMap in="SourceGraphic" in2="n" scale="3.5" xChannelSelector="R" yChannelSelector="G" result="d"></feDisplacementMap>
+                <feGaussianBlur in="d" stdDeviation="0.35"></feGaussianBlur>
+              </filter>
+              <filter id="yqt-sn-far" x="-5%" y="-20%" width="110%" height="140%">
+                <feTurbulence type="fractalNoise" baseFrequency="0.05 0.14" numOctaves="2" seed="11" result="n"></feTurbulence>
+                <feDisplacementMap in="SourceGraphic" in2="n" scale="4" xChannelSelector="R" yChannelSelector="G" result="d"></feDisplacementMap>
+                <feGaussianBlur in="d" stdDeviation="1"></feGaussianBlur>
+              </filter>
+              <radialGradient id="yqt-sn-mist">
+                <stop offset="0" style="stop-color: var(--mist); stop-opacity: 1"></stop>
+                <stop offset="0.42" style="stop-color: var(--mist); stop-opacity: 0.72"></stop>
+                <stop offset="0.75" style="stop-color: var(--mist); stop-opacity: 0.24"></stop>
+                <stop offset="1" style="stop-color: var(--mist); stop-opacity: 0"></stop>
+              </radialGradient>
+              <linearGradient id="yqt-sn-fade" gradientUnits="userSpaceOnUse" x1="0" y1="50" x2="0" y2="142">
+                <stop offset="0" stop-color="#fff"></stop>
+                <stop offset="0.5" stop-color="#fff" stop-opacity="0.62"></stop>
+                <stop offset="1" stop-color="#fff" stop-opacity="0"></stop>
+              </linearGradient>
+              <linearGradient id="yqt-sn-crest" gradientUnits="userSpaceOnUse" x1="0" y1="50" x2="0" y2="112">
+                <stop offset="0" style="stop-color: var(--m4)"></stop>
+                <stop offset="1" style="stop-color: var(--m2)"></stop>
+              </linearGradient>
+              <linearGradient id="yqt-sn-fadefar" gradientUnits="userSpaceOnUse" x1="0" y1="72" x2="0" y2="106">
+                <stop offset="0" stop-color="#fff"></stop>
+                <stop offset="1" stop-color="#fff" stop-opacity="0"></stop>
+              </linearGradient>
+              <mask id="yqt-sn-mk" maskUnits="userSpaceOnUse" x="-20" y="0" width="280" height="150"><rect x="-20" y="0" width="280" height="150" fill="url(#yqt-sn-fade)"></rect></mask>
+              <mask id="yqt-sn-mkfar" maskUnits="userSpaceOnUse" x="-20" y="0" width="280" height="150"><rect x="-20" y="0" width="280" height="150" fill="url(#yqt-sn-fadefar)"></rect></mask>
+            </defs>
+            <g mask="url(#yqt-sn-mkfar)">
+              <path filter="url(#yqt-sn-far)" d="M120 94 C 140 90, 152 82, 166 80 C 178 78, 186 84, 198 84 C 212 84, 222 76, 236 75 C 246 74, 256 78, 266 80 L 266 120 L 120 120 Z" style="fill: var(--m1)"></path>
+            </g>
+            <g mask="url(#yqt-sn-mk)">
+              <path filter="url(#yqt-sn-wet)" d="M-12 150 L -12 124 C 0 116, 12 104, 22 90 C 30 78, 40 64, 52 56 C 60 51, 72 50, 84 53 C 100 57, 116 66, 132 76 C 146 85, 160 96, 180 106 C 204 116, 228 120, 252 122 L 252 150 Z" style="fill: url(#yqt-sn-crest)"></path>
+              <path filter="url(#yqt-sn-wet)" d="M-12 150 L -12 122 C 10 116, 34 112, 62 114 C 92 116, 118 122, 146 128 C 170 133, 196 140, 228 150 Z" style="fill: var(--m3)"></path>
+            </g>
+            <ellipse cx="128" cy="124" rx="170" ry="16" style="fill: url(#yqt-sn-mist); opacity: 0.92"></ellipse>
+            <ellipse cx="66" cy="94" rx="80" ry="7" style="fill: url(#yqt-sn-mist); opacity: 0.5"></ellipse>
+            <g style="fill: var(--ripple)">
+              <path d="M168 128 q 22 -1 44 0 q -22 0.6 -44 0 Z"></path>
+              <path d="M190 135 q 16 -0.8 32 0 q -16 0.5 -32 0 Z"></path>
+            </g>
+          </svg>
+          <div style="position: absolute; left: 0; top: 0; right: 0; bottom: 0; background-image: repeating-linear-gradient(0deg, var(--weave) 0 1px, transparent 1px 3px), repeating-linear-gradient(90deg, var(--weave) 0 1px, transparent 1px 3px)"></div>
+          <div style="position: absolute; left: 22px; top: 18px; z-index: 1; width: 126px; height: 88px; border-radius: 10px; box-shadow: 0 1px 2px var(--drop), 0 16px 30px -20px var(--drop)">
+            <div style="position: absolute; left: 0; top: 0; right: 0; bottom: 0; z-index: -1; border-radius: inherit; pointer-events: none; display: var(--lens); backdrop-filter: url(#yqt-lens-s)"></div>
+            <div style="position: absolute; left: 0; top: 0; right: 0; bottom: 0; z-index: -1; border-radius: inherit; pointer-events: none; -webkit-backdrop-filter: var(--bd); backdrop-filter: var(--bd); -webkit-mask-image: linear-gradient(to right, transparent 2px, #000 10px, #000 calc(100% - 10px), transparent calc(100% - 2px)), linear-gradient(to bottom, transparent 2px, #000 10px, #000 calc(100% - 10px), transparent calc(100% - 2px)); mask-image: linear-gradient(to right, transparent 2px, #000 10px, #000 calc(100% - 10px), transparent calc(100% - 2px)), linear-gradient(to bottom, transparent 2px, #000 10px, #000 calc(100% - 10px), transparent calc(100% - 2px)); -webkit-mask-composite: source-in; mask-composite: intersect"></div>
+            <div style="position: absolute; left: 0; top: 0; right: 0; bottom: 0; z-index: -1; border-radius: inherit; pointer-events: none; background: var(--glass); -webkit-mask-image: linear-gradient(to right, rgba(0,0,0,var(--thin)) 0, #000 8px, #000 calc(100% - 8px), rgba(0,0,0,var(--thin)) 100%), linear-gradient(to bottom, rgba(0,0,0,var(--thin)) 0, #000 8px, #000 calc(100% - 8px), rgba(0,0,0,var(--thin)) 100%); mask-image: linear-gradient(to right, rgba(0,0,0,var(--thin)) 0, #000 8px, #000 calc(100% - 8px), rgba(0,0,0,var(--thin)) 100%), linear-gradient(to bottom, rgba(0,0,0,var(--thin)) 0, #000 8px, #000 calc(100% - 8px), rgba(0,0,0,var(--thin)) 100%); -webkit-mask-composite: source-in; mask-composite: intersect"></div>
+            <!-- 兔毫（仅夜） -->
+            <svg width="110" height="80" style="position: absolute; left: 8px; top: 1px; z-index: -1; display: block; pointer-events: none">
+              <defs>
+                <pattern id="yqt-fur-a" width="31" height="80" patternUnits="userSpaceOnUse" style="fill: var(--fur)"><path d="M4.0 2 h0.8 L4.5 64 Z" fill-opacity="0.9"></path><path d="M14.0 5 h0.6 L14.3 46 Z" fill-opacity="0.7"></path><path d="M23.0 1 h0.9 L23.2 74 Z" fill-opacity="1"></path></pattern>
+                <pattern id="yqt-fur-b" width="47" height="80" patternUnits="userSpaceOnUse" patternTransform="translate(11 0)" style="fill: var(--fur)"><path d="M7 3 h0.7 L7.4 58 Z" fill-opacity="0.8"></path><path d="M25 1 h0.9 L24.8 68 Z" fill-opacity="0.95"></path><path d="M39 5 h0.6 L39.4 40 Z" fill-opacity="0.65"></path></pattern>
+                <linearGradient id="yqt-fur-fade" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#fff"></stop><stop offset="0.55" stop-color="#fff" stop-opacity="0.7"></stop><stop offset="1" stop-color="#fff" stop-opacity="0"></stop></linearGradient>
+                <mask id="yqt-fur-mk" maskUnits="userSpaceOnUse" x="0" y="0" width="110" height="80"><rect width="110" height="80" fill="url(#yqt-fur-fade)"></rect></mask>
+              </defs>
+              <g mask="url(#yqt-fur-mk)">
+                <rect width="110" height="80" style="fill: url(#yqt-fur-a)"></rect>
+                <rect width="110" height="80" style="fill: url(#yqt-fur-b)"></rect>
+              </g>
+            </svg>
+            <div style="position: absolute; left: 0; top: 0; right: 0; bottom: 0; z-index: -1; border-radius: inherit; pointer-events: none; background-image: radial-gradient(ellipse 90% 40% at 24% 0%, var(--sheen), transparent 70%), linear-gradient(to bottom, transparent 64%, var(--pool) 135%); box-shadow: inset 0 0 0 1px var(--rim), inset 0 1px 0 var(--lip), inset 0 -1px 0 var(--lipdk), inset 0 0 18px -7px var(--pool)"></div>
+            <div style="position: absolute; left: 14px; top: 0; z-index: -1; width: 52%; height: 1px; border-radius: inherit; pointer-events: none; background-image: linear-gradient(90deg, transparent, var(--spec) 28%, var(--spec) 50%, transparent)"></div>
+            <div style="position: absolute; left: 14px; top: 1px; z-index: -1; width: 52%; height: 4px; border-radius: inherit; pointer-events: none; opacity: var(--bloom); background-image: linear-gradient(90deg, transparent, var(--spec) 28%, var(--spec) 50%, transparent); -webkit-mask-image: linear-gradient(to bottom, #000, transparent); mask-image: linear-gradient(to bottom, #000, transparent)"></div>
+          </div>
+        </div>
+        <figcaption style="margin-top: 8px; font-size: 12px; letter-spacing: 0.04em; color: var(--ink2)"><span style="color: var(--ink)">夜</span>　酱口兔毫，底部积黑</figcaption>
+      </figure>
+    </div>
+
+    <table style="margin-top: 14px; width: 100%; border-collapse: collapse; font-size: 12px; line-height: 1.5; font-variant-numeric: tabular-nums">
+      <thead>
+        <tr>
+          <th scope="col" style="width: 72px; padding: 0 10px 6px 0; text-align: left; font-size: 12px; font-weight: 400; letter-spacing: 0.1em; color: var(--ink2); border-bottom: 1px solid var(--carve)">釉层</th>
+          <th scope="col" style="padding: 0 12px 6px 0; text-align: left; font-size: 12px; font-weight: 400; letter-spacing: 0.1em; color: var(--ink2); border-bottom: 1px solid var(--carve)">昼 · 汝窑天青</th>
+          <th scope="col" style="padding: 0 0 6px; text-align: left; font-size: 12px; font-weight: 400; letter-spacing: 0.1em; color: var(--ink2); border-bottom: 1px solid var(--carve)">夜 · 建盏黑釉</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr>
+          <th scope="row" style="padding: 5px 10px 5px 0; text-align: left; vertical-align: top; font-size: 13px; font-weight: 500; border-bottom: 1px solid var(--rule)">地画</th>
+          <td style="padding: 5px 12px 5px 0; vertical-align: top; border-bottom: 1px solid var(--rule)">天 #EEF3F0 → 水 #E1E9E5<br><span style="color: var(--ink2)">山 #CCD9D2–#9AAFA5，绢纹 1.6%</span></td>
+          <td style="padding: 5px 0; vertical-align: top; border-bottom: 1px solid var(--rule)">天 #1B1816 → 水 #121010<br><span style="color: var(--ink2)">山 #2E2824–#4D4137，绢纹 1.4%</span></td>
+        </tr>
+        <tr>
+          <th scope="row" style="padding: 5px 10px 5px 0; text-align: left; vertical-align: top; font-size: 13px; font-weight: 500; border-bottom: 1px solid var(--rule)">玻璃基层</th>
+          <td style="padding: 5px 12px 5px 0; vertical-align: top; border-bottom: 1px solid var(--rule)">#F0F5F2 · 42%<br><span style="color: var(--ink2)">输入 #F3F7F4 · 72%</span></td>
+          <td style="padding: 5px 0; vertical-align: top; border-bottom: 1px solid var(--rule)">#1A1714 · 42%<br><span style="color: var(--ink2)">输入 #1E1B18 · 74%</span></td>
+        </tr>
+        <tr>
+          <th scope="row" style="padding: 5px 10px 5px 0; text-align: left; vertical-align: top; font-size: 13px; font-weight: 500; border-bottom: 1px solid var(--rule)">口沿 / 酱口</th>
+          <td style="padding: 5px 12px 5px 0; vertical-align: top; border-bottom: 1px solid var(--rule)">出筋：白 40%<br><span style="color: var(--ink2)">12px 内釉薄至 35%</span></td>
+          <td style="padding: 5px 0; vertical-align: top; border-bottom: 1px solid var(--rule)">酱口：#B88458 · 22%<br><span style="color: var(--ink2)">12px 内釉薄至 55%</span></td>
+        </tr>
+        <tr>
+          <th scope="row" style="padding: 5px 10px 5px 0; text-align: left; vertical-align: top; font-size: 13px; font-weight: 500; border-bottom: 1px solid var(--rule)">积釉</th>
+          <td style="padding: 5px 12px 5px 0; vertical-align: top; border-bottom: 1px solid var(--rule)">#6E9688 · 22%<br><span style="color: var(--ink2)">离边一圈 24px，底部积厚</span></td>
+          <td style="padding: 5px 0; vertical-align: top; border-bottom: 1px solid var(--rule)">黑 · 34%<br><span style="color: var(--ink2)">底部积黑</span></td>
+        </tr>
+        <tr>
+          <th scope="row" style="padding: 5px 10px 5px 0; text-align: left; vertical-align: top; font-size: 13px; font-weight: 500; border-bottom: 1px solid var(--rule)">釉光</th>
+          <td style="padding: 5px 12px 5px 0; vertical-align: top; border-bottom: 1px solid var(--rule)">白 55%<span style="color: var(--ink2)">，酥油光，宽软偏左上</span></td>
+          <td style="padding: 5px 0; vertical-align: top; border-bottom: 1px solid var(--rule)">#FFEAD2 · 6%<span style="color: var(--ink2)">，只余一点暖</span></td>
+        </tr>
+        <tr>
+          <th scope="row" style="padding: 5px 10px 5px 0; text-align: left; vertical-align: top; font-size: 13px; font-weight: 500; border-bottom: 1px solid var(--rule)">顶边高光</th>
+          <td style="padding: 5px 12px 5px 0; vertical-align: top; border-bottom: 1px solid var(--rule)">1px 白 98%，两头收尖<br><span style="color: var(--ink2)">其下 4px 辉光 90%</span></td>
+          <td style="padding: 5px 0; vertical-align: top; border-bottom: 1px solid var(--rule)">1px #FFE8C8 · 50%<br><span style="color: var(--ink2)">辉光 40%</span></td>
+        </tr>
+        <tr>
+          <th scope="row" style="padding: 5px 10px 5px 0; text-align: left; vertical-align: top; font-size: 13px; font-weight: 500; border-bottom: 1px solid var(--rule)">边缘透镜</th>
+          <td colspan="2" style="padding: 5px 0; vertical-align: top; border-bottom: 1px solid var(--rule)">口沿约 20px 内把景向里弯折，最大位移 16px（页头 10px）<br><span style="color: var(--ink2)">昼夜同参，仅 Chromium；素瓷关闭，减弱动态时页头与输入关闭</span></td>
+        </tr>
+        <tr>
+          <th scope="row" style="padding: 5px 10px 5px 0; text-align: left; vertical-align: top; font-size: 13px; font-weight: 500">兔毫</th>
+          <td style="padding: 5px 12px 5px 0; vertical-align: top; color: var(--ink2)">昼无</td>
+          <td style="padding: 5px 0; vertical-align: top">#B07A4A · 6.5%<span style="color: var(--ink2)">，自口沿下流渐稀</span></td>
+        </tr>
+      </tbody>
+    </table>
+
+    <div style="margin-top: 12px; display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); gap: 24px; padding-top: 14px; border-top: 1px solid var(--carve); box-shadow: inset 0 1px 0 var(--etch)">
+      <div>
+        <div style="font-size: 13px; letter-spacing: 0.1em; color: var(--ink2)">令牌</div>
+        <dl style="margin: 8px 0 0; display: grid; grid-template-columns: auto minmax(0, 1fr); gap: 3px 12px; font-size: 12px; line-height: 1.6; font-variant-numeric: tabular-nums">
+          <dt>--blur</dt><dd style="margin: 0; color: var(--ink2)">16px，框架釉片</dd>
+          <dt>--blur-strong</dt><dd style="margin: 0; color: var(--ink2)">22px，输入釉片</dd>
+          <dt>--sat</dt><dd style="margin: 0; color: var(--ink2)">saturate 昼 1.5，夜 1.3</dd>
+          <dt>--bri</dt><dd style="margin: 0; color: var(--ink2)">brightness 昼 1，夜 0.84</dd>
+          <dt>--bd</dt><dd style="margin: 0; color: var(--ink2)">三者合成，素瓷为 none</dd>
+        </dl>
+      </div>
+      <div>
+        <div style="font-size: 13px; letter-spacing: 0.1em; color: var(--ink2)">素瓷：减少透明度的退路</div>
+        <p style="margin: 8px 0 0; font-size: 12px; line-height: 1.75; color: var(--ink2)">系统减少透明度、增强对比度，或在应用内打开「素瓷」时：釉片转为不透明（昼 #F0F4F1，夜 #1E1B18），--bd 为 none，透镜关闭；口沿、积釉、釉光照留，背景画减半。</p>
+      </div>
+    </div>
+  </section>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"solid":{"editor":"boolean","default":false,"tsType":"boolean"},"$preview":{"width":1440,"height":900}}'>
+class Component extends DCLogic {
+  renderVals() {
+    const T = /*THEMES*/{"day":{"paper":"#E8EEEA","hi":"#F4F7F4","slip":"#D5E0DA","deep":"#93AFA4","ink":"#1F2926","ink2":"#56635E","ink3":"#84918B","rule":"rgba(31,41,38,0.12)","rule2":"rgba(31,41,38,0.26)","seal":"#A8322A","glyph":"#F6F1E8","btn":"#1F2926","btnink":"#F4F7F4","weave":"rgba(31,41,38,0.016)","chart":"rgba(31,41,38,0.34)","chartf":"rgba(31,41,38,0.13)","river":"rgba(147,175,164,0.20)","sky":"#EEF3F0","water":"#E1E9E5","m1":"#CCD9D2","m2":"#B7C9C0","m3":"#ACC0B6","m4":"#9AAFA5","mist":"#F1F5F2","ripple":"rgba(70,104,92,0.20)","glass":"rgba(240,245,242,0.42)","glass2":"rgba(243,247,244,0.72)","thin":"0.35","thin2":"0.28","chip":"rgba(198,216,207,0.56)","tile":"rgba(248,251,249,0.5)","mount":"rgba(244,247,245,0.7)","pool":"rgba(110,150,136,0.22)","sheen":"rgba(255,255,255,0.55)","rim":"rgba(255,255,255,0.4)","lip":"rgba(255,255,255,0.25)","lipdk":"rgba(52,86,74,0.14)","carve":"rgba(70,108,95,0.17)","etch":"rgba(255,255,255,0.5)","spec":"rgba(255,255,255,0.98)","bloom":"0.9","drop":"rgba(36,60,52,0.13)","fur":"rgba(0,0,0,0)","blur":"16px","blurS":"22px","sat":"1.5","bri":"1","bd":"blur(var(--blur)) saturate(var(--sat)) brightness(var(--bri))","bdS":"blur(var(--blur-strong)) saturate(var(--sat)) brightness(var(--bri))","lens":"block","art":"1","nPaper":"#161412","nHi":"#1E1B18","nSlip":"#2A2622","nInk":"#E7E3DA","nInk2":"#A8A195","nRule2":"rgba(231,227,218,0.22)","nSeal":"#BF4537","nSky":"#1B1816","nWater":"#121010","nM1":"#2E2824","nM2":"#433930","nM3":"#4A3F35","nM4":"#4D4137","nMist":"#282321","nRipple":"rgba(231,227,218,0.08)","nWeave":"rgba(231,227,218,0.014)","nGlass":"rgba(26,23,20,0.42)","nThin":"0.55","nPool":"rgba(0,0,0,0.34)","nSheen":"rgba(255,234,210,0.06)","nRim":"rgba(184,132,88,0.22)","nLip":"rgba(214,164,116,0.24)","nLipdk":"rgba(0,0,0,0.55)","nSpec":"rgba(255,232,200,0.5)","nBloom":"0.4","nDrop":"rgba(0,0,0,0.42)","nFur":"rgba(176,122,74,0.065)","nSat":"1.3","nBri":"0.84"},"night":{"paper":"#161412","hi":"#1E1B18","slip":"#2A2622","deep":"#7A6650","ink":"#E7E3DA","ink2":"#A8A195","ink3":"#78726A","rule":"rgba(231,227,218,0.10)","rule2":"rgba(231,227,218,0.22)","seal":"#BF4537","glyph":"#F6F1E8","btn":"#E7E3DA","btnink":"#161412","weave":"rgba(231,227,218,0.014)","chart":"rgba(231,227,218,0.34)","chartf":"rgba(231,227,218,0.12)","river":"rgba(185,139,94,0.12)","sky":"#1B1816","water":"#121010","m1":"#2E2824","m2":"#433930","m3":"#4A3F35","m4":"#4D4137","mist":"#282321","ripple":"rgba(231,227,218,0.08)","glass":"rgba(26,23,20,0.42)","glass2":"rgba(30,27,24,0.74)","thin":"0.55","thin2":"1","chip":"rgba(74,63,52,0.42)","tile":"rgba(40,35,30,0.46)","mount":"rgba(30,27,24,0.72)","pool":"rgba(0,0,0,0.34)","sheen":"rgba(255,234,210,0.06)","rim":"rgba(184,132,88,0.22)","lip":"rgba(214,164,116,0.24)","lipdk":"rgba(0,0,0,0.55)","carve":"rgba(185,139,94,0.16)","etch":"rgba(214,164,116,0.08)","spec":"rgba(255,232,200,0.5)","bloom":"0.4","drop":"rgba(0,0,0,0.42)","fur":"rgba(176,122,74,0.065)","blur":"16px","blurS":"22px","sat":"1.3","bri":"0.84","bd":"blur(var(--blur)) saturate(var(--sat)) brightness(var(--bri))","bdS":"blur(var(--blur-strong)) saturate(var(--sat)) brightness(var(--bri))","lens":"block","art":"1","nPaper":"#161412","nHi":"#1E1B18","nSlip":"#2A2622","nInk":"#E7E3DA","nInk2":"#A8A195","nRule2":"rgba(231,227,218,0.22)","nSeal":"#BF4537","nSky":"#1B1816","nWater":"#121010","nM1":"#2E2824","nM2":"#433930","nM3":"#4A3F35","nM4":"#4D4137","nMist":"#282321","nRipple":"rgba(231,227,218,0.08)","nWeave":"rgba(231,227,218,0.014)","nGlass":"rgba(26,23,20,0.42)","nThin":"0.55","nPool":"rgba(0,0,0,0.34)","nSheen":"rgba(255,234,210,0.06)","nRim":"rgba(184,132,88,0.22)","nLip":"rgba(214,164,116,0.24)","nLipdk":"rgba(0,0,0,0.55)","nSpec":"rgba(255,232,200,0.5)","nBloom":"0.4","nDrop":"rgba(0,0,0,0.42)","nFur":"rgba(176,122,74,0.065)","nSat":"1.3","nBri":"0.84"},"daySolid":{"paper":"#E8EEEA","hi":"#F4F7F4","slip":"#D5E0DA","deep":"#93AFA4","ink":"#1F2926","ink2":"#56635E","ink3":"#84918B","rule":"rgba(31,41,38,0.12)","rule2":"rgba(31,41,38,0.26)","seal":"#A8322A","glyph":"#F6F1E8","btn":"#1F2926","btnink":"#F4F7F4","weave":"rgba(31,41,38,0.016)","chart":"rgba(31,41,38,0.34)","chartf":"rgba(31,41,38,0.13)","river":"rgba(147,175,164,0.20)","sky":"#EEF3F0","water":"#E1E9E5","m1":"#CCD9D2","m2":"#B7C9C0","m3":"#ACC0B6","m4":"#9AAFA5","mist":"#F1F5F2","ripple":"rgba(70,104,92,0.20)","glass":"#F0F4F1","glass2":"#F4F7F4","thin":"1","thin2":"1","chip":"#D5E0DA","tile":"#F4F7F4","mount":"#F4F7F4","pool":"rgba(110,150,136,0.16)","sheen":"rgba(255,255,255,0.55)","rim":"rgba(255,255,255,0.7)","lip":"rgba(255,255,255,0.85)","lipdk":"rgba(52,86,74,0.18)","carve":"rgba(70,108,95,0.24)","etch":"rgba(255,255,255,0.6)","spec":"rgba(255,255,255,0.98)","bloom":"0.9","drop":"rgba(36,60,52,0.13)","fur":"rgba(0,0,0,0)","blur":"16px","blurS":"22px","sat":"1.5","bri":"1","bd":"none","bdS":"none","lens":"none","art":"0.5","nPaper":"#161412","nHi":"#1E1B18","nSlip":"#2A2622","nInk":"#E7E3DA","nInk2":"#A8A195","nRule2":"rgba(231,227,218,0.22)","nSeal":"#BF4537","nSky":"#1B1816","nWater":"#121010","nM1":"#2E2824","nM2":"#433930","nM3":"#4A3F35","nM4":"#4D4137","nMist":"#282321","nRipple":"rgba(231,227,218,0.08)","nWeave":"rgba(231,227,218,0.014)","nGlass":"#1E1B18","nThin":"1","nPool":"rgba(0,0,0,0.28)","nSheen":"rgba(255,234,210,0.06)","nRim":"rgba(184,132,88,0.3)","nLip":"rgba(214,164,116,0.3)","nLipdk":"rgba(0,0,0,0.55)","nSpec":"rgba(255,232,200,0.5)","nBloom":"0.4","nDrop":"rgba(0,0,0,0.42)","nFur":"rgba(176,122,74,0.065)","nSat":"1.3","nBri":"0.84"},"nightSolid":{"paper":"#161412","hi":"#1E1B18","slip":"#2A2622","deep":"#7A6650","ink":"#E7E3DA","ink2":"#A8A195","ink3":"#78726A","rule":"rgba(231,227,218,0.10)","rule2":"rgba(231,227,218,0.22)","seal":"#BF4537","glyph":"#F6F1E8","btn":"#E7E3DA","btnink":"#161412","weave":"rgba(231,227,218,0.014)","chart":"rgba(231,227,218,0.34)","chartf":"rgba(231,227,218,0.12)","river":"rgba(185,139,94,0.12)","sky":"#1B1816","water":"#121010","m1":"#2E2824","m2":"#433930","m3":"#4A3F35","m4":"#4D4137","mist":"#282321","ripple":"rgba(231,227,218,0.08)","glass":"#1E1B18","glass2":"#221F1B","thin":"1","thin2":"1","chip":"#2A2622","tile":"#26221E","mount":"#221F1B","pool":"rgba(0,0,0,0.28)","sheen":"rgba(255,234,210,0.06)","rim":"rgba(184,132,88,0.3)","lip":"rgba(214,164,116,0.3)","lipdk":"rgba(0,0,0,0.55)","carve":"rgba(185,139,94,0.22)","etch":"rgba(214,164,116,0.08)","spec":"rgba(255,232,200,0.5)","bloom":"0.4","drop":"rgba(0,0,0,0.42)","fur":"rgba(176,122,74,0.065)","blur":"16px","blurS":"22px","sat":"1.3","bri":"0.84","bd":"none","bdS":"none","lens":"none","art":"0.5","nPaper":"#161412","nHi":"#1E1B18","nSlip":"#2A2622","nInk":"#E7E3DA","nInk2":"#A8A195","nRule2":"rgba(231,227,218,0.22)","nSeal":"#BF4537","nSky":"#1B1816","nWater":"#121010","nM1":"#2E2824","nM2":"#433930","nM3":"#4A3F35","nM4":"#4D4137","nMist":"#282321","nRipple":"rgba(231,227,218,0.08)","nWeave":"rgba(231,227,218,0.014)","nGlass":"#1E1B18","nThin":"1","nPool":"rgba(0,0,0,0.28)","nSheen":"rgba(255,234,210,0.06)","nRim":"rgba(184,132,88,0.3)","nLip":"rgba(214,164,116,0.3)","nLipdk":"rgba(0,0,0,0.55)","nSpec":"rgba(255,232,200,0.5)","nBloom":"0.4","nDrop":"rgba(0,0,0,0.42)","nFur":"rgba(176,122,74,0.065)","nSat":"1.3","nBri":"0.84"}}/*END*/;
+    const solid = this.props.solid ?? false;
+    const t = solid ? T.daySolid : T.day;
+    return { t };
+  }
+}
+</script>
+</body>
+</html>

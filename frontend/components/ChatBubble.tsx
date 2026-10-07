@@ -112,7 +112,6 @@ export interface Message {
 interface ChatBubbleProps {
   message: Message;
   agentName?: string;
-  agentAvatar?: string;
   onDelete?: (id: string, dbId?: number) => void;
   onConfirmTts?: (id: string, text: string) => void;
   onDeclineTts?: (id: string) => void;
@@ -122,7 +121,7 @@ interface ChatBubbleProps {
   selectedReferenceImagePaths?: string[];
 }
 
-function ChatBubble({ message, agentName = "Chloe", agentAvatar = "✨", onDelete, onConfirmTts, onDeclineTts, onRetryImage, imageRetryDisabled, onEditImage, selectedReferenceImagePaths = [] }: ChatBubbleProps) {
+function ChatBubble({ message, agentName = "Chloe", onDelete, onConfirmTts, onDeclineTts, onRetryImage, imageRetryDisabled, onEditImage, selectedReferenceImagePaths = [] }: ChatBubbleProps) {
   const isUser = message.role === "user";
   const referenceUrls = useMemo(() => {
     if (!isUser) return [];
@@ -157,9 +156,9 @@ function ChatBubble({ message, agentName = "Chloe", agentAvatar = "✨", onDelet
   // 分隔线渲染
   if (message.isDivider) {
     return (
-      <div className="flex items-center gap-3 py-2">
+      <div className="flex items-center gap-[18px] py-2">
         <div className="flex-1 h-px bg-border" />
-        <span className="text-[10px] text-muted-foreground/50 shrink-0">{message.content}</span>
+        <span className="shrink-0 text-xs tracking-[0.32em] text-[color:var(--ink2)]">{message.content}</span>
         <div className="flex-1 h-px bg-border" />
       </div>
     );
@@ -168,27 +167,19 @@ function ChatBubble({ message, agentName = "Chloe", agentAvatar = "✨", onDelet
   return (
     <div
       className={cn(
-        "group flex items-start gap-2",
-        isUser ? "ml-auto max-w-[520px] flex-row-reverse msg-in-right max-md:max-w-full" : "max-w-[640px] msg-in-left max-md:w-full max-md:max-w-full"
+        "group flex min-w-0 items-start",
+        isUser ? "ml-auto max-w-[72%] justify-end msg-in-right max-md:max-w-[82%]" : "w-full max-w-[600px] msg-in-left max-md:max-w-full"
       )}
       onMouseEnter={() => setHovered(true)}
       onMouseLeave={() => setHovered(false)}
     >
-      {/* Avatar */}
-      {!isUser && (
-        <div className="mt-0.5 grid h-7 w-7 shrink-0 place-items-center rounded-[6px] bg-secondary text-sm" title={`${agentName} · AI 分身`}>
-          {agentAvatar}
-        </div>
-      )}
-
-      <div className={cn("flex min-w-0 flex-col gap-1.5", isUser ? "items-end" : "max-md:flex-1")}>
-        {!isUser && <div className="flex items-center gap-2 text-xs text-muted-foreground">
-          <span className="inline-block h-1.5 w-1.5" style={{ background: "var(--amber-ink)" }} />
+      <div className={cn("flex min-w-0 flex-col gap-2", isUser ? "items-end" : "w-full")}>
+        {!isUser && <div className="text-[13px] tracking-[0.1em] text-[color:var(--ink2)]" title={`${agentName} · AI 分身`}>
           {agentName}
         </div>}
 
         {/* 图片（如果有） */}
-        {message.imageUrl && !isUser && <GeneratedImage key={message.imageUrl} imageUrl={message.imageUrl} width={message.generatedImage?.width} height={message.generatedImage?.height}
+        {message.imageUrl && !isUser && <GeneratedImage key={message.imageUrl} imageUrl={message.imageUrl} width={message.generatedImage?.width} height={message.generatedImage?.height} model={message.generatedImage?.model}
           onEdit={onEditImage && imagePath ? () => onEditImage(message.imageUrl!) : undefined} editDisabled={editDisabled}
           editLabel={editLabel} editDisabledReason={editDisabledReason} editSelected={selectedReferenceIndex > 0} />}
         {referenceUrls.length > 0 && <div className="flex max-w-full flex-wrap justify-end gap-2" aria-label="本次修改的参考图片">
@@ -205,7 +196,7 @@ function ChatBubble({ message, agentName = "Chloe", agentAvatar = "✨", onDelet
           />
         )}
 
-        {message.generationStatus && <div role="status" className="flex items-center gap-2 text-sm text-muted-foreground">
+        {message.generationStatus && <div role="status" className="ceramic-card flex items-center gap-2 px-4 py-3 text-sm text-[color:var(--ink2)]">
           <LoaderCircle size={16} className="shrink-0 animate-spin" />{message.generationStatus}
         </div>}
 
@@ -213,8 +204,8 @@ function ChatBubble({ message, agentName = "Chloe", agentAvatar = "✨", onDelet
         {!message.generationStatus && (message.content || message.isTyping) && message.content !== "[发了一张图片]" && (
           <div
             className={cn(
-              "break-words whitespace-pre-wrap text-sm",
-              isUser ? "bubble-user max-w-[520px] max-md:max-w-full" : "bubble-ai max-w-[640px] max-md:w-full max-md:max-w-full",
+              "break-words whitespace-pre-wrap",
+              isUser ? "bubble-user max-w-full" : "bubble-ai w-full max-w-[600px] max-md:max-w-full",
               (message.isTyping || stillTyping) && "typing-cursor"
             )}
           >
@@ -226,23 +217,23 @@ function ChatBubble({ message, agentName = "Chloe", agentAvatar = "✨", onDelet
         {message.cardData?.subtype === "weather" && message.cardData.weather && (() => {
           const w = message.cardData.weather;
           return (
-            <div className="glass-card w-[320px] max-w-full overflow-hidden">
-              <div className="flex items-center justify-between border-b px-3.5 py-2 text-xs" style={{ borderColor: "var(--glass-border)" }}>
+            <div className="ceramic-card w-[320px] max-w-full overflow-hidden">
+              <div className="flex items-center justify-between border-b px-3.5 py-2 text-xs" style={{ borderColor: "var(--carve)" }}>
                 <b className="font-medium">天气</b>
                 <span className="text-muted-foreground">{w.location}</span>
               </div>
               <div className="flex items-center gap-3.5 px-3.5 py-3">
-                <span className="readout" style={{ fontSize: 32, color: "var(--foreground)" }}>{w.currentTemp}°</span>
+                <span className="readout" style={{ fontSize: 32, color: "var(--ink)" }}>{w.currentTemp}°</span>
                 <div>
                   <div>{w.condition}</div>
                   <div className="text-xs text-muted-foreground">体感 <span className="readout">{w.feelsLike}°</span>　湿度 <span className="readout">{w.humidity}%</span></div>
                 </div>
               </div>
-              <div className="grid grid-cols-3 border-t" style={{ borderColor: "var(--glass-border)" }}>
+              <div className="grid grid-cols-3 border-t" style={{ borderColor: "var(--carve)" }}>
                 {w.forecast.slice(0, 3).map((f, i) => (
-                  <div key={i} className="flex flex-col gap-0.5 px-3.5 py-2 text-xs text-muted-foreground" style={{ borderLeft: i > 0 ? "1px solid var(--glass-border)" : undefined }}>
+                  <div key={i} className="flex flex-col gap-0.5 px-3.5 py-2 text-xs text-muted-foreground" style={{ borderLeft: i > 0 ? "1px solid var(--carve)" : undefined }}>
                     <span>{f.day}</span>
-                    <span className="readout" style={{ color: "var(--foreground)" }}>{f.low}° {f.high}°</span>
+                    <span className="readout" style={{ color: "var(--ink)" }}>{f.low}° {f.high}°</span>
                   </div>
                 ))}
               </div>
@@ -254,12 +245,12 @@ function ChatBubble({ message, agentName = "Chloe", agentAvatar = "✨", onDelet
         {message.cardData && message.cardData.subtype !== "weather" && message.cardData.points && message.cardData.points.length > 0 && (
           <div
             className={cn(
-              "glass-card w-[340px] max-w-full",
+              "ceramic-card w-[340px] max-w-full",
               "overflow-hidden"
             )}
           >
-            <div className="flex items-center gap-1.5 border-b px-4 pb-2 pt-3" style={{ borderColor: "var(--glass-border)" }}>
-              <Globe size={12} style={{ color: "var(--amber-ink)" }} />
+            <div className="flex items-center gap-1.5 border-b px-4 pb-2 pt-3" style={{ borderColor: "var(--carve)" }}>
+              <Globe size={12} style={{ color: "var(--ink)" }} />
               <span className="text-[11px] font-medium text-muted-foreground">
                 {message.cardData.source || "网页"}
               </span>
@@ -272,7 +263,7 @@ function ChatBubble({ message, agentName = "Chloe", agentAvatar = "✨", onDelet
             <ul className="px-4 py-3 space-y-1.5">
               {message.cardData.points.map((point, i) => (
                 <li key={i} className="text-sm text-foreground/90 leading-relaxed flex gap-2">
-                  <span className="mt-1 shrink-0" style={{ color: "var(--amber-ink)" }}>•</span>
+                  <span className="mt-1 shrink-0" style={{ color: "var(--ink)" }}>•</span>
                   <span className="max-md:min-w-0 max-md:break-words">{point}</span>
                 </li>
               ))}
@@ -284,7 +275,7 @@ function ChatBubble({ message, agentName = "Chloe", agentAvatar = "✨", onDelet
           disabled={imageRetryDisabled}
           title={imageRetryDisabled ? "请等待当前操作完成，并移除待发送的图片后重试" : message.imageGenerationRetry.referenceImages?.length ? "使用原参考图顺序和修改要求，以当前选择的模型重新修改" : "使用相同的描述和比例，以当前选择的模型重新生成"}
           onClick={() => onRetryImage(message.imageGenerationRetry!)}
-          className="btn h-7 self-start px-2.5 text-xs">
+          className="btn h-8 self-start px-3 text-xs max-md:min-h-10">
           <RotateCcw size={12} />{message.imageGenerationRetry.referenceImages?.length ? "重新修改" : "重新生成"}
         </button>}
 
@@ -293,14 +284,14 @@ function ChatBubble({ message, agentName = "Chloe", agentAvatar = "✨", onDelet
           <div className="flex gap-2 mt-1">
             <button
               onClick={() => onConfirmTts?.(message.id, message.pendingTtsText!)}
-              className="btn btn-quiet h-7 px-2.5 text-xs"
+              className="btn btn-quiet h-8 px-2.5 text-xs max-md:min-h-10"
             >
               <Volume2 size={11} />
               <span>帮我读</span>
             </button>
             <button
               onClick={() => onDeclineTts?.(message.id)}
-              className="btn btn-quiet h-7 px-2.5 text-xs"
+              className="btn btn-quiet h-8 px-2.5 text-xs max-md:min-h-10"
             >
               不用
             </button>
@@ -310,15 +301,15 @@ function ChatBubble({ message, agentName = "Chloe", agentAvatar = "✨", onDelet
         {/* Meta row */}
         <div
           className={cn(
-            "flex items-center gap-1.5 px-1",
+            "flex min-h-8 items-center gap-3 text-xs text-[color:var(--ink2)] max-md:min-h-10",
             isUser ? "flex-row-reverse" : "flex-row"
           )}
         >
-          <span className="readout text-[11px]">{timeStr}</span>
+          <span className="readout text-xs text-[color:var(--ink2)]">{timeStr}</span>
           {!isUser && (
             <button
               onClick={() => setMuted(!muted)}
-              className="text-muted-foreground hover:text-foreground transition-colors"
+              className="inline-flex min-h-8 min-w-8 items-center justify-center text-[color:var(--ink2)] transition-colors hover:text-[color:var(--ink)] max-md:min-h-10 max-md:min-w-10"
               title={muted ? "播放语音" : "静音"}
             >
               {muted ? <VolumeX size={12} /> : <Volume2 size={12} />}
@@ -328,7 +319,7 @@ function ChatBubble({ message, agentName = "Chloe", agentAvatar = "✨", onDelet
           {hovered && onDelete && !message.isTyping && (
             <button
               onClick={() => onDelete(message.id, message.dbId)}
-              className="text-muted-foreground/50 hover:text-destructive transition-colors"
+              className="inline-flex min-h-8 min-w-8 items-center justify-center text-[color:var(--ink2)] transition-colors hover:text-[color:var(--seal)] max-md:min-h-10 max-md:min-w-10"
               title="删除这条消息"
             >
               <Trash2 size={11} />

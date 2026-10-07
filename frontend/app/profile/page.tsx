@@ -4,6 +4,8 @@ import { Suspense, useState, useEffect } from "react";
 import Link from "next/link";
 import { useSearchParams } from "next/navigation";
 import Sidebar from "@/components/Sidebar";
+import Glaze from "@/components/Glaze";
+import InkLandscape from "@/components/InkLandscape";
 import { ArrowUpRight, Shield, Loader2, Heart, Scale, CircleHelp, Wrench, TriangleAlert } from "lucide-react";
 import { apiFetch } from "@/lib/auth";
 import { useAccountIdentity, useAccountRequest } from "@/lib/useAccountIdentity";
@@ -30,13 +32,13 @@ const Section = ({
   icon: React.ComponentType<{ size?: number; className?: string; style?: React.CSSProperties }>;
   children: React.ReactNode;
 }) => (
-  <div className="glass-card p-5">
-    <h3 className="mb-3 flex items-center gap-2 text-sm font-medium">
-      <Icon size={14} style={{ color: "var(--amber-ink)" }} />
+  <section className="grid min-w-0 grid-cols-[160px_minmax(0,1fr)] gap-6 border-t border-[color:var(--carve)] py-[22px] shadow-[inset_0_1px_0_var(--etch)] mobile:grid-cols-1 mobile:gap-3">
+    <h3 className="flex items-start gap-2 text-base font-medium leading-[1.8] tracking-[0.08em]">
+      <Icon size={14} className="mt-[7px] shrink-0" style={{ color: "var(--ink2)" }} />
       {title}
     </h3>
-    {children}
-  </div>
+    <div className="min-w-0">{children}</div>
+  </section>
 );
 
 const TagList = ({ items }: { items: string[] }) => (
@@ -50,7 +52,7 @@ const TagList = ({ items }: { items: string[] }) => (
 );
 
 const Empty = ({ hint }: { hint: string }) => (
-  <p className="text-xs text-muted-foreground/60 italic">{hint}</p>
+  <p className="text-xs text-[color:var(--ink2)]">{hint}</p>
 );
 
 function ProfileForAccount({ username }: { username: string }) {
@@ -86,85 +88,58 @@ function ProfileForAccount({ username }: { username: string }) {
   const embedded = sp?.get("embed") === "1";
 
   return (
-    <div className={`flex h-dvh flex-col overflow-hidden ${!embedded ? "mobile:pb-[calc(56px+env(safe-area-inset-bottom))]" : ""}`}>
-      <div className="flex flex-1 min-h-0">
+    <div className={`relative flex h-dvh flex-col overflow-hidden ${!embedded ? "mobile:pb-[calc(var(--tabbar-h)+env(safe-area-inset-bottom))]" : ""}`}>
+      <InkLandscape variant="page" />
+      <div className="relative flex min-h-0 flex-1">
         {!embedded && <Sidebar />}
-        <div className="flex flex-col flex-1 min-w-0">
-        <header className="glass sticky top-0 z-[2] shrink-0 border-b px-8 pb-[18px] pt-7 mobile:px-4 mobile:pt-4" style={{ borderColor: "var(--glass-border)" }}>
-          <div className="flex max-w-[976px] items-end justify-between gap-4 mobile:flex-col mobile:items-start mobile:gap-2">
-            <div>
-              <h1 className="text-xl font-medium tracking-[-0.01em]">旧社交画像</h1>
-              <p className="mt-1 text-[13px] text-muted-foreground">此前用于社交匹配的画像；新会话记忆在“我的分身”中查看</p>
-            </div>
-            <div className="flex items-center gap-1.5 text-xs text-muted-foreground">
-              <Shield size={13} style={{ color: "var(--amber-ink)" }} />
-              本人查看
-            </div>
-          </div>
-        </header>
+        <main className="flex min-w-0 flex-1 justify-center overflow-x-hidden overflow-y-auto p-3">
+          <Glaze variant="panel" fur className="relative z-[1] box-border min-h-full w-full max-w-[712px] self-start rounded-[18px] px-12 pb-8 pt-7 mobile:px-6 mobile:pb-6 mobile:pt-5">
+            <header className="pb-7">
+              <h1 className="mt-[18px] text-[30px] font-medium tracking-[0.16em] mobile:text-[26px]">旧社交画像</h1>
+              <p className="mt-2 text-[13px] leading-[1.85] tracking-[0.04em] text-[color:var(--ink2)]">此前用于社交匹配的画像；新会话记忆在“我的分身”中查看</p>
+              <div className="mt-3 flex items-center gap-1.5 text-xs text-[color:var(--ink2)]"><Shield size={13} />本人查看</div>
+            </header>
 
-        <div className="flex-1 space-y-3 overflow-y-auto px-8 py-6 mobile:min-w-0 mobile:px-4 mobile:py-4">
-          {/* Avatar & 基本信息 */}
-          <div className="glass-card flex items-center gap-4 p-5">
-            <div className="grid h-14 w-14 place-items-center rounded-[6px] bg-secondary">
-              <span className="text-xl font-medium" style={{ color: "var(--amber-ink)" }}>{username[0]}</span>
-            </div>
-            <div className="min-w-0">
-              <p className="truncate font-medium">{username}</p>
-              <p className="text-xs text-muted-foreground mt-0.5 truncate">
-                {[city, occupation, stage].filter(Boolean).join(" · ") || "（暂未提取到基本信息）"}
-              </p>
-            </div>
-          </div>
+            <section className="flex min-w-0 items-center gap-4 border-t border-[color:var(--carve)] py-[22px] shadow-[inset_0_1px_0_var(--etch)]">
+              <div className="grid h-14 w-14 shrink-0 place-items-center rounded-[8px] border border-[color:var(--rule2)] bg-[color:var(--mount)]">
+                <span className="text-[26px] font-light">{Array.from(username)[0]}</span>
+              </div>
+              <div className="min-w-0">
+                <p className="break-all text-xl tracking-[0.02em]">{username}</p>
+                <p className="mt-1 text-[13px] leading-[1.85] text-[color:var(--ink2)]">
+                  {[city, occupation, stage].filter(Boolean).join(" · ") || "（暂未提取到基本信息）"}
+                </p>
+              </div>
+            </section>
 
-          {loading ? (
-            <div className="flex items-center justify-center py-12 gap-2 text-muted-foreground">
-              <Loader2 size={16} className="animate-spin" />
-              <span className="text-sm">加载中…</span>
-            </div>
-          ) : isEmpty ? (
-            <div className="glass-card p-8 text-center">
-              <p className="text-sm text-muted-foreground mb-2">暂无旧社交画像</p>
-              <p className="text-[11px] text-muted-foreground/70 leading-relaxed">
-                新会话形成的私有记忆已单独保存，<br/>
-                请前往“我的分身”查看和管理。
-              </p>
-            </div>
-          ) : (
-            <>
-              <Section title="兴趣" icon={Heart}>
-                {interests.length ? <TagList items={interests} /> : <Empty hint="暂无记录" />}
-              </Section>
-              <Section title="价值观" icon={Scale}>
-                {values.length ? <TagList items={values} /> : <Empty hint="暂无记录" />}
-              </Section>
-              <Section title="当前需求 / 想解决的问题" icon={CircleHelp}>
-                {needs.length ? <TagList items={needs} /> : <Empty hint="暂无记录" />}
-              </Section>
-              <Section title="技能 / 可分享的经验" icon={Wrench}>
-                {skills.length ? <TagList items={skills} /> : <Empty hint="暂无记录" />}
-              </Section>
-              <Section title="当前困境" icon={TriangleAlert}>
-                {struggles.length ? <TagList items={struggles} /> : <Empty hint="暂无记录" />}
-              </Section>
-            </>
-          )}
+            {loading ? (
+              <div role="status" className="flex items-center justify-center gap-2 py-12 text-[color:var(--ink2)]">
+                <Loader2 size={16} className="animate-spin" /><span className="text-sm">加载中…</span>
+              </div>
+            ) : isEmpty ? (
+              <div className="border-t border-[color:var(--carve)] py-8 text-center">
+                <p className="mb-2 text-sm text-[color:var(--ink2)]">暂无旧社交画像</p>
+                <p className="text-[13px] leading-[1.85] text-[color:var(--ink2)]">新会话形成的私有记忆已单独保存，<br />请前往“我的分身”查看和管理。</p>
+              </div>
+            ) : (
+              <>
+                <Section title="兴趣" icon={Heart}>{interests.length ? <TagList items={interests} /> : <Empty hint="暂无记录" />}</Section>
+                <Section title="价值观" icon={Scale}>{values.length ? <TagList items={values} /> : <Empty hint="暂无记录" />}</Section>
+                <Section title="当前需求 / 想解决的问题" icon={CircleHelp}>{needs.length ? <TagList items={needs} /> : <Empty hint="暂无记录" />}</Section>
+                <Section title="技能 / 可分享的经验" icon={Wrench}>{skills.length ? <TagList items={skills} /> : <Empty hint="暂无记录" />}</Section>
+                <Section title="当前困境" icon={TriangleAlert}>{struggles.length ? <TagList items={struggles} /> : <Empty hint="暂无记录" />}</Section>
+              </>
+            )}
 
-          <div className="glass-card flex items-start gap-2 p-5">
-            <Shield size={13} className="mt-0.5 shrink-0" style={{ color: "var(--amber-ink)" }} />
-            <p className="text-xs text-muted-foreground leading-relaxed">
-              这里保留旧社交画像，不展示新会话的私有记忆。你可以在“我的分身”中查看新记忆，或清空分身记忆和已有个人画像；聊天记录会保留。
-            </p>
-          </div>
-
-          <div className="flex gap-2 pb-4">
-            <Link href="/agents/me" target={embedded ? "_top" : undefined} className="btn flex-1 mobile:h-auto mobile:min-h-10 mobile:whitespace-normal">
-              <ArrowUpRight size={14} />
-              前往我的分身管理记忆
+            <div className="flex items-start gap-2 border-t border-[color:var(--carve)] py-[22px] shadow-[inset_0_1px_0_var(--etch)]">
+              <Shield size={13} className="mt-1 shrink-0 text-[color:var(--ink2)]" />
+              <p className="text-[13px] leading-[1.85] text-[color:var(--ink2)]">这里保留旧社交画像，不展示新会话的私有记忆。你可以在“我的分身”中查看新记忆，或清空分身记忆和已有个人画像；聊天记录会保留。</p>
+            </div>
+            <Link href="/agents/me" target={embedded ? "_top" : undefined} className="btn min-h-10 px-[18px] mobile:h-auto mobile:max-w-full mobile:whitespace-normal">
+              <ArrowUpRight size={14} />前往我的分身管理记忆
             </Link>
-          </div>
-        </div>
-        </div>
+          </Glaze>
+        </main>
       </div>
     </div>
   );

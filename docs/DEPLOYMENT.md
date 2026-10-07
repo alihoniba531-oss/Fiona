@@ -287,6 +287,17 @@ server {
         proxy_set_header X-Forwarded-Proto $scheme;
     }
 
+    location /fonts/ {
+        proxy_pass http://127.0.0.1:3000;
+        proxy_http_version 1.1;
+        proxy_set_header Host $host;
+        proxy_set_header X-Real-IP $remote_addr;
+        proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+        proxy_set_header X-Forwarded-Proto $scheme;
+        proxy_hide_header Cache-Control;
+        add_header Cache-Control "public, max-age=31536000, immutable";
+    }
+
     location / {
         proxy_pass http://127.0.0.1:3000;
         proxy_http_version 1.1;
@@ -300,6 +311,8 @@ server {
     }
 }
 ```
+
+`/fonts/noto-serif-sc/` 下的自托管字体切片文件固定不变，部署层以一年 `immutable` 缓存提供；`proxy_hide_header` 避免 Next.js 的 `public, max-age=0` 与该策略并存。更换字体时必须使用新的目录名，并同步更新字体 CSS 中的 URL，不能覆盖相同 URL 下已缓存的文件。首次部署后可用 `curl -I https://madchloechat.online/fonts/noto-serif-sc/noto-serif-sc-000.woff2` 核对唯一的 `Cache-Control` 值。
 
 启用站点后先检查配置：
 

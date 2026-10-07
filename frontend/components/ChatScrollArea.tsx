@@ -71,10 +71,10 @@ export default forwardRef<ChatScrollHandle, Props>(function ChatScrollArea({ chi
     const content = contentRef.current;
     if (!viewport || !content) return;
     const observer = new ResizeObserver(scheduleFollow);
-    // The content grows after SSE completion while ChatBubble is still typing;
-    // the viewport shrinks independently when the composer or window changes.
-    observer.observe(content);
-    observer.observe(viewport);
+    // Include content padding: composer growth changes the bottom clearance
+    // even when message text stays the same. Observe viewport borders too.
+    observer.observe(content, { box: "border-box" });
+    observer.observe(viewport, { box: "border-box" });
     scheduleFollow();
     return () => {
       observer.disconnect();
@@ -116,7 +116,7 @@ export default forwardRef<ChatScrollHandle, Props>(function ChatScrollArea({ chi
     <div className="relative flex min-h-0 flex-1 flex-col" data-chat-scroll-area>
       <div ref={viewportRef} role="region" aria-label="聊天消息" tabIndex={0}
         data-chat-scroll-viewport
-        className="min-h-0 flex-1 overflow-y-auto outline-none focus-visible:ring-1 focus-visible:ring-inset focus-visible:ring-primary/40"
+        className="chat-scroll-viewport min-h-0 flex-1 overflow-y-auto outline-none focus-visible:ring-1 focus-visible:ring-inset focus-visible:ring-primary/40"
         style={{ overflowAnchor: "none", scrollBehavior: "auto" }}
         onScroll={onScroll}
         onWheel={event => { if (!event.ctrlKey) noteScrollIntent(event.deltaY); }}
@@ -133,10 +133,10 @@ export default forwardRef<ChatScrollHandle, Props>(function ChatScrollArea({ chi
           if (["ArrowUp", "PageUp", "Home"].includes(event.key) || (event.key === " " && event.shiftKey && target === event.currentTarget)) noteScrollIntent(-1);
           if (["ArrowDown", "PageDown", "End"].includes(event.key) || (event.key === " " && !event.shiftKey && target === event.currentTarget)) noteScrollIntent(1);
         }}>
-        <div ref={contentRef} className="space-y-4 px-6 py-4 max-md:px-4" data-chat-scroll-content>{children}</div>
+        <div ref={contentRef} className="chat-scroll-content space-y-4" data-chat-scroll-content>{children}</div>
       </div>
       {showLatest && <button type="button" onClick={scrollToLatest}
-        className="absolute bottom-3 left-1/2 z-20 flex -translate-x-1/2 items-center gap-1.5 rounded-full border border-border bg-background/95 px-3 py-1.5 text-xs text-muted-foreground shadow-sm hover:text-foreground focus-visible:outline-2 focus-visible:outline-primary">
+        className="chat-latest absolute bottom-[calc(var(--chat-content-bottom)+96px)] left-1/2 z-20 flex -translate-x-1/2 items-center gap-1.5 rounded-full border border-border bg-background/95 px-3 py-1.5 text-xs text-muted-foreground shadow-sm hover:text-foreground focus-visible:outline-2 focus-visible:outline-primary">
         <ArrowDown size={12} />回到最新
       </button>}
     </div>

@@ -79,20 +79,20 @@ function AccountMemoryPanel({ owner }: { owner: string }) {
   const entries = Object.entries(profile).map(([key, value]) => [labels[key] || key, memoryText(value)]).filter(([, value]) => value);
 
   return (
-    <section className="flex flex-col gap-3 border-t pt-[18px]" style={{ borderColor: "var(--glass-border)" }} aria-labelledby="private-memory-title">
+    <section className="mt-3.5 flex min-w-0 flex-col gap-3 border-t pt-[22px]" style={{ borderColor: "var(--rule)" }} aria-labelledby="private-memory-title">
       <div className="flex items-center justify-between gap-3">
-        <h3 id="private-memory-title" className="text-sm font-medium">私有记忆</h3>
+        <h3 id="private-memory-title" className="text-[17px] font-medium tracking-[.12em]">私有记忆</h3>
         <span className="readout">{revision === null ? "仅自己可见" : <>修订 <b>{revision}</b></>}</span>
       </div>
-      <p className="text-xs leading-relaxed text-muted-foreground">分身从交流中整理的兴趣、需求与个人画像。这些内容不出现在公开名片里。</p>
+      <p className="text-[13px] leading-[1.85] text-[color:var(--ink2)]">分身从交流中整理的兴趣、需求与个人画像。这些内容不出现在公开名片里。</p>
       {!owner ? <p className="text-xs text-muted-foreground" role="status">请登录后查看私有记忆。</p> : loading ? <p className="flex items-center gap-2 text-xs text-muted-foreground" role="status"><Loader2 size={13} className="animate-spin" />正在加载记忆…</p>
-        : entries.length ? <ul>{entries.map(([label, value]) => <li key={label} className="border-b py-1.5 text-[13px] leading-relaxed text-muted-foreground" style={{ borderColor: "var(--glass-border)" }}>{label}：<span className="whitespace-pre-wrap break-words">{value}</span></li>)}</ul>
+        : entries.length ? <ul>{entries.map(([label, value]) => <li key={label} className="border-b py-2 text-[13px] leading-[1.85] text-[color:var(--ink2)]" style={{ borderColor: "var(--carve)" }}>{label}：<span className="whitespace-pre-wrap break-words">{value}</span></li>)}</ul>
         : !error && <p className="text-xs text-muted-foreground">还没有私人画像。和分身聊聊自己后，这里会逐步形成记忆。</p>}
-      {error && <p className="text-xs text-[color:var(--rec)]" role="alert">{error}<button type="button" onClick={() => void load()} disabled={loading || clearing} className="btn btn-quiet ml-2 h-7 px-2.5 text-xs">重试</button></p>}
+      {error && <p className="text-xs text-[color:var(--seal)]" role="alert">{error}<button type="button" onClick={() => void load()} disabled={loading || clearing} className="btn btn-quiet ml-2 min-h-10 px-2.5 text-xs">重试</button></p>}
       {notice && <p className="text-xs text-muted-foreground" role="status">{notice}</p>}
-      <footer className="flex flex-wrap items-center justify-between gap-1.5">
+      <footer className="flex flex-wrap items-center gap-x-[22px] gap-y-1.5">
         <button type="button" onClick={() => void load()} disabled={!owner || loading || clearing} className="btn btn-quiet">刷新</button>
-        <button type="button" onClick={() => void clear()} disabled={!owner || loading || clearing} className="btn btn-danger">
+        <button type="button" onClick={() => void clear()} disabled={!owner || loading || clearing} className="btn btn-danger min-h-10">
           {clearing ? <Loader2 size={13} className="animate-spin" /> : <Trash2 size={13} />}{clearing ? "正在清空…" : "清空记忆与个人画像"}
         </button>
       </footer>

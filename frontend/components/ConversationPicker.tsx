@@ -1,7 +1,8 @@
 "use client";
 
-import { Clock, Moon, Plus, Sun, Trash2 } from "lucide-react";
+import { Trash2 } from "lucide-react";
 import { type Conversation } from "@/lib/agents";
+import Glaze from "@/components/Glaze";
 import { useTheme } from "@/lib/useTheme";
 
 function formatRelative(iso: string) {
@@ -20,7 +21,7 @@ function formatRelative(iso: string) {
 }
 
 export default function ConversationPicker({
-  conversations, selectedId, loading, locked, canCreate, error, onSelect, onCreate, onDelete, onRetry, onHistory, onFullHistory, className = "",
+  conversations, selectedId, loading, locked, canCreate, error, onSelect, onCreate, onDelete, onRetry, onHistory, onFullHistory, className = "", glazed = true,
 }: {
   conversations: Conversation[];
   selectedId?: string;
@@ -35,25 +36,25 @@ export default function ConversationPicker({
   onHistory?: () => void;
   onFullHistory?: () => void;
   className?: string;
+  glazed?: boolean;
 }) {
   const disabled = loading || locked;
   const { dark, toggleTheme } = useTheme();
-  return (
+  const content = (
     <aside
-      className={`glass flex h-full w-[260px] shrink-0 flex-col border-r max-md:w-full ${className}`}
-      style={{ borderColor: "var(--glass-border)" }}
+      className={`flex h-full w-[288px] shrink-0 flex-col max-md:w-full ${className}`}
       aria-label="对话列表"
     >
-      <div className="flex h-16 shrink-0 items-center justify-between border-b pl-5 pr-3" style={{ borderColor: "var(--glass-border)" }}>
-        <h2 className="text-sm font-medium">对话</h2>
+      <div className="flex h-[76px] shrink-0 items-center justify-between border-b pl-5 pr-3" style={{ borderColor: "var(--glass-border)" }}>
+        <h2 className="text-[18px] font-medium tracking-[.18em]">对话</h2>
         <div className="flex items-center gap-1">
           {onHistory && (
-            <button type="button" className="btn btn-quiet w-[34px] px-0 max-md:h-10 max-md:w-10" title="当前对话记录" aria-label="当前对话记录" onClick={onHistory}>
-              <Clock size={16} />
+            <button type="button" className="btn btn-quiet px-2 max-md:h-10" title="当前对话记录" aria-label="历史：当前对话记录" onClick={onHistory}>
+              历史
             </button>
           )}
-          <button type="button" className="btn btn-quiet w-[34px] px-0 max-md:h-10 max-md:w-10" title="新对话" aria-label="新对话" onClick={onCreate} disabled={disabled || !canCreate}>
-            <Plus size={16} />
+          <button type="button" className="btn btn-quiet px-2 max-md:h-10" title="新对话" aria-label="新建：新对话" onClick={onCreate} disabled={disabled || !canCreate}>
+            新建
           </button>
         </div>
       </div>
@@ -66,12 +67,12 @@ export default function ConversationPicker({
             key={conversation.id}
             role="option"
             aria-selected={conversation.id === selectedId}
-            className="group flex cursor-pointer items-baseline gap-2 rounded-[6px] px-3 py-2 text-[13px] text-muted-foreground hover:bg-secondary hover:text-foreground aria-selected:bg-secondary aria-selected:text-foreground"
+            className="group flex cursor-pointer items-baseline gap-2 rounded-lg px-[18px] py-3.5 text-[15px] text-muted-foreground hover:bg-secondary hover:text-foreground aria-selected:bg-[var(--chip)] aria-selected:shadow-[inset_0_0_0_1px_var(--rim)] aria-selected:text-foreground"
           >
             <button type="button" className="min-w-0 flex-1 truncate text-left" onClick={() => onSelect(conversation.id)} disabled={disabled}>
               {conversation.title || "新对话"}
             </button>
-            <span className="readout shrink-0 text-[11px]">{formatRelative(conversation.updated_at)}</span>
+            <span className="readout shrink-0 text-xs">{formatRelative(conversation.updated_at)}</span>
             <button
               type="button"
               aria-label="删除对话"
@@ -95,14 +96,15 @@ export default function ConversationPicker({
 
       <div className="flex items-center justify-between border-t px-5 py-3 text-xs text-muted-foreground" style={{ borderColor: "var(--glass-border)" }}>
         <span>对话仅你可见</span>
-        <button type="button" onClick={onFullHistory} className="hover:text-foreground">完整历史</button>
+        <button type="button" onClick={onFullHistory} className="min-h-10 hover:text-foreground">完整历史</button>
       </div>
       <div className="flex shrink-0 items-center justify-end border-t px-5 py-2 md:hidden" style={{ borderColor: "var(--glass-border)" }}>
         <button type="button" onClick={toggleTheme} className="btn btn-quiet h-10 px-2.5" title={dark ? "切换浅色" : "切换深色"} aria-label={dark ? "切换浅色" : "切换深色"}>
-          {dark ? <Sun size={18} /> : <Moon size={18} />}
+          <span className="theme-day">夜</span><span className="theme-night">昼</span>
           <span>主题</span>
         </button>
       </div>
     </aside>
   );
+  return glazed ? <Glaze as="div" variant="panel" className="h-full">{content}</Glaze> : content;
 }

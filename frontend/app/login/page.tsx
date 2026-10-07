@@ -4,6 +4,9 @@ import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { setAuth } from "@/lib/auth";
 import Signal from "@/components/Signal";
+import Glaze from "@/components/Glaze";
+import InkLandscape from "@/components/InkLandscape";
+import Seal from "@/components/Seal";
 
 import { API_BASE as API } from "@/lib/config";
 
@@ -134,23 +137,21 @@ export default function LoginPage() {
   }
 
   return (
-    <div className="flex min-h-screen items-center justify-center px-6 max-md:min-h-dvh max-md:px-4 max-md:py-6 max-md:pb-[calc(24px+env(safe-area-inset-bottom))]">
-      <div className="flex w-[360px] flex-col gap-8 max-md:w-full max-md:min-w-0 max-md:gap-6">
-        <div className="flex flex-col gap-3">
-          <svg className="text-[color:var(--amber-ink)]" width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" aria-hidden="true">
-            <circle cx="9" cy="12" r="5.5" />
-            <circle cx="15" cy="12" r="5.5" />
-          </svg>
-          <div className="echo text-[44px]" data-text="Chloe">Chloe</div>
-          <p className="text-[15px] text-muted-foreground">每个人自己的分身。</p>
-          <Signal mode="idle" className="mt-2" />
+    <main className="relative flex min-h-dvh items-center overflow-x-hidden max-md:py-10 max-md:pb-[calc(40px+env(safe-area-inset-bottom))]">
+      <InkLandscape variant="login" />
+      <section className="relative z-[1] box-border w-[560px] max-w-full pb-[72px] pl-[168px] pr-8 max-md:w-full max-md:min-w-0 max-md:px-8 max-md:pb-0">
+        <div>
+          <Seal variant="brand" size={56} />
+          <h1 className="mt-11 text-[76px] font-light leading-none tracking-[0.01em] max-md:mt-7 max-md:text-[64px]">Chloe</h1>
+          <p className="mt-[22px] text-[20px] leading-[1.6] tracking-[0.16em] text-[color:var(--ink2)] max-md:text-[18px]">每个人自己的分身。</p>
+          <Signal mode="idle" className="mt-3 h-[22px]" />
         </div>
 
-        <div className="glass rounded-[10px] border p-[22px]" style={{ borderColor: "var(--glass-border)" }}>
-          <div className="flex flex-col gap-3.5">
+        <Glaze variant="panel" fur className="relative z-[2] -ml-9 mt-[18px] w-[calc(100%+72px)] max-w-[452px] rounded-[18px] px-9 py-[30px] max-md:-ml-4 max-md:w-[calc(100%+32px)] max-md:px-5 max-md:py-6">
+          <div className="flex flex-col gap-8">
             {step === "invite" ? (
               <>
-                <label className="flex flex-col gap-1.5 text-xs font-medium">邀请码
+                <label className="flex flex-col gap-1 text-[13px] font-normal tracking-[0.14em] text-[color:var(--ink2)]">邀请码
                   <input
                     type="text"
                     placeholder="输入邀请码"
@@ -158,25 +159,25 @@ export default function LoginPage() {
                     disabled={loading}
                     onChange={e => setInvite(e.target.value.toUpperCase().replace(/\s/g, ""))}
                     onKeyDown={e => e.key === "Enter" && handleRedeem()}
-                    className="w-full rounded-[6px] border bg-card px-3 py-[9px] text-sm font-mono tracking-[0.2em] outline-none placeholder:font-sans placeholder:tracking-normal placeholder:text-muted-foreground focus:border-[color:var(--amber-ink)] disabled:opacity-50"
+                    className="readout h-[52px] w-full rounded-none border-0 border-b border-[color:var(--rule2)] bg-transparent p-0 text-[20px] shadow-[0_1px_0_var(--etch)] tracking-[0.12em] text-[color:var(--ink)] outline-none placeholder:tracking-normal placeholder:text-[color:var(--ink2)] focus:border-[color:var(--ink)] disabled:opacity-50"
                     autoFocus
                   />
                 </label>
 
-                {err && <p className="text-xs text-[color:var(--rec)]">{err}</p>}
+                {err && <p role="alert" className="text-xs text-[color:var(--seal)]">{err}</p>}
 
                 <button
                   onClick={handleRedeem}
                   disabled={loading || !invite.trim()}
-                  className="btn btn-primary w-full h-10"
+                  className="btn btn-primary h-[46px] self-start px-10 text-[15px] tracking-[0.36em]"
                 >
                   {loading ? "进入中…" : "进入"}
                 </button>
               </>
             ) : step === "phone" ? (
               <>
-                <label className="flex flex-col gap-1.5 text-xs font-medium">手机号
-                  <div className="flex w-full items-center gap-2 rounded-[6px] border bg-card px-3 py-[9px] focus-within:border-[color:var(--amber-ink)]">
+                <label className="flex flex-col gap-1 text-[13px] font-normal tracking-[0.14em] text-[color:var(--ink2)]">手机号
+                  <div className="flex h-[52px] w-full items-center gap-2 border-b border-[color:var(--rule2)] focus-within:border-[color:var(--ink)]">
                     <span className="text-sm text-muted-foreground shrink-0">+86</span>
                     <input
                       type="tel"
@@ -186,25 +187,25 @@ export default function LoginPage() {
                       disabled={loading}
                       onChange={e => setPhone(e.target.value.replace(/\D/g, "").slice(0, 11))}
                       onKeyDown={e => e.key === "Enter" && handleSendOtp()}
-                      className="min-w-0 flex-1 bg-transparent text-sm font-normal outline-none placeholder:text-muted-foreground disabled:opacity-50"
+                      className="min-w-0 flex-1 bg-transparent text-[20px] font-normal text-[color:var(--ink)] outline-none placeholder:text-[color:var(--ink2)] disabled:opacity-50"
                       autoFocus
                     />
                   </div>
                 </label>
 
-                {err && <p className="text-xs text-[color:var(--rec)]">{err}</p>}
+                {err && <p role="alert" className="text-xs text-[color:var(--seal)]">{err}</p>}
 
                 <button
                   onClick={handleSendOtp}
                   disabled={loading || phone.length < 11}
-                  className="btn btn-primary w-full h-10"
+                  className="btn btn-primary h-[46px] self-start px-10 text-[15px] tracking-[0.36em]"
                 >
                   {loading ? "发送中…" : "获取验证码"}
                 </button>
               </>
             ) : (
               <>
-                <label className="flex flex-col gap-1.5 text-xs font-medium">
+                <label className="flex flex-col gap-1 text-[13px] font-normal tracking-[0.14em] text-[color:var(--ink2)]">
                   <div className="flex items-center justify-between">
                     <span>验证码</span>
                     <span className="font-normal text-muted-foreground">{phone}</span>
@@ -218,17 +219,17 @@ export default function LoginPage() {
                     disabled={loading}
                     onChange={e => setCode(e.target.value.replace(/\D/g, "").slice(0, 6))}
                     onKeyDown={e => e.key === "Enter" && handleVerify()}
-                    className="w-full rounded-[6px] border bg-card px-3 py-[9px] text-sm font-mono tracking-[0.3em] outline-none placeholder:font-sans placeholder:tracking-normal placeholder:text-muted-foreground focus:border-[color:var(--amber-ink)] disabled:opacity-50"
+                    className="readout h-[52px] w-full rounded-none border-0 border-b border-[color:var(--rule2)] bg-transparent p-0 text-[20px] shadow-[0_1px_0_var(--etch)] tracking-[0.3em] text-[color:var(--ink)] outline-none placeholder:tracking-normal placeholder:text-[color:var(--ink2)] focus:border-[color:var(--ink)] disabled:opacity-50"
                     autoFocus
                   />
                 </label>
 
-                {err && <p className="text-xs text-[color:var(--rec)]">{err}</p>}
+                {err && <p role="alert" className="text-xs text-[color:var(--seal)]">{err}</p>}
 
                 <button
                   onClick={handleVerify}
                   disabled={loading || code.length < 6}
-                  className="btn btn-primary w-full h-10"
+                  className="btn btn-primary h-[46px] self-start px-10 text-[15px] tracking-[0.36em]"
                 >
                   {loading ? "验证中…" : "登录 / 注册"}
                 </button>
@@ -242,13 +243,13 @@ export default function LoginPage() {
               </>
             )}
 
-            <p className="text-xs leading-relaxed text-muted-foreground">内测阶段凭邀请码进入。登录即同意用户协议，新用户赠送 <b className="readout">200</b> 颗草莓。</p>
+            <p className="-mt-1 text-[13px] leading-[1.9] tracking-normal text-[color:var(--ink2)]">内测阶段凭邀请码进入。登录即同意用户协议，新用户赠送 <b className="readout">200</b> 颗草莓。</p>
           </div>
-        </div>
+        </Glaze>
 
         {/* 开发测试入口（仅本地 dev 构建可见，生产 build 时自动消失） */}
         {process.env.NODE_ENV !== "production" && (
-          <div className="pt-3 border-t border-border/30 space-y-2">
+          <div className="mt-6 space-y-2 border-t border-[color:var(--carve)] pt-3">
             {!showTest ? (
               <button
                 onClick={() => setShowTest(true)}
@@ -264,7 +265,7 @@ export default function LoginPage() {
                   value={testUser}
                   onChange={e => setTestUser(e.target.value)}
                   onKeyDown={e => e.key === "Enter" && handleTestLogin()}
-                  className="w-full rounded-[6px] border bg-card px-3 py-[9px] text-sm outline-none placeholder:text-muted-foreground focus:border-[color:var(--amber-ink)] disabled:opacity-50"
+                  className="h-[44px] w-full rounded-[8px] border border-[color:var(--rule2)] bg-[color:var(--mount)] px-3 text-base outline-none placeholder:text-[color:var(--ink2)] focus:border-[color:var(--ink)] disabled:opacity-50"
                 />
                 <button
                   onClick={handleTestLogin}
@@ -277,7 +278,7 @@ export default function LoginPage() {
             )}
           </div>
         )}
-      </div>
-    </div>
+      </section>
+    </main>
   );
 }

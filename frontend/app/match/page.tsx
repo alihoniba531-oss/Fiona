@@ -3,8 +3,9 @@
 import { Suspense, useState, useEffect, useRef, useCallback } from "react";
 import { useSearchParams } from "next/navigation";
 import Sidebar from "@/components/Sidebar";
-import Earth3D from "@/components/Earth3D";
-import { Send, User, Sparkles, MessageCircle } from "lucide-react";
+import Glaze from "@/components/Glaze";
+import InkLandscape from "@/components/InkLandscape";
+import { User, MessageCircle } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { apiFetch } from "@/lib/auth";
 import { useAccountIdentity, useAccountRequest } from "@/lib/useAccountIdentity";
@@ -57,44 +58,44 @@ function CloudCard({
   return (
     <div
       className={cn(
-        "cloud-card glass-card w-80 px-5 py-4 mobile:static! mobile:w-full mobile:min-w-0 mobile:break-words",
+        "cloud-card ceramic-card w-[min(20rem,calc(100%_-_24px))] min-w-0 break-words rounded-[14px] px-5 py-5 mobile:static! mobile:w-full",
         phase === "in" && "cloud-in",
         phase === "stable" && "cloud-stable",
         phase === "out" && "cloud-out",
       )}
       style={{
         position: "absolute",
-        left: `${pos.x}%`,
+        left: `min(${pos.x}%, max(12px, calc(100% - 320px - 12px)))`,
         top: `${pos.y}%`,
         animationDelay: `${index * 0.15}s`,
       }}
     >
       <div className="flex items-start gap-3">
         {/* 匿名头像 */}
-        <div className="grid h-10 w-10 shrink-0 place-items-center rounded-[6px] bg-secondary">
-          <Sparkles size={16} style={{ color: "var(--amber-ink)" }} />
+        <div className="grid h-10 w-10 shrink-0 place-items-center rounded-[10px] border border-[color:var(--rule2)]">
+          <svg aria-hidden="true" width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="var(--ink)" strokeWidth="1.2"><path d="M12 3 Q13 10 21 12 Q13 13 12 21 Q11 13 3 12 Q11 10 12 3Z" /></svg>
         </div>
         <div className="flex-1 min-w-0">
           <div className="flex items-center gap-2 mb-1">
-            <span className="text-sm font-medium text-foreground/70">神秘好友</span>
+            <span className="text-[17px] font-medium tracking-[.12em] text-[color:var(--ink)]">神秘好友</span>
             <span className="tag tag-amber">
               {match.type}
             </span>
           </div>
           {match.interest_topic && (
-            <p className="text-[10px] text-muted-foreground mb-1.5">
+            <p className="text-xs text-[color:var(--ink2)] mb-1.5">
               因为你聊到了 <span className="text-foreground/70 font-medium">「{match.interest_topic}」</span>
             </p>
           )}
-          <p className="text-sm text-foreground/85 leading-relaxed">{match.reason}</p>
+          <p className="text-[15px] text-[color:var(--ink)] leading-[1.8]">{match.reason}</p>
           {/* 对方的招呼 */}
           {match.peer_greeting && (
             <div
-              className="mt-2 flex items-start gap-1.5 rounded-[6px] border px-3.5 py-2.5"
-              style={{ background: "var(--fill)", borderColor: "var(--glass-border)" }}
+              className="mt-3 flex items-start gap-2 border-t px-0 py-3"
+              style={{ borderColor: "var(--carve)" }}
             >
-              <MessageCircle size={11} className="mt-0.5 shrink-0" style={{ color: "var(--amber-ink)" }} />
-              <p className="text-[11px] text-foreground/80 leading-relaxed">「{match.peer_greeting}」</p>
+              <MessageCircle size={11} className="mt-0.5 shrink-0" style={{ color: "var(--ink)" }} />
+              <p className="text-[13px] text-[color:var(--ink2)] leading-[1.8]">「{match.peer_greeting}」</p>
             </div>
           )}
           {match.tags.length > 0 && (
@@ -117,16 +118,16 @@ function CloudCard({
             onChange={e => setGreetingText(e.target.value.slice(0, 50))}
             placeholder="说点什么吧（可选，50字以内）"
             rows={2}
-            className="w-full resize-none rounded-[6px] border bg-card px-3 py-[9px] text-xs leading-relaxed text-foreground outline-none placeholder:text-muted-foreground focus:border-[color:var(--amber-ink)] mobile:text-base"
+            className="w-full resize-none rounded-[10px] border border-[color:var(--carve)] bg-[color:var(--tile)] px-3 py-[9px] text-base leading-relaxed text-[color:var(--ink)] outline-none placeholder:text-[color:var(--ink2)] focus:border-[color:var(--ink)]"
           />
           <div className="flex gap-2 mt-2 justify-end">
             <button
               onClick={() => setShowGreeting(false)}
-              className="btn btn-quiet h-7 px-2.5 text-xs"
+              className="btn btn-quiet h-8 px-2.5 text-[13px] mobile:h-10"
             >跳过</button>
             <button
               onClick={() => onAccept(match, greetingText)}
-              className="btn btn-primary h-7 px-2.5 text-xs"
+              className="btn btn-primary h-8 px-3.5 text-[13px] mobile:h-10"
             >发送打招呼</button>
           </div>
         </div>
@@ -136,11 +137,11 @@ function CloudCard({
         <div className="flex gap-2 mt-3 justify-end">
           <button
             onClick={() => onSkip(match.id)}
-            className="btn btn-quiet h-7 px-2.5 text-xs"
+            className="btn btn-quiet h-8 px-2.5 text-[13px] mobile:h-10"
           >算了</button>
           <button
             onClick={() => setShowGreeting(true)}
-            className="btn btn-primary h-7 px-2.5 text-xs"
+            className="btn btn-primary h-8 px-3.5 text-[13px] mobile:h-10"
           >认识下</button>
         </div>
       )}
@@ -303,20 +304,19 @@ function MatchForAccount({ username }: { username: string }) {
   const embedded = searchParams?.get("embed") === "1";
 
   return (
-    <div className={cn("flex h-screen flex-col overflow-hidden mobile:h-dvh", !embedded && "mobile:pb-[calc(56px+env(safe-area-inset-bottom))]")}>
+    <div className={cn("flex h-screen flex-col overflow-hidden mobile:h-dvh", !embedded && "mobile:pb-[calc(var(--tabbar-h)+env(safe-area-inset-bottom))]")}>
       <div className="flex flex-1 min-h-0">
         {!embedded && <Sidebar />}
         <div className="flex flex-1 min-w-0 relative overflow-hidden mobile:min-h-0 mobile:flex-col">
 
-          {/* 3D 地球背景：横跨整个区域，让左栏也能透出宇宙 */}
-          <Earth3D />
+          <InkLandscape variant="page" />
 
-          {/* 左侧：最近 5 个联系人 (玻璃质感，星空直接穿透) */}
-          <div className="glass-card relative z-10 m-4 mr-0 flex w-64 shrink-0 flex-col overflow-hidden mobile:m-3 mobile:mb-0 mobile:w-auto">
-            <div className="border-b px-4 py-3" style={{ borderColor: "var(--glass-border)" }}>
-              <p className="text-xs font-medium text-muted-foreground">最近聊天</p>
+          {/* 最近聊天釉片；联系人用刻线与清釉选中片。 */}
+          <Glaze as="aside" variant="panel" lens={false} fur className="relative z-10 m-3 mr-0 flex w-[min(16rem,30%)] shrink-0 flex-col rounded-[18px] mobile:mb-0 mobile:w-auto">
+            <div className="mx-5 border-b py-5" style={{ borderColor: "var(--carve)", boxShadow: "0 1px 0 var(--etch)" }}>
+              <p className="text-[18px] font-medium tracking-[.18em]">最近聊天</p>
             </div>
-            <div className="flex-1 overflow-y-auto py-1 mobile:flex mobile:flex-none mobile:overflow-x-auto mobile:overflow-y-hidden">
+            <div className="flex-1 min-h-0 overflow-y-auto p-2 mobile:flex mobile:flex-none mobile:overflow-x-auto mobile:overflow-y-hidden">
               {rooms.length === 0 ? (
                 <div className="flex flex-col items-center justify-center h-40 px-4 text-center gap-2 mobile:h-16 mobile:w-full">
                   <User size={28} className="text-muted-foreground/40" />
@@ -327,21 +327,21 @@ function MatchForAccount({ username }: { username: string }) {
                   key={room.room_id}
                   onClick={() => openChat(room)}
                   className={cn(
-                    "chip h-auto w-full justify-start px-4 py-3 text-left transition-colors hover:bg-secondary mobile:w-auto mobile:min-w-32 mobile:shrink-0",
+                    "chip h-auto w-full justify-start rounded-[10px] border-b border-[color:var(--carve)] px-3 py-3 text-left transition-colors mobile:w-auto mobile:min-w-32 mobile:shrink-0",
                     selected?.room_id === room.room_id && "chip-on"
                   )}
                 >
                   <div className="grid h-9 w-9 shrink-0 place-items-center rounded-[6px] bg-secondary">
-                    <span className="text-sm font-medium" style={{ color: "var(--amber-ink)" }}>{room.peer[0]}</span>
+                    <span className="text-sm font-medium" style={{ color: "var(--ink)" }}>{room.peer[0]}</span>
                   </div>
                   <span className="text-sm font-medium truncate">{room.peer}</span>
                 </button>
               ))}
             </div>
-          </div>
+          </Glaze>
 
-          {/* 右侧：聊天区 / 匹配卡飘动区 (Earth3D 在外层公共背景) */}
-          <div className={cn("relative z-10 flex min-w-0 flex-1 flex-col mobile:min-h-0", selected && "glass-card m-4 overflow-hidden mobile:m-3")}>
+          {/* 消息留在纸面；页头与输入各由一片釉托起。 */}
+          <div className={cn("relative z-10 flex min-w-0 flex-1 flex-col mobile:min-h-0", selected && "m-3 overflow-hidden rounded-[18px]")}>
             {!selected ? (
               <div className="flex-1 relative overflow-hidden mobile:flex mobile:min-h-0 mobile:flex-col mobile:gap-3 mobile:overflow-y-auto mobile:p-3">
                 {pendingMatches.length === 0 ? null : (
@@ -364,27 +364,24 @@ function MatchForAccount({ username }: { username: string }) {
             ) : (
               <>
                 {/* header */}
-                <div className="flex shrink-0 items-center gap-3 border-b px-5 py-3 mobile:px-4" style={{ borderColor: "var(--glass-border)" }}>
+                <Glaze as="header" variant="strip" lens className="relative z-[2] flex shrink-0 items-center gap-3 rounded-[16px] px-5 py-4 mobile:px-4">
                   <div className="grid h-7 w-7 place-items-center rounded-[6px] bg-secondary">
-                    <span className="text-xs font-medium" style={{ color: "var(--amber-ink)" }}>{selected.peer[0]}</span>
+                    <span className="text-xs font-medium" style={{ color: "var(--ink)" }}>{selected.peer[0]}</span>
                   </div>
-                  <p className="text-sm font-medium mobile:min-w-0 mobile:truncate">{selected.peer}</p>
-                </div>
+                  <p className="text-[18px] font-medium tracking-[.1em] mobile:min-w-0 mobile:truncate">{selected.peer}</p>
+                </Glaze>
 
                 {/* 消息列表 */}
-                <div className="flex-1 overflow-y-auto px-5 py-4 space-y-3 mobile:min-h-0 mobile:px-4">
+                <div className="min-h-0 flex-1 overflow-y-auto px-5 py-6 space-y-6 mobile:px-4">
                   {messages.map((m, i) => {
                     const isSelf = m.sender === username;
                     return (
                       <div key={i} className={cn("flex", isSelf ? "justify-end" : "justify-start")}>
                         <div className={cn("flex flex-col gap-1.5 mobile:max-w-[80vw] mobile:min-w-0", isSelf ? "max-w-[520px] items-end" : "max-w-[640px] items-start")}>
                           {!isSelf && (
-                            <div className="flex items-center gap-2 text-xs text-muted-foreground">
-                              <span className="inline-block h-1.5 w-1.5" style={{ background: "var(--amber-ink)" }} />
-                              {m.sender}
-                            </div>
+                            <div className="text-[13px] tracking-[.1em] text-[color:var(--ink2)]">{m.sender}</div>
                           )}
-                          <div className={cn("text-sm mobile:max-w-full mobile:break-words", isSelf ? "bubble-user" : "bubble-ai")}>
+                          <div className={cn("mobile:max-w-full mobile:break-words", isSelf ? "bubble-user" : "bubble-ai")}>
                             {m.content}
                           </div>
                         </div>
@@ -395,25 +392,26 @@ function MatchForAccount({ username }: { username: string }) {
                 </div>
 
                 {/* 输入框 */}
-                <div className="glass shrink-0 border-t px-4 py-3 mobile:px-3" style={{ borderColor: "var(--glass-border)" }}>
-                  <div className="flex items-end gap-2 rounded-[10px] border px-3.5 py-2.5 mobile:min-w-0" style={{ background: "var(--fill)", borderColor: "var(--glass-border)" }}>
+                <Glaze as="footer" variant="slab" lens className="relative z-[2] shrink-0 rounded-[18px] px-4 py-3 mobile:px-3">
+                  <div className="flex items-end gap-3 px-1 py-1 mobile:min-w-0">
                     <textarea
                       value={input}
                       onChange={e => setInput(e.target.value)}
                       onKeyDown={handleKey}
                       placeholder="发消息…"
                       rows={1}
-                      className="flex-1 resize-none bg-transparent text-sm outline-none py-1.5 leading-relaxed max-h-[100px] text-foreground placeholder:text-muted-foreground mobile:min-w-0 mobile:text-base"
+                      className="flex-1 resize-none bg-transparent text-base outline-none py-1.5 leading-[1.8] max-h-[100px] text-[color:var(--ink)] placeholder:text-[color:var(--ink2)] mobile:min-w-0"
                     />
                     <button
                       onClick={handleSend}
                       disabled={!input.trim()}
-                      className="btn btn-primary mb-0.5 h-8 w-8 px-0 mobile:h-10 mobile:w-10 mobile:shrink-0"
+                      aria-label="发送消息"
+                      className="btn btn-primary mb-0.5 h-10 shrink-0 px-4 text-[13px] tracking-[.2em]"
                     >
-                      <Send size={14} />
+                      发送
                     </button>
                   </div>
-                </div>
+                </Glaze>
               </>
             )}
           </div>
@@ -425,7 +423,7 @@ function MatchForAccount({ username }: { username: string }) {
           0%, 100% { transform: translateY(0); }
           50% { transform: translateY(-3px); }
         }
-        .cloud-card.glass-card {
+        .cloud-card.ceramic-card {
           opacity: 0;
           transform: translateY(-24px) scale(0.96);
           transition: opacity 1.2s ease-out, transform 1.5s cubic-bezier(0.16, 1, 0.3, 1);

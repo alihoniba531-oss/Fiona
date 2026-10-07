@@ -6,11 +6,13 @@ import { Download, ImageOff, LoaderCircle, Maximize2, PencilLine, RotateCcw, X }
 import { apiFetch } from "@/lib/auth";
 import { cn } from "@/lib/utils";
 import { isLocalReferenceDataUrl } from "@/lib/generatedImages";
+import { imageModelLabel } from "@/lib/imageModels";
 
 interface Props {
   imageUrl: string;
   width?: number;
   height?: number;
+  model?: string;
   variant?: "generated" | "reference";
   onEdit?: () => void;
   editDisabled?: boolean;
@@ -22,7 +24,7 @@ interface Props {
   localPreview?: boolean;
 }
 
-export default function GeneratedImage({ imageUrl, width, height, variant = "generated", onEdit, editDisabled, editLabel = "以此图修改", editDisabledReason, editSelected, referenceIndex, compact = false, localPreview = false }: Props) {
+export default function GeneratedImage({ imageUrl, width, height, model, variant = "generated", onEdit, editDisabled, editLabel = "以此图修改", editDisabledReason, editSelected, referenceIndex, compact = false, localPreview = false }: Props) {
   const containerRef = useRef<HTMLDivElement>(null);
   const dialogRef = useRef<HTMLDialogElement>(null);
   const restoreFocusRef = useRef(true);
@@ -35,6 +37,7 @@ export default function GeneratedImage({ imageUrl, width, height, variant = "gen
   const isReference = variant === "reference";
   const referenceLabel = referenceIndex ? `参考图 ${referenceIndex}` : "参考图";
   const imageLabel = isReference ? referenceLabel : "AI 生成的图片";
+  const modelLabel = imageModelLabel(model);
   // Only references explicitly created by the local file picker may use data URLs.
   const localSource = localPreview && isLocalReferenceDataUrl(imageUrl) ? imageUrl : "";
   const previewSource = localSource || source;
@@ -131,10 +134,9 @@ export default function GeneratedImage({ imageUrl, width, height, variant = "gen
   return (
     <div
       ref={containerRef}
-      className={cn("glass-card max-w-full overflow-hidden rounded-[10px] border", isReference ? "w-[120px]" : "w-[280px]", editSelected && "ring-1 ring-[color:var(--amber-ink)]")}
-      style={{ borderColor: editSelected ? "var(--amber-ink)" : "var(--glass-border)" }}
+      className={cn("mount-frame max-w-full overflow-hidden rounded-[4px]", isReference ? "mount-frame-reference" : "w-[448px] p-3.5 pb-3", editSelected && "ring-1 ring-[color:var(--ink)]")}
     >
-      <div className={cn("relative flex items-center justify-center bg-secondary/40", isReference ? (previewError ? "min-h-12" : compact ? "min-h-12 max-h-16" : "min-h-18 max-h-24") : "min-h-36 max-h-[360px]")} style={!isReference && width && height ? { aspectRatio: `${width}/${height}` } : undefined}>
+      <div className={cn("relative flex items-center justify-center bg-[color:var(--tile)] shadow-[0_0_0_1px_var(--carve),0_2px_8px_-3px_var(--pool)]", isReference ? (previewError ? "min-h-12" : compact ? "min-h-12 max-h-16" : "min-h-18 max-h-24") : "min-h-36 max-h-[360px]")} style={!isReference && width && height ? { aspectRatio: `${width}/${height}` } : undefined}>
         {!previewError && !loaded && <div role="status" className={cn("flex items-center gap-2 text-xs text-muted-foreground", isReference ? "p-3" : "p-6")}><LoaderCircle size={15} className="shrink-0 animate-spin" />{isReference ? "加载中…" : "正在加载图片…"}</div>}
         {previewError ? <div role="alert" className="flex flex-col items-center gap-2 p-5 text-xs text-muted-foreground">
           <ImageOff size={22} />
@@ -147,28 +149,32 @@ export default function GeneratedImage({ imageUrl, width, height, variant = "gen
             className={cn("w-full object-contain", isReference ? compact ? "max-h-16" : "max-h-24" : "max-h-[360px]")} />
         </button>}
       </div>
-      <div className={cn("flex items-center gap-1 border-t px-3 py-2 text-[11px]", isReference && "max-md:flex-wrap max-md:justify-between max-md:gap-0 max-md:px-2 max-md:py-1")} style={{ borderColor: "var(--glass-border)" }}>
-        <span className={cn("mr-auto shrink-0 text-muted-foreground", isReference && "max-md:mb-1 max-md:w-full")}>{isReference ? referenceLabel : "AI 生成"}</span>
+      {!isReference && <div className="mt-2.5 flex min-w-0 items-start justify-between gap-6 text-[13px]">
+        <span>AI 生成</span>
+        {modelLabel && <span className="min-w-0 break-words text-right text-xs text-[color:var(--ink2)]">{modelLabel}</span>}
+      </div>}
+      <div className={cn("flex items-center justify-end gap-1 py-2 text-[11px]", isReference && "max-md:flex-wrap max-md:justify-between max-md:gap-0 max-md:px-2 max-md:py-1")}>
+        {isReference && <span className="mr-auto shrink-0 text-[color:var(--ink2)] max-md:mb-1 max-md:w-full">{referenceLabel}</span>}
         <button type="button" aria-label={`放大${imageLabel}`} title="放大" onClick={openPreview} disabled={!loaded || !!previewError} className="btn btn-quiet h-7 px-2.5 text-xs max-md:h-10 max-md:min-w-10 max-md:px-0"><Maximize2 size={12} />{!isReference && "放大"}</button>
         <button type="button" aria-label={`下载${imageLabel}`} title="下载" onClick={download} disabled={!loaded || !!previewError} className="btn btn-quiet h-7 px-2.5 text-xs max-md:h-10 max-md:min-w-10 max-md:px-0"><Download size={12} />{!isReference && "下载"}</button>
       </div>
       {!isReference && onEdit && <button type="button" onClick={selectForEdit} disabled={editDisabled || !loaded || !!previewError}
         title={editDisabled ? editDisabledReason || "请等待当前操作完成，并移除待发送图片后再选择" : "选择这张图作为参考，输入希望修改的地方"}
-        className={cn("btn btn-quiet h-7 w-full rounded-none border-x-0 border-b-0 border-t px-2.5 text-xs max-md:h-10", editSelected ? "font-medium text-[color:var(--amber-ink)]" : "disabled:opacity-40")}
-        style={{ borderColor: "var(--glass-border)" }}>
+        className={cn("btn btn-quiet h-7 w-full rounded-none border-x-0 border-b-0 border-t px-2.5 text-xs max-md:h-10", editSelected ? "font-medium text-[color:var(--ink)]" : "disabled:opacity-40")}
+        style={{ borderColor: "var(--carve)" }}>
         <PencilLine size={12} />{editLabel}
       </button>}
       {expanded && createPortal(
         <dialog ref={dialogRef} aria-label={`${imageLabel}预览`} onCancel={() => setExpanded(false)} onClose={() => setExpanded(false)}
           onClick={event => { if (event.target === event.currentTarget) setExpanded(false); }}
-          className="glass m-auto max-h-[94vh] max-w-[94vw] overflow-auto rounded-[10px] border p-0 text-foreground shadow-2xl backdrop:bg-black/75"
-          style={{ borderColor: "var(--glass-border)" }}>
-          <div className="flex flex-wrap items-center justify-between gap-3 border-b px-4 py-3" style={{ borderColor: "var(--glass-border)" }}>
+          className="image-preview-dialog m-auto max-h-[94vh] max-w-[94vw] overflow-auto rounded-[8px] border p-0 text-[color:var(--ink)]"
+          style={{ borderColor: "var(--carve)" }}>
+          <div className="flex flex-wrap items-center justify-between gap-3 border-b px-4 py-3" style={{ borderColor: "var(--carve)" }}>
             <span className="text-sm">{imageLabel}</span>
             <div className="flex items-center gap-3">
               {!isReference && onEdit && <button type="button" onClick={selectForEdit} disabled={editDisabled || !loaded || !!previewError}
                 title={editDisabledReason}
-                className={cn("btn btn-quiet h-7 px-2.5 text-xs max-md:h-10", editSelected && "font-medium text-[color:var(--amber-ink)]")}><PencilLine size={14} />{editLabel}</button>}
+                className={cn("btn btn-quiet h-7 px-2.5 text-xs max-md:h-10", editSelected && "font-medium text-[color:var(--ink)]")}><PencilLine size={14} />{editLabel}</button>}
               <button type="button" onClick={download} className="btn btn-quiet h-7 px-2.5 text-xs max-md:h-10"><Download size={14} />下载图片</button>
               <button type="button" autoFocus aria-label="关闭图片预览" onClick={() => setExpanded(false)} className="btn btn-quiet h-7 w-7 px-0 max-md:h-10 max-md:w-10"><X size={18} /></button>
             </div>

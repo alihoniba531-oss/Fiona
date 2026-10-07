@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { MessageCircle, Settings, Moon, Sun, Bot, Orbit, Globe } from "lucide-react";
+import Glaze from "@/components/Glaze";
 import { useEffect, useRef, useState } from "react";
 import { cn } from "@/lib/utils";
 import { getUsername, updateBalance, apiFetch } from "@/lib/auth";
@@ -11,11 +11,11 @@ import { useTheme } from "@/lib/useTheme";
 import { API_BASE as API } from "@/lib/config";
 
 const navItems = [
-  { href: "/", icon: MessageCircle, label: "对话" },
-  { href: "/agents/me", icon: Bot, label: "分身" },
-  { href: "/agents", icon: Orbit, label: "广场" },
-  { href: "/plaza", icon: Globe, label: "世界" },
-  { href: "/settings", icon: Settings, label: "设置" },
+  { href: "/", label: "对话" },
+  { href: "/agents/me", label: "分身" },
+  { href: "/agents", label: "广场" },
+  { href: "/plaza", label: "世界" },
+  { href: "/settings", label: "设置" },
 ];
 
 export default function Sidebar({
@@ -79,146 +79,46 @@ export default function Sidebar({
     };
   }, []);
 
-  return (
-    <>
-    <aside className="glass flex min-h-0 w-14 shrink-0 flex-col items-center gap-1 border-r border-border bg-sidebar py-3 max-md:hidden">
-      {/* Logo */}
-      <div className="mb-3 grid h-8 w-8 shrink-0 place-items-center text-[color:var(--amber-ink)]" title="Chloe">
-        <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" aria-hidden="true">
-          <circle cx="9" cy="12" r="5.5" />
-          <circle cx="15" cy="12" r="5.5" />
-        </svg>
-      </div>
-
-      {/* Nav */}
-      <nav className="flex min-h-0 w-full flex-col items-center gap-1 flex-1 overflow-y-auto">
-        {navItems.map(({ href, icon: Icon, label }) => {
-          // active 优先看抽屉状态，没传 active prop 时回退到 pathname
-          const drawerActive =
-            (href === "/agents/me" && agentActive) ||
-            (href === "/agents" && exchangeActive) ||
-            (href === "/plaza" && plazaActive) ||
-            (href === "/settings" && settingsActive);
-          const anyDrawerOpen = !!(agentActive || exchangeActive || plazaActive || settingsActive);
-          // "聊天"在主页且没抽屉开时高亮；任一抽屉开时不高亮
-          const chatActive = href === "/" && pathname === "/" && !anyDrawerOpen;
-          const active = drawerActive || chatActive || (href !== "/" && pathname === href);
-          // 抽屉模式：父组件传了对应 callback 时走按钮 + 不路由跳转
-          const drawerCallback =
-            href === "/" ? onChatClick :
-            href === "/agents/me" ? onAgentClick :
-            href === "/agents" ? onExchangeClick :
-            href === "/plaza" ? onPlazaClick :
-            href === "/settings" ? onSettingsClick :
-            undefined;
-          if (drawerCallback) {
-            return (
-              <button
-                key={href}
-                type="button"
-                onClick={drawerCallback}
-                aria-expanded={href === "/agents/me" ? !!agentActive : href === "/agents" ? !!exchangeActive : undefined}
-                aria-controls={href === "/agents/me" ? "agent-drawer" : href === "/agents" ? "exchange-drawer" : undefined}
-                className={cn(
-                  "flex h-12 w-12 shrink-0 flex-col items-center justify-center gap-0.5 rounded-[6px] transition-colors duration-150",
-                  active
-                    ? "text-[color:var(--amber-ink)]"
-                    : "text-muted-foreground hover:bg-secondary hover:text-foreground"
-                )}
-                title={label}
-              >
-                <Icon size={20} strokeWidth={active ? 2.2 : 1.8} />
-                <span className="text-[10px] font-medium">{label}</span>
-              </button>
-            );
-          }
-          return (
-            <Link
-              key={href}
-              href={href}
-              className={cn(
-                "flex h-12 w-12 shrink-0 flex-col items-center justify-center gap-0.5 rounded-[6px] transition-colors duration-150",
-                active
-                  ? "text-[color:var(--amber-ink)]"
-                  : "text-muted-foreground hover:bg-secondary hover:text-foreground"
-              )}
-              title={label}
-            >
-              <Icon size={20} strokeWidth={active ? 2.2 : 1.8} />
-              <span className="text-[10px] font-medium">{label}</span>
-            </Link>
-          );
-        })}
-      </nav>
-
-      <div className="flex shrink-0 flex-col items-center gap-2.5">
-        <div className="flex flex-col items-center gap-0.5 text-[11px] text-muted-foreground" title="草莓余额，每条消息消耗 10 颗">
-          <span aria-hidden="true">🍓</span>
-          <b
-            className="readout"
-            style={{
-              color: balance !== null && balance < 30
-                ? "var(--rec)"
-                : balance !== null && balance < 100
-                  ? "var(--amber-ink)"
-                  : "var(--foreground)",
-            }}
-          >
-            {balance === null ? "…" : balance}
-          </b>
-        </div>
-
-        {/* 底部：深浅色切换 */}
-        <button
-          onClick={toggleTheme}
-          className="flex h-10 w-12 shrink-0 items-center justify-center rounded-[6px] text-muted-foreground transition-colors hover:bg-secondary hover:text-foreground"
-          title={dark ? "切换浅色" : "切换深色"}
-        >
-          {dark ? <Sun size={18} /> : <Moon size={18} />}
-        </button>
-      </div>
-    </aside>
-    <nav
-      aria-label="主导航"
-      className="glass fixed inset-x-0 bottom-0 z-[70] flex h-[calc(56px+env(safe-area-inset-bottom))] items-start border-t pb-[env(safe-area-inset-bottom)] md:hidden"
-      style={{ borderColor: "var(--glass-border)" }}
-    >
-      {navItems.map(({ href, icon: Icon, label }) => {
-        const drawerActive =
-          (href === "/agents/me" && agentActive) ||
-          (href === "/agents" && exchangeActive) ||
-          (href === "/plaza" && plazaActive) ||
-          (href === "/settings" && settingsActive);
-        const anyDrawerOpen = !!(agentActive || exchangeActive || plazaActive || settingsActive);
-        const chatActive = href === "/" && pathname === "/" && !anyDrawerOpen;
-        const active = drawerActive || chatActive || (href !== "/" && pathname === href);
-        const drawerCallback =
-          href === "/" ? onChatClick :
-          href === "/agents/me" ? onAgentClick :
-          href === "/agents" ? onExchangeClick :
-          href === "/plaza" ? onPlazaClick :
-          href === "/settings" ? onSettingsClick :
-          undefined;
-        const drawerId =
-          href === "/agents/me" ? "agent-drawer" :
-          href === "/agents" ? "exchange-drawer" :
-          href === "/plaza" ? "plaza-drawer" :
-          href === "/settings" ? "settings-drawer" : undefined;
-        const itemClassName = cn(
-          "flex h-14 min-w-0 flex-1 flex-col items-center justify-center gap-0.5 whitespace-nowrap transition-colors duration-150",
-          active
-            ? "text-[color:var(--amber-ink)]"
-            : "text-muted-foreground hover:bg-secondary hover:text-foreground"
-        );
-        const content = <><Icon size={20} strokeWidth={active ? 2.2 : 1.8} /><span className="text-[10px] font-medium">{label}</span></>;
-        if (drawerCallback) {
-          return <button key={href} type="button" onClick={drawerCallback}
-            aria-expanded={drawerId ? !!drawerActive : undefined} aria-controls={drawerId}
-            className={itemClassName} title={label}>{content}</button>;
-        }
-        return <Link key={href} href={href} className={itemClassName} title={label}>{content}</Link>;
+  const shared = !!onChatClick;
+  const items = navItems.map(({href,label}) => {
+    const drawerActive=(href === "/agents/me" && agentActive) || (href === "/agents" && exchangeActive) || (href === "/plaza" && plazaActive) || (href === "/settings" && settingsActive);
+    const anyDrawer=!!(agentActive || exchangeActive || plazaActive || settingsActive);
+    const active=!!drawerActive || (href === "/" && pathname === "/" && !anyDrawer) || (href !== "/" && pathname === href);
+    const callback=href === "/" ? onChatClick : href === "/agents/me" ? onAgentClick : href === "/agents" ? onExchangeClick : href === "/plaza" ? onPlazaClick : onSettingsClick;
+    const drawerId=href === "/agents/me" ? "agent-drawer" : href === "/agents" ? "exchange-drawer" : href === "/plaza" ? "plaza-drawer" : href === "/settings" ? "settings-drawer" : undefined;
+    return {href,label,active,callback,drawerActive,drawerId};
+  });
+  const desktop = <aside className={cn(shared && "relative z-[2] my-3 ml-3", "bookmark-sidebar flex min-h-0 w-[var(--nav-w)] shrink-0 flex-col items-center border-r border-[var(--carve)] py-[22px] max-md:hidden")} aria-label="主导航">
+    <svg width="30" height="30" viewBox="0 0 36 36" role="img" aria-label="Chloe"><circle cx="14" cy="18" r="8" fill="none" stroke="var(--ink)" strokeWidth="1.4"/><circle cx="22" cy="18" r="8" fill="none" stroke="var(--ink)" strokeWidth="1.4"/></svg>
+    <nav className="mt-10 flex flex-col items-center gap-2.5">
+      {items.map(({href,label,active,callback,drawerActive,drawerId}) => {
+        const classes=cn("bookmark-nav flex min-h-16 w-10 items-center justify-center border-l-[1.5px] py-2.5 pl-[9px] text-[15px] tracking-[.32em] [writing-mode:vertical-rl]",active ? "border-[var(--ink)] font-medium text-[var(--ink)]":"border-transparent text-[var(--ink2)] hover:text-[var(--ink)]");
+        return callback ? <button key={href} type="button" onClick={callback} aria-expanded={drawerId ? !!drawerActive:undefined}
+          aria-controls={drawerId} aria-current={active ? "page":undefined} className={classes} title={label}>{label}</button>
+          : <Link key={href} href={href} aria-current={active ? "page":undefined} className={classes} title={label}>{label}</Link>;
       })}
     </nav>
-    </>
-  );
+    <div className="mt-auto flex flex-col items-center pt-6">
+      <button type="button" onClick={toggleTheme} className="grid h-10 w-10 place-items-center rounded-full border border-[var(--rule2)] text-sm text-[var(--ink2)] hover:text-[var(--ink)]" title={dark ? "切换浅色":"切换深色"} aria-label={dark ? "切换浅色":"切换深色"}>
+        <span className="theme-day">夜</span><span className="theme-night">昼</span>
+      </button>
+      <div className="mt-[18px] text-center leading-[1.3]" title="草莓余额，每条消息消耗 10 颗">
+        <div className="text-sm tabular-nums" style={{color:balance !== null && balance < 30 ? "var(--seal)":"var(--ink)"}}>{balance === null ? "…":balance}</div>
+        <div className="text-[11px] tracking-[.1em] text-[var(--ink2)]">草莓</div>
+      </div>
+    </div>
+  </aside>;
+  const mobile = <nav aria-label="主导航" className={cn("mobile-tabbar fixed inset-x-0 bottom-0 z-[70] flex h-[calc(var(--tabbar-h)+env(safe-area-inset-bottom))] items-start pb-[env(safe-area-inset-bottom)] md:hidden", shared && "border-t border-[var(--carve)]")}>
+    {items.map(({href,label,active,callback,drawerActive,drawerId}) => {
+      const classes=cn("flex h-[var(--tabbar-h)] min-w-0 flex-1 flex-col items-center justify-center gap-1.5 whitespace-nowrap text-sm tracking-[.2em]",active ? "font-medium text-[var(--ink)]":"text-[var(--ink2)] hover:text-[var(--ink)]");
+      const content=<><span aria-hidden="true" className={cn("h-[1.5px] w-4",active ? "bg-[var(--ink)]":"bg-transparent")}/>{label}</>;
+      return callback ? <button key={href} type="button" onClick={callback} aria-expanded={drawerId ? !!drawerActive:undefined}
+        aria-controls={drawerId} aria-current={active ? "page":undefined} className={classes} title={label}>{content}</button>
+        : <Link key={href} href={href} aria-current={active ? "page":undefined} className={classes} title={label}>{content}</Link>;
+    })}
+  </nav>;
+  return <>
+    {shared ? desktop : <Glaze variant="panel" fur className="my-3 ml-3 flex shrink-0 max-md:hidden">{desktop}</Glaze>}
+    {shared ? mobile : <Glaze variant="slab" className="fixed inset-x-0 bottom-0 z-[70] h-[calc(var(--tabbar-h)+env(safe-area-inset-bottom))] rounded-t-[18px] rounded-b-none md:hidden">{mobile}</Glaze>}
+  </>;
 }

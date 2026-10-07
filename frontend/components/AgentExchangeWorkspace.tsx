@@ -4,14 +4,17 @@ import Link from "next/link";
 import { useCallback, useEffect, useRef, useState, type FormEvent, type ReactNode } from "react";
 import { ArrowLeft, Check, ChevronRight, Download, Loader2, Play, RefreshCw, Send, Square, X } from "lucide-react";
 import Sidebar from "@/components/Sidebar";
+import Glaze from "@/components/Glaze";
+import InkLandscape from "@/components/InkLandscape";
 import { ApiError, apiJson, errorMessage, type Agent, type AgentCard } from "@/lib/agents";
 import { ExchangeIdentityError, exchangeBelongsTo, exchangeStatusLabel, isExchangeActive, isOfficialExchange, isDraftReviewExchange, isArtifactApproved, type AgentExchange, type ExchangeDetail, type ExchangeModelMetadata, type OfficialAgentCard } from "@/lib/agentExchanges";
 import { useAgentExchanges } from "@/lib/useAgentExchanges";
 import { useAccountIdentity, useAccountRequest } from "@/lib/useAccountIdentity";
 import { apiFetch } from "@/lib/auth";
+import { avatarGlyph } from "@/lib/avatarGlyph";
 import { API_BASE as API } from "@/lib/config";
 
-const fieldClass = "w-full rounded-[6px] border border-[color:var(--border)] bg-card px-3 py-[9px] text-sm outline-none focus:border-[color:var(--amber-ink)] disabled:opacity-50";
+const fieldClass = "ceramic-card w-full rounded-[10px] border-0 px-4 py-3 text-[16px] leading-[1.8] tracking-normal text-[color:var(--ink)] outline-none focus-visible:ring-1 focus-visible:ring-[color:var(--ink)] disabled:opacity-50";
 
 interface WorkspaceProps {
   embedded?: boolean;
@@ -35,8 +38,8 @@ function ExchangeWorkspace({ owner, embedded = false, onOpenMyAgent }: Workspace
   const records = data.exchanges.filter(item => tab === "experiences" ? isOfficialExchange(item) : !isOfficialExchange(item) && item.viewer_role === (tab === "received" ? "recipient" : "initiator"));
   const others = data.agents.filter(item => item.id !== data.agent?.id);
   const manageAgent = onOpenMyAgent
-    ? <button type="button" className="text-[color:var(--amber-ink)] underline underline-offset-4" onClick={onOpenMyAgent}>管理我的分身</button>
-    : <Link className="text-[color:var(--amber-ink)] underline underline-offset-4" href="/agents/me">管理我的分身</Link>;
+    ? <button type="button" className="inline-flex min-h-10 items-center text-[color:var(--ink)] underline underline-offset-4" onClick={onOpenMyAgent}>管理我的分身</button>
+    : <Link className="inline-flex min-h-10 items-center text-[color:var(--ink)] underline underline-offset-4" href="/agents/me">管理我的分身</Link>;
 
   const back = () => { setTarget(null); setSelected(null); };
 
@@ -59,55 +62,64 @@ function ExchangeWorkspace({ owner, embedded = false, onOpenMyAgent }: Workspace
   }, [owner]);
 
   return (
-    <div className={`flex ${embedded ? "h-full min-h-0" : "h-screen max-md:h-dvh"} flex-col overflow-hidden`} data-agent-exchange-workspace>
-      <div className="flex min-h-0 flex-1">
+    <div className={`relative flex ${embedded ? "h-full min-h-0" : "h-screen max-md:h-dvh"} flex-col overflow-hidden`} data-agent-exchange-workspace>
+      {!embedded && <InkLandscape variant="page" />}
+      <div className="relative z-[1] flex min-h-0 flex-1">
         {!embedded && <Sidebar />}
-        <main className={`min-w-0 flex-1 overflow-y-auto ${embedded ? "" : "max-md:pb-[calc(56px+env(safe-area-inset-bottom))]"}`} aria-label="分身交流工作区">
-          <header className="glass sticky top-0 z-[2] border-b px-8 pb-[18px] pt-7 max-md:px-4 max-md:pb-4 max-md:pt-4" style={{ borderColor: "var(--glass-border)" }}>
-            <div className="flex max-w-[976px] items-end justify-between gap-4">
+        <main className={`min-w-0 flex-1 overflow-y-auto ${embedded ? "" : "max-md:pb-[calc(var(--tabbar-h)+env(safe-area-inset-bottom))]"}`} aria-label="分身交流工作区">
+          <header className="mx-auto max-w-[1344px] px-12 pb-[22px] pt-7 max-md:px-4 max-md:pb-5 max-md:pt-4">
+            <div className="flex items-end justify-between gap-6 max-md:items-start max-md:gap-3">
               <div className="max-md:min-w-0">
-                {!embedded && <Link href="/" className="mb-1 inline-flex items-center gap-1 text-xs text-muted-foreground hover:text-foreground"><ArrowLeft size={13} />回到对话</Link>}
-                <h1 className="text-xl font-medium tracking-[-0.01em]">广场</h1>
-                <p className="mt-1 text-[13px] text-muted-foreground">让分身和官方搭档讨论一个话题，一个账号就能开始。也可以邀请其他用户的公开分身。 <span className="text-xs">{manageAgent}</span></p>
+                {!embedded && <Link href="/" className="mb-1 inline-flex min-h-10 items-center gap-1 text-xs text-muted-foreground hover:text-foreground"><ArrowLeft size={13} />回到对话</Link>}
+                <h1 className="text-[30px] font-medium tracking-[.24em]">广场</h1>
+                <p className="mt-2 text-[14px] leading-[1.85] tracking-[.04em] text-[color:var(--ink2)]">让分身和官方搭档讨论一个话题，一个账号就能开始。也可以邀请其他用户的公开分身。 <span className="text-xs">{manageAgent}</span></p>
               </div>
-              {owner && <button type="button" className="btn btn-quiet max-md:shrink-0" disabled={data.loading || data.officialLoading} onClick={() => { void data.refreshDirectory().then(data.refreshRecords); void data.refreshOfficial(); }} aria-label="刷新分身与交流记录"><RefreshCw size={14} className={data.loading || data.officialLoading ? "animate-spin" : ""} />刷新</button>}
+              {owner && <button type="button" className="btn min-h-10 tracking-[.12em] max-md:shrink-0" disabled={data.loading || data.officialLoading} onClick={() => { void data.refreshDirectory().then(data.refreshRecords); void data.refreshOfficial(); }} aria-label="刷新分身与交流记录"><RefreshCw size={14} className={data.loading || data.officialLoading ? "animate-spin" : ""} />刷新</button>}
             </div>
           </header>
 
-          <div className="mx-auto max-w-[1040px] px-8 py-6 max-md:px-4 max-md:py-4">
-            {!owner ? <EmptyState>请登录后查看分身和自己的交流记录。<Link href="/login" className="ml-2 text-[color:var(--amber-ink)] underline">前往登录</Link></EmptyState> : <>
+          <div className="mx-auto max-w-[1344px] px-12 pb-10 max-md:px-4 max-md:pb-6">
+            {!owner ? <EmptyState>请登录后查看分身和自己的交流记录。<Link href="/login" className="ml-2 text-[color:var(--ink)] underline">前往登录</Link></EmptyState> : <>
               {data.error && <ErrorNotice message={data.error} retry={() => void data.refreshDirectory()} />}
-              <div className="relative mb-6">
-                <nav ref={tabsRef} role="tablist" className="mobile-scrollbar-none flex gap-1 border-b max-md:overflow-x-auto max-md:pr-7 max-md:whitespace-nowrap" style={{ borderColor: "var(--border)" }} aria-label="分身广场分类">
+              <div className="relative mb-[34px]">
+                <nav ref={tabsRef} role="tablist" className="mobile-scrollbar-none flex gap-9 border-t max-md:gap-6 max-md:overflow-x-auto max-md:pr-7 max-md:whitespace-nowrap" style={{ borderColor: "var(--carve)", boxShadow: "inset 0 1px 0 var(--etch)" }} aria-label="分身广场分类">
                   {([{ key: "official", label: "单人体验" }, { key: "experiences", label: "体验记录" }, { key: "gallery", label: "发现分身" }, { key: "received", label: "收到的邀请" }, { key: "sent", label: "发出的邀请" }] as const).map(item => (
-                    <button key={item.key} type="button" role="tab" aria-selected={tab === item.key} onClick={() => { setTab(item.key); back(); }} className={`-mb-px flex h-9 items-center gap-1.5 border-b-2 px-3 text-[13px] max-md:shrink-0 max-md:whitespace-nowrap ${tab === item.key ? "border-[color:var(--amber-ink)] text-foreground" : "border-transparent text-muted-foreground hover:text-foreground"}`}>{item.label}{item.key === "received" && pendingCount > 0 && <span className="readout text-[11px]" style={{ color: "var(--amber-ink)" }}>{pendingCount}</span>}</button>
+                    <button key={item.key} type="button" role="tab" aria-selected={tab === item.key} onClick={() => { setTab(item.key); back(); }} className={`-mb-px flex h-[54px] shrink-0 items-center gap-1.5 border-b-[1.5px] text-[15px] tracking-[.14em] max-md:whitespace-nowrap ${tab === item.key ? "border-[color:var(--ink)] font-medium text-[color:var(--ink)]" : "border-transparent text-[color:var(--ink2)] hover:text-[color:var(--ink)]"}`}>{item.label}{item.key === "received" && pendingCount > 0 && <span className="readout text-[11px]" style={{ color: "var(--ink)" }}>{pendingCount}</span>}</button>
                   ))}
                 </nav>
-                {moreTabsRight && <span aria-hidden="true" className="pointer-events-none absolute inset-y-0 right-0 hidden w-7 items-center justify-center border-l bg-card text-muted-foreground max-md:flex" style={{ borderColor: "var(--border)" }}><ChevronRight size={16} /></span>}
+                {moreTabsRight && <span aria-hidden="true" className="pointer-events-none absolute inset-y-0 right-0 hidden w-7 items-center justify-center border-l bg-[color:var(--paper)] text-muted-foreground max-md:flex" style={{ borderColor: "var(--rule)" }}><ChevronRight size={16} /></span>}
               </div>
               {data.recordsError && <ErrorNotice message={`交流记录暂未更新：${data.recordsError}`} retry={() => void data.refreshRecords()} />}
 
               {!data.agent ? data.loading ? <LoadingState>正在确认你的分身身份…</LoadingState> : <EmptyState>暂时无法确认当前分身身份，请刷新或重新登录。</EmptyState> : selected ? <ExchangeConversation key={selected.id} owner={owner} agentId={data.agent.id} initial={selected} onBack={back} onChanged={data.onExchangeChanged} onIdentityInvalid={data.invalidateIdentity} manageAgent={manageAgent} /> : tab === "official" ? <>
-                <p className="mb-4 text-xs leading-relaxed text-muted-foreground">以下均为平台官方 AI，无真人用户。分身先写完整初稿，官方搭档审稿，再按意见修订；审稿通过提前结束，可随时停止。</p>
+                <ol className="mb-3 flex flex-wrap items-center gap-x-[18px] gap-y-2 text-[14px] tracking-[.06em] text-[color:var(--ink)] max-md:gap-x-2">
+                  <li>分身写完整初稿</li><li aria-hidden="true" className="h-px w-10 bg-[color:var(--rule2)] max-md:w-4" />
+                  <li>官方搭档审稿</li><li aria-hidden="true" className="h-px w-10 bg-[color:var(--rule2)] max-md:w-4" />
+                  <li>按意见修订</li>
+                </ol>
+                <p className="mb-9 text-[13px] leading-[1.85] text-[color:var(--ink2)]">以下均为平台官方 AI，无真人用户。分身先写完整初稿，官方搭档审稿，再按意见修订；审稿通过提前结束，可随时停止。</p>
                 {data.officialError && <ErrorNotice message={`官方搭档暂不可用：${data.officialError}`} retry={() => void data.refreshOfficial()} />}
-                {data.officialLoading ? <LoadingState>正在加载官方搭档…</LoadingState> : data.officialAgents.length === 0 ? <EmptyState>暂时没有可用的官方搭档，请稍后刷新。</EmptyState> : <div className="mb-6 grid grid-cols-1 gap-3 md:grid-cols-3" role="radiogroup" aria-label="选择官方搭档">
+                {data.officialLoading ? <LoadingState>正在加载官方搭档…</LoadingState> : data.officialAgents.length === 0 ? <EmptyState>暂时没有可用的官方搭档，请稍后刷新。</EmptyState> : <OfficialPartners embedded={embedded}>
                   {data.officialAgents.map(card => {
                     const modelLabel = card.model_label || card.model;
                     const checked = target?.kind === "official" && target.id === card.id;
-                    return <button key={card.id} type="button" role="radio" aria-checked={checked} className={`glass-card flex flex-col gap-2.5 p-4 text-left max-md:min-w-0 ${checked ? "border-[color:var(--amber-ink)]" : ""}`} data-official-agent={card.id} onClick={() => { setTarget(card); setSelected(null); }}>
-                      <div className="flex items-center justify-between gap-3"><h3 className="text-sm font-medium">{card.display_name}</h3><span className="tag">官方 AI</span></div>
-                      <p className="line-clamp-3 flex-1 text-xs leading-[1.6] text-muted-foreground">{card.bio}</p>
-                      {modelLabel && <span className="readout max-md:break-all">{modelLabel}</span>}
+                    return <button key={card.id} type="button" role="radio" aria-checked={checked} className={`flex min-w-0 flex-col px-9 py-[30px] text-left outline-none first:pl-12 last:pr-12 focus-visible:ring-1 focus-visible:ring-inset focus-visible:ring-[color:var(--ink)] md:min-h-[300px] max-md:px-5 max-md:py-6 max-md:first:pl-5 max-md:last:pr-5 ${checked ? "bg-[color:var(--chip)]" : "hover:bg-[color:var(--tile)]"}`} data-official-agent={card.id} onClick={() => { setTarget(card); setSelected(null); }}>
+                      <div className="flex flex-wrap items-center justify-between gap-3"><h3 className="break-words text-[22px] font-medium tracking-[.12em]">{card.display_name}</h3><span className="tag">官方 AI</span></div>
+                      <p className="mt-4 flex-1 whitespace-pre-wrap break-words text-[14.5px] leading-[1.95] text-[color:var(--ink2)]">{card.bio}</p>
+                      <div className="mt-6 flex flex-wrap items-center justify-between gap-3">
+                        {modelLabel && <span className="readout break-words max-md:break-all">{modelLabel}</span>}
+                        <span className="inline-flex min-h-10 items-center rounded-lg border border-[color:var(--rule2)] px-[18px] text-[13px] tracking-[.14em]">邀它讨论</span>
+                      </div>
                     </button>;
                   })}
-                </div>}
+                </OfficialPartners>}
                 {target?.kind === "official" && <ExchangeStartForm key={target.id} owner={owner} agent={data.agent} target={target} onCancel={back} onIdentityInvalid={data.invalidateIdentity} onCreated={exchange => { data.onExchangeChanged(exchange); setTarget(null); setSelected(exchange); setTab("experiences"); }} />}
               </> : tab === "gallery" ? <>
                 <p className="mb-3.5 text-xs text-muted-foreground">邀请需要双方都已公开名片。交流只使用公开名片和这次话题。{!data.agent.is_public && <> {manageAgent}</>}</p>
                 {data.loading ? <LoadingState>正在寻找公开分身…</LoadingState> : others.length === 0 ? <EmptyState>最近公开的分身中暂无其他交流对象。分身主人开启公开名片后，就会出现在这里。</EmptyState> : <div className="grid gap-3 md:grid-cols-3">
-                  {others.map(card => <section key={card.id} className="glass-card flex flex-col gap-2.5 p-4">
-                    <div className="flex items-center gap-2.5"><span className="grid h-8 w-8 shrink-0 place-items-center rounded-[6px] bg-secondary" aria-hidden="true">{card.avatar_emoji || "✨"}</span><h3 className="break-words text-sm font-medium">{card.display_name}</h3></div>
-                    <p className="flex-1 whitespace-pre-wrap break-words text-xs leading-[1.6] text-muted-foreground">{card.bio || "这位分身还没有填写简介。"}</p>
+                  {others.map(card => <section key={card.id} className="ceramic-card flex min-w-0 flex-col gap-3.5 p-5">
+                    <div className="flex items-center gap-3"><AvatarMark avatar={card.avatar_emoji} /><h3 className="break-words text-[20px] font-medium tracking-[.06em]">{card.display_name}</h3></div>
+                    <p className="flex-1 whitespace-pre-wrap break-words text-[13px] leading-[1.85] text-muted-foreground">{card.bio || "这位分身还没有填写简介。"}</p>
                     <button type="button" className="btn self-start" disabled={!data.agent?.is_public} onClick={() => { setTarget(card); setSelected(null); }}><Send size={14} />邀请交流</button>
                   </section>)}
                 </div>}
@@ -115,7 +127,7 @@ function ExchangeWorkspace({ owner, embedded = false, onOpenMyAgent }: Workspace
               </> : <>
                 <p className="mb-4 text-xs text-muted-foreground">展示最近 50 条交流记录中的{tab === "experiences" ? "单人体验，只有你自己可以查看。" : tab === "received" ? "已收邀请，需要你接受才会开始。" : "已发邀请，等待对方主人接受。"} 记录会自动更新。</p>
                 {data.recordsLoading ? <LoadingState>正在加载交流记录…</LoadingState> : records.length === 0 ? <EmptyState>{tab === "experiences" ? "最近记录中暂无单人体验。去“单人体验”选择一位官方搭档，开始第一次讨论。" : tab === "received" ? "最近记录中暂无收到的邀请。公开分身名片后，其他用户就能发现你。" : "最近记录中暂无发出的邀请。去“发现分身”选择一位交流对象。"}</EmptyState> : <div>
-                  <div className="grid grid-cols-[minmax(0,1fr)_150px_120px_60px_60px] gap-4 px-2 pb-2 text-[11px] max-md:hidden" style={{ color: "var(--dim)" }}><span>话题</span><span>搭档</span><span>状态</span><span className="text-right">次数</span><span className="text-right">时间</span></div>
+                  <div className="grid grid-cols-[minmax(0,1fr)_150px_120px_60px_60px] gap-4 px-2 pb-2 text-[11px] max-md:hidden" style={{ color: "var(--ink3)" }}><span>话题</span><span>搭档</span><span>状态</span><span className="text-right">次数</span><span className="text-right">时间</span></div>
                   {records.map(exchange => {
                     const other = exchange.viewer_role === "initiator" ? exchange.recipient : exchange.initiator;
                     return <button key={exchange.id} type="button" onClick={() => setSelected(exchange)} className="grid w-full grid-cols-[minmax(0,1fr)_150px_120px_60px_60px] items-center gap-4 border-b px-2 py-3 text-left text-[13px] hover:bg-card max-md:grid-cols-1 max-md:gap-1" data-exchange-id={exchange.id}>
@@ -141,6 +153,21 @@ function ExchangeWorkspace({ owner, embedded = false, onOpenMyAgent }: Workspace
       </div>
     </div>
   );
+}
+
+function OfficialPartners({ embedded, children }: { embedded: boolean; children: ReactNode }) {
+  const content = <div className="grid grid-cols-1 divide-y divide-[color:var(--carve)] md:grid-cols-3 md:divide-x md:divide-y-0" role="radiogroup" aria-label="选择官方搭档">{children}</div>;
+  // A drawer already supplies the framework glaze; its content stays clear.
+  return embedded
+    ? <div className="ceramic-card mb-6 overflow-hidden rounded-[18px]">{content}</div>
+    : <Glaze variant="panel" lens={false} className="mb-6 overflow-hidden rounded-[18px]">{content}</Glaze>;
+}
+
+function AvatarMark({ avatar }: { avatar?: string }) {
+  const glyph = avatarGlyph(avatar);
+  return <span className="grid h-10 w-10 shrink-0 place-items-center rounded-[10px] border border-[color:var(--rule2)] text-[20px] text-[color:var(--ink)]" aria-hidden="true">
+    {glyph ?? <svg width="24" height="24" viewBox="0 0 36 36"><path d="M18 8.5 C19 15.5 20.5 17 27.5 18 C20.5 19 19 20.5 18 27.5 C17 20.5 15.5 19 8.5 18 C15.5 17 17 15.5 18 8.5 Z" fill="none" stroke="currentColor" strokeWidth="1.25" /></svg>}
+  </span>;
 }
 
 function ExchangeStartForm({ owner, agent, target, onCancel, onCreated, onIdentityInvalid }: { owner: string; agent: Agent; target: AgentCard | OfficialAgentCard; onCancel: () => void; onCreated: (exchange: AgentExchange) => void; onIdentityInvalid: () => void }) {
@@ -193,10 +220,10 @@ function ExchangeStartForm({ owner, agent, target, onCancel, onCreated, onIdenti
           <textarea autoFocus required value={topic} maxLength={topicLimit} onChange={event => setTopic(event.target.value)} className={`${fieldClass} min-h-[150px] resize-y`} placeholder={official ? "写下你想讨论的内容，可以详细补充人物设定、故事背景、风格、时长要求，也可以粘贴已有大纲或完整需求。" : "例如：一起讨论怎样安排一个不赶时间的周末。"} />
           <small className="font-normal text-muted-foreground"><b className="readout">{topic.length.toLocaleString("zh-CN")}</b> / <b className="readout">{topicLimit.toLocaleString("zh-CN")}</b>，人物、背景、风格和时长都可以写进来</small>
         </label>
-        {official && suggestedTopic && <button type="button" className="btn btn-quiet mt-2 h-7 px-2.5 text-xs" onClick={() => setTopic(suggestedTopic.slice(0, topicLimit))}>使用示例话题</button>}
+        {official && suggestedTopic && <button type="button" className="btn btn-quiet mt-2 min-h-10 px-2.5 text-xs" onClick={() => setTopic(suggestedTopic.slice(0, topicLimit))}>使用示例话题</button>}
       </fieldset>
-      <div className="flex flex-col gap-3">
-        <fieldset disabled={busy}>
+      <div className="flex min-w-0 flex-col gap-3">
+        <fieldset disabled={busy} className="min-w-0">
           <label className="flex flex-col gap-2 text-xs font-medium">回复次数
             <input type="number" required min={2} max={turnLimit} step={1} inputMode="numeric" value={maxTurnsInput} onChange={event => setMaxTurnsInput(event.target.value)} className={`${fieldClass} readout`} aria-describedby={official ? "official-reply-count-help" : "reply-count-help"} />
             <small id={official ? "official-reply-count-help" : "reply-count-help"} className="font-normal text-muted-foreground">双方合计，2–{turnLimit}。{official ? "审稿通过会提前结束。" : "对方接受后开始。"}</small>
@@ -303,10 +330,10 @@ function ExchangeConversation({ owner, agentId, initial, onBack, onChanged, onId
       </div>
       <StatusBadge exchange={exchange} />
     </div>
-    {workflow && <div className="inline-flex self-start overflow-hidden rounded-[6px] border max-md:w-full" style={{ borderColor: "var(--glass-border)" }} aria-label="流程阶段">
+    {workflow && <div className="inline-flex self-start overflow-hidden rounded-[6px] border max-md:w-full" style={{ borderColor: "var(--carve)" }} aria-label="流程阶段">
       {([{ key: "draft", label: "主创初稿" }, { key: "review", label: "官方审稿" }, { key: "revision", label: "主创修订" }] as const).map((stage, index) => {
         const done = detail?.messages.some(message => message.stage === stage.key) ?? false;
-        return <span key={stage.key} className={`flex items-center gap-1.5 px-3.5 py-1.5 text-xs max-md:min-w-0 max-md:flex-1 max-md:justify-center max-md:gap-1 max-md:px-1 max-md:whitespace-nowrap ${index ? "border-l" : ""} ${done ? "text-foreground" : "text-muted-foreground"}`} style={index ? { borderColor: "var(--glass-border)" } : undefined}>{done && <Check size={14} style={{ color: "var(--amber-ink)" }} />}{stage.label}</span>;
+        return <span key={stage.key} className={`flex items-center gap-1.5 px-3.5 py-1.5 text-xs max-md:min-w-0 max-md:flex-1 max-md:justify-center max-md:gap-1 max-md:px-1 max-md:whitespace-nowrap ${index ? "border-l" : ""} ${done ? "text-foreground" : "text-muted-foreground"}`} style={index ? { borderColor: "var(--carve)" } : undefined}>{done && <Check size={14} style={{ color: "var(--ink)" }} />}{stage.label}</span>;
       })}
     </div>}
     <ExchangeTopic topic={exchange.topic} />
@@ -316,7 +343,7 @@ function ExchangeConversation({ owner, agentId, initial, onBack, onChanged, onId
       <button type="button" className="btn" disabled={!!busy || !detail} onClick={() => void act("stop")}>{busy === "stop" ? <Loader2 size={14} className="animate-spin" /> : <Square size={12} />}取消这次邀请</button>
     </div>}
     {error && <ErrorNotice message={`交流暂未更新：${error}`} retry={busy ? undefined : () => void load()} />}
-    {exchange.status === "running" && <div className="glass sticky top-0 z-[2] -mx-8 flex items-center justify-between px-8 py-2 text-xs text-muted-foreground max-md:-mx-4 max-md:flex-col max-md:items-start max-md:gap-2 max-md:px-4">
+    {exchange.status === "running" && <div className="ceramic-card sticky top-0 z-[2] flex items-center justify-between gap-3 px-5 py-3 text-xs text-muted-foreground max-md:flex-col max-md:items-start max-md:gap-2 max-md:px-4">
       <span>交流正在自动更新，停止后保留已有内容</span>
       <div className="flex flex-wrap gap-2"><button type="button" className="btn btn-quiet" onClick={() => messagesRef.current?.scrollIntoView({ block: "end" })}>查看最新回复</button><button type="button" className="btn" disabled={!!busy || !detail} onClick={() => void act("stop")}>{busy === "stop" ? <Loader2 size={14} className="animate-spin" /> : <Square size={12} />}停止交流</button></div>
     </div>}
@@ -326,13 +353,13 @@ function ExchangeConversation({ owner, agentId, initial, onBack, onChanged, onId
       {detail?.messages.map(message => <article key={message.id} className="grid min-w-0 grid-cols-[28px_minmax(0,1fr)] gap-3" data-exchange-message={message.sequence}>
         <span className="readout pt-[3px]">{message.sequence}</span>
         <div className="min-w-0">
-          <div className="mb-1 flex flex-wrap items-center gap-2 text-xs text-muted-foreground"><span className="max-md:break-all">{message.display_name}</span>{message.stage && <span className="tag">{stageLabel(message.stage)}</span>}<span>{message.agent_id === mine.id ? "你的 AI 分身" : official ? "平台官方 AI" : "对方 AI 分身"}</span></div>
-          <div className="whitespace-pre-wrap break-words text-[13px] leading-[1.75]">{message.content}</div>
+          <div className="mb-2 flex flex-wrap items-center gap-2 text-[13px] tracking-[.1em] text-muted-foreground"><span className="max-md:break-all">{message.display_name}</span>{message.stage && <span className="tag">{stageLabel(message.stage)}</span>}<span>{message.agent_id === mine.id ? "你的 AI 分身" : official ? "平台官方 AI" : "对方 AI 分身"}</span></div>
+          <div className="whitespace-pre-wrap break-words text-[16.5px] leading-[1.95]">{message.content}</div>
         </div>
       </article>)}
       {detail && detail.messages.length === 0 && <EmptyState>{pending ? "对方接受邀请后，两位 AI 分身的回复会出现在这里。" : exchange.status === "running" ? "分身正在准备第一条回复…" : "这段交流没有生成回复。"}</EmptyState>}
     </div>
-    {exchange.summary && <section className="glass-card p-4"><h3 className="mb-3 text-sm font-medium">{workflow ? "创作说明" : "交流总结 · AI 生成"}</h3><p className="whitespace-pre-wrap break-words text-[13px] leading-[1.75]">{exchange.summary}</p></section>}
+    {exchange.summary && <section className="ceramic-card p-4"><h3 className="mb-3 text-sm font-medium">{workflow ? "创作说明" : "交流总结 · AI 生成"}</h3><p className="whitespace-pre-wrap break-words text-[16.5px] leading-[1.95]">{exchange.summary}</p></section>}
     {!workflow && <ExchangeDocuments owner={owner} agentId={agentId} exchange={exchange} ready={!!detail && !loading} onAccessError={handleError} />}
     {exchange.status === "failed" && <ErrorNotice message={exchange.error || (official ? "这次体验未能完成。已有回复已保留，可以返回单人体验重新开始讨论。" : "这段交流未能完成。已有回复已保留，可以返回广场重新发起邀请。")} />}
     {exchange.status === "stopped" && <EmptyState>交流已停止，已有回复保留。{exchange.error && <span className="mt-2 block">{exchange.error}</span>}</EmptyState>}
@@ -353,8 +380,8 @@ function ExchangeArtifact({ exchange, children }: { exchange: AgentExchange; chi
   const approved = isArtifactApproved(exchange);
   const reason = completionLabel(exchange.completion_reason);
   const length = exchange.artifact?.trim().length ?? 0;
-  return <section className="glass-card" aria-label="当前作品" data-exchange-artifact>
-    <div className="flex flex-wrap items-center justify-between gap-2 border-b px-4 py-3" style={{ borderColor: "var(--glass-border)" }}>
+  return <section className="ceramic-card" aria-label="当前作品" data-exchange-artifact>
+    <div className="flex flex-wrap items-center justify-between gap-2 border-b px-4 py-3" style={{ borderColor: "var(--carve)" }}>
       <b className="font-medium">当前作品</b>
       <span className="flex items-center gap-2"><span className="readout"><b>{length.toLocaleString("zh-CN")}</b> 字</span><span className={`tag ${approved ? "tag-amber" : ""}`}>{approved ? "审稿通过，待你验收" : exchange.artifact_status === "needs_revision" ? "待修订" : "草稿"}</span></span>
     </div>
@@ -413,7 +440,7 @@ function ExchangeDocuments({ owner, agentId, exchange, ready, onAccessError, emb
     }
   };
 
-  return <section className={`${embedded ? "border-t p-3" : "glass-card p-4"} flex flex-col gap-3`} style={embedded ? { borderColor: "var(--glass-border)" } : undefined} aria-label="文档交付物">
+  return <section className={`${embedded ? "border-t p-3" : "ceramic-card p-4"} flex flex-col gap-3`} style={embedded ? { borderColor: "var(--carve)" } : undefined} aria-label="文档交付物">
     <p className="text-xs leading-relaxed text-muted-foreground">{workflow ? "作品文档保存完整稿件；README.md 包含原始需求、稿件和审核状态；完整讨论保留每轮写稿与审稿。" : "README.md 包含原始需求和已有总结；完整讨论保留双方逐轮回复。"}{draft ? workflow ? " 当前导出为尚未通过审稿的草稿快照。" : " 当前导出为已保存内容的快照。" : " 下载只导出实际保存的文字内容。"}</p>
     <div className="flex flex-wrap gap-1.5">
       {workflow && <button type="button" className="btn max-w-full" disabled={!ready || !!downloading || !exchange.artifact?.trim()} onClick={() => void download("artifact")}>{downloading === "artifact" ? <Loader2 size={15} className="shrink-0 animate-spin" /> : <Download size={15} className="shrink-0" />}作品 Markdown</button>}
@@ -429,8 +456,8 @@ function ExchangeTopic({ topic }: { topic: string }) {
   if (topic.length <= 300) return <p className="whitespace-pre-wrap break-words text-base leading-relaxed">{topic}</p>;
   return <div className="space-y-2">
     <p className="line-clamp-4 whitespace-pre-wrap break-words text-base leading-relaxed">{topic.slice(0, 300)}…</p>
-    <details className="glass-card group p-3">
-      <summary className="cursor-pointer text-sm text-[color:var(--amber-ink)] focus-visible:rounded focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[color:var(--ring)]"><span className="group-open:hidden">展开完整话题</span><span className="hidden group-open:inline">收起完整话题</span>（{topic.length.toLocaleString("zh-CN")} 字）</summary>
+    <details className="ceramic-card group p-3">
+      <summary className="inline-block min-h-10 cursor-pointer py-2 text-sm text-[color:var(--ink)] focus-visible:rounded focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[color:var(--ring)]"><span className="group-open:hidden">展开完整话题</span><span className="hidden group-open:inline">收起完整话题</span>（{topic.length.toLocaleString("zh-CN")} 字）</summary>
       <div role="region" aria-label="完整讨论话题" tabIndex={0} className="mt-3 max-h-80 overflow-y-auto whitespace-pre-wrap break-words pr-2 text-sm leading-7 select-text focus-visible:rounded focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[color:var(--ring)]">{topic}</div>
     </details>
   </div>;
@@ -438,7 +465,7 @@ function ExchangeTopic({ topic }: { topic: string }) {
 
 function Participant({ card, label }: { card: AgentCard & ExchangeModelMetadata; label: string }) {
   const modelLabel = card.model_label || card.model;
-  return <div className="flex min-w-0 items-center gap-2.5"><span className="grid h-8 w-8 shrink-0 place-items-center rounded-[6px] bg-secondary text-base" aria-hidden="true">{card.avatar_emoji || "✨"}</span><div className="min-w-0"><p className="break-words text-sm font-medium">{card.display_name}</p><p className="text-xs text-muted-foreground">{label}</p>{modelLabel && <span className="readout break-words max-md:break-all">{modelLabel}</span>}</div></div>;
+  return <div className="flex min-w-0 items-center gap-3"><AvatarMark avatar={card.avatar_emoji} /><div className="min-w-0"><p className="break-words text-sm font-medium">{card.display_name}</p><p className="text-xs text-muted-foreground">{label}</p>{modelLabel && <span className="readout break-words max-md:break-all">{modelLabel}</span>}</div></div>;
 }
 
 function StatusBadge({ exchange, className = "" }: { exchange: AgentExchange; className?: string }) {
@@ -446,7 +473,7 @@ function StatusBadge({ exchange, className = "" }: { exchange: AgentExchange; cl
 }
 
 function ErrorNotice({ message, retry }: { message: string; retry?: () => void }) {
-  return <div role="alert" className="glass-card flex flex-col gap-2 p-3 text-[13px]"><p className="whitespace-pre-wrap break-words text-destructive">{message}</p>{retry && <button type="button" onClick={retry} className="btn btn-quiet h-7 self-start">重新加载</button>}</div>;
+  return <div role="alert" className="ceramic-card flex flex-col gap-2 p-3 text-[13px]"><p className="whitespace-pre-wrap break-words text-destructive">{message}</p>{retry && <button type="button" onClick={retry} className="btn btn-quiet min-h-10 self-start">重新加载</button>}</div>;
 }
 
 function EmptyState({ children }: { children: ReactNode }) {

@@ -1,0 +1,328 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<title>Chloe 分身</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin="">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Noto+Serif+SC:wght@300;400;500;600&amp;display=swap">
+<style>
+body{margin:0}
+input::placeholder,textarea::placeholder{color:var(--ink2);opacity:1}
+</style>
+</helmet>
+<div style="--paper:{{t.paper}};--hi:{{t.hi}};--slip:{{t.slip}};--deep:{{t.deep}};--ink:{{t.ink}};--ink2:{{t.ink2}};--ink3:{{t.ink3}};--rule:{{t.rule}};--rule2:{{t.rule2}};--seal:{{t.seal}};--glyph:{{t.glyph}};--btn:{{t.btn}};--btnink:{{t.btnink}};--weave:{{t.weave}};--sky:{{t.sky}};--water:{{t.water}};--m1:{{t.m1}};--m2:{{t.m2}};--m3:{{t.m3}};--m4:{{t.m4}};--mist:{{t.mist}};--ripple:{{t.ripple}};--glass:{{t.glass}};--glass2:{{t.glass2}};--thin:{{t.thin}};--thin2:{{t.thin2}};--chip:{{t.chip}};--tile:{{t.tile}};--mount:{{t.mount}};--pool:{{t.pool}};--sheen:{{t.sheen}};--rim:{{t.rim}};--lip:{{t.lip}};--lipdk:{{t.lipdk}};--carve:{{t.carve}};--etch:{{t.etch}};--spec:{{t.spec}};--bloom:{{t.bloom}};--drop:{{t.drop}};--fur:{{t.fur}};--blur:{{t.blur}};--blur-strong:{{t.blurS}};--sat:{{t.sat}};--bri:{{t.bri}};--bd:{{t.bd}};--bd-strong:{{t.bdS}};--lens:{{t.lens}};--art:{{t.art}}; position: relative; box-sizing: border-box; height: 100vh; min-height: 720px; display: flex; overflow: hidden; font-family: 'Noto Serif SC', 'Songti SC', 'STSong', serif; color: var(--ink); background-color: var(--paper)">
+
+  <!-- 影青釉 · 液态玻璃配方：与 Chat.dc.html 定稿同一套（令牌、层序、遮罩、透镜参数一致），本页两块框架玻璃：
+         · 左侧窄釉片：竖排书签导航（与定稿左釉片同材质，只是没有对话目录）
+         · 名片釉牌：本页主角。釉牌外沿一圈薄釉口沿（透镜弯折 + 出筋），往里积釉；宋版书双边版框「印在釉下」，
+           同心圆角 釉牌 18 → 外框 4（内收 14）→ 内栏 0（再内收 6.5，方正如宋版）；右上一方朱印。
+       每块玻璃本身只托投影，其下 aria-hidden 附属层全部 border-radius: inherit：
+         1 透镜层  backdrop-filter: url(#yqa-lens)（内收 3、模糊 7、scale 32：只在口沿约 20px 内把后面的山脊向内弯折，最大约 16px）
+         2 釉层    backdrop-filter: var(--bd) / var(--bd-strong)，遮罩让釉在口沿最外 3–17px 变薄
+         3 釉色底  var(--glass)，遮罩让口沿 12px 内釉薄（--thin）——出筋
+         4 兔毫    仅夜（--fur 昼为透明）
+         5 釉色    酥油光、积釉（离边一圈 + 底部积厚）、口沿出筋（白筋 / 夜为酱口）
+         6 顶边高光 两头收尖的 1px 光 + 其下 4px 同形辉光（--bloom）
+       表单留在纸面：输入框为「清釉」——不模糊、不取背景，只一层薄釉（--tile）+ 口沿白筋 + 顶沿受光 + 底缘积釉，
+       透过它看得见纸上的烟水与绢纹，不被吃软；与名片釉牌的厚釉、模糊形成一清一厚。
+       素瓷（solid 属性 / 系统减少透明度 / 提高对比度）：令牌切到 daySolid / nightSolid，玻璃不透明，透镜隐藏，背景画透明度减半。 -->
+
+  <!-- 玻璃后面：绢本烟雨平远（与对话页同源：同一组山形、湿边、雾、水纹与令牌）。本页把「夏半边」翻到右侧：
+       主山峰压在名片釉牌右上、朱印之后，右沿出一段陡坡，左沿斜下越出釉牌、在表单之前没入烟水；左下一痕汀洲压在窄釉片之后，与右上主山成对角；表单所在的纸面不落山形，清釉输入框后只有烟水与绢纹。
+       画与版心一样左对齐（top/left 钉住），宽屏时主山向右延伸，不露断口 -->
+  <div aria-hidden="true" style="position: absolute; left: 0; top: 0; right: 0; bottom: 0; z-index: 0; pointer-events: none; background-image: linear-gradient(to top, var(--water) 0, var(--water) 306px, var(--paper) 378px, var(--sky) 900px)"></div>
+  <svg aria-hidden="true" width="2600" height="900" viewBox="0 0 2600 900" style="position: absolute; left: 0; top: 0; z-index: 0; display: block; overflow: visible; pointer-events: none; opacity: var(--art)">
+    <defs>
+      <!-- 湿边：近山 位移 7 + 模糊 0.7 -->
+      <filter id="yqa-wet-near" x="-5%" y="-10%" width="110%" height="120%">
+        <feTurbulence type="fractalNoise" baseFrequency="0.018 0.05" numOctaves="3" seed="4" result="n"></feTurbulence>
+        <feDisplacementMap in="SourceGraphic" in2="n" scale="7" xChannelSelector="R" yChannelSelector="G" result="d"></feDisplacementMap>
+        <feGaussianBlur in="d" stdDeviation="0.7"></feGaussianBlur>
+      </filter>
+      <radialGradient id="yqa-mistg">
+        <stop offset="0" style="stop-color: var(--mist); stop-opacity: 1"></stop>
+        <stop offset="0.42" style="stop-color: var(--mist); stop-opacity: 0.72"></stop>
+        <stop offset="0.75" style="stop-color: var(--mist); stop-opacity: 0.24"></stop>
+        <stop offset="1" style="stop-color: var(--mist); stop-opacity: 0"></stop>
+      </radialGradient>
+      <linearGradient id="yqa-fade-main" gradientUnits="userSpaceOnUse" x1="0" y1="240" x2="0" y2="544">
+        <stop offset="0" stop-color="#fff"></stop>
+        <stop offset="0.45" stop-color="#fff" stop-opacity="0.62"></stop>
+        <stop offset="1" stop-color="#fff" stop-opacity="0"></stop>
+      </linearGradient>
+      <linearGradient id="yqa-fade-near" gradientUnits="userSpaceOnUse" x1="0" y1="388" x2="0" y2="566">
+        <stop offset="0" stop-color="#fff"></stop>
+        <stop offset="1" stop-color="#fff" stop-opacity="0"></stop>
+      </linearGradient>
+      <mask id="yqa-mk-main" maskUnits="userSpaceOnUse" x="0" y="0" width="2600" height="900"><rect x="0" y="0" width="2600" height="900" fill="url(#yqa-fade-main)"></rect></mask>
+      <mask id="yqa-mk-near" maskUnits="userSpaceOnUse" x="0" y="0" width="2600" height="900"><rect x="0" y="0" width="2600" height="900" fill="url(#yqa-fade-near)"></rect></mask>
+    </defs>
+    <!-- 主山：夏半边翻到右侧，峰压在釉牌右上之后，陡坡越过釉牌右沿，长脊斜下越过釉牌左沿，在表单之前没入烟水；右侧缓缓延伸（宽屏） -->
+    <g mask="url(#yqa-mk-main)">
+      <path filter="url(#yqa-wet-near)" d="M2600 620 L 2600 436 C 2100 424, 1800 408, 1640 394 C 1540 384, 1460 362, 1400 350 C 1360 344, 1330 334, 1300 314 C 1270 294, 1240 270, 1206 252 C 1180 238, 1156 240, 1134 254 C 1114 266, 1094 274, 1070 280 C 1044 286, 1022 298, 1000 312 C 968 332, 936 354, 904 378 C 874 402, 846 432, 816 464 C 786 496, 744 522, 680 544 L 680 620 Z" style="fill: var(--m2)"></path>
+    </g>
+    <!-- 近坡：低一层，第二次越过釉牌 -->
+    <g mask="url(#yqa-mk-near)">
+      <path filter="url(#yqa-wet-near)" d="M2600 620 L 2600 470 C 2100 466, 1700 452, 1400 432 C 1350 424, 1310 404, 1264 396 C 1222 389, 1190 402, 1152 414 C 1110 427, 1070 434, 1028 446 C 994 456, 966 470, 936 488 C 906 506, 872 528, 820 566 L 820 620 Z" style="fill: var(--m3)"></path>
+    </g>
+    <!-- 烟：吞掉山脚，山腰一缕 -->
+    <g>
+      <ellipse cx="1010" cy="512" rx="520" ry="62" style="fill: url(#yqa-mistg); opacity: 0.95"></ellipse>
+      <ellipse cx="1150" cy="388" rx="290" ry="30" style="fill: url(#yqa-mistg); opacity: 0.55"></ellipse>
+    </g>
+    <!-- 水：两头尖的几笔，只落在留白处 -->
+    <g style="fill: var(--ripple)">
+      <path d="M1262 612 q 55 -1.5 110 0 q -55 0.83 -110 0 Z"></path>
+      <path d="M1290 676 q 60 -1.6 120 0 q -60 0.9 -120 0 Z"></path>
+      <path d="M1010 852 q 65 -1.6 130 0 q -65 0.88 -130 0 Z"></path>
+    </g>
+  </svg>
+  <!-- 汀洲：左下一角，与对话页汀洲同形（翻转），两头压在窄釉片之后，陡坡越过釉片右沿、在保存键之下没入烟水；随底边钉住 -->
+  <svg aria-hidden="true" width="1440" height="900" viewBox="0 0 1440 900" style="position: absolute; left: 0; bottom: 0; z-index: 0; display: block; overflow: visible; pointer-events: none; opacity: var(--art)">
+    <defs>
+      <filter id="yqa-wet-isle" x="-5%" y="-10%" width="110%" height="120%">
+        <feTurbulence type="fractalNoise" baseFrequency="0.018 0.05" numOctaves="3" seed="7" result="n"></feTurbulence>
+        <feDisplacementMap in="SourceGraphic" in2="n" scale="7" xChannelSelector="R" yChannelSelector="G" result="d"></feDisplacementMap>
+        <feGaussianBlur in="d" stdDeviation="0.7"></feGaussianBlur>
+      </filter>
+      <radialGradient id="yqa-mistg-b">
+        <stop offset="0" style="stop-color: var(--mist); stop-opacity: 1"></stop>
+        <stop offset="0.42" style="stop-color: var(--mist); stop-opacity: 0.72"></stop>
+        <stop offset="0.75" style="stop-color: var(--mist); stop-opacity: 0.24"></stop>
+        <stop offset="1" style="stop-color: var(--mist); stop-opacity: 0"></stop>
+      </radialGradient>
+      <linearGradient id="yqa-fade-isle" gradientUnits="userSpaceOnUse" x1="0" y1="820" x2="0" y2="960">
+        <stop offset="0" stop-color="#fff" stop-opacity="1"></stop>
+        <stop offset="1" stop-color="#fff" stop-opacity="0"></stop>
+      </linearGradient>
+      <!-- 山头积墨：脊上浓、往下淡（米家山法） -->
+      <linearGradient id="yqa-crest-isle" gradientUnits="userSpaceOnUse" x1="0" y1="780" x2="0" y2="880">
+        <stop offset="0" style="stop-color: var(--m4)"></stop>
+        <stop offset="1" style="stop-color: var(--m3)"></stop>
+      </linearGradient>
+      <mask id="yqa-mk-isle" maskUnits="userSpaceOnUse" x="-700" y="0" width="1400" height="1000"><rect x="-700" y="0" width="1400" height="1000" fill="url(#yqa-fade-isle)"></rect></mask>
+    </defs>
+    <g mask="url(#yqa-mk-isle)">
+      <path filter="url(#yqa-wet-isle)" d="M332 970 C 272 944, 212 914, 168 888 C 144 874, 126 852, 112 830 C 102 814, 92 798, 76 788 C 64 780, 52 778, 40 781 C 26 785, 16 796, 2 798 C -12 800, -24 790, -40 788 C -58 786, -80 796, -106 804 C -158 816, -228 824, -308 830 C -388 836, -468 840, -568 843 L -568 970 L 332 970 Z" style="fill: url(#yqa-crest-isle)"></path>
+    </g>
+    <ellipse cx="150" cy="900" rx="320" ry="28" style="fill: url(#yqa-mistg-b); opacity: 0.72"></ellipse>
+    <g style="fill: var(--ripple)">
+      <path d="M380 876 q 48 -1.4 96 0 q -48 0.77 -96 0 Z"></path>
+    </g>
+  </svg>
+  <!-- 抖动细粒：大面积暗渐变不起色带，只改明度不改色相 -->
+  <svg aria-hidden="true" width="100%" height="100%" style="position: absolute; left: 0; top: 0; width: 100%; height: 100%; z-index: 0; display: block; pointer-events: none; mix-blend-mode: overlay; opacity: 0.1">
+    <filter id="yqa-grain" x="0" y="0" width="100%" height="100%" color-interpolation-filters="sRGB">
+      <feTurbulence type="fractalNoise" baseFrequency="0.9" numOctaves="1" seed="3" stitchTiles="stitch"></feTurbulence>
+      <feColorMatrix type="matrix" values="1 0 0 0 0  1 0 0 0 0  1 0 0 0 0  0 0 0 0 1"></feColorMatrix>
+    </filter>
+    <rect width="100%" height="100%" filter="url(#yqa-grain)"></rect>
+  </svg>
+  <!-- 绢纹：画在绢上，釉外看得见，釉内被磨平；清釉输入框不磨，绢纹透得过 -->
+  <div aria-hidden="true" style="position: absolute; left: 0; top: 0; right: 0; bottom: 0; z-index: 0; pointer-events: none; background-image: repeating-linear-gradient(0deg, var(--weave) 0 1px, transparent 1px 3px), repeating-linear-gradient(90deg, var(--weave) 0 1px, transparent 1px 3px)"></div>
+  <!-- 透镜滤镜（仅 Chromium）：与定稿框架玻璃同参（3 / 7 / scale 32），只取元素自身的盒子 -->
+  <svg aria-hidden="true" width="0" height="0" style="position: absolute; width: 0; height: 0; overflow: hidden">
+    <defs>
+      <filter id="yqa-lens" x="0" y="0" width="1" height="1" color-interpolation-filters="sRGB">
+        <feFlood flood-color="#fff" result="f0"></feFlood>
+        <feMorphology in="f0" operator="erode" radius="3" result="f"></feMorphology>
+        <feGaussianBlur in="f" stdDeviation="7" result="a"></feGaussianBlur>
+        <feOffset in="a" dx="-2" result="ax1"></feOffset>
+        <feOffset in="a" dx="2" result="ax2"></feOffset>
+        <feComposite in="ax1" in2="ax2" operator="arithmetic" k2="1.6" k3="-1.6" k4="0.5" result="gx"></feComposite>
+        <feOffset in="a" dy="-2" result="ay1"></feOffset>
+        <feOffset in="a" dy="2" result="ay2"></feOffset>
+        <feComposite in="ay1" in2="ay2" operator="arithmetic" k2="1.6" k3="-1.6" k4="0.5" result="gy"></feComposite>
+        <feColorMatrix in="gx" type="matrix" values="0 0 0 1 0  0 0 0 0 0  0 0 0 0 0  0 0 0 0 1" result="rx"></feColorMatrix>
+        <feColorMatrix in="gy" type="matrix" values="0 0 0 0 0  0 0 0 1 0  0 0 0 0 0  0 0 0 0 1" result="ry"></feColorMatrix>
+        <feComposite in="rx" in2="ry" operator="arithmetic" k2="1" k3="1" result="m0"></feComposite>
+        <feGaussianBlur in="m0" stdDeviation="1.2" result="m1"></feGaussianBlur>
+        <feColorMatrix in="m1" type="matrix" values="1 0 0 0 0  0 1 0 0 0  0 0 0 0 0.5  0 0 0 0 1" result="map"></feColorMatrix>
+        <feDisplacementMap in="SourceGraphic" in2="map" scale="32" xChannelSelector="R" yChannelSelector="G"></feDisplacementMap>
+      </filter>
+    </defs>
+  </svg>
+
+  <!-- 左侧窄釉片：竖排书签导航（定稿左釉片同材质） -->
+  <div style="position: relative; z-index: 2; flex: 0 0 72px; margin: 12px 0 12px 12px; display: flex; border-radius: 18px; box-shadow: 0 1px 2px var(--drop), 0 28px 56px -36px var(--drop)">
+    <!-- 窄釉片的透镜层左右各伸出 12px 再用 clip-path 裁回（同定稿页头做法）：Chromium 在 72px 宽的盒子上跑 url() 透镜时，
+         其后釉层的模糊只剩横向、纵向失效（汀洲山头在釉内成一道硬横线）；放宽滤镜盒即恢复，口沿弯折仍在可见区内 -->
+    <div aria-hidden="true" style="position: absolute; left: -12px; top: 0; right: -12px; bottom: 0; z-index: -1; border-radius: inherit; pointer-events: none; display: var(--lens); -webkit-clip-path: inset(0 12px round 18px); clip-path: inset(0 12px round 18px); backdrop-filter: url(#yqa-lens)"></div>
+    <div aria-hidden="true" style="position: absolute; left: 0; top: 0; right: 0; bottom: 0; z-index: -1; border-radius: inherit; pointer-events: none; -webkit-backdrop-filter: var(--bd); backdrop-filter: var(--bd); -webkit-mask-image: linear-gradient(to right, transparent 3px, #000 17px, #000 calc(100% - 17px), transparent calc(100% - 3px)), linear-gradient(to bottom, transparent 3px, #000 17px, #000 calc(100% - 17px), transparent calc(100% - 3px)); mask-image: linear-gradient(to right, transparent 3px, #000 17px, #000 calc(100% - 17px), transparent calc(100% - 3px)), linear-gradient(to bottom, transparent 3px, #000 17px, #000 calc(100% - 17px), transparent calc(100% - 3px)); -webkit-mask-composite: source-in; mask-composite: intersect"></div>
+    <div aria-hidden="true" style="position: absolute; left: 0; top: 0; right: 0; bottom: 0; z-index: -1; border-radius: inherit; pointer-events: none; background: var(--glass); -webkit-mask-image: linear-gradient(to right, rgba(0,0,0,var(--thin)) 0, #000 12px, #000 calc(100% - 12px), rgba(0,0,0,var(--thin)) 100%), linear-gradient(to bottom, rgba(0,0,0,var(--thin)) 0, #000 12px, #000 calc(100% - 12px), rgba(0,0,0,var(--thin)) 100%); mask-image: linear-gradient(to right, rgba(0,0,0,var(--thin)) 0, #000 12px, #000 calc(100% - 12px), rgba(0,0,0,var(--thin)) 100%), linear-gradient(to bottom, rgba(0,0,0,var(--thin)) 0, #000 12px, #000 calc(100% - 12px), rgba(0,0,0,var(--thin)) 100%); -webkit-mask-composite: source-in; mask-composite: intersect"></div>
+    <!-- 兔毫（仅夜）：自口沿向下流，愈下愈稀、渐隐 -->
+    <svg aria-hidden="true" width="40" height="170" style="position: absolute; left: 16px; top: 1px; z-index: -1; display: block; pointer-events: none">
+      <defs>
+        <pattern id="yqa-fur-a" width="61" height="170" patternUnits="userSpaceOnUse" style="fill: var(--fur)"><path d="M8.0 4 h1.0 L8.9 132 Z" fill-opacity="0.9"></path><path d="M27.0 9 h0.8 L27.4 98 Z" fill-opacity="0.7"></path><path d="M44.0 3 h1.1 L44.2 152 Z" fill-opacity="1"></path><path d="M55.5 12 h0.7 L55.9 72 Z" fill-opacity="0.6"></path></pattern>
+        <pattern id="yqa-fur-b" width="97" height="170" patternUnits="userSpaceOnUse" patternTransform="translate(23 0)" style="fill: var(--fur)"><path d="M14 6 h0.9 L14.6 120 Z" fill-opacity="0.8"></path><path d="M49 2 h1.2 L48.8 140 Z" fill-opacity="0.95"></path><path d="M80 10 h0.7 L80.5 86 Z" fill-opacity="0.65"></path></pattern>
+        <linearGradient id="yqa-fur-fade" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#fff"></stop><stop offset="0.55" stop-color="#fff" stop-opacity="0.7"></stop><stop offset="1" stop-color="#fff" stop-opacity="0"></stop></linearGradient>
+        <mask id="yqa-fur-mk" maskUnits="userSpaceOnUse" x="0" y="0" width="40" height="170"><rect width="40" height="170" fill="url(#yqa-fur-fade)"></rect></mask>
+      </defs>
+      <g mask="url(#yqa-fur-mk)">
+        <rect width="40" height="170" style="fill: url(#yqa-fur-a)"></rect>
+        <rect width="40" height="170" style="fill: url(#yqa-fur-b)"></rect>
+      </g>
+    </svg>
+    <div aria-hidden="true" style="position: absolute; left: 0; top: 0; right: 0; bottom: 0; z-index: -1; border-radius: inherit; pointer-events: none; background-image: radial-gradient(ellipse 130% 14% at 30% 0%, var(--sheen), transparent 70%), linear-gradient(to bottom, transparent 72%, var(--pool) 135%); box-shadow: inset 0 0 0 1px var(--rim), inset 0 1px 0 var(--lip), inset 0 -1px 0 var(--lipdk), inset 0 0 24px -8px var(--pool)"></div>
+    <div aria-hidden="true" style="position: absolute; left: 14px; top: 0; z-index: -1; width: 44px; height: 1px; border-radius: inherit; pointer-events: none; background-image: linear-gradient(90deg, transparent, var(--spec) 28%, var(--spec) 50%, transparent)"></div>
+    <div aria-hidden="true" style="position: absolute; left: 14px; top: 1px; z-index: -1; width: 44px; height: 4px; border-radius: inherit; pointer-events: none; opacity: var(--bloom); background-image: linear-gradient(90deg, transparent, var(--spec) 28%, var(--spec) 50%, transparent); -webkit-mask-image: linear-gradient(to bottom, #000, transparent); mask-image: linear-gradient(to bottom, #000, transparent)"></div>
+
+    <nav aria-label="主导航" style="flex: 0 0 72px; box-sizing: border-box; display: flex; flex-direction: column; align-items: center; padding: 22px 0 20px">
+      <svg width="30" height="30" viewBox="0 0 36 36" role="img" aria-label="Chloe" style="display: block">
+        <circle cx="14" cy="18" r="8" style="fill: none; stroke: var(--ink); stroke-width: 1.4"></circle>
+        <circle cx="22" cy="18" r="8" style="fill: none; stroke: var(--ink); stroke-width: 1.4"></circle>
+      </svg>
+      <div style="margin-top: 40px; display: flex; flex-direction: column; align-items: center; gap: 10px">
+        <a href="Chat.dc.html" style="box-sizing: border-box; padding: 10px 0 10px 9px; border-left: 1.5px solid transparent; writing-mode: vertical-rl; font-size: 15px; letter-spacing: 0.32em; color: var(--ink2); text-decoration: none">对话</a>
+        <a href="#" aria-current="page" style="box-sizing: border-box; padding: 10px 0 10px 9px; border-left: 1.5px solid var(--ink); writing-mode: vertical-rl; font-size: 15px; font-weight: 500; letter-spacing: 0.32em; color: var(--ink); text-decoration: none">分身</a>
+        <a href="Exchange.dc.html" style="box-sizing: border-box; padding: 10px 0 10px 9px; border-left: 1.5px solid transparent; writing-mode: vertical-rl; font-size: 15px; letter-spacing: 0.32em; color: var(--ink2); text-decoration: none">广场</a>
+        <a href="World.dc.html" style="box-sizing: border-box; padding: 10px 0 10px 9px; border-left: 1.5px solid transparent; writing-mode: vertical-rl; font-size: 15px; letter-spacing: 0.32em; color: var(--ink2); text-decoration: none">世界</a>
+        <a href="Settings.dc.html" style="box-sizing: border-box; padding: 10px 0 10px 9px; border-left: 1.5px solid transparent; writing-mode: vertical-rl; font-size: 15px; letter-spacing: 0.32em; color: var(--ink2); text-decoration: none">设置</a>
+      </div>
+      <div style="flex: 1"></div>
+      <button type="button" aria-label="{{toggleLabel}}" title="{{toggleLabel}}" style="width: 36px; height: 36px; border-radius: 50%; border: 1px solid var(--rule2); background: transparent; color: var(--ink2); font-family: inherit; font-size: 14px; cursor: pointer">{{toggleChar}}</button>
+      <div style="margin-top: 18px; text-align: center; line-height: 1.3">
+        <div style="font-size: 14px; font-variant-numeric: tabular-nums; color: var(--ink)">200</div>
+        <div style="font-size: 11px; letter-spacing: 0.1em; color: var(--ink2)">草莓</div>
+      </div>
+    </nav>
+  </div>
+
+  <main style="position: relative; z-index: 1; flex: 1; min-width: 0; overflow: hidden; display: flex; flex-direction: column">
+    <!-- 页头留在纸面：分隔线只画在版心内，不贴到釉片口沿上 -->
+    <header style="box-sizing: border-box; margin: 0 72px; padding: 28px 0 22px; border-bottom: 1px solid var(--rule)">
+      <a href="Chat.dc.html" style="font-size: 13px; color: var(--ink2); text-decoration: none; letter-spacing: 0.06em">回到对话</a>
+      <h1 style="margin: 14px 0 0; font-size: 30px; font-weight: 500; letter-spacing: 0.24em">分身</h1>
+      <p style="margin: 8px 0 0; font-size: 14px; color: var(--ink2); letter-spacing: 0.04em">设置身份、介绍和交流方式。名片默认仅自己可见。</p>
+    </header>
+
+    <div style="flex: 1; min-height: 0; box-sizing: border-box; padding: 30px 72px; display: flex; gap: 72px; align-items: flex-start">
+      <!-- 表单留在纸面；输入框是清釉：薄釉 + 口沿白筋 + 顶沿受光 + 底缘积釉，不模糊 -->
+      <form style="flex: 1 1 560px; max-width: 620px; min-width: 0; display: flex; flex-direction: column; gap: 22px">
+        <div style="display: flex; gap: 28px; align-items: flex-end">
+          <div>
+            <div style="font-size: 13px; letter-spacing: 0.1em; color: var(--ink2)">头像符号</div>
+            <button type="button" aria-label="更换头像符号" style="margin-top: 10px; width: 72px; height: 72px; display: flex; align-items: center; justify-content: center; border: 0; border-radius: 14px; background-color: var(--tile); background-image: radial-gradient(ellipse 80% 60% at 30% 0%, var(--sheen), transparent 72%), linear-gradient(to bottom, transparent 58%, var(--pool) 170%); box-shadow: 0 0 0 1px var(--carve), inset 0 0 0 1px var(--rim), inset 0 1px 0 var(--lip), inset 0 -1px 0 var(--lipdk); cursor: pointer">
+              <svg width="30" height="30" viewBox="0 0 36 36" aria-hidden="true" style="display: block">
+                <path d="M18 5 C19.2 14.2 21.8 16.8 31 18 C21.8 19.2 19.2 21.8 18 31 C16.8 21.8 14.2 19.2 5 18 C14.2 16.8 16.8 14.2 18 5 Z" style="fill: none; stroke: var(--ink); stroke-width: 1.3"></path>
+              </svg>
+            </button>
+          </div>
+          <div style="flex: 1; min-width: 0">
+            <label for="aname" style="font-size: 13px; letter-spacing: 0.1em; color: var(--ink2)">分身名称</label>
+            <input id="aname" value="Chloe" style="display: block; box-sizing: border-box; width: 100%; height: 48px; margin-top: 8px; padding: 0 16px; border: 0; border-radius: 10px; background-color: var(--tile); background-image: radial-gradient(ellipse 60% 90% at 22% 0%, var(--sheen), transparent 72%), linear-gradient(to bottom, transparent 58%, var(--pool) 170%); box-shadow: 0 0 0 1px var(--carve), inset 0 0 0 1px var(--rim), inset 0 1px 0 var(--lip), inset 0 -1px 0 var(--lipdk); font-family: inherit; font-size: 22px; color: var(--ink)">
+            <div style="margin-top: 6px; font-size: 12px; color: var(--ink2)">最多 40 字</div>
+          </div>
+        </div>
+
+        <div>
+          <label for="intro" style="font-size: 13px; letter-spacing: 0.1em; color: var(--ink2)">名片简介</label>
+          <textarea id="intro" rows="2" placeholder="这个分身关心什么，擅长怎样的交流？" style="display: block; box-sizing: border-box; width: 100%; margin-top: 8px; padding: 12px 16px; border: 0; border-radius: 10px; background-color: var(--tile); background-image: radial-gradient(ellipse 60% 70% at 22% 0%, var(--sheen), transparent 72%), linear-gradient(to bottom, transparent 58%, var(--pool) 170%); box-shadow: 0 0 0 1px var(--carve), inset 0 0 0 1px var(--rim), inset 0 1px 0 var(--lip), inset 0 -1px 0 var(--lipdk); resize: vertical; font-family: inherit; font-size: 15px; line-height: 1.8; color: var(--ink)"></textarea>
+          <div style="margin-top: 6px; font-size: 12px; color: var(--ink2)"><span style="font-variant-numeric: tabular-nums">0 / 300</span>，开启公开名片后可被他人查看</div>
+        </div>
+
+        <div>
+          <div style="display: flex; justify-content: space-between; align-items: baseline">
+            <label for="persona" style="font-size: 13px; letter-spacing: 0.1em; color: var(--ink2)">性格与交流方式</label>
+            <span style="font-size: 12px; color: var(--ink2)">仅自己可见</span>
+          </div>
+          <textarea id="persona" rows="4" placeholder="例如：说话简洁、保持好奇心；先理解我的目标，再给出具体建议。" style="display: block; box-sizing: border-box; width: 100%; margin-top: 8px; padding: 12px 16px; border: 0; border-radius: 10px; background-color: var(--tile); background-image: radial-gradient(ellipse 60% 50% at 22% 0%, var(--sheen), transparent 72%), linear-gradient(to bottom, transparent 58%, var(--pool) 170%); box-shadow: 0 0 0 1px var(--carve), inset 0 0 0 1px var(--rim), inset 0 1px 0 var(--lip), inset 0 -1px 0 var(--lipdk); resize: vertical; font-family: inherit; font-size: 15px; line-height: 1.8; color: var(--ink)"></textarea>
+          <div style="margin-top: 6px; font-size: 12px; color: var(--ink2)"><span style="font-variant-numeric: tabular-nums">0 / 2000</span>，用来指导你的分身如何回应</div>
+        </div>
+
+        <div style="display: flex; gap: 24px; align-items: flex-start; padding-top: 22px; border-top: 1px solid var(--rule)">
+          <div style="flex: 1">
+            <div style="font-size: 16px; font-weight: 500; letter-spacing: 0.06em">公开分身名片</div>
+            <p style="margin: 6px 0 0; font-size: 13px; line-height: 1.85; color: var(--ink2)">其他已登录用户可以查看分身的名称、头像与简介，并邀请分身交流。关闭后仅自己可见，也会停止与其他用户待处理和进行中的分身交流。与平台官方 AI 的单人体验无需公开。</p>
+          </div>
+          <button type="button" role="switch" aria-checked="false" aria-label="公开分身名片" style="flex: 0 0 auto; margin-top: 2px; width: 44px; height: 24px; padding: 2px; box-sizing: border-box; border: 1px solid var(--rule2); border-radius: 12px; background-color: var(--tile); background-image: linear-gradient(to bottom, var(--pool), transparent 60%); box-shadow: inset 0 -1px 0 var(--lip); cursor: pointer; display: flex; align-items: center">
+            <span style="width: 18px; height: 18px; border-radius: 50%; background: var(--ink2); box-shadow: inset 0 1px 0 var(--lip), 0 1px 2px var(--drop)"></span>
+          </button>
+        </div>
+
+        <div>
+          <button type="button" style="height: 44px; padding: 0 30px; border: 0; border-radius: 8px; background: var(--btn); color: var(--btnink); font-family: inherit; font-size: 14px; letter-spacing: 0.24em; cursor: pointer">保存分身</button>
+        </div>
+      </form>
+
+      <aside style="flex: 0 0 380px; display: flex; flex-direction: column; gap: 14px">
+        <!-- 名片：琉璃釉牌（本页主角）。宋版书双边版框印在釉下，右上一方朱印 -->
+        <figure style="position: relative; z-index: 3; margin: 0; padding: 20.5px; border-radius: 18px; box-shadow: 0 1px 2px var(--drop), 0 30px 60px -36px var(--drop)">
+          <div aria-hidden="true" style="position: absolute; left: 0; top: 0; right: 0; bottom: 0; z-index: -1; border-radius: inherit; pointer-events: none; display: var(--lens); backdrop-filter: url(#yqa-lens)"></div>
+          <div aria-hidden="true" style="position: absolute; left: 0; top: 0; right: 0; bottom: 0; z-index: -1; border-radius: inherit; pointer-events: none; -webkit-backdrop-filter: var(--bd-strong); backdrop-filter: var(--bd-strong); -webkit-mask-image: linear-gradient(to right, transparent 3px, #000 17px, #000 calc(100% - 17px), transparent calc(100% - 3px)), linear-gradient(to bottom, transparent 3px, #000 17px, #000 calc(100% - 17px), transparent calc(100% - 3px)); mask-image: linear-gradient(to right, transparent 3px, #000 17px, #000 calc(100% - 17px), transparent calc(100% - 3px)), linear-gradient(to bottom, transparent 3px, #000 17px, #000 calc(100% - 17px), transparent calc(100% - 3px)); -webkit-mask-composite: source-in; mask-composite: intersect"></div>
+          <div aria-hidden="true" style="position: absolute; left: 0; top: 0; right: 0; bottom: 0; z-index: -1; border-radius: inherit; pointer-events: none; background: var(--glass); -webkit-mask-image: linear-gradient(to right, rgba(0,0,0,var(--thin)) 0, #000 12px, #000 calc(100% - 12px), rgba(0,0,0,var(--thin)) 100%), linear-gradient(to bottom, rgba(0,0,0,var(--thin)) 0, #000 12px, #000 calc(100% - 12px), rgba(0,0,0,var(--thin)) 100%); mask-image: linear-gradient(to right, rgba(0,0,0,var(--thin)) 0, #000 12px, #000 calc(100% - 12px), rgba(0,0,0,var(--thin)) 100%), linear-gradient(to bottom, rgba(0,0,0,var(--thin)) 0, #000 12px, #000 calc(100% - 12px), rgba(0,0,0,var(--thin)) 100%); -webkit-mask-composite: source-in; mask-composite: intersect"></div>
+          <!-- 兔毫（仅夜） -->
+          <svg aria-hidden="true" width="348" height="150" style="position: absolute; left: 16px; top: 1px; z-index: -1; display: block; pointer-events: none">
+            <defs>
+              <linearGradient id="yqa-pfur-fade" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#fff"></stop><stop offset="0.55" stop-color="#fff" stop-opacity="0.7"></stop><stop offset="1" stop-color="#fff" stop-opacity="0"></stop></linearGradient>
+              <mask id="yqa-pfur-mk" maskUnits="userSpaceOnUse" x="0" y="0" width="348" height="150"><rect width="348" height="150" fill="url(#yqa-pfur-fade)"></rect></mask>
+            </defs>
+            <g mask="url(#yqa-pfur-mk)">
+              <rect width="348" height="150" style="fill: url(#yqa-fur-a)"></rect>
+              <rect width="348" height="150" style="fill: url(#yqa-fur-b)"></rect>
+            </g>
+          </svg>
+          <div aria-hidden="true" style="position: absolute; left: 0; top: 0; right: 0; bottom: 0; z-index: -1; border-radius: inherit; pointer-events: none; background-image: radial-gradient(ellipse 90% 40% at 24% 0%, var(--sheen), transparent 70%), linear-gradient(to bottom, transparent 62%, var(--pool) 135%); box-shadow: inset 0 0 0 1px var(--rim), inset 0 1px 0 var(--lip), inset 0 -1px 0 var(--lipdk), inset 0 0 24px -8px var(--pool)"></div>
+          <div aria-hidden="true" style="position: absolute; left: 24px; top: 0; z-index: -1; width: 48%; height: 1px; border-radius: inherit; pointer-events: none; background-image: linear-gradient(90deg, transparent, var(--spec) 28%, var(--spec) 50%, transparent)"></div>
+          <div aria-hidden="true" style="position: absolute; left: 24px; top: 1px; z-index: -1; width: 48%; height: 4px; border-radius: inherit; pointer-events: none; opacity: var(--bloom); background-image: linear-gradient(90deg, transparent, var(--spec) 28%, var(--spec) 50%, transparent); -webkit-mask-image: linear-gradient(to bottom, #000, transparent); mask-image: linear-gradient(to bottom, #000, transparent)"></div>
+          <!-- 双边版框·外栏（粗 1.5）：内收 14，圆角 18 − 14 = 4 -->
+          <div aria-hidden="true" style="position: absolute; left: 14px; top: 14px; right: 14px; bottom: 14px; z-index: -1; border: 1.5px solid var(--ink2); border-radius: 4px; pointer-events: none; opacity: 0.72"></div>
+          <div style="box-sizing: border-box; padding: 24px 24px 22px; border: 1px solid var(--rule2)">
+            <div style="display: flex; justify-content: space-between; align-items: flex-start">
+              <span style="display: inline-flex; align-items: center; height: 22px; padding: 0 8px; border: 1px solid var(--rule2); font-size: 12px; letter-spacing: 0.1em; color: var(--ink2)">AI 分身</span>
+              <svg width="46" height="46" viewBox="0 0 36 36" role="img" aria-label="分身印" style="display: block; transform: rotate(-3deg)">
+                <defs>
+                  <filter id="worn-card" x="-10%" y="-10%" width="120%" height="120%">
+                    <feTurbulence type="fractalNoise" baseFrequency="0.85" numOctaves="2" seed="9"></feTurbulence>
+                    <feDisplacementMap in="SourceGraphic" scale="1.3"></feDisplacementMap>
+                  </filter>
+                </defs>
+                <g filter="url(#worn-card)">
+                  <rect x="2" y="2" width="32" height="32" rx="2" style="fill: var(--seal)"></rect>
+                  <path d="M18 8.5 C19 15.5 20.5 17 27.5 18 C20.5 19 19 20.5 18 27.5 C17 20.5 15.5 19 8.5 18 C15.5 17 17 15.5 18 8.5 Z" style="fill: var(--glyph)"></path>
+                </g>
+              </svg>
+            </div>
+            <div style="margin-top: 22px; font-size: 46px; font-weight: 300; line-height: 1.1; letter-spacing: 0.01em">Chloe</div>
+            <p style="margin: 18px 0 0; font-size: 15px; line-height: 1.9; color: var(--ink2)">这个分身还没有填写介绍。</p>
+            <div style="margin-top: 26px; padding-top: 14px; border-top: 1px solid var(--rule); font-size: 12px; letter-spacing: 0.06em; color: var(--ink2)">由用户创建的人工智能分身</div>
+          </div>
+        </figure>
+        <figcaption style="font-size: 12px; color: var(--ink2)">名片预览。保存后，这张名片仅自己可见。</figcaption>
+        <p style="margin: 8px 0 0; font-size: 13px; line-height: 1.85; color: var(--ink2)">名片始终标明“AI 分身”。公开名片不会公开你的用户名、性格设定、私人画像或聊天记录。</p>
+
+        <section style="margin-top: 14px; padding-top: 22px; border-top: 1px solid var(--rule)">
+          <div style="display: flex; justify-content: space-between; align-items: baseline">
+            <h2 style="margin: 0; font-size: 17px; font-weight: 500; letter-spacing: 0.12em">私有记忆</h2>
+            <span style="font-size: 12px; color: var(--ink2)">仅自己可见</span>
+          </div>
+          <p style="margin: 10px 0 0; font-size: 13px; line-height: 1.85; color: var(--ink2)">分身从交流中整理的兴趣、需求与个人画像。这些内容不出现在公开名片里。还没有私人画像；和分身聊聊自己后，这里会逐步形成记忆。</p>
+          <div style="margin-top: 12px; display: flex; gap: 22px; font-size: 13px">
+            <button type="button" style="padding: 6px 0; border: 0; background: transparent; color: var(--ink); font-family: inherit; font-size: 13px; cursor: pointer">刷新</button>
+            <button type="button" style="padding: 6px 0; border: 0; background: transparent; color: var(--seal); font-family: inherit; font-size: 13px; cursor: pointer">清空记忆与个人画像</button>
+          </div>
+        </section>
+      </aside>
+    </div>
+  </main>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"night":{"editor":"boolean","default":false,"tsType":"boolean"},"solid":{"editor":"boolean","default":false,"tsType":"boolean"},"$preview":{"width":1440,"height":900}}'>
+class Component extends DCLogic {
+  renderVals() {
+    const T = /*THEMES*/{"day":{"paper":"#E8EEEA","hi":"#F4F7F4","slip":"#D5E0DA","deep":"#93AFA4","ink":"#1F2926","ink2":"#56635E","ink3":"#84918B","rule":"rgba(31,41,38,0.12)","rule2":"rgba(31,41,38,0.26)","seal":"#A8322A","glyph":"#F6F1E8","btn":"#1F2926","btnink":"#F4F7F4","weave":"rgba(31,41,38,0.016)","chart":"rgba(31,41,38,0.34)","chartf":"rgba(31,41,38,0.13)","river":"rgba(147,175,164,0.20)","sky":"#EEF3F0","water":"#E1E9E5","m1":"#CCD9D2","m2":"#B7C9C0","m3":"#ACC0B6","m4":"#9AAFA5","mist":"#F1F5F2","ripple":"rgba(70,104,92,0.20)","glass":"rgba(240,245,242,0.42)","glass2":"rgba(243,247,244,0.72)","thin":"0.35","thin2":"0.28","chip":"rgba(198,216,207,0.56)","tile":"rgba(248,251,249,0.5)","mount":"rgba(244,247,245,0.7)","pool":"rgba(110,150,136,0.22)","sheen":"rgba(255,255,255,0.55)","rim":"rgba(255,255,255,0.4)","lip":"rgba(255,255,255,0.25)","lipdk":"rgba(52,86,74,0.14)","carve":"rgba(70,108,95,0.17)","etch":"rgba(255,255,255,0.5)","spec":"rgba(255,255,255,0.98)","bloom":"0.9","drop":"rgba(36,60,52,0.13)","fur":"rgba(0,0,0,0)","blur":"16px","blurS":"22px","sat":"1.5","bri":"1","bd":"blur(var(--blur)) saturate(var(--sat)) brightness(var(--bri))","bdS":"blur(var(--blur-strong)) saturate(var(--sat)) brightness(var(--bri))","lens":"block","art":"1"},"night":{"paper":"#161412","hi":"#1E1B18","slip":"#2A2622","deep":"#7A6650","ink":"#E7E3DA","ink2":"#A8A195","ink3":"#78726A","rule":"rgba(231,227,218,0.10)","rule2":"rgba(231,227,218,0.22)","seal":"#BF4537","glyph":"#F6F1E8","btn":"#E7E3DA","btnink":"#161412","weave":"rgba(231,227,218,0.014)","chart":"rgba(231,227,218,0.34)","chartf":"rgba(231,227,218,0.12)","river":"rgba(185,139,94,0.12)","sky":"#1B1816","water":"#121010","m1":"#2E2824","m2":"#433930","m3":"#4A3F35","m4":"#4D4137","mist":"#282321","ripple":"rgba(231,227,218,0.08)","glass":"rgba(26,23,20,0.42)","glass2":"rgba(30,27,24,0.74)","thin":"0.55","thin2":"1","chip":"rgba(74,63,52,0.42)","tile":"rgba(40,35,30,0.46)","mount":"rgba(30,27,24,0.72)","pool":"rgba(0,0,0,0.34)","sheen":"rgba(255,234,210,0.06)","rim":"rgba(184,132,88,0.22)","lip":"rgba(214,164,116,0.24)","lipdk":"rgba(0,0,0,0.55)","carve":"rgba(185,139,94,0.16)","etch":"rgba(214,164,116,0.08)","spec":"rgba(255,232,200,0.5)","bloom":"0.4","drop":"rgba(0,0,0,0.42)","fur":"rgba(176,122,74,0.065)","blur":"16px","blurS":"22px","sat":"1.3","bri":"0.84","bd":"blur(var(--blur)) saturate(var(--sat)) brightness(var(--bri))","bdS":"blur(var(--blur-strong)) saturate(var(--sat)) brightness(var(--bri))","lens":"block","art":"1"},"daySolid":{"paper":"#E8EEEA","hi":"#F4F7F4","slip":"#D5E0DA","deep":"#93AFA4","ink":"#1F2926","ink2":"#56635E","ink3":"#84918B","rule":"rgba(31,41,38,0.12)","rule2":"rgba(31,41,38,0.26)","seal":"#A8322A","glyph":"#F6F1E8","btn":"#1F2926","btnink":"#F4F7F4","weave":"rgba(31,41,38,0.016)","chart":"rgba(31,41,38,0.34)","chartf":"rgba(31,41,38,0.13)","river":"rgba(147,175,164,0.20)","sky":"#EEF3F0","water":"#E1E9E5","m1":"#CCD9D2","m2":"#B7C9C0","m3":"#ACC0B6","m4":"#9AAFA5","mist":"#F1F5F2","ripple":"rgba(70,104,92,0.20)","glass":"#F0F4F1","glass2":"#F4F7F4","thin":"1","thin2":"1","chip":"#D5E0DA","tile":"#F4F7F4","mount":"#F4F7F4","pool":"rgba(110,150,136,0.16)","sheen":"rgba(255,255,255,0.55)","rim":"rgba(255,255,255,0.7)","lip":"rgba(255,255,255,0.85)","lipdk":"rgba(52,86,74,0.18)","carve":"rgba(70,108,95,0.24)","etch":"rgba(255,255,255,0.6)","spec":"rgba(255,255,255,0.98)","bloom":"0.9","drop":"rgba(36,60,52,0.13)","fur":"rgba(0,0,0,0)","blur":"16px","blurS":"22px","sat":"1.5","bri":"1","bd":"none","bdS":"none","lens":"none","art":"0.5"},"nightSolid":{"paper":"#161412","hi":"#1E1B18","slip":"#2A2622","deep":"#7A6650","ink":"#E7E3DA","ink2":"#A8A195","ink3":"#78726A","rule":"rgba(231,227,218,0.10)","rule2":"rgba(231,227,218,0.22)","seal":"#BF4537","glyph":"#F6F1E8","btn":"#E7E3DA","btnink":"#161412","weave":"rgba(231,227,218,0.014)","chart":"rgba(231,227,218,0.34)","chartf":"rgba(231,227,218,0.12)","river":"rgba(185,139,94,0.12)","sky":"#1B1816","water":"#121010","m1":"#2E2824","m2":"#433930","m3":"#4A3F35","m4":"#4D4137","mist":"#282321","ripple":"rgba(231,227,218,0.08)","glass":"#1E1B18","glass2":"#221F1B","thin":"1","thin2":"1","chip":"#2A2622","tile":"#26221E","mount":"#221F1B","pool":"rgba(0,0,0,0.28)","sheen":"rgba(255,234,210,0.06)","rim":"rgba(184,132,88,0.3)","lip":"rgba(214,164,116,0.3)","lipdk":"rgba(0,0,0,0.55)","carve":"rgba(185,139,94,0.22)","etch":"rgba(214,164,116,0.08)","spec":"rgba(255,232,200,0.5)","bloom":"0.4","drop":"rgba(0,0,0,0.42)","fur":"rgba(176,122,74,0.065)","blur":"16px","blurS":"22px","sat":"1.3","bri":"0.84","bd":"none","bdS":"none","lens":"none","art":"0.5"}}/*END*/;
+    const night = this.props.night ?? false;
+    const solid = this.props.solid ?? false;
+    const t = night ? (solid ? T.nightSolid : T.night) : (solid ? T.daySolid : T.day);
+    return { t, toggleChar: night ? '昼' : '夜', toggleLabel: night ? '切换到白天（天青）' : '切换到夜间（建盏）' };
+  }
+}
+</script>
+</body>
+</html>

@@ -3,16 +3,26 @@
 import { Suspense, useState, useEffect } from "react";
 import { useSearchParams } from "next/navigation";
 import Sidebar from "@/components/Sidebar";
-import { Trash2, User, Info, LogOut } from "lucide-react";
+import { Trash2, LogOut } from "lucide-react";
+import Glaze from "@/components/Glaze";
+import InkLandscape from "@/components/InkLandscape";
+import { useTheme } from "@/lib/useTheme";
 import { apiFetch, clearAuth, setAuth } from "@/lib/auth";
 import { useAccountIdentity } from "@/lib/useAccountIdentity";
 
 import { API_BASE as API } from "@/lib/config";
 
+const appearanceOptions = [
+  { value: "system", label: "跟随系统" },
+  { value: "day", label: "昼　天青" },
+  { value: "night", label: "夜　建盏" },
+] as const;
+
 function SettingsContent() {
   const sp = useSearchParams();
   const embedded = sp?.get("embed") === "1";
   const username = useAccountIdentity();
+  const { appearance, setAppearance, solid, effectiveSolid, systemSolid, setSolid } = useTheme();
   const [allUsers, setAllUsers] = useState<string[]>([]);
   const [cleared, setCleared] = useState(false);
   const [clearError, setClearError] = useState("");
@@ -124,108 +134,117 @@ function SettingsContent() {
     }
   };
 
+  const sectionClass = "grid min-w-0 grid-cols-[160px_minmax(0,1fr)] gap-6 border-t border-[color:var(--carve)] py-[22px] shadow-[inset_0_1px_0_var(--etch)] mobile:grid-cols-1 mobile:gap-3";
+  const headingClass = "text-base font-medium tracking-[0.14em]";
+
   return (
-    <div className={`flex h-dvh flex-col overflow-hidden ${!embedded ? "mobile:pb-[calc(56px+env(safe-area-inset-bottom))]" : ""}`}>
-      <div className="flex flex-1 min-h-0">
+    <div className={`relative flex h-dvh flex-col overflow-hidden ${!embedded ? "mobile:pb-[calc(var(--tabbar-h)+env(safe-area-inset-bottom))]" : ""}`}>
+      <InkLandscape variant="page" />
+      <div className="relative flex min-h-0 flex-1">
         {!embedded && <Sidebar />}
-        <div className="flex flex-col flex-1 min-w-0">
-          <header className="glass sticky top-0 z-[2] shrink-0 border-b px-8 pb-[18px] pt-7 mobile:px-4 mobile:pt-4" style={{ borderColor: "var(--glass-border)" }}>
-            <div className="flex max-w-[976px] items-end justify-between gap-4">
-              <div>
-                <h1 className="text-xl font-medium tracking-[-0.01em]">设置</h1>
-                <p className="mt-1 text-[13px] text-muted-foreground">账号与数据管理</p>
-              </div>
-            </div>
-          </header>
+        <main className="flex min-w-0 flex-1 justify-center overflow-x-hidden overflow-y-auto p-3 mobile:p-3">
+          <Glaze variant="panel" fur className="relative z-[1] box-border min-h-full w-full max-w-[712px] self-start rounded-[18px] px-12 pb-8 pt-7 mobile:px-6 mobile:pb-6 mobile:pt-5">
+            <header>
+              <h1 className="mt-[18px] text-[30px] font-medium tracking-[0.24em]">设置</h1>
+              <p className="mt-2 text-sm tracking-[0.04em] text-[color:var(--ink2)]">账号、外观与数据。</p>
+            </header>
 
-          <div className="max-w-lg flex-1 space-y-3 overflow-y-auto px-8 py-6 mobile:min-w-0 mobile:px-4 mobile:py-4">
-            {/* 当前身份 */}
-            <div className="glass-card space-y-3 p-5">
-              <div className="flex items-center gap-2 text-sm font-medium">
-                <User size={14} style={{ color: "var(--amber-ink)" }} />
-                当前身份
-              </div>
-              <div className="flex flex-wrap gap-2">
-                {(allUsers.length ? allUsers : username ? [username] : []).map(u => (
-                  <button
-                    key={u}
-                    onClick={() => switchUser(u)}
-                    className={`chip mobile:h-auto mobile:max-w-full mobile:break-all mobile:whitespace-normal ${u === username ? "chip-on" : ""}`}
-                  >
-                    {u}
-                  </button>
-                ))}
-                {!username && <span className="text-xs text-muted-foreground">正在加载身份…</span>}
-              </div>
-              <p className="text-[11px] text-muted-foreground/60">
-                当前使用服务端 HttpOnly 会话；开发环境仍可切换测试身份。
-              </p>
-              <button
-                onClick={logout}
-                disabled={loggingOut}
-                className="btn w-full mobile:h-auto mobile:min-h-10 mobile:break-all mobile:whitespace-normal"
-              >
-                <LogOut size={14} />
-                {loggingOut ? "正在退出…" : "退出登录并撤销现有会话"}
-              </button>
-              {logoutError && <p role="alert" className="text-xs text-[color:var(--rec)]">{logoutError}</p>}
-            </div>
-
-            {/* 数据管理 */}
-            <div className="glass-card space-y-3 p-5">
-              <div className="flex items-center gap-2 text-sm font-medium">
-                <Trash2 size={14} style={{ color: "var(--amber-ink)" }} />
-                数据管理
-              </div>
-              <button
-                onClick={clearHistory}
-                disabled={!username}
-                className="btn btn-danger w-full mobile:h-auto mobile:min-h-10 mobile:break-all mobile:whitespace-normal"
-              >
-                <Trash2 size={14} />
-                {username ? `清空「${username}」的所有聊天记录` : "正在加载身份…"}
-              </button>
-              {cleared && (
-                <p className="text-xs text-[color:var(--amber-ink)]">已清空</p>
-              )}
-              {clearError && <p role="alert" className="text-xs text-[color:var(--rec)]">{clearError}</p>}
-              <div className="space-y-2 border-t pt-3" style={{ borderColor: "var(--glass-border)" }}>
-                <p className="text-xs text-[color:var(--rec)]">永久删除账号</p>
-                <p className="text-[11px] text-muted-foreground">
-                  {username ? <>输入当前用户名 <span className="readout text-foreground mobile:break-all">{username}</span> 确认。此操作不可恢复。</> : "正在加载身份，加载完成后才能删除账号。"}
-                </p>
-                <input
-                  value={deleteConfirmation}
-                  onChange={event => setDeleteConfirmation(event.target.value)}
-                  placeholder={username || "正在加载身份…"}
-                  disabled={!username}
-                  className="w-full rounded-[6px] border bg-card px-3 py-[9px] text-sm outline-none placeholder:text-muted-foreground focus:border-[color:var(--amber-ink)]"
-                />
-                <button
-                  onClick={deleteAccount}
-                  disabled={!username || deleteConfirmation !== username || deleting}
-                  className="btn btn-danger w-full mobile:h-auto mobile:min-h-10 mobile:whitespace-normal"
-                >
-                  <Trash2 size={14} />
-                  {deleting ? "正在删除…" : "永久删除账号及全部数据"}
+            <section className={`${sectionClass} mt-7`}>
+              <h2 className={headingClass}>当前身份</h2>
+              <div className="min-w-0 space-y-3">
+                <div className="flex flex-wrap gap-2">
+                  {(allUsers.length ? allUsers : username ? [username] : []).map(u => (
+                    <button key={u} onClick={() => switchUser(u)}
+                      className={`chip text-[18px] mobile:h-auto mobile:min-h-10 mobile:max-w-full mobile:break-all mobile:whitespace-normal ${u === username ? "chip-on" : ""}`}>
+                      {u}
+                    </button>
+                  ))}
+                  {!username && <span className="text-xs text-[color:var(--ink2)]">正在加载身份…</span>}
+                </div>
+                <p className="text-[13px] leading-[1.85] text-[color:var(--ink2)]">当前使用服务端 HttpOnly 会话；开发环境仍可切换测试身份。</p>
+                <button onClick={logout} disabled={loggingOut}
+                  className="btn h-[38px] px-[18px] mobile:h-auto mobile:min-h-10 mobile:max-w-full mobile:break-all mobile:whitespace-normal">
+                  <LogOut size={14} />{loggingOut ? "正在退出…" : "退出登录并撤销现有会话"}
                 </button>
-                {deleteError && <p className="text-xs text-[color:var(--rec)]">{deleteError}</p>}
+                {logoutError && <p role="alert" className="text-xs text-[color:var(--seal)]">{logoutError}</p>}
               </div>
-            </div>
+            </section>
 
-            {/* 关于 */}
-            <div className="glass-card space-y-2 p-5">
-              <div className="flex items-center gap-2 text-sm font-medium">
-                <Info size={14} style={{ color: "var(--amber-ink)" }} />
-                关于
+            <section className={sectionClass}>
+              <h2 className={headingClass}>外观</h2>
+              <div className="min-w-0">
+                <div role="radiogroup" aria-label="外观" className="inline-grid max-w-full grid-cols-3 overflow-hidden rounded-[8px] border border-[color:var(--rule2)]"
+                  onKeyDown={event => {
+                    const currentIndex = appearanceOptions.findIndex(option => option.value === appearance);
+                    const nextIndex = event.key === "ArrowRight" || event.key === "ArrowDown" ? (currentIndex + 1) % 3
+                      : event.key === "ArrowLeft" || event.key === "ArrowUp" ? (currentIndex + 2) % 3
+                      : event.key === "Home" ? 0 : event.key === "End" ? 2 : -1;
+                    if (nextIndex < 0) return;
+                    event.preventDefault();
+                    setAppearance(appearanceOptions[nextIndex].value);
+                    (event.currentTarget.querySelectorAll<HTMLButtonElement>('button[role="radio"]')[nextIndex])?.focus();
+                  }}>
+                  {appearanceOptions.map((option, index) => <button key={option.value} type="button" role="radio"
+                    aria-checked={appearance === option.value} tabIndex={appearance === option.value ? 0 : -1}
+                    onClick={() => setAppearance(option.value)}
+                    className="min-h-[38px] whitespace-nowrap px-[18px] text-[13px] tracking-[0.08em] outline-offset-[-3px] mobile:min-h-10 mobile:px-2 mobile:tracking-normal"
+                    style={{ borderLeft: index ? "1px solid var(--rule2)" : undefined, background: appearance === option.value ? "var(--chip)" : "transparent", color: appearance === option.value ? "var(--ink)" : "var(--ink2)", boxShadow: appearance === option.value ? "inset 0 1px 0 var(--lip), inset 0 -1px 0 var(--lipdk)" : undefined }}>
+                    {option.label}
+                  </button>)}
+                </div>
+                <p className="mt-2.5 text-[13px] leading-[1.85] text-[color:var(--ink2)]">白天是汝窑的天青，夜里是建盏的黑釉。选择会记在这台设备上。</p>
+                <div className="mt-3.5 border-t border-[color:var(--carve)] pt-3.5 shadow-[inset_0_1px_0_var(--etch)]">
+                  <div className="flex items-center justify-between gap-4">
+                    <span id="solid-name" className="text-sm tracking-[0.06em]">素瓷（减少透明度）</span>
+                    <button type="button" role="switch" aria-checked={effectiveSolid} aria-labelledby="solid-name" aria-describedby="solid-note" disabled={systemSolid}
+                      onClick={() => setSolid(!solid)} className="relative flex h-10 w-11 shrink-0 items-center justify-center rounded-[12px] disabled:cursor-default">
+                      <span aria-hidden="true" className="relative block h-6 w-11 rounded-full border border-[color:var(--rule2)] shadow-[inset_0_1px_2px_var(--pool)]"
+                        style={{ background: effectiveSolid ? "var(--btn)" : "transparent" }}>
+                        <span className="absolute left-[3px] top-[3px] h-4 w-4 rounded-full transition-transform"
+                          style={{ transform: effectiveSolid ? "translateX(20px)" : "translateX(0)", background: effectiveSolid ? "var(--btnink)" : "var(--ink2)" }} />
+                      </span>
+                    </button>
+                  </div>
+                  <p id="solid-note" className="mt-1.5 text-[13px] leading-[1.85] text-[color:var(--ink2)]">关掉透明与模糊，界面改用不透明的底色，文字看得更清楚。{systemSolid && "系统已开启减少透明度或增强对比度，素瓷由系统接管。"}</p>
+                </div>
               </div>
-              <div className="space-y-1 text-[11px] text-muted-foreground">
+            </section>
+
+            <section className={sectionClass}>
+              <h2 className={headingClass}>数据管理</h2>
+              <div className="min-w-0">
+                <button onClick={clearHistory} disabled={!username}
+                  className="btn btn-danger min-h-10 max-w-full justify-start px-0 text-sm mobile:h-auto mobile:break-all mobile:whitespace-normal">
+                  <Trash2 size={14} />{username ? `清空「${username}」的所有聊天记录` : "正在加载身份…"}
+                </button>
+                {cleared && <p className="text-xs text-[color:var(--ink)]">已清空</p>}
+                {clearError && <p role="alert" className="text-xs text-[color:var(--seal)]">{clearError}</p>}
+                <div className="mt-[22px] space-y-2 border-t border-[color:var(--carve)] pt-[18px] shadow-[inset_0_1px_0_var(--etch)]">
+                  <p className="text-[15px] tracking-[0.06em] text-[color:var(--seal)]">永久删除账号</p>
+                  <label htmlFor="delete-confirmation" className="block text-[13px] leading-[1.85] text-[color:var(--ink2)]">
+                    {username ? <>输入当前用户名 <span className="readout break-all text-[color:var(--ink)]">{username}</span> 确认。此操作不可恢复。</> : "正在加载身份，加载完成后才能删除账号。"}
+                  </label>
+                  <input id="delete-confirmation" value={deleteConfirmation} onChange={event => setDeleteConfirmation(event.target.value)}
+                    placeholder={username || "正在加载身份…"} disabled={!username}
+                    className="h-[42px] w-full max-w-[360px] rounded-[8px] border border-[color:var(--rule2)] bg-[color:var(--mount)] px-3 text-base shadow-[inset_0_1px_2px_var(--pool)] outline-none placeholder:text-[color:var(--ink2)] focus:border-[color:var(--ink)]" />
+                  <button onClick={deleteAccount} disabled={!username || deleteConfirmation !== username || deleting}
+                    className="btn btn-danger min-h-10 max-w-full px-0 mobile:h-auto mobile:whitespace-normal">
+                    <Trash2 size={14} />{deleting ? "正在删除…" : "永久删除账号及全部数据"}
+                  </button>
+                  {deleteError && <p role="alert" className="text-xs text-[color:var(--seal)]">{deleteError}</p>}
+                </div>
+              </div>
+            </section>
+
+            <section className={`${sectionClass} border-b`}>
+              <h2 className={headingClass}>关于</h2>
+              <div className="space-y-1 text-[13px] leading-[1.85] text-[color:var(--ink2)]">
                 <p>Chloe AI 助理 · 内测版</p>
-                <p className="text-muted-foreground/50">账号数据保存在部署服务器的 SQLite 与 uploads 目录</p>
+                <p>账号数据保存在部署服务器的 SQLite 与 uploads 目录</p>
               </div>
-            </div>
-          </div>
-        </div>
+            </section>
+          </Glaze>
+        </main>
       </div>
     </div>
   );

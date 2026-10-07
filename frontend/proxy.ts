@@ -37,6 +37,6 @@ export function proxy(req: NextRequest) {
 export const config = {
   // 排除：后端 API rewrite、Next 内部资产、PWA/SW、图标与纹理
   matcher: [
-    "/((?!api|_next/static|_next/image|favicon.ico|manifest.webmanifest|sw.js|icons|textures|uploads).*)",
+    "/((?!api|_next/static|_next/image|favicon.ico|manifest.webmanifest|sw.js|icons|textures|uploads|fonts).*)",
   ],
 };
