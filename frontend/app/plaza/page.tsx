@@ -432,6 +432,8 @@ function PlazaContent() {
                 maxWidth: 920,
                 overflow: "hidden",
                 borderColor: "var(--rule)",
+                backdropFilter: "var(--bd)",
+                WebkitBackdropFilter: "var(--bd)",
               }}>
               {/* 头部 */}
               <div className="flex shrink-0 items-center justify-between border-b px-5 py-3" style={{ borderColor: "var(--rule)" }}>
