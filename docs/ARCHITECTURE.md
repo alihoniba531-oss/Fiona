@@ -1,6 +1,6 @@
 # Fiona 当前架构
 
-本文描述仓库在 2026-09-25 的实际代码结构。它是实现说明，不替代 [PLAN.md](../PLAN.md) 中的路线图和发布决策。
+本文描述仓库在 2026-10-09 的实际代码结构。它是实现说明，不替代 [PLAN.md](../PLAN.md) 中的路线图和发布决策。
 
 ## 系统边界
 
@@ -47,6 +47,9 @@ Browser / Tauri WebView
 - `frontend/proxy.ts`：页面级 Cookie 门禁。
 - `frontend/components/`：聊天、导航、HUD 和 3D 场景。
 - `frontend/lib/useConversations.ts`：会话请求、当前选择持久化、历史加载与迟到响应隔离；选择器位于 `components/ConversationPicker.tsx`。
+- `frontend/components/ChatBubble.tsx`：通用卡片在要点下方显示最多 5 条来源，包含标题和站点；来源先经 `frontend/lib/open.ts:toSafeExternalUrl` 校验绝对、无凭据、长度受限的 HTTP(S) URL，再通过 `openExternal` 打开。搜索失败气泡显示错误说明。
+
+工具卡片（含搜索和旅行来源）只随本轮 SSE 交付，不保存卡片结构到数据库。搜索与旅行的历史仅保存去掉引用角标的文字摘要，刷新或切换会话后来源不保留，这是当前已知限制。
 
 主页面目前会保留多个抽屉 iframe 的挂载状态。这是当前行为，不是推荐的长期架构；拆分和懒加载计划记录在 [PLAN.md](../PLAN.md)。
 
@@ -135,15 +138,21 @@ V4 事务迁移为交流增加 `workflow_version/artifact/artifact_status/comple
 
 - `deepseek-v4-pro`：本地已配置的官方搭档发言及单人体验总结；由 `exchange_models.py` 独立配置。
 - `qwen3.8-omni-flash`：主力对话、匹配和复杂判断。
-- `qwen3.8-flash`：轻量对话槽位，失败时回退主力模型；也用于独立的危机复核，危机复核不回退、不重试。
+- `qwen3.8-flash`：轻量对话槽位，失败时回退主力模型；热点分类使用此模型，请求固定 8 秒超时、不重试；也用于独立的危机复核，危机复核不回退、不重试。
 - `qwen-vl-max`：用户图片和视觉搜索结果理解。
 - `qwen-image-3.0`：默认聊天文生图及参考图编辑模型，每次一张；`QWEN_IMAGE_MODEL` 可调整。
 - `seedream-5.0-flash`：可选生图及参考图编辑模型，经火山方舟调用；`ARK_API_KEY` 仅服务端读取，`SEEDREAM_IMAGE_MODEL` 默认 `doubao-seedream-5-0-flash-260915`，需先开通。
-- `qwen-plus`：联网搜索、热点分类/展开和旅行规划。
+- `qwen-plus`：搜索、旅行规划、热点展开和卡片详情，均使用 DashScope 原生接口并强制开启联网搜索。
 - `qwen3-asr-flash`：语音识别。
 - DashScope TTS：语音合成。
 
 工具分派位于 `backend/services/chat_service.py:execute_intent`，意图识别位于 `backend/intent_router.py`；`backend/tools/route.py` 仅实现驾车路线。当前内置函数还不是可发布、安装或交易的 Skill。系统/微信辅助模块中的部分功能是占位实现，不能视为可用的服务端 Skill。
+
+搜索、旅行规划、热点展开和卡片详情都复用 `tools.topic_expand._request_search`：固定 30 秒 socket 超时、不重试，不受兼容客户端的 `DASHSCOPE_TIMEOUT_SECONDS` / `DASHSCOPE_MAX_RETRIES` 控制。卡片详情路由 `backend/routers/cards.py` 外层另有 45 秒总超时。
+
+`backend/tools/native_search.py` 为搜索与旅行规划整理来源，只取自原生 `output.search_info.search_results`，将纯数字字符串编号转为整数后复用 `tools.card_detail._search_sources` 做公网 HTTP(S) 格式校验、去重与引用优先排序；只下发标题、URL、站点和有效编号，最多 5 条，不下发图标。此链接校验不访问来源站点，不承诺链接实时可达；服务端实际抓取仍需独立的 DNS/IP 与重定向校验。模型输出的 `sources` / `url` 不参与卡片来源和表头 URL；模型正文（要点、旅行标题和非 JSON 回退行）在组装前依次清理引用角标与 HTTP(S)、www.、Markdown 链接，非字符串要点只允许非 bool 的 int/float 转成文字，其余对象丢弃，朗读和历史摘要使用已清理的正文。
+
+搜索没有可用真实来源时交付错误卡，不结算草莓；旅行规划允许 `sources: []` 和空 URL，仍按原有成功规则交付建议。含“天气”的搜索继续使用既有天气分流。
 
 ## 鉴权与公开端点
 
@@ -209,8 +218,8 @@ Layer 2 会为双方创建待接受卡片；Layer 1、Layer 2 和手动匹配都
 - SQLite 每次操作创建连接；WAL、统一 busy timeout 和异步路径的槽位读写隔离已启用，正式迁移和更高并发能力仍待建设。
 - 模型预算计数是单进程内存状态，不是供应商账单或集群级配额；草莓预扣、退款和每日补给已原子化，真实 usage 与持久化成本控制仍待完成。
 - 消息/账户删除已有引用检查和持久化文件清理周期重试；全目录孤儿扫描与保留期限尚未完成。
-- ASGI 层限制总请求体为 25 MB，Chat/图片、ASR、TTS、帖子和分页还有更严格的领域边界；上传图片验证真实格式、完整性和像素量并去元数据，广场视频由 ffmpeg remux 去元数据，处理失败拒绝保存。官方体验、热点展开、卡片详情和 ASR 已叠加每日每账号上限；模型客户端已有明确超时和有限重试，并发边界、公共热点缓存和持久化成本上限仍需继续治理。
-- 模型生成的热点/卡片 URL 通过只允许公网 HTTP(S) 的客户端访问，每次 DNS 和重定向都会重新校验并限制响应体与超时。
+- ASGI 层限制总请求体为 25 MB，Chat/图片、ASR、TTS、帖子和分页还有更严格的领域边界；上传图片验证真实格式、完整性和像素量并去元数据，广场视频由 ffmpeg remux 去元数据，处理失败拒绝保存。官方体验、热点展开、卡片详情和 ASR 已叠加每日每账号上限；兼容模型客户端已有可配置超时和有限重试，搜索、旅行规划、热点展开和卡片详情的原生调用则固定 30 秒 socket 超时、无重试且不受兼容客户端超时/重试环境变量控制；热点分类使用 `qwen3.8-flash`，固定 8 秒超时、不重试。并发边界、公共热点缓存和持久化成本上限仍需继续治理。
+- 热点与网页卡片的服务端抓取通过只允许公网 HTTP(S) 的客户端访问，每次 DNS 和重定向都会重新校验并限制响应体与超时；搜索与旅行卡片只展示原生搜索结果中经公网 HTTP(S) 格式校验的链接，模型生成的 URL 不进入这两类卡片。
 - 前端主页面承担职责过多，多个隐藏 iframe 会继续运行轮询或 3D 场景。
 - 仓库已增加后端与 Web 质量门禁工作流；Windows 桌面工作流会运行 Rust 单测再打包。新工作流仍需在 GitHub 首次运行中确认 runner 环境。
 

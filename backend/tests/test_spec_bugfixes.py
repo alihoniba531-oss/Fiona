@@ -18,19 +18,29 @@ def _fake_llm(content: str):
 
 
 def test_malformed_search_json_is_sanitized(monkeypatch):
+    from tools import native_search
     from tools import travel_plan as travel_module
     from tools import web_search as search_module
 
     malformed = '{"headline":"主线", "points":null, "sources":{"title":"官网","url":"https://example.net"}}'
-    monkeypatch.setattr(search_module, "_get_client", lambda: _fake_llm(malformed))
-    monkeypatch.setattr(travel_module, "_get_client", lambda: _fake_llm(malformed))
+    monkeypatch.setenv("DASHSCOPE_API_KEY", "test-native-search-key")
+    response = {"output": {
+        "choices": [{"finish_reason": "stop", "message": {"content": malformed}}],
+        "search_info": {"search_results": [{
+            "title": "真实官网", "url": "https://travel.gov.cn/guide", "site_name": "官网", "index": "1",
+        }]},
+    }}
+    monkeypatch.setattr(native_search, "_request_search", lambda *args, **kwargs: response)
 
     search_card = search_module.web_search("测试畸形结果")
     travel_card = travel_module.travel_plan("宁波到北京")
 
     assert search_card["points"] == ["没搜到"]
     assert travel_card["points"] == ["主线"]
-    assert travel_card["sources"] == [{"title": "官网", "url": "https://example.net"}]
+    assert travel_card["sources"] == [{
+        "title": "真实官网", "url": "https://travel.gov.cn/guide", "site_name": "官网", "index": 1,
+    }]
+    assert "https://example.net" not in str(travel_card)
 
 
 def test_search_fallback_does_not_match_observation(monkeypatch):

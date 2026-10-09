@@ -9,18 +9,9 @@ v0.3: 用通义千问 enable_search 替代 Playwright + VL 截图方案。
 
 天气走专门的 wttr.in 直通车（保留 visual_search 里的实现）。
 """
-import json
 import re
-from llm import make_dashscope_client
+from tools import native_search
 from utils.beijing_time import beijing_now
-
-
-_search_client_cache = None
-def _get_client():
-    global _search_client_cache
-    if _search_client_cache is None:
-        _search_client_cache = make_dashscope_client()
-    return _search_client_cache
 
 
 _SEARCH_PROMPT = """你是一个搜索结果整理器。你需要联网搜索用户问题，并把答案整理成结构化要点。
@@ -28,18 +19,16 @@ _SEARCH_PROMPT = """你是一个搜索结果整理器。你需要联网搜索用
 【输出格式 - 严格 JSON，不加任何其他文字】
 {
   "success": true,
-  "points": ["要点1", "要点2", "要点3"],
-  "sources": [{"title": "来源标题", "url": "https://..."}]
+  "points": ["要点1", "要点2", "要点3"]
 }
 
 【规则】
 - success: 只有搜到可用的具体信息时才为 true；没有结果、搜索失败或无法核实内容时为 false
 - points: 3-5 条，每条具体到事实/数字/时间/地点，不要笼统空话
 - 如果是航班/票务/天气类，给出具体数字（价格、时间、温度等）
-- 如果搜不到任何信息，points 写 ["没搜到相关信息"]，sources 留空数组
-- 不要列出网站名，points 里直接给答案；sources 单独放原始链接
-- sources 里的 url **必须是搜索结果里出现的真实 URL**，不要写 example.com 或者编造网址；
-  如果记不准真实 URL，就把这一项删掉，宁可 sources 为空也别假
+- 如果搜不到任何信息，points 写 ["没搜到相关信息"]
+- 不要列出网站名，points 里直接给答案
+- 不要输出任何 URL、链接或来源列表，来源由系统根据真实搜索结果附加
 - 不输出 markdown、不加 ```json 围栏，直接 JSON 对象
 """
 
@@ -76,36 +65,27 @@ def web_search(query: str) -> dict:
         if card:
             return card
 
-    client = _get_client()
-    try:
-        resp = client.chat.completions.create(
-            model="qwen-plus",
-            messages=[
-                {"role": "system", "content": _SEARCH_PROMPT + _today_directive()},
-                {"role": "user", "content": f"搜索：{query}"},
-            ],
-            extra_body={"enable_search": True},
-            max_tokens=700,
-            temperature=0.2,
-        )
-        content = (resp.choices[0].message.content or "").strip()
-    except Exception as e:
+    result = native_search.grounded_search([
+        {"role": "system", "content": _SEARCH_PROMPT + _today_directive()},
+        {"role": "user", "content": f"搜索：{query}"},
+    ], max_tokens=700)
+    if result["error"]:
         return {
             "type": "card",
             "source": f"搜索:{query[:20]}",
-            "points": [f"搜索失败:{type(e).__name__}"],
+            "points": [f"搜索失败:{result['error']}"],
             "error": True,
         }
 
-    # 容错：模型偶尔在 JSON 前后加 ``` 围栏或解释
-    m = re.search(r"\{[\s\S]*\}", content)
-    if m:
-        content = m.group(0)
-    try:
-        data = json.loads(content)
-    except Exception:
+    data = result["data"]
+    if data is None:
         # 不是 JSON 就按行切作 fallback
-        lines = [l.strip("•- \t").strip() for l in content.split("\n") if l.strip()]
+        content = result["raw"]
+        match = re.search(r"\{[\s\S]*\}", content)
+        if match:
+            content = match.group(0)
+        lines = [native_search.strip_urls(native_search.strip_citations(line)).strip("•- \t").strip()
+                 for line in content.split("\n")]
         lines = [l for l in lines if l and not l.startswith(("{", "}", '"'))]
         return {
             "type": "card",
@@ -114,23 +94,13 @@ def web_search(query: str) -> dict:
             "error": True,
         }
 
-    raw_points = data.get("points") if isinstance(data, dict) else None
+    raw_points = data.get("points")
     raw_points = raw_points if isinstance(raw_points, list) else []
-    points = [str(p).strip() for p in raw_points if p]
-    # 千问偶尔会给 example.com 这种占位 URL，过滤掉假链接，避免误导用户点开
-    raw_sources = (data.get("sources") or []) if isinstance(data, dict) else []
-    raw_sources = raw_sources if isinstance(raw_sources, list) else [raw_sources]
-    sources = []
-    for s in raw_sources:
-        if not isinstance(s, dict):
-            continue
-        u = s.get("url") or ""
-        if not u.startswith(("http://", "https://")):
-            continue
-        if "example.com" in u or "example.org" in u:
-            continue
-        sources.append({"title": str(s.get("title") or "")[:80], "url": u})
-    first_url = sources[0]["url"] if sources else ""
+    points = [native_search.strip_urls(native_search.strip_citations(str(point)))
+              for point in raw_points
+              if isinstance(point, (str, int, float)) and not isinstance(point, bool)]
+    points = [point for point in points if point][:5]
+    sources = result["sources"]
 
     if not points:
         return {
@@ -140,11 +110,19 @@ def web_search(query: str) -> dict:
             "error": True,
         }
 
+    if not sources:
+        return {
+            "type": "card",
+            "source": f"搜索:{query[:20]}",
+            "points": ["没搜到可核实的来源，换个说法再试试"],
+            "error": True,
+        }
+
     return {
         "type": "card",
         "source": f"搜索:{query[:20]}",
-        "url": first_url,
-        "points": points[:5],
-        "sources": sources[:5],  # 前端将来想展示来源列表也能用
+        "url": sources[0]["url"],
+        "points": points,
+        "sources": sources,
         "error": data.get("success") is not True,
     }

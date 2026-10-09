@@ -108,6 +108,10 @@ FIONA_UPLOADS_DIR=/var/lib/fiona/uploads
 STRAWBERRY_DAILY_REFILL=0
 ```
 
+OpenAI 兼容模型客户端默认 60 秒超时、最多重试 1 次，可通过 `DASHSCOPE_TIMEOUT_SECONDS` / `DASHSCOPE_MAX_RETRIES` 调整（模板允许 5–300 秒、0–3 次）。搜索、旅行规划、热点展开和卡片详情均使用 DashScope 原生 `qwen-plus` 接口、强制开启联网搜索，固定 30 秒 socket 超时、不重试，不受这两个环境变量控制；调大兼容客户端超时不会延长这四项调用。卡片详情路由外层另有 45 秒总超时。热点分类使用 `qwen3.8-flash`，请求固定 8 秒超时、不重试。
+
+搜索与旅行卡片的来源只取自原生响应 `output.search_info.search_results`，经公网 HTTP(S) 格式校验后下发，模型生成的 URL 不进入卡片；模型正文中的引用角标与 HTTP(S)、www.、Markdown 链接也会清理。前端在要点下方显示可点击标题和站点，通过安全外链入口打开；校验不探测来源站点可达性。卡片及来源不落库，刷新或切换会话后只保留清理后的文字摘要。部署后抽查应覆盖搜索无真实来源时的错误与退款、旅行无来源时的正常交付，以及浏览器和 Tauri 的来源点击行为。
+
 | 环境变量 | 用途 |
 |---|---|
 | `QWEN_IMAGE_MODEL` | 默认生图和修图模型，默认 `qwen-image-3.0`，使用 `DASHSCOPE_API_KEY` |

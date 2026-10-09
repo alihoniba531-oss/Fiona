@@ -8,18 +8,9 @@ route.py 走 OSRM 算驾车导航，对"宁波 → 新德里"这种跨国旅行�
 此工具用千问 enable_search 联网搜索 + 整理：航班 / 高铁 / 签证 / 季节
 提示 / 大致预算等多维度，给出可执行的旅行方案。
 """
-import json
 import re
-from llm import make_dashscope_client
+from tools import native_search
 from utils.beijing_time import beijing_now
-
-
-_client_cache = None
-def _get_client():
-    global _client_cache
-    if _client_cache is None:
-        _client_cache = make_dashscope_client()
-    return _client_cache
 
 
 _PROMPT = """你是一个旅行规划助手。用户给出起点、终点、可选的出行时间/天数，你需要联网搜索并整理一个**可执行**的旅行方案。
@@ -35,15 +26,14 @@ _PROMPT = """你是一个旅行规划助手。用户给出起点、终点、可�
     "费用范围：合理票价 + 旺/淡季差异",
     "时间建议：最佳出行月份、当地季节/气候提醒",
     "其他注意：行李/SIM卡/插座/支付方式 等实用提示"
-  ],
-  "sources": [{"title": "信息来源标题", "url": "https://..."}]
+  ]
 }
 
 【规则】
 - success: 只有形成可执行且有依据的方案时才为 true；没有方案、搜索失败或无法核实时为 false
 - points: 3-6 条，每条必须有具体内容（航班号、时刻、价格、天数），不要笼统
 - 跨国/跨大区时必含签证项；同城/同省驾车时直接给路线即可
-- sources 给真实搜到的链接；编不出真实 URL 就留空数组
+- 不要输出任何 URL、链接或来源列表，来源由系统根据真实搜索结果附加
 - 不输出 markdown、不加 ```json 围栏，直接 JSON 对象
 """
 
@@ -70,34 +60,26 @@ def travel_plan(query: str) -> dict:
     if not q:
         return {"type": "card", "source": "旅行规划", "points": ["没说要去哪"], "error": True}
 
-    client = _get_client()
-    try:
-        resp = client.chat.completions.create(
-            model="qwen-plus",
-            messages=[
-                {"role": "system", "content": _PROMPT + _today_directive()},
-                {"role": "user", "content": q},
-            ],
-            extra_body={"enable_search": True},
-            max_tokens=1200,
-            temperature=0.3,
-        )
-        content = (resp.choices[0].message.content or "").strip()
-    except Exception as e:
+    result = native_search.grounded_search([
+        {"role": "system", "content": _PROMPT + _today_directive()},
+        {"role": "user", "content": q},
+    ], max_tokens=1200)
+    if result["error"]:
         return {
             "type": "card",
             "source": f"旅行规划 · {q[:20]}",
-            "points": [f"规划失败：{type(e).__name__}"],
+            "points": [f"规划失败：{result['error']}"],
             "error": True,
         }
 
-    m = re.search(r"\{[\s\S]*\}", content)
-    if m:
-        content = m.group(0)
-    try:
-        data = json.loads(content)
-    except Exception:
-        lines = [l.strip("•- \t").strip() for l in content.split("\n") if l.strip()]
+    data = result["data"]
+    if data is None:
+        content = result["raw"]
+        match = re.search(r"\{[\s\S]*\}", content)
+        if match:
+            content = match.group(0)
+        lines = [native_search.strip_urls(native_search.strip_citations(line)).strip("•- \t").strip()
+                 for line in content.split("\n")]
         lines = [l for l in lines if l and not l.startswith(("{", "}", '"'))]
         return {
             "type": "card",
@@ -106,26 +88,20 @@ def travel_plan(query: str) -> dict:
             "error": True,
         }
 
-    headline = (data.get("headline") or "").strip() if isinstance(data, dict) else ""
-    raw_points = data.get("points") if isinstance(data, dict) else None
+    raw_headline = data.get("headline")
+    headline = (native_search.strip_urls(native_search.strip_citations(raw_headline))
+                if isinstance(raw_headline, str) else "")
+    raw_points = data.get("points")
     raw_points = raw_points if isinstance(raw_points, list) else []
-    points = [str(p).strip() for p in raw_points if p]
+    points = [native_search.strip_urls(native_search.strip_citations(str(point)))
+              for point in raw_points
+              if isinstance(point, (str, int, float)) and not isinstance(point, bool)]
+    points = [point for point in points if point]
     # headline 放第一条，方便手机/卡片首屏看到主线
     if headline:
         points.insert(0, headline)
 
-    raw_sources = (data.get("sources") or []) if isinstance(data, dict) else []
-    raw_sources = raw_sources if isinstance(raw_sources, list) else [raw_sources]
-    sources = []
-    for s in raw_sources:
-        if not isinstance(s, dict):
-            continue
-        u = s.get("url") or ""
-        if not u.startswith(("http://", "https://")):
-            continue
-        if "example.com" in u or "example.org" in u:
-            continue
-        sources.append({"title": str(s.get("title") or "")[:80], "url": u})
+    sources = result["sources"]
     first_url = sources[0]["url"] if sources else ""
 
     if not points:

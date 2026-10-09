@@ -7,7 +7,7 @@
 - `backend/`：FastAPI + SQLite `fiona.db`，入口 `main.py`，通过 `run.py` 监听 `127.0.0.1:8000`。
 - `frontend/`：Next.js 16.2.6 App Router + React 19，开发端口 3000。
 - `desktop/`：Tauri 2 Windows 壳；有配置时建 SSH 隧道，无配置时加载 `https://madchloechat.online`（线上服务已于 2026-09-25 下线，该地址当前不可用）。
-- 模型：DashScope/Qwen；主力 `qwen3.8-omni-flash`，轻量 `qwen3.8-flash`，图片 `qwen-vl-max`，搜索/热点 `qwen-plus`，语音使用 Qwen ASR 和 DashScope TTS。生图和修图默认 Qwen Image 3.0，可选火山方舟 Seedream 5.0 Flash；两者均扣 10 颗草莓，后者将描述和参考图发送给字节跳动火山引擎。
+- 模型：DashScope/Qwen；主力 `qwen3.8-omni-flash`，轻量 `qwen3.8-flash`，图片 `qwen-vl-max`，搜索、旅行规划、热点展开和卡片详情 `qwen-plus`，语音使用 Qwen ASR 和 DashScope TTS。这四项走 DashScope 原生接口并强制联网搜索，固定 30 秒 socket 超时、不重试，不受兼容客户端的 `DASHSCOPE_TIMEOUT_SECONDS` / `DASHSCOPE_MAX_RETRIES` 控制；卡片详情路由外层另有 45 秒总超时。热点分类使用 `qwen3.8-flash`，请求固定 8 秒超时、不重试。生图和修图默认 Qwen Image 3.0，可选火山方舟 Seedream 5.0 Flash；两者均扣 10 颗草莓，后者将描述和参考图发送给字节跳动火山引擎。
 - 数据：SQLite、`backend/uploads/`、`backend/.env` 都是本机/单机状态，不进入 Git。
 
 ## 核心模块
@@ -72,7 +72,8 @@ npm run build
 
 - 这是 SQLite 单机内测架构，不要宣称已经支持 PostgreSQL 或无限并发。
 - 远程 Tauri capability、Windows `open_url` 和 CSP 已完成代码整改；桌面公开发布仍需 Windows/Rust 复核、签名和发布验证。
-- 热点来源和网页卡片已经统一经过公网 HTTP(S) 校验、DNS/IP 固定、逐跳重定向检查和响应大小限制。
+- 热点与网页卡片的服务端抓取已经统一经过公网 HTTP(S) 校验、DNS/IP 固定、逐跳重定向检查和响应大小限制。
+- 搜索与旅行卡片来源只取自原生 `output.search_info.search_results`，经公网 HTTP(S) 格式校验后下发，模型生成的 URL 不进入卡片；此校验不访问来源站点。前端最多显示 5 条可点击来源，统一用 `openExternal` 打开；模型正文（要点、旅行标题与非 JSON 回退行）在卡片组装前依次清理引用角标与 HTTP(S)、www.、Markdown 链接，朗读和历史摘要使用清理后的正文。非字符串要点只允许非 bool 的 int/float 转成文字，其余对象丢弃。搜索无可核实来源时错误且不计费，旅行建议允许没有来源。卡片及来源不落库，刷新或切换会话后只剩文字摘要。
 - Layer 2 双边卡片、双方偏好验证、手动匹配输出约束和跨用户画像最小化已完成；候选原始消息不得进入匹配模型。
 - 完整账户删除会清理数据库关联记录、关闭真人连接，并通过持久化队列重试无引用上传文件；关键后台写入必须继续防止删号后重建数据。
 - 总请求体、Chat/图片、ASR、TTS、帖子和分页已有应用层边界；模型并发、真实 usage 与持久化成本控制仍未完成。

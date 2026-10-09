@@ -439,11 +439,15 @@ def test_unstructured_tool_model_reply_is_explicitly_non_billable(
 ):
     import importlib
     import services.chat_service as chat
+    from tools import native_search
 
     module = importlib.import_module(module_name)
-    response = SimpleNamespace(choices=[SimpleNamespace(message=SimpleNamespace(content="服务暂时没有结果"))])
-    model = SimpleNamespace(chat=SimpleNamespace(completions=SimpleNamespace(create=lambda **kwargs: response)))
-    monkeypatch.setattr(module, "_get_client", lambda: model)
+    monkeypatch.setenv("DASHSCOPE_API_KEY", "test-native-search-key")
+    response = {"output": {
+        "choices": [{"finish_reason": "stop", "message": {"content": "服务暂时没有结果"}}],
+        "search_info": {"search_results": []},
+    }}
+    monkeypatch.setattr(native_search, "_request_search", lambda *args, **kwargs: response)
     card = getattr(module, function_name)(query)
     assert card["error"] is True
     assert not chat._tool_billable(function_name, card)

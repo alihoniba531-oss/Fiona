@@ -1770,6 +1770,8 @@ export default function ChatPage() {
                   msg += " 下面的卡片有详情——接下来几天的都帮你看了。";
                   return msg;
                 })()
+              : card.error
+              ? card.points[0] || "这次没查到可靠的结果"
               : "搜到了，详情在下面的卡片里";
             // 卡片回复替换流式文本 — 清掉旧队列；TTS 不自动播，挂 pendingTtsText 等用户点"帮我读"
             clearTtsQueue();

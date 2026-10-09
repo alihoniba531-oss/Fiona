@@ -25,6 +25,25 @@ function isTauri(): boolean {
 // 否则 window.open("javascript:...") 会在本应用 origin 内执行脚本（XSS / 窃取 token）。
 // 相对/协议无关 URL（"/x"、"//host"）按当前页 origin 解析后再判 protocol。
 const SAFE_PROTOCOLS = new Set(["http:", "https:"]);
+
+/** 仅接受绝对 HTTP(S) URL，供来源链接展示前校验。 */
+export function toSafeExternalUrl(url: unknown): string | null {
+  if (typeof url !== "string") return null;
+  try {
+    const parsed = new URL(url);
+    const safe = (
+      SAFE_PROTOCOLS.has(parsed.protocol.toLowerCase()) &&
+      !!parsed.hostname &&
+      !parsed.username &&
+      !parsed.password &&
+      parsed.href.length <= 2048
+    );
+    return safe ? parsed.href : null;
+  } catch {
+    return null;
+  }
+}
+
 function normalizeSafeUrl(url: string): string | null {
   try {
     const base = typeof window !== "undefined" ? window.location.href : undefined;
