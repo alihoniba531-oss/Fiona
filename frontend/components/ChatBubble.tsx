@@ -49,24 +49,38 @@ function useTypewriter(target: string, enabled: boolean, cps = 45) {
 }
 
 export interface WeatherForecastDay {
-  day: string;        // "周三"
-  date: string;       // "2026-05-16"
-  high: string;       // "26"
-  low: string;        // "17"
-  condition: string;  // "晴"
-  icon: string;       // weather icon URL
+  date: string;
+  day: string;
+  dayWeather: string;
+  nightWeather: string;
+  high: string;
+  low: string;
+  dayWind: string;
+  nightWind: string;
 }
 
 export interface WeatherData {
   location: string;
-  currentTemp: string;
-  feelsLike: string;
-  condition: string;
-  conditionIcon: string;
-  humidity: string;
-  windSpeed: string;
-  visibility: string;
   forecast: WeatherForecastDay[];
+}
+
+function weatherDayLabel(forecast: WeatherForecastDay, now = new Date()) {
+  const beijingTime = now.getTime() + 8 * 60 * 60 * 1000;
+  const today = new Date(beijingTime).toISOString().slice(0, 10);
+  const tomorrow = new Date(beijingTime + 24 * 60 * 60 * 1000).toISOString().slice(0, 10);
+  return forecast.date === today ? "今天" : forecast.date === tomorrow ? "明天" : forecast.day;
+}
+
+function weatherCondition(forecast: WeatherForecastDay) {
+  return forecast.dayWeather === forecast.nightWeather
+    ? forecast.dayWeather
+    : [forecast.dayWeather, forecast.nightWeather].filter(Boolean).join("转");
+}
+
+function weatherTemperature(forecast: WeatherForecastDay) {
+  return forecast.low.trim() && forecast.high.trim()
+    && Number.isFinite(Number(forecast.low)) && Number.isFinite(Number(forecast.high))
+    ? `${forecast.low}°~${forecast.high}°` : "";
 }
 
 export interface CardData {
@@ -215,8 +229,10 @@ function ChatBubble({ message, agentName = "Chloe", onDelete, onConfirmTts, onDe
         )}
 
         {/* 天气卡片（weather subtype） */}
-        {message.cardData?.subtype === "weather" && message.cardData.weather && (() => {
+        {message.cardData?.subtype === "weather" && message.cardData.weather && message.cardData.weather.forecast.length > 0 && (() => {
           const w = message.cardData.weather;
+          const first = w.forecast[0];
+          const temperature = weatherTemperature(first);
           return (
             <div className="ceramic-card w-[320px] max-w-full overflow-hidden">
               <div className="flex items-center justify-between border-b px-3.5 py-2 text-xs" style={{ borderColor: "var(--carve)" }}>
@@ -224,20 +240,22 @@ function ChatBubble({ message, agentName = "Chloe", onDelete, onConfirmTts, onDe
                 <span className="text-muted-foreground">{w.location}</span>
               </div>
               <div className="flex items-center gap-3.5 px-3.5 py-3">
-                <span className="readout" style={{ fontSize: 32, color: "var(--ink)" }}>{w.currentTemp}°</span>
+                {temperature && <span className="readout" style={{ fontSize: 32, color: "var(--ink)" }}>{temperature}</span>}
                 <div>
-                  <div>{w.condition}</div>
-                  <div className="text-xs text-muted-foreground">体感 <span className="readout">{w.feelsLike}°</span>　湿度 <span className="readout">{w.humidity}%</span></div>
+                  <div className="text-xs text-muted-foreground">{weatherDayLabel(first)}</div>
+                  <div>{weatherCondition(first)}</div>
+                  {first.dayWind && <div className="text-xs text-muted-foreground">{first.dayWind}</div>}
                 </div>
               </div>
-              <div className="grid grid-cols-3 border-t" style={{ borderColor: "var(--carve)" }}>
-                {w.forecast.slice(0, 3).map((f, i) => (
+              {w.forecast.length > 1 && <div className="grid grid-cols-3 border-t" style={{ borderColor: "var(--carve)" }}>
+                {w.forecast.slice(1, 4).map((f, i) => (
                   <div key={i} className="flex flex-col gap-0.5 px-3.5 py-2 text-xs text-muted-foreground" style={{ borderLeft: i > 0 ? "1px solid var(--carve)" : undefined }}>
-                    <span>{f.day}</span>
-                    <span className="readout" style={{ color: "var(--ink)" }}>{f.low}° {f.high}°</span>
+                    <span>{weatherDayLabel(f)}</span>
+                    <span>{weatherCondition(f)}</span>
+                    {weatherTemperature(f) && <span className="readout" style={{ color: "var(--ink)" }}>{weatherTemperature(f)}</span>}
                   </div>
                 ))}
-              </div>
+              </div>}
             </div>
           );
         })()}

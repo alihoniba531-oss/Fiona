@@ -32,6 +32,7 @@ from llm import QWEN_CLIENT, _create_stream_with_fallback, client
 from mode_switcher import apply_mode_prompt, detect_mode, get_user_mode
 from model_router import choose_model, token_budget
 from persona import BASE_SAFETY_RULES, build_system_prompt
+from rate_limit import check_chat_daily_cap
 from safety import CRISIS_GUIDANCE, CRISIS_RESOURCE_NOTE, assess_crisis, is_informational_crisis_context
 from tools.fetch_card import fetch_card as _fetch_card_impl
 from tools.hot_topics import hot_topics
@@ -44,8 +45,10 @@ from tools.travel_plan import build_playback
 from tools.travel_plan import travel_plan as travel_plan_query
 from tools.web_search import web_search
 from tools.wechat_send import send_wechat_message, start_wechat_video_call, start_wechat_voice_call
+from tools.weather import weather as weather_query
 from trace import log_event, trace_span
 from utils.background_tasks import create_background_task
+from utils.city_name import normalize_city
 from utils.media import _save_uploaded_image, delete_uploaded_files
 from utils.reference_images import prepare_reference_upload
 from utils.slow_pool import run_slow
@@ -59,7 +62,7 @@ _IMAGE_HEARTBEAT_SECONDS = 10
 # 视觉分支拼进 VL 请求的历史条数上限（T2a）。
 _VL_HISTORY_TURNS = 10
 _BILLABLE_TOOLS = frozenset({
-    "web_search", "hot_topics", "route", "travel_plan", "fetch_card", "get_datetime",
+    "web_search", "hot_topics", "route", "travel_plan", "fetch_card", "get_datetime", "weather",
 })
 
 
@@ -156,20 +159,29 @@ def _summarize_card_for_history(card: dict) -> str:
     """卡片回复落库时的可读摘要 —— 防止刷新后只剩 [城市名] 占位符。"""
     subtype = card.get("subtype")
     if subtype == "weather":
-        w = card.get("weather") or {}
-        loc = w.get("location") or card.get("source", "")
-        cur = w.get("currentTemp", "?")
-        cond = w.get("condition", "")
-        fl = w.get("feelsLike", "?")
-        head = f"{loc}现在{cur}° {cond}，体感{fl}°。"
-        fc = w.get("forecast") or []
-        parts = [
-            f"{f.get('day','')} {f.get('condition','')} {f.get('low','?')}~{f.get('high','?')}°"
-            for f in fc[:3]
-        ]
-        if parts:
-            head += " 接下来：" + "；".join(parts) + "。"
-        return head
+        w = card.get("weather")
+        w = w if isinstance(w, dict) else {}
+        loc = w.get("location") or card.get("source") or "天气"
+        head = f"[天气 · {loc}]"
+        fc = w.get("forecast")
+        fc = fc if isinstance(fc, list) else []
+        parts = []
+        for forecast in fc[:4]:
+            if not isinstance(forecast, dict):
+                continue
+            day = forecast.get("day") or ""
+            daytime = forecast.get("dayWeather") or forecast.get("condition") or ""
+            nighttime = forecast.get("nightWeather") or ""
+            condition = f"{daytime}转{nighttime}" if daytime and nighttime and daytime != nighttime else daytime or nighttime
+            low, high = forecast.get("low"), forecast.get("high")
+            temperature = f"{low}~{high}°" if low not in (None, "", "?") and high not in (None, "", "?") else ""
+            line = " ".join(str(value) for value in (day, condition, temperature) if value)
+            if line:
+                parts.append(f"• {line}")
+        if not parts and w.get("currentTemp") not in (None, "", "?"):
+            condition = w.get("condition") or ""
+            parts.append(f"• {condition} {w.get('currentTemp')}°".strip())
+        return head + ("\n" + "\n".join(parts) if parts else "")
     # 通用网页卡 / 搜索结果：source + bullets
     src = card.get("source", "网页")
     points = card.get("points") or []
@@ -235,6 +247,8 @@ def execute_intent(intent: str, params: dict):
         return hot_topics(params.get("source", ""))
     if intent == "route":
         return route_query(params.get("origin", ""), params.get("destination", ""))
+    if intent == "weather":
+        return weather_query(params.get("city", ""))
     if intent == "travel_plan":
         return travel_plan_query(params.get("query", ""))
     if intent == "set_reminder":
@@ -829,6 +843,14 @@ async def stream_pending(ctx: ChatContext, state: ChatState, pending: dict):
             async for event in stream_generated_image(ctx, state, ctx.message.strip()):
                 yield event
             return
+        if filled["intent"] == "weather" and normalize_city(filled["params"].get("city")):
+            message = check_chat_daily_cap("weather", ctx.user, hit=True)
+            if message:
+                state.trace["error"] = "DailyCapExceeded"
+                if _needs_crisis_resource(state):
+                    yield _crisis_resource_event(state)
+                yield _sse({"error": message})
+                return
         state.trace["intent"] = filled["intent"]
         state.trace["tool"] = filled["intent"]
         async with trace_span(ctx.user, "tool_call", filled["intent"], payload={"via": "pending_fill"}):
@@ -853,6 +875,15 @@ async def stream_pending(ctx: ChatContext, state: ChatState, pending: dict):
         yield _sse({"done": True})
     else:
         # 还缺参数，继续追问
+        if filled["intent"] == "weather":
+            message = check_chat_daily_cap("weather", ctx.user, hit=False)
+            if message:
+                await asyncio.to_thread(clear_pending, ctx.state_key)
+                state.trace["error"] = "DailyCapExceeded"
+                if _needs_crisis_resource(state):
+                    yield _crisis_resource_event(state)
+                yield _sse({"error": message})
+                return
         await asyncio.to_thread(set_pending, ctx.state_key, filled)
         question = ask_missing(filled["missing"][0])
         state.full_response = question
@@ -923,6 +954,14 @@ async def stream_intent(ctx: ChatContext, state: ChatState, intent_result: dict)
         return
     if not intent_result["missing"]:
         # 意图明确，参数完整，直接执行
+        if intent_result["intent"] == "weather" and normalize_city(intent_result["params"].get("city")):
+            message = check_chat_daily_cap("weather", ctx.user, hit=True)
+            if message:
+                state.trace["error"] = "DailyCapExceeded"
+                if _needs_crisis_resource(state):
+                    yield _crisis_resource_event(state)
+                yield _sse({"error": message})
+                return
         state.trace["tool"] = intent_result["intent"]
         async with trace_span(ctx.user, "tool_call", intent_result["intent"], payload={"via": "direct"}):
             await _ensure_active_conversation(ctx)
@@ -943,6 +982,14 @@ async def stream_intent(ctx: ChatContext, state: ChatState, intent_result: dict)
         tool_billable = _tool_billable(intent_result["intent"], result)
     else:
         # 意图明确，但缺参数，存 pending 并追问
+        if intent_result["intent"] == "weather":
+            message = check_chat_daily_cap("weather", ctx.user, hit=False)
+            if message:
+                state.trace["error"] = "DailyCapExceeded"
+                if _needs_crisis_resource(state):
+                    yield _crisis_resource_event(state)
+                yield _sse({"error": message})
+                return
         await asyncio.to_thread(set_pending, ctx.state_key, intent_result)
         question = ask_missing(intent_result["missing"][0])
         state.full_response = question
@@ -1197,6 +1244,18 @@ async def run_chat(
 
         # ── 1. 检查是否有等待补全参数的 pending intent ──
         pending = await asyncio.to_thread(get_pending, ctx.state_key)
+        if pending and pending.get("intent") == "weather":
+            if re.match(r"^(?:算了|取消|不用了|不查了|不要了|没事了)[吧了。！!\s]*$", ctx.message.strip()):
+                await asyncio.to_thread(clear_pending, ctx.state_key)
+                state.full_response = "好，已取消。"
+                yield _sse({"text": state.full_response})
+                async for event in _save_text_reply(ctx, state):
+                    yield event
+                yield _sse({"done": True})
+                return
+            if state.crisis_level in {"high", "possible"} or not normalize_city(ctx.message):
+                await asyncio.to_thread(clear_pending, ctx.state_key)
+                pending = None
         if pending and not (image_candidate_rejected and pending.get("intent") == "generate_image"):
             async for s in stream_pending(ctx, state, pending):
                 yield s

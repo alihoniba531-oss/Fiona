@@ -7,7 +7,6 @@ v0.3: 用通义千问 enable_search 替代 Playwright + VL 截图方案。
 都是验证码/挑战页，VL 看完只能说"没搜到"。千问 enable_search 走的是阿里云
 内部的搜索通道，IP 干净、命中率高，还自带要点提炼。
 
-天气走专门的 wttr.in 直通车（保留 visual_search 里的实现）。
 """
 import re
 from tools import native_search
@@ -57,13 +56,6 @@ def web_search(query: str) -> dict:
     if not query or not query.strip():
         return {"type": "card", "source": "搜索", "points": ["没说要搜啥"], "error": True}
     query = query.strip()
-
-    # 天气仍走 wttr.in（更准、更快、有结构化字段供前端渲染天气卡）
-    if "天气" in query:
-        from tools.visual_search import _search_weather_direct
-        card = _search_weather_direct(query)
-        if card:
-            return card
 
     result = native_search.grounded_search([
         {"role": "system", "content": _SEARCH_PROMPT + _today_directive()},

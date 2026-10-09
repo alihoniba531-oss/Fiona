@@ -65,6 +65,7 @@ _DAILY_SETTINGS = {
     "hot_expand": ("FIONA_DAILY_HOT_EXPANDS", 30),
     "card_detail": ("FIONA_DAILY_CARD_DETAILS", 30),
     "asr": ("FIONA_DAILY_ASR", 300),
+    "weather": ("FIONA_DAILY_WEATHER", 30),
 }
 _INVALID_DAILY_WARNED: set[str] = set()
 
@@ -90,20 +91,24 @@ def daily_cap(kind: str) -> int:
     return default
 
 
-def daily_cap_response(kind: str, amount: int | None = None) -> JSONResponse:
+def daily_cap_message(kind: str, amount: int | None = None) -> str:
     messages = {
         "hot_expand": "今天的热点展开次数已用完，明天再来吧。",
         "card_detail": "今天的详情查看次数已用完，明天再来吧。",
         "asr": "今天的语音识别次数已用完，明天再来吧，可以先打字。",
+        "weather": "今天查天气的次数已用完，明天再试",
     }
+    if kind == "official_exchange":
+        amount = daily_cap(kind) if amount is None else amount
+        return f"今天的官方体验次数已用完（每天 {amount} 次），明天再来吧。"
+    return messages[kind]
+
+
+def daily_cap_response(kind: str, amount: int | None = None) -> JSONResponse:
     now = datetime.now(timezone(timedelta(hours=8)))
     midnight = (now + timedelta(days=1)).replace(hour=0, minute=0, second=0, microsecond=0)
     retry_after = max(1, math.ceil((midnight - now).total_seconds()))
-    if kind == "official_exchange":
-        amount = daily_cap(kind) if amount is None else amount
-        message = f"今天的官方体验次数已用完（每天 {amount} 次），明天再来吧。"
-    else:
-        message = messages[kind]
+    message = daily_cap_message(kind, amount)
     return JSONResponse(
         status_code=429,
         headers={"Retry-After": str(retry_after)},
@@ -126,6 +131,19 @@ def check_daily_cap(kind: str, user: str) -> JSONResponse | None:
     if check_and_hit([(item, identifiers, 1)]) is not None:
         return daily_cap_response(kind, amount)
     return None
+
+
+def check_chat_daily_cap(kind: str, user: str, *, hit: bool) -> str | None:
+    """Synchronously inspect or consume the account's current Beijing-day cap."""
+    if not daily_caps_enabled():
+        return None
+    item = _DailyLimitItem(daily_cap(kind))
+    identifiers = ("daily", kind, user, database._today_shanghai())
+    if hit:
+        exceeded = check_and_hit([(item, identifiers, 1)]) is not None
+    else:
+        exceeded = not limiter.limiter.test(item, *identifiers, cost=1)
+    return daily_cap_message(kind) if exceeded else None
 
 
 def check_and_hit(

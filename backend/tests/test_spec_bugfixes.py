@@ -222,36 +222,6 @@ def test_latest_match_decision_wins(tmp_path, monkeypatch):
     assert asyncio.run(scenario()) == []
 
 
-def test_weather_weekday_uses_monday_first(monkeypatch):
-    import requests
-    from tools.visual_search import _search_weather_direct
-
-    payload = {
-        "current_condition": [{
-            "weatherDesc": [{"value": "晴"}],
-            "temp_C": "28",
-            "FeelsLikeC": "29",
-        }],
-        "weather": [{
-            "date": "2026-07-20",
-            "maxtempC": "30",
-            "mintempC": "22",
-            "hourly": [{}, {}, {}, {}, {"weatherDesc": [{"value": "晴"}]}],
-        }],
-    }
-
-    class _Response:
-        def raise_for_status(self):
-            return None
-
-        def json(self):
-            return payload
-
-    monkeypatch.setattr(requests, "get", lambda *args, **kwargs: _Response())
-    card = _search_weather_direct("宁波天气")
-    assert card["weather"]["forecast"][0]["day"] == "周一"
-
-
 def test_peer_manager_keeps_each_socket_independent():
     from routers.peer import ConnectionManager
 

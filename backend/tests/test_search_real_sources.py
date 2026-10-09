@@ -265,24 +265,17 @@ def test_surrounding_prose_is_tolerated_and_raw_is_preserved(monkeypatch):
     assert card["error"] is False
 
 
-def test_weather_dispatch_happens_before_native_search(monkeypatch):
-    from tools import visual_search
+def test_weather_query_uses_native_search_and_legacy_module_is_removed(monkeypatch):
+    import importlib.util
 
-    weather_card = {"type": "card", "subtype": "weather", "source": "宁波", "points": ["晴"]}
-    weather_calls = []
-
-    def weather(query):
-        weather_calls.append(query)
-        return weather_card
-
-    monkeypatch.setattr(visual_search, "_search_weather_direct", weather)
     calls = _stub(monkeypatch, _payload())
 
     card = web_search.web_search("  宁波天气  ")
 
-    assert card is weather_card
-    assert weather_calls == ["宁波天气"]
-    assert calls == []
+    assert card["error"] is False
+    assert len(calls) == 1
+    assert calls[0][0][-1]["content"] == "搜索：宁波天气"
+    assert importlib.util.find_spec("tools.visual_search") is None
 
 
 def test_grounded_search_copies_provider_sources(monkeypatch):

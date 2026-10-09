@@ -269,20 +269,10 @@ function groupByDate(msgs: Message[]) {
 }
 
 // ── weather helpers ──
-const WEATHER_CN: Record<string, string> = {
-  "sunny": "晴", "clear": "晴", "partly cloudy": "多云", "cloudy": "阴",
-  "overcast": "阴", "mist": "薄雾", "fog": "雾", "haze": "霾",
-  "rain": "雨", "light rain": "小雨", "moderate rain": "中雨", "heavy rain": "大雨",
-  "drizzle": "毛毛雨", "shower": "阵雨", "thunder": "雷", "storm": "暴风雨",
-  "snow": "雪", "light snow": "小雪", "heavy snow": "大雪", "hail": "冰雹",
-  "sleet": "雨夹雪", "ice": "冻雨",
-};
-function weatherCN(cond: string) {
-  const c = (cond || "").toLowerCase();
-  for (const [en, zh] of Object.entries(WEATHER_CN)) {
-    if (c.includes(en)) return zh;
-  }
-  return cond || "?";
+function weatherForecastCondition(forecast: WeatherForecastDay) {
+  return forecast.dayWeather === forecast.nightWeather
+    ? forecast.dayWeather
+    : [forecast.dayWeather, forecast.nightWeather].filter(Boolean).join("转");
 }
 
 // ── main page ──
@@ -1739,35 +1729,22 @@ export default function ChatPage() {
             // 旅行规划卡：后端紧跟着会发完整口播 text，气泡不用 "搜到了" 占位覆盖
             const tip = card.subtype === "travel_plan"
               ? ""
-              : card.subtype === "weather" && card.weather
+              : card.subtype === "weather" && card.weather && card.weather.forecast.length > 0
               ? (() => {
                   const w = card.weather;
-                  const c = (w.condition || "").toLowerCase();
-                  const t = parseInt(w.currentTemp) || 20;
-                  const fl = parseInt(w.feelsLike) || t;
-                  const loc = card.source || "这里";
-                  let msg = `${loc}现在${t}° ${weatherCN(w.condition)}，体感${fl}°。`;
-                  // 未来三天概要
-                  const fc = w.forecast || [];
-                  if (fc.length >= 2) {
-                    const parts = fc.slice(0, 3).map((f: WeatherForecastDay) => `${f.day} ${weatherCN(f.condition)} ${f.low}~${f.high}°`);
-                    msg += `接下来：${parts.join("；")}。`;
-                    // 预警未来三天内的坏天气
-                    const hasRain = fc.slice(0, 3).some((f: WeatherForecastDay) => {
-                      const fc = (f.condition || "").toLowerCase();
-                      return fc.includes("rain") || fc.includes("drizzle") || fc.includes("shower") || fc.includes("thunder");
-                    });
-                    if (hasRain) msg += "有雨天，记得带伞。";
+                  const today = w.forecast[0];
+                  const tomorrow = w.forecast[1];
+                  let msg = `${w.location}今天${weatherForecastCondition(today)}`;
+                  if (today.low.trim() && today.high.trim()
+                    && Number.isFinite(Number(today.low)) && Number.isFinite(Number(today.high))) {
+                    msg += `，${today.low}~${today.high}°`;
                   }
-                  // 今日建议
-                  if (c.includes("rain") || c.includes("drizzle") || c.includes("shower")) msg += "现在出门带把伞。";
-                  else if (t > 32) msg += "热得够呛，注意防暑喝水。";
-                  else if (t > 28) msg += "穿凉快点。";
-                  else if (t < 10) msg += "挺冷的，穿厚点别着凉。";
-                  else if (t < 18) msg += "微凉，带件薄外套。";
-                  else if (fl < t - 3) msg += "风大比看上去冷，多穿一层。";
-                  else if (fl > t + 3) msg += "闷闷的，穿透气些。";
-                  msg += " 下面的卡片有详情——接下来几天的都帮你看了。";
+                  msg += "。";
+                  if (tomorrow) msg += `明天${weatherForecastCondition(tomorrow)}。`;
+                  const conditions = w.forecast.slice(0, 2).flatMap(f => [f.dayWeather, f.nightWeather]);
+                  if (conditions.some(condition => condition.includes("雨"))) msg += "记得带伞。";
+                  if (conditions.some(condition => condition.includes("雪"))) msg += "注意保暖、路滑。";
+                  if (conditions.some(condition => condition.includes("雷"))) msg += "雷雨天尽量待在室内。";
                   return msg;
                 })()
               : card.error

@@ -9,6 +9,7 @@ from datetime import datetime, timedelta, timezone
 
 import database
 from llm import MAIN_EXTRA_BODY, MAIN_MODEL
+from utils.city_name import normalize_city
 
 # pending intent 落库 chat_slot_state（不再是进程内裸 dict）：跨进程/重启都还在，
 # 且按 PENDING_TTL_SECONDS 到期失效——几天前没答完的追问不该劫持今天的第一句话。
@@ -29,6 +30,7 @@ INTENT_PROMPT = """你是意图识别器，只输出JSON，不输出任何其他
   get_datetime    查询时间日期     params: (无)
   fetch_card      读取网页内容做成卡片(默认在Chloe里呈现) params: query(网址 URL,如 https://...)
   generate_image  生成一张新图片   params: prompt(画面描述), aspect_ratio(可选: 1:1/16:9/9:16)
+  weather         查天气（今天/明天/未来几天，下雨、冷热、穿衣） params: city(城市名，只填用户明确说出的城市)
 
 【核心原则 - 严格遵守】
 1. 只有用户**当前消息明确要你执行一个新动作**时，才返回意图。
@@ -36,10 +38,21 @@ INTENT_PROMPT = """你是意图识别器，只输出JSON，不输出任何其他
 3. 用户**问问题、聊天、求分析、表达情绪**时，返回 intent=null。
 4. 如果上下文显示你刚才已经做了某事，用户现在的消息提到同一个动作词（"打开"/"搜"/"发"等），**强烈倾向**是评价/抱怨而非新指令，返回 null。
 
+【天气例外】
+问天气的问句（会不会下雨、冷不冷、要不要带伞、穿什么）属于查询请求，返回 weather，这是原则 3 的例外。
+城市只能来自用户本轮或最近对话里明确说出的城市；没说城市时 missing=[city]，不得猜测、使用默认城市或用户画像里的城市。
+"明天会下雨吗" → weather, missing=[city]
+"杭州明天冷不冷" → weather, city=杭州
+"要带伞吗" → weather, missing=[city]
+"那上海呢"（上一轮刚查过天气） → weather, city=上海
+"最近天气不好心情差" → null
+"天气预报 API 哪个好" → web_search, query=天气预报 API
+"今天天气真好" → null
+
 口语识别示例（理解意图用，不要照搬）：
-"帮我查一下今天天气" → web_search, query=今天天气
+"帮我查一下今天天气" → weather, missing=[city]
 "搜搜最近有什么好电影" → web_search, query=最近好电影
-"帮我看下明天的天气" → web_search, query=明天天气
+"帮我看下明天的天气" → weather, missing=[city]
 "帮我查下比特币最新价格" → web_search, query=比特币价格
 "搜一下怎么学Python" → web_search, query=怎么学Python
 "查一下五月天演唱会" / "查查油价" → web_search, query=五月天演唱会 / 油价
@@ -111,7 +124,7 @@ INTENT_PROMPT = """你是意图识别器，只输出JSON，不输出任何其他
 缺少参数时，把已提取的放params，缺的放missing数组（按执行顺序排）。
 
 严格输出格式（只有JSON，不加任何说明）：
-参数完整：{"intent": "web_search", "params": {"query": "今天天气"}, "missing": []}
+参数完整：{"intent": "web_search", "params": {"query": "比特币最新价格"}, "missing": []}
 缺少参数：{"intent": "route", "params": {"destination": "机场"}, "missing": ["origin"]}
 普通对话：{"intent": null}
 """
@@ -122,6 +135,7 @@ MISSING_QUESTIONS = {
     "origin":      "从哪儿出发？",
     "destination": "去哪儿？",
     "prompt":      "想生成什么画面？可以告诉我主体、场景和风格。",
+    "city":        "哪个城市？",
 }
 
 
@@ -349,12 +363,47 @@ def fill_param(pending: dict, message: str) -> dict:
             elif "一小时" in message or "1小时" in message:
                 nums = ["60"]
         value = int(nums[0]) if nums else 5
+    elif key == "city":
+        value = normalize_city(message)
     else:
         value = message.strip()
 
     pending["params"][key] = value
     pending["missing"] = pending["missing"][1:]
     return pending
+
+
+def normalize_intent_result(raw) -> dict:
+    """Normalize model output without changing other dispatcher or slot inputs."""
+    allowed_params = {
+        "web_search": {"query"},
+        "hot_topics": {"source"},
+        "route": {"origin", "destination"},
+        "travel_plan": {"query"},
+        "get_datetime": set(),
+        "fetch_card": {"query"},
+        "generate_image": {"prompt", "aspect_ratio"},
+        "weather": {"city"},
+    }
+    if not isinstance(raw, dict):
+        return {"intent": None}
+    intent = raw.get("intent")
+    if not isinstance(intent, str) or intent not in allowed_params:
+        return {"intent": None}
+    allowed = allowed_params[intent]
+    params = raw.get("params")
+    params = {key: value for key, value in params.items() if key in allowed} if isinstance(params, dict) else {}
+    missing = raw.get("missing")
+    missing = list(dict.fromkeys(key for key in missing if isinstance(key, str) and key in allowed)) if isinstance(missing, list) else []
+    if intent == "weather":
+        city = normalize_city(params.get("city"))
+        if city:
+            params["city"] = city
+            missing = [key for key in missing if key != "city"]
+        else:
+            params.pop("city", None)
+            missing = ["city"]
+    return {"intent": intent, "params": params, "missing": missing}
 
 
 def recognize_intent(client, message: str, history: list[dict] | None = None) -> dict:
@@ -387,13 +436,6 @@ def recognize_intent(client, message: str, history: list[dict] | None = None) ->
             max_tokens=150,
             temperature=0.1,
         )
-        result = json.loads(resp.choices[0].message.content)
-        if result.get("intent") is None:
-            return {"intent": None}
-        return {
-            "intent": result["intent"],
-            "params": result.get("params", {}),
-            "missing": result.get("missing", []),
-        }
+        return normalize_intent_result(json.loads(resp.choices[0].message.content))
     except Exception:
         return {"intent": None}
