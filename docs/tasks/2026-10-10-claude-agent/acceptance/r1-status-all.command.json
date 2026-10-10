@@ -1,0 +1,1 @@
+{"command": ["git", "status", "--porcelain", "--untracked-files=all"], "cwd": ".", "offline_guard": true}

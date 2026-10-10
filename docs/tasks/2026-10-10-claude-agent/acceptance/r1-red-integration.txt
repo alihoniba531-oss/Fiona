@@ -1,0 +1,63 @@
+FFFFFFFFFF                                                               [100%]
+=================================== FAILURES ===================================
+E   AssertionError: assert 0 == 1
+     +  where 0 = len([])
+     +    where [] = namespace(chat=<module 'services.chat_service' from './backend/services/chat_...private<pytest-temp>')).refunds
+----------------------------- Captured stdout call -----------------------------
+[byok] reply failed category=other
+./backend/tests/test_claude_agent_r1_integration.py:35: AssertionError: assert 0 == 1
+E   AssertionError: assert 0 == 1
+     +  where 0 = len([])
+     +    where [] = namespace(chat=<module 'services.chat_service' from './backend/services/chat_...private<pytest-temp>')).refunds
+----------------------------- Captured stdout call -----------------------------
+[chat] clear_user_mode failed type=OperationalError
+./backend/tests/test_claude_agent_r1_integration.py:35: AssertionError: assert 0 == 1
+E   AssertionError: assert (0 == 1)
+     +  where 0 = len([])
+     +    where [] = namespace(chat=<module 'services.chat_service' from './backend/services/chat_...private<pytest-temp>')).refunds
+./backend/tests/test_claude_agent_r1_integration.py:52: AssertionError: assert (0 == 1)
+E   AssertionError: assert (0 == 1)
+     +  where 0 = len([])
+     +    where [] = namespace(chat=<module 'services.chat_service' from './backend/services/chat_...private<pytest-temp>')).refunds
+----------------------------- Captured stdout call -----------------------------
+[byok] reply failed category=other
+./backend/tests/test_claude_agent_r1_integration.py:73: AssertionError: assert (0 == 1)
+E   AssertionError: assert (not True)
+     +  where True = ChatState(trace={'intent': 'generate_image', 'tool': 'generate_image', 'image_source': 'tool', 'image_model': 'seedrea... sys_prompt_final='', response_saved=False, billable=True, crisis=False, crisis_level=None, crisis_resource_sent=False).billable
+./backend/tests/test_claude_agent_r1_integration.py:92: AssertionError: assert (not True)
+E   AssertionError: assert [{'error': '你...本条没有改用平台模型。'}] == [{'error': '服务暂时不可用，请稍后再试'}]
+      
+      At index 0 diff: {'error': '你的模型调用失败：调用失败。本条没有改用平台模型。'} != {'error': '服务暂时不可用，请稍后再试'}
+      Use -v to get more diff
+./backend/tests/test_claude_agent_r1_integration.py:106: AssertionError: assert [{'error': '你...本条没有改用平台模型。'}] == [{'error': '服务暂时不可用，请稍后再试'}]
+E   AssertionError: assert [{'error': '你...本条没有改用平台模型。'}] == [{'error': '服务暂时不可用，请稍后再试'}]
+      
+      At index 0 diff: {'error': '你的模型调用失败：连不上该服务。本条没有改用平台模型。'} != {'error': '服务暂时不可用，请稍后再试'}
+      Use -v to get more diff
+----------------------------- Captured stdout call -----------------------------
+[byok] reply failed category=connection
+./backend/tests/test_claude_agent_r1_integration.py:106: AssertionError: assert [{'error': '你...本条没有改用平台模型。'}] == [{'error': '服务暂时不可用，请稍后再试'}]
+E   AssertionError: assert [{'error': '你...本条没有改用平台模型。'}] == [{'error': '服务暂时不可用，请稍后再试'}]
+      
+      At index 0 diff: {'error': '你的模型调用失败：调用失败。本条没有改用平台模型。'} != {'error': '服务暂时不可用，请稍后再试'}
+      Use -v to get more diff
+./backend/tests/test_claude_agent_r1_integration.py:106: AssertionError: assert [{'error': '你...本条没有改用平台模型。'}] == [{'error': '服务暂时不可用，请稍后再试'}]
+E   AssertionError: assert [{'error': '你...本条没有改用平台模型。'}] == [{'error': '服务暂时不可用，请稍后再试'}]
+      
+      At index 0 diff: {'error': '你的模型调用失败：调用失败。本条没有改用平台模型。'} != {'error': '服务暂时不可用，请稍后再试'}
+      Use -v to get more diff
+./backend/tests/test_claude_agent_r1_integration.py:106: AssertionError: assert [{'error': '你...本条没有改用平台模型。'}] == [{'error': '服务暂时不可用，请稍后再试'}]
+E   AssertionError: assert {'status': 'image_failed', 'source': 'tool'} in [{'reply_model': {'source': 'byok', 'label': 'Claude · claude-haiku-5-5'}}, {'text': '我来画。'}, {'status': 'generating_image', 'message': '正在用 Seedream 5.0 Flash 生成图片…', 'source': 'tool'}, {'text': '这次没画成功，可以再试。'}, {'done': True}]
+./backend/tests/test_claude_agent_r1_integration.py:125: AssertionError: assert {'status': 'image_failed', 'source': 'tool'} in [{'reply_model': {'source': 'byok', 'label': 'Claude · claude-haiku-5-5'}}, {'text': '我来画。'}, {'status': 'generating_image', 'message': '正在用 Seedream 5.0 Flash 生成图片…', 'source': 'tool'}, {'text': '这次没画成功，可以再试。'}, {'done': True}]
+=========================== short test summary info ============================
+FAILED tests/test_claude_agent_r1_integration.py::test_card_save_failure_refunds_and_uses_platform_error[False]
+FAILED tests/test_claude_agent_r1_integration.py::test_card_save_failure_refunds_and_uses_platform_error[True]
+FAILED tests/test_claude_agent_r1_integration.py::test_client_disconnect_after_card_refunds_without_save
+FAILED tests/test_claude_agent_r1_integration.py::test_image_save_failure_refunds_and_deletes_attachment
+FAILED tests/test_claude_agent_r1_integration.py::test_agent_adapter_success_defers_billing
+FAILED tests/test_claude_agent_r1_integration.py::test_pre_request_platform_failures_use_generic_error[get_pending]
+FAILED tests/test_claude_agent_r1_integration.py::test_pre_request_platform_failures_use_generic_error[clear_pending]
+FAILED tests/test_claude_agent_r1_integration.py::test_pre_request_platform_failures_use_generic_error[detect_mode]
+FAILED tests/test_claude_agent_r1_integration.py::test_pre_request_platform_failures_use_generic_error[_ensure_active_conversation]
+FAILED tests/test_claude_agent_r1_integration.py::test_failed_image_is_feedback_and_followups_still_run
+10 failed in 1.40s

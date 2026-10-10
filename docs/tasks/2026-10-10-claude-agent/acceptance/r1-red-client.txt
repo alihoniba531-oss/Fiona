@@ -1,0 +1,100 @@
+FFFFFFFFF...................FFF                                          [100%]
+=================================== FAILURES ===================================
+E   AssertionError: assert {'name': 'get...eaming': True} == {'name': 'get...d': ['city']}}
+      
+      Omitting 3 identical items, use -vv to show
+      Left contains 1 more item:
+      {'eager_input_streaming': True}
+      Use -v to get more diff
+./backend/tests/test_claude_agent_client.py:157: AssertionError: assert {'name': 'get...eaming': True} == {'name': 'get...d': ['city']}}
+E   AssertionError: assert {'name': 'get...eaming': True} == {'name': 'get...d': ['city']}}
+      
+      Omitting 3 identical items, use -vv to show
+      Left contains 1 more item:
+      {'eager_input_streaming': True}
+      Use -v to get more diff
+./backend/tests/test_claude_agent_client.py:157: AssertionError: assert {'name': 'get...eaming': True} == {'name': 'get...d': ['city']}}
+E   AssertionError: assert {'name': 'get...eaming': True} == {'name': 'get...d': ['city']}}
+      
+      Omitting 3 identical items, use -vv to show
+      Left contains 1 more item:
+      {'eager_input_streaming': True}
+      Use -v to get more diff
+./backend/tests/test_claude_agent_client.py:157: AssertionError: assert {'name': 'get...eaming': True} == {'name': 'get...d': ['city']}}
+E   AssertionError: assert {'name': 'get...eaming': True} == {'name': 'get...d': ['city']}}
+      
+      Omitting 3 identical items, use -vv to show
+      Left contains 1 more item:
+      {'eager_input_streaming': True}
+      Use -v to get more diff
+./backend/tests/test_claude_agent_client.py:157: AssertionError: assert {'name': 'get...eaming': True} == {'name': 'get...d': ['city']}}
+E   AssertionError: assert {'name': 'get...eaming': True} == {'name': 'get...d': ['city']}}
+      
+      Omitting 3 identical items, use -vv to show
+      Left contains 1 more item:
+      {'eager_input_streaming': True}
+      Use -v to get more diff
+./backend/tests/test_claude_agent_client.py:157: AssertionError: assert {'name': 'get...eaming': True} == {'name': 'get...d': ['city']}}
+E   AssertionError: assert {'name': 'get...eaming': True} == {'name': 'get...d': ['city']}}
+      
+      Omitting 3 identical items, use -vv to show
+      Left contains 1 more item:
+      {'eager_input_streaming': True}
+      Use -v to get more diff
+./backend/tests/test_claude_agent_client.py:157: AssertionError: assert {'name': 'get...eaming': True} == {'name': 'get...d': ['city']}}
+E   AssertionError: assert {'name': 'get...eaming': True} == {'name': 'get...d': ['city']}}
+      
+      Omitting 3 identical items, use -vv to show
+      Left contains 1 more item:
+      {'eager_input_streaming': True}
+      Use -v to get more diff
+./backend/tests/test_claude_agent_client.py:157: AssertionError: assert {'name': 'get...eaming': True} == {'name': 'get...d': ['city']}}
+E   AssertionError: assert {'name': 'get...eaming': True} == {'name': 'get...d': ['city']}}
+      
+      Omitting 3 identical items, use -vv to show
+      Left contains 1 more item:
+      {'eager_input_streaming': True}
+      Use -v to get more diff
+./backend/tests/test_claude_agent_client.py:157: AssertionError: assert {'name': 'get...eaming': True} == {'name': 'get...d': ['city']}}
+E   AssertionError: assert {'name': 'get...eaming': True} == {'name': 'get...d': ['city']}}
+      
+      Omitting 3 identical items, use -vv to show
+      Left contains 1 more item:
+      {'eager_input_streaming': True}
+      Use -v to get more diff
+./backend/tests/test_claude_agent_client.py:157: AssertionError: assert {'name': 'get...eaming': True} == {'name': 'get...d': ['city']}}
+E   AssertionError: assert {'name': 'get...eaming': True} == {'name': 'get...d': ['city']}}
+      
+      Omitting 3 identical items, use -vv to show
+      Left contains 1 more item:
+      {'eager_input_streaming': True}
+      Use -v to get more diff
+./backend/tests/test_claude_agent_r1_client.py:35: AssertionError: assert {'name': 'get...eaming': True} == {'name': 'get...d': ['city']}}
+E   AssertionError: assert {'name': 'get...eaming': True} == {'name': 'get...d': ['city']}}
+      
+      Omitting 3 identical items, use -vv to show
+      Left contains 1 more item:
+      {'eager_input_streaming': True}
+      Use -v to get more diff
+./backend/tests/test_claude_agent_r1_client.py:35: AssertionError: assert {'name': 'get...eaming': True} == {'name': 'get...d': ['city']}}
+E   AssertionError: assert {'name': 'get...eaming': True} == {'name': 'get...d': ['city']}}
+      
+      Omitting 3 identical items, use -vv to show
+      Left contains 1 more item:
+      {'eager_input_streaming': True}
+      Use -v to get more diff
+./backend/tests/test_claude_agent_r1_client.py:35: AssertionError: assert {'name': 'get...eaming': True} == {'name': 'get...d': ['city']}}
+=========================== short test summary info ============================
+FAILED tests/test_claude_agent_client.py::test_agent_request_has_stable_prefix_cache_tools_and_existing_effort[low-claude-opus-5-5]
+FAILED tests/test_claude_agent_client.py::test_agent_request_has_stable_prefix_cache_tools_and_existing_effort[low-claude-sonnet-5-5]
+FAILED tests/test_claude_agent_client.py::test_agent_request_has_stable_prefix_cache_tools_and_existing_effort[low-claude-haiku-5-5]
+FAILED tests/test_claude_agent_client.py::test_agent_request_has_stable_prefix_cache_tools_and_existing_effort[medium-claude-opus-5-5]
+FAILED tests/test_claude_agent_client.py::test_agent_request_has_stable_prefix_cache_tools_and_existing_effort[medium-claude-sonnet-5-5]
+FAILED tests/test_claude_agent_client.py::test_agent_request_has_stable_prefix_cache_tools_and_existing_effort[medium-claude-haiku-5-5]
+FAILED tests/test_claude_agent_client.py::test_agent_request_has_stable_prefix_cache_tools_and_existing_effort[high-claude-opus-5-5]
+FAILED tests/test_claude_agent_client.py::test_agent_request_has_stable_prefix_cache_tools_and_existing_effort[high-claude-sonnet-5-5]
+FAILED tests/test_claude_agent_client.py::test_agent_request_has_stable_prefix_cache_tools_and_existing_effort[high-claude-haiku-5-5]
+FAILED tests/test_claude_agent_r1_client.py::test_agent_never_sends_eager_input_streaming_even_with_stale_tool_schema[claude-opus-5-5]
+FAILED tests/test_claude_agent_r1_client.py::test_agent_never_sends_eager_input_streaming_even_with_stale_tool_schema[claude-sonnet-5-5]
+FAILED tests/test_claude_agent_r1_client.py::test_agent_never_sends_eager_input_streaming_even_with_stale_tool_schema[claude-haiku-5-5]
+12 failed, 19 passed in 1.12s

@@ -94,6 +94,108 @@ export interface CardData {
   sources?: { title: string; url: string; site_name?: string; index?: number }[];
 }
 
+interface ChatCardProps {
+  card: CardData;
+}
+
+function ChatCard(props: ChatCardProps) {
+  const card = props.card;
+  return <>
+    {/* 天气卡片（weather subtype） */}
+    {card.subtype === "weather" && card.weather && card.weather.forecast.length > 0 && (() => {
+      const w = card.weather;
+      const first = w.forecast[0];
+      const temperature = weatherTemperature(first);
+      return (
+        <div className="ceramic-card w-[320px] max-w-full overflow-hidden">
+          <div className="flex items-center justify-between border-b px-3.5 py-2 text-xs" style={{ borderColor: "var(--carve)" }}>
+            <b className="font-medium">天气</b>
+            <span className="text-muted-foreground">{w.location}</span>
+          </div>
+          <div className="flex items-center gap-3.5 px-3.5 py-3">
+            {temperature && <span className="readout" style={{ fontSize: 32, color: "var(--ink)" }}>{temperature}</span>}
+            <div>
+              <div className="text-xs text-muted-foreground">{weatherDayLabel(first)}</div>
+              <div>{weatherCondition(first)}</div>
+              {first.dayWind && <div className="text-xs text-muted-foreground">{first.dayWind}</div>}
+            </div>
+          </div>
+          {w.forecast.length > 1 && <div className="grid grid-cols-3 border-t" style={{ borderColor: "var(--carve)" }}>
+            {w.forecast.slice(1, 4).map((f, i) => (
+              <div key={i} className="flex flex-col gap-0.5 px-3.5 py-2 text-xs text-muted-foreground" style={{ borderLeft: i > 0 ? "1px solid var(--carve)" : undefined }}>
+                <span>{weatherDayLabel(f)}</span>
+                <span>{weatherCondition(f)}</span>
+                {weatherTemperature(f) && <span className="readout" style={{ color: "var(--ink)" }}>{weatherTemperature(f)}</span>}
+              </div>
+            ))}
+          </div>}
+        </div>
+      );
+    })()}
+
+    {/* 网页卡片（fetch_card / web_search 通用） */}
+    {card.subtype !== "weather" && ((card.points && card.points.length > 0) || card.subtype === "web_sources") && (() => {
+      const cardData = card;
+      const safeSources = (cardData.sources ?? []).flatMap((source) => {
+        const url = toSafeExternalUrl(source.url);
+        if (!url) return [];
+        const hostname = new URL(url).hostname;
+        const title = typeof source.title === "string" ? source.title.trim() : "";
+        const siteName = (typeof source.site_name === "string" ? source.site_name.trim() : "") || hostname;
+        const label = title || siteName;
+        return [{ url, label, siteName }];
+      }).slice(0, 5);
+      return (
+        <div
+          className={cn(
+            "ceramic-card w-[340px] max-w-full",
+            "overflow-hidden"
+          )}
+        >
+          <div className="flex items-center gap-1.5 border-b px-4 pb-2 pt-3" style={{ borderColor: "var(--carve)" }}>
+            <Globe size={12} style={{ color: "var(--ink)" }} />
+            <span className="text-[11px] font-medium text-muted-foreground">
+              {cardData.subtype === "web_sources" ? "联网搜索" : cardData.source || "网页"}
+            </span>
+            {cardData.subtype !== "web_sources" && safeSources.length === 0 && cardData.url && (
+              <span className="text-[10px] text-muted-foreground/50 truncate flex-1 ml-1">
+                {cardData.url.replace(/^https?:\/\//, "").slice(0, 40)}
+              </span>
+            )}
+          </div>
+          {cardData.subtype !== "web_sources" && <ul className="px-4 py-3 space-y-1.5">
+            {cardData.points.map((point, i) => (
+              <li key={i} className="text-sm text-foreground/90 leading-relaxed flex gap-2">
+                <span className="mt-1 shrink-0" style={{ color: "var(--ink)" }}>•</span>
+                <span className="max-md:min-w-0 max-md:break-words">{point}</span>
+              </li>
+            ))}
+          </ul>}
+          {safeSources.length > 0 && (
+            <div className="border-t px-4 py-3" style={{ borderColor: "var(--carve)" }}>
+              {cardData.subtype !== "web_sources" && <div className="mb-1.5 text-[11px] text-muted-foreground">来源</div>}
+              <div className="space-y-1">
+                {safeSources.map(({ url, label, siteName }, i) => (
+                  <button key={`${i}:${url}`} type="button"
+                    onClick={() => void openExternal(url)}
+                    aria-label={`打开来源：${label}`}
+                    className="flex w-full items-start gap-1.5 py-1 text-left text-[12px] text-[color:var(--ink2)] hover:text-[color:var(--ink)] hover:underline max-md:min-h-10">
+                    <ArrowUpRight size={12} className="mt-0.5 shrink-0" aria-hidden="true" />
+                    <span className="min-w-0 flex-1">
+                      <span className="block truncate">{label}</span>
+                      {siteName !== label && <span className="block truncate text-[10px] text-muted-foreground">{siteName}</span>}
+                    </span>
+                  </button>
+                ))}
+              </div>
+            </div>
+          )}
+        </div>
+      );
+    })()}
+  </>;
+}
+
 export type ImageAspectRatio = "1:1" | "16:9" | "9:16";
 export type ImageModelId = "qwen-image-3.0" | "seedream-5.0-flash";
 
@@ -121,6 +223,7 @@ export interface Message {
   generationStatus?: string;
   replyModelLabel?: string; // 仅记录本次 SSE 标注，不写入历史或浏览器存储。
   imageGenerationRetry?: ImageGenerationRetry;
+  cards?: CardData[];  // 智能体工具按交付顺序追加，不替换文字或旧卡片。
   cardData?: CardData;  // 网页卡片(fetch_card 意图)——非空时整条消息渲染为卡片
   pendingTtsText?: string;  // 搜索类回复待询问播报的文本；非空时气泡下方出现 [帮我读]/[不用] 按钮
 }
@@ -230,98 +333,8 @@ function ChatBubble({ message, agentName = "Chloe", onDelete, onConfirmTts, onDe
           </div>
         )}
 
-        {/* 天气卡片（weather subtype） */}
-        {message.cardData?.subtype === "weather" && message.cardData.weather && message.cardData.weather.forecast.length > 0 && (() => {
-          const w = message.cardData.weather;
-          const first = w.forecast[0];
-          const temperature = weatherTemperature(first);
-          return (
-            <div className="ceramic-card w-[320px] max-w-full overflow-hidden">
-              <div className="flex items-center justify-between border-b px-3.5 py-2 text-xs" style={{ borderColor: "var(--carve)" }}>
-                <b className="font-medium">天气</b>
-                <span className="text-muted-foreground">{w.location}</span>
-              </div>
-              <div className="flex items-center gap-3.5 px-3.5 py-3">
-                {temperature && <span className="readout" style={{ fontSize: 32, color: "var(--ink)" }}>{temperature}</span>}
-                <div>
-                  <div className="text-xs text-muted-foreground">{weatherDayLabel(first)}</div>
-                  <div>{weatherCondition(first)}</div>
-                  {first.dayWind && <div className="text-xs text-muted-foreground">{first.dayWind}</div>}
-                </div>
-              </div>
-              {w.forecast.length > 1 && <div className="grid grid-cols-3 border-t" style={{ borderColor: "var(--carve)" }}>
-                {w.forecast.slice(1, 4).map((f, i) => (
-                  <div key={i} className="flex flex-col gap-0.5 px-3.5 py-2 text-xs text-muted-foreground" style={{ borderLeft: i > 0 ? "1px solid var(--carve)" : undefined }}>
-                    <span>{weatherDayLabel(f)}</span>
-                    <span>{weatherCondition(f)}</span>
-                    {weatherTemperature(f) && <span className="readout" style={{ color: "var(--ink)" }}>{weatherTemperature(f)}</span>}
-                  </div>
-                ))}
-              </div>}
-            </div>
-          );
-        })()}
-
-        {/* 网页卡片（fetch_card / web_search 通用） */}
-        {message.cardData && message.cardData.subtype !== "weather" && message.cardData.points && message.cardData.points.length > 0 && (() => {
-          const cardData = message.cardData;
-          const safeSources = (cardData.sources ?? []).flatMap((source) => {
-            const url = toSafeExternalUrl(source.url);
-            if (!url) return [];
-            const hostname = new URL(url).hostname;
-            const title = typeof source.title === "string" ? source.title.trim() : "";
-            const siteName = (typeof source.site_name === "string" ? source.site_name.trim() : "") || hostname;
-            const label = title || siteName;
-            return [{ url, label, siteName }];
-          }).slice(0, 5);
-          return (
-            <div
-              className={cn(
-                "ceramic-card w-[340px] max-w-full",
-                "overflow-hidden"
-              )}
-            >
-              <div className="flex items-center gap-1.5 border-b px-4 pb-2 pt-3" style={{ borderColor: "var(--carve)" }}>
-                <Globe size={12} style={{ color: "var(--ink)" }} />
-                <span className="text-[11px] font-medium text-muted-foreground">
-                  {cardData.source || "网页"}
-                </span>
-                {safeSources.length === 0 && cardData.url && (
-                  <span className="text-[10px] text-muted-foreground/50 truncate flex-1 ml-1">
-                    {cardData.url.replace(/^https?:\/\//, "").slice(0, 40)}
-                  </span>
-                )}
-              </div>
-              <ul className="px-4 py-3 space-y-1.5">
-                {cardData.points.map((point, i) => (
-                  <li key={i} className="text-sm text-foreground/90 leading-relaxed flex gap-2">
-                    <span className="mt-1 shrink-0" style={{ color: "var(--ink)" }}>•</span>
-                    <span className="max-md:min-w-0 max-md:break-words">{point}</span>
-                  </li>
-                ))}
-              </ul>
-              {safeSources.length > 0 && (
-                <div className="border-t px-4 py-3" style={{ borderColor: "var(--carve)" }}>
-                  <div className="mb-1.5 text-[11px] text-muted-foreground">来源</div>
-                  <div className="space-y-1">
-                    {safeSources.map(({ url, label, siteName }, i) => (
-                      <button key={`${i}:${url}`} type="button"
-                        onClick={() => void openExternal(url)}
-                        aria-label={`打开来源：${label}`}
-                        className="flex w-full items-start gap-1.5 py-1 text-left text-[12px] text-[color:var(--ink2)] hover:text-[color:var(--ink)] hover:underline max-md:min-h-10">
-                        <ArrowUpRight size={12} className="mt-0.5 shrink-0" aria-hidden="true" />
-                        <span className="min-w-0 flex-1">
-                          <span className="block truncate">{label}</span>
-                          {siteName !== label && <span className="block truncate text-[10px] text-muted-foreground">{siteName}</span>}
-                        </span>
-                      </button>
-                    ))}
-                  </div>
-                </div>
-              )}
-            </div>
-          );
-        })()}
+        {message.cardData && <ChatCard card={message.cardData} />}
+        {message.cards?.map((card, index) => <ChatCard key={index} card={card} />)}
 
         {message.imageGenerationRetry && onRetryImage && <button type="button"
           disabled={imageRetryDisabled}

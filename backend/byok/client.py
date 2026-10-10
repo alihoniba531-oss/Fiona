@@ -14,6 +14,7 @@ import anthropic
 import httpx
 import openai
 
+from persona import BASE_SAFETY_RULES
 from services.image_tool import (
     OpenAIToolCallAccumulator,
     anthropic_image_tool,
@@ -27,6 +28,19 @@ from .providers import CLAUDE_EFFORTS, DEFAULT_EFFORT, PROVIDERS, validate_model
 from .url_safety import PinnedTransport, normalize_custom_base_url
 
 _warned: set[str] = set()
+
+CLAUDE_TOOL_INSTRUCTIONS = "【工具使用】你可以调用工具帮主人做事：get_weather 查天气（城市必须是主人亲口说过的，没说就先问）；plan_travel 做旅行规划；plan_route 查两地路线；get_hot_topics 看热榜；generate_image 生成图片（每轮最多一张，描述不得含账号名、真实姓名或私人细节）；web_search 和 web_fetch 联网搜索、阅读网页（需要最新信息或主人给了链接时使用）。只有实际收到工具结果后才能说已经查到或已经画好，不得编造工具结果；工具失败就如实告诉主人。可以连续使用多个工具，再综合作答。当前消息开头的「当前北京时间」可直接使用。"
+# 2026-10-10 真实 Key 实测：_20260209 版本内部使用程序化工具调用，与
+# disable_parallel_tool_use 冲突（400）。三个型号统一用不带动态过滤的版本。
+_CLAUDE_WEB_TOOLS = [
+    {"type": "web_search_20250305", "name": "web_search", "max_uses": 5},
+    {"type": "web_fetch_20250910", "name": "web_fetch", "max_uses": 3},
+]
+CLAUDE_SERVER_TOOLS = {
+    "claude-opus-5-5": _CLAUDE_WEB_TOOLS,
+    "claude-sonnet-5-5": _CLAUDE_WEB_TOOLS,
+    "claude-haiku-5-5": _CLAUDE_WEB_TOOLS,
+}
 
 
 def _setting(name: str, default: float, minimum: float, maximum: float, *, integer: bool = False):
@@ -53,7 +67,7 @@ def total_seconds() -> float:
     return _setting("FIONA_BYOK_TOTAL_SECONDS", 120.0, 10, 240)
 
 
-def convert_messages(provider: str, messages: list[dict], username: str) -> tuple[str, list[dict]]:
+def convert_messages(provider: str, messages: list[dict], username: str, *, preserve_blocks: bool = False) -> tuple[str, list[dict]]:
     """Copy the caller's messages; only system prompts contain redacted account ids."""
     copied = deepcopy(messages)
     for message in copied:
@@ -65,15 +79,17 @@ def convert_messages(provider: str, messages: list[dict], username: str) -> tupl
     normalized: list[dict] = []
     for message in copied:
         role, content = message.get("role"), message.get("content")
-        if role not in {"user", "assistant"} or not isinstance(content, str) or not content.strip():
+        string_content = isinstance(content, str) and bool(content.strip())
+        block_content = preserve_blocks and provider == "anthropic" and isinstance(content, list) and bool(content)
+        if role not in {"user", "assistant"} or not (string_content or block_content):
             continue
         if not normalized and role == "assistant":
             continue
-        if normalized and normalized[-1]["role"] == role:
+        if normalized and normalized[-1]["role"] == role and string_content and isinstance(normalized[-1]["content"], str):
             normalized[-1]["content"] += "\n\n" + content
         else:
             normalized.append({"role": role, "content": content})
-    while normalized and normalized[-1]["role"] == "assistant":
+    while not preserve_blocks and normalized and normalized[-1]["role"] == "assistant":
         normalized.pop()
     return system, normalized if provider == "anthropic" else ([{"role": "system", "content": system}] if system else []) + normalized
 
@@ -205,11 +221,13 @@ class _Resources:
 
 class ReplyStream:
     """One consumer, compatible chunks, and explicit final stop semantics."""
-    def __init__(self, resources: _Resources, *, anthropic_stream: bool, character_limit: int, image_tool: bool = False):
+    def __init__(self, resources: _Resources, *, anthropic_stream: bool, character_limit: int, image_tool: bool = False, agent_stream: bool = False):
         self.resources = resources
         self.anthropic_stream = anthropic_stream
         self.character_limit = character_limit
         self.image_tool = image_tool
+        self.agent_stream = agent_stream
+        self.final_message = None
         self.stop_reason: str | None = None
         self.refused = False
         self.text_length = 0
@@ -276,11 +294,12 @@ class ReplyStream:
                 raise ReplyInterruptedError
             if self.anthropic_stream:
                 final = resources.stream.get_final_message()
-                if self.image_tool:
+                if self.image_tool or self.agent_stream:
                     if resources.timed_out:
                         raise ByokTimeoutError
                     if resources.closed:
                         raise ReplyInterruptedError
+                self.final_message = final
                 self.stop_reason = final.stop_reason
                 self.refused = final.stop_reason == "refusal"
                 if self.image_tool:
@@ -386,6 +405,81 @@ def _open(config: dict, messages: list[dict], *, mirror: bool, username: str, te
 
 def open_reply_stream(config: dict, messages: list[dict], *, mirror: bool, username: str, control: ReplyStreamControl | None = None, tools: str | None = None) -> ReplyStream:
     return _open(config, messages, mirror=mirror, username=username, testing=False, control=control, tools=tools)
+
+
+def agent_request_seconds(config: dict) -> float:
+    """Use the existing Anthropic effort adjustment for each agent request."""
+    seconds = total_seconds()
+    if config.get("effort") == "high":
+        seconds = min(240, seconds * 1.5)
+    return seconds
+
+
+def _prepare_agent_messages(messages: list[dict], username: str) -> tuple[list[dict], list[dict]]:
+    system, prepared = convert_messages("anthropic", messages, username, preserve_blocks=True)
+    safety = BASE_SAFETY_RULES.strip()
+    prefix = system.replace(safety, "").replace(CLAUDE_TOOL_INSTRUCTIONS, "").strip()
+    system_text = "\n\n".join(part for part in (prefix, CLAUDE_TOOL_INSTRUCTIONS, safety) if part)
+    if prepared:
+        last = prepared[-1]
+        if isinstance(last["content"], str):
+            last["content"] = [{"type": "text", "text": last["content"]}]
+        last["content"][-1]["cache_control"] = {"type": "ephemeral"}
+    return [{"type": "text", "text": system_text, "cache_control": {"type": "ephemeral"}}], prepared
+
+
+def open_agent_stream(
+    config: dict, messages: list[dict], *, username: str, tools: list[dict],
+    deadline_seconds: float, control: ReplyStreamControl | None = None,
+) -> ReplyStream:
+    """Open one Claude agent step without changing ordinary BYOK requests."""
+    ensure_available()
+    provider = validate_provider(config.get("provider"))
+    if provider != "anthropic":
+        raise ValueError("Claude agent requires Anthropic")
+    model = validate_model(provider, config.get("model"))
+    api_key = config.get("api_key")
+    if not isinstance(api_key, str) or not api_key:
+        raise NeedsReentryError
+    if deadline_seconds <= 0:
+        raise ByokTimeoutError
+    requested_effort = config.get("effort")
+    effort = requested_effort if isinstance(requested_effort, str) and requested_effort in CLAUDE_EFFORTS else DEFAULT_EFFORT
+    system, prepared = _prepare_agent_messages(messages, username)
+    client_tools = deepcopy(tools)
+    for tool in client_tools:
+        tool.pop("eager_input_streaming", None)
+    resources = _Resources(min(deadline_seconds, agent_request_seconds(config)))
+    if control is not None:
+        control.bind(resources)
+        if control.aborted:
+            raise ReplyInterruptedError
+    try:
+        resources.attach_client(anthropic.Anthropic(
+            api_key=api_key, base_url=PROVIDERS[provider]["base_url"], timeout=60.0, max_retries=0,
+        ))
+        kwargs = {
+            "model": model, "system": system, "messages": prepared,
+            "max_tokens": 4096 * {"low": 1, "medium": 2, "high": 4}[effort],
+            "output_config": {"effort": effort},
+            "tools": client_tools + deepcopy(CLAUDE_SERVER_TOOLS[model]),
+            "tool_choice": {"type": "auto", "disable_parallel_tool_use": True},
+        }
+        endpoint = resources.client.messages
+        if model in {"claude-opus-5-5", "claude-sonnet-5-5"}:
+            endpoint = resources.client.beta.messages
+            kwargs.update(betas=["server-side-fallback-2026-07-01"], fallbacks="default")
+        resources.start()
+        if resources.closed:
+            raise ByokTimeoutError if resources.timed_out else ReplyInterruptedError
+        manager = endpoint.stream(**kwargs)
+        resources.attach_stream(manager.__enter__(), manager)
+        return ReplyStream(resources, anthropic_stream=True, character_limit=4000, agent_stream=True)
+    except Exception:
+        resources.close()
+        if resources.timed_out:
+            raise ByokTimeoutError from None
+        raise
 
 
 def test_connection(config: dict, *, control: ReplyStreamControl | None = None) -> None:

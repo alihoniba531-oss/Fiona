@@ -1,0 +1,13 @@
+{
+  "command": [
+    "python",
+    "-m",
+    "pytest",
+    "-q"
+  ],
+  "cwd": "backend",
+  "offline_guard": true,
+  "environment": {
+    "FIONA_CLAUDE_AGENT": "1"
+  }
+}

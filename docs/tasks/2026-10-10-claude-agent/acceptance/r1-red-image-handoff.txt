@@ -1,0 +1,31 @@
+F..                                                                      [100%]
+=================================== FAILURES ===================================
+____ test_unattached_owned_image_is_cleaned_even_when_partial_text_is_saved ____
+
+harness = namespace(agent=<module 'services.claude_agent' from './backend/services/clau...user', 'conversation')], summaries=[], deleted=[], monkeypatch=<_pytest.monkeypatch.MonkeyPatch object at 0x109c196e0>)
+
+    def test_unattached_owned_image_is_cleaned_even_when_partial_text_is_saved(harness):
+        h = harness
+        h.monkeypatch.setattr(h.agent, "agent_total_seconds", lambda: .02)
+        async def image(ctx, state, prompt, *, agent_result, **kwargs):
+            agent_result.update(success=True, image_path="/uploads/owned.png", model="model", aspect_ratio="1:1")
+            await asyncio.Event().wait()
+            yield h.chat._sse({"generated_image": {"image_path": "/uploads/owned.png"}})
+        h.monkeypatch.setattr(h.chat, "_stream_image_execution", image)
+        h.streams.append(FakeStream(message("tool_use", content=[call("generate_image", {"prompt": "猫"})]), "准备画。"))
+        events = run(h)
+        assert "error" in events[-1]
+>       assert h.saves == [("准备画。", None)] and h.deleted == ["/uploads/owned.png"]
+E       AssertionError: assert ([('准备画。', None)] == [('准备画。', None)]
+E         
+E         Use -v to get more diff and [] == ['/uploads/owned.png']
+E         
+E         Right contains one more item: '/uploads/owned.png'
+E         Use -v to get more diff)
+
+tests/test_claude_agent_r1_runtime.py:287: AssertionError
+----------------------------- Captured stdout call -----------------------------
+[byok] reply failed category=timeout
+=========================== short test summary info ============================
+FAILED tests/test_claude_agent_r1_runtime.py::test_unattached_owned_image_is_cleaned_even_when_partial_text_is_saved
+1 failed, 2 passed, 26 deselected in 1.00s

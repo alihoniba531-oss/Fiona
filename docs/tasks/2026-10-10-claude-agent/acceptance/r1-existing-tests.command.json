@@ -1,0 +1,1 @@
+{"command": ["git", "diff", "--name-only", "--", "backend/tests"], "cwd": ".", "offline_guard": true}

@@ -1,0 +1,6 @@
+................................................................sss..... [ 37%]
+........................................................................ [ 74%]
+.................................................                        [100%]
+=========================== short test summary info ============================
+SKIPPED [3] tests/test_claude_agent_frontend.py:155: Frontend SSR dependencies unavailable: typescript, react, react-dom/server
+190 passed, 3 skipped in 2.77s

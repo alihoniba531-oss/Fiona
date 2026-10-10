@@ -1,0 +1,42 @@
+FF                                                                       [100%]
+=================================== FAILURES ===================================
+_ test_platform_admission_exceptions_before_claude_are_not_model_failures[slot] _
+
+harness = namespace(agent=<module 'services.claude_agent' from './backend/services/clau...user', 'conversation')], summaries=[], deleted=[], monkeypatch=<_pytest.monkeypatch.MonkeyPatch object at 0x10ba6d6e0>)
+phase = 'slot'
+
+    @pytest.mark.parametrize("phase", ["slot", "daily_counter"])
+    def test_platform_admission_exceptions_before_claude_are_not_model_failures(harness, phase):
+        h = harness
+        def broken(*args, **kwargs):
+            raise RuntimeError("platform admission failed")
+        h.monkeypatch.setattr(h.chat, "_byok_slot" if phase == "slot" else "check_chat_daily_cap", broken)
+>       with pytest.raises(RuntimeError, match="platform admission failed"):
+             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+E       Failed: DID NOT RAISE RuntimeError
+
+tests/test_claude_agent_r1_runtime.py:329: Failed
+----------------------------- Captured stdout call -----------------------------
+[byok] reply failed category=other
+_ test_platform_admission_exceptions_before_claude_are_not_model_failures[daily_counter] _
+
+harness = namespace(agent=<module 'services.claude_agent' from './backend/services/clau...user', 'conversation')], summaries=[], deleted=[], monkeypatch=<_pytest.monkeypatch.MonkeyPatch object at 0x110f531d0>)
+phase = 'daily_counter'
+
+    @pytest.mark.parametrize("phase", ["slot", "daily_counter"])
+    def test_platform_admission_exceptions_before_claude_are_not_model_failures(harness, phase):
+        h = harness
+        def broken(*args, **kwargs):
+            raise RuntimeError("platform admission failed")
+        h.monkeypatch.setattr(h.chat, "_byok_slot" if phase == "slot" else "check_chat_daily_cap", broken)
+>       with pytest.raises(RuntimeError, match="platform admission failed"):
+             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+E       Failed: DID NOT RAISE RuntimeError
+
+tests/test_claude_agent_r1_runtime.py:329: Failed
+----------------------------- Captured stdout call -----------------------------
+[byok] reply failed category=other
+=========================== short test summary info ============================
+FAILED tests/test_claude_agent_r1_runtime.py::test_platform_admission_exceptions_before_claude_are_not_model_failures[slot]
+FAILED tests/test_claude_agent_r1_runtime.py::test_platform_admission_exceptions_before_claude_are_not_model_failures[daily_counter]
+2 failed, 29 deselected in 0.97s

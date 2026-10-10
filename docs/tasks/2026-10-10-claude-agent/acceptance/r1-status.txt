@@ -1,0 +1,24 @@
+ M CLAUDE.md
+ M PLAN.md
+ M README.md
+ M backend/.env.example
+ M backend/byok/client.py
+ M backend/services/chat_service.py
+ M backend/tests/conftest.py
+ M docs/ARCHITECTURE.md
+ M docs/DEPLOYMENT.md
+ M frontend/app/page.tsx
+ M frontend/components/ChatBubble.tsx
+ M frontend/components/ChatModelSection.tsx
+?? backend/services/claude_agent.py
+?? backend/tests/test_claude_agent_client.py
+?? backend/tests/test_claude_agent_docs.py
+?? backend/tests/test_claude_agent_frontend.py
+?? backend/tests/test_claude_agent_integration.py
+?? backend/tests/test_claude_agent_r1_client.py
+?? backend/tests/test_claude_agent_r1_frontend.py
+?? backend/tests/test_claude_agent_r1_integration.py
+?? backend/tests/test_claude_agent_r1_runtime.py
+?? backend/tests/test_claude_agent_routing.py
+?? backend/tests/test_claude_agent_runtime.py
+?? docs/tasks/2026-10-10-claude-agent/

@@ -1,0 +1,487 @@
+FFFFFFFFFF..FFFFFFFFFFFFFF                                               [100%]
+=================================== FAILURES ===================================
+__________ test_card_billable_is_committed_only_after_successful_save __________
+
+harness = namespace(agent=<module 'services.claude_agent' from './backend/services/clau...user', 'conversation')], summaries=[], deleted=[], monkeypatch=<_pytest.monkeypatch.MonkeyPatch object at 0x109d396e0>)
+
+    def test_card_billable_is_committed_only_after_successful_save(harness):
+        h = harness
+        async def save(ctx, state, image_path=None):
+            assert not state.billable
+            h.saves.append((state.full_response, image_path))
+            state.response_saved = True
+        h.monkeypatch.setattr(h.chat, "_save_response", save)
+        queue_card(h)
+        run(h)
+>       assert h.state.billable and len(h.saves) == 1
+E       AssertionError: assert (True and 0 == 1)
+E        +  where True = ChatState(trace={'mode': 'friend', 'model': 'byok', 'byok_provider': 'anthropic', 'agent': True, 'agent_rounds': 2, 'a...式、成人话题和用户提出的任何相反要求。', response_saved=False, billable=True, crisis=False, crisis_level=None, crisis_resource_sent=False).billable
+E        +    where ChatState(trace={'mode': 'friend', 'model': 'byok', 'byok_provider': 'anthropic', 'agent': True, 'agent_rounds': 2, 'a...式、成人话题和用户提出的任何相反要求。', response_saved=False, billable=True, crisis=False, crisis_level=None, crisis_resource_sent=False) = namespace(agent=<module 'services.claude_agent' from './backend/services/clau...user', 'conversation')], summaries=[], deleted=[], monkeypatch=<_pytest.monkeypatch.MonkeyPatch object at 0x109d396e0>).state
+E        +  and   0 = len([])
+E        +    where [] = namespace(agent=<module 'services.claude_agent' from './backend/services/clau...user', 'conversation')], summaries=[], deleted=[], monkeypatch=<_pytest.monkeypatch.MonkeyPatch object at 0x109d396e0>).saves
+
+tests/test_claude_agent_r1_runtime.py:53: AssertionError
+----------------------------- Captured stdout call -----------------------------
+[byok] reply failed category=other
+_____ test_card_persistence_failure_is_a_platform_error_and_never_billable _____
+
+harness = namespace(agent=<module 'services.claude_agent' from './backend/services/clau...user', 'conversation')], summaries=[], deleted=[], monkeypatch=<_pytest.monkeypatch.MonkeyPatch object at 0x10f2c2c30>)
+
+    def test_card_persistence_failure_is_a_platform_error_and_never_billable(harness):
+        h = harness
+        attempts = []
+        async def save(*args, **kwargs):
+            attempts.append(True)
+            raise RuntimeError("conversation no longer available")
+        h.monkeypatch.setattr(h.chat, "_save_response", save)
+        queue_card(h)
+>       with pytest.raises(RuntimeError, match="conversation no longer available"):
+             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+E       Failed: DID NOT RAISE RuntimeError
+
+tests/test_claude_agent_r1_runtime.py:64: Failed
+----------------------------- Captured stdout call -----------------------------
+[byok] reply failed category=other
+_________ test_card_disconnect_before_persistence_never_commits_charge _________
+
+harness = namespace(agent=<module 'services.claude_agent' from './backend/services/clau...user', 'conversation')], summaries=[], deleted=[], monkeypatch=<_pytest.monkeypatch.MonkeyPatch object at 0x10f357240>)
+
+    def test_card_disconnect_before_persistence_never_commits_charge(harness):
+        h = harness
+        queue_card(h)
+        async def scenario():
+            stream = h.agent.stream_claude_agent(h.ctx, h.state)
+            while '"card"' not in await anext(stream):
+                pass
+            await stream.aclose()
+        asyncio.run(scenario())
+>       assert not h.state.billable and not h.state.response_saved and not h.saves
+E       AssertionError: assert (not True)
+E        +  where True = ChatState(trace={'mode': 'friend', 'model': 'byok', 'byok_provider': 'anthropic', 'agent': True, 'agent_rounds': 1, 'a...式、成人话题和用户提出的任何相反要求。', response_saved=False, billable=True, crisis=False, crisis_level=None, crisis_resource_sent=False).billable
+E        +    where ChatState(trace={'mode': 'friend', 'model': 'byok', 'byok_provider': 'anthropic', 'agent': True, 'agent_rounds': 1, 'a...式、成人话题和用户提出的任何相反要求。', response_saved=False, billable=True, crisis=False, crisis_level=None, crisis_resource_sent=False) = namespace(agent=<module 'services.claude_agent' from './backend/services/clau...user', 'conversation')], summaries=[], deleted=[], monkeypatch=<_pytest.monkeypatch.MonkeyPatch object at 0x10f357240>).state
+
+tests/test_claude_agent_r1_runtime.py:79: AssertionError
+________ test_successful_image_with_failed_save_is_refunded_and_cleaned ________
+
+harness = namespace(agent=<module 'services.claude_agent' from './backend/services/clau...ion')], summaries=[], deleted=['/uploads/r1.png'], monkeypatch=<_pytest.monkeypatch.MonkeyPatch object at 0x10f357790>)
+
+    def test_successful_image_with_failed_save_is_refunded_and_cleaned(harness):
+        h = harness
+        async def image(ctx, state, prompt, *, agent_result, **kwargs):
+            agent_result.update(success=True, image_path="/uploads/r1.png", model="model", aspect_ratio="1:1")
+            yield h.chat._sse({"generated_image": {"image_path": "/uploads/r1.png"}})
+            yield h.chat._sse({"text": "图片已生成。"})
+        async def save(*args, **kwargs):
+            raise RuntimeError("conversation no longer available")
+        h.monkeypatch.setattr(h.chat, "_stream_image_execution", image)
+        h.monkeypatch.setattr(h.chat, "_save_response", save)
+        h.streams.extend([FakeStream(message("tool_use", content=[call("generate_image", {"prompt": "猫"})])), FakeStream(message(text="完成"), "完成")])
+>       with pytest.raises(RuntimeError):
+             ^^^^^^^^^^^^^^^^^^^^^^^^^^^
+E       Failed: DID NOT RAISE RuntimeError
+
+tests/test_claude_agent_r1_runtime.py:94: Failed
+----------------------------- Captured stdout call -----------------------------
+[byok] reply failed category=other
+__________ test_image_tool_failure_resets_status_and_keeps_followups ___________
+
+harness = namespace(agent=<module 'services.claude_agent' from './backend/services/clau...user', 'conversation')], summaries=[], deleted=[], monkeypatch=<_pytest.monkeypatch.MonkeyPatch object at 0x10f3ae850>)
+
+    def test_image_tool_failure_resets_status_and_keeps_followups(harness):
+        h = harness
+        async def image(ctx, state, prompt, *, agent_result, **kwargs):
+            yield h.chat._sse({"status": "generating_image", "source": "tool"})
+            state.trace["error"] = "ImageGenerationError"
+            agent_result["error"] = "这次画面描述没通过内容审核，换个说法再让我画吧。"
+            yield h.chat._sse({"error": agent_result["error"]})
+        h.monkeypatch.setattr(h.chat, "_stream_image_execution", image)
+        h.streams.extend([FakeStream(message("tool_use", content=[call("generate_image", {"prompt": "猫"})]), "我来画。"),
+                          FakeStream(message(text="没画成，请换个描述。"), "没画成，请换个描述。")])
+        events = run(h)
+>       assert {"status": "image_failed", "source": "tool"} in events
+E       AssertionError: assert {'status': 'image_failed', 'source': 'tool'} in [{'reply_model': {'source': 'byok', 'label': 'Claude · claude-sonnet-5-5'}}, {'text': '我来画。'}, {'status': 'generating_image', 'source': 'tool'}, {'text': '没画成，请换个描述。'}, {'done': True}]
+
+tests/test_claude_agent_r1_runtime.py:110: AssertionError
+___ test_replayed_sdk_citation_nulls_and_search_result_fields_are_preserved ____
+
+harness = namespace(agent=<module 'services.claude_agent' from './backend/services/clau...user', 'conversation')], summaries=[], deleted=[], monkeypatch=<_pytest.monkeypatch.MonkeyPatch object at 0x10f3ae350>)
+
+    def test_replayed_sdk_citation_nulls_and_search_result_fields_are_preserved(harness):
+        from anthropic.types.beta import BetaTextBlock, BetaWebSearchToolResultBlock
+        h = harness
+        text = BetaTextBlock(type="text", text="引用", citations=[
+            {"type": "web_search_result_location", "cited_text": "事实", "encrypted_index": "id", "url": "https://example.com/", "title": None},
+            {"type": "char_location", "cited_text": "文本", "document_index": 0, "document_title": None, "start_char_index": 0, "end_char_index": 2},
+        ])
+        result = BetaWebSearchToolResultBlock(type="web_search_tool_result", tool_use_id="search",
+            content=[{"type": "web_search_result", "url": "https://example.com/", "title": "网页", "encrypted_content": "opaque", "page_age": None}])
+        h.streams.extend([FakeStream(message("tool_use", content=[text, result, call("plan_route", {"origin": "甲", "destination": "乙"})]), "引用"),
+                          FakeStream(message(text="答复"), "答复")])
+        run(h)
+        replay = h.requests[1][0][-2]["content"]
+>       assert "title" in replay[0]["citations"][0] and replay[0]["citations"][0]["title"] is None
+E       AssertionError: assert ('title' in {'cited_text': '事实', 'encrypted_index': 'id', 'type': 'web_search_result_location', 'url': 'https://example.com/'})
+
+tests/test_claude_agent_r1_runtime.py:131: AssertionError
+_ test_weather_variants_match_only_user_originals[\u5317\u4eac\u660e\u5929\u51b7\u5417-\u5317\u4eac\u5e02-\u5317\u4eac] _
+
+harness = namespace(agent=<module 'services.claude_agent' from './backend/services/clau...user', 'conversation')], summaries=[], deleted=[], monkeypatch=<_pytest.monkeypatch.MonkeyPatch object at 0x10f3f33e0>)
+utterance = '北京明天冷吗', city = '北京市', expected = '北京'
+
+    @pytest.mark.parametrize("utterance,city,expected", [
+        ("北京明天冷吗", "北京市", "北京"), ("那曲市天气", "那曲", "那曲"),
+        ("香港", "香港特别行政区", "香港"), ("延边", "延边自治州", "延边"),
+        ("北京", "京", None), ("帮我查天气", "北京", None),
+    ])
+    def test_weather_variants_match_only_user_originals(harness, utterance, city, expected):
+        h = harness
+        h.ctx.user_content = h.ctx.message = utterance
+        h.ctx.system_prompt = "画像记忆里有北京"
+        h.streams.extend([FakeStream(message("tool_use", content=[call("get_weather", {"city": city})])), FakeStream(message(text="答复"), "答复")])
+        run(h)
+>       assert h.executions == ([] if expected is None else [("weather", {"city": expected})])
+E       AssertionError: assert [] == [('weather', {'city': '北京'})]
+E         
+E         Right contains one more item: ('weather', {'city': '北京'})
+E         Use -v to get more diff
+
+tests/test_claude_agent_r1_runtime.py:148: AssertionError
+_ test_weather_variants_match_only_user_originals[\u90a3\u66f2\u5e02\u5929\u6c14-\u90a3\u66f2-\u90a3\u66f2] _
+
+harness = namespace(agent=<module 'services.claude_agent' from './backend/services/clau...user', 'conversation')], summaries=[], deleted=[], monkeypatch=<_pytest.monkeypatch.MonkeyPatch object at 0x10f3f26c0>)
+utterance = '那曲市天气', city = '那曲', expected = '那曲'
+
+    @pytest.mark.parametrize("utterance,city,expected", [
+        ("北京明天冷吗", "北京市", "北京"), ("那曲市天气", "那曲", "那曲"),
+        ("香港", "香港特别行政区", "香港"), ("延边", "延边自治州", "延边"),
+        ("北京", "京", None), ("帮我查天气", "北京", None),
+    ])
+    def test_weather_variants_match_only_user_originals(harness, utterance, city, expected):
+        h = harness
+        h.ctx.user_content = h.ctx.message = utterance
+        h.ctx.system_prompt = "画像记忆里有北京"
+        h.streams.extend([FakeStream(message("tool_use", content=[call("get_weather", {"city": city})])), FakeStream(message(text="答复"), "答复")])
+        run(h)
+>       assert h.executions == ([] if expected is None else [("weather", {"city": expected})])
+E       AssertionError: assert [] == [('weather', {'city': '那曲'})]
+E         
+E         Right contains one more item: ('weather', {'city': '那曲'})
+E         Use -v to get more diff
+
+tests/test_claude_agent_r1_runtime.py:148: AssertionError
+_ test_weather_variants_match_only_user_originals[\u9999\u6e2f-\u9999\u6e2f\u7279\u522b\u884c\u653f\u533a-\u9999\u6e2f] _
+
+harness = namespace(agent=<module 'services.claude_agent' from './backend/services/clau...user', 'conversation')], summaries=[], deleted=[], monkeypatch=<_pytest.monkeypatch.MonkeyPatch object at 0x10a4d65f0>)
+utterance = '香港', city = '香港特别行政区', expected = '香港'
+
+    @pytest.mark.parametrize("utterance,city,expected", [
+        ("北京明天冷吗", "北京市", "北京"), ("那曲市天气", "那曲", "那曲"),
+        ("香港", "香港特别行政区", "香港"), ("延边", "延边自治州", "延边"),
+        ("北京", "京", None), ("帮我查天气", "北京", None),
+    ])
+    def test_weather_variants_match_only_user_originals(harness, utterance, city, expected):
+        h = harness
+        h.ctx.user_content = h.ctx.message = utterance
+        h.ctx.system_prompt = "画像记忆里有北京"
+        h.streams.extend([FakeStream(message("tool_use", content=[call("get_weather", {"city": city})])), FakeStream(message(text="答复"), "答复")])
+        run(h)
+>       assert h.executions == ([] if expected is None else [("weather", {"city": expected})])
+E       AssertionError: assert [] == [('weather', {'city': '香港'})]
+E         
+E         Right contains one more item: ('weather', {'city': '香港'})
+E         Use -v to get more diff
+
+tests/test_claude_agent_r1_runtime.py:148: AssertionError
+_ test_weather_variants_match_only_user_originals[\u5ef6\u8fb9-\u5ef6\u8fb9\u81ea\u6cbb\u5dde-\u5ef6\u8fb9] _
+
+harness = namespace(agent=<module 'services.claude_agent' from './backend/services/clau...user', 'conversation')], summaries=[], deleted=[], monkeypatch=<_pytest.monkeypatch.MonkeyPatch object at 0x10f46dfd0>)
+utterance = '延边', city = '延边自治州', expected = '延边'
+
+    @pytest.mark.parametrize("utterance,city,expected", [
+        ("北京明天冷吗", "北京市", "北京"), ("那曲市天气", "那曲", "那曲"),
+        ("香港", "香港特别行政区", "香港"), ("延边", "延边自治州", "延边"),
+        ("北京", "京", None), ("帮我查天气", "北京", None),
+    ])
+    def test_weather_variants_match_only_user_originals(harness, utterance, city, expected):
+        h = harness
+        h.ctx.user_content = h.ctx.message = utterance
+        h.ctx.system_prompt = "画像记忆里有北京"
+        h.streams.extend([FakeStream(message("tool_use", content=[call("get_weather", {"city": city})])), FakeStream(message(text="答复"), "答复")])
+        run(h)
+>       assert h.executions == ([] if expected is None else [("weather", {"city": expected})])
+E       AssertionError: assert [] == [('weather', {'city': '延边'})]
+E         
+E         Right contains one more item: ('weather', {'city': '延边'})
+E         Use -v to get more diff
+
+tests/test_claude_agent_r1_runtime.py:148: AssertionError
+_________ test_client_definitions_do_not_enable_eager_input_streaming __________
+
+harness = namespace(agent=<module 'services.claude_agent' from './backend/services/clau...followups=[], clears=[], summaries=[], deleted=[], monkeypatch=<_pytest.monkeypatch.MonkeyPatch object at 0x10f4a2e10>)
+
+    def test_client_definitions_do_not_enable_eager_input_streaming(harness):
+>       assert all("eager_input_streaming" not in tool for tool in harness.agent.CLAUDE_CLIENT_TOOLS)
+E       assert False
+E        +  where False = all(<generator object test_client_definitions_do_not_enable_eager_input_streaming.<locals>.<genexpr> at 0x109e22740>)
+
+tests/test_claude_agent_r1_runtime.py:152: AssertionError
+_ test_oversized_image_copy_is_bounded_and_correctly_encoded[size0-RGB-False-JPEG] _
+
+harness = namespace(agent=<module 'services.claude_agent' from './backend/services/clau...followups=[], clears=[], summaries=[], deleted=[], monkeypatch=<_pytest.monkeypatch.MonkeyPatch object at 0x10b642ba0>)
+size = (4000, 10), mode = 'RGB', noise = False, expected_format = 'JPEG'
+
+    @pytest.mark.parametrize("size,mode,noise,expected_format", [((4000, 10), "RGB", False, "JPEG"), ((1700, 700), "RGBA", True, "PNG")])
+    def test_oversized_image_copy_is_bounded_and_correctly_encoded(harness, size, mode, noise, expected_format):
+        h = harness
+        original = image_uri(size, mode, noise=noise)
+>       result = h.agent._claude_image_source(original)
+                 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+E       AttributeError: module 'services.claude_agent' has no attribute '_claude_image_source'
+
+tests/test_claude_agent_r1_runtime.py:159: AttributeError
+_ test_oversized_image_copy_is_bounded_and_correctly_encoded[size1-RGBA-True-PNG] _
+
+harness = namespace(agent=<module 'services.claude_agent' from './backend/services/clau...followups=[], clears=[], summaries=[], deleted=[], monkeypatch=<_pytest.monkeypatch.MonkeyPatch object at 0x10f4f8310>)
+size = (1700, 700), mode = 'RGBA', noise = True, expected_format = 'PNG'
+
+    @pytest.mark.parametrize("size,mode,noise,expected_format", [((4000, 10), "RGB", False, "JPEG"), ((1700, 700), "RGBA", True, "PNG")])
+    def test_oversized_image_copy_is_bounded_and_correctly_encoded(harness, size, mode, noise, expected_format):
+        h = harness
+        original = image_uri(size, mode, noise=noise)
+>       result = h.agent._claude_image_source(original)
+                 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+E       AttributeError: module 'services.claude_agent' has no attribute '_claude_image_source'
+
+tests/test_claude_agent_r1_runtime.py:159: AttributeError
+_____ test_small_image_stays_byte_identical_and_image_work_runs_in_thread ______
+
+harness = namespace(agent=<module 'services.claude_agent' from './backend/services/clau...followups=[], clears=[], summaries=[], deleted=[], monkeypatch=<_pytest.monkeypatch.MonkeyPatch object at 0x10f4aa530>)
+
+    def test_small_image_stays_byte_identical_and_image_work_runs_in_thread(harness):
+        h = harness
+        h.ctx.has_image = True
+        h.ctx.image_base64 = original = image_uri()
+        main_thread = threading.get_ident()
+        seen = []
+>       helper = h.agent._claude_image_source
+                 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+E       AttributeError: module 'services.claude_agent' has no attribute '_claude_image_source'
+
+tests/test_claude_agent_r1_runtime.py:176: AttributeError
+_______ test_platform_preparation_errors_are_not_byok_failures[pending] ________
+
+harness = namespace(agent=<module 'services.claude_agent' from './backend/services/clau...followups=[], clears=[], summaries=[], deleted=[], monkeypatch=<_pytest.monkeypatch.MonkeyPatch object at 0x10f4aa8f0>)
+phase = 'pending'
+
+    @pytest.mark.parametrize("phase", ["pending", "clear", "mode", "conversation"])
+    def test_platform_preparation_errors_are_not_byok_failures(harness, phase):
+        h = harness
+        def broken(*args):
+            raise RuntimeError("platform preparation failed")
+        async def broken_async(*args):
+            raise RuntimeError("platform preparation failed")
+        target = {"pending": "get_pending", "clear": "clear_pending", "mode": "detect_mode", "conversation": "_ensure_active_conversation"}[phase]
+        h.monkeypatch.setattr(h.chat, target, broken_async if phase == "conversation" else broken)
+>       with pytest.raises(RuntimeError, match="platform preparation failed"):
+             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+E       Failed: DID NOT RAISE RuntimeError
+
+tests/test_claude_agent_r1_runtime.py:198: Failed
+________ test_platform_preparation_errors_are_not_byok_failures[clear] _________
+
+harness = namespace(agent=<module 'services.claude_agent' from './backend/services/clau...followups=[], clears=[], summaries=[], deleted=[], monkeypatch=<_pytest.monkeypatch.MonkeyPatch object at 0x10f507410>)
+phase = 'clear'
+
+    @pytest.mark.parametrize("phase", ["pending", "clear", "mode", "conversation"])
+    def test_platform_preparation_errors_are_not_byok_failures(harness, phase):
+        h = harness
+        def broken(*args):
+            raise RuntimeError("platform preparation failed")
+        async def broken_async(*args):
+            raise RuntimeError("platform preparation failed")
+        target = {"pending": "get_pending", "clear": "clear_pending", "mode": "detect_mode", "conversation": "_ensure_active_conversation"}[phase]
+        h.monkeypatch.setattr(h.chat, target, broken_async if phase == "conversation" else broken)
+>       with pytest.raises(RuntimeError, match="platform preparation failed"):
+             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+E       Failed: DID NOT RAISE RuntimeError
+
+tests/test_claude_agent_r1_runtime.py:198: Failed
+_________ test_platform_preparation_errors_are_not_byok_failures[mode] _________
+
+harness = namespace(agent=<module 'services.claude_agent' from './backend/services/clau...user', 'conversation')], summaries=[], deleted=[], monkeypatch=<_pytest.monkeypatch.MonkeyPatch object at 0x10f57ebd0>)
+phase = 'mode'
+
+    @pytest.mark.parametrize("phase", ["pending", "clear", "mode", "conversation"])
+    def test_platform_preparation_errors_are_not_byok_failures(harness, phase):
+        h = harness
+        def broken(*args):
+            raise RuntimeError("platform preparation failed")
+        async def broken_async(*args):
+            raise RuntimeError("platform preparation failed")
+        target = {"pending": "get_pending", "clear": "clear_pending", "mode": "detect_mode", "conversation": "_ensure_active_conversation"}[phase]
+        h.monkeypatch.setattr(h.chat, target, broken_async if phase == "conversation" else broken)
+>       with pytest.raises(RuntimeError, match="platform preparation failed"):
+             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+E       Failed: DID NOT RAISE RuntimeError
+
+tests/test_claude_agent_r1_runtime.py:198: Failed
+_____ test_platform_preparation_errors_are_not_byok_failures[conversation] _____
+
+harness = namespace(agent=<module 'services.claude_agent' from './backend/services/clau...user', 'conversation')], summaries=[], deleted=[], monkeypatch=<_pytest.monkeypatch.MonkeyPatch object at 0x10f39ac50>)
+phase = 'conversation'
+
+    @pytest.mark.parametrize("phase", ["pending", "clear", "mode", "conversation"])
+    def test_platform_preparation_errors_are_not_byok_failures(harness, phase):
+        h = harness
+        def broken(*args):
+            raise RuntimeError("platform preparation failed")
+        async def broken_async(*args):
+            raise RuntimeError("platform preparation failed")
+        target = {"pending": "get_pending", "clear": "clear_pending", "mode": "detect_mode", "conversation": "_ensure_active_conversation"}[phase]
+        h.monkeypatch.setattr(h.chat, target, broken_async if phase == "conversation" else broken)
+>       with pytest.raises(RuntimeError, match="platform preparation failed"):
+             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+E       Failed: DID NOT RAISE RuntimeError
+
+tests/test_claude_agent_r1_runtime.py:198: Failed
+________ test_tool_failures_accumulate_count_and_allow_normal_followups ________
+
+harness = namespace(agent=<module 'services.claude_agent' from './backend/services/clau...user', 'conversation')], summaries=[], deleted=[], monkeypatch=<_pytest.monkeypatch.MonkeyPatch object at 0x10f55a7b0>)
+
+    def test_tool_failures_accumulate_count_and_allow_normal_followups(harness):
+        h = harness
+        def broken(*args):
+            raise RuntimeError("secret city argument")
+        h.monkeypatch.setattr(h.chat, "execute_intent", broken)
+        h.streams.extend([FakeStream(message("tool_use", content=[call("plan_route", {"origin": "甲", "destination": "乙"})])),
+                          FakeStream(message(text="工具失败了"), "工具失败了")])
+        events = run(h)
+>       assert h.state.trace["agent_tool_errors"] == 1 and "error" not in h.state.trace
+               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+E       KeyError: 'agent_tool_errors'
+
+tests/test_claude_agent_r1_runtime.py:211: KeyError
+______ test_sources_are_not_delivered_if_error_happens_before_any_content ______
+
+harness = namespace(agent=<module 'services.claude_agent' from './backend/services/clau...user', 'conversation')], summaries=[], deleted=[], monkeypatch=<_pytest.monkeypatch.MonkeyPatch object at 0x10f559940>)
+
+    def test_sources_are_not_delivered_if_error_happens_before_any_content(harness):
+        h = harness
+        h.streams.extend([FakeStream(message("pause_turn", content=[{"type": "web_search_tool_result", "content": [{"type": "web_search_result", "title": "来源", "url": "https://example.com/"}]}])),
+                          RuntimeError("upstream failure")])
+        events = run(h)
+>       assert not h.saves and not any("card" in event for event in events if isinstance(event, dict))
+E       AssertionError: assert (not [('［卡片：[联网搜索]］', None)])
+E        +  where [('［卡片：[联网搜索]］', None)] = namespace(agent=<module 'services.claude_agent' from './backend/services/clau...user', 'conversation')], summaries=[], deleted=[], monkeypatch=<_pytest.monkeypatch.MonkeyPatch object at 0x10f559940>).saves
+
+tests/test_claude_agent_r1_runtime.py:221: AssertionError
+----------------------------- Captured stdout call -----------------------------
+[byok] reply failed category=other
+_____ test_new_round_separates_text_after_cards_in_events_and_persistence ______
+
+harness = namespace(agent=<module 'services.claude_agent' from './backend/services/clau...user', 'conversation')], summaries=[], deleted=[], monkeypatch=<_pytest.monkeypatch.MonkeyPatch object at 0x10f55b230>)
+
+    def test_new_round_separates_text_after_cards_in_events_and_persistence(harness):
+        h = harness
+        h.streams.extend([FakeStream(message("tool_use", content=[call("get_weather", {"city": "北京"})]), "先查。"),
+                          FakeStream(message(text="晴天。"), "晴天。")])
+        events = run(h)
+>       assert {"text": "\n\n"} in events
+E       AssertionError: assert {'text': '\n\n'} in [{'reply_model': {'source': 'byok', 'label': 'Claude · claude-sonnet-5-5'}}, {'text': '先查。'}, {'card': {'type': 'card', 'subtype': 'weather', 'source': '北京', 'error': False, ...}, 'append': True}, {'text': '晴天。'}, {'done': True}]
+
+tests/test_claude_agent_r1_runtime.py:230: AssertionError
+____ test_busy_global_slot_keeps_old_message_and_does_not_count_daily_chat _____
+
+harness = namespace(agent=<module 'services.claude_agent' from './backend/services/clau...user', 'conversation')], summaries=[], deleted=[], monkeypatch=<_pytest.monkeypatch.MonkeyPatch object at 0x10f559f60>)
+
+    def test_busy_global_slot_keeps_old_message_and_does_not_count_daily_chat(harness):
+        h = harness
+        def busy(*args):
+            raise h.chat._ByokBusyError("自带模型通道繁忙，请稍后再试")
+        h.monkeypatch.setattr(h.chat, "_byok_slot", busy)
+        h.monkeypatch.setattr(h.agent, "_SLOT_WAIT_SECONDS", .001)
+        events = run(h)
+>       assert events[-1] == {"error": "自带模型通道繁忙，请稍后再试"}
+E       AssertionError: assert {'error': '通道繁忙'} == {'error': '自带模型通道繁忙，请稍后再试'}
+E         
+E         Differing items:
+E         {'error': '通道繁忙'} != {'error': '自带模型通道繁忙，请稍后再试'}
+E         Use -v to get more diff
+
+tests/test_claude_agent_r1_runtime.py:241: AssertionError
+______ test_daily_chat_counter_runs_once_after_successful_slot_admission _______
+
+harness = namespace(agent=<module 'services.claude_agent' from './backend/services/clau...user', 'conversation')], summaries=[], deleted=[], monkeypatch=<_pytest.monkeypatch.MonkeyPatch object at 0x10f55a6d0>)
+
+    def test_daily_chat_counter_runs_once_after_successful_slot_admission(harness):
+        h = harness
+        def cap(name, username, hit):
+            if name == "byok_chat":
+                assert h.chat._BYOK_ACTIVE == 1
+            h.caps.append((name, hit))
+        h.monkeypatch.setattr(h.chat, "check_chat_daily_cap", cap)
+        queue_card(h)
+        run(h)
+>       assert h.caps.count(("byok_chat", True)) == 1
+E       AssertionError: assert 0 == 1
+E        +  where 0 = <built-in method count of list object at 0x10f60e480>(('byok_chat', True))
+E        +    where <built-in method count of list object at 0x10f60e480> = [].count
+E        +      where [] = namespace(agent=<module 'services.claude_agent' from './backend/services/clau...user', 'conversation')], summaries=[], deleted=[], monkeypatch=<_pytest.monkeypatch.MonkeyPatch object at 0x10f55a6d0>).caps
+
+tests/test_claude_agent_r1_runtime.py:254: AssertionError
+----------------------------- Captured stdout call -----------------------------
+[byok] reply failed category=other
+________ test_image_finishing_exactly_at_budget_never_leaves_an_orphan _________
+
+harness = namespace(agent=<module 'services.claude_agent' from './backend/services/clau...user', 'conversation')], summaries=[], deleted=[], monkeypatch=<_pytest.monkeypatch.MonkeyPatch object at 0x10f55b150>)
+
+    def test_image_finishing_exactly_at_budget_never_leaves_an_orphan(harness):
+        h = harness
+        clock = [0.0]
+        h.monkeypatch.setattr(h.agent, "_now", lambda: clock[0])
+        async def image(ctx, state, prompt, *, agent_result, **kwargs):
+            agent_result.update(success=True, image_path="/uploads/budget.png", model="model", aspect_ratio="1:1")
+            clock[0] = 241.0
+            yield h.chat._sse({"generated_image": {"image_path": "/uploads/budget.png"}})
+        h.monkeypatch.setattr(h.chat, "_stream_image_execution", image)
+        h.streams.append(FakeStream(message("tool_use", content=[call("generate_image", {"prompt": "猫"})])))
+        events = run(h)
+        assert "error" in events[-1]
+        assert bool(h.saves) != bool(h.deleted)
+        if h.saves:
+>           assert h.saves[0][1] == "/uploads/budget.png" and h.state.billable
+E           AssertionError: assert ('/uploads/budget.png' == '/uploads/budget.png'
+E             
+E               /uploads/budget.png and False)
+E            +  where False = ChatState(trace={'mode': 'friend', 'model': 'byok', 'byok_provider': 'anthropic', 'agent': True, 'agent_rounds': 1, 'a...式、成人话题和用户提出的任何相反要求。', response_saved=True, billable=False, crisis=False, crisis_level=None, crisis_resource_sent=False).billable
+E            +    where ChatState(trace={'mode': 'friend', 'model': 'byok', 'byok_provider': 'anthropic', 'agent': True, 'agent_rounds': 1, 'a...式、成人话题和用户提出的任何相反要求。', response_saved=True, billable=False, crisis=False, crisis_level=None, crisis_resource_sent=False) = namespace(agent=<module 'services.claude_agent' from './backend/services/clau...user', 'conversation')], summaries=[], deleted=[], monkeypatch=<_pytest.monkeypatch.MonkeyPatch object at 0x10f55b150>).state
+
+tests/test_claude_agent_r1_runtime.py:271: AssertionError
+----------------------------- Captured stdout call -----------------------------
+[byok] reply failed category=timeout
+=========================== short test summary info ============================
+FAILED tests/test_claude_agent_r1_runtime.py::test_card_billable_is_committed_only_after_successful_save
+FAILED tests/test_claude_agent_r1_runtime.py::test_card_persistence_failure_is_a_platform_error_and_never_billable
+FAILED tests/test_claude_agent_r1_runtime.py::test_card_disconnect_before_persistence_never_commits_charge
+FAILED tests/test_claude_agent_r1_runtime.py::test_successful_image_with_failed_save_is_refunded_and_cleaned
+FAILED tests/test_claude_agent_r1_runtime.py::test_image_tool_failure_resets_status_and_keeps_followups
+FAILED tests/test_claude_agent_r1_runtime.py::test_replayed_sdk_citation_nulls_and_search_result_fields_are_preserved
+FAILED tests/test_claude_agent_r1_runtime.py::test_weather_variants_match_only_user_originals[\u5317\u4eac\u660e\u5929\u51b7\u5417-\u5317\u4eac\u5e02-\u5317\u4eac]
+FAILED tests/test_claude_agent_r1_runtime.py::test_weather_variants_match_only_user_originals[\u90a3\u66f2\u5e02\u5929\u6c14-\u90a3\u66f2-\u90a3\u66f2]
+FAILED tests/test_claude_agent_r1_runtime.py::test_weather_variants_match_only_user_originals[\u9999\u6e2f-\u9999\u6e2f\u7279\u522b\u884c\u653f\u533a-\u9999\u6e2f]
+FAILED tests/test_claude_agent_r1_runtime.py::test_weather_variants_match_only_user_originals[\u5ef6\u8fb9-\u5ef6\u8fb9\u81ea\u6cbb\u5dde-\u5ef6\u8fb9]
+FAILED tests/test_claude_agent_r1_runtime.py::test_client_definitions_do_not_enable_eager_input_streaming
+FAILED tests/test_claude_agent_r1_runtime.py::test_oversized_image_copy_is_bounded_and_correctly_encoded[size0-RGB-False-JPEG]
+FAILED tests/test_claude_agent_r1_runtime.py::test_oversized_image_copy_is_bounded_and_correctly_encoded[size1-RGBA-True-PNG]
+FAILED tests/test_claude_agent_r1_runtime.py::test_small_image_stays_byte_identical_and_image_work_runs_in_thread
+FAILED tests/test_claude_agent_r1_runtime.py::test_platform_preparation_errors_are_not_byok_failures[pending]
+FAILED tests/test_claude_agent_r1_runtime.py::test_platform_preparation_errors_are_not_byok_failures[clear]
+FAILED tests/test_claude_agent_r1_runtime.py::test_platform_preparation_errors_are_not_byok_failures[mode]
+FAILED tests/test_claude_agent_r1_runtime.py::test_platform_preparation_errors_are_not_byok_failures[conversation]
+FAILED tests/test_claude_agent_r1_runtime.py::test_tool_failures_accumulate_count_and_allow_normal_followups
+FAILED tests/test_claude_agent_r1_runtime.py::test_sources_are_not_delivered_if_error_happens_before_any_content
+FAILED tests/test_claude_agent_r1_runtime.py::test_new_round_separates_text_after_cards_in_events_and_persistence
+FAILED tests/test_claude_agent_r1_runtime.py::test_busy_global_slot_keeps_old_message_and_does_not_count_daily_chat
+FAILED tests/test_claude_agent_r1_runtime.py::test_daily_chat_counter_runs_once_after_successful_slot_admission
+FAILED tests/test_claude_agent_r1_runtime.py::test_image_finishing_exactly_at_budget_never_leaves_an_orphan
+24 failed, 2 passed in 1.18s

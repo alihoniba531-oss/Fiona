@@ -1,0 +1,18 @@
+============================= test session starts ==============================
+platform darwin -- Python 3.14.6, pytest-9.1.1, pluggy-1.6.0 -- ./backend/.venv/bin/python
+cachedir: .pytest_cache
+rootdir: ./backend
+plugins: anyio-4.14.2
+collecting ... collected 130 items / 124 deselected / 6 selected
+
+tests/test_byok_client.py::test_r1_watchdog_real_loopback[deepseek] SKIPPED [ 16%]
+tests/test_byok_client.py::test_r1_watchdog_real_loopback[anthropic] SKIPPED [ 33%]
+tests/test_byok_client.py::test_r2_loopback_interrupt_race[watchdog-deepseek] SKIPPED [ 50%]
+tests/test_byok_client.py::test_r2_loopback_interrupt_race[watchdog-anthropic] SKIPPED [ 66%]
+tests/test_byok_client.py::test_r2_loopback_interrupt_race[cancel-deepseek] SKIPPED [ 83%]
+tests/test_byok_client.py::test_r2_loopback_interrupt_race[cancel-anthropic] SKIPPED [100%]
+
+=========================== short test summary info ============================
+SKIPPED [2] tests/test_byok_client.py:652: R1-6 loopback bind is denied by sandbox permissions
+SKIPPED [4] tests/test_byok_client.py:882: R2-1 loopback bind is denied by sandbox permissions; 20-iteration race test requires host rerun
+====================== 6 skipped, 124 deselected in 0.84s ======================

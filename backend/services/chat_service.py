@@ -76,6 +76,7 @@ _BYOK_POOL_LOCK = threading.Lock()
 TOOL_DEFAULT_IMAGE_MODEL = "seedream-5.0-flash"
 _IMAGE_MODEL_LABELS = {"seedream-5.0-flash": "Seedream 5.0 Flash", "qwen-image-3.0": "Qwen Image 3.0"}
 _IMAGE_TOOL_ENV_WARNED = False
+_CLAUDE_AGENT_ENV_WARNED = False
 _IMAGE_HEARTBEAT_SECONDS = 10
 IMAGE_PENDING_CANCEL_PATTERN = r"^(?:算了|取消|不用了|不画了|不要了|停止|别画了)[吧了。！!\s]*$"
 IMAGE_PLANNER_FOLLOWUP_PATTERN = "使用的描述|想生成什么画面|画|提示词|prompt"
@@ -257,6 +258,31 @@ def _image_tool_enabled(ctx: "ChatContext", state: "ChatState") -> bool:
         or ctx.byok_unreserved or ctx.byok_error is not None):
         return False
     return True
+
+
+def _claude_agent_enabled(ctx: "ChatContext", state: "ChatState") -> bool:
+    """Read the Claude rollout switch once, before entering legacy routing."""
+    global _CLAUDE_AGENT_ENV_WARNED
+    value = os.getenv("FIONA_CLAUDE_AGENT", "1")
+    if value == "0":
+        return False
+    if value != "1" and not _CLAUDE_AGENT_ENV_WARNED:
+        logging.getLogger(__name__).warning("FIONA_CLAUDE_AGENT 非法值，按 1 处理")
+        _CLAUDE_AGENT_ENV_WARNED = True
+    config = ctx.byok_config
+    return bool(
+        ctx.request_mode == "chat" and state.crisis_level is None
+        and config and config.get("enabled") and config.get("provider") == "anthropic"
+        and ctx.byok_error is None and not ctx.byok_unreserved
+    )
+
+
+async def stream_claude_agent(ctx: "ChatContext", state: "ChatState"):
+    """Load the isolated agent path without changing legacy module startup."""
+    from services.claude_agent import stream_claude_agent as agent_reply
+    async with aclosing(agent_reply(ctx, state)) as reply:
+        async for event in reply:
+            yield event
 
 
 def _image_tool_mode(ctx: "ChatContext") -> str:
@@ -918,7 +944,7 @@ async def stream_generated_image(
 async def _stream_image_execution(
     ctx: ChatContext, state: ChatState, prompt: str, *, aspect_ratio: str | None = None,
     model_id: str | None = None, lead_text: str = "", source: str | None = None,
-    image_source: str = "tool",
+    image_source: str = "tool", agent_result: dict | None = None,
 ):
     """生成图先保存到固定会话，再交给页面；中断和删除均不留下孤立附件。"""
     tool_source = source == "tool"
@@ -932,6 +958,8 @@ async def _stream_image_execution(
             alternate = DEFAULT_IMAGE_MODEL if selected_model == TOOL_DEFAULT_IMAGE_MODEL else TOOL_DEFAULT_IMAGE_MODEL
             if not image_model_available(alternate):
                 state.trace["error"] = "ImageGenerationError"
+                if agent_result is not None:
+                    agent_result["error"] = "图片生成服务尚未配置，请联系管理员。"
                 yield _sse({"error": "图片生成服务尚未配置，请联系管理员。"})
                 return
             fallback_note = f"（{_IMAGE_MODEL_LABELS[selected_model]} 暂未配置，这次用 {_IMAGE_MODEL_LABELS[alternate]} 生成。）"
@@ -951,6 +979,8 @@ async def _stream_image_execution(
         state.trace["error"] = "ImageGenerationBusy"
         if _needs_crisis_resource(state):
             yield _crisis_resource_event(state)
+        if agent_result is not None:
+            agent_result["error"] = "已有图片正在生成，请等待完成后再试"
         yield _sse({"error": "已有图片正在生成，请等待完成后再试"})
         return
     _IMAGE_GENERATION_USERS.add(ctx.user)
@@ -1002,28 +1032,38 @@ async def _stream_image_execution(
         if not tool_source:
             state.trace["model"] = generated["model"]
         image_reply = "图片已修改。" if editing else "图片已生成。"
+        agent_separator = "\n\n" if agent_result is not None and state.full_response else ""
         if tool_source:
             lead_text = lead_text.strip()
             description_line = f"\n\n使用的描述（{_IMAGE_MODEL_LABELS[selected_model]}）：{prompt}"
-            state.full_response = (lead_text + "\n\n" if lead_text else "") + image_reply + description_line + fallback_note
+            if agent_result is not None:
+                state.full_response += ("\n\n" if state.full_response else "") + image_reply + description_line + fallback_note
+            else:
+                state.full_response = (lead_text + "\n\n" if lead_text else "") + image_reply + description_line + fallback_note
         else:
             state.full_response = image_reply
         resource_needed = _needs_crisis_resource(state)
         if resource_needed:
             state.full_response += "\n\n" + CRISIS_RESOURCE_NOTE
         # 若客户端恰好在落库期间离开，先确认事务结果，避免误删已持久化的图。
-        save_task = asyncio.create_task(_save_response(ctx, state, image_path=image_path))
-        with anyio.CancelScope(shield=True):
-            try:
-                await asyncio.shield(save_task)
-            except asyncio.CancelledError:
-                await save_task
-                raise
-        state.billable = True
+        if agent_result is not None:
+            # The agent owns this attachment until its single final persistence.
+            agent_result.update(success=True, image_path=image_path,
+                                model=selected_model, aspect_ratio=ratio)
+        else:
+            save_task = asyncio.create_task(_save_response(ctx, state, image_path=image_path))
+            with anyio.CancelScope(shield=True):
+                try:
+                    await asyncio.shield(save_task)
+                except asyncio.CancelledError:
+                    await save_task
+                    raise
+        if agent_result is None:
+            state.billable = True
         if editing:
             generated = {**generated, "reference_image_path": references[0], "reference_image_paths": references}
         yield _sse({"generated_image": generated})
-        yield _sse({"text": ("\n\n" if tool_source and lead_text else "") + image_reply})
+        yield _sse({"text": (agent_separator if agent_result is not None else ("\n\n" if tool_source and lead_text else "")) + image_reply})
         if tool_source:
             yield _sse({"text": description_line, "speak": False})
             if fallback_note:
@@ -1031,7 +1071,8 @@ async def _stream_image_execution(
         if resource_needed:
             state.crisis_resource_sent = True
             yield _sse({"text": "\n\n" + CRISIS_RESOURCE_NOTE})
-        yield _sse({"done": True})
+        if agent_result is None:
+            yield _sse({"done": True})
     except ImageGenerationError as exc:
         state.trace["error"] = "ImageGenerationError"
         if exc.provider_status is not None:
@@ -1046,6 +1087,8 @@ async def _stream_image_execution(
                 message = "这次画面描述没通过内容审核，换个说法再让我画吧。"
             elif exc.category == "unavailable" and selected_model == TOOL_DEFAULT_IMAGE_MODEL:
                 message = "Seedream 暂时用不了（可能未开通或欠费），可以说『用千问画』改用 Qwen Image 3.0。"
+        if agent_result is not None:
+            agent_result["error"] = message
         yield _sse({"error": message})
     finally:
         with anyio.CancelScope(shield=True):
@@ -1057,7 +1100,7 @@ async def _stream_image_execution(
                     image_path = image_path or generated.get("image_path")
                 except (asyncio.CancelledError, Exception):
                     pass
-            if image_path and not state.response_saved:
+            if image_path and not state.response_saved and not (agent_result and agent_result.get("success")):
                 delete_uploaded_files([image_path])
             _IMAGE_GENERATION_USERS.discard(ctx.user)
 
@@ -1668,6 +1711,11 @@ async def run_chat(
             async for event in _save_text_reply(ctx, state):
                 yield event
             yield _sse({"done": True})
+            return
+        if _claude_agent_enabled(ctx, state):
+            async with aclosing(stream_claude_agent(ctx, state)) as reply:
+                async for event in reply:
+                    yield event
             return
         image_tool_on = _image_tool_enabled(ctx, state)
         if image_tool_on:

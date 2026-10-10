@@ -1,0 +1,1 @@
+{"command": ["git", "diff", "--", "backend/tests/conftest.py"], "cwd": ".", "offline_guard": true}

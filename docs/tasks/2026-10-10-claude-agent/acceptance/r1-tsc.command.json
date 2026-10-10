@@ -1,0 +1,1 @@
+{"command": ["npx", "tsc", "--noEmit"], "cwd": "frontend", "offline_guard": true}

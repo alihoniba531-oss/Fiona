@@ -1,0 +1,2968 @@
+........................................................................ [  2%]
+........................................................................ [  4%]
+........................................................................ [  6%]
+........................................................................ [  8%]
+........................................................................ [ 10%]
+........................................................................ [ 12%]
+........................................................................ [ 14%]
+........................................................................ [ 16%]
+........................................F...........FFF....FFFFFFF..FF.. [ 18%]
+.........F.F.F.F.F.F.FFF.F.F.F......F.........F...FFFFFFFFFFF......F.... [ 20%]
+........................................................................ [ 22%]
+...........................ss.................ssss...................... [ 24%]
+........................................................................ [ 26%]
+........................................................................ [ 28%]
+.................................................FFF.................... [ 31%]
+........................................................................ [ 33%]
+........................................................................ [ 35%]
+........................................................................ [ 37%]
+........................................................................ [ 39%]
+........................................................FFFF.........F.. [ 41%]
+..F...F.F.F.....F....F.F...F............................................ [ 43%]
+........................................................................ [ 45%]
+........................................................................ [ 47%]
+........................................................................ [ 49%]
+........................................................................ [ 51%]
+........................................................................ [ 53%]
+........................................................................ [ 55%]
+........................................................................ [ 57%]
+........................................................................ [ 59%]
+........................................................................ [ 62%]
+........................................................................ [ 64%]
+........................................................................ [ 66%]
+........................................................................ [ 68%]
+........................................................................ [ 70%]
+........................................................................ [ 72%]
+........................................................................ [ 74%]
+........................................................................ [ 76%]
+........................................................................ [ 78%]
+........................................................................ [ 80%]
+........................................................................ [ 82%]
+........................................................................ [ 84%]
+........................................................................ [ 86%]
+........................................................................ [ 88%]
+........................................................................ [ 91%]
+........................................................................ [ 93%]
+........................................................................ [ 95%]
+........................................................................ [ 97%]
+........................................................................ [ 99%]
+.........................                                                [100%]
+=================================== FAILURES ===================================
+____________ test_reply_uses_dedicated_pool_and_refunds[10-friend] _____________
+
+client = <starlette.testclient.TestClient object at 0x10e293680>
+dev_headers = {'X-Dev-User': 'smoke_tester'}
+monkeypatch = <_pytest.monkeypatch.MonkeyPatch object at 0x107ad1470>
+mode = 'friend', amount = 10
+
+    @pytest.mark.parametrize("mode", ["friend", "mirror"])
+    @pytest.mark.parametrize("amount", [0, 5, 10])
+    def test_reply_uses_dedicated_pool_and_refunds(client, dev_headers, monkeypatch, mode, amount):
+        import services.chat_service as chat
+        user, conversation, headers = setup(client, dev_headers, monkeypatch, balance=amount)
+        monkeypatch.setattr(chat, "detect_mode", lambda *a, **k: mode)
+        calls, platform, names, replies = stub_reply(monkeypatch)
+        accounting = []
+        monkeypatch.setattr(chat.token_budget, "add", lambda *a: accounting.append(1))
+        result = events(client.post("/chat", headers=headers, json={"message": "今天挺轻松", "conversation_id": conversation}))
+>       assert len(calls) == 1 and calls[0]["mirror"] is (mode == "mirror")
+E       assert (0 == 1)
+E        +  where 0 = len([])
+
+tests/test_byok_chat.py:126: AssertionError
+----------------------------- Captured stdout call -----------------------------
+[硬词检测] chars=5, detected_count=0
+[byok] reply failed category=connection
+__________________ test_paid_branches_still_cost_ten[weather] __________________
+
+client = <starlette.testclient.TestClient object at 0x10f38f240>
+dev_headers = {'X-Dev-User': 'smoke_tester'}
+monkeypatch = <_pytest.monkeypatch.MonkeyPatch object at 0x10f373070>
+branch = 'weather'
+
+    @pytest.mark.parametrize("branch", ["weather", "image", "vision"])
+    def test_paid_branches_still_cost_ten(client, dev_headers, monkeypatch, branch):
+        import services.chat_service as chat
+        from pathlib import Path
+        from utils import media
+        user, conversation, headers = setup(client, dev_headers, monkeypatch)
+        calls, platform, *_ = stub_reply(monkeypatch)
+        monkeypatch.setattr(chat, "recognize_intent", lambda *a, **k: {
+            "intent": "generate_image" if branch == "image" else "weather", "params": {"city": "北京"}, "missing": [],
+        })
+        monkeypatch.setattr(chat, "execute_intent", lambda *a, **k: {"type": "card", "subtype": "weather", "points": ["晴"]})
+        async def generate(*a, **k):
+            path = "/uploads/generated_" + "f" * 32 + ".png"
+            Path(media.UPLOADS_DIR, path.rsplit("/", 1)[1]).write_bytes(b"image")
+            return {"image_path": path, "model": "platform-image"}
+        monkeypatch.setattr(chat, "generate_image", generate)
+        monkeypatch.setattr(chat.QWEN_CLIENT.chat.completions, "create", lambda *a, **k: FakeStream())
+        payload = {"message": "画一只猫" if branch == "image" else "北京天气", "conversation_id": conversation}
+        if branch == "vision":
+            payload["image_base64"] = "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mNk+A8AAQUBAScY42YAAAAASUVORK5CYII="
+        result = events(client.post("/chat", headers=headers, json=payload))
+>       assert result[-1] == {"done": True}
+E       AssertionError: assert {'error': '你的...。本条没有改用平台模型。'} == {'done': True}
+E         
+E         Left contains 1 more item:
+E         {'error': '你的模型调用失败：连不上该服务。本条没有改用平台模型。'}
+E         Right contains 1 more item:
+E         {'done': True}
+E         Use -v to get more diff
+
+tests/test_byok_chat.py:204: AssertionError
+----------------------------- Captured stdout call -----------------------------
+[硬词检测] chars=4, detected_count=0
+[byok] reply failed category=connection
+___________________ test_paid_branches_still_cost_ten[image] ___________________
+
+client = <starlette.testclient.TestClient object at 0x10f38f350>
+dev_headers = {'X-Dev-User': 'smoke_tester'}
+monkeypatch = <_pytest.monkeypatch.MonkeyPatch object at 0x10e74ec80>
+branch = 'image'
+
+    @pytest.mark.parametrize("branch", ["weather", "image", "vision"])
+    def test_paid_branches_still_cost_ten(client, dev_headers, monkeypatch, branch):
+        import services.chat_service as chat
+        from pathlib import Path
+        from utils import media
+        user, conversation, headers = setup(client, dev_headers, monkeypatch)
+        calls, platform, *_ = stub_reply(monkeypatch)
+        monkeypatch.setattr(chat, "recognize_intent", lambda *a, **k: {
+            "intent": "generate_image" if branch == "image" else "weather", "params": {"city": "北京"}, "missing": [],
+        })
+        monkeypatch.setattr(chat, "execute_intent", lambda *a, **k: {"type": "card", "subtype": "weather", "points": ["晴"]})
+        async def generate(*a, **k):
+            path = "/uploads/generated_" + "f" * 32 + ".png"
+            Path(media.UPLOADS_DIR, path.rsplit("/", 1)[1]).write_bytes(b"image")
+            return {"image_path": path, "model": "platform-image"}
+        monkeypatch.setattr(chat, "generate_image", generate)
+        monkeypatch.setattr(chat.QWEN_CLIENT.chat.completions, "create", lambda *a, **k: FakeStream())
+        payload = {"message": "画一只猫" if branch == "image" else "北京天气", "conversation_id": conversation}
+        if branch == "vision":
+            payload["image_base64"] = "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mNk+A8AAQUBAScY42YAAAAASUVORK5CYII="
+        result = events(client.post("/chat", headers=headers, json=payload))
+>       assert result[-1] == {"done": True}
+E       AssertionError: assert {'error': '你的...。本条没有改用平台模型。'} == {'done': True}
+E         
+E         Left contains 1 more item:
+E         {'error': '你的模型调用失败：连不上该服务。本条没有改用平台模型。'}
+E         Right contains 1 more item:
+E         {'done': True}
+E         Use -v to get more diff
+
+tests/test_byok_chat.py:204: AssertionError
+----------------------------- Captured stdout call -----------------------------
+[硬词检测] chars=4, detected_count=0
+[byok] reply failed category=connection
+__________________ test_paid_branches_still_cost_ten[vision] ___________________
+
+client = <starlette.testclient.TestClient object at 0x10f38fdf0>
+dev_headers = {'X-Dev-User': 'smoke_tester'}
+monkeypatch = <_pytest.monkeypatch.MonkeyPatch object at 0x10f373f50>
+branch = 'vision'
+
+    @pytest.mark.parametrize("branch", ["weather", "image", "vision"])
+    def test_paid_branches_still_cost_ten(client, dev_headers, monkeypatch, branch):
+        import services.chat_service as chat
+        from pathlib import Path
+        from utils import media
+        user, conversation, headers = setup(client, dev_headers, monkeypatch)
+        calls, platform, *_ = stub_reply(monkeypatch)
+        monkeypatch.setattr(chat, "recognize_intent", lambda *a, **k: {
+            "intent": "generate_image" if branch == "image" else "weather", "params": {"city": "北京"}, "missing": [],
+        })
+        monkeypatch.setattr(chat, "execute_intent", lambda *a, **k: {"type": "card", "subtype": "weather", "points": ["晴"]})
+        async def generate(*a, **k):
+            path = "/uploads/generated_" + "f" * 32 + ".png"
+            Path(media.UPLOADS_DIR, path.rsplit("/", 1)[1]).write_bytes(b"image")
+            return {"image_path": path, "model": "platform-image"}
+        monkeypatch.setattr(chat, "generate_image", generate)
+        monkeypatch.setattr(chat.QWEN_CLIENT.chat.completions, "create", lambda *a, **k: FakeStream())
+        payload = {"message": "画一只猫" if branch == "image" else "北京天气", "conversation_id": conversation}
+        if branch == "vision":
+            payload["image_base64"] = "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mNk+A8AAQUBAScY42YAAAAASUVORK5CYII="
+        result = events(client.post("/chat", headers=headers, json=payload))
+>       assert result[-1] == {"done": True}
+E       AssertionError: assert {'error': '你的...。本条没有改用平台模型。'} == {'done': True}
+E         
+E         Left contains 1 more item:
+E         {'error': '你的模型调用失败：连不上该服务。本条没有改用平台模型。'}
+E         Right contains 1 more item:
+E         {'done': True}
+E         Use -v to get more diff
+
+tests/test_byok_chat.py:204: AssertionError
+----------------------------- Captured stdout call -----------------------------
+[硬词检测] chars=4, detected_count=0
+[byok] reply failed category=connection
+__________ test_error_mapping_no_fallback_refund_or_secret[failure0] ___________
+
+client = <starlette.testclient.TestClient object at 0x10f3e4c00>
+dev_headers = {'X-Dev-User': 'smoke_tester'}
+monkeypatch = <_pytest.monkeypatch.MonkeyPatch object at 0x10e270360>
+capsys = <_pytest.capture.CaptureFixture object at 0x10f3a97f0>
+failure = ProviderFailure('sk-private-test-key https://private.example.net claude-opus-5-5')
+
+    @pytest.mark.parametrize("failure", [ProviderFailure(401), ProviderFailure(404), ProviderFailure(429), TimeoutError(), openai.APIConnectionError(request=httpx.Request("POST", "https://private.example.net")), NeedsReentryError(), ByokUnavailableError()])
+    def test_error_mapping_no_fallback_refund_or_secret(client, dev_headers, monkeypatch, capsys, failure):
+        user, conversation, headers = setup(client, dev_headers, monkeypatch)
+        calls, platform, *_ = stub_reply(monkeypatch, failure=failure)
+        response = client.post("/chat", headers=headers, json={"message": "正常聊天", "conversation_id": conversation})
+>       assert events(response) == [{"error": error_message(failure)}]
+E       AssertionError: assert [{'error': '你...本条没有改用平台模型。'}] == [{'error': '你...本条没有改用平台模型。'}]
+E         
+E         At index 0 diff: {'error': '你的模型调用失败：连不上该服务。本条没有改用平台模型。'} != {'error': '你的模型调用失败：Key 无效或没有权限。本条没有改用平台模型。'}
+E         Use -v to get more diff
+
+tests/test_byok_chat.py:248: AssertionError
+----------------------------- Captured stdout call -----------------------------
+[硬词检测] chars=4, detected_count=0
+[byok] reply failed category=connection
+__________ test_error_mapping_no_fallback_refund_or_secret[failure1] ___________
+
+client = <starlette.testclient.TestClient object at 0x10f3e4490>
+dev_headers = {'X-Dev-User': 'smoke_tester'}
+monkeypatch = <_pytest.monkeypatch.MonkeyPatch object at 0x10f3cf770>
+capsys = <_pytest.capture.CaptureFixture object at 0x10f3e6030>
+failure = ProviderFailure('sk-private-test-key https://private.example.net claude-opus-5-5')
+
+    @pytest.mark.parametrize("failure", [ProviderFailure(401), ProviderFailure(404), ProviderFailure(429), TimeoutError(), openai.APIConnectionError(request=httpx.Request("POST", "https://private.example.net")), NeedsReentryError(), ByokUnavailableError()])
+    def test_error_mapping_no_fallback_refund_or_secret(client, dev_headers, monkeypatch, capsys, failure):
+        user, conversation, headers = setup(client, dev_headers, monkeypatch)
+        calls, platform, *_ = stub_reply(monkeypatch, failure=failure)
+        response = client.post("/chat", headers=headers, json={"message": "正常聊天", "conversation_id": conversation})
+>       assert events(response) == [{"error": error_message(failure)}]
+E       AssertionError: assert [{'error': '你...本条没有改用平台模型。'}] == [{'error': '你...本条没有改用平台模型。'}]
+E         
+E         At index 0 diff: {'error': '你的模型调用失败：连不上该服务。本条没有改用平台模型。'} != {'error': '你的模型调用失败：模型名或地址不存在。本条没有改用平台模型。'}
+E         Use -v to get more diff
+
+tests/test_byok_chat.py:248: AssertionError
+----------------------------- Captured stdout call -----------------------------
+[硬词检测] chars=4, detected_count=0
+[byok] reply failed category=connection
+__________ test_error_mapping_no_fallback_refund_or_secret[failure2] ___________
+
+client = <starlette.testclient.TestClient object at 0x10f3e48d0>
+dev_headers = {'X-Dev-User': 'smoke_tester'}
+monkeypatch = <_pytest.monkeypatch.MonkeyPatch object at 0x10f3cfaf0>
+capsys = <_pytest.capture.CaptureFixture object at 0x10f3e4f30>
+failure = ProviderFailure('sk-private-test-key https://private.example.net claude-opus-5-5')
+
+    @pytest.mark.parametrize("failure", [ProviderFailure(401), ProviderFailure(404), ProviderFailure(429), TimeoutError(), openai.APIConnectionError(request=httpx.Request("POST", "https://private.example.net")), NeedsReentryError(), ByokUnavailableError()])
+    def test_error_mapping_no_fallback_refund_or_secret(client, dev_headers, monkeypatch, capsys, failure):
+        user, conversation, headers = setup(client, dev_headers, monkeypatch)
+        calls, platform, *_ = stub_reply(monkeypatch, failure=failure)
+        response = client.post("/chat", headers=headers, json={"message": "正常聊天", "conversation_id": conversation})
+>       assert events(response) == [{"error": error_message(failure)}]
+E       AssertionError: assert [{'error': '你...本条没有改用平台模型。'}] == [{'error': '你...本条没有改用平台模型。'}]
+E         
+E         At index 0 diff: {'error': '你的模型调用失败：连不上该服务。本条没有改用平台模型。'} != {'error': '你的模型调用失败：额度不足或请求过于频繁。本条没有改用平台模型。'}
+E         Use -v to get more diff
+
+tests/test_byok_chat.py:248: AssertionError
+----------------------------- Captured stdout call -----------------------------
+[硬词检测] chars=4, detected_count=0
+[byok] reply failed category=connection
+__________ test_error_mapping_no_fallback_refund_or_secret[failure3] ___________
+
+client = <starlette.testclient.TestClient object at 0x10f3e6360>
+dev_headers = {'X-Dev-User': 'smoke_tester'}
+monkeypatch = <_pytest.monkeypatch.MonkeyPatch object at 0x10f3cf070>
+capsys = <_pytest.capture.CaptureFixture object at 0x10f3dbb50>
+failure = TimeoutError()
+
+    @pytest.mark.parametrize("failure", [ProviderFailure(401), ProviderFailure(404), ProviderFailure(429), TimeoutError(), openai.APIConnectionError(request=httpx.Request("POST", "https://private.example.net")), NeedsReentryError(), ByokUnavailableError()])
+    def test_error_mapping_no_fallback_refund_or_secret(client, dev_headers, monkeypatch, capsys, failure):
+        user, conversation, headers = setup(client, dev_headers, monkeypatch)
+        calls, platform, *_ = stub_reply(monkeypatch, failure=failure)
+        response = client.post("/chat", headers=headers, json={"message": "正常聊天", "conversation_id": conversation})
+>       assert events(response) == [{"error": error_message(failure)}]
+E       AssertionError: assert [{'error': '你...本条没有改用平台模型。'}] == [{'error': '你...本条没有改用平台模型。'}]
+E         
+E         At index 0 diff: {'error': '你的模型调用失败：连不上该服务。本条没有改用平台模型。'} != {'error': '你的模型调用失败：响应超时。本条没有改用平台模型。'}
+E         Use -v to get more diff
+
+tests/test_byok_chat.py:248: AssertionError
+----------------------------- Captured stdout call -----------------------------
+[硬词检测] chars=4, detected_count=0
+[byok] reply failed category=connection
+__________ test_error_mapping_no_fallback_refund_or_secret[failure4] ___________
+
+client = <starlette.testclient.TestClient object at 0x10f38ff00>
+dev_headers = {'X-Dev-User': 'smoke_tester'}
+monkeypatch = <_pytest.monkeypatch.MonkeyPatch object at 0x107b08d70>
+capsys = <_pytest.capture.CaptureFixture object at 0x10f3d9950>
+failure = APIConnectionError('Connection error.')
+
+    @pytest.mark.parametrize("failure", [ProviderFailure(401), ProviderFailure(404), ProviderFailure(429), TimeoutError(), openai.APIConnectionError(request=httpx.Request("POST", "https://private.example.net")), NeedsReentryError(), ByokUnavailableError()])
+    def test_error_mapping_no_fallback_refund_or_secret(client, dev_headers, monkeypatch, capsys, failure):
+        user, conversation, headers = setup(client, dev_headers, monkeypatch)
+        calls, platform, *_ = stub_reply(monkeypatch, failure=failure)
+        response = client.post("/chat", headers=headers, json={"message": "正常聊天", "conversation_id": conversation})
+        assert events(response) == [{"error": error_message(failure)}]
+>       assert calls and not platform and balance(user) == 10
+E       assert ([])
+
+tests/test_byok_chat.py:249: AssertionError
+----------------------------- Captured stdout call -----------------------------
+[硬词检测] chars=4, detected_count=0
+[byok] reply failed category=connection
+__________ test_error_mapping_no_fallback_refund_or_secret[failure5] ___________
+
+client = <starlette.testclient.TestClient object at 0x10f38f680>
+dev_headers = {'X-Dev-User': 'smoke_tester'}
+monkeypatch = <_pytest.monkeypatch.MonkeyPatch object at 0x107b09390>
+capsys = <_pytest.capture.CaptureFixture object at 0x10f3b1a90>
+failure = NeedsReentryError()
+
+    @pytest.mark.parametrize("failure", [ProviderFailure(401), ProviderFailure(404), ProviderFailure(429), TimeoutError(), openai.APIConnectionError(request=httpx.Request("POST", "https://private.example.net")), NeedsReentryError(), ByokUnavailableError()])
+    def test_error_mapping_no_fallback_refund_or_secret(client, dev_headers, monkeypatch, capsys, failure):
+        user, conversation, headers = setup(client, dev_headers, monkeypatch)
+        calls, platform, *_ = stub_reply(monkeypatch, failure=failure)
+        response = client.post("/chat", headers=headers, json={"message": "正常聊天", "conversation_id": conversation})
+>       assert events(response) == [{"error": error_message(failure)}]
+E       AssertionError: assert [{'error': '你...本条没有改用平台模型。'}] == [{'error': '你...本条没有改用平台模型。'}]
+E         
+E         At index 0 diff: {'error': '你的模型调用失败：连不上该服务。本条没有改用平台模型。'} != {'error': '你的模型调用失败：配置需要重新填写 Key。本条没有改用平台模型。'}
+E         Use -v to get more diff
+
+tests/test_byok_chat.py:248: AssertionError
+----------------------------- Captured stdout call -----------------------------
+[硬词检测] chars=4, detected_count=0
+[byok] reply failed category=connection
+__________ test_error_mapping_no_fallback_refund_or_secret[failure6] ___________
+
+client = <starlette.testclient.TestClient object at 0x10f38f460>
+dev_headers = {'X-Dev-User': 'smoke_tester'}
+monkeypatch = <_pytest.monkeypatch.MonkeyPatch object at 0x10f372e40>
+capsys = <_pytest.capture.CaptureFixture object at 0x10f3b3c50>
+failure = ByokUnavailableError()
+
+    @pytest.mark.parametrize("failure", [ProviderFailure(401), ProviderFailure(404), ProviderFailure(429), TimeoutError(), openai.APIConnectionError(request=httpx.Request("POST", "https://private.example.net")), NeedsReentryError(), ByokUnavailableError()])
+    def test_error_mapping_no_fallback_refund_or_secret(client, dev_headers, monkeypatch, capsys, failure):
+        user, conversation, headers = setup(client, dev_headers, monkeypatch)
+        calls, platform, *_ = stub_reply(monkeypatch, failure=failure)
+        response = client.post("/chat", headers=headers, json={"message": "正常聊天", "conversation_id": conversation})
+>       assert events(response) == [{"error": error_message(failure)}]
+E       AssertionError: assert [{'error': '你...本条没有改用平台模型。'}] == [{'error': '你...本条没有改用平台模型。'}]
+E         
+E         At index 0 diff: {'error': '你的模型调用失败：连不上该服务。本条没有改用平台模型。'} != {'error': '你的模型调用失败：服务器暂未开启自带模型。本条没有改用平台模型。'}
+E         Use -v to get more diff
+
+tests/test_byok_chat.py:248: AssertionError
+----------------------------- Captured stdout call -----------------------------
+[硬词检测] chars=4, detected_count=0
+[byok] reply failed category=connection
+_________________ test_empty_and_refusal_semantics[True-True] __________________
+
+client = <starlette.testclient.TestClient object at 0x10f3e59d0>
+dev_headers = {'X-Dev-User': 'smoke_tester'}
+monkeypatch = <_pytest.monkeypatch.MonkeyPatch object at 0x10f3cd710>
+refused = True, partial = True
+
+    @pytest.mark.parametrize("refused,partial", [(False, False), (True, False), (True, True)])
+    def test_empty_and_refusal_semantics(client, dev_headers, monkeypatch, refused, partial):
+        import database
+        user, conversation, headers = setup(client, dev_headers, monkeypatch)
+        stub_reply(monkeypatch, chunks=[("部分", None)] if partial else [], refused=refused)
+        result = events(client.post("/chat", headers=headers, json={"message": "正常聊天", "conversation_id": conversation}))
+        messages = asyncio.run(database.get_messages(user, conversation_id=conversation))
+        if partial:
+>           assert result[-2:] == [{"text": "（Claude 中止了这条回复）"}, {"done": True}]
+E           AssertionError: assert [{'error': '你...本条没有改用平台模型。'}] == [{'text': '（C...'done': True}]
+E             
+E             At index 0 diff: {'error': '你的模型调用失败：连不上该服务。本条没有改用平台模型。'} != {'text': '（Claude 中止了这条回复）'}
+E             Right contains one more item: {'done': True}
+E             Use -v to get more diff
+
+tests/test_byok_chat.py:262: AssertionError
+----------------------------- Captured stdout call -----------------------------
+[硬词检测] chars=4, detected_count=0
+[byok] reply failed category=connection
+______________________ test_daily_cap_and_dev_mode_bypass ______________________
+
+client = <starlette.testclient.TestClient object at 0x10f3e7240>
+dev_headers = {'X-Dev-User': 'smoke_tester'}
+monkeypatch = <_pytest.monkeypatch.MonkeyPatch object at 0x10f4d9e10>
+
+    def test_daily_cap_and_dev_mode_bypass(client, dev_headers, monkeypatch):
+        import services.chat_service as chat
+        from rate_limit import limiter
+        user, conversation, headers = setup(client, dev_headers, monkeypatch)
+        monkeypatch.setenv("FIONA_DAILY_BYOK_CHATS", "1")
+        monkeypatch.setattr(limiter, "enabled", True)
+        calls, *_ = stub_reply(monkeypatch)
+        payload = {"message": "正常聊天", "conversation_id": conversation}
+>       assert events(client.post("/chat", headers=headers, json=payload))[-1] == {"done": True}
+E       AssertionError: assert {'error': '你的...。本条没有改用平台模型。'} == {'done': True}
+E         
+E         Left contains 1 more item:
+E         {'error': '你的模型调用失败：连不上该服务。本条没有改用平台模型。'}
+E         Right contains 1 more item:
+E         {'done': True}
+E         Use -v to get more diff
+
+tests/test_byok_chat.py:278: AssertionError
+----------------------------- Captured stdout call -----------------------------
+[硬词检测] chars=4, detected_count=0
+[byok] reply failed category=connection
+____________ test_disconnected_byok_stream_closes_and_releases_slot ____________
+
+monkeypatch = <_pytest.monkeypatch.MonkeyPatch object at 0x10be1cf30>
+
+    def test_disconnected_byok_stream_closes_and_releases_slot(monkeypatch):
+        import services.chat_service as chat
+        from rate_limit import limiter
+        monkeypatch.setattr(limiter, "enabled", False)
+        monkeypatch.setenv("DEV_MODE", "0")
+        monkeypatch.setattr(chat, "detect_mode", lambda *a, **k: "friend")
+        monkeypatch.setattr(chat, "get_pending", lambda *a, **k: None)
+        monkeypatch.setattr(chat, "recognize_intent_with_fallback", lambda *a, **k: {"intent": None})
+        traces = []
+        async def log(*a, **k):
+            traces.append(k)
+        monkeypatch.setattr(chat, "log_event", log)
+        replies = []
+        def open_stream(*a, **k):
+            reply = Reply()
+            replies.append(reply)
+            return reply
+        monkeypatch.setattr(chat, "open_reply_stream", open_stream)
+        config = {"provider": "anthropic", "model": "claude-opus-5-5", "enabled": True, "api_key": "test-key"}
+        ctx = chat.ChatContext("disconnect_user", "聊天", False, None, "聊天", [], 0, "system", [], byok_config=config)
+        async def scenario():
+            stream = chat.run_chat(ctx, crisis=False)
+            first = await anext(stream)
+            assert "reply_model" in first
+            assert ctx.user in chat._BYOK_USERS
+            await stream.aclose()
+>       asyncio.run(scenario())
+
+tests/test_byok_chat.py:464: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+<python-install>:205: in run
+    return runner.run(main)
+           ^^^^^^^^^^^^^^^^
+<python-install>:128: in run
+    return self._loop.run_until_complete(task)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+<python-install>:719: in run_until_complete
+    return future.result()
+           ^^^^^^^^^^^^^^^
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+    async def scenario():
+        stream = chat.run_chat(ctx, crisis=False)
+        first = await anext(stream)
+>       assert "reply_model" in first
+E       assert 'reply_model' in 'data: {"error": "你的模型调用失败：连不上该服务。本条没有改用平台模型。"}\n\n'
+
+tests/test_byok_chat.py:461: AssertionError
+----------------------------- Captured stdout call -----------------------------
+[byok] reply failed category=connection
+_______ test_r1_pending_api_free_actions_and_paid_guards[image_topic-10] _______
+
+client = <starlette.testclient.TestClient object at 0x10f3e78a0>
+dev_headers = {'X-Dev-User': 'smoke_tester'}
+monkeypatch = <_pytest.monkeypatch.MonkeyPatch object at 0x10f4a11d0>
+amount = 10, case = 'image_topic'
+
+    @pytest.mark.parametrize("amount", [0, 10])
+    @pytest.mark.parametrize("case", [
+        "image_topic", "image_cancel", "image_fill", "weather_cancel", "weather_fill",
+        "weather_chat", "image_new_tool", "image_thanks", "image_discussion",
+        "image_question", "manual_mirror", "missing_edit_reference",
+    ])
+    def test_r1_pending_api_free_actions_and_paid_guards(client, dev_headers, monkeypatch, amount, case):
+        import database
+        import services.chat_service as chat
+        from intent_router import get_pending, set_pending
+        from pathlib import Path
+        from utils import media
+        user, conversation, headers = setup(client, dev_headers, monkeypatch, balance=amount)
+        key = (user, conversation)
+        calls, platform, *_ = stub_reply(monkeypatch)
+        caps, generated, tools = [], [], []
+    
+        def classify(_client, message, history):
+            if message == "帮我画张图":
+                return {"intent": "generate_image", "params": {}, "missing": ["prompt"]}
+            if message == "查一下北京明天天气":
+                return {"intent": "weather", "params": {"city": "北京"}, "missing": []}
+            return {"intent": None, "params": {}, "missing": []}
+    
+        def cap(kind, username, *, hit):
+            caps.append((kind, hit))
+            return None
+    
+        def execute(intent, params):
+            tools.append((intent, dict(params)))
+            return {"type": "card", "subtype": "weather", "points": ["天气晴"]}
+    
+        async def image(*a, **k):
+            generated.append(1)
+            path = "/uploads/generated_" + "e" * 32 + ".png"
+            Path(media.UPLOADS_DIR, path.rsplit("/", 1)[1]).write_bytes(b"image")
+            return {"image_path": path, "model": "platform-image"}
+    
+        monkeypatch.setattr(chat, "recognize_intent", classify)
+        monkeypatch.setattr(chat, "check_chat_daily_cap", cap)
+        monkeypatch.setattr(chat, "execute_intent", execute)
+        monkeypatch.setattr(chat, "generate_image", image)
+        weather_pending = case.startswith("weather_") or case == "manual_mirror"
+        pending = {"intent": "weather" if weather_pending else "generate_image", "params": {}, "missing": ["city" if weather_pending else "prompt"]}
+        if case == "image_new_tool":
+            # Manufacture the pending through the real paid route, then lower balance.
+            with sqlite3.connect(database.DB_PATH) as db:
+                db.execute("UPDATE users SET strawberry_balance = 10 WHERE username = ?", (user,))
+            seed = events(client.post("/chat", headers=headers, json={"message": "帮我画张图", "conversation_id": conversation}))
+            assert seed[-1] == {"done": True} and get_pending(key) == pending
+            with sqlite3.connect(database.DB_PATH) as db:
+                db.execute("UPDATE users SET strawberry_balance = ? WHERE username = ?", (amount, user))
+            caps.clear()
+        else:
+            set_pending(key, pending)
+        messages = {
+            "image_topic": "换个话题", "image_cancel": "算了", "image_fill": "一只橘猫",
+            "weather_cancel": "算了", "weather_fill": "上海", "weather_chat": "我今天心情不好",
+            "image_new_tool": "查一下北京明天天气", "image_thanks": "谢谢",
+            "image_discussion": "生图多少钱", "image_question": "你觉得呢？",
+            "manual_mirror": "聊聊今天", "missing_edit_reference": "把刚才的图片天空改成黄昏",
+        }
+        if case == "manual_mirror":
+            monkeypatch.setattr(chat, "detect_mode", lambda *a, **k: "mirror")
+            monkeypatch.setattr(chat, "get_user_mode", lambda *a, **k: {"last_trigger": "manual_request"})
+        result = events(client.post("/chat", headers=headers, json={"message": messages[case], "conversation_id": conversation}))
+        paid = case in {"image_fill", "weather_fill", "image_new_tool"}
+        if paid and amount == 0:
+            assert result == [{"error": database.strawberry_insufficient_message()}]
+            assert not generated and not tools and not calls and not platform
+            assert all(kind != "weather" or hit is False for kind, hit in caps)
+            assert get_pending(key) == pending
+            assert balance(user) == amount
+        else:
+            assert get_pending(key) is None
+>           assert result[-1] == {"done": True}
+E           AssertionError: assert {'error': '你的...。本条没有改用平台模型。'} == {'done': True}
+E             
+E             Left contains 1 more item:
+E             {'error': '你的模型调用失败：连不上该服务。本条没有改用平台模型。'}
+E             Right contains 1 more item:
+E             {'done': True}
+E             Use -v to get more diff
+
+tests/test_byok_chat.py:543: AssertionError
+----------------------------- Captured stdout call -----------------------------
+[硬词检测] chars=4, detected_count=0
+[byok] reply failed category=connection
+______ test_r1_pending_api_free_actions_and_paid_guards[image_cancel-10] _______
+
+client = <starlette.testclient.TestClient object at 0x10f3e7ac0>
+dev_headers = {'X-Dev-User': 'smoke_tester'}
+monkeypatch = <_pytest.monkeypatch.MonkeyPatch object at 0x10f4a07c0>
+amount = 10, case = 'image_cancel'
+
+    @pytest.mark.parametrize("amount", [0, 10])
+    @pytest.mark.parametrize("case", [
+        "image_topic", "image_cancel", "image_fill", "weather_cancel", "weather_fill",
+        "weather_chat", "image_new_tool", "image_thanks", "image_discussion",
+        "image_question", "manual_mirror", "missing_edit_reference",
+    ])
+    def test_r1_pending_api_free_actions_and_paid_guards(client, dev_headers, monkeypatch, amount, case):
+        import database
+        import services.chat_service as chat
+        from intent_router import get_pending, set_pending
+        from pathlib import Path
+        from utils import media
+        user, conversation, headers = setup(client, dev_headers, monkeypatch, balance=amount)
+        key = (user, conversation)
+        calls, platform, *_ = stub_reply(monkeypatch)
+        caps, generated, tools = [], [], []
+    
+        def classify(_client, message, history):
+            if message == "帮我画张图":
+                return {"intent": "generate_image", "params": {}, "missing": ["prompt"]}
+            if message == "查一下北京明天天气":
+                return {"intent": "weather", "params": {"city": "北京"}, "missing": []}
+            return {"intent": None, "params": {}, "missing": []}
+    
+        def cap(kind, username, *, hit):
+            caps.append((kind, hit))
+            return None
+    
+        def execute(intent, params):
+            tools.append((intent, dict(params)))
+            return {"type": "card", "subtype": "weather", "points": ["天气晴"]}
+    
+        async def image(*a, **k):
+            generated.append(1)
+            path = "/uploads/generated_" + "e" * 32 + ".png"
+            Path(media.UPLOADS_DIR, path.rsplit("/", 1)[1]).write_bytes(b"image")
+            return {"image_path": path, "model": "platform-image"}
+    
+        monkeypatch.setattr(chat, "recognize_intent", classify)
+        monkeypatch.setattr(chat, "check_chat_daily_cap", cap)
+        monkeypatch.setattr(chat, "execute_intent", execute)
+        monkeypatch.setattr(chat, "generate_image", image)
+        weather_pending = case.startswith("weather_") or case == "manual_mirror"
+        pending = {"intent": "weather" if weather_pending else "generate_image", "params": {}, "missing": ["city" if weather_pending else "prompt"]}
+        if case == "image_new_tool":
+            # Manufacture the pending through the real paid route, then lower balance.
+            with sqlite3.connect(database.DB_PATH) as db:
+                db.execute("UPDATE users SET strawberry_balance = 10 WHERE username = ?", (user,))
+            seed = events(client.post("/chat", headers=headers, json={"message": "帮我画张图", "conversation_id": conversation}))
+            assert seed[-1] == {"done": True} and get_pending(key) == pending
+            with sqlite3.connect(database.DB_PATH) as db:
+                db.execute("UPDATE users SET strawberry_balance = ? WHERE username = ?", (amount, user))
+            caps.clear()
+        else:
+            set_pending(key, pending)
+        messages = {
+            "image_topic": "换个话题", "image_cancel": "算了", "image_fill": "一只橘猫",
+            "weather_cancel": "算了", "weather_fill": "上海", "weather_chat": "我今天心情不好",
+            "image_new_tool": "查一下北京明天天气", "image_thanks": "谢谢",
+            "image_discussion": "生图多少钱", "image_question": "你觉得呢？",
+            "manual_mirror": "聊聊今天", "missing_edit_reference": "把刚才的图片天空改成黄昏",
+        }
+        if case == "manual_mirror":
+            monkeypatch.setattr(chat, "detect_mode", lambda *a, **k: "mirror")
+            monkeypatch.setattr(chat, "get_user_mode", lambda *a, **k: {"last_trigger": "manual_request"})
+        result = events(client.post("/chat", headers=headers, json={"message": messages[case], "conversation_id": conversation}))
+        paid = case in {"image_fill", "weather_fill", "image_new_tool"}
+        if paid and amount == 0:
+            assert result == [{"error": database.strawberry_insufficient_message()}]
+            assert not generated and not tools and not calls and not platform
+            assert all(kind != "weather" or hit is False for kind, hit in caps)
+            assert get_pending(key) == pending
+            assert balance(user) == amount
+        else:
+            assert get_pending(key) is None
+>           assert result[-1] == {"done": True}
+E           AssertionError: assert {'error': '你的...。本条没有改用平台模型。'} == {'done': True}
+E             
+E             Left contains 1 more item:
+E             {'error': '你的模型调用失败：连不上该服务。本条没有改用平台模型。'}
+E             Right contains 1 more item:
+E             {'done': True}
+E             Use -v to get more diff
+
+tests/test_byok_chat.py:543: AssertionError
+----------------------------- Captured stdout call -----------------------------
+[硬词检测] chars=2, detected_count=0
+[byok] reply failed category=connection
+_______ test_r1_pending_api_free_actions_and_paid_guards[image_fill-10] ________
+
+client = <starlette.testclient.TestClient object at 0x10f3e69c0>
+dev_headers = {'X-Dev-User': 'smoke_tester'}
+monkeypatch = <_pytest.monkeypatch.MonkeyPatch object at 0x10f4d9da0>
+amount = 10, case = 'image_fill'
+
+    @pytest.mark.parametrize("amount", [0, 10])
+    @pytest.mark.parametrize("case", [
+        "image_topic", "image_cancel", "image_fill", "weather_cancel", "weather_fill",
+        "weather_chat", "image_new_tool", "image_thanks", "image_discussion",
+        "image_question", "manual_mirror", "missing_edit_reference",
+    ])
+    def test_r1_pending_api_free_actions_and_paid_guards(client, dev_headers, monkeypatch, amount, case):
+        import database
+        import services.chat_service as chat
+        from intent_router import get_pending, set_pending
+        from pathlib import Path
+        from utils import media
+        user, conversation, headers = setup(client, dev_headers, monkeypatch, balance=amount)
+        key = (user, conversation)
+        calls, platform, *_ = stub_reply(monkeypatch)
+        caps, generated, tools = [], [], []
+    
+        def classify(_client, message, history):
+            if message == "帮我画张图":
+                return {"intent": "generate_image", "params": {}, "missing": ["prompt"]}
+            if message == "查一下北京明天天气":
+                return {"intent": "weather", "params": {"city": "北京"}, "missing": []}
+            return {"intent": None, "params": {}, "missing": []}
+    
+        def cap(kind, username, *, hit):
+            caps.append((kind, hit))
+            return None
+    
+        def execute(intent, params):
+            tools.append((intent, dict(params)))
+            return {"type": "card", "subtype": "weather", "points": ["天气晴"]}
+    
+        async def image(*a, **k):
+            generated.append(1)
+            path = "/uploads/generated_" + "e" * 32 + ".png"
+            Path(media.UPLOADS_DIR, path.rsplit("/", 1)[1]).write_bytes(b"image")
+            return {"image_path": path, "model": "platform-image"}
+    
+        monkeypatch.setattr(chat, "recognize_intent", classify)
+        monkeypatch.setattr(chat, "check_chat_daily_cap", cap)
+        monkeypatch.setattr(chat, "execute_intent", execute)
+        monkeypatch.setattr(chat, "generate_image", image)
+        weather_pending = case.startswith("weather_") or case == "manual_mirror"
+        pending = {"intent": "weather" if weather_pending else "generate_image", "params": {}, "missing": ["city" if weather_pending else "prompt"]}
+        if case == "image_new_tool":
+            # Manufacture the pending through the real paid route, then lower balance.
+            with sqlite3.connect(database.DB_PATH) as db:
+                db.execute("UPDATE users SET strawberry_balance = 10 WHERE username = ?", (user,))
+            seed = events(client.post("/chat", headers=headers, json={"message": "帮我画张图", "conversation_id": conversation}))
+            assert seed[-1] == {"done": True} and get_pending(key) == pending
+            with sqlite3.connect(database.DB_PATH) as db:
+                db.execute("UPDATE users SET strawberry_balance = ? WHERE username = ?", (amount, user))
+            caps.clear()
+        else:
+            set_pending(key, pending)
+        messages = {
+            "image_topic": "换个话题", "image_cancel": "算了", "image_fill": "一只橘猫",
+            "weather_cancel": "算了", "weather_fill": "上海", "weather_chat": "我今天心情不好",
+            "image_new_tool": "查一下北京明天天气", "image_thanks": "谢谢",
+            "image_discussion": "生图多少钱", "image_question": "你觉得呢？",
+            "manual_mirror": "聊聊今天", "missing_edit_reference": "把刚才的图片天空改成黄昏",
+        }
+        if case == "manual_mirror":
+            monkeypatch.setattr(chat, "detect_mode", lambda *a, **k: "mirror")
+            monkeypatch.setattr(chat, "get_user_mode", lambda *a, **k: {"last_trigger": "manual_request"})
+        result = events(client.post("/chat", headers=headers, json={"message": messages[case], "conversation_id": conversation}))
+        paid = case in {"image_fill", "weather_fill", "image_new_tool"}
+        if paid and amount == 0:
+            assert result == [{"error": database.strawberry_insufficient_message()}]
+            assert not generated and not tools and not calls and not platform
+            assert all(kind != "weather" or hit is False for kind, hit in caps)
+            assert get_pending(key) == pending
+            assert balance(user) == amount
+        else:
+            assert get_pending(key) is None
+>           assert result[-1] == {"done": True}
+E           AssertionError: assert {'error': '你的...。本条没有改用平台模型。'} == {'done': True}
+E             
+E             Left contains 1 more item:
+E             {'error': '你的模型调用失败：连不上该服务。本条没有改用平台模型。'}
+E             Right contains 1 more item:
+E             {'done': True}
+E             Use -v to get more diff
+
+tests/test_byok_chat.py:543: AssertionError
+----------------------------- Captured stdout call -----------------------------
+[硬词检测] chars=4, detected_count=0
+[byok] reply failed category=connection
+_____ test_r1_pending_api_free_actions_and_paid_guards[weather_cancel-10] ______
+
+client = <starlette.testclient.TestClient object at 0x10f3e7680>
+dev_headers = {'X-Dev-User': 'smoke_tester'}
+monkeypatch = <_pytest.monkeypatch.MonkeyPatch object at 0x10f7a1f60>
+amount = 10, case = 'weather_cancel'
+
+    @pytest.mark.parametrize("amount", [0, 10])
+    @pytest.mark.parametrize("case", [
+        "image_topic", "image_cancel", "image_fill", "weather_cancel", "weather_fill",
+        "weather_chat", "image_new_tool", "image_thanks", "image_discussion",
+        "image_question", "manual_mirror", "missing_edit_reference",
+    ])
+    def test_r1_pending_api_free_actions_and_paid_guards(client, dev_headers, monkeypatch, amount, case):
+        import database
+        import services.chat_service as chat
+        from intent_router import get_pending, set_pending
+        from pathlib import Path
+        from utils import media
+        user, conversation, headers = setup(client, dev_headers, monkeypatch, balance=amount)
+        key = (user, conversation)
+        calls, platform, *_ = stub_reply(monkeypatch)
+        caps, generated, tools = [], [], []
+    
+        def classify(_client, message, history):
+            if message == "帮我画张图":
+                return {"intent": "generate_image", "params": {}, "missing": ["prompt"]}
+            if message == "查一下北京明天天气":
+                return {"intent": "weather", "params": {"city": "北京"}, "missing": []}
+            return {"intent": None, "params": {}, "missing": []}
+    
+        def cap(kind, username, *, hit):
+            caps.append((kind, hit))
+            return None
+    
+        def execute(intent, params):
+            tools.append((intent, dict(params)))
+            return {"type": "card", "subtype": "weather", "points": ["天气晴"]}
+    
+        async def image(*a, **k):
+            generated.append(1)
+            path = "/uploads/generated_" + "e" * 32 + ".png"
+            Path(media.UPLOADS_DIR, path.rsplit("/", 1)[1]).write_bytes(b"image")
+            return {"image_path": path, "model": "platform-image"}
+    
+        monkeypatch.setattr(chat, "recognize_intent", classify)
+        monkeypatch.setattr(chat, "check_chat_daily_cap", cap)
+        monkeypatch.setattr(chat, "execute_intent", execute)
+        monkeypatch.setattr(chat, "generate_image", image)
+        weather_pending = case.startswith("weather_") or case == "manual_mirror"
+        pending = {"intent": "weather" if weather_pending else "generate_image", "params": {}, "missing": ["city" if weather_pending else "prompt"]}
+        if case == "image_new_tool":
+            # Manufacture the pending through the real paid route, then lower balance.
+            with sqlite3.connect(database.DB_PATH) as db:
+                db.execute("UPDATE users SET strawberry_balance = 10 WHERE username = ?", (user,))
+            seed = events(client.post("/chat", headers=headers, json={"message": "帮我画张图", "conversation_id": conversation}))
+            assert seed[-1] == {"done": True} and get_pending(key) == pending
+            with sqlite3.connect(database.DB_PATH) as db:
+                db.execute("UPDATE users SET strawberry_balance = ? WHERE username = ?", (amount, user))
+            caps.clear()
+        else:
+            set_pending(key, pending)
+        messages = {
+            "image_topic": "换个话题", "image_cancel": "算了", "image_fill": "一只橘猫",
+            "weather_cancel": "算了", "weather_fill": "上海", "weather_chat": "我今天心情不好",
+            "image_new_tool": "查一下北京明天天气", "image_thanks": "谢谢",
+            "image_discussion": "生图多少钱", "image_question": "你觉得呢？",
+            "manual_mirror": "聊聊今天", "missing_edit_reference": "把刚才的图片天空改成黄昏",
+        }
+        if case == "manual_mirror":
+            monkeypatch.setattr(chat, "detect_mode", lambda *a, **k: "mirror")
+            monkeypatch.setattr(chat, "get_user_mode", lambda *a, **k: {"last_trigger": "manual_request"})
+        result = events(client.post("/chat", headers=headers, json={"message": messages[case], "conversation_id": conversation}))
+        paid = case in {"image_fill", "weather_fill", "image_new_tool"}
+        if paid and amount == 0:
+            assert result == [{"error": database.strawberry_insufficient_message()}]
+            assert not generated and not tools and not calls and not platform
+            assert all(kind != "weather" or hit is False for kind, hit in caps)
+            assert get_pending(key) == pending
+            assert balance(user) == amount
+        else:
+            assert get_pending(key) is None
+>           assert result[-1] == {"done": True}
+E           AssertionError: assert {'error': '你的...。本条没有改用平台模型。'} == {'done': True}
+E             
+E             Left contains 1 more item:
+E             {'error': '你的模型调用失败：连不上该服务。本条没有改用平台模型。'}
+E             Right contains 1 more item:
+E             {'done': True}
+E             Use -v to get more diff
+
+tests/test_byok_chat.py:543: AssertionError
+----------------------------- Captured stdout call -----------------------------
+[硬词检测] chars=2, detected_count=0
+[byok] reply failed category=connection
+______ test_r1_pending_api_free_actions_and_paid_guards[weather_fill-10] _______
+
+client = <starlette.testclient.TestClient object at 0x10f3e6f10>
+dev_headers = {'X-Dev-User': 'smoke_tester'}
+monkeypatch = <_pytest.monkeypatch.MonkeyPatch object at 0x10f7a3000>
+amount = 10, case = 'weather_fill'
+
+    @pytest.mark.parametrize("amount", [0, 10])
+    @pytest.mark.parametrize("case", [
+        "image_topic", "image_cancel", "image_fill", "weather_cancel", "weather_fill",
+        "weather_chat", "image_new_tool", "image_thanks", "image_discussion",
+        "image_question", "manual_mirror", "missing_edit_reference",
+    ])
+    def test_r1_pending_api_free_actions_and_paid_guards(client, dev_headers, monkeypatch, amount, case):
+        import database
+        import services.chat_service as chat
+        from intent_router import get_pending, set_pending
+        from pathlib import Path
+        from utils import media
+        user, conversation, headers = setup(client, dev_headers, monkeypatch, balance=amount)
+        key = (user, conversation)
+        calls, platform, *_ = stub_reply(monkeypatch)
+        caps, generated, tools = [], [], []
+    
+        def classify(_client, message, history):
+            if message == "帮我画张图":
+                return {"intent": "generate_image", "params": {}, "missing": ["prompt"]}
+            if message == "查一下北京明天天气":
+                return {"intent": "weather", "params": {"city": "北京"}, "missing": []}
+            return {"intent": None, "params": {}, "missing": []}
+    
+        def cap(kind, username, *, hit):
+            caps.append((kind, hit))
+            return None
+    
+        def execute(intent, params):
+            tools.append((intent, dict(params)))
+            return {"type": "card", "subtype": "weather", "points": ["天气晴"]}
+    
+        async def image(*a, **k):
+            generated.append(1)
+            path = "/uploads/generated_" + "e" * 32 + ".png"
+            Path(media.UPLOADS_DIR, path.rsplit("/", 1)[1]).write_bytes(b"image")
+            return {"image_path": path, "model": "platform-image"}
+    
+        monkeypatch.setattr(chat, "recognize_intent", classify)
+        monkeypatch.setattr(chat, "check_chat_daily_cap", cap)
+        monkeypatch.setattr(chat, "execute_intent", execute)
+        monkeypatch.setattr(chat, "generate_image", image)
+        weather_pending = case.startswith("weather_") or case == "manual_mirror"
+        pending = {"intent": "weather" if weather_pending else "generate_image", "params": {}, "missing": ["city" if weather_pending else "prompt"]}
+        if case == "image_new_tool":
+            # Manufacture the pending through the real paid route, then lower balance.
+            with sqlite3.connect(database.DB_PATH) as db:
+                db.execute("UPDATE users SET strawberry_balance = 10 WHERE username = ?", (user,))
+            seed = events(client.post("/chat", headers=headers, json={"message": "帮我画张图", "conversation_id": conversation}))
+            assert seed[-1] == {"done": True} and get_pending(key) == pending
+            with sqlite3.connect(database.DB_PATH) as db:
+                db.execute("UPDATE users SET strawberry_balance = ? WHERE username = ?", (amount, user))
+            caps.clear()
+        else:
+            set_pending(key, pending)
+        messages = {
+            "image_topic": "换个话题", "image_cancel": "算了", "image_fill": "一只橘猫",
+            "weather_cancel": "算了", "weather_fill": "上海", "weather_chat": "我今天心情不好",
+            "image_new_tool": "查一下北京明天天气", "image_thanks": "谢谢",
+            "image_discussion": "生图多少钱", "image_question": "你觉得呢？",
+            "manual_mirror": "聊聊今天", "missing_edit_reference": "把刚才的图片天空改成黄昏",
+        }
+        if case == "manual_mirror":
+            monkeypatch.setattr(chat, "detect_mode", lambda *a, **k: "mirror")
+            monkeypatch.setattr(chat, "get_user_mode", lambda *a, **k: {"last_trigger": "manual_request"})
+        result = events(client.post("/chat", headers=headers, json={"message": messages[case], "conversation_id": conversation}))
+        paid = case in {"image_fill", "weather_fill", "image_new_tool"}
+        if paid and amount == 0:
+            assert result == [{"error": database.strawberry_insufficient_message()}]
+            assert not generated and not tools and not calls and not platform
+            assert all(kind != "weather" or hit is False for kind, hit in caps)
+            assert get_pending(key) == pending
+            assert balance(user) == amount
+        else:
+            assert get_pending(key) is None
+>           assert result[-1] == {"done": True}
+E           AssertionError: assert {'error': '你的...。本条没有改用平台模型。'} == {'done': True}
+E             
+E             Left contains 1 more item:
+E             {'error': '你的模型调用失败：连不上该服务。本条没有改用平台模型。'}
+E             Right contains 1 more item:
+E             {'done': True}
+E             Use -v to get more diff
+
+tests/test_byok_chat.py:543: AssertionError
+----------------------------- Captured stdout call -----------------------------
+[硬词检测] chars=2, detected_count=0
+[byok] reply failed category=connection
+______ test_r1_pending_api_free_actions_and_paid_guards[weather_chat-10] _______
+
+client = <starlette.testclient.TestClient object at 0x10f3e58c0>
+dev_headers = {'X-Dev-User': 'smoke_tester'}
+monkeypatch = <_pytest.monkeypatch.MonkeyPatch object at 0x10f7a1a90>
+amount = 10, case = 'weather_chat'
+
+    @pytest.mark.parametrize("amount", [0, 10])
+    @pytest.mark.parametrize("case", [
+        "image_topic", "image_cancel", "image_fill", "weather_cancel", "weather_fill",
+        "weather_chat", "image_new_tool", "image_thanks", "image_discussion",
+        "image_question", "manual_mirror", "missing_edit_reference",
+    ])
+    def test_r1_pending_api_free_actions_and_paid_guards(client, dev_headers, monkeypatch, amount, case):
+        import database
+        import services.chat_service as chat
+        from intent_router import get_pending, set_pending
+        from pathlib import Path
+        from utils import media
+        user, conversation, headers = setup(client, dev_headers, monkeypatch, balance=amount)
+        key = (user, conversation)
+        calls, platform, *_ = stub_reply(monkeypatch)
+        caps, generated, tools = [], [], []
+    
+        def classify(_client, message, history):
+            if message == "帮我画张图":
+                return {"intent": "generate_image", "params": {}, "missing": ["prompt"]}
+            if message == "查一下北京明天天气":
+                return {"intent": "weather", "params": {"city": "北京"}, "missing": []}
+            return {"intent": None, "params": {}, "missing": []}
+    
+        def cap(kind, username, *, hit):
+            caps.append((kind, hit))
+            return None
+    
+        def execute(intent, params):
+            tools.append((intent, dict(params)))
+            return {"type": "card", "subtype": "weather", "points": ["天气晴"]}
+    
+        async def image(*a, **k):
+            generated.append(1)
+            path = "/uploads/generated_" + "e" * 32 + ".png"
+            Path(media.UPLOADS_DIR, path.rsplit("/", 1)[1]).write_bytes(b"image")
+            return {"image_path": path, "model": "platform-image"}
+    
+        monkeypatch.setattr(chat, "recognize_intent", classify)
+        monkeypatch.setattr(chat, "check_chat_daily_cap", cap)
+        monkeypatch.setattr(chat, "execute_intent", execute)
+        monkeypatch.setattr(chat, "generate_image", image)
+        weather_pending = case.startswith("weather_") or case == "manual_mirror"
+        pending = {"intent": "weather" if weather_pending else "generate_image", "params": {}, "missing": ["city" if weather_pending else "prompt"]}
+        if case == "image_new_tool":
+            # Manufacture the pending through the real paid route, then lower balance.
+            with sqlite3.connect(database.DB_PATH) as db:
+                db.execute("UPDATE users SET strawberry_balance = 10 WHERE username = ?", (user,))
+            seed = events(client.post("/chat", headers=headers, json={"message": "帮我画张图", "conversation_id": conversation}))
+            assert seed[-1] == {"done": True} and get_pending(key) == pending
+            with sqlite3.connect(database.DB_PATH) as db:
+                db.execute("UPDATE users SET strawberry_balance = ? WHERE username = ?", (amount, user))
+            caps.clear()
+        else:
+            set_pending(key, pending)
+        messages = {
+            "image_topic": "换个话题", "image_cancel": "算了", "image_fill": "一只橘猫",
+            "weather_cancel": "算了", "weather_fill": "上海", "weather_chat": "我今天心情不好",
+            "image_new_tool": "查一下北京明天天气", "image_thanks": "谢谢",
+            "image_discussion": "生图多少钱", "image_question": "你觉得呢？",
+            "manual_mirror": "聊聊今天", "missing_edit_reference": "把刚才的图片天空改成黄昏",
+        }
+        if case == "manual_mirror":
+            monkeypatch.setattr(chat, "detect_mode", lambda *a, **k: "mirror")
+            monkeypatch.setattr(chat, "get_user_mode", lambda *a, **k: {"last_trigger": "manual_request"})
+        result = events(client.post("/chat", headers=headers, json={"message": messages[case], "conversation_id": conversation}))
+        paid = case in {"image_fill", "weather_fill", "image_new_tool"}
+        if paid and amount == 0:
+            assert result == [{"error": database.strawberry_insufficient_message()}]
+            assert not generated and not tools and not calls and not platform
+            assert all(kind != "weather" or hit is False for kind, hit in caps)
+            assert get_pending(key) == pending
+            assert balance(user) == amount
+        else:
+            assert get_pending(key) is None
+>           assert result[-1] == {"done": True}
+E           AssertionError: assert {'error': '你的...。本条没有改用平台模型。'} == {'done': True}
+E             
+E             Left contains 1 more item:
+E             {'error': '你的模型调用失败：连不上该服务。本条没有改用平台模型。'}
+E             Right contains 1 more item:
+E             {'done': True}
+E             Use -v to get more diff
+
+tests/test_byok_chat.py:543: AssertionError
+----------------------------- Captured stdout call -----------------------------
+[硬词检测] chars=7, detected_count=0
+[byok] reply failed category=connection
+______ test_r1_pending_api_free_actions_and_paid_guards[image_new_tool-0] ______
+
+client = <starlette.testclient.TestClient object at 0x10f3e7130>
+dev_headers = {'X-Dev-User': 'smoke_tester'}
+monkeypatch = <_pytest.monkeypatch.MonkeyPatch object at 0x10f494980>
+amount = 0, case = 'image_new_tool'
+
+    @pytest.mark.parametrize("amount", [0, 10])
+    @pytest.mark.parametrize("case", [
+        "image_topic", "image_cancel", "image_fill", "weather_cancel", "weather_fill",
+        "weather_chat", "image_new_tool", "image_thanks", "image_discussion",
+        "image_question", "manual_mirror", "missing_edit_reference",
+    ])
+    def test_r1_pending_api_free_actions_and_paid_guards(client, dev_headers, monkeypatch, amount, case):
+        import database
+        import services.chat_service as chat
+        from intent_router import get_pending, set_pending
+        from pathlib import Path
+        from utils import media
+        user, conversation, headers = setup(client, dev_headers, monkeypatch, balance=amount)
+        key = (user, conversation)
+        calls, platform, *_ = stub_reply(monkeypatch)
+        caps, generated, tools = [], [], []
+    
+        def classify(_client, message, history):
+            if message == "帮我画张图":
+                return {"intent": "generate_image", "params": {}, "missing": ["prompt"]}
+            if message == "查一下北京明天天气":
+                return {"intent": "weather", "params": {"city": "北京"}, "missing": []}
+            return {"intent": None, "params": {}, "missing": []}
+    
+        def cap(kind, username, *, hit):
+            caps.append((kind, hit))
+            return None
+    
+        def execute(intent, params):
+            tools.append((intent, dict(params)))
+            return {"type": "card", "subtype": "weather", "points": ["天气晴"]}
+    
+        async def image(*a, **k):
+            generated.append(1)
+            path = "/uploads/generated_" + "e" * 32 + ".png"
+            Path(media.UPLOADS_DIR, path.rsplit("/", 1)[1]).write_bytes(b"image")
+            return {"image_path": path, "model": "platform-image"}
+    
+        monkeypatch.setattr(chat, "recognize_intent", classify)
+        monkeypatch.setattr(chat, "check_chat_daily_cap", cap)
+        monkeypatch.setattr(chat, "execute_intent", execute)
+        monkeypatch.setattr(chat, "generate_image", image)
+        weather_pending = case.startswith("weather_") or case == "manual_mirror"
+        pending = {"intent": "weather" if weather_pending else "generate_image", "params": {}, "missing": ["city" if weather_pending else "prompt"]}
+        if case == "image_new_tool":
+            # Manufacture the pending through the real paid route, then lower balance.
+            with sqlite3.connect(database.DB_PATH) as db:
+                db.execute("UPDATE users SET strawberry_balance = 10 WHERE username = ?", (user,))
+            seed = events(client.post("/chat", headers=headers, json={"message": "帮我画张图", "conversation_id": conversation}))
+>           assert seed[-1] == {"done": True} and get_pending(key) == pending
+E           AssertionError: assert ({'error': '你的...。本条没有改用平台模型。'} == {'done': True}
+E             
+E             Left contains 1 more item:
+E             {'error': '你的模型调用失败：连不上该服务。本条没有改用平台模型。'}
+E             Right contains 1 more item:
+E             {'done': True}
+E             Use -v to get more diff)
+
+tests/test_byok_chat.py:517: AssertionError
+----------------------------- Captured stdout call -----------------------------
+[硬词检测] chars=5, detected_count=0
+[byok] reply failed category=connection
+_____ test_r1_pending_api_free_actions_and_paid_guards[image_new_tool-10] ______
+
+client = <starlette.testclient.TestClient object at 0x10f38fac0>
+dev_headers = {'X-Dev-User': 'smoke_tester'}
+monkeypatch = <_pytest.monkeypatch.MonkeyPatch object at 0x10f4db310>
+amount = 10, case = 'image_new_tool'
+
+    @pytest.mark.parametrize("amount", [0, 10])
+    @pytest.mark.parametrize("case", [
+        "image_topic", "image_cancel", "image_fill", "weather_cancel", "weather_fill",
+        "weather_chat", "image_new_tool", "image_thanks", "image_discussion",
+        "image_question", "manual_mirror", "missing_edit_reference",
+    ])
+    def test_r1_pending_api_free_actions_and_paid_guards(client, dev_headers, monkeypatch, amount, case):
+        import database
+        import services.chat_service as chat
+        from intent_router import get_pending, set_pending
+        from pathlib import Path
+        from utils import media
+        user, conversation, headers = setup(client, dev_headers, monkeypatch, balance=amount)
+        key = (user, conversation)
+        calls, platform, *_ = stub_reply(monkeypatch)
+        caps, generated, tools = [], [], []
+    
+        def classify(_client, message, history):
+            if message == "帮我画张图":
+                return {"intent": "generate_image", "params": {}, "missing": ["prompt"]}
+            if message == "查一下北京明天天气":
+                return {"intent": "weather", "params": {"city": "北京"}, "missing": []}
+            return {"intent": None, "params": {}, "missing": []}
+    
+        def cap(kind, username, *, hit):
+            caps.append((kind, hit))
+            return None
+    
+        def execute(intent, params):
+            tools.append((intent, dict(params)))
+            return {"type": "card", "subtype": "weather", "points": ["天气晴"]}
+    
+        async def image(*a, **k):
+            generated.append(1)
+            path = "/uploads/generated_" + "e" * 32 + ".png"
+            Path(media.UPLOADS_DIR, path.rsplit("/", 1)[1]).write_bytes(b"image")
+            return {"image_path": path, "model": "platform-image"}
+    
+        monkeypatch.setattr(chat, "recognize_intent", classify)
+        monkeypatch.setattr(chat, "check_chat_daily_cap", cap)
+        monkeypatch.setattr(chat, "execute_intent", execute)
+        monkeypatch.setattr(chat, "generate_image", image)
+        weather_pending = case.startswith("weather_") or case == "manual_mirror"
+        pending = {"intent": "weather" if weather_pending else "generate_image", "params": {}, "missing": ["city" if weather_pending else "prompt"]}
+        if case == "image_new_tool":
+            # Manufacture the pending through the real paid route, then lower balance.
+            with sqlite3.connect(database.DB_PATH) as db:
+                db.execute("UPDATE users SET strawberry_balance = 10 WHERE username = ?", (user,))
+            seed = events(client.post("/chat", headers=headers, json={"message": "帮我画张图", "conversation_id": conversation}))
+>           assert seed[-1] == {"done": True} and get_pending(key) == pending
+E           AssertionError: assert ({'error': '你的...。本条没有改用平台模型。'} == {'done': True}
+E             
+E             Left contains 1 more item:
+E             {'error': '你的模型调用失败：连不上该服务。本条没有改用平台模型。'}
+E             Right contains 1 more item:
+E             {'done': True}
+E             Use -v to get more diff)
+
+tests/test_byok_chat.py:517: AssertionError
+----------------------------- Captured stdout call -----------------------------
+[硬词检测] chars=5, detected_count=0
+[byok] reply failed category=connection
+______ test_r1_pending_api_free_actions_and_paid_guards[image_thanks-10] _______
+
+client = <starlette.testclient.TestClient object at 0x10f3e57b0>
+dev_headers = {'X-Dev-User': 'smoke_tester'}
+monkeypatch = <_pytest.monkeypatch.MonkeyPatch object at 0x10f7a3cb0>
+amount = 10, case = 'image_thanks'
+
+    @pytest.mark.parametrize("amount", [0, 10])
+    @pytest.mark.parametrize("case", [
+        "image_topic", "image_cancel", "image_fill", "weather_cancel", "weather_fill",
+        "weather_chat", "image_new_tool", "image_thanks", "image_discussion",
+        "image_question", "manual_mirror", "missing_edit_reference",
+    ])
+    def test_r1_pending_api_free_actions_and_paid_guards(client, dev_headers, monkeypatch, amount, case):
+        import database
+        import services.chat_service as chat
+        from intent_router import get_pending, set_pending
+        from pathlib import Path
+        from utils import media
+        user, conversation, headers = setup(client, dev_headers, monkeypatch, balance=amount)
+        key = (user, conversation)
+        calls, platform, *_ = stub_reply(monkeypatch)
+        caps, generated, tools = [], [], []
+    
+        def classify(_client, message, history):
+            if message == "帮我画张图":
+                return {"intent": "generate_image", "params": {}, "missing": ["prompt"]}
+            if message == "查一下北京明天天气":
+                return {"intent": "weather", "params": {"city": "北京"}, "missing": []}
+            return {"intent": None, "params": {}, "missing": []}
+    
+        def cap(kind, username, *, hit):
+            caps.append((kind, hit))
+            return None
+    
+        def execute(intent, params):
+            tools.append((intent, dict(params)))
+            return {"type": "card", "subtype": "weather", "points": ["天气晴"]}
+    
+        async def image(*a, **k):
+            generated.append(1)
+            path = "/uploads/generated_" + "e" * 32 + ".png"
+            Path(media.UPLOADS_DIR, path.rsplit("/", 1)[1]).write_bytes(b"image")
+            return {"image_path": path, "model": "platform-image"}
+    
+        monkeypatch.setattr(chat, "recognize_intent", classify)
+        monkeypatch.setattr(chat, "check_chat_daily_cap", cap)
+        monkeypatch.setattr(chat, "execute_intent", execute)
+        monkeypatch.setattr(chat, "generate_image", image)
+        weather_pending = case.startswith("weather_") or case == "manual_mirror"
+        pending = {"intent": "weather" if weather_pending else "generate_image", "params": {}, "missing": ["city" if weather_pending else "prompt"]}
+        if case == "image_new_tool":
+            # Manufacture the pending through the real paid route, then lower balance.
+            with sqlite3.connect(database.DB_PATH) as db:
+                db.execute("UPDATE users SET strawberry_balance = 10 WHERE username = ?", (user,))
+            seed = events(client.post("/chat", headers=headers, json={"message": "帮我画张图", "conversation_id": conversation}))
+            assert seed[-1] == {"done": True} and get_pending(key) == pending
+            with sqlite3.connect(database.DB_PATH) as db:
+                db.execute("UPDATE users SET strawberry_balance = ? WHERE username = ?", (amount, user))
+            caps.clear()
+        else:
+            set_pending(key, pending)
+        messages = {
+            "image_topic": "换个话题", "image_cancel": "算了", "image_fill": "一只橘猫",
+            "weather_cancel": "算了", "weather_fill": "上海", "weather_chat": "我今天心情不好",
+            "image_new_tool": "查一下北京明天天气", "image_thanks": "谢谢",
+            "image_discussion": "生图多少钱", "image_question": "你觉得呢？",
+            "manual_mirror": "聊聊今天", "missing_edit_reference": "把刚才的图片天空改成黄昏",
+        }
+        if case == "manual_mirror":
+            monkeypatch.setattr(chat, "detect_mode", lambda *a, **k: "mirror")
+            monkeypatch.setattr(chat, "get_user_mode", lambda *a, **k: {"last_trigger": "manual_request"})
+        result = events(client.post("/chat", headers=headers, json={"message": messages[case], "conversation_id": conversation}))
+        paid = case in {"image_fill", "weather_fill", "image_new_tool"}
+        if paid and amount == 0:
+            assert result == [{"error": database.strawberry_insufficient_message()}]
+            assert not generated and not tools and not calls and not platform
+            assert all(kind != "weather" or hit is False for kind, hit in caps)
+            assert get_pending(key) == pending
+            assert balance(user) == amount
+        else:
+            assert get_pending(key) is None
+>           assert result[-1] == {"done": True}
+E           AssertionError: assert {'error': '你的...。本条没有改用平台模型。'} == {'done': True}
+E             
+E             Left contains 1 more item:
+E             {'error': '你的模型调用失败：连不上该服务。本条没有改用平台模型。'}
+E             Right contains 1 more item:
+E             {'done': True}
+E             Use -v to get more diff
+
+tests/test_byok_chat.py:543: AssertionError
+----------------------------- Captured stdout call -----------------------------
+[硬词检测] chars=2, detected_count=0
+[byok] reply failed category=connection
+____ test_r1_pending_api_free_actions_and_paid_guards[image_discussion-10] _____
+
+client = <starlette.testclient.TestClient object at 0x10f3e49e0>
+dev_headers = {'X-Dev-User': 'smoke_tester'}
+monkeypatch = <_pytest.monkeypatch.MonkeyPatch object at 0x10f7a1a90>
+amount = 10, case = 'image_discussion'
+
+    @pytest.mark.parametrize("amount", [0, 10])
+    @pytest.mark.parametrize("case", [
+        "image_topic", "image_cancel", "image_fill", "weather_cancel", "weather_fill",
+        "weather_chat", "image_new_tool", "image_thanks", "image_discussion",
+        "image_question", "manual_mirror", "missing_edit_reference",
+    ])
+    def test_r1_pending_api_free_actions_and_paid_guards(client, dev_headers, monkeypatch, amount, case):
+        import database
+        import services.chat_service as chat
+        from intent_router import get_pending, set_pending
+        from pathlib import Path
+        from utils import media
+        user, conversation, headers = setup(client, dev_headers, monkeypatch, balance=amount)
+        key = (user, conversation)
+        calls, platform, *_ = stub_reply(monkeypatch)
+        caps, generated, tools = [], [], []
+    
+        def classify(_client, message, history):
+            if message == "帮我画张图":
+                return {"intent": "generate_image", "params": {}, "missing": ["prompt"]}
+            if message == "查一下北京明天天气":
+                return {"intent": "weather", "params": {"city": "北京"}, "missing": []}
+            return {"intent": None, "params": {}, "missing": []}
+    
+        def cap(kind, username, *, hit):
+            caps.append((kind, hit))
+            return None
+    
+        def execute(intent, params):
+            tools.append((intent, dict(params)))
+            return {"type": "card", "subtype": "weather", "points": ["天气晴"]}
+    
+        async def image(*a, **k):
+            generated.append(1)
+            path = "/uploads/generated_" + "e" * 32 + ".png"
+            Path(media.UPLOADS_DIR, path.rsplit("/", 1)[1]).write_bytes(b"image")
+            return {"image_path": path, "model": "platform-image"}
+    
+        monkeypatch.setattr(chat, "recognize_intent", classify)
+        monkeypatch.setattr(chat, "check_chat_daily_cap", cap)
+        monkeypatch.setattr(chat, "execute_intent", execute)
+        monkeypatch.setattr(chat, "generate_image", image)
+        weather_pending = case.startswith("weather_") or case == "manual_mirror"
+        pending = {"intent": "weather" if weather_pending else "generate_image", "params": {}, "missing": ["city" if weather_pending else "prompt"]}
+        if case == "image_new_tool":
+            # Manufacture the pending through the real paid route, then lower balance.
+            with sqlite3.connect(database.DB_PATH) as db:
+                db.execute("UPDATE users SET strawberry_balance = 10 WHERE username = ?", (user,))
+            seed = events(client.post("/chat", headers=headers, json={"message": "帮我画张图", "conversation_id": conversation}))
+            assert seed[-1] == {"done": True} and get_pending(key) == pending
+            with sqlite3.connect(database.DB_PATH) as db:
+                db.execute("UPDATE users SET strawberry_balance = ? WHERE username = ?", (amount, user))
+            caps.clear()
+        else:
+            set_pending(key, pending)
+        messages = {
+            "image_topic": "换个话题", "image_cancel": "算了", "image_fill": "一只橘猫",
+            "weather_cancel": "算了", "weather_fill": "上海", "weather_chat": "我今天心情不好",
+            "image_new_tool": "查一下北京明天天气", "image_thanks": "谢谢",
+            "image_discussion": "生图多少钱", "image_question": "你觉得呢？",
+            "manual_mirror": "聊聊今天", "missing_edit_reference": "把刚才的图片天空改成黄昏",
+        }
+        if case == "manual_mirror":
+            monkeypatch.setattr(chat, "detect_mode", lambda *a, **k: "mirror")
+            monkeypatch.setattr(chat, "get_user_mode", lambda *a, **k: {"last_trigger": "manual_request"})
+        result = events(client.post("/chat", headers=headers, json={"message": messages[case], "conversation_id": conversation}))
+        paid = case in {"image_fill", "weather_fill", "image_new_tool"}
+        if paid and amount == 0:
+            assert result == [{"error": database.strawberry_insufficient_message()}]
+            assert not generated and not tools and not calls and not platform
+            assert all(kind != "weather" or hit is False for kind, hit in caps)
+            assert get_pending(key) == pending
+            assert balance(user) == amount
+        else:
+            assert get_pending(key) is None
+>           assert result[-1] == {"done": True}
+E           AssertionError: assert {'error': '你的...。本条没有改用平台模型。'} == {'done': True}
+E             
+E             Left contains 1 more item:
+E             {'error': '你的模型调用失败：连不上该服务。本条没有改用平台模型。'}
+E             Right contains 1 more item:
+E             {'done': True}
+E             Use -v to get more diff
+
+tests/test_byok_chat.py:543: AssertionError
+----------------------------- Captured stdout call -----------------------------
+[硬词检测] chars=5, detected_count=0
+[byok] reply failed category=connection
+_____ test_r1_pending_api_free_actions_and_paid_guards[image_question-10] ______
+
+client = <starlette.testclient.TestClient object at 0x10f3e5260>
+dev_headers = {'X-Dev-User': 'smoke_tester'}
+monkeypatch = <_pytest.monkeypatch.MonkeyPatch object at 0x10f7a08a0>
+amount = 10, case = 'image_question'
+
+    @pytest.mark.parametrize("amount", [0, 10])
+    @pytest.mark.parametrize("case", [
+        "image_topic", "image_cancel", "image_fill", "weather_cancel", "weather_fill",
+        "weather_chat", "image_new_tool", "image_thanks", "image_discussion",
+        "image_question", "manual_mirror", "missing_edit_reference",
+    ])
+    def test_r1_pending_api_free_actions_and_paid_guards(client, dev_headers, monkeypatch, amount, case):
+        import database
+        import services.chat_service as chat
+        from intent_router import get_pending, set_pending
+        from pathlib import Path
+        from utils import media
+        user, conversation, headers = setup(client, dev_headers, monkeypatch, balance=amount)
+        key = (user, conversation)
+        calls, platform, *_ = stub_reply(monkeypatch)
+        caps, generated, tools = [], [], []
+    
+        def classify(_client, message, history):
+            if message == "帮我画张图":
+                return {"intent": "generate_image", "params": {}, "missing": ["prompt"]}
+            if message == "查一下北京明天天气":
+                return {"intent": "weather", "params": {"city": "北京"}, "missing": []}
+            return {"intent": None, "params": {}, "missing": []}
+    
+        def cap(kind, username, *, hit):
+            caps.append((kind, hit))
+            return None
+    
+        def execute(intent, params):
+            tools.append((intent, dict(params)))
+            return {"type": "card", "subtype": "weather", "points": ["天气晴"]}
+    
+        async def image(*a, **k):
+            generated.append(1)
+            path = "/uploads/generated_" + "e" * 32 + ".png"
+            Path(media.UPLOADS_DIR, path.rsplit("/", 1)[1]).write_bytes(b"image")
+            return {"image_path": path, "model": "platform-image"}
+    
+        monkeypatch.setattr(chat, "recognize_intent", classify)
+        monkeypatch.setattr(chat, "check_chat_daily_cap", cap)
+        monkeypatch.setattr(chat, "execute_intent", execute)
+        monkeypatch.setattr(chat, "generate_image", image)
+        weather_pending = case.startswith("weather_") or case == "manual_mirror"
+        pending = {"intent": "weather" if weather_pending else "generate_image", "params": {}, "missing": ["city" if weather_pending else "prompt"]}
+        if case == "image_new_tool":
+            # Manufacture the pending through the real paid route, then lower balance.
+            with sqlite3.connect(database.DB_PATH) as db:
+                db.execute("UPDATE users SET strawberry_balance = 10 WHERE username = ?", (user,))
+            seed = events(client.post("/chat", headers=headers, json={"message": "帮我画张图", "conversation_id": conversation}))
+            assert seed[-1] == {"done": True} and get_pending(key) == pending
+            with sqlite3.connect(database.DB_PATH) as db:
+                db.execute("UPDATE users SET strawberry_balance = ? WHERE username = ?", (amount, user))
+            caps.clear()
+        else:
+            set_pending(key, pending)
+        messages = {
+            "image_topic": "换个话题", "image_cancel": "算了", "image_fill": "一只橘猫",
+            "weather_cancel": "算了", "weather_fill": "上海", "weather_chat": "我今天心情不好",
+            "image_new_tool": "查一下北京明天天气", "image_thanks": "谢谢",
+            "image_discussion": "生图多少钱", "image_question": "你觉得呢？",
+            "manual_mirror": "聊聊今天", "missing_edit_reference": "把刚才的图片天空改成黄昏",
+        }
+        if case == "manual_mirror":
+            monkeypatch.setattr(chat, "detect_mode", lambda *a, **k: "mirror")
+            monkeypatch.setattr(chat, "get_user_mode", lambda *a, **k: {"last_trigger": "manual_request"})
+        result = events(client.post("/chat", headers=headers, json={"message": messages[case], "conversation_id": conversation}))
+        paid = case in {"image_fill", "weather_fill", "image_new_tool"}
+        if paid and amount == 0:
+            assert result == [{"error": database.strawberry_insufficient_message()}]
+            assert not generated and not tools and not calls and not platform
+            assert all(kind != "weather" or hit is False for kind, hit in caps)
+            assert get_pending(key) == pending
+            assert balance(user) == amount
+        else:
+            assert get_pending(key) is None
+>           assert result[-1] == {"done": True}
+E           AssertionError: assert {'error': '你的...。本条没有改用平台模型。'} == {'done': True}
+E             
+E             Left contains 1 more item:
+E             {'error': '你的模型调用失败：连不上该服务。本条没有改用平台模型。'}
+E             Right contains 1 more item:
+E             {'done': True}
+E             Use -v to get more diff
+
+tests/test_byok_chat.py:543: AssertionError
+----------------------------- Captured stdout call -----------------------------
+[硬词检测] chars=5, detected_count=0
+[byok] reply failed category=connection
+________ test_r1_reply_persistence_failure_uses_platform_error[friend] _________
+
+client = <starlette.testclient.TestClient object at 0x10f41c050>
+dev_headers = {'X-Dev-User': 'smoke_tester'}
+monkeypatch = <_pytest.monkeypatch.MonkeyPatch object at 0x10f497bd0>
+capsys = <_pytest.capture.CaptureFixture object at 0x10f4325f0>, mode = 'friend'
+
+    @pytest.mark.parametrize("mode", ["friend", "mirror"])
+    def test_r1_reply_persistence_failure_uses_platform_error(client, dev_headers, monkeypatch, capsys, mode):
+        import services.chat_service as chat
+        user, conversation, headers = setup(client, dev_headers, monkeypatch)
+        calls, platform, *_ = stub_reply(monkeypatch)
+        monkeypatch.setattr(chat, "detect_mode", lambda *a, **k: mode)
+        original = chat.save_message
+        async def fail_assistant(username, role, *a, **k):
+            if role == "assistant":
+                return False
+            return await original(username, role, *a, **k)
+        monkeypatch.setattr(chat, "save_message", fail_assistant)
+        result = events(client.post("/chat", headers=headers, json={"message": "聊天", "conversation_id": conversation}))
+>       assert result[-1] == {"error": "服务暂时不可用，请稍后再试"}
+E       AssertionError: assert {'error': '你的...。本条没有改用平台模型。'} == {'error': '服务暂时不可用，请稍后再试'}
+E         
+E         Differing items:
+E         {'error': '你的模型调用失败：连不上该服务。本条没有改用平台模型。'} != {'error': '服务暂时不可用，请稍后再试'}
+E         Use -v to get more diff
+
+tests/test_byok_chat.py:591: AssertionError
+----------------------------- Captured stdout call -----------------------------
+[硬词检测] chars=2, detected_count=0
+[byok] reply failed category=connection
+____ test_r1_deleted_conversation_during_reply_is_platform_failure[friend] _____
+
+client = <starlette.testclient.TestClient object at 0x10f3e79b0>
+dev_headers = {'X-Dev-User': 'smoke_tester'}
+monkeypatch = <_pytest.monkeypatch.MonkeyPatch object at 0x10f4db310>
+capsys = <_pytest.capture.CaptureFixture object at 0x10f7aec30>, mode = 'friend'
+
+    @pytest.mark.parametrize("mode", ["friend", "mirror"])
+    def test_r1_deleted_conversation_during_reply_is_platform_failure(client, dev_headers, monkeypatch, capsys, mode):
+        import database
+        import services.chat_service as chat
+        from agent_store import delete_conversation
+        user, conversation, headers = setup(client, dev_headers, monkeypatch)
+        calls, platform, *_ = stub_reply(monkeypatch)
+        monkeypatch.setattr(chat, "detect_mode", lambda *a, **k: mode)
+        class DeletedReply(Reply):
+            def __iter__(self):
+                for chunk in super().__iter__():
+                    yield chunk
+                    # The first chunk has reached the consumer before deletion.
+                    if not calls:
+                        raise AssertionError("BYOK stream did not open")
+                    asyncio.run(delete_conversation(user, conversation))
+                    break
+        def open_stream(*a, **k):
+            calls.append(1)
+            return DeletedReply()
+        monkeypatch.setattr(chat, "open_reply_stream", open_stream)
+        result = events(client.post("/chat", headers=headers, json={"message": "聊天", "conversation_id": conversation}))
+>       assert result[:2] == [{"reply_model": {"source": "byok", "label": "Claude · claude-opus-5-5"}}, {"text": "测试"}]
+E       AssertionError: assert [{'error': '你...本条没有改用平台模型。'}] == [{'reply_mode...'text': '测试'}]
+E         
+E         At index 0 diff: {'error': '你的模型调用失败：连不上该服务。本条没有改用平台模型。'} != {'reply_model': {'source': 'byok', 'label': 'Claude · claude-opus-5-5'}}
+E         Right contains one more item: {'text': '测试'}
+E         Use -v to get more diff
+
+tests/test_byok_chat.py:733: AssertionError
+----------------------------- Captured stdout call -----------------------------
+[硬词检测] chars=2, detected_count=0
+[byok] reply failed category=connection
+____________ test_r2_paid_weather_pending_routing_matches_platform _____________
+
+client = <starlette.testclient.TestClient object at 0x10f3e7bd0>
+dev_headers = {'X-Dev-User': 'smoke_tester'}
+monkeypatch = <_pytest.monkeypatch.MonkeyPatch object at 0x10f3cd710>
+
+    def test_r2_paid_weather_pending_routing_matches_platform(client, dev_headers, monkeypatch):
+        """BYOK must not reinterpret a pending city's valid text as conversation."""
+        import database
+        import services.chat_service as chat
+        from byok.store import delete_config
+        from intent_router import get_pending, set_pending
+        snapshots = []
+        for enabled in (False, True):
+            monkeypatch.setenv("DEV_MODE", "1")
+            user, conversation, headers = setup(client, dev_headers, monkeypatch)
+            if not enabled:
+                asyncio.run(delete_config(user))
+            key = (user, conversation)
+            set_pending(key, {"intent": "weather", "params": {}, "missing": ["city"]})
+            calls, platform, *_ = stub_reply(monkeypatch)
+            tools, caps = [], []
+            card = {"type": "card", "subtype": "weather", "points": ["天气结果"]}
+            def execute(intent, params):
+                tools.append((intent, dict(params)))
+                return card
+            monkeypatch.setattr(chat, "execute_intent", execute)
+            monkeypatch.setattr(chat, "check_chat_daily_cap", lambda kind, user, *, hit: caps.append((kind, hit)))
+            result = events(client.post("/chat", headers=headers, json={"message": "开心", "conversation_id": conversation}))
+            snapshots.append((result, tools, caps, balance(user), bool(calls), bool(platform), get_pending(key)))
+>           assert asyncio.run(database.get_messages(user, conversation_id=conversation))[-1]["role"] == "assistant"
+E           AssertionError: assert 'user' == 'assistant'
+E             
+E             - assistant
+E             + user
+
+tests/test_byok_chat.py:791: AssertionError
+----------------------------- Captured stdout call -----------------------------
+[硬词检测] chars=2, detected_count=0
+[硬词检测] chars=2, detected_count=0
+[byok] reply failed category=connection
+______ test_r2_zero_balance_other_pending_free_exits[route-\u7b97\u4e86] _______
+
+client = <starlette.testclient.TestClient object at 0x10f3e4160>
+dev_headers = {'X-Dev-User': 'smoke_tester'}
+monkeypatch = <_pytest.monkeypatch.MonkeyPatch object at 0x10f4c5f60>
+intent = 'route', message = '算了'
+
+    @pytest.mark.parametrize("intent,message", [("route", "算了"), ("route", "换个话题"), ("route", "从家出发"), ("web_search", "算了")])
+    def test_r2_zero_balance_other_pending_free_exits(client, dev_headers, monkeypatch, intent, message):
+        import database
+        import services.chat_service as chat
+        from intent_router import get_pending
+>       user, conversation, headers, pending = _r2_seed_other_pending(client, dev_headers, monkeypatch, intent)
+                                               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+tests/test_byok_chat.py:821: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+client = <starlette.testclient.TestClient object at 0x10f3e4160>
+dev_headers = {'X-Dev-User': 'smoke_tester'}
+monkeypatch = <_pytest.monkeypatch.MonkeyPatch object at 0x10f4c5f60>
+intent = 'route', byok = True
+
+    def _r2_seed_other_pending(client, dev_headers, monkeypatch, intent, *, byok=True):
+        """Use /chat at balance 10 to create the pending before changing credit."""
+        import services.chat_service as chat
+        from byok.store import delete_config
+        from intent_router import get_pending
+        monkeypatch.setenv("DEV_MODE", "1")
+        user, conversation, headers = setup(client, dev_headers, monkeypatch)
+        if not byok:
+            asyncio.run(delete_config(user))
+        message = "怎么去机场" if intent == "route" else "帮我搜点信息"
+        pending = {"intent": intent, "params": {"destination": "机场"} if intent == "route" else {}, "missing": ["origin" if intent == "route" else "query"]}
+        def classify(_client, text, history):
+            return {"intent": pending["intent"], "params": dict(pending["params"]), "missing": list(pending["missing"])} if text == message else {"intent": None, "params": {}, "missing": []}
+        monkeypatch.setattr(chat, "recognize_intent", classify)
+        seed = events(client.post("/chat", headers=headers, json={"message": message, "conversation_id": conversation}))
+>       assert seed[-1] == {"done": True} and get_pending((user, conversation)) == pending
+E       AssertionError: assert ({'error': '你的...。本条没有改用平台模型。'} == {'done': True}
+E         
+E         Left contains 1 more item:
+E         {'error': '你的模型调用失败：连不上该服务。本条没有改用平台模型。'}
+E         Right contains 1 more item:
+E         {'done': True}
+E         Use -v to get more diff)
+
+tests/test_byok_chat.py:811: AssertionError
+----------------------------- Captured stdout call -----------------------------
+[硬词检测] chars=5, detected_count=0
+[byok] reply failed category=connection
+_ test_r2_zero_balance_other_pending_free_exits[route-\u6362\u4e2a\u8bdd\u9898] _
+
+client = <starlette.testclient.TestClient object at 0x10f3e6140>
+dev_headers = {'X-Dev-User': 'smoke_tester'}
+monkeypatch = <_pytest.monkeypatch.MonkeyPatch object at 0x10f494590>
+intent = 'route', message = '换个话题'
+
+    @pytest.mark.parametrize("intent,message", [("route", "算了"), ("route", "换个话题"), ("route", "从家出发"), ("web_search", "算了")])
+    def test_r2_zero_balance_other_pending_free_exits(client, dev_headers, monkeypatch, intent, message):
+        import database
+        import services.chat_service as chat
+        from intent_router import get_pending
+>       user, conversation, headers, pending = _r2_seed_other_pending(client, dev_headers, monkeypatch, intent)
+                                               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+tests/test_byok_chat.py:821: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+client = <starlette.testclient.TestClient object at 0x10f3e6140>
+dev_headers = {'X-Dev-User': 'smoke_tester'}
+monkeypatch = <_pytest.monkeypatch.MonkeyPatch object at 0x10f494590>
+intent = 'route', byok = True
+
+    def _r2_seed_other_pending(client, dev_headers, monkeypatch, intent, *, byok=True):
+        """Use /chat at balance 10 to create the pending before changing credit."""
+        import services.chat_service as chat
+        from byok.store import delete_config
+        from intent_router import get_pending
+        monkeypatch.setenv("DEV_MODE", "1")
+        user, conversation, headers = setup(client, dev_headers, monkeypatch)
+        if not byok:
+            asyncio.run(delete_config(user))
+        message = "怎么去机场" if intent == "route" else "帮我搜点信息"
+        pending = {"intent": intent, "params": {"destination": "机场"} if intent == "route" else {}, "missing": ["origin" if intent == "route" else "query"]}
+        def classify(_client, text, history):
+            return {"intent": pending["intent"], "params": dict(pending["params"]), "missing": list(pending["missing"])} if text == message else {"intent": None, "params": {}, "missing": []}
+        monkeypatch.setattr(chat, "recognize_intent", classify)
+        seed = events(client.post("/chat", headers=headers, json={"message": message, "conversation_id": conversation}))
+>       assert seed[-1] == {"done": True} and get_pending((user, conversation)) == pending
+E       AssertionError: assert ({'error': '你的...。本条没有改用平台模型。'} == {'done': True}
+E         
+E         Left contains 1 more item:
+E         {'error': '你的模型调用失败：连不上该服务。本条没有改用平台模型。'}
+E         Right contains 1 more item:
+E         {'done': True}
+E         Use -v to get more diff)
+
+tests/test_byok_chat.py:811: AssertionError
+----------------------------- Captured stdout call -----------------------------
+[硬词检测] chars=5, detected_count=0
+[byok] reply failed category=connection
+_ test_r2_zero_balance_other_pending_free_exits[route-\u4ece\u5bb6\u51fa\u53d1] _
+
+client = <starlette.testclient.TestClient object at 0x10f3e5480>
+dev_headers = {'X-Dev-User': 'smoke_tester'}
+monkeypatch = <_pytest.monkeypatch.MonkeyPatch object at 0x10f4c7000>
+intent = 'route', message = '从家出发'
+
+    @pytest.mark.parametrize("intent,message", [("route", "算了"), ("route", "换个话题"), ("route", "从家出发"), ("web_search", "算了")])
+    def test_r2_zero_balance_other_pending_free_exits(client, dev_headers, monkeypatch, intent, message):
+        import database
+        import services.chat_service as chat
+        from intent_router import get_pending
+>       user, conversation, headers, pending = _r2_seed_other_pending(client, dev_headers, monkeypatch, intent)
+                                               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+tests/test_byok_chat.py:821: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+client = <starlette.testclient.TestClient object at 0x10f3e5480>
+dev_headers = {'X-Dev-User': 'smoke_tester'}
+monkeypatch = <_pytest.monkeypatch.MonkeyPatch object at 0x10f4c7000>
+intent = 'route', byok = True
+
+    def _r2_seed_other_pending(client, dev_headers, monkeypatch, intent, *, byok=True):
+        """Use /chat at balance 10 to create the pending before changing credit."""
+        import services.chat_service as chat
+        from byok.store import delete_config
+        from intent_router import get_pending
+        monkeypatch.setenv("DEV_MODE", "1")
+        user, conversation, headers = setup(client, dev_headers, monkeypatch)
+        if not byok:
+            asyncio.run(delete_config(user))
+        message = "怎么去机场" if intent == "route" else "帮我搜点信息"
+        pending = {"intent": intent, "params": {"destination": "机场"} if intent == "route" else {}, "missing": ["origin" if intent == "route" else "query"]}
+        def classify(_client, text, history):
+            return {"intent": pending["intent"], "params": dict(pending["params"]), "missing": list(pending["missing"])} if text == message else {"intent": None, "params": {}, "missing": []}
+        monkeypatch.setattr(chat, "recognize_intent", classify)
+        seed = events(client.post("/chat", headers=headers, json={"message": message, "conversation_id": conversation}))
+>       assert seed[-1] == {"done": True} and get_pending((user, conversation)) == pending
+E       AssertionError: assert ({'error': '你的...。本条没有改用平台模型。'} == {'done': True}
+E         
+E         Left contains 1 more item:
+E         {'error': '你的模型调用失败：连不上该服务。本条没有改用平台模型。'}
+E         Right contains 1 more item:
+E         {'done': True}
+E         Use -v to get more diff)
+
+tests/test_byok_chat.py:811: AssertionError
+----------------------------- Captured stdout call -----------------------------
+[硬词检测] chars=5, detected_count=0
+[byok] reply failed category=connection
+____ test_r2_zero_balance_other_pending_free_exits[web_search-\u7b97\u4e86] ____
+
+client = <starlette.testclient.TestClient object at 0x10f3e7f00>
+dev_headers = {'X-Dev-User': 'smoke_tester'}
+monkeypatch = <_pytest.monkeypatch.MonkeyPatch object at 0x10f4972a0>
+intent = 'web_search', message = '算了'
+
+    @pytest.mark.parametrize("intent,message", [("route", "算了"), ("route", "换个话题"), ("route", "从家出发"), ("web_search", "算了")])
+    def test_r2_zero_balance_other_pending_free_exits(client, dev_headers, monkeypatch, intent, message):
+        import database
+        import services.chat_service as chat
+        from intent_router import get_pending
+>       user, conversation, headers, pending = _r2_seed_other_pending(client, dev_headers, monkeypatch, intent)
+                                               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+tests/test_byok_chat.py:821: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+client = <starlette.testclient.TestClient object at 0x10f3e7f00>
+dev_headers = {'X-Dev-User': 'smoke_tester'}
+monkeypatch = <_pytest.monkeypatch.MonkeyPatch object at 0x10f4972a0>
+intent = 'web_search', byok = True
+
+    def _r2_seed_other_pending(client, dev_headers, monkeypatch, intent, *, byok=True):
+        """Use /chat at balance 10 to create the pending before changing credit."""
+        import services.chat_service as chat
+        from byok.store import delete_config
+        from intent_router import get_pending
+        monkeypatch.setenv("DEV_MODE", "1")
+        user, conversation, headers = setup(client, dev_headers, monkeypatch)
+        if not byok:
+            asyncio.run(delete_config(user))
+        message = "怎么去机场" if intent == "route" else "帮我搜点信息"
+        pending = {"intent": intent, "params": {"destination": "机场"} if intent == "route" else {}, "missing": ["origin" if intent == "route" else "query"]}
+        def classify(_client, text, history):
+            return {"intent": pending["intent"], "params": dict(pending["params"]), "missing": list(pending["missing"])} if text == message else {"intent": None, "params": {}, "missing": []}
+        monkeypatch.setattr(chat, "recognize_intent", classify)
+        seed = events(client.post("/chat", headers=headers, json={"message": message, "conversation_id": conversation}))
+>       assert seed[-1] == {"done": True} and get_pending((user, conversation)) == pending
+E       AssertionError: assert ({'error': '你的...。本条没有改用平台模型。'} == {'done': True}
+E         
+E         Left contains 1 more item:
+E         {'error': '你的模型调用失败：连不上该服务。本条没有改用平台模型。'}
+E         Right contains 1 more item:
+E         {'done': True}
+E         Use -v to get more diff)
+
+tests/test_byok_chat.py:811: AssertionError
+----------------------------- Captured stdout call -----------------------------
+[硬词检测] chars=6, detected_count=0
+[byok] reply failed category=connection
+_______ test_r2_paid_other_pending_matches_platform[\u7b97\u4e86-route] ________
+
+client = <starlette.testclient.TestClient object at 0x10f3e7020>
+dev_headers = {'X-Dev-User': 'smoke_tester'}
+monkeypatch = <_pytest.monkeypatch.MonkeyPatch object at 0x10f7a07c0>
+intent = 'route', message = '算了'
+
+    @pytest.mark.parametrize("intent", ["route", "web_search"])
+    @pytest.mark.parametrize("message", ["算了", "换个话题", "从家出发"])
+    def test_r2_paid_other_pending_matches_platform(client, dev_headers, monkeypatch, intent, message):
+        import services.chat_service as chat
+        from intent_router import get_pending
+        snapshots = []
+        card = {"type": "card", "subtype": intent, "points": ["付费工具结果"]}
+        for byok in (False, True):
+>           user, conversation, headers, _ = _r2_seed_other_pending(client, dev_headers, monkeypatch, intent, byok=byok)
+                                             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+tests/test_byok_chat.py:850: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+client = <starlette.testclient.TestClient object at 0x10f3e7020>
+dev_headers = {'X-Dev-User': 'smoke_tester'}
+monkeypatch = <_pytest.monkeypatch.MonkeyPatch object at 0x10f7a07c0>
+intent = 'route', byok = True
+
+    def _r2_seed_other_pending(client, dev_headers, monkeypatch, intent, *, byok=True):
+        """Use /chat at balance 10 to create the pending before changing credit."""
+        import services.chat_service as chat
+        from byok.store import delete_config
+        from intent_router import get_pending
+        monkeypatch.setenv("DEV_MODE", "1")
+        user, conversation, headers = setup(client, dev_headers, monkeypatch)
+        if not byok:
+            asyncio.run(delete_config(user))
+        message = "怎么去机场" if intent == "route" else "帮我搜点信息"
+        pending = {"intent": intent, "params": {"destination": "机场"} if intent == "route" else {}, "missing": ["origin" if intent == "route" else "query"]}
+        def classify(_client, text, history):
+            return {"intent": pending["intent"], "params": dict(pending["params"]), "missing": list(pending["missing"])} if text == message else {"intent": None, "params": {}, "missing": []}
+        monkeypatch.setattr(chat, "recognize_intent", classify)
+        seed = events(client.post("/chat", headers=headers, json={"message": message, "conversation_id": conversation}))
+>       assert seed[-1] == {"done": True} and get_pending((user, conversation)) == pending
+E       AssertionError: assert ({'error': '你的...。本条没有改用平台模型。'} == {'done': True}
+E         
+E         Left contains 1 more item:
+E         {'error': '你的模型调用失败：连不上该服务。本条没有改用平台模型。'}
+E         Right contains 1 more item:
+E         {'done': True}
+E         Use -v to get more diff)
+
+tests/test_byok_chat.py:811: AssertionError
+----------------------------- Captured stdout call -----------------------------
+[硬词检测] chars=5, detected_count=0
+[意图识别] chars=5, intent=route, missing=['origin']
+[硬词检测] chars=2, detected_count=0
+[硬词检测] chars=5, detected_count=0
+[byok] reply failed category=connection
+_____ test_r2_paid_other_pending_matches_platform[\u7b97\u4e86-web_search] _____
+
+client = <starlette.testclient.TestClient object at 0x10f41e250>
+dev_headers = {'X-Dev-User': 'smoke_tester'}
+monkeypatch = <_pytest.monkeypatch.MonkeyPatch object at 0x10f7a2190>
+intent = 'web_search', message = '算了'
+
+    @pytest.mark.parametrize("intent", ["route", "web_search"])
+    @pytest.mark.parametrize("message", ["算了", "换个话题", "从家出发"])
+    def test_r2_paid_other_pending_matches_platform(client, dev_headers, monkeypatch, intent, message):
+        import services.chat_service as chat
+        from intent_router import get_pending
+        snapshots = []
+        card = {"type": "card", "subtype": intent, "points": ["付费工具结果"]}
+        for byok in (False, True):
+>           user, conversation, headers, _ = _r2_seed_other_pending(client, dev_headers, monkeypatch, intent, byok=byok)
+                                             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+tests/test_byok_chat.py:850: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+client = <starlette.testclient.TestClient object at 0x10f41e250>
+dev_headers = {'X-Dev-User': 'smoke_tester'}
+monkeypatch = <_pytest.monkeypatch.MonkeyPatch object at 0x10f7a2190>
+intent = 'web_search', byok = True
+
+    def _r2_seed_other_pending(client, dev_headers, monkeypatch, intent, *, byok=True):
+        """Use /chat at balance 10 to create the pending before changing credit."""
+        import services.chat_service as chat
+        from byok.store import delete_config
+        from intent_router import get_pending
+        monkeypatch.setenv("DEV_MODE", "1")
+        user, conversation, headers = setup(client, dev_headers, monkeypatch)
+        if not byok:
+            asyncio.run(delete_config(user))
+        message = "怎么去机场" if intent == "route" else "帮我搜点信息"
+        pending = {"intent": intent, "params": {"destination": "机场"} if intent == "route" else {}, "missing": ["origin" if intent == "route" else "query"]}
+        def classify(_client, text, history):
+            return {"intent": pending["intent"], "params": dict(pending["params"]), "missing": list(pending["missing"])} if text == message else {"intent": None, "params": {}, "missing": []}
+        monkeypatch.setattr(chat, "recognize_intent", classify)
+        seed = events(client.post("/chat", headers=headers, json={"message": message, "conversation_id": conversation}))
+>       assert seed[-1] == {"done": True} and get_pending((user, conversation)) == pending
+E       AssertionError: assert ({'error': '你的...。本条没有改用平台模型。'} == {'done': True}
+E         
+E         Left contains 1 more item:
+E         {'error': '你的模型调用失败：连不上该服务。本条没有改用平台模型。'}
+E         Right contains 1 more item:
+E         {'done': True}
+E         Use -v to get more diff)
+
+tests/test_byok_chat.py:811: AssertionError
+----------------------------- Captured stdout call -----------------------------
+[硬词检测] chars=6, detected_count=0
+[意图识别] chars=6, intent=web_search, missing=['query']
+[硬词检测] chars=2, detected_count=0
+[硬词检测] chars=6, detected_count=0
+[byok] reply failed category=connection
+_ test_r2_paid_other_pending_matches_platform[\u6362\u4e2a\u8bdd\u9898-route] __
+
+client = <starlette.testclient.TestClient object at 0x10f38f8a0>
+dev_headers = {'X-Dev-User': 'smoke_tester'}
+monkeypatch = <_pytest.monkeypatch.MonkeyPatch object at 0x10f3cd390>
+intent = 'route', message = '换个话题'
+
+    @pytest.mark.parametrize("intent", ["route", "web_search"])
+    @pytest.mark.parametrize("message", ["算了", "换个话题", "从家出发"])
+    def test_r2_paid_other_pending_matches_platform(client, dev_headers, monkeypatch, intent, message):
+        import services.chat_service as chat
+        from intent_router import get_pending
+        snapshots = []
+        card = {"type": "card", "subtype": intent, "points": ["付费工具结果"]}
+        for byok in (False, True):
+>           user, conversation, headers, _ = _r2_seed_other_pending(client, dev_headers, monkeypatch, intent, byok=byok)
+                                             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+tests/test_byok_chat.py:850: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+client = <starlette.testclient.TestClient object at 0x10f38f8a0>
+dev_headers = {'X-Dev-User': 'smoke_tester'}
+monkeypatch = <_pytest.monkeypatch.MonkeyPatch object at 0x10f3cd390>
+intent = 'route', byok = True
+
+    def _r2_seed_other_pending(client, dev_headers, monkeypatch, intent, *, byok=True):
+        """Use /chat at balance 10 to create the pending before changing credit."""
+        import services.chat_service as chat
+        from byok.store import delete_config
+        from intent_router import get_pending
+        monkeypatch.setenv("DEV_MODE", "1")
+        user, conversation, headers = setup(client, dev_headers, monkeypatch)
+        if not byok:
+            asyncio.run(delete_config(user))
+        message = "怎么去机场" if intent == "route" else "帮我搜点信息"
+        pending = {"intent": intent, "params": {"destination": "机场"} if intent == "route" else {}, "missing": ["origin" if intent == "route" else "query"]}
+        def classify(_client, text, history):
+            return {"intent": pending["intent"], "params": dict(pending["params"]), "missing": list(pending["missing"])} if text == message else {"intent": None, "params": {}, "missing": []}
+        monkeypatch.setattr(chat, "recognize_intent", classify)
+        seed = events(client.post("/chat", headers=headers, json={"message": message, "conversation_id": conversation}))
+>       assert seed[-1] == {"done": True} and get_pending((user, conversation)) == pending
+E       AssertionError: assert ({'error': '你的...。本条没有改用平台模型。'} == {'done': True}
+E         
+E         Left contains 1 more item:
+E         {'error': '你的模型调用失败：连不上该服务。本条没有改用平台模型。'}
+E         Right contains 1 more item:
+E         {'done': True}
+E         Use -v to get more diff)
+
+tests/test_byok_chat.py:811: AssertionError
+----------------------------- Captured stdout call -----------------------------
+[硬词检测] chars=5, detected_count=0
+[意图识别] chars=5, intent=route, missing=['origin']
+[硬词检测] chars=4, detected_count=0
+[硬词检测] chars=5, detected_count=0
+[byok] reply failed category=connection
+_ test_r2_paid_other_pending_matches_platform[\u6362\u4e2a\u8bdd\u9898-web_search] _
+
+client = <starlette.testclient.TestClient object at 0x10f3e6580>
+dev_headers = {'X-Dev-User': 'smoke_tester'}
+monkeypatch = <_pytest.monkeypatch.MonkeyPatch object at 0x10f497150>
+intent = 'web_search', message = '换个话题'
+
+    @pytest.mark.parametrize("intent", ["route", "web_search"])
+    @pytest.mark.parametrize("message", ["算了", "换个话题", "从家出发"])
+    def test_r2_paid_other_pending_matches_platform(client, dev_headers, monkeypatch, intent, message):
+        import services.chat_service as chat
+        from intent_router import get_pending
+        snapshots = []
+        card = {"type": "card", "subtype": intent, "points": ["付费工具结果"]}
+        for byok in (False, True):
+>           user, conversation, headers, _ = _r2_seed_other_pending(client, dev_headers, monkeypatch, intent, byok=byok)
+                                             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+tests/test_byok_chat.py:850: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+client = <starlette.testclient.TestClient object at 0x10f3e6580>
+dev_headers = {'X-Dev-User': 'smoke_tester'}
+monkeypatch = <_pytest.monkeypatch.MonkeyPatch object at 0x10f497150>
+intent = 'web_search', byok = True
+
+    def _r2_seed_other_pending(client, dev_headers, monkeypatch, intent, *, byok=True):
+        """Use /chat at balance 10 to create the pending before changing credit."""
+        import services.chat_service as chat
+        from byok.store import delete_config
+        from intent_router import get_pending
+        monkeypatch.setenv("DEV_MODE", "1")
+        user, conversation, headers = setup(client, dev_headers, monkeypatch)
+        if not byok:
+            asyncio.run(delete_config(user))
+        message = "怎么去机场" if intent == "route" else "帮我搜点信息"
+        pending = {"intent": intent, "params": {"destination": "机场"} if intent == "route" else {}, "missing": ["origin" if intent == "route" else "query"]}
+        def classify(_client, text, history):
+            return {"intent": pending["intent"], "params": dict(pending["params"]), "missing": list(pending["missing"])} if text == message else {"intent": None, "params": {}, "missing": []}
+        monkeypatch.setattr(chat, "recognize_intent", classify)
+        seed = events(client.post("/chat", headers=headers, json={"message": message, "conversation_id": conversation}))
+>       assert seed[-1] == {"done": True} and get_pending((user, conversation)) == pending
+E       AssertionError: assert ({'error': '你的...。本条没有改用平台模型。'} == {'done': True}
+E         
+E         Left contains 1 more item:
+E         {'error': '你的模型调用失败：连不上该服务。本条没有改用平台模型。'}
+E         Right contains 1 more item:
+E         {'done': True}
+E         Use -v to get more diff)
+
+tests/test_byok_chat.py:811: AssertionError
+----------------------------- Captured stdout call -----------------------------
+[硬词检测] chars=6, detected_count=0
+[意图识别] chars=6, intent=web_search, missing=['query']
+[硬词检测] chars=4, detected_count=0
+[硬词检测] chars=6, detected_count=0
+[byok] reply failed category=connection
+_ test_r2_paid_other_pending_matches_platform[\u4ece\u5bb6\u51fa\u53d1-route] __
+
+client = <starlette.testclient.TestClient object at 0x10f3e6ad0>
+dev_headers = {'X-Dev-User': 'smoke_tester'}
+monkeypatch = <_pytest.monkeypatch.MonkeyPatch object at 0x10f4940c0>
+intent = 'route', message = '从家出发'
+
+    @pytest.mark.parametrize("intent", ["route", "web_search"])
+    @pytest.mark.parametrize("message", ["算了", "换个话题", "从家出发"])
+    def test_r2_paid_other_pending_matches_platform(client, dev_headers, monkeypatch, intent, message):
+        import services.chat_service as chat
+        from intent_router import get_pending
+        snapshots = []
+        card = {"type": "card", "subtype": intent, "points": ["付费工具结果"]}
+        for byok in (False, True):
+>           user, conversation, headers, _ = _r2_seed_other_pending(client, dev_headers, monkeypatch, intent, byok=byok)
+                                             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+tests/test_byok_chat.py:850: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+client = <starlette.testclient.TestClient object at 0x10f3e6ad0>
+dev_headers = {'X-Dev-User': 'smoke_tester'}
+monkeypatch = <_pytest.monkeypatch.MonkeyPatch object at 0x10f4940c0>
+intent = 'route', byok = True
+
+    def _r2_seed_other_pending(client, dev_headers, monkeypatch, intent, *, byok=True):
+        """Use /chat at balance 10 to create the pending before changing credit."""
+        import services.chat_service as chat
+        from byok.store import delete_config
+        from intent_router import get_pending
+        monkeypatch.setenv("DEV_MODE", "1")
+        user, conversation, headers = setup(client, dev_headers, monkeypatch)
+        if not byok:
+            asyncio.run(delete_config(user))
+        message = "怎么去机场" if intent == "route" else "帮我搜点信息"
+        pending = {"intent": intent, "params": {"destination": "机场"} if intent == "route" else {}, "missing": ["origin" if intent == "route" else "query"]}
+        def classify(_client, text, history):
+            return {"intent": pending["intent"], "params": dict(pending["params"]), "missing": list(pending["missing"])} if text == message else {"intent": None, "params": {}, "missing": []}
+        monkeypatch.setattr(chat, "recognize_intent", classify)
+        seed = events(client.post("/chat", headers=headers, json={"message": message, "conversation_id": conversation}))
+>       assert seed[-1] == {"done": True} and get_pending((user, conversation)) == pending
+E       AssertionError: assert ({'error': '你的...。本条没有改用平台模型。'} == {'done': True}
+E         
+E         Left contains 1 more item:
+E         {'error': '你的模型调用失败：连不上该服务。本条没有改用平台模型。'}
+E         Right contains 1 more item:
+E         {'done': True}
+E         Use -v to get more diff)
+
+tests/test_byok_chat.py:811: AssertionError
+----------------------------- Captured stdout call -----------------------------
+[硬词检测] chars=5, detected_count=0
+[意图识别] chars=5, intent=route, missing=['origin']
+[硬词检测] chars=4, detected_count=0
+[硬词检测] chars=5, detected_count=0
+[byok] reply failed category=connection
+_ test_r2_paid_other_pending_matches_platform[\u4ece\u5bb6\u51fa\u53d1-web_search] _
+
+client = <starlette.testclient.TestClient object at 0x10f3e68b0>
+dev_headers = {'X-Dev-User': 'smoke_tester'}
+monkeypatch = <_pytest.monkeypatch.MonkeyPatch object at 0x10f4965f0>
+intent = 'web_search', message = '从家出发'
+
+    @pytest.mark.parametrize("intent", ["route", "web_search"])
+    @pytest.mark.parametrize("message", ["算了", "换个话题", "从家出发"])
+    def test_r2_paid_other_pending_matches_platform(client, dev_headers, monkeypatch, intent, message):
+        import services.chat_service as chat
+        from intent_router import get_pending
+        snapshots = []
+        card = {"type": "card", "subtype": intent, "points": ["付费工具结果"]}
+        for byok in (False, True):
+>           user, conversation, headers, _ = _r2_seed_other_pending(client, dev_headers, monkeypatch, intent, byok=byok)
+                                             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+tests/test_byok_chat.py:850: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+client = <starlette.testclient.TestClient object at 0x10f3e68b0>
+dev_headers = {'X-Dev-User': 'smoke_tester'}
+monkeypatch = <_pytest.monkeypatch.MonkeyPatch object at 0x10f4965f0>
+intent = 'web_search', byok = True
+
+    def _r2_seed_other_pending(client, dev_headers, monkeypatch, intent, *, byok=True):
+        """Use /chat at balance 10 to create the pending before changing credit."""
+        import services.chat_service as chat
+        from byok.store import delete_config
+        from intent_router import get_pending
+        monkeypatch.setenv("DEV_MODE", "1")
+        user, conversation, headers = setup(client, dev_headers, monkeypatch)
+        if not byok:
+            asyncio.run(delete_config(user))
+        message = "怎么去机场" if intent == "route" else "帮我搜点信息"
+        pending = {"intent": intent, "params": {"destination": "机场"} if intent == "route" else {}, "missing": ["origin" if intent == "route" else "query"]}
+        def classify(_client, text, history):
+            return {"intent": pending["intent"], "params": dict(pending["params"]), "missing": list(pending["missing"])} if text == message else {"intent": None, "params": {}, "missing": []}
+        monkeypatch.setattr(chat, "recognize_intent", classify)
+        seed = events(client.post("/chat", headers=headers, json={"message": message, "conversation_id": conversation}))
+>       assert seed[-1] == {"done": True} and get_pending((user, conversation)) == pending
+E       AssertionError: assert ({'error': '你的...。本条没有改用平台模型。'} == {'done': True}
+E         
+E         Left contains 1 more item:
+E         {'error': '你的模型调用失败：连不上该服务。本条没有改用平台模型。'}
+E         Right contains 1 more item:
+E         {'done': True}
+E         Use -v to get more diff)
+
+tests/test_byok_chat.py:811: AssertionError
+----------------------------- Captured stdout call -----------------------------
+[硬词检测] chars=6, detected_count=0
+[意图识别] chars=6, intent=web_search, missing=['query']
+[硬词检测] chars=4, detected_count=0
+[硬词检测] chars=6, detected_count=0
+[byok] reply failed category=connection
+________ test_r3_paid_weather_topic_exit_matches_unconfigured_platform _________
+
+client = <starlette.testclient.TestClient object at 0x10f41e360>
+dev_headers = {'X-Dev-User': 'smoke_tester'}
+monkeypatch = <_pytest.monkeypatch.MonkeyPatch object at 0x10f7a0de0>
+
+    def test_r3_paid_weather_topic_exit_matches_unconfigured_platform(client, dev_headers, monkeypatch):
+        import services.chat_service as chat
+        from byok.store import delete_config
+        from intent_router import get_pending, set_pending
+        snapshots = []
+        for enabled in (False, True):
+            monkeypatch.setenv("DEV_MODE", "1")
+            user, conversation, headers = setup(client, dev_headers, monkeypatch, balance=10)
+            if not enabled:
+                asyncio.run(delete_config(user))
+            key = (user, conversation)
+            set_pending(key, {"intent": "weather", "params": {}, "missing": ["city"]})
+            calls, platform, *_ = stub_reply(monkeypatch)
+            tools, caps = [], []
+            card = {"type": "card", "subtype": "weather", "points": ["天气结果"]}
+            def execute(intent, params):
+                tools.append((intent, dict(params)))
+                return card
+            monkeypatch.setattr(chat, "execute_intent", execute)
+            monkeypatch.setattr(chat, "check_chat_daily_cap", lambda kind, user, *, hit: caps.append((kind, hit)))
+            result = events(client.post("/chat", headers=headers, json={"message": "换个话题", "conversation_id": conversation}))
+            snapshots.append((result, tools, caps, balance(user), bool(calls), bool(platform), get_pending(key)))
+>       assert snapshots[0] == snapshots[1]
+E       AssertionError: assert ([{'card': {'...e, False, ...) == ([{'error': '...e, False, ...)
+E         
+E         At index 0 diff: [{'card': {'type': 'card', 'subtype': 'weather', 'points': ['天气结果']}}, {'done': True}] != [{'error': '你的模型调用失败：连不上该服务。本条没有改用平台模型。'}]
+E         Use -v to get more diff
+
+tests/test_byok_chat.py:969: AssertionError
+----------------------------- Captured stdout call -----------------------------
+[硬词检测] chars=4, detected_count=0
+[硬词检测] chars=4, detected_count=0
+[byok] reply failed category=connection
+_ test_r1_native_still_calls_reply_tools_without_planner[anthropic-claude-opus-5-5] _
+
+harness = namespace(chat=<module 'services.chat_service' from './backend/services/chat_...'unavailable', 'resp_chars': 0}], daily=[(('byok_chat', 'r1-byok-user'), {'hit': True})], replies=[], planner_calls=[])
+monkeypatch = <_pytest.monkeypatch.MonkeyPatch object at 0x10f372cf0>
+provider = 'anthropic', model = 'claude-opus-5-5'
+
+    @pytest.mark.parametrize("provider,model", NATIVE_CONFIGS)
+    def test_r1_native_still_calls_reply_tools_without_planner(harness, monkeypatch, provider, model):
+        h = harness
+        configure(h, provider, model)
+        def unexpected(*args, **kwargs):
+            pytest.fail("native mode must not call planner")
+        monkeypatch.setattr(h.chat, "plan_image", unexpected, raising=False)
+        def open_reply(*args, **kwargs):
+            h.replies.append((args, kwargs))
+            return Reply("", call={"name": "generate_image", "arguments": {"prompt": "原生猫"}})
+        monkeypatch.setattr(h.chat, "open_reply_stream", open_reply)
+        events = asyncio.run(collect(h.chat.run_chat(h.ctx, reserved=True, crisis=False)))
+>       assert h.replies[0][1]["tools"] == "generate_image"
+               ^^^^^^^^^^^^
+E       IndexError: list index out of range
+
+tests/test_byok_planner_r1.py:235: IndexError
+----------------------------- Captured stdout call -----------------------------
+[byok] reply failed category=unavailable
+_ test_r1_native_still_calls_reply_tools_without_planner[anthropic-claude-sonnet-5-5] _
+
+harness = namespace(chat=<module 'services.chat_service' from './backend/services/chat_...'unavailable', 'resp_chars': 0}], daily=[(('byok_chat', 'r1-byok-user'), {'hit': True})], replies=[], planner_calls=[])
+monkeypatch = <_pytest.monkeypatch.MonkeyPatch object at 0x10bdfd5c0>
+provider = 'anthropic', model = 'claude-sonnet-5-5'
+
+    @pytest.mark.parametrize("provider,model", NATIVE_CONFIGS)
+    def test_r1_native_still_calls_reply_tools_without_planner(harness, monkeypatch, provider, model):
+        h = harness
+        configure(h, provider, model)
+        def unexpected(*args, **kwargs):
+            pytest.fail("native mode must not call planner")
+        monkeypatch.setattr(h.chat, "plan_image", unexpected, raising=False)
+        def open_reply(*args, **kwargs):
+            h.replies.append((args, kwargs))
+            return Reply("", call={"name": "generate_image", "arguments": {"prompt": "原生猫"}})
+        monkeypatch.setattr(h.chat, "open_reply_stream", open_reply)
+        events = asyncio.run(collect(h.chat.run_chat(h.ctx, reserved=True, crisis=False)))
+>       assert h.replies[0][1]["tools"] == "generate_image"
+               ^^^^^^^^^^^^
+E       IndexError: list index out of range
+
+tests/test_byok_planner_r1.py:235: IndexError
+----------------------------- Captured stdout call -----------------------------
+[byok] reply failed category=unavailable
+_ test_r1_native_still_calls_reply_tools_without_planner[anthropic-claude-haiku-5-5] _
+
+harness = namespace(chat=<module 'services.chat_service' from './backend/services/chat_...'unavailable', 'resp_chars': 0}], daily=[(('byok_chat', 'r1-byok-user'), {'hit': True})], replies=[], planner_calls=[])
+monkeypatch = <_pytest.monkeypatch.MonkeyPatch object at 0x10baa1fd0>
+provider = 'anthropic', model = 'claude-haiku-5-5'
+
+    @pytest.mark.parametrize("provider,model", NATIVE_CONFIGS)
+    def test_r1_native_still_calls_reply_tools_without_planner(harness, monkeypatch, provider, model):
+        h = harness
+        configure(h, provider, model)
+        def unexpected(*args, **kwargs):
+            pytest.fail("native mode must not call planner")
+        monkeypatch.setattr(h.chat, "plan_image", unexpected, raising=False)
+        def open_reply(*args, **kwargs):
+            h.replies.append((args, kwargs))
+            return Reply("", call={"name": "generate_image", "arguments": {"prompt": "原生猫"}})
+        monkeypatch.setattr(h.chat, "open_reply_stream", open_reply)
+        events = asyncio.run(collect(h.chat.run_chat(h.ctx, reserved=True, crisis=False)))
+>       assert h.replies[0][1]["tools"] == "generate_image"
+               ^^^^^^^^^^^^
+E       IndexError: list index out of range
+
+tests/test_byok_planner_r1.py:235: IndexError
+----------------------------- Captured stdout call -----------------------------
+[byok] reply failed category=unavailable
+___________ test_native_tool_route_uses_reply_model_only[candidate] ____________
+
+chat_harness = (<module 'services.chat_service' from './backend/services/chat_service.py'>, ...=False, billable=False, crisis=False, crisis_level=None, crisis_resource_sent=False), [], [], [('tool-user', 10)], ...)
+monkeypatch = <_pytest.monkeypatch.MonkeyPatch object at 0x10c4d6f90>
+kind = 'candidate'
+
+    @pytest.mark.parametrize('kind', ['candidate', 'intent', 'intent_error', 'pending'])
+    def test_native_tool_route_uses_reply_model_only(chat_harness, monkeypatch, kind):
+        chat, ctx, state, saves, calls, *_ = chat_harness
+        ctx.byok_config = {'enabled': True, 'provider': 'anthropic', 'model': 'claude-sonnet-5-5', 'api_key': 'fake'}
+        monkeypatch.setattr(chat, 'check_chat_daily_cap', lambda *a, **kw: None)
+        requests, cleared, modes = [], [], []
+        ctx.message = ctx.user_content = '画一只猫' if kind == 'candidate' else '按上面的描述继续'
+        ctx.messages = [{'role': 'user', 'content': ctx.message}]
+        monkeypatch.setattr(chat, 'clear_pending', lambda *a: cleared.append(a))
+        def detect(*a):
+            modes.append(a)
+            return 'mirror' if kind == 'candidate' else 'friend'
+        monkeypatch.setattr(chat, 'detect_mode', detect)
+        def recognize(*a):
+            if kind == 'intent_error': raise RuntimeError('offline intent unavailable')
+            return {'intent': 'generate_image', 'params': {'prompt': '错误的意图描述'}, 'missing': []}
+        monkeypatch.setattr(chat, 'recognize_intent_with_fallback', recognize)
+        monkeypatch.setattr(chat, 'explicit_image_intent', lambda *a: {'intent': 'generate_image', 'params': {}, 'missing': []} if kind == 'candidate' else None)
+        if kind == 'pending': monkeypatch.setattr(chat, 'get_pending', lambda *a: {'intent': 'generate_image', 'params': {}, 'missing': ['prompt']})
+        def opened(config, messages, **kwargs):
+            requests.append((messages, kwargs))
+            return ByokFakeStream(call={'name': 'generate_image', 'arguments': {'prompt': '猫'}})
+        monkeypatch.setattr(chat, 'open_reply_stream', opened)
+        result = asyncio.run(collect(chat.run_chat(ctx, reserved=True, crisis=False)))
+>       assert len(calls) == 1 and calls[0][0] == '猫'
+E       assert (0 == 1)
+E        +  where 0 = len([])
+
+tests/test_chat_image_tool.py:553: AssertionError
+_____________ test_native_tool_route_uses_reply_model_only[intent] _____________
+
+chat_harness = (<module 'services.chat_service' from './backend/services/chat_service.py'>, ...=False, billable=False, crisis=False, crisis_level=None, crisis_resource_sent=False), [], [], [('tool-user', 10)], ...)
+monkeypatch = <_pytest.monkeypatch.MonkeyPatch object at 0x1103879a0>
+kind = 'intent'
+
+    @pytest.mark.parametrize('kind', ['candidate', 'intent', 'intent_error', 'pending'])
+    def test_native_tool_route_uses_reply_model_only(chat_harness, monkeypatch, kind):
+        chat, ctx, state, saves, calls, *_ = chat_harness
+        ctx.byok_config = {'enabled': True, 'provider': 'anthropic', 'model': 'claude-sonnet-5-5', 'api_key': 'fake'}
+        monkeypatch.setattr(chat, 'check_chat_daily_cap', lambda *a, **kw: None)
+        requests, cleared, modes = [], [], []
+        ctx.message = ctx.user_content = '画一只猫' if kind == 'candidate' else '按上面的描述继续'
+        ctx.messages = [{'role': 'user', 'content': ctx.message}]
+        monkeypatch.setattr(chat, 'clear_pending', lambda *a: cleared.append(a))
+        def detect(*a):
+            modes.append(a)
+            return 'mirror' if kind == 'candidate' else 'friend'
+        monkeypatch.setattr(chat, 'detect_mode', detect)
+        def recognize(*a):
+            if kind == 'intent_error': raise RuntimeError('offline intent unavailable')
+            return {'intent': 'generate_image', 'params': {'prompt': '错误的意图描述'}, 'missing': []}
+        monkeypatch.setattr(chat, 'recognize_intent_with_fallback', recognize)
+        monkeypatch.setattr(chat, 'explicit_image_intent', lambda *a: {'intent': 'generate_image', 'params': {}, 'missing': []} if kind == 'candidate' else None)
+        if kind == 'pending': monkeypatch.setattr(chat, 'get_pending', lambda *a: {'intent': 'generate_image', 'params': {}, 'missing': ['prompt']})
+        def opened(config, messages, **kwargs):
+            requests.append((messages, kwargs))
+            return ByokFakeStream(call={'name': 'generate_image', 'arguments': {'prompt': '猫'}})
+        monkeypatch.setattr(chat, 'open_reply_stream', opened)
+        result = asyncio.run(collect(chat.run_chat(ctx, reserved=True, crisis=False)))
+>       assert len(calls) == 1 and calls[0][0] == '猫'
+E       assert (0 == 1)
+E        +  where 0 = len([])
+
+tests/test_chat_image_tool.py:553: AssertionError
+----------------------------- Captured stdout call -----------------------------
+[byok] reply failed category=unavailable
+__________ test_native_tool_route_uses_reply_model_only[intent_error] __________
+
+chat_harness = (<module 'services.chat_service' from './backend/services/chat_service.py'>, ...=False, billable=False, crisis=False, crisis_level=None, crisis_resource_sent=False), [], [], [('tool-user', 10)], ...)
+monkeypatch = <_pytest.monkeypatch.MonkeyPatch object at 0x110387d20>
+kind = 'intent_error'
+
+    @pytest.mark.parametrize('kind', ['candidate', 'intent', 'intent_error', 'pending'])
+    def test_native_tool_route_uses_reply_model_only(chat_harness, monkeypatch, kind):
+        chat, ctx, state, saves, calls, *_ = chat_harness
+        ctx.byok_config = {'enabled': True, 'provider': 'anthropic', 'model': 'claude-sonnet-5-5', 'api_key': 'fake'}
+        monkeypatch.setattr(chat, 'check_chat_daily_cap', lambda *a, **kw: None)
+        requests, cleared, modes = [], [], []
+        ctx.message = ctx.user_content = '画一只猫' if kind == 'candidate' else '按上面的描述继续'
+        ctx.messages = [{'role': 'user', 'content': ctx.message}]
+        monkeypatch.setattr(chat, 'clear_pending', lambda *a: cleared.append(a))
+        def detect(*a):
+            modes.append(a)
+            return 'mirror' if kind == 'candidate' else 'friend'
+        monkeypatch.setattr(chat, 'detect_mode', detect)
+        def recognize(*a):
+            if kind == 'intent_error': raise RuntimeError('offline intent unavailable')
+            return {'intent': 'generate_image', 'params': {'prompt': '错误的意图描述'}, 'missing': []}
+        monkeypatch.setattr(chat, 'recognize_intent_with_fallback', recognize)
+        monkeypatch.setattr(chat, 'explicit_image_intent', lambda *a: {'intent': 'generate_image', 'params': {}, 'missing': []} if kind == 'candidate' else None)
+        if kind == 'pending': monkeypatch.setattr(chat, 'get_pending', lambda *a: {'intent': 'generate_image', 'params': {}, 'missing': ['prompt']})
+        def opened(config, messages, **kwargs):
+            requests.append((messages, kwargs))
+            return ByokFakeStream(call={'name': 'generate_image', 'arguments': {'prompt': '猫'}})
+        monkeypatch.setattr(chat, 'open_reply_stream', opened)
+        result = asyncio.run(collect(chat.run_chat(ctx, reserved=True, crisis=False)))
+>       assert len(calls) == 1 and calls[0][0] == '猫'
+E       assert (0 == 1)
+E        +  where 0 = len([])
+
+tests/test_chat_image_tool.py:553: AssertionError
+----------------------------- Captured stdout call -----------------------------
+[byok] reply failed category=unavailable
+____________ test_native_tool_route_uses_reply_model_only[pending] _____________
+
+chat_harness = (<module 'services.chat_service' from './backend/services/chat_service.py'>, ...=False, billable=False, crisis=False, crisis_level=None, crisis_resource_sent=False), [], [], [('tool-user', 10)], ...)
+monkeypatch = <_pytest.monkeypatch.MonkeyPatch object at 0x10b730d00>
+kind = 'pending'
+
+    @pytest.mark.parametrize('kind', ['candidate', 'intent', 'intent_error', 'pending'])
+    def test_native_tool_route_uses_reply_model_only(chat_harness, monkeypatch, kind):
+        chat, ctx, state, saves, calls, *_ = chat_harness
+        ctx.byok_config = {'enabled': True, 'provider': 'anthropic', 'model': 'claude-sonnet-5-5', 'api_key': 'fake'}
+        monkeypatch.setattr(chat, 'check_chat_daily_cap', lambda *a, **kw: None)
+        requests, cleared, modes = [], [], []
+        ctx.message = ctx.user_content = '画一只猫' if kind == 'candidate' else '按上面的描述继续'
+        ctx.messages = [{'role': 'user', 'content': ctx.message}]
+        monkeypatch.setattr(chat, 'clear_pending', lambda *a: cleared.append(a))
+        def detect(*a):
+            modes.append(a)
+            return 'mirror' if kind == 'candidate' else 'friend'
+        monkeypatch.setattr(chat, 'detect_mode', detect)
+        def recognize(*a):
+            if kind == 'intent_error': raise RuntimeError('offline intent unavailable')
+            return {'intent': 'generate_image', 'params': {'prompt': '错误的意图描述'}, 'missing': []}
+        monkeypatch.setattr(chat, 'recognize_intent_with_fallback', recognize)
+        monkeypatch.setattr(chat, 'explicit_image_intent', lambda *a: {'intent': 'generate_image', 'params': {}, 'missing': []} if kind == 'candidate' else None)
+        if kind == 'pending': monkeypatch.setattr(chat, 'get_pending', lambda *a: {'intent': 'generate_image', 'params': {}, 'missing': ['prompt']})
+        def opened(config, messages, **kwargs):
+            requests.append((messages, kwargs))
+            return ByokFakeStream(call={'name': 'generate_image', 'arguments': {'prompt': '猫'}})
+        monkeypatch.setattr(chat, 'open_reply_stream', opened)
+        result = asyncio.run(collect(chat.run_chat(ctx, reserved=True, crisis=False)))
+>       assert len(calls) == 1 and calls[0][0] == '猫'
+E       assert (0 == 1)
+E        +  where 0 = len([])
+
+tests/test_chat_image_tool.py:553: AssertionError
+----------------------------- Captured stdout call -----------------------------
+[byok] reply failed category=unavailable
+_____________ test_switch_off_route_keeps_requests_unchanged[True] _____________
+
+chat_harness = (<module 'services.chat_service' from './backend/services/chat_service.py'>, ...', response_saved=False, billable=False, crisis=False, crisis_level=None, crisis_resource_sent=False), [], [], [], ...)
+monkeypatch = <_pytest.monkeypatch.MonkeyPatch object at 0x10c300360>
+byok = True
+
+    @pytest.mark.parametrize('byok', [False, True])
+    def test_switch_off_route_keeps_requests_unchanged(chat_harness, monkeypatch, byok):
+        chat, ctx, state, saves, calls, *_ = chat_harness
+        ctx.message = ctx.user_content = '你好'
+        monkeypatch.setenv('FIONA_CHAT_IMAGE_TOOL', '0')
+        requests = []
+        if byok:
+            ctx.byok_config = {'enabled': True, 'provider': 'anthropic', 'model': 'claude-sonnet-5-5', 'api_key': 'fake'}
+            monkeypatch.setattr(chat, 'check_chat_daily_cap', lambda *a, **kw: None)
+            def opened(*a, **kwargs):
+                requests.append(kwargs)
+                return ByokFakeStream('免费文字', call={'name': 'generate_image', 'arguments': {'prompt': '猫'}})
+            monkeypatch.setattr(chat, 'open_reply_stream', opened)
+        else:
+            def opened(*a, **kwargs):
+                requests.append(kwargs)
+                return iter(tool_blocks()), False
+            monkeypatch.setattr(chat, '_create_stream_with_fallback', opened)
+        asyncio.run(collect(chat.run_chat(ctx, crisis=False)))
+>       assert requests
+E       assert []
+
+tests/test_chat_image_tool.py:630: AssertionError
+----------------------------- Captured stdout call -----------------------------
+[byok] reply failed category=unavailable
+_____________ test_byok_tools_safe_system_once_including_readaloud _____________
+
+chat_harness = (<module 'services.chat_service' from './backend/services/chat_service.py'>, ...', response_saved=False, billable=False, crisis=False, crisis_level=None, crisis_resource_sent=False), [], [], [], ...)
+monkeypatch = <_pytest.monkeypatch.MonkeyPatch object at 0x10f88f1c0>
+
+    def test_byok_tools_safe_system_once_including_readaloud(chat_harness, monkeypatch):
+        from persona import BASE_SAFETY_RULES
+        chat, ctx, state, saves, calls, *_ = chat_harness
+        ctx.byok_config = {'enabled': True, 'provider': 'anthropic', 'model': 'claude-sonnet-5-5', 'api_key': 'fake'}
+        ctx.messages.append({'role': 'system', 'content': '朗读本次结果\n\n' + BASE_SAFETY_RULES.strip()})
+        requests = []
+        def opened(config, messages, **kwargs):
+            requests.append(messages)
+            return ByokFakeStream(call={'name': 'generate_image', 'arguments': {'prompt': '猫'}})
+        monkeypatch.setattr(chat, 'open_reply_stream', opened)
+        monkeypatch.setattr(chat, 'check_chat_daily_cap', lambda *a, **kw: None)
+        result = asyncio.run(collect(chat.run_chat(ctx, crisis=False)))
+>       systems = [m['content'] for m in requests[0] if m['role'] == 'system']
+                                         ^^^^^^^^^^^
+E       IndexError: list index out of range
+
+tests/test_chat_image_tool.py:674: IndexError
+----------------------------- Captured stdout call -----------------------------
+[byok] reply failed category=unavailable
+_________ test_reserved_turn_settlement_and_single_image[success-True] _________
+
+chat_harness = (<module 'services.chat_service' from './backend/services/chat_service.py'>, ...=False, billable=False, crisis=False, crisis_level=None, crisis_resource_sent=False), [], [], [('tool-user', 10)], ...)
+monkeypatch = <_pytest.monkeypatch.MonkeyPatch object at 0x10fd25710>
+byok = True, outcome = 'success'
+
+    @pytest.mark.parametrize('byok', [False, True])
+    @pytest.mark.parametrize('outcome', ['success', 'invalid', 'error', 'busy', 'missing', 'deleted'])
+    def test_reserved_turn_settlement_and_single_image(chat_harness, monkeypatch, byok, outcome):
+        chat, ctx, state, saves, calls, refunds, traces = chat_harness
+        if byok:
+            ctx.byok_config = {'enabled': True, 'provider': 'anthropic', 'model': 'claude-sonnet-5-5', 'api_key': 'fake'}
+            monkeypatch.setattr(chat, 'check_chat_daily_cap', lambda *a, **kw: None)
+            monkeypatch.setattr(chat, 'open_reply_stream', lambda *a, **kw: ByokFakeStream('我来画。', call={'name': 'generate_image', 'arguments': {'prompt': '猫'}}, invalid=outcome == 'invalid'))
+        else:
+            monkeypatch.setattr(chat, '_create_stream_with_fallback', lambda *a, **kw: (iter(tool_blocks(raw='{"prompt":' if outcome == 'invalid' else None, multiple=True)), False))
+            if outcome == 'invalid':
+                async def unavailable_planner(*args):
+                    return {'status': 'error', 'exception_type': 'ValueError', 'elapsed_ms': 1}
+                monkeypatch.setattr(chat, 'plan_image', unavailable_planner)
+        deleted = []
+        monkeypatch.setattr(chat, 'delete_uploaded_files', deleted.extend)
+        if outcome == 'error':
+            async def fail(*a, **kw): raise chat.ImageGenerationError('错误', category='moderation')
+            monkeypatch.setattr(chat, 'generate_image', fail)
+        elif outcome == 'busy': chat._IMAGE_GENERATION_USERS.add(ctx.user)
+        elif outcome == 'missing':
+            monkeypatch.delenv('ARK_API_KEY')
+            monkeypatch.delenv('DASHSCOPE_API_KEY')
+        elif outcome == 'deleted':
+            original = chat.generate_image
+            async def generate(*a, **kw):
+                generated = await original(*a, **kw)
+                async def vanished(*a): raise chat.ResourceNotFound()
+                monkeypatch.setattr(chat, '_ensure_active_conversation', vanished)
+                return generated
+            monkeypatch.setattr(chat, 'generate_image', generate)
+        monkeypatch.setattr(chat, 'clear_pending', lambda *a: None)
+        result = asyncio.run(collect(chat.run_chat(ctx, reserved=True, crisis=False)))
+        assert chat.STRAWBERRY_COST_PER_REPLY == 10
+        # An unavailable planner falls back to the legacy route. A delivered
+        # platform text reply still settles its ordinary reservation.
+>       assert refunds == ([] if outcome == 'success' or (outcome == 'invalid' and not byok) else [(ctx.user, 10)])
+E       AssertionError: assert [('tool-user', 10)] == []
+E         
+E         Left contains one more item: ('tool-user', 10)
+E         Use -v to get more diff
+
+tests/test_chat_image_tool.py:751: AssertionError
+----------------------------- Captured stdout call -----------------------------
+[byok] reply failed category=unavailable
+_________ test_reserved_turn_settlement_and_single_image[invalid-True] _________
+
+chat_harness = (<module 'services.chat_service' from './backend/services/chat_service.py'>, ...=False, billable=False, crisis=False, crisis_level=None, crisis_resource_sent=False), [], [], [('tool-user', 10)], ...)
+monkeypatch = <_pytest.monkeypatch.MonkeyPatch object at 0x10e00a190>
+byok = True, outcome = 'invalid'
+
+    @pytest.mark.parametrize('byok', [False, True])
+    @pytest.mark.parametrize('outcome', ['success', 'invalid', 'error', 'busy', 'missing', 'deleted'])
+    def test_reserved_turn_settlement_and_single_image(chat_harness, monkeypatch, byok, outcome):
+        chat, ctx, state, saves, calls, refunds, traces = chat_harness
+        if byok:
+            ctx.byok_config = {'enabled': True, 'provider': 'anthropic', 'model': 'claude-sonnet-5-5', 'api_key': 'fake'}
+            monkeypatch.setattr(chat, 'check_chat_daily_cap', lambda *a, **kw: None)
+            monkeypatch.setattr(chat, 'open_reply_stream', lambda *a, **kw: ByokFakeStream('我来画。', call={'name': 'generate_image', 'arguments': {'prompt': '猫'}}, invalid=outcome == 'invalid'))
+        else:
+            monkeypatch.setattr(chat, '_create_stream_with_fallback', lambda *a, **kw: (iter(tool_blocks(raw='{"prompt":' if outcome == 'invalid' else None, multiple=True)), False))
+            if outcome == 'invalid':
+                async def unavailable_planner(*args):
+                    return {'status': 'error', 'exception_type': 'ValueError', 'elapsed_ms': 1}
+                monkeypatch.setattr(chat, 'plan_image', unavailable_planner)
+        deleted = []
+        monkeypatch.setattr(chat, 'delete_uploaded_files', deleted.extend)
+        if outcome == 'error':
+            async def fail(*a, **kw): raise chat.ImageGenerationError('错误', category='moderation')
+            monkeypatch.setattr(chat, 'generate_image', fail)
+        elif outcome == 'busy': chat._IMAGE_GENERATION_USERS.add(ctx.user)
+        elif outcome == 'missing':
+            monkeypatch.delenv('ARK_API_KEY')
+            monkeypatch.delenv('DASHSCOPE_API_KEY')
+        elif outcome == 'deleted':
+            original = chat.generate_image
+            async def generate(*a, **kw):
+                generated = await original(*a, **kw)
+                async def vanished(*a): raise chat.ResourceNotFound()
+                monkeypatch.setattr(chat, '_ensure_active_conversation', vanished)
+                return generated
+            monkeypatch.setattr(chat, 'generate_image', generate)
+        monkeypatch.setattr(chat, 'clear_pending', lambda *a: None)
+        result = asyncio.run(collect(chat.run_chat(ctx, reserved=True, crisis=False)))
+        assert chat.STRAWBERRY_COST_PER_REPLY == 10
+        # An unavailable planner falls back to the legacy route. A delivered
+        # platform text reply still settles its ordinary reservation.
+        assert refunds == ([] if outcome == 'success' or (outcome == 'invalid' and not byok) else [(ctx.user, 10)])
+        if outcome == 'success':
+            assert len(calls) == 1
+            assert sum('generated_image' in event for event in result if isinstance(event, dict)) == 1
+            assert '图片已生成。' in saves[0][2] and '使用的描述' in saves[0][2]
+            assert sum('done' in event for event in result if isinstance(event, dict)) == 1
+            assert chat.STRAWBERRY_COST_PER_REPLY == 10 and not refunds
+        else:
+            assert len(calls) == int(outcome == 'deleted')
+>           assert sum('done' in event for event in result if isinstance(event, dict)) == int(outcome == 'invalid')
+E           AssertionError: assert 0 == 1
+E            +  where 0 = sum(<generator object test_reserved_turn_settlement_and_single_image.<locals>.<genexpr> at 0x10f49eb20>)
+E            +  and   1 = int('invalid' == 'invalid'
+E               
+E                 invalid)
+
+tests/test_chat_image_tool.py:760: AssertionError
+----------------------------- Captured stdout call -----------------------------
+[byok] reply failed category=unavailable
+__________ test_reserved_turn_settlement_and_single_image[error-True] __________
+
+chat_harness = (<module 'services.chat_service' from './backend/services/chat_service.py'>, ...=False, billable=False, crisis=False, crisis_level=None, crisis_resource_sent=False), [], [], [('tool-user', 10)], ...)
+monkeypatch = <_pytest.monkeypatch.MonkeyPatch object at 0x10c4d7cb0>
+byok = True, outcome = 'error'
+
+    @pytest.mark.parametrize('byok', [False, True])
+    @pytest.mark.parametrize('outcome', ['success', 'invalid', 'error', 'busy', 'missing', 'deleted'])
+    def test_reserved_turn_settlement_and_single_image(chat_harness, monkeypatch, byok, outcome):
+        chat, ctx, state, saves, calls, refunds, traces = chat_harness
+        if byok:
+            ctx.byok_config = {'enabled': True, 'provider': 'anthropic', 'model': 'claude-sonnet-5-5', 'api_key': 'fake'}
+            monkeypatch.setattr(chat, 'check_chat_daily_cap', lambda *a, **kw: None)
+            monkeypatch.setattr(chat, 'open_reply_stream', lambda *a, **kw: ByokFakeStream('我来画。', call={'name': 'generate_image', 'arguments': {'prompt': '猫'}}, invalid=outcome == 'invalid'))
+        else:
+            monkeypatch.setattr(chat, '_create_stream_with_fallback', lambda *a, **kw: (iter(tool_blocks(raw='{"prompt":' if outcome == 'invalid' else None, multiple=True)), False))
+            if outcome == 'invalid':
+                async def unavailable_planner(*args):
+                    return {'status': 'error', 'exception_type': 'ValueError', 'elapsed_ms': 1}
+                monkeypatch.setattr(chat, 'plan_image', unavailable_planner)
+        deleted = []
+        monkeypatch.setattr(chat, 'delete_uploaded_files', deleted.extend)
+        if outcome == 'error':
+            async def fail(*a, **kw): raise chat.ImageGenerationError('错误', category='moderation')
+            monkeypatch.setattr(chat, 'generate_image', fail)
+        elif outcome == 'busy': chat._IMAGE_GENERATION_USERS.add(ctx.user)
+        elif outcome == 'missing':
+            monkeypatch.delenv('ARK_API_KEY')
+            monkeypatch.delenv('DASHSCOPE_API_KEY')
+        elif outcome == 'deleted':
+            original = chat.generate_image
+            async def generate(*a, **kw):
+                generated = await original(*a, **kw)
+                async def vanished(*a): raise chat.ResourceNotFound()
+                monkeypatch.setattr(chat, '_ensure_active_conversation', vanished)
+                return generated
+            monkeypatch.setattr(chat, 'generate_image', generate)
+        monkeypatch.setattr(chat, 'clear_pending', lambda *a: None)
+        result = asyncio.run(collect(chat.run_chat(ctx, reserved=True, crisis=False)))
+        assert chat.STRAWBERRY_COST_PER_REPLY == 10
+        # An unavailable planner falls back to the legacy route. A delivered
+        # platform text reply still settles its ordinary reservation.
+        assert refunds == ([] if outcome == 'success' or (outcome == 'invalid' and not byok) else [(ctx.user, 10)])
+        if outcome == 'success':
+            assert len(calls) == 1
+            assert sum('generated_image' in event for event in result if isinstance(event, dict)) == 1
+            assert '图片已生成。' in saves[0][2] and '使用的描述' in saves[0][2]
+            assert sum('done' in event for event in result if isinstance(event, dict)) == 1
+            assert chat.STRAWBERRY_COST_PER_REPLY == 10 and not refunds
+        else:
+            assert len(calls) == int(outcome == 'deleted')
+            assert sum('done' in event for event in result if isinstance(event, dict)) == int(outcome == 'invalid')
+        assert sum('error' in event for event in result if isinstance(event, dict)) == (0 if outcome in ('success', 'invalid') else 1)
+        assert not any('tool' in event for event in result if isinstance(event, dict))
+        if outcome in ('success', 'invalid'): assert len(saves) == 1
+        else: assert not saves
+        if outcome == 'deleted': assert deleted == ['/uploads/generated_test.png']
+>       if byok and outcome == 'error': assert 'byok_error' not in traces[0]
+                                        ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+E       AssertionError: assert 'byok_error' not in {'mode': 'friend', 'intent': None, 'model': 'byok', 'has_image': False, ...}
+
+tests/test_chat_image_tool.py:766: AssertionError
+----------------------------- Captured stdout call -----------------------------
+[byok] reply failed category=unavailable
+_________ test_reserved_turn_settlement_and_single_image[deleted-True] _________
+
+chat_harness = (<module 'services.chat_service' from './backend/services/chat_service.py'>, ...=False, billable=False, crisis=False, crisis_level=None, crisis_resource_sent=False), [], [], [('tool-user', 10)], ...)
+monkeypatch = <_pytest.monkeypatch.MonkeyPatch object at 0x10c302b30>
+byok = True, outcome = 'deleted'
+
+    @pytest.mark.parametrize('byok', [False, True])
+    @pytest.mark.parametrize('outcome', ['success', 'invalid', 'error', 'busy', 'missing', 'deleted'])
+    def test_reserved_turn_settlement_and_single_image(chat_harness, monkeypatch, byok, outcome):
+        chat, ctx, state, saves, calls, refunds, traces = chat_harness
+        if byok:
+            ctx.byok_config = {'enabled': True, 'provider': 'anthropic', 'model': 'claude-sonnet-5-5', 'api_key': 'fake'}
+            monkeypatch.setattr(chat, 'check_chat_daily_cap', lambda *a, **kw: None)
+            monkeypatch.setattr(chat, 'open_reply_stream', lambda *a, **kw: ByokFakeStream('我来画。', call={'name': 'generate_image', 'arguments': {'prompt': '猫'}}, invalid=outcome == 'invalid'))
+        else:
+            monkeypatch.setattr(chat, '_create_stream_with_fallback', lambda *a, **kw: (iter(tool_blocks(raw='{"prompt":' if outcome == 'invalid' else None, multiple=True)), False))
+            if outcome == 'invalid':
+                async def unavailable_planner(*args):
+                    return {'status': 'error', 'exception_type': 'ValueError', 'elapsed_ms': 1}
+                monkeypatch.setattr(chat, 'plan_image', unavailable_planner)
+        deleted = []
+        monkeypatch.setattr(chat, 'delete_uploaded_files', deleted.extend)
+        if outcome == 'error':
+            async def fail(*a, **kw): raise chat.ImageGenerationError('错误', category='moderation')
+            monkeypatch.setattr(chat, 'generate_image', fail)
+        elif outcome == 'busy': chat._IMAGE_GENERATION_USERS.add(ctx.user)
+        elif outcome == 'missing':
+            monkeypatch.delenv('ARK_API_KEY')
+            monkeypatch.delenv('DASHSCOPE_API_KEY')
+        elif outcome == 'deleted':
+            original = chat.generate_image
+            async def generate(*a, **kw):
+                generated = await original(*a, **kw)
+                async def vanished(*a): raise chat.ResourceNotFound()
+                monkeypatch.setattr(chat, '_ensure_active_conversation', vanished)
+                return generated
+            monkeypatch.setattr(chat, 'generate_image', generate)
+        monkeypatch.setattr(chat, 'clear_pending', lambda *a: None)
+        result = asyncio.run(collect(chat.run_chat(ctx, reserved=True, crisis=False)))
+        assert chat.STRAWBERRY_COST_PER_REPLY == 10
+        # An unavailable planner falls back to the legacy route. A delivered
+        # platform text reply still settles its ordinary reservation.
+        assert refunds == ([] if outcome == 'success' or (outcome == 'invalid' and not byok) else [(ctx.user, 10)])
+        if outcome == 'success':
+            assert len(calls) == 1
+            assert sum('generated_image' in event for event in result if isinstance(event, dict)) == 1
+            assert '图片已生成。' in saves[0][2] and '使用的描述' in saves[0][2]
+            assert sum('done' in event for event in result if isinstance(event, dict)) == 1
+            assert chat.STRAWBERRY_COST_PER_REPLY == 10 and not refunds
+        else:
+>           assert len(calls) == int(outcome == 'deleted')
+E           AssertionError: assert 0 == 1
+E            +  where 0 = len([])
+E            +  and   1 = int('deleted' == 'deleted'
+E               
+E                 deleted)
+
+tests/test_chat_image_tool.py:759: AssertionError
+----------------------------- Captured stdout call -----------------------------
+[byok] reply failed category=unavailable
+____ test_http_paid_turn_reserves_once_and_settles_real_balance[image-True] ____
+
+client = <starlette.testclient.TestClient object at 0x10fc75040>
+dev_headers = {'X-Dev-User': 'smoke_tester'}
+monkeypatch = <_pytest.monkeypatch.MonkeyPatch object at 0x10e273460>
+byok = True, outcome = 'image'
+
+    @pytest.mark.parametrize('byok', [False, True])
+    @pytest.mark.parametrize('outcome', ['image', 'invalid', 'error', 'text'])
+    def test_http_paid_turn_reserves_once_and_settles_real_balance(client, dev_headers, monkeypatch, byok, outcome):
+        """In-process ASGI with a real isolated SQLite balance; every provider is fake."""
+        import sqlite3
+        from pathlib import Path
+        import database
+        import routers.chat as router
+        import services.chat_service as chat
+        from auth import create_token
+        from rate_limit import limiter
+        from utils import media
+        monkeypatch.setattr(limiter, 'enabled', False)
+        monkeypatch.setenv('STRAWBERRY_DAILY_REFILL', '0')
+        monkeypatch.setattr(chat, '_IMAGE_GENERATION_USERS', set())
+        username = dev_headers['X-Dev-User']
+        conversation = client.post('/conversations', headers=dev_headers, json={}).json()['conversation']['id']
+        with sqlite3.connect(database.DB_PATH) as db:
+            db.execute('UPDATE users SET strawberry_balance = 20 WHERE username = ?', (username,))
+        version = asyncio.run(database.get_session_version(username))
+        headers = {'Authorization': 'Bearer ' + create_token(username, version)}
+        monkeypatch.setenv('DEV_MODE', '0')
+        config = {'enabled': True, 'provider': 'anthropic', 'model': 'claude-sonnet-5-5', 'api_key': 'fake'} if byok else None
+        async def config_read(*a): return config
+        monkeypatch.setattr(chat, 'get_internal_config', config_read)
+        reservations, refunds, generated = [], [], []
+        original_reserve, original_refund = router.reserve_strawberries, chat.refund_strawberries
+        async def reserve(*a):
+            reservations.append(a)
+            return await original_reserve(*a)
+        async def refund(*a):
+            refunds.append(a)
+            return await original_refund(*a)
+        monkeypatch.setattr(router, 'reserve_strawberries', reserve)
+        monkeypatch.setattr(chat, 'refund_strawberries', refund)
+        monkeypatch.setattr(chat, 'check_chat_daily_cap', lambda *a, **kw: None)
+        async def planner(*args):
+            if outcome == 'text':
+                return {'status': 'no'}
+            if outcome == 'invalid':
+                return {'status': 'error', 'exception_type': 'ValueError', 'elapsed_ms': 1}
+            return {'status': 'draw', 'prompt': '猫'}
+        monkeypatch.setattr(chat, 'plan_image', planner)
+        if byok:
+            call = None if outcome == 'text' else {'name': 'generate_image', 'arguments': {'prompt': '猫'}}
+            monkeypatch.setattr(chat, 'open_reply_stream', lambda *a, **kw: ByokFakeStream('我来画。', call=call, invalid=outcome == 'invalid'))
+        else:
+            chunks = [block('普通文字'), block(finish='stop')] if outcome == 'text' else tool_blocks(raw='{"prompt":' if outcome == 'invalid' else None, multiple=True)
+            monkeypatch.setattr(chat, '_create_stream_with_fallback', lambda *a, **kw: (iter(chunks), False))
+        async def image(prompt, ratio, **kwargs):
+            generated.append((prompt, ratio, kwargs))
+            if outcome == 'error': raise chat.ImageGenerationError('工具生图失败')
+            Path(media.UPLOADS_DIR).mkdir(parents=True, exist_ok=True)
+            (Path(media.UPLOADS_DIR) / 'generated_billing.png').write_bytes(b'isolated-fake-image')
+            return {'image_path': '/uploads/generated_billing.png', 'model': 'fake-renderer'}
+        monkeypatch.setattr(chat, 'generate_image', image)
+        response = client.post('/chat', headers=headers, json={'conversation_id': conversation, 'message': '按上面的提示词画', 'image_model': 'qwen-image-3.0'})
+        assert response.status_code == 200
+        result = [json.loads(line[6:]) for line in response.text.splitlines() if line.startswith('data: ')]
+        billed = outcome == 'image' or (outcome in ('text', 'invalid') and not byok)
+        assert reservations == [(username, 10)]
+>       assert refunds == ([] if billed else [(username, 10)])
+E       AssertionError: assert [('smoke_tester', 10)] == []
+E         
+E         Left contains one more item: ('smoke_tester', 10)
+E         Use -v to get more diff
+
+tests/test_chat_image_tool.py:891: AssertionError
+----------------------------- Captured stdout call -----------------------------
+[硬词检测] chars=8, detected_count=0
+[byok] reply failed category=unavailable
+___ test_http_paid_turn_reserves_once_and_settles_real_balance[invalid-True] ___
+
+client = <starlette.testclient.TestClient object at 0x10fc77570>
+dev_headers = {'X-Dev-User': 'smoke_tester'}
+monkeypatch = <_pytest.monkeypatch.MonkeyPatch object at 0x10c4b87c0>
+byok = True, outcome = 'invalid'
+
+    @pytest.mark.parametrize('byok', [False, True])
+    @pytest.mark.parametrize('outcome', ['image', 'invalid', 'error', 'text'])
+    def test_http_paid_turn_reserves_once_and_settles_real_balance(client, dev_headers, monkeypatch, byok, outcome):
+        """In-process ASGI with a real isolated SQLite balance; every provider is fake."""
+        import sqlite3
+        from pathlib import Path
+        import database
+        import routers.chat as router
+        import services.chat_service as chat
+        from auth import create_token
+        from rate_limit import limiter
+        from utils import media
+        monkeypatch.setattr(limiter, 'enabled', False)
+        monkeypatch.setenv('STRAWBERRY_DAILY_REFILL', '0')
+        monkeypatch.setattr(chat, '_IMAGE_GENERATION_USERS', set())
+        username = dev_headers['X-Dev-User']
+        conversation = client.post('/conversations', headers=dev_headers, json={}).json()['conversation']['id']
+        with sqlite3.connect(database.DB_PATH) as db:
+            db.execute('UPDATE users SET strawberry_balance = 20 WHERE username = ?', (username,))
+        version = asyncio.run(database.get_session_version(username))
+        headers = {'Authorization': 'Bearer ' + create_token(username, version)}
+        monkeypatch.setenv('DEV_MODE', '0')
+        config = {'enabled': True, 'provider': 'anthropic', 'model': 'claude-sonnet-5-5', 'api_key': 'fake'} if byok else None
+        async def config_read(*a): return config
+        monkeypatch.setattr(chat, 'get_internal_config', config_read)
+        reservations, refunds, generated = [], [], []
+        original_reserve, original_refund = router.reserve_strawberries, chat.refund_strawberries
+        async def reserve(*a):
+            reservations.append(a)
+            return await original_reserve(*a)
+        async def refund(*a):
+            refunds.append(a)
+            return await original_refund(*a)
+        monkeypatch.setattr(router, 'reserve_strawberries', reserve)
+        monkeypatch.setattr(chat, 'refund_strawberries', refund)
+        monkeypatch.setattr(chat, 'check_chat_daily_cap', lambda *a, **kw: None)
+        async def planner(*args):
+            if outcome == 'text':
+                return {'status': 'no'}
+            if outcome == 'invalid':
+                return {'status': 'error', 'exception_type': 'ValueError', 'elapsed_ms': 1}
+            return {'status': 'draw', 'prompt': '猫'}
+        monkeypatch.setattr(chat, 'plan_image', planner)
+        if byok:
+            call = None if outcome == 'text' else {'name': 'generate_image', 'arguments': {'prompt': '猫'}}
+            monkeypatch.setattr(chat, 'open_reply_stream', lambda *a, **kw: ByokFakeStream('我来画。', call=call, invalid=outcome == 'invalid'))
+        else:
+            chunks = [block('普通文字'), block(finish='stop')] if outcome == 'text' else tool_blocks(raw='{"prompt":' if outcome == 'invalid' else None, multiple=True)
+            monkeypatch.setattr(chat, '_create_stream_with_fallback', lambda *a, **kw: (iter(chunks), False))
+        async def image(prompt, ratio, **kwargs):
+            generated.append((prompt, ratio, kwargs))
+            if outcome == 'error': raise chat.ImageGenerationError('工具生图失败')
+            Path(media.UPLOADS_DIR).mkdir(parents=True, exist_ok=True)
+            (Path(media.UPLOADS_DIR) / 'generated_billing.png').write_bytes(b'isolated-fake-image')
+            return {'image_path': '/uploads/generated_billing.png', 'model': 'fake-renderer'}
+        monkeypatch.setattr(chat, 'generate_image', image)
+        response = client.post('/chat', headers=headers, json={'conversation_id': conversation, 'message': '按上面的提示词画', 'image_model': 'qwen-image-3.0'})
+        assert response.status_code == 200
+        result = [json.loads(line[6:]) for line in response.text.splitlines() if line.startswith('data: ')]
+        billed = outcome == 'image' or (outcome in ('text', 'invalid') and not byok)
+        assert reservations == [(username, 10)]
+        assert refunds == ([] if billed else [(username, 10)])
+        assert asyncio.run(database.get_strawberry_balance(username)) == (10 if billed else 20)
+        history = client.get(f'/conversations/{conversation}/messages', headers=headers).json()['messages']
+        assistants = [row for row in history if row['role'] == 'assistant']
+>       assert len(assistants) == (0 if outcome == 'error' else 1)
+E       assert 0 == 1
+E        +  where 0 = len([])
+
+tests/test_chat_image_tool.py:895: AssertionError
+----------------------------- Captured stdout call -----------------------------
+[硬词检测] chars=8, detected_count=0
+[byok] reply failed category=unavailable
+____ test_http_paid_turn_reserves_once_and_settles_real_balance[text-True] _____
+
+client = <starlette.testclient.TestClient object at 0x10f41ead0>
+dev_headers = {'X-Dev-User': 'smoke_tester'}
+monkeypatch = <_pytest.monkeypatch.MonkeyPatch object at 0x10f88c590>
+byok = True, outcome = 'text'
+
+    @pytest.mark.parametrize('byok', [False, True])
+    @pytest.mark.parametrize('outcome', ['image', 'invalid', 'error', 'text'])
+    def test_http_paid_turn_reserves_once_and_settles_real_balance(client, dev_headers, monkeypatch, byok, outcome):
+        """In-process ASGI with a real isolated SQLite balance; every provider is fake."""
+        import sqlite3
+        from pathlib import Path
+        import database
+        import routers.chat as router
+        import services.chat_service as chat
+        from auth import create_token
+        from rate_limit import limiter
+        from utils import media
+        monkeypatch.setattr(limiter, 'enabled', False)
+        monkeypatch.setenv('STRAWBERRY_DAILY_REFILL', '0')
+        monkeypatch.setattr(chat, '_IMAGE_GENERATION_USERS', set())
+        username = dev_headers['X-Dev-User']
+        conversation = client.post('/conversations', headers=dev_headers, json={}).json()['conversation']['id']
+        with sqlite3.connect(database.DB_PATH) as db:
+            db.execute('UPDATE users SET strawberry_balance = 20 WHERE username = ?', (username,))
+        version = asyncio.run(database.get_session_version(username))
+        headers = {'Authorization': 'Bearer ' + create_token(username, version)}
+        monkeypatch.setenv('DEV_MODE', '0')
+        config = {'enabled': True, 'provider': 'anthropic', 'model': 'claude-sonnet-5-5', 'api_key': 'fake'} if byok else None
+        async def config_read(*a): return config
+        monkeypatch.setattr(chat, 'get_internal_config', config_read)
+        reservations, refunds, generated = [], [], []
+        original_reserve, original_refund = router.reserve_strawberries, chat.refund_strawberries
+        async def reserve(*a):
+            reservations.append(a)
+            return await original_reserve(*a)
+        async def refund(*a):
+            refunds.append(a)
+            return await original_refund(*a)
+        monkeypatch.setattr(router, 'reserve_strawberries', reserve)
+        monkeypatch.setattr(chat, 'refund_strawberries', refund)
+        monkeypatch.setattr(chat, 'check_chat_daily_cap', lambda *a, **kw: None)
+        async def planner(*args):
+            if outcome == 'text':
+                return {'status': 'no'}
+            if outcome == 'invalid':
+                return {'status': 'error', 'exception_type': 'ValueError', 'elapsed_ms': 1}
+            return {'status': 'draw', 'prompt': '猫'}
+        monkeypatch.setattr(chat, 'plan_image', planner)
+        if byok:
+            call = None if outcome == 'text' else {'name': 'generate_image', 'arguments': {'prompt': '猫'}}
+            monkeypatch.setattr(chat, 'open_reply_stream', lambda *a, **kw: ByokFakeStream('我来画。', call=call, invalid=outcome == 'invalid'))
+        else:
+            chunks = [block('普通文字'), block(finish='stop')] if outcome == 'text' else tool_blocks(raw='{"prompt":' if outcome == 'invalid' else None, multiple=True)
+            monkeypatch.setattr(chat, '_create_stream_with_fallback', lambda *a, **kw: (iter(chunks), False))
+        async def image(prompt, ratio, **kwargs):
+            generated.append((prompt, ratio, kwargs))
+            if outcome == 'error': raise chat.ImageGenerationError('工具生图失败')
+            Path(media.UPLOADS_DIR).mkdir(parents=True, exist_ok=True)
+            (Path(media.UPLOADS_DIR) / 'generated_billing.png').write_bytes(b'isolated-fake-image')
+            return {'image_path': '/uploads/generated_billing.png', 'model': 'fake-renderer'}
+        monkeypatch.setattr(chat, 'generate_image', image)
+        response = client.post('/chat', headers=headers, json={'conversation_id': conversation, 'message': '按上面的提示词画', 'image_model': 'qwen-image-3.0'})
+        assert response.status_code == 200
+        result = [json.loads(line[6:]) for line in response.text.splitlines() if line.startswith('data: ')]
+        billed = outcome == 'image' or (outcome in ('text', 'invalid') and not byok)
+        assert reservations == [(username, 10)]
+        assert refunds == ([] if billed else [(username, 10)])
+        assert asyncio.run(database.get_strawberry_balance(username)) == (10 if billed else 20)
+        history = client.get(f'/conversations/{conversation}/messages', headers=headers).json()['messages']
+        assistants = [row for row in history if row['role'] == 'assistant']
+>       assert len(assistants) == (0 if outcome == 'error' else 1)
+E       assert 0 == 1
+E        +  where 0 = len([])
+
+tests/test_chat_image_tool.py:895: AssertionError
+----------------------------- Captured stdout call -----------------------------
+[硬词检测] chars=8, detected_count=0
+[byok] reply failed category=unavailable
+=============================== warnings summary ===============================
+.venv/lib/python3.14/site-packages/slowapi/extension.py:720: 2 warnings
+tests/test_account_deletion.py: 12 warnings
+  ./backend/.venv/lib/python3.14/site-packages/slowapi/extension.py:720: DeprecationWarning: 'asyncio.iscoroutinefunction' is deprecated and slated for removal in Python 3.16; use inspect.iscoroutinefunction() instead
+    if asyncio.iscoroutinefunction(func):
+
+-- Docs: https://docs.pytest.org/en/stable/how-to/capture-warnings.html
+=========================== short test summary info ============================
+FAILED tests/test_byok_chat.py::test_reply_uses_dedicated_pool_and_refunds[10-friend]
+FAILED tests/test_byok_chat.py::test_paid_branches_still_cost_ten[weather] - ...
+FAILED tests/test_byok_chat.py::test_paid_branches_still_cost_ten[image] - As...
+FAILED tests/test_byok_chat.py::test_paid_branches_still_cost_ten[vision] - A...
+FAILED tests/test_byok_chat.py::test_error_mapping_no_fallback_refund_or_secret[failure0]
+FAILED tests/test_byok_chat.py::test_error_mapping_no_fallback_refund_or_secret[failure1]
+FAILED tests/test_byok_chat.py::test_error_mapping_no_fallback_refund_or_secret[failure2]
+FAILED tests/test_byok_chat.py::test_error_mapping_no_fallback_refund_or_secret[failure3]
+FAILED tests/test_byok_chat.py::test_error_mapping_no_fallback_refund_or_secret[failure4]
+FAILED tests/test_byok_chat.py::test_error_mapping_no_fallback_refund_or_secret[failure5]
+FAILED tests/test_byok_chat.py::test_error_mapping_no_fallback_refund_or_secret[failure6]
+FAILED tests/test_byok_chat.py::test_empty_and_refusal_semantics[True-True]
+FAILED tests/test_byok_chat.py::test_daily_cap_and_dev_mode_bypass - Assertio...
+FAILED tests/test_byok_chat.py::test_disconnected_byok_stream_closes_and_releases_slot
+FAILED tests/test_byok_chat.py::test_r1_pending_api_free_actions_and_paid_guards[image_topic-10]
+FAILED tests/test_byok_chat.py::test_r1_pending_api_free_actions_and_paid_guards[image_cancel-10]
+FAILED tests/test_byok_chat.py::test_r1_pending_api_free_actions_and_paid_guards[image_fill-10]
+FAILED tests/test_byok_chat.py::test_r1_pending_api_free_actions_and_paid_guards[weather_cancel-10]
+FAILED tests/test_byok_chat.py::test_r1_pending_api_free_actions_and_paid_guards[weather_fill-10]
+FAILED tests/test_byok_chat.py::test_r1_pending_api_free_actions_and_paid_guards[weather_chat-10]
+FAILED tests/test_byok_chat.py::test_r1_pending_api_free_actions_and_paid_guards[image_new_tool-0]
+FAILED tests/test_byok_chat.py::test_r1_pending_api_free_actions_and_paid_guards[image_new_tool-10]
+FAILED tests/test_byok_chat.py::test_r1_pending_api_free_actions_and_paid_guards[image_thanks-10]
+FAILED tests/test_byok_chat.py::test_r1_pending_api_free_actions_and_paid_guards[image_discussion-10]
+FAILED tests/test_byok_chat.py::test_r1_pending_api_free_actions_and_paid_guards[image_question-10]
+FAILED tests/test_byok_chat.py::test_r1_reply_persistence_failure_uses_platform_error[friend]
+FAILED tests/test_byok_chat.py::test_r1_deleted_conversation_during_reply_is_platform_failure[friend]
+FAILED tests/test_byok_chat.py::test_r2_paid_weather_pending_routing_matches_platform
+FAILED tests/test_byok_chat.py::test_r2_zero_balance_other_pending_free_exits[route-\u7b97\u4e86]
+FAILED tests/test_byok_chat.py::test_r2_zero_balance_other_pending_free_exits[route-\u6362\u4e2a\u8bdd\u9898]
+FAILED tests/test_byok_chat.py::test_r2_zero_balance_other_pending_free_exits[route-\u4ece\u5bb6\u51fa\u53d1]
+FAILED tests/test_byok_chat.py::test_r2_zero_balance_other_pending_free_exits[web_search-\u7b97\u4e86]
+FAILED tests/test_byok_chat.py::test_r2_paid_other_pending_matches_platform[\u7b97\u4e86-route]
+FAILED tests/test_byok_chat.py::test_r2_paid_other_pending_matches_platform[\u7b97\u4e86-web_search]
+FAILED tests/test_byok_chat.py::test_r2_paid_other_pending_matches_platform[\u6362\u4e2a\u8bdd\u9898-route]
+FAILED tests/test_byok_chat.py::test_r2_paid_other_pending_matches_platform[\u6362\u4e2a\u8bdd\u9898-web_search]
+FAILED tests/test_byok_chat.py::test_r2_paid_other_pending_matches_platform[\u4ece\u5bb6\u51fa\u53d1-route]
+FAILED tests/test_byok_chat.py::test_r2_paid_other_pending_matches_platform[\u4ece\u5bb6\u51fa\u53d1-web_search]
+FAILED tests/test_byok_chat.py::test_r3_paid_weather_topic_exit_matches_unconfigured_platform
+FAILED tests/test_byok_planner_r1.py::test_r1_native_still_calls_reply_tools_without_planner[anthropic-claude-opus-5-5]
+FAILED tests/test_byok_planner_r1.py::test_r1_native_still_calls_reply_tools_without_planner[anthropic-claude-sonnet-5-5]
+FAILED tests/test_byok_planner_r1.py::test_r1_native_still_calls_reply_tools_without_planner[anthropic-claude-haiku-5-5]
+FAILED tests/test_chat_image_tool.py::test_native_tool_route_uses_reply_model_only[candidate]
+FAILED tests/test_chat_image_tool.py::test_native_tool_route_uses_reply_model_only[intent]
+FAILED tests/test_chat_image_tool.py::test_native_tool_route_uses_reply_model_only[intent_error]
+FAILED tests/test_chat_image_tool.py::test_native_tool_route_uses_reply_model_only[pending]
+FAILED tests/test_chat_image_tool.py::test_switch_off_route_keeps_requests_unchanged[True]
+FAILED tests/test_chat_image_tool.py::test_byok_tools_safe_system_once_including_readaloud
+FAILED tests/test_chat_image_tool.py::test_reserved_turn_settlement_and_single_image[success-True]
+FAILED tests/test_chat_image_tool.py::test_reserved_turn_settlement_and_single_image[invalid-True]
+FAILED tests/test_chat_image_tool.py::test_reserved_turn_settlement_and_single_image[error-True]
+FAILED tests/test_chat_image_tool.py::test_reserved_turn_settlement_and_single_image[deleted-True]
+FAILED tests/test_chat_image_tool.py::test_http_paid_turn_reserves_once_and_settles_real_balance[image-True]
+FAILED tests/test_chat_image_tool.py::test_http_paid_turn_reserves_once_and_settles_real_balance[invalid-True]
+FAILED tests/test_chat_image_tool.py::test_http_paid_turn_reserves_once_and_settles_real_balance[text-True]
+55 failed, 3420 passed, 6 skipped, 6 deselected, 14 warnings in 88.41s (0:01:28)

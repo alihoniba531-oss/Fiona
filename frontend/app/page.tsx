@@ -63,9 +63,10 @@ interface ChatStreamEvent {
   text?: string;
   speak?: boolean;
   card?: CardData;
+  append?: boolean;
   error?: string;
   done?: boolean;
-  status?: "generating_image" | "editing_image";
+  status?: "generating_image" | "editing_image" | "image_failed";
   source?: string;
   message?: string;
   generated_image?: { image_path: string; model: string; width: number; height: number; reference_image_paths?: string[]; reference_image_path?: string };
@@ -1843,6 +1844,12 @@ export default function ChatPage() {
             setMessages((prev) => prev.map((m) => m.id === replyId
               ? { ...m, generationStatus: data.message || (editingImage ? "正在修改图片…" : "正在生成图片…") } : m));
           }
+          if (data.status === "image_failed") {
+            generatingImage = false;
+            editingImage = false;
+            setMessages((prev) => prev.map((m) => m.id === replyId
+              ? { ...m, generationStatus: undefined } : m));
+          }
           if (data.generated_image) {
             const generated = data.generated_image;
             // Generated assets must be served by our authenticated uploads endpoint.
@@ -1870,7 +1877,21 @@ export default function ChatPage() {
             await reader.cancel();
             throw new Error(data.error);
           }
-          if (data.card) {
+          if (data.card && data.append === true) {
+            const card: CardData = {
+              source: data.card.source || "网页",
+              points: data.card.points || [],
+              url: data.card.url,
+              error: data.card.error,
+              subtype: data.card.subtype,
+              weather: data.card.weather,
+              items: data.card.items,
+              sources: data.card.sources,
+            };
+            setMessages((prev) => prev.map((m) => m.id === replyId
+              ? { ...m, cards: [...(m.cards ?? []), card] } : m));
+          }
+          if (data.card && data.append !== true) {
             const card: CardData = {
               source: data.card.source || "网页",
               points: data.card.points || [],
@@ -1926,7 +1947,7 @@ export default function ChatPage() {
         // Drain to EOF after done so the server can finish saved-response accounting.
         if (done) break;
       }
-      if (generatingImage && !generatedImageReceived) throw new Error(editingImage ? "图片修改未完成，请重试。" : "图片生成未完成，请重试。");
+      if (generatingImage && !generatedImageReceived && !(imageGenerationFromTool && responseComplete)) throw new Error(editingImage ? "图片修改未完成，请重试。" : "图片生成未完成，请重试。");
       if (!responseComplete && !generatedImageReceived) throw new Error("连接已中断，请重新发送消息。");
       focusChatInput();
     } catch (err) {

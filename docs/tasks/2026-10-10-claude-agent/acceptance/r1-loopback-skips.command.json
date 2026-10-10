@@ -1,0 +1,1 @@
+{"command": ["python", "-m", "pytest", "-v", "-rs", "tests/test_byok_client.py", "-k", "loopback"], "cwd": "backend", "offline_guard": true}

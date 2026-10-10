@@ -1,0 +1,14 @@
+{
+  "command": [
+    "git",
+    "clone",
+    "--depth",
+    "1",
+    "file://<repository-root>",
+    "<shallow-clone>"
+  ],
+  "cwd": ".",
+  "protocol": "local file; no network",
+  "HEAD_commit_count": 1,
+  "frontend_node_modules": false
+}
