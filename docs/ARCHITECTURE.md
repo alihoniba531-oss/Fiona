@@ -138,11 +138,15 @@ V4 事务迁移为交流增加 `workflow_version/artifact/artifact_status/comple
 
 每用户 BYOK 由独立 `backend/byok/` 管理，只在普通/镜子回复且配置启用、非 high 时替换平台建流；平台路径仍通过 chat_service 全局 `_create_stream_with_fallback` 查找，BYOK 绝不调用它，分身交流/官方搭档不读取用户模型配置。预设通义、DeepSeek、Kimi、智谱、Claude；custom 只允许公网 HTTPS/443，格式与全部 DNS 应答校验，拒绝代理假 IP、multicast 和危险 NAT64，连接时重新解析固定 IP，TLS SNI/证书仍用原主机名，不跟随重定向，不信任环境代理。自写 httpx transport 只用 httpcore 公开 API；Claude 直接使用 Anthropic SDK（httpx2），两类 HTTP 对象不混用。custom 每连接限制读取 4 MiB 的 HTTP 字节（TLS 之上），超限 abort 并映射为 connection 类别「连不上该服务」；custom 强制请求头 Accept-Encoding: identity，拒绝非空且非 identity 的 Content-Encoding，避免解压绕过 4 MiB 上限；错误仍归「连不上该服务」。预设厂商不受此字节限制影响。错误分类新增「服务繁忙，请稍后再试」，用于 Claude 529/overloaded_error。
 
+BYOK 等待上游建流或正文块期间，每 10 秒发送 SSE 注释心跳（`: thinking`），防止 Next 开发代理的 30 秒空闲超时或其他中间层切断长时间思考；取消时仍先中断上游、等待 worker 结束，再关闭并释放槽位。
+
+Claude 思考强度可选低 / 中 / 高，默认低；聊天底栏和设置页切换立即保存到服务端账号。低、中、高的 `max_tokens` 普通/镜子分别为 4096/2048、8192/4096、16384/8192；低与中总时限为 `FIONA_BYOK_TOTAL_SECONDS`（默认 120 秒），高为 `min(240, FIONA_BYOK_TOTAL_SECONDS×1.5)`（默认 180 秒），必须小于 Nginx 的 300 秒。调高会先思考再回答，用户自己的额度消耗随档位上升；其他厂商不受影响。正文仍限普通 4000 字、镜子 600 字，测试连接固定低档/1024 tokens/原总时限。`user_model_configs` 新增 `effort TEXT NOT NULL DEFAULT 'low'`，老库启动时自动补列，已有行默认低，不新增迁移版本号，`/health` 不变；保存模型、Key 或切换厂商保留档位，只在 Claude 下生效。
+
 零余额且已启用 BYOK、未预扣时，generate_image / weather 以外的 pending：「算了/取消/不用了/不要了/不查了/没事了」免费取消并清 pending；以「先聊/聊点/换个话题/先不」开头清 pending、由用户模型回复；其他补参消息仍报草莓不足、pending 保留。天气 pending 的「换个话题」类句子同样清 pending、由用户模型回复；余额充足用户与平台路由保持不变。
 
 启用后，每条聊天回复会把分身设定、用户的私有长期记忆、本会话最近 60 条消息（含平台看图生成的图片描述）与本条消息发送给用户选择的厂商；系统提示中的账号名替换为「（账号已隐藏）」。危机复核、意图识别、模式判定、看图、全部工具、生图、朗读仍由平台处理并读取对话内容，画像提取仍由平台执行并会读到用户模型的回复；明确危机轮仍由平台回复。用户模型失败不改用平台模型。Key 加密保存，删除 Key 或删号时删除，数据库备份中最多保留 14 天，无服务端密钥无法解密。长期归档副本须先清除 Key 密文，步骤见部署手册。Claude 的接口不对中国大陆提供服务，大陆服务器通常无法连接该预设。
 
-客户端每次显式传 Key/地址/60 秒读超时/max_retries=0，新建后关闭；调用前检查服务端密钥与十一项污染环境变量（完整清单见部署手册，含 `ANTHROPIC_CUSTOM_HEADERS`），读取/解密出错不走平台。预设厂商（含 Claude）遵循服务器的 HTTP(S)_PROXY / NO_PROXY 出站代理设置；自定义地址不使用环境代理。普通/镜子正文限制 4000/600 字；`FIONA_BYOK_TOTAL_SECONDS` 默认 120（10–240）秒从建流计时。响应头到达后，所有厂商在总时限或取消时立即中断；上游在返回响应头之前挂起时，预设厂商最多再等 60 秒读超时，custom 在 TLS 建立后立即中断；DNS 解析与 TCP/TLS 建连阶段分别最多等约 5 秒和 60 秒连接超时。中断线程只标记状态并 shutdown socket，阻塞调用返回后由属主 worker 关闭流、客户端和连接池。`FIONA_BYOK_MAX_STREAMS` 默认 8（1–64），专用有界 `fiona-byok` 池建流与逐块读取，全进程容量和每用户一条流；这两项调用时读取，非法回退并只告警一次。Claude max_tokens 普通4096/镜子2048，effort=low，Opus/Sonnet使用官方内部拒答兜底；OpenAI兼容普通2048/镜子512，不传采样参数。空正文报错不保存assistant；Claude拒答有正文时加中止说明保存。日志/trace仅记异常类型、厂商id、错误类别、耗时，模型trace记byok。
+客户端每次显式传 Key/地址/60 秒读超时/max_retries=0，新建后关闭；调用前检查服务端密钥与十一项污染环境变量（完整清单见部署手册，含 `ANTHROPIC_CUSTOM_HEADERS`），读取/解密出错不走平台。预设厂商（含 Claude）遵循服务器的 HTTP(S)_PROXY / NO_PROXY 出站代理设置；自定义地址不使用环境代理。普通/镜子正文限制 4000/600 字；`FIONA_BYOK_TOTAL_SECONDS` 默认 120（10–240）秒从建流计时。响应头到达后，所有厂商在总时限或取消时立即中断；上游在返回响应头之前挂起时，预设厂商最多再等 60 秒读超时，custom 在 TLS 建立后立即中断；DNS 解析与 TCP/TLS 建连阶段分别最多等约 5 秒和 60 秒连接超时。中断线程只标记状态并 shutdown socket，阻塞调用返回后由属主 worker 关闭流、客户端和连接池。`FIONA_BYOK_MAX_STREAMS` 默认 8（1–64），专用有界 `fiona-byok` 池建流与逐块读取，全进程容量和每用户一条流；这两项调用时读取，非法回退并只告警一次。Claude 按上述思考档位设置 max_tokens 与总时限，Opus/Sonnet使用官方内部拒答兜底；OpenAI兼容普通2048/镜子512，不传采样参数。空正文报错不保存assistant；Claude拒答有正文时加中止说明保存。日志/trace仅记异常类型、厂商id、错误类别、耗时，模型trace记byok。
 
 当前平台模型配置以 `backend/llm.py` 和各适配器源码为准：
 
@@ -197,7 +201,7 @@ HTTP 默认经过 `backend/main.py` 的鉴权中间件，身份来源优先级�
 `/var/lib/fiona/fiona.db` 和 `/var/lib/fiona/uploads/`；API Key/JWT Secret 位于
 权限为 `0600` 的 `/etc/fiona/fiona.env`，不写入只读代码目录。
 
-SQLite 表由 `backend/database.py:init_db()` 在启动时创建，初始化时启用持久的 WAL 模式，连接设置一致且不低于 5 秒的 busy timeout。历史字段仍使用旧的容错式 `ALTER TABLE`，其中包括可空列 `users.strawberry_refill_date`；兼容建表还包括 `retired_usernames`、`user_model_configs`；后者在 init_db 直接执行模块 DDL，不新增迁移版本，health 与五道迁移不变。新增分身与会话由 `backend/agent_store.py:migrate_avatar_schema()` 执行版本化事务迁移，版本记入 `schema_migrations`。当前没有通用迁移框架或 PostgreSQL 实现。
+SQLite 表由 `backend/database.py:init_db()` 在启动时创建，初始化时启用持久的 WAL 模式，连接设置一致且不低于 5 秒的 busy timeout。历史字段仍使用旧的容错式 `ALTER TABLE`，其中包括可空列 `users.strawberry_refill_date`；兼容建表还包括 `retired_usernames`、`user_model_configs`；后者在 init_db 直接执行模块 DDL，并紧接着容错执行 `ALTER TABLE user_model_configs ADD COLUMN effort TEXT NOT NULL DEFAULT 'low'`，老库启动时自动补列，不新增迁移版本，health 与五道迁移不变。新增分身与会话由 `backend/agent_store.py:migrate_avatar_schema()` 执行版本化事务迁移，版本记入 `schema_migrations`。当前没有通用迁移框架或 PostgreSQL 实现。
 
 `agents` 对每个 owner 设置唯一约束，保存可编辑身份，以及不经名片 API 输出的 `private_memory_json/memory_revision`。初次创建时复制本人旧画像作为私有基线，之后与 `users.profile_json` 分开；旧社会画像仍用于原有显式匹配流程。公开名片只经字段白名单返回，不返回用户名、人格设定或私有记忆。
 
@@ -205,7 +209,7 @@ SQLite 表由 `backend/database.py:init_db()` 在启动时创建，初始化时�
 
 画像提取使用会话内消息和私有记忆修订号，通过条件写入避免清空记忆、删除会话或账号后的迟到回填。清空记忆同时清理私有副本与旧社会画像，保留原始聊天记录；未来交流可以形成新的记忆。待补全工具参数和模式以 `(username, conversation_id)` 隔离并保存在 SQLite 的 `chat_slot_state` 表，重启后在有效期内可恢复；异步请求路径把同步槽位读写交给工作线程，避免阻塞事件循环，连接不再重复建表。
 
-`user_model_configs` 每用户名一行，保存厂商、custom 地址、模型、版本化 AES-256-GCM 密文、HMAC key_id、Key末四位、启用位与时间戳；AAD绑定用户名/厂商/地址，改变厂商或地址必须重填Key，模型可单独修改。写入 BEGIN IMMEDIATE 后检查用户存在，迟到保存不能复活删号配置；公开读取白名单字段、不返回密文或Key，解密失败标 needs_reentry，内部取Key不缓存。删号在删除 users 前同事务删除该表记录。`FIONA_BYOK_SECRET` 是 url-safe base64 的32字节服务端密钥，单独保管、不进数据库/媒体备份；`FIONA_BYOK_SECRET_PREVIOUS` 逗号分隔旧密钥仅解密，下一次保存用当前密钥重加密。密钥丢失只需用户重填Key，缺失/非法整体不可用，不在导入时raise，DEV_MODE无固定回退。生成命令：`python -c "import secrets,base64;print(base64.urlsafe_b64encode(secrets.token_bytes(32)).decode())"`。
+`user_model_configs` 每用户名一行，保存厂商、custom 地址、模型、版本化 AES-256-GCM 密文、HMAC key_id、Key末四位、启用位、`effort TEXT NOT NULL DEFAULT 'low'` 与时间戳；AAD绑定用户名/厂商/地址，改变厂商或地址必须重填Key，模型可单独修改。写入 BEGIN IMMEDIATE 后检查用户存在，迟到保存不能复活删号配置；公开读取白名单字段、不返回密文或Key，解密失败标 needs_reentry，内部取Key不缓存。删号在删除 users 前同事务删除该表记录。`FIONA_BYOK_SECRET` 是 url-safe base64 的32字节服务端密钥，单独保管、不进数据库/媒体备份；`FIONA_BYOK_SECRET_PREVIOUS` 逗号分隔旧密钥仅解密，下一次保存用当前密钥重加密。密钥丢失只需用户重填Key，缺失/非法整体不可用，不在导入时raise，DEV_MODE无固定回退。生成命令：`python -c "import secrets,base64;print(base64.urlsafe_b64encode(secrets.token_bytes(32)).decode())"`。
 
 主要数据域包括：加密自带模型配置、用户和画像、消息、匹配、待接受卡片、真人消息、帖子/点赞、标签与时间偏好、用户成长状态、事件、OTP、邀请码、退役用户名、槽位状态和上传清理队列。
 

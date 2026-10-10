@@ -4,8 +4,8 @@ import { useCallback, useEffect, useRef, useState } from "react";
 import { cn } from "@/lib/utils";
 import { useAccountRequest } from "@/lib/useAccountIdentity";
 import {
-  CHAT_MODEL_REV_KEY, chatModelErrorMessage, deleteChatModel, getChatModel, publishChatModelRevision, saveChatModel, setChatModelEnabled, testChatModel,
-  type ChatModelDraft, type ChatModelProvider, type ChatModelSettings,
+  CHAT_MODEL_REV_KEY, CLAUDE_EFFORTS, CHAT_MODEL_EFFORT_LABELS, CHAT_MODEL_EFFORT_TITLES, chatModelErrorMessage, deleteChatModel, getChatModel, publishChatModelRevision, saveChatModel, setChatModelEnabled, setChatModelOptions, testChatModel,
+  type ChatModelDraft, type ChatModelEffort, type ChatModelProvider, type ChatModelSettings,
 } from "@/lib/chatModel";
 
 const inputClass = "h-[42px] w-full rounded-[8px] border border-[color:var(--rule2)] bg-[color:var(--mount)] px-3 text-base shadow-[inset_0_1px_2px_var(--pool)] outline-none placeholder:text-[color:var(--ink2)] focus:border-[color:var(--ink)] disabled:opacity-50";
@@ -22,7 +22,7 @@ function ChatModelForm({ initial, username }: { initial: ChatModelSettings; user
   const [baseUrl, setBaseUrl] = useState(initial.config?.base_url ?? "");
   const [keyEditing, setKeyEditing] = useState(!initial.config || initial.config.status === "needs_reentry");
   const [keyEntered, setKeyEntered] = useState(false);
-  const [busy, setBusy] = useState<"save" | "test" | "toggle" | "delete" | null>(null);
+  const [busy, setBusy] = useState<"save" | "test" | "toggle" | "effort" | "delete" | null>(null);
   const [error, setError] = useState("");
   const [success, setSuccess] = useState("");
   const keyInput = useRef<HTMLInputElement>(null);
@@ -40,7 +40,15 @@ function ChatModelForm({ initial, username }: { initial: ChatModelSettings; user
   const switchDisabled = disabled || !config || config.status !== "ok";
   const draftProtection = useRef({ dirty, busy });
   const serverRevision = useRef(0);
-  const refreshError = useRef(false);
+  const errorOwner = useRef<"refresh" | "operation" | null>(null);
+  const effortGroup = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    const group = effortGroup.current;
+    if (!busy && group?.contains(document.activeElement)) {
+      group.querySelector<HTMLButtonElement>('button[role="radio"][aria-checked="true"]')?.focus();
+    }
+  }, [busy, config?.effort]);
 
   useEffect(() => { draftProtection.current = { dirty, busy }; }, [dirty, busy]);
 
@@ -60,13 +68,13 @@ function ChatModelForm({ initial, username }: { initial: ChatModelSettings; user
           setBaseUrl(value.config?.base_url ?? "");
           setKeyEditing(!value.config || value.config.status === "needs_reentry");
         }
-        if (refreshError.current) {
-          refreshError.current = false;
+        if (errorOwner.current === "refresh") {
+          errorOwner.current = null;
           setError("");
         }
       }).catch(cause => {
-        if (request.isCurrent() && readRevision === serverRevision.current) {
-          refreshError.current = true;
+        if (request.isCurrent() && readRevision === serverRevision.current && errorOwner.current !== "operation") {
+          errorOwner.current = "refresh";
           setError(chatModelErrorMessage(cause));
         }
       });
@@ -110,6 +118,7 @@ function ChatModelForm({ initial, username }: { initial: ChatModelSettings; user
     setModel(providerModel(next));
     setBaseUrl("");
     setKeyEditing(true);
+    errorOwner.current = null;
     setError("");
     setSuccess("");
   };
@@ -118,7 +127,7 @@ function ChatModelForm({ initial, username }: { initial: ChatModelSettings; user
     if (disabled) return;
     const request = beginRequest();
     if (!request) return;
-    refreshError.current = false;
+    errorOwner.current = null;
     serverRevision.current += 1;
     draftProtection.current = { dirty, busy: "save" };
     setBusy("save"); setError(""); setSuccess("");
@@ -133,7 +142,7 @@ function ChatModelForm({ initial, username }: { initial: ChatModelSettings; user
       setSuccess("聊天模型已保存");
     } catch (cause) {
       if (request.isCurrent()) {
-        refreshError.current = false;
+        errorOwner.current = "operation";
         setError(chatModelErrorMessage(cause));
       }
     } finally {
@@ -145,7 +154,7 @@ function ChatModelForm({ initial, username }: { initial: ChatModelSettings; user
     if (disabled) return;
     const request = beginRequest();
     if (!request) return;
-    refreshError.current = false;
+    errorOwner.current = null;
     draftProtection.current = { dirty, busy: "test" };
     setBusy("test"); setError(""); setSuccess("");
     try {
@@ -153,12 +162,12 @@ function ChatModelForm({ initial, username }: { initial: ChatModelSettings; user
       if (!request.isCurrent()) return;
       if (result.ok) setSuccess(`${result.message}（测试不会保存配置）`);
       else {
-        refreshError.current = false;
+        errorOwner.current = "operation";
         setError(result.message);
       }
     } catch (cause) {
       if (request.isCurrent()) {
-        refreshError.current = false;
+        errorOwner.current = "operation";
         setError(chatModelErrorMessage(cause));
       }
     } finally {
@@ -170,7 +179,7 @@ function ChatModelForm({ initial, username }: { initial: ChatModelSettings; user
     if (switchDisabled || !config) return;
     const request = beginRequest();
     if (!request) return;
-    refreshError.current = false;
+    errorOwner.current = null;
     serverRevision.current += 1;
     draftProtection.current = { dirty, busy: "toggle" };
     setBusy("toggle"); setError(""); setSuccess("");
@@ -183,7 +192,32 @@ function ChatModelForm({ initial, username }: { initial: ChatModelSettings; user
       setSuccess(saved.enabled ? "已启用自带模型" : "已改用平台模型");
     } catch (cause) {
       if (request.isCurrent()) {
-        refreshError.current = false;
+        errorOwner.current = "operation";
+        setError(chatModelErrorMessage(cause));
+      }
+    } finally {
+      if (request.isCurrent()) setBusy(null);
+    }
+  };
+
+  const changeEffort = async (effort: ChatModelEffort) => {
+    if (disabled || !config || config.provider !== "anthropic" || provider.id !== "anthropic" || config.effort === effort) return;
+    const request = beginRequest();
+    if (!request) return;
+    errorOwner.current = null;
+    serverRevision.current += 1;
+    draftProtection.current = { dirty, busy: "effort" };
+    setBusy("effort"); setError(""); setSuccess("");
+    try {
+      const saved = await setChatModelOptions({ effort }, request.signal);
+      if (!request.isCurrent()) return;
+      serverRevision.current += 1;
+      setSettings(previous => ({ ...previous, config: saved }));
+      publishChatModelRevision();
+      setSuccess("思考强度已保存");
+    } catch (cause) {
+      if (request.isCurrent()) {
+        errorOwner.current = "operation";
         setError(chatModelErrorMessage(cause));
       }
     } finally {
@@ -195,7 +229,7 @@ function ChatModelForm({ initial, username }: { initial: ChatModelSettings; user
     if (disabled || !config || !confirm("确定删除自带模型配置与 Key？之后聊天将使用平台模型。")) return;
     const request = beginRequest();
     if (!request) return;
-    refreshError.current = false;
+    errorOwner.current = null;
     serverRevision.current += 1;
     draftProtection.current = { dirty, busy: "delete" };
     setBusy("delete"); setError(""); setSuccess("");
@@ -212,7 +246,7 @@ function ChatModelForm({ initial, username }: { initial: ChatModelSettings; user
       setSuccess("自带模型配置与 Key 已删除");
     } catch (cause) {
       if (request.isCurrent()) {
-        refreshError.current = false;
+        errorOwner.current = "operation";
         setError(chatModelErrorMessage(cause));
       }
     } finally {
@@ -255,6 +289,31 @@ function ChatModelForm({ initial, username }: { initial: ChatModelSettings; user
           </button>)}
         </div>}
       </div>
+    </fieldset>
+    {provider.id === "anthropic" && (config?.provider === "anthropic" ? <div className="space-y-2">
+      <span className="block text-sm">思考强度</span>
+      <div ref={effortGroup} role="radiogroup" aria-label="思考强度" className="flex max-w-full flex-wrap items-center gap-2"
+        onKeyDown={event => {
+          if (disabled) return;
+          const index = CLAUDE_EFFORTS.indexOf(config.effort);
+          const nextIndex = event.key === "ArrowRight" ? (index + 1) % CLAUDE_EFFORTS.length
+            : event.key === "ArrowLeft" ? (index + CLAUDE_EFFORTS.length - 1) % CLAUDE_EFFORTS.length : -1;
+          if (nextIndex < 0) return;
+          event.preventDefault();
+          void changeEffort(CLAUDE_EFFORTS[nextIndex]);
+          event.currentTarget.querySelectorAll<HTMLButtonElement>('button[role="radio"]')[nextIndex]?.focus();
+        }}>
+        {CLAUDE_EFFORTS.map(effort => <button key={effort} type="button" role="radio" aria-checked={config.effort === effort}
+          tabIndex={config.effort === effort ? 0 : -1} title={CHAT_MODEL_EFFORT_TITLES[effort]} aria-disabled={disabled}
+          onClick={() => void changeEffort(effort)}
+          className="btn btn-quiet min-h-10 px-3 text-sm aria-checked:bg-[color:var(--btn)] aria-checked:text-[color:var(--btnink)] aria-checked:hover:bg-[color:var(--btn)] aria-checked:hover:text-[color:var(--btnink)] aria-disabled:opacity-50 aria-disabled:cursor-default">
+          {CHAT_MODEL_EFFORT_LABELS[effort]}
+        </button>)}
+      </div>
+      <p className={noteClass}>调高后 Claude 会先思考再回答：更周全，但更慢、更费你自己的额度；高档单条最长约 3 分钟。只对 Claude 生效。</p>
+    </div> : <p className={noteClass}>保存后可选择思考强度</p>)}
+    <fieldset disabled={disabled} className="min-w-0 space-y-3 disabled:opacity-60">
+      <legend className="sr-only">聊天模型密钥与启用选项</legend>
       {custom && <div className="space-y-2">
         <label htmlFor="chat-model-url" className="block text-sm">API 地址</label>
         <input id="chat-model-url" type="url" inputMode="url" placeholder="https://…/v1" autoComplete="off" spellCheck={false}

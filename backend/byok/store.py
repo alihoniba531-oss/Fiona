@@ -8,7 +8,7 @@ import database
 
 from .crypto import decrypt_key, encrypt_key, ensure_available
 from .errors import ConfigurationError, ConfigNotFoundError, NeedsReentryError, ByokUnavailableError, UserDeletedError
-from .providers import PROVIDERS, validate_model, validate_provider
+from .providers import CLAUDE_EFFORTS, DEFAULT_EFFORT, PROVIDERS, validate_effort, validate_model, validate_provider
 from .url_safety import normalize_custom_base_url, validate_custom_base_url, UnsafeUrlError
 
 USER_MODEL_CONFIGS_DDL = """
@@ -21,11 +21,12 @@ USER_MODEL_CONFIGS_DDL = """
         key_id TEXT NOT NULL,
         key_last4 TEXT NOT NULL,
         enabled INTEGER NOT NULL DEFAULT 1 CHECK(enabled IN (0, 1)),
+        effort TEXT NOT NULL DEFAULT 'low',
         created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
         updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
     )
 """
-_PUBLIC_FIELDS = ("provider", "base_url", "model", "key_last4", "enabled", "updated_at")
+_PUBLIC_FIELDS = ("provider", "base_url", "model", "key_last4", "enabled", "effort", "updated_at")
 
 
 async def _read_row(username: str) -> dict | None:
@@ -39,6 +40,8 @@ async def _read_row(username: str) -> dict | None:
 def _public(row: dict) -> dict:
     result = {field: row[field] for field in _PUBLIC_FIELDS}
     result["enabled"] = bool(result["enabled"])
+    if not isinstance(result["effort"], str) or result["effort"] not in CLAUDE_EFFORTS:
+        result["effort"] = DEFAULT_EFFORT
     try:
         decrypt_key(row["key_ciphertext"], row["key_id"], row["username"], row["provider"], row["base_url"])
         result["status"] = "ok"
@@ -125,7 +128,7 @@ async def save_config(username: str, *, provider, model, base_url=None, api_key=
         await db.execute("BEGIN IMMEDIATE")
         if not await database._users_exist(db, username):
             raise UserDeletedError
-        # Keep the existing enabled value, including switches during draft validation.
+        # Keep existing options, including changes during draft validation.
         await db.execute("""
             INSERT INTO user_model_configs (username, provider, base_url, model, key_ciphertext, key_id, key_last4, enabled)
             VALUES (?, ?, ?, ?, ?, ?, ?, 1)
@@ -140,9 +143,13 @@ async def save_config(username: str, *, provider, model, base_url=None, api_key=
     return result
 
 
-async def set_enabled(username: str, enabled: bool) -> dict:
-    if not isinstance(enabled, bool):
+async def update_options(username: str, *, enabled=None, effort=None) -> dict:
+    if enabled is not None and not isinstance(enabled, bool):
         raise ConfigurationError("启用状态格式不正确")
+    if effort is not None:
+        effort = validate_effort(effort)
+    if enabled is None and effort is None:
+        raise ConfigurationError("请求格式不正确")
     if enabled:
         ensure_available()
     async with aiosqlite.connect(database.DB_PATH, timeout=database.SQLITE_BUSY_TIMEOUT) as db:
@@ -152,14 +159,25 @@ async def set_enabled(username: str, enabled: bool) -> dict:
             row = await cursor.fetchone()
         if row is None:
             raise ConfigNotFoundError
+        if effort is not None and row["provider"] != "anthropic":
+            raise ConfigurationError("只有 Claude 支持思考强度")
         if enabled and _public(dict(row))["status"] != "ok":
             raise ConfigurationError("配置需要重新填写 Key")
-        await db.execute("UPDATE user_model_configs SET enabled = ?, updated_at = CURRENT_TIMESTAMP WHERE username = ?", (int(enabled), username))
+        await db.execute("""UPDATE user_model_configs
+                         SET enabled = COALESCE(?, enabled), effort = COALESCE(?, effort),
+                             updated_at = CURRENT_TIMESTAMP WHERE username = ?""",
+                         (int(enabled) if enabled is not None else None, effort, username))
         await db.commit()
     result = await get_public_config(username)
     if result is None:
         raise ConfigNotFoundError
     return result
+
+
+async def set_enabled(username: str, enabled: bool) -> dict:
+    if not isinstance(enabled, bool):
+        raise ConfigurationError("启用状态格式不正确")
+    return await update_options(username, enabled=enabled)
 
 
 async def delete_config(username: str) -> None:

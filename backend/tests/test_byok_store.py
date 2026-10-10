@@ -118,7 +118,7 @@ def test_invalid_stored_key_id_needs_reentry(identifier):
 def test_public_fields_patch_delete_and_bad_ciphertext(config_db):
     async def scenario():
         public = await store.save_config("alice", provider="deepseek", model="deepseek-v4-pro", api_key="sk-secret-a123")
-        assert set(public) == {"provider", "base_url", "model", "key_last4", "enabled", "status", "updated_at"}
+        assert set(public) == {"provider", "base_url", "model", "key_last4", "enabled", "effort", "status", "updated_at"}
         assert public["status"] == "ok" and public["key_last4"] == "a123"
         assert "sk-secret" not in repr(public)
         await store.set_enabled("alice", False)

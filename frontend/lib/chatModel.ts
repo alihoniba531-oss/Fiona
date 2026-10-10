@@ -2,6 +2,19 @@ import { apiFetch } from "@/lib/auth";
 import { API_BASE as API } from "@/lib/config";
 
 export const CHAT_MODEL_REV_KEY = "fiona_chat_model_rev";
+export const CLAUDE_EFFORTS = ["low", "medium", "high"] as const;
+export type ChatModelEffort = typeof CLAUDE_EFFORTS[number];
+export const CHAT_MODEL_EFFORT_LABELS: Record<ChatModelEffort, string> = { low: "低", medium: "中", high: "高" };
+export const CHAT_MODEL_EFFORT_TITLES: Record<ChatModelEffort, string> = {
+  low: "低：最快，适合闲聊",
+  medium: "中：更周全，稍慢",
+  high: "高：最周全，最慢、最费你的额度，单条最长约 3 分钟",
+};
+
+export interface ChatModelOptions {
+  enabled?: boolean;
+  effort?: ChatModelEffort;
+}
 
 export interface ChatModelProvider {
   id: string;
@@ -11,6 +24,8 @@ export interface ChatModelProvider {
   recommended_models: string[];
   allowed_models: string[] | null;
   default_model: string | null;
+  efforts: ChatModelEffort[] | null;
+  default_effort: ChatModelEffort | null;
 }
 
 export interface ChatModelConfig {
@@ -21,6 +36,7 @@ export interface ChatModelConfig {
   enabled: boolean;
   status: "ok" | "needs_reentry";
   updated_at: string;
+  effort: ChatModelEffort;
 }
 
 export interface ChatModelSettings {
@@ -57,6 +73,14 @@ function isStringArray(value: unknown): value is string[] {
   return Array.isArray(value) && value.every((item: unknown) => typeof item === "string");
 }
 
+function isEffort(value: unknown): value is ChatModelEffort {
+  return value === "low" || value === "medium" || value === "high";
+}
+
+function isEffortArray(value: unknown): value is ChatModelEffort[] {
+  return Array.isArray(value) && value.every(isEffort);
+}
+
 function invalidResponse(): never {
   throw new ChatModelInterfaceError("聊天模型响应格式不正确，请重试");
 }
@@ -67,12 +91,16 @@ function parseProvider(value: unknown): ChatModelProvider {
     || (value.base_url !== null && typeof value.base_url !== "string")
     || !isStringArray(value.recommended_models)
     || (value.allowed_models !== null && !isStringArray(value.allowed_models))
-    || (value.default_model !== null && typeof value.default_model !== "string")) invalidResponse();
+    || (value.default_model !== null && typeof value.default_model !== "string")
+    || (value.efforts !== null && !isEffortArray(value.efforts))
+    || (value.default_effort !== null && !isEffort(value.default_effort))) invalidResponse();
   return {
     id: value.id, name: value.name, kind: value.kind, base_url: value.base_url,
     recommended_models: [...value.recommended_models],
     allowed_models: value.allowed_models === null ? null : [...value.allowed_models],
     default_model: value.default_model,
+    efforts: value.efforts === null ? null : [...value.efforts],
+    default_effort: value.default_effort,
   };
 }
 
@@ -81,10 +109,11 @@ function parseConfig(value: unknown): ChatModelConfig {
     || (value.base_url !== null && typeof value.base_url !== "string")
     || typeof value.key_last4 !== "string" || typeof value.enabled !== "boolean"
     || (value.status !== "ok" && value.status !== "needs_reentry")
-    || typeof value.updated_at !== "string") invalidResponse();
+    || typeof value.updated_at !== "string" || !isEffort(value.effort)) invalidResponse();
   return {
     provider: value.provider, model: value.model, base_url: value.base_url,
     key_last4: value.key_last4, enabled: value.enabled, status: value.status, updated_at: value.updated_at,
+    effort: value.effort,
   };
 }
 
@@ -116,7 +145,7 @@ export async function getChatModel(signal?: AbortSignal): Promise<ChatModelSetti
   };
 }
 
-async function updateChatModel(method: "PUT" | "PATCH", body: ChatModelDraft | { enabled: boolean }, signal?: AbortSignal): Promise<ChatModelConfig> {
+async function updateChatModel(method: "PUT" | "PATCH", body: ChatModelDraft | ChatModelOptions, signal?: AbortSignal): Promise<ChatModelConfig> {
   const data = await readResponse(await apiFetch(`${API}/chat-model`, {
     method, signal, headers: { "Content-Type": "application/json" }, body: JSON.stringify(body),
   }));
@@ -129,7 +158,11 @@ export function saveChatModel(draft: ChatModelDraft, signal?: AbortSignal): Prom
 }
 
 export function setChatModelEnabled(enabled: boolean, signal?: AbortSignal): Promise<ChatModelConfig> {
-  return updateChatModel("PATCH", { enabled }, signal);
+  return setChatModelOptions({ enabled }, signal);
+}
+
+export function setChatModelOptions(options: ChatModelOptions, signal?: AbortSignal): Promise<ChatModelConfig> {
+  return updateChatModel("PATCH", options, signal);
 }
 
 export async function deleteChatModel(signal?: AbortSignal): Promise<void> {

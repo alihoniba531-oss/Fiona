@@ -16,7 +16,7 @@ import openai
 
 from .crypto import ensure_available
 from .errors import ByokTimeoutError, EmptyReplyError, NeedsReentryError, RefusalError
-from .providers import PROVIDERS, validate_model, validate_provider
+from .providers import CLAUDE_EFFORTS, DEFAULT_EFFORT, PROVIDERS, validate_model, validate_provider
 from .url_safety import PinnedTransport, normalize_custom_base_url
 
 _warned: set[str] = set()
@@ -102,7 +102,7 @@ class ReplyStreamControl:
 
 
 class _Resources:
-    def __init__(self):
+    def __init__(self, deadline_seconds: float | None = None):
         self.client = None
         self.http_client = None
         self.stream = None
@@ -112,7 +112,7 @@ class _Resources:
         self.disposed = False
         self.timed_out = False
         self.lock = Lock()
-        self.timer = Timer(total_seconds(), self.expire)
+        self.timer = Timer(total_seconds() if deadline_seconds is None else deadline_seconds, self.expire)
         self.timer.daemon = True
 
     def start(self):
@@ -281,7 +281,15 @@ def _open(config: dict, messages: list[dict], *, mirror: bool, username: str, te
     spec = PROVIDERS[provider]
     base_url = normalize_custom_base_url(config.get("base_url")) if provider == "custom" else spec["base_url"]
     system, prepared = convert_messages(provider, messages, username)
-    resources = _Resources()
+    effort = DEFAULT_EFFORT
+    deadline_seconds = total_seconds()
+    if provider == "anthropic" and not testing:
+        requested_effort = config.get("effort")
+        if isinstance(requested_effort, str) and requested_effort in CLAUDE_EFFORTS:
+            effort = requested_effort
+        if effort == "high":
+            deadline_seconds = min(240, deadline_seconds * 1.5)
+    resources = _Resources(deadline_seconds)
     if control is not None:
         control.bind(resources)
         if control.aborted:
@@ -289,8 +297,9 @@ def _open(config: dict, messages: list[dict], *, mirror: bool, username: str, te
     try:
         if provider == "anthropic":
             resources.attach_client(anthropic.Anthropic(api_key=api_key, base_url=base_url, timeout=60.0, max_retries=0))
+            token_multiplier = {"low": 1, "medium": 2, "high": 4}[effort]
             kwargs = {"model": model, "messages": prepared,
-                      "max_tokens": 1024 if testing else (2048 if mirror else 4096), "output_config": {"effort": "low"}}
+                      "max_tokens": 1024 if testing else (2048 if mirror else 4096) * token_multiplier, "output_config": {"effort": effort}}
             if system:
                 kwargs["system"] = system
             endpoint = resources.client.messages

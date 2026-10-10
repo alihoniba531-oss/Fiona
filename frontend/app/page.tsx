@@ -25,7 +25,7 @@ import { requestTtsTicket, type TtsBackoff } from "@/lib/ttsTicket";
 import { generatedImagePath, referenceImagePath, referencePreviewUrl, isLocalReferenceDataUrl, type ReferenceImageInput } from "@/lib/generatedImages";
 import { readLocalReferenceImage, MAX_REFERENCE_FILE_BYTES, REFERENCE_FILE_TYPES } from "@/lib/localReferenceImages";
 import { useAccountRequest } from "@/lib/useAccountIdentity";
-import { CHAT_MODEL_REV_KEY, chatModelErrorMessage, getChatModel, setChatModelEnabled, publishChatModelRevision, parseReplyModel, type ChatModelSettings } from "@/lib/chatModel";
+import { CHAT_MODEL_REV_KEY, CLAUDE_EFFORTS, CHAT_MODEL_EFFORT_LABELS, CHAT_MODEL_EFFORT_TITLES, chatModelErrorMessage, getChatModel, setChatModelEnabled, setChatModelOptions, publishChatModelRevision, parseReplyModel, type ChatModelEffort, type ChatModelSettings } from "@/lib/chatModel";
 
 import { API_BASE as API, WS_BASE } from "@/lib/config";
 
@@ -284,12 +284,13 @@ function ChatModelFooter({ username, settingsOpen, chatMode, loading }: {
   username: string; settingsOpen: boolean; chatMode: boolean; loading: boolean;
 }) {
   const [settings, setSettings] = useState<ChatModelSettings | null>(null);
-  const [busy, setBusy] = useState(false);
+  const [busy, setBusy] = useState<"toggle" | "effort" | null>(null);
   const [error, setError] = useState("");
   const { beginRequest } = useAccountRequest(username);
   const { beginRequest: beginMutation } = useAccountRequest(username);
   const revision = useRef(0);
-  const refreshError = useRef(false);
+  const errorOwner = useRef<"refresh" | "operation" | null>(null);
+  const effortGroup = useRef<HTMLDivElement>(null);
   const refresh = useCallback(() => {
     const request = beginRequest();
     if (!request) return;
@@ -297,13 +298,13 @@ function ChatModelFooter({ username, settingsOpen, chatMode, loading }: {
     getChatModel(request.signal).then(value => {
       if (!request.isCurrent() || readRevision !== revision.current) return;
       setSettings(value);
-      if (refreshError.current) {
-        refreshError.current = false;
+      if (errorOwner.current === "refresh") {
+        errorOwner.current = null;
         setError("");
       }
     }).catch(cause => {
-      if (request.isCurrent() && readRevision === revision.current) {
-        refreshError.current = true;
+      if (request.isCurrent() && readRevision === revision.current && errorOwner.current !== "operation") {
+        errorOwner.current = "refresh";
         setError(chatModelErrorMessage(cause));
       }
     });
@@ -328,9 +329,9 @@ function ChatModelFooter({ username, settingsOpen, chatMode, loading }: {
     if (!settings?.config || busy || loading) return;
     const request = beginMutation();
     if (!request) return;
-    refreshError.current = false;
+    errorOwner.current = null;
     revision.current += 1;
-    setBusy(true); setError("");
+    setBusy("toggle"); setError("");
     try {
       const config = await setChatModelEnabled(!settings.config.enabled, request.signal);
       if (!request.isCurrent()) return;
@@ -339,30 +340,82 @@ function ChatModelFooter({ username, settingsOpen, chatMode, loading }: {
       publishChatModelRevision();
     } catch (cause) {
       if (request.isCurrent()) {
-        refreshError.current = false;
+        errorOwner.current = "operation";
         setError(chatModelErrorMessage(cause));
       }
     } finally {
-      if (request.isCurrent()) setBusy(false);
+      if (request.isCurrent()) setBusy(null);
+    }
+  };
+
+  const changeEffort = async (effort: ChatModelEffort) => {
+    const current = settings?.config;
+    if (!chatMode || !current?.enabled || current.provider !== "anthropic" || current.status !== "ok"
+      || current.effort === effort || !settings?.available || busy || loading) return;
+    const request = beginMutation();
+    if (!request) return;
+    errorOwner.current = null;
+    revision.current += 1;
+    setBusy("effort"); setError("");
+    try {
+      const config = await setChatModelOptions({ effort }, request.signal);
+      if (!request.isCurrent()) return;
+      revision.current += 1;
+      setSettings(previous => previous ? { ...previous, config } : previous);
+      publishChatModelRevision();
+    } catch (cause) {
+      if (request.isCurrent()) {
+        errorOwner.current = "operation";
+        setError(chatModelErrorMessage(cause));
+      }
+    } finally {
+      if (request.isCurrent()) setBusy(null);
     }
   };
 
   const config = settings?.config;
   const provider = settings?.providers.find(item => item.id === config?.provider);
-  return <div className="flex min-w-0 flex-col items-end gap-1 max-md:items-start">
-    {chatMode && config ? <div className="flex max-w-full flex-wrap items-center justify-end gap-x-2 gap-y-1 max-md:justify-start">
-      <span className="break-all">{config.enabled
+  useEffect(() => {
+    const group = effortGroup.current;
+    if (!busy && !loading && group?.contains(document.activeElement)) {
+      group.querySelector<HTMLButtonElement>('button[role="radio"][aria-checked="true"]')?.focus();
+    }
+  }, [busy, loading, config?.effort]);
+  const label = config?.enabled
         ? `聊天：${provider?.name ?? config.provider} · ${config.model}（不扣草莓）`
-        : "聊天：平台 · 每条 10 颗草莓"}</span>
-      <button type="button" disabled={busy || loading || (!config.enabled && (config.status !== "ok" || !settings.available))}
+        : "聊天：平台 · 每条 10 颗草莓";
+  return <div className="flex min-w-0 flex-col items-end gap-1 max-md:items-start xl:flex-1">
+    {chatMode && config ? <div className="flex max-w-full flex-wrap items-center justify-end gap-x-2 gap-y-1 max-md:justify-start xl:w-full xl:flex-nowrap">
+      <span className="min-w-0 break-all xl:truncate" title={label}>{label}</span>
+      {config.enabled && config.provider === "anthropic" && config.status === "ok" && <div ref={effortGroup} role="radiogroup" aria-label="思考强度"
+        className="flex max-w-full flex-wrap items-center gap-1 xl:shrink-0 xl:flex-nowrap"
+        onKeyDown={event => {
+          if (busy || loading || !settings.available) return;
+          const index = CLAUDE_EFFORTS.indexOf(config.effort);
+          const nextIndex = event.key === "ArrowRight" ? (index + 1) % CLAUDE_EFFORTS.length
+            : event.key === "ArrowLeft" ? (index + CLAUDE_EFFORTS.length - 1) % CLAUDE_EFFORTS.length : -1;
+          if (nextIndex < 0) return;
+          event.preventDefault();
+          void changeEffort(CLAUDE_EFFORTS[nextIndex]);
+          event.currentTarget.querySelectorAll<HTMLButtonElement>('button[role="radio"]')[nextIndex]?.focus();
+        }}>
+        <span aria-hidden="true">思考</span>
+        {CLAUDE_EFFORTS.map(effort => <button key={effort} type="button" role="radio" aria-checked={config.effort === effort}
+          tabIndex={config.effort === effort ? 0 : -1} title={CHAT_MODEL_EFFORT_TITLES[effort]} aria-disabled={busy !== null || loading || !settings.available}
+          onClick={() => void changeEffort(effort)}
+          className="btn btn-quiet h-7 shrink-0 px-2 text-xs aria-checked:bg-[color:var(--btn)] aria-checked:text-[color:var(--btnink)] aria-checked:hover:bg-[color:var(--btn)] aria-checked:hover:text-[color:var(--btnink)] aria-disabled:opacity-50 aria-disabled:cursor-default max-md:min-h-10">
+          {CHAT_MODEL_EFFORT_LABELS[effort]}
+        </button>)}
+      </div>}
+      <button type="button" disabled={busy !== null || loading || (!config.enabled && (config.status !== "ok" || !settings.available))}
         title={!config.enabled && config.status !== "ok" ? "请在设置中重新填写 Key" : undefined}
         onClick={() => void toggle()} className="btn btn-quiet h-7 shrink-0 px-2 text-xs max-md:min-h-10">
-        {busy ? "正在切换…" : config.enabled ? "改用平台" : "改用我的模型"}
+        {busy === "toggle" ? "正在切换…" : config.enabled ? "改用平台" : "改用我的模型"}
       </button>
     </div> : <span>每条消息消耗 <b className="readout">10</b> 颗草莓</span>}
     {chatMode && error && <div className="flex items-center gap-2 text-[color:var(--seal)]">
       <span role="alert">{error}</span>
-      {!settings && <button type="button" disabled={busy || loading} onClick={refresh}
+      {!settings && <button type="button" disabled={busy !== null || loading} onClick={refresh}
         className="btn btn-quiet h-7 shrink-0 px-2 text-xs max-md:min-h-10">重试</button>}
     </div>}
   </div>;
@@ -2402,7 +2455,7 @@ export default function ChatPage() {
                   </div>
                 </div>
                 {voiceText && <p className="mt-2 text-xs text-muted-foreground">{voiceText}</p>}
-                <div className="mt-2 flex items-center justify-between gap-3 border-t border-[var(--carve)] pt-2 text-xs text-muted-foreground shadow-[inset_0_1px_0_var(--etch)]">
+                <div className="mt-2 flex min-w-0 items-center justify-between gap-3 border-t border-[var(--carve)] pt-2 text-xs text-muted-foreground shadow-[inset_0_1px_0_var(--etch)] xl:flex-nowrap">
                   <span className="shrink-0 max-md:hidden">Enter 发送，Shift + Enter 换行</span>
                   <ChatModelFooter key={username} username={username} settingsOpen={settingsOpen} chatMode={!imageMode && !hasReferenceImages} loading={isLoading} />
                 </div>

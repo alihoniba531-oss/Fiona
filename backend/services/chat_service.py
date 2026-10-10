@@ -72,6 +72,7 @@ _BYOK_POOL: ThreadPoolExecutor | None = None
 _BYOK_POOL_SIZE = 0
 _BYOK_POOL_LOCK = threading.Lock()
 _IMAGE_HEARTBEAT_SECONDS = 10
+_BYOK_HEARTBEAT_SECONDS = 10
 # 视觉分支拼进 VL 请求的历史条数上限（T2a）。
 _VL_HISTORY_TURNS = 10
 _BILLABLE_TOOLS = frozenset({
@@ -245,6 +246,19 @@ async def _unreserved_error(ctx: "ChatContext", state: "ChatState"):
 
 async def _stream_byok_reply(ctx: "ChatContext", state: "ChatState", *, mirror: bool):
     """Both reply branches use this isolated consumer; errors never fall back."""
+    async def wait_with_heartbeats(task):
+        try:
+            while not task.done():
+                done, _ = await asyncio.wait({task}, timeout=_BYOK_HEARTBEAT_SECONDS)
+                if not done:
+                    yield ": thinking\n\n"
+        finally:
+            if not task.done():
+                task.cancel()
+            # Join _byok_call so its existing abort/worker cleanup owns cancellation.
+            with anyio.CancelScope(shield=True):
+                await asyncio.gather(task, return_exceptions=True)
+
     stream = None
     state.trace["model"] = "byok"
     if ctx.byok_config and ctx.byok_config.get("provider"):
@@ -272,17 +286,35 @@ async def _stream_byok_reply(ctx: "ChatContext", state: "ChatState", *, mirror: 
                 raise _ByokBusyError(message)
             from functools import partial
             control = ReplyStreamControl()
-            stream = await _byok_call(pool, partial(
+            task = asyncio.create_task(_byok_call(pool, partial(
                 open_reply_stream, config,
                 [{"role": "system", "content": state.sys_prompt_final}] + ctx.messages,
                 mirror=mirror, username=ctx.user, control=control,
-            ), control=control)
+            ), control=control))
+            try:
+                async with aclosing(wait_with_heartbeats(task)) as waiting:
+                    async for event in waiting:
+                        yield event
+                stream = task.result()
+            finally:
+                # A heartbeat can suspend the owner after opening already finishes.
+                if stream is None and task.done() and not task.cancelled() and task.exception() is None:
+                    control.abort()
+                    with anyio.CancelScope(shield=True):
+                        try:
+                            await _byok_call(pool, task.result().close)
+                        except Exception as exc:
+                            print(f"[byok] close failed type={type(exc).__name__}", flush=True)
             labelled = False
             exhausted = False
             try:
                 iterator = iter(stream)
                 while True:
-                    chunk = await _byok_call(pool, next, iterator, _STREAM_END, control=control)
+                    task = asyncio.create_task(_byok_call(pool, next, iterator, _STREAM_END, control=control))
+                    async with aclosing(wait_with_heartbeats(task)) as waiting:
+                        async for event in waiting:
+                            yield event
+                    chunk = task.result()
                     if chunk is _STREAM_END:
                         exhausted = True
                         break
@@ -296,7 +328,7 @@ async def _stream_byok_reply(ctx: "ChatContext", state: "ChatState", *, mirror: 
                         state.full_response += text
                         yield _sse({"text": text})
             finally:
-                if not exhausted:
+                if not exhausted and not control.aborted:
                     control.abort()
                 with anyio.CancelScope(shield=True):
                     try:

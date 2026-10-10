@@ -134,7 +134,7 @@ OpenAI 兼容模型客户端默认 60 秒超时、最多重试 1 次，可通过
 | `FIONA_DAILY_BYOK_CHATS` | 每账号每日 BYOK 聊天默认200次（byok_chat），正整数，非法回退并只告警一次，调用时读取 |
 | `FIONA_DAILY_BYOK_TESTS` | 每账号每日测试连接默认20次（byok_test），同上；本地校验失败不计次，上游连接测试计次 |
 | `FIONA_BYOK_MAX_STREAMS` | 全进程 BYOK 流及专用线程池上限默认8（1–64），每用户一条；调用时读取，非法回退并只告警一次 |
-| `FIONA_BYOK_TOTAL_SECONDS` | 建流起的总预算默认120秒（10–240），须小于Nginx300秒；调用时读取，非法回退并只告警一次；实际中断边界见下文 |
+| `FIONA_BYOK_TOTAL_SECONDS` | 建流起的低/中档及非 Claude 总预算默认120秒（10–240）；Claude 高档为 min(240, FIONA_BYOK_TOTAL_SECONDS×1.5)，默认180秒，均须小于 Nginx 的 300 秒；调用时读取，非法回退并只告警一次；实际中断边界见下文 |
 | `FIONA_DAILY_WEATHER` | 每账号每个北京时间自然日天气查询次数，默认 `30`；正整数，非法值回落默认并只告警一次，调用时读取 |
 | `FIONA_AMAP_ENABLED` | 高德地图 MCP 天气默认开启（`1`），只有字面 `0` 关闭；关闭时返回“天气服务暂未开启”，不发请求，调用时读取 |
 | `FIONA_AMAP_TIMEOUT_SECONDS` | 天气 MCP 请求总预算，默认 `8` 秒，合法范围 `1–30` 的有限浮点数；空串、非数字、`nan`、`inf` 和越界值回落 `8`，调用时读取 |
@@ -162,6 +162,10 @@ journalctl -u fiona | grep -c '\[crisis-model\] level='
 七个每日上限（官方体验3、热点展开30、卡片详情30、ASR300、天气30、BYOK聊天200、测试连接20）只在限流器开启且 DEV_MODE 不等于1时生效，正整数非法回退默认并只告警一次，均调用时读取；次数不额外扣草莓，原IP每分钟限流保留。官方创建用数据库事务计数，其他六项使用进程内存计数，重启清零、北京零点换日，上游失败不退还。天气追问只检查额度、本地失败和取消不计数，超限流内报错退款、不写pending；BYOK聊天并发检查后计数，超限流内报错退款，测试连接失败和每日超限均HTTP200返回ok:false，不保存草稿。官方体验、热点展开、卡片详情和ASR四类HTTP超限仍429、Retry-After及同文案detail/error/retry_after，ASR超限关闭免提。
 
 BYOK 只接管普通/镜子聊天回复。意图、模式、危机复核、看图、工具、生图、朗读、画像提取、分身交流/官方创作搭档始终使用平台；用户模型失败不改用平台。自定义地址须公网HTTPS/443、全部DNS结果公网，连接固定IP且保留主机名SNI，不跟随重定向；代理假IP198.18.0.0/15会被拒，不提供放行开关。自定义上游每连接累计读取全部 HTTP 字节（TLS 之上），上限 4 MiB，超限立即中断并报「你的模型调用失败：连不上该服务。本条没有改用平台模型。」；预设厂商不受此字节上限影响。custom 强制请求头 Accept-Encoding: identity，拒绝非空且非 identity 的 Content-Encoding，避免解压绕过 4 MiB 上限；错误仍归「连不上该服务」。响应头到达后，所有厂商在总时限或取消时立即中断；上游在返回响应头之前挂起时，预设厂商最多再等 60 秒读超时，custom 在 TLS 建立后立即中断；DNS 解析与 TCP/TLS 建连阶段分别最多等约 5 秒和 60 秒连接超时。中断线程只标记状态并 shutdown socket，阻塞调用返回后由属主 worker 关闭流、客户端和连接池。测试连接的平台限流为 10 次/分钟，命中时仍以 HTTP 200 返回 ok:false 和「操作太频繁，请稍后再试」。错误固定映射新增「服务繁忙，请稍后再试」，仍不包含上游正文。以下客户端污染环境变量任一非空都会使 BYOK 整体不可用：`OPENAI_ORG_ID`、`OPENAI_PROJECT_ID`、`OPENAI_CUSTOM_HEADERS`、`OPENAI_BASE_URL`、`ANTHROPIC_BASE_URL`、`ANTHROPIC_AUTH_TOKEN`、`ANTHROPIC_PROFILE`、`ANTHROPIC_FEDERATION_RULE_ID`、`ANTHROPIC_IDENTITY_TOKEN`、`ANTHROPIC_IDENTITY_TOKEN_FILE`、`ANTHROPIC_CUSTOM_HEADERS`。共十一项。预设厂商（含 Claude）遵循服务器的 HTTP(S)_PROXY / NO_PROXY 出站代理设置；自定义地址不使用环境代理。`ALL_PROXY` 同样按预设 SDK 默认规则生效。
+
+BYOK 等待上游建流或正文块期间，每 10 秒发送 SSE 注释心跳（`: thinking`），防止 Next 开发代理的 30 秒空闲超时或其他中间层切断长时间思考；取消时仍先中断上游、等待 worker 结束，再关闭并释放槽位。
+
+Claude 思考强度可选低 / 中 / 高，默认低；聊天底栏和设置页切换立即保存到服务端账号。低、中、高的 `max_tokens` 普通/镜子分别为 4096/2048、8192/4096、16384/8192；低与中总时限为 `FIONA_BYOK_TOTAL_SECONDS`（默认 120 秒），高为 `min(240, FIONA_BYOK_TOTAL_SECONDS×1.5)`（默认 180 秒），必须小于 Nginx 的 300 秒。调高会先思考再回答，用户自己的额度消耗随档位上升；其他厂商不受影响。正文仍限普通 4000 字、镜子 600 字，测试连接固定低档/1024 tokens/原总时限。`user_model_configs` 新增 `effort TEXT NOT NULL DEFAULT 'low'`，老库启动时自动补列，已有行默认低，不新增迁移版本号，`/health` 不变；保存模型、Key 或切换厂商保留档位，只在 Claude 下生效。
 
 零余额且已启用 BYOK、未预扣时，generate_image / weather 以外的 pending：「算了/取消/不用了/不要了/不查了/没事了」免费取消并清 pending；以「先聊/聊点/换个话题/先不」开头清 pending、由用户模型回复；其他补参消息仍报草莓不足、pending 保留。天气 pending 的「换个话题」类句子同样清 pending、由用户模型回复；余额充足用户与平台路由保持不变。
 
@@ -383,10 +387,10 @@ curl --fail https://madchloechat.online/api/health
 6. Plaza 页面和媒体上传。
 7. 匹配卡片、双方接受和真人 WebSocket。
 8. 桌面用户模式加载公网网站。
-9. 设置页测试/保存/启停/删除BYOK：GET响应private,no-store且无密文/完整Key，非法Key不回显、厂商失败不返回401；Claude推荐白名单与大陆说明正确。
+9. 设置页测试/保存/启停/删除BYOK：GET响应private,no-store且无密文/完整Key，非法Key不回显、厂商失败不返回401；Claude推荐白名单与大陆说明正确；设置页和聊天底栏的低/中/高档立即保存、跨 iframe 同步且不覆盖草稿，方向键可切换，忙碌时禁用，手机无横向溢出。
 10. 普通/镜子BYOK回复气泡有标记、余额不变，切平台恢复10颗计费；失效Key、空回复、超时均不改用平台；possible先一次资源再错误、high仍平台。
 11. 余额0和5的BYOK用户可聊天，工具/自然语言生图/看图被守卫且不消耗天气额度、不清pending；显式image模式保持草莓不足。
-12. 抽查byok_chat默认200与byok_test默认20额度、每用户一条、全进程8条与120秒总时限；检查非法配置回退不打印值，trace不含Key/URL/用户模型名/原文。
+12. 抽查byok_chat默认200与byok_test默认20额度、每用户一条、全进程8条、低/中默认120秒与高默认180秒总时限；高档预算不得超过240秒且小于 Nginx 的300秒；检查非法配置回退不打印值，trace不含Key/URL/用户模型名/原文。
 13. 核查服务端密钥单独保管且不进备份；轮换可解旧配置、丢失Key提示重填，删号后迟到保存不重建配置。
 
 账户删除是破坏性操作，只能用专门创建的一次性测试账号验证。确认该账号的消息、匹配、真人消息、广场帖子、媒体文件及 user_model_configs 自带模型配置与加密Key都已删除，并检查后端日志没有文件清理失败。
@@ -438,7 +442,7 @@ systemctl status fiona fiona-web
 
 当前 `npm run lint` 已恢复为绿色，但仍有非阻断警告。发布者必须人工查看 Lint 输出，不能把生产构建成功等同于所有维护债务已经清零。
 
-数据库兼容 DDL 会在后端启动时执行。既有迁移增加了 `users.session_version`、邀请码撤销/用量字段、`posts.owner_username`、`upload_cleanup_queue` 和可空列 `users.strawberry_refill_date`；兼容建表包括 `retired_usernames(username TEXT PRIMARY KEY, retired_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP)` 和 `user_model_configs`（加密用户Key、模型配置与启用位）表；后者直接在 init_db 执行DDL、不增加迁移版本号，health与五道迁移不变，并启用持久的 WAL 模式与统一的 SQLite busy timeout。新账号初始 `session_version` 为随机正整数，旧账号版本保持原值，不强制重新登录；删号事务记录退役用户名，之后的 `testerNN` 发码跳过它。后端启动还会回填可识别的旧帖子 owner，并重试队列中的文件清理。由于当前没有通用迁移和自动回滚，任何涉及 `database.py` 的发布都必须先同时备份数据库与上传目录。
+数据库兼容 DDL 会在后端启动时执行。既有迁移增加了 `users.session_version`、邀请码撤销/用量字段、`posts.owner_username`、`upload_cleanup_queue` 和可空列 `users.strawberry_refill_date`；兼容建表包括 `retired_usernames(username TEXT PRIMARY KEY, retired_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP)` 和 `user_model_configs`（加密用户Key、模型配置、启用位与 `effort TEXT NOT NULL DEFAULT 'low'`）表；后者直接在 init_db 执行DDL，紧接着用容错 ALTER TABLE 补 `effort`，老库启动时自动补列、已有行取 low，不增加迁移版本号，health与五道迁移不变，并启用持久的 WAL 模式与统一的 SQLite busy timeout。新账号初始 `session_version` 为随机正整数，旧账号版本保持原值，不强制重新登录；删号事务记录退役用户名，之后的 `testerNN` 发码跳过它。后端启动还会回填可识别的旧帖子 owner，并重试队列中的文件清理。由于当前没有通用迁移和自动回滚，任何涉及 `database.py` 的发布都必须先同时备份数据库与上传目录。
 
 ## 邀请码、会话与草莓运维
 

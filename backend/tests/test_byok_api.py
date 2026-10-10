@@ -62,7 +62,7 @@ def test_get_public_metadata_and_no_key(client, dev_headers):
     assert first.json()["available"] is True and first.json()["config"] is None
     providers = first.json()["providers"]
     assert {p["id"] for p in providers} == {"dashscope", "deepseek", "moonshot", "zhipu", "anthropic", "custom"}
-    expected = {"provider", "model", "base_url", "key_last4", "enabled", "status", "updated_at"}
+    expected = {"provider", "model", "base_url", "key_last4", "enabled", "effort", "status", "updated_at"}
     config = saved(client, dev_headers)
     assert set(config) == expected and config["enabled"] is True and config["status"] == "ok"
     assert config["key_last4"] == SECRET[-4:]

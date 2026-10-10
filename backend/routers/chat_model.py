@@ -7,8 +7,8 @@ from auth_dep import get_current_user
 from byok.crypto import availability
 from byok.errors import (ByokUnavailableError, ConfigurationError, ConfigNotFoundError,
                          NeedsReentryError, error_message)
-from byok.providers import public_provider_metadata
-from byok.store import delete_config, get_public_config, prepare_config, save_config, set_enabled
+from byok.providers import public_provider_metadata, validate_effort
+from byok.store import delete_config, get_public_config, prepare_config, save_config, update_options
 from rate_limit import check_chat_daily_cap, limiter
 from services.chat_service import run_byok_connection_test
 
@@ -29,6 +29,7 @@ class ModelDraft(BaseModel):
 class ModelSwitch(BaseModel):
     model_config = ConfigDict(extra="forbid", strict=True)
     enabled: bool | None = None
+    effort: str | None = None
 
 
 def _response(body, status=200):
@@ -41,15 +42,20 @@ async def _body(request: Request, *, test=False, patch=False):
         body = await request.json()
     except Exception:
         raise ConfigurationError("请求格式不正确") from None
-    fields = {"enabled"} if patch else _DRAFT_FIELDS
+    fields = {"enabled", "effort"} if patch else _DRAFT_FIELDS
     if not isinstance(body, dict) or set(body) - fields:
         raise ConfigurationError("请求格式不正确")
+    if patch:
+        if not body:
+            raise ConfigurationError("请求格式不正确")
+        if "effort" in body:
+            validate_effort(body["effort"])
     try:
         parsed = (ModelSwitch if patch else ModelDraft).model_validate(body)
     except ValidationError:
         message = "Key 格式不正确" if "api_key" in body and not isinstance(body["api_key"], (str, type(None))) else "请求格式不正确"
         raise ConfigurationError(message) from None
-    if patch and parsed.enabled is None:
+    if patch and "enabled" in body and parsed.enabled is None:
         raise ConfigurationError("启用状态格式不正确")
     if not patch and not test and (parsed.provider is None or parsed.model is None):
         raise ConfigurationError("请填写厂商和模型名")
@@ -98,7 +104,7 @@ async def put_chat_model(request: Request, user: str = Depends(get_current_user)
 async def patch_chat_model(request: Request, user: str = Depends(get_current_user)):
     try:
         body = await _body(request, patch=True)
-        config = await set_enabled(user, body["enabled"])
+        config = await update_options(user, **body)
         return _response({"config": config})
     except Exception as exc:
         return _error(exc)

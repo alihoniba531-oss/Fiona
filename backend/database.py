@@ -308,6 +308,7 @@ async def init_db():
         await _safe_migrate(db, "ALTER TABLE invite_codes ADD COLUMN last_used_at TIMESTAMP DEFAULT NULL")
         from byok.store import USER_MODEL_CONFIGS_DDL
         await db.execute(USER_MODEL_CONFIGS_DDL)
+        await _safe_migrate(db, "ALTER TABLE user_model_configs ADD COLUMN effort TEXT NOT NULL DEFAULT 'low'")
         await db.execute("""
             CREATE TABLE IF NOT EXISTS retired_usernames (
                 username   TEXT PRIMARY KEY,
