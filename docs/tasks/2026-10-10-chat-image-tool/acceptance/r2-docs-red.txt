@@ -1,0 +1,261 @@
+.............FFFFFFFFFFFFFF                                              [100%]
+=================================== FAILURES ===================================
+_________ test_r1_docs_explain_native_and_planner_data_flow[README.md] _________
+
+monkeypatch = <_pytest.monkeypatch.MonkeyPatch object at 0x108a3eb10>
+filename = 'README.md'
+
+    @pytest.mark.parametrize("filename", [
+        "README.md", "CLAUDE.md", "PLAN.md", "docs/ARCHITECTURE.md", "docs/DEPLOYMENT.md",
+        "backend/.env.example",
+    ])
+    def test_r1_docs_explain_native_and_planner_data_flow(monkeypatch, filename):
+        monkeypatch.setenv("FIONA_CHAT_IMAGE_TOOL", "1")
+        document = (ROOT / filename).read_text()
+        for required in (
+            "原生工具模式", "判断器模式", "qwen3.8-flash", "最近 6 条对话",
+            "历史每条最多 600 字，本轮原话最多 1500 字（超长时保留首尾）", "阿里云 DashScope", "约 1–5 秒",
+            "判断器不可用时退回旧路由", "判断器模式下镜子模式也能生图",
+            "Kimi、智谱、自定义地址改走判断器模式",
+        ):
+>           assert required in document, (filename, required)
+E           AssertionError: ('README.md', '历史每条最多 600 字，本轮原话最多 1500 字（超长时保留首尾）')
+E           assert '历史每条最多 600 字，本轮原话最多 1500 字（超长时保留首尾）' in '# Fiona / Chloe\n\nFiona 正在演进为个人 AI 分身交流与 Skill 交易平台，当前用于作者自用和小范围内测。已实现独立分身、持久私有会话、名片和私有记忆，以及经双方授权的分身互聊。Skill 安装和交易仍在...sue 中披露未修复漏洞、API Key、个人数据或数据库内容。安全问题请按 [安全政策](./.github/SECURITY.md) 通过 GitHub Private Vulnerability Reporting 私密提交。\n'
+
+tests/test_chat_image_tool_docs.py:95: AssertionError
+_________ test_r1_docs_explain_native_and_planner_data_flow[CLAUDE.md] _________
+
+monkeypatch = <_pytest.monkeypatch.MonkeyPatch object at 0x108b20cb0>
+filename = 'CLAUDE.md'
+
+    @pytest.mark.parametrize("filename", [
+        "README.md", "CLAUDE.md", "PLAN.md", "docs/ARCHITECTURE.md", "docs/DEPLOYMENT.md",
+        "backend/.env.example",
+    ])
+    def test_r1_docs_explain_native_and_planner_data_flow(monkeypatch, filename):
+        monkeypatch.setenv("FIONA_CHAT_IMAGE_TOOL", "1")
+        document = (ROOT / filename).read_text()
+        for required in (
+            "原生工具模式", "判断器模式", "qwen3.8-flash", "最近 6 条对话",
+            "历史每条最多 600 字，本轮原话最多 1500 字（超长时保留首尾）", "阿里云 DashScope", "约 1–5 秒",
+            "判断器不可用时退回旧路由", "判断器模式下镜子模式也能生图",
+            "Kimi、智谱、自定义地址改走判断器模式",
+        ):
+>           assert required in document, (filename, required)
+E           AssertionError: ('CLAUDE.md', '历史每条最多 600 字，本轮原话最多 1500 字（超长时保留首尾）')
+E           assert '历史每条最多 600 字，本轮原话最多 1500 字（超长时保留首尾）' in '# Fiona / Chloe 开发上下文\n\n个人 AI 分身交流与 Skill 平台，当前第一阶段支持独立分身和持久私有会话，用于作者自用和受控小范围内测。分身互聊与 Skill 交易尚未实现。完整说明见 `README.md`...上传文件、备份或 `fiona.config.json`。\n- 代码改变模型、路由、端口、环境变量、数据位置或部署方式时，同步更新 README、架构/部署文档和 PLAN。\n- 只有作者明确要求时才提交 Git commit。\n'
+
+tests/test_chat_image_tool_docs.py:95: AssertionError
+__________ test_r1_docs_explain_native_and_planner_data_flow[PLAN.md] __________
+
+monkeypatch = <_pytest.monkeypatch.MonkeyPatch object at 0x108b21e90>
+filename = 'PLAN.md'
+
+    @pytest.mark.parametrize("filename", [
+        "README.md", "CLAUDE.md", "PLAN.md", "docs/ARCHITECTURE.md", "docs/DEPLOYMENT.md",
+        "backend/.env.example",
+    ])
+    def test_r1_docs_explain_native_and_planner_data_flow(monkeypatch, filename):
+        monkeypatch.setenv("FIONA_CHAT_IMAGE_TOOL", "1")
+        document = (ROOT / filename).read_text()
+        for required in (
+            "原生工具模式", "判断器模式", "qwen3.8-flash", "最近 6 条对话",
+            "历史每条最多 600 字，本轮原话最多 1500 字（超长时保留首尾）", "阿里云 DashScope", "约 1–5 秒",
+            "判断器不可用时退回旧路由", "判断器模式下镜子模式也能生图",
+            "Kimi、智谱、自定义地址改走判断器模式",
+        ):
+>           assert required in document, (filename, required)
+E           AssertionError: ('PLAN.md', '历史每条最多 600 字，本轮原话最多 1500 字（超长时保留首尾）')
+E           assert '历史每条最多 600 字，本轮原话最多 1500 字（超长时保留首尾）' in '# Fiona / Chloe 当前状态与路线图\n\n最后同步：2026-10-10\n\n本文只记录当前实现、发布边界和下一步工作。最初的“天人合一私人助理”构想仍可通过 Git 历史查看，但其中的 Next.js 14、Duck...评估\n\n- 在完成隐私、安全、内容治理和运营能力后，再决定是否开放注册。\n- 根据真实用户量和 SQLite 指标决定是否迁移 PostgreSQL，而不是预先承诺无缝扩容。\n- 桌面安装包增加签名、更新机制和发布验证流程。\n'
+
+tests/test_chat_image_tool_docs.py:95: AssertionError
+___ test_r1_docs_explain_native_and_planner_data_flow[docs/ARCHITECTURE.md] ____
+
+monkeypatch = <_pytest.monkeypatch.MonkeyPatch object at 0x108b95950>
+filename = 'docs/ARCHITECTURE.md'
+
+    @pytest.mark.parametrize("filename", [
+        "README.md", "CLAUDE.md", "PLAN.md", "docs/ARCHITECTURE.md", "docs/DEPLOYMENT.md",
+        "backend/.env.example",
+    ])
+    def test_r1_docs_explain_native_and_planner_data_flow(monkeypatch, filename):
+        monkeypatch.setenv("FIONA_CHAT_IMAGE_TOOL", "1")
+        document = (ROOT / filename).read_text()
+        for required in (
+            "原生工具模式", "判断器模式", "qwen3.8-flash", "最近 6 条对话",
+            "历史每条最多 600 字，本轮原话最多 1500 字（超长时保留首尾）", "阿里云 DashScope", "约 1–5 秒",
+            "判断器不可用时退回旧路由", "判断器模式下镜子模式也能生图",
+            "Kimi、智谱、自定义地址改走判断器模式",
+        ):
+>           assert required in document, (filename, required)
+E           AssertionError: ('docs/ARCHITECTURE.md', '历史每条最多 600 字，本轮原话最多 1500 字（超长时保留首尾）')
+E           assert '历史每条最多 600 字，本轮原话最多 1500 字（超长时保留首尾）' in '# Fiona 当前架构\n\n本文描述仓库在 2026-10-10 的实际代码结构。它是实现说明，不替代 [PLAN.md](../PLAN.md) 中的路线图和发布决策。\n\n## 系统边界\n\n```text\nBrowse...量门禁工作流；Windows 桌面工作流会运行 Rust 单测再打包。新工作流仍需在 GitHub 首次运行中确认 runner 环境。\n\n当上述实现发生变化时，应在同一个变更中更新本文、根 README 和 PLAN 的状态。\n'
+
+tests/test_chat_image_tool_docs.py:95: AssertionError
+____ test_r1_docs_explain_native_and_planner_data_flow[docs/DEPLOYMENT.md] _____
+
+monkeypatch = <_pytest.monkeypatch.MonkeyPatch object at 0x108b95bd0>
+filename = 'docs/DEPLOYMENT.md'
+
+    @pytest.mark.parametrize("filename", [
+        "README.md", "CLAUDE.md", "PLAN.md", "docs/ARCHITECTURE.md", "docs/DEPLOYMENT.md",
+        "backend/.env.example",
+    ])
+    def test_r1_docs_explain_native_and_planner_data_flow(monkeypatch, filename):
+        monkeypatch.setenv("FIONA_CHAT_IMAGE_TOOL", "1")
+        document = (ROOT / filename).read_text()
+        for required in (
+            "原生工具模式", "判断器模式", "qwen3.8-flash", "最近 6 条对话",
+            "历史每条最多 600 字，本轮原话最多 1500 字（超长时保留首尾）", "阿里云 DashScope", "约 1–5 秒",
+            "判断器不可用时退回旧路由", "判断器模式下镜子模式也能生图",
+            "Kimi、智谱、自定义地址改走判断器模式",
+        ):
+>           assert required in document, (filename, required)
+E           AssertionError: ('docs/DEPLOYMENT.md', '历史每条最多 600 字，本轮原话最多 1500 字（超长时保留首尾）')
+E           assert '历史每条最多 600 字，本轮原话最多 1500 字（超长时保留首尾）' in '# Fiona 生产部署手册\n\n本文把仓库当前采用的“单机、单域名、Nginx + systemd”拓扑写成可执行的基线。当前约定的线上域名是 `madchloechat.online`，只读代码目录是 `/opt/fiona`，...lity 白名单。\n- **待作者确认**：在 DashScope、DeepSeek 后台删除本项目使用的旧 API Key。\n\n重新上线时，按本文“首次安装”一节重新部署，并用新的 `JWT_SECRET` 和新的模型密钥。\n'
+
+tests/test_chat_image_tool_docs.py:95: AssertionError
+___ test_r1_docs_explain_native_and_planner_data_flow[backend/.env.example] ____
+
+monkeypatch = <_pytest.monkeypatch.MonkeyPatch object at 0x108ab48c0>
+filename = 'backend/.env.example'
+
+    @pytest.mark.parametrize("filename", [
+        "README.md", "CLAUDE.md", "PLAN.md", "docs/ARCHITECTURE.md", "docs/DEPLOYMENT.md",
+        "backend/.env.example",
+    ])
+    def test_r1_docs_explain_native_and_planner_data_flow(monkeypatch, filename):
+        monkeypatch.setenv("FIONA_CHAT_IMAGE_TOOL", "1")
+        document = (ROOT / filename).read_text()
+        for required in (
+            "原生工具模式", "判断器模式", "qwen3.8-flash", "最近 6 条对话",
+            "历史每条最多 600 字，本轮原话最多 1500 字（超长时保留首尾）", "阿里云 DashScope", "约 1–5 秒",
+            "判断器不可用时退回旧路由", "判断器模式下镜子模式也能生图",
+            "Kimi、智谱、自定义地址改走判断器模式",
+        ):
+>           assert required in document, (filename, required)
+E           AssertionError: ('backend/.env.example', '历史每条最多 600 字，本轮原话最多 1500 字（超长时保留首尾）')
+E           assert '历史每条最多 600 字，本轮原话最多 1500 字（超长时保留首尾）' in '# ─────────────────────────────────────────────────────────────\n# 菲欧娜 / Chloe 后端环境变量模板\n#\n# 用法:  cp backend/.env.ex...NTITY_TOKEN_FILE,\n# ANTHROPIC_CUSTOM_HEADERS。\n# 预设厂商（含 Claude）遵循服务器的 HTTP(S)_PROXY / NO_PROXY 出站代理设置；自定义地址不使用环境代理。\n'
+
+tests/test_chat_image_tool_docs.py:95: AssertionError
+__________ test_r2_docs_describe_planner_followup_triggers[README.md] __________
+
+filename = 'README.md'
+
+    @pytest.mark.parametrize("filename", [
+        "README.md", "CLAUDE.md", "PLAN.md", "docs/ARCHITECTURE.md", "docs/DEPLOYMENT.md",
+        "backend/.env.example",
+    ])
+    def test_r2_docs_describe_planner_followup_triggers(filename):
+        document = (ROOT / filename).read_text()
+>       assert "上一条回复与生图相关" in document
+E       AssertionError: assert '上一条回复与生图相关' in '# Fiona / Chloe\n\nFiona 正在演进为个人 AI 分身交流与 Skill 交易平台，当前用于作者自用和小范围内测。已实现独立分身、持久私有会话、名片和私有记忆，以及经双方授权的分身互聊。Skill 安装和交易仍在...sue 中披露未修复漏洞、API Key、个人数据或数据库内容。安全问题请按 [安全政策](./.github/SECURITY.md) 通过 GitHub Private Vulnerability Reporting 私密提交。\n'
+
+tests/test_chat_image_tool_docs.py:108: AssertionError
+__________ test_r2_docs_describe_planner_followup_triggers[CLAUDE.md] __________
+
+filename = 'CLAUDE.md'
+
+    @pytest.mark.parametrize("filename", [
+        "README.md", "CLAUDE.md", "PLAN.md", "docs/ARCHITECTURE.md", "docs/DEPLOYMENT.md",
+        "backend/.env.example",
+    ])
+    def test_r2_docs_describe_planner_followup_triggers(filename):
+        document = (ROOT / filename).read_text()
+>       assert "上一条回复与生图相关" in document
+E       AssertionError: assert '上一条回复与生图相关' in '# Fiona / Chloe 开发上下文\n\n个人 AI 分身交流与 Skill 平台，当前第一阶段支持独立分身和持久私有会话，用于作者自用和受控小范围内测。分身互聊与 Skill 交易尚未实现。完整说明见 `README.md`...上传文件、备份或 `fiona.config.json`。\n- 代码改变模型、路由、端口、环境变量、数据位置或部署方式时，同步更新 README、架构/部署文档和 PLAN。\n- 只有作者明确要求时才提交 Git commit。\n'
+
+tests/test_chat_image_tool_docs.py:108: AssertionError
+___________ test_r2_docs_describe_planner_followup_triggers[PLAN.md] ___________
+
+filename = 'PLAN.md'
+
+    @pytest.mark.parametrize("filename", [
+        "README.md", "CLAUDE.md", "PLAN.md", "docs/ARCHITECTURE.md", "docs/DEPLOYMENT.md",
+        "backend/.env.example",
+    ])
+    def test_r2_docs_describe_planner_followup_triggers(filename):
+        document = (ROOT / filename).read_text()
+>       assert "上一条回复与生图相关" in document
+E       AssertionError: assert '上一条回复与生图相关' in '# Fiona / Chloe 当前状态与路线图\n\n最后同步：2026-10-10\n\n本文只记录当前实现、发布边界和下一步工作。最初的“天人合一私人助理”构想仍可通过 Git 历史查看，但其中的 Next.js 14、Duck...评估\n\n- 在完成隐私、安全、内容治理和运营能力后，再决定是否开放注册。\n- 根据真实用户量和 SQLite 指标决定是否迁移 PostgreSQL，而不是预先承诺无缝扩容。\n- 桌面安装包增加签名、更新机制和发布验证流程。\n'
+
+tests/test_chat_image_tool_docs.py:108: AssertionError
+____ test_r2_docs_describe_planner_followup_triggers[docs/ARCHITECTURE.md] _____
+
+filename = 'docs/ARCHITECTURE.md'
+
+    @pytest.mark.parametrize("filename", [
+        "README.md", "CLAUDE.md", "PLAN.md", "docs/ARCHITECTURE.md", "docs/DEPLOYMENT.md",
+        "backend/.env.example",
+    ])
+    def test_r2_docs_describe_planner_followup_triggers(filename):
+        document = (ROOT / filename).read_text()
+>       assert "上一条回复与生图相关" in document
+E       AssertionError: assert '上一条回复与生图相关' in '# Fiona 当前架构\n\n本文描述仓库在 2026-10-10 的实际代码结构。它是实现说明，不替代 [PLAN.md](../PLAN.md) 中的路线图和发布决策。\n\n## 系统边界\n\n```text\nBrowse...量门禁工作流；Windows 桌面工作流会运行 Rust 单测再打包。新工作流仍需在 GitHub 首次运行中确认 runner 环境。\n\n当上述实现发生变化时，应在同一个变更中更新本文、根 README 和 PLAN 的状态。\n'
+
+tests/test_chat_image_tool_docs.py:108: AssertionError
+_____ test_r2_docs_describe_planner_followup_triggers[docs/DEPLOYMENT.md] ______
+
+filename = 'docs/DEPLOYMENT.md'
+
+    @pytest.mark.parametrize("filename", [
+        "README.md", "CLAUDE.md", "PLAN.md", "docs/ARCHITECTURE.md", "docs/DEPLOYMENT.md",
+        "backend/.env.example",
+    ])
+    def test_r2_docs_describe_planner_followup_triggers(filename):
+        document = (ROOT / filename).read_text()
+>       assert "上一条回复与生图相关" in document
+E       AssertionError: assert '上一条回复与生图相关' in '# Fiona 生产部署手册\n\n本文把仓库当前采用的“单机、单域名、Nginx + systemd”拓扑写成可执行的基线。当前约定的线上域名是 `madchloechat.online`，只读代码目录是 `/opt/fiona`，...lity 白名单。\n- **待作者确认**：在 DashScope、DeepSeek 后台删除本项目使用的旧 API Key。\n\n重新上线时，按本文“首次安装”一节重新部署，并用新的 `JWT_SECRET` 和新的模型密钥。\n'
+
+tests/test_chat_image_tool_docs.py:108: AssertionError
+____ test_r2_docs_describe_planner_followup_triggers[backend/.env.example] _____
+
+filename = 'backend/.env.example'
+
+    @pytest.mark.parametrize("filename", [
+        "README.md", "CLAUDE.md", "PLAN.md", "docs/ARCHITECTURE.md", "docs/DEPLOYMENT.md",
+        "backend/.env.example",
+    ])
+    def test_r2_docs_describe_planner_followup_triggers(filename):
+        document = (ROOT / filename).read_text()
+>       assert "上一条回复与生图相关" in document
+E       AssertionError: assert '上一条回复与生图相关' in '# ─────────────────────────────────────────────────────────────\n# 菲欧娜 / Chloe 后端环境变量模板\n#\n# 用法:  cp backend/.env.ex...NTITY_TOKEN_FILE,\n# ANTHROPIC_CUSTOM_HEADERS。\n# 预设厂商（含 Claude）遵循服务器的 HTTP(S)_PROXY / NO_PROXY 出站代理设置；自定义地址不使用环境代理。\n'
+
+tests/test_chat_image_tool_docs.py:108: AssertionError
+__________ test_r2_architecture_restores_complete_legacy_image_route ___________
+
+    def test_r2_architecture_restores_complete_legacy_image_route():
+        baseline = subprocess.check_output(
+            ["git", "show", "7ac7b57:docs/ARCHITECTURE.md"], cwd=ROOT, text=True,
+        )
+        paragraph = next(p for p in baseline.split("\n\n") if p.startswith("图片生成通过同一个 `POST /chat` 接入："))
+        document = (ROOT / "docs/ARCHITECTURE.md").read_text()
+>       assert "适用于开关关闭、判断器不可用、possible 轮与面板路径。" + paragraph in document
+E       AssertionError: assert ('适用于开关关闭、判断器不可用、possible 轮与面板路径。' + '图片生成通过同一个 `POST /chat` 接入：`mode=image` 显式请求，`aspect_ratio` 可选 `1:1/16:9/9:16`；自然语言绘图候选先由正则提名，再由现有意图模型确认，确认生图才执行且复用本轮识..._path`，限定为经过验证的本地 PNG，供应商临时链接不交给浏览器。新 `generated_*` 文件在开发和生产均验证消息归属，使用 `private, no-store`；删除与断开时清理未保存附件，落库期间保护事务结果确认。') in '# Fiona 当前架构\n\n本文描述仓库在 2026-10-10 的实际代码结构。它是实现说明，不替代 [PLAN.md](../PLAN.md) 中的路线图和发布决策。\n\n## 系统边界\n\n```text\nBrowse...量门禁工作流；Windows 桌面工作流会运行 Rust 单测再打包。新工作流仍需在 GitHub 首次运行中确认 runner 环境。\n\n当上述实现发生变化时，应在同一个变更中更新本文、根 README 和 PLAN 的状态。\n'
+
+tests/test_chat_image_tool_docs.py:119: AssertionError
+_________ test_r2_deployment_explains_sse_no_transform_for_next_proxy __________
+
+    def test_r2_deployment_explains_sse_no_transform_for_next_proxy():
+        document = (ROOT / "docs/DEPLOYMENT.md").read_text()
+        paragraph = next(p for p in document.split("\n\n") if "FIONA_BACKEND_ORIGIN=http://127.0.0.1:8001" in p)
+>       assert "Cache-Control: no-transform" in paragraph
+E       AssertionError: assert 'Cache-Control: no-transform' in '浏览器隔离联调可设置前端服务端变量 `FIONA_BACKEND_ORIGIN=http://127.0.0.1:8001`，将 `/api` 代理到临时后端；默认仍为 `http://localhost:8000`。该变量参与 Next 配置，正式构建前应清除测试值。测试浏览器使用 `localhost`，与现有 `127.0.0.1` 预览隔离 Cookie。'
+
+tests/test_chat_image_tool_docs.py:126: AssertionError
+=========================== short test summary info ============================
+FAILED tests/test_chat_image_tool_docs.py::test_r1_docs_explain_native_and_planner_data_flow[README.md]
+FAILED tests/test_chat_image_tool_docs.py::test_r1_docs_explain_native_and_planner_data_flow[CLAUDE.md]
+FAILED tests/test_chat_image_tool_docs.py::test_r1_docs_explain_native_and_planner_data_flow[PLAN.md]
+FAILED tests/test_chat_image_tool_docs.py::test_r1_docs_explain_native_and_planner_data_flow[docs/ARCHITECTURE.md]
+FAILED tests/test_chat_image_tool_docs.py::test_r1_docs_explain_native_and_planner_data_flow[docs/DEPLOYMENT.md]
+FAILED tests/test_chat_image_tool_docs.py::test_r1_docs_explain_native_and_planner_data_flow[backend/.env.example]
+FAILED tests/test_chat_image_tool_docs.py::test_r2_docs_describe_planner_followup_triggers[README.md]
+FAILED tests/test_chat_image_tool_docs.py::test_r2_docs_describe_planner_followup_triggers[CLAUDE.md]
+FAILED tests/test_chat_image_tool_docs.py::test_r2_docs_describe_planner_followup_triggers[PLAN.md]
+FAILED tests/test_chat_image_tool_docs.py::test_r2_docs_describe_planner_followup_triggers[docs/ARCHITECTURE.md]
+FAILED tests/test_chat_image_tool_docs.py::test_r2_docs_describe_planner_followup_triggers[docs/DEPLOYMENT.md]
+FAILED tests/test_chat_image_tool_docs.py::test_r2_docs_describe_planner_followup_triggers[backend/.env.example]
+FAILED tests/test_chat_image_tool_docs.py::test_r2_architecture_restores_complete_legacy_image_route
+FAILED tests/test_chat_image_tool_docs.py::test_r2_deployment_explains_sse_no_transform_for_next_proxy
+14 failed, 13 passed in 0.18s

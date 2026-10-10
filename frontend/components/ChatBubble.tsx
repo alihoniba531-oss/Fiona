@@ -218,7 +218,7 @@ function ChatBubble({ message, agentName = "Chloe", onDelete, onConfirmTts, onDe
         </div>}
 
         {/* 文字气泡（如果有内容或正在打字，且不是卡片） */}
-        {!message.generationStatus && (message.content || message.isTyping) && message.content !== "[发了一张图片]" && (
+        {(message.content || (message.isTyping && !message.generationStatus)) && message.content !== "[发了一张图片]" && (
           <div
             className={cn(
               "break-words whitespace-pre-wrap",

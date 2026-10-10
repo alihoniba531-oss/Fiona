@@ -1,0 +1,456 @@
+....................................F................................... [ 34%]
+.................................................FF...F..FFFFFF....FF.FF [ 68%]
+...................................................................      [100%]
+=================================== FAILURES ===================================
+_ test_r1_no_draw_routes_without_tools_or_image_candidate[\u4f60\u597d-False-no] _
+
+chat_harness = (<module 'services.chat_service' from 'backend/services/chat_service.py'>, ...ent=False), [('tool-user', 'assistant', '文字回复', {'image_path': None, 'conversation_id': 'conversation'})], [], [], ...)
+monkeypatch = <_pytest.monkeypatch.MonkeyPatch object at 0x10865fe70>
+message = '你好', prescreen = False, planned = 'no'
+
+    @pytest.mark.parametrize("message,prescreen,planned", [
+        ("你好", False, "no"), ("帮我写一段提示词", True, "no"),
+        ("按上面那个做", True, "no"),
+    ])
+    def test_r1_no_draw_routes_without_tools_or_image_candidate(chat_harness, monkeypatch, message, prescreen, planned):
+        chat, ctx, state, saves, calls, refunds, traces = chat_harness
+        ctx.message = ctx.user_content = message
+        ctx.messages = [{"role": "user", "content": message}]
+        planner_requests, mode_calls, intents, requests, cleared = [], [], [], [], []
+        async def planner(*args):
+            planner_requests.append(args)
+            return {"status": planned}
+        monkeypatch.setattr(chat, "plan_image", planner)
+        monkeypatch.setattr(chat, "image_planner_prescreen", lambda text, **kw: prescreen, raising=False)
+        monkeypatch.setattr(chat, "get_pending", lambda *a: {"intent": "generate_image", "params": {}, "missing": ["prompt"]})
+        monkeypatch.setattr(chat, "clear_pending", lambda *a: cleared.append(a))
+        monkeypatch.setattr(chat, "detect_mode", lambda *a: mode_calls.append(a) or "friend")
+        def recognize(*a):
+            intents.append(a)
+            return {"intent": "generate_image", "params": {"prompt": "wrong"}, "missing": []}
+        monkeypatch.setattr(chat, "recognize_intent_with_fallback", recognize)
+        def opened(*a, **kw):
+            requests.append(kw)
+            return iter([block("文字回复"), block(finish="stop")]), False
+        monkeypatch.setattr(chat, "_create_stream_with_fallback", opened)
+        result = asyncio.run(collect(chat.run_chat(ctx, crisis=False)))
+>       assert len(planner_requests) == 1  # The pending image request also triggers the planner.
+        ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+E       assert 0 == 1
+E        +  where 0 = len([])
+
+tests/test_chat_image_tool.py:327: AssertionError
+__ test_r2_image_pending_answer_calls_planner_without_current_prescreen[draw] __
+
+chat_harness = (<module 'services.chat_service' from 'backend/services/chat_service.py'>, ...ent=False), [('tool-user', 'assistant', '普通回复', {'image_path': None, 'conversation_id': 'conversation'})], [], [], ...)
+monkeypatch = <_pytest.monkeypatch.MonkeyPatch object at 0x1085b5f60>
+decision = 'draw'
+
+    @pytest.mark.parametrize("decision", ["draw", "no"])
+    def test_r2_image_pending_answer_calls_planner_without_current_prescreen(chat_harness, monkeypatch, decision):
+        chat, ctx, state, saves, images, refunds, traces = chat_harness
+        ctx.message = ctx.user_content = "一只橘猫在窗台上晒太阳"
+        ctx.messages = [{"role": "user", "content": ctx.message}]
+        pending = [{"intent": "generate_image", "params": {}, "missing": ["prompt"]}]
+        planner_calls, clears = [], []
+        monkeypatch.setattr(chat, "image_planner_prescreen", lambda *args, **kwargs: False)
+        monkeypatch.setattr(chat, "explicit_image_intent", lambda *args: None)
+        monkeypatch.setattr(chat, "get_pending", lambda *args: pending[0])
+        def clear(*args):
+            clears.append(args)
+            pending[0] = None
+        monkeypatch.setattr(chat, "clear_pending", clear)
+        async def planner(history, message):
+            planner_calls.append((history, message))
+            return {"status": decision, "prompt": "窗台上的橘猫"}
+        monkeypatch.setattr(chat, "plan_image", planner)
+        events = asyncio.run(collect(chat.run_chat(ctx, reserved=True, crisis=False)))
+>       assert planner_calls == [(ctx.history, ctx.message)]
+E       AssertionError: assert [] == [([], '一只橘猫在窗台上晒太阳')]
+E         
+E         Right contains one more item: ([], '一只橘猫在窗台上晒太阳')
+E         Use -v to get more diff
+
+tests/test_chat_image_tool.py:982: AssertionError
+___ test_r2_image_pending_answer_calls_planner_without_current_prescreen[no] ___
+
+chat_harness = (<module 'services.chat_service' from 'backend/services/chat_service.py'>, ...ent=False), [('tool-user', 'assistant', '普通回复', {'image_path': None, 'conversation_id': 'conversation'})], [], [], ...)
+monkeypatch = <_pytest.monkeypatch.MonkeyPatch object at 0x10dc07a10>
+decision = 'no'
+
+    @pytest.mark.parametrize("decision", ["draw", "no"])
+    def test_r2_image_pending_answer_calls_planner_without_current_prescreen(chat_harness, monkeypatch, decision):
+        chat, ctx, state, saves, images, refunds, traces = chat_harness
+        ctx.message = ctx.user_content = "一只橘猫在窗台上晒太阳"
+        ctx.messages = [{"role": "user", "content": ctx.message}]
+        pending = [{"intent": "generate_image", "params": {}, "missing": ["prompt"]}]
+        planner_calls, clears = [], []
+        monkeypatch.setattr(chat, "image_planner_prescreen", lambda *args, **kwargs: False)
+        monkeypatch.setattr(chat, "explicit_image_intent", lambda *args: None)
+        monkeypatch.setattr(chat, "get_pending", lambda *args: pending[0])
+        def clear(*args):
+            clears.append(args)
+            pending[0] = None
+        monkeypatch.setattr(chat, "clear_pending", clear)
+        async def planner(history, message):
+            planner_calls.append((history, message))
+            return {"status": decision, "prompt": "窗台上的橘猫"}
+        monkeypatch.setattr(chat, "plan_image", planner)
+        events = asyncio.run(collect(chat.run_chat(ctx, reserved=True, crisis=False)))
+>       assert planner_calls == [(ctx.history, ctx.message)]
+E       AssertionError: assert [] == [([], '一只橘猫在窗台上晒太阳')]
+E         
+E         Right contains one more item: ([], '一只橘猫在窗台上晒太阳')
+E         Use -v to get more diff
+
+tests/test_chat_image_tool.py:982: AssertionError
+____ test_r2_pending_cancel_does_not_call_planner[\u4e0d\u753b\u4e86\uff01] ____
+
+chat_harness = (<module 'services.chat_service' from 'backend/services/chat_service.py'>, ...=False, billable=False, crisis=False, crisis_level=None, crisis_resource_sent=False), [], [], [('tool-user', 10)], ...)
+monkeypatch = <_pytest.monkeypatch.MonkeyPatch object at 0x10dd0f070>
+message = '不画了！'
+
+    @pytest.mark.parametrize("message", ["算了", "取消吧", "不用了。", "不画了！", "不要了", "停止", "别画了"])
+    def test_r2_pending_cancel_does_not_call_planner(chat_harness, monkeypatch, message):
+        chat, ctx, state, saves, images, refunds, traces = chat_harness
+        ctx.message = ctx.user_content = message
+        pending = [{"intent": "generate_image", "params": {}, "missing": ["prompt"]}]
+        clears = []
+        monkeypatch.setattr(chat, "get_pending", lambda *args: pending[0])
+        def clear(*args):
+            clears.append(args)
+            pending[0] = None
+        monkeypatch.setattr(chat, "clear_pending", clear)
+        async def forbidden(*args):
+            pytest.fail("取消已有生图请求不得调用判断器")
+        monkeypatch.setattr(chat, "plan_image", forbidden)
+>       events = asyncio.run(collect(chat.run_chat(ctx, reserved=True, crisis=False)))
+                 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+tests/test_chat_image_tool.py:1009: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+<python-stdlib>/asyncio/runners.py:205: in run
+    return runner.run(main)
+           ^^^^^^^^^^^^^^^^
+<python-stdlib>/asyncio/runners.py:128: in run
+    return self._loop.run_until_complete(task)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+<python-stdlib>/asyncio/base_events.py:719: in run_until_complete
+    return future.result()
+           ^^^^^^^^^^^^^^^
+tests/test_chat_image_tool.py:83: in collect
+    return [json.loads(event[6:]) if event.startswith("data: ") else event async for event in stream]
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+services/chat_service.py:1675: in run_chat
+    planned = await plan_image(ctx.history, ctx.message)
+              ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+args = ([], '不画了！')
+
+    async def forbidden(*args):
+>       pytest.fail("取消已有生图请求不得调用判断器")
+E       Failed: 取消已有生图请求不得调用判断器
+
+tests/test_chat_image_tool.py:1007: Failed
+_______ test_r2_pending_cancel_does_not_call_planner[\u522b\u753b\u4e86] _______
+
+chat_harness = (<module 'services.chat_service' from 'backend/services/chat_service.py'>, ...=False, billable=False, crisis=False, crisis_level=None, crisis_resource_sent=False), [], [], [('tool-user', 10)], ...)
+monkeypatch = <_pytest.monkeypatch.MonkeyPatch object at 0x10dd51a90>
+message = '别画了'
+
+    @pytest.mark.parametrize("message", ["算了", "取消吧", "不用了。", "不画了！", "不要了", "停止", "别画了"])
+    def test_r2_pending_cancel_does_not_call_planner(chat_harness, monkeypatch, message):
+        chat, ctx, state, saves, images, refunds, traces = chat_harness
+        ctx.message = ctx.user_content = message
+        pending = [{"intent": "generate_image", "params": {}, "missing": ["prompt"]}]
+        clears = []
+        monkeypatch.setattr(chat, "get_pending", lambda *args: pending[0])
+        def clear(*args):
+            clears.append(args)
+            pending[0] = None
+        monkeypatch.setattr(chat, "clear_pending", clear)
+        async def forbidden(*args):
+            pytest.fail("取消已有生图请求不得调用判断器")
+        monkeypatch.setattr(chat, "plan_image", forbidden)
+>       events = asyncio.run(collect(chat.run_chat(ctx, reserved=True, crisis=False)))
+                 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+tests/test_chat_image_tool.py:1009: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+<python-stdlib>/asyncio/runners.py:205: in run
+    return runner.run(main)
+           ^^^^^^^^^^^^^^^^
+<python-stdlib>/asyncio/runners.py:128: in run
+    return self._loop.run_until_complete(task)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+<python-stdlib>/asyncio/base_events.py:719: in run_until_complete
+    return future.result()
+           ^^^^^^^^^^^^^^^
+tests/test_chat_image_tool.py:83: in collect
+    return [json.loads(event[6:]) if event.startswith("data: ") else event async for event in stream]
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+services/chat_service.py:1675: in run_chat
+    planned = await plan_image(ctx.history, ctx.message)
+              ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+args = ([], '别画了')
+
+    async def forbidden(*args):
+>       pytest.fail("取消已有生图请求不得调用判断器")
+E       Failed: 取消已有生图请求不得调用判断器
+
+tests/test_chat_image_tool.py:1007: Failed
+_ test_r2_last_assistant_image_followup_calls_planner[\u4f7f\u7528\u7684\u63cf\u8ff0\uff08Seedream 5.0 Flash\uff09\uff1a\u7a97\u8fb9\u7684\u732b] _
+
+chat_harness = (<module 'services.chat_service' from 'backend/services/chat_service.py'>, ...ent=False), [('tool-user', 'assistant', '普通回复', {'image_path': None, 'conversation_id': 'conversation'})], [], [], ...)
+monkeypatch = <_pytest.monkeypatch.MonkeyPatch object at 0x10dd51da0>
+assistant = '使用的描述（Seedream 5.0 Flash）：窗边的猫'
+
+    @pytest.mark.parametrize("assistant", [
+        "使用的描述（Seedream 5.0 Flash）：窗边的猫", "想生成什么画面？", "你想画什么呀？",
+        "这是整理好的提示词：a cat", "Here is the PROMPT: a cat",
+    ])
+    def test_r2_last_assistant_image_followup_calls_planner(chat_harness, monkeypatch, assistant):
+        chat, ctx, state, saves, images, refunds, traces = chat_harness
+        ctx.message = ctx.user_content = "就按这个来"
+        ctx.history = [{"role": "assistant", "content": assistant}, {"role": "user", "content": "就这样"}]
+        assert not chat.image_planner_prescreen(ctx.message, explicit=False)
+        planner_calls = []
+        async def planner(history, message):
+            planner_calls.append((history, message))
+            return {"status": "draw", "prompt": "一只猫"}
+        monkeypatch.setattr(chat, "plan_image", planner)
+        events = asyncio.run(collect(chat.run_chat(ctx, crisis=False)))
+>       assert planner_calls == [(ctx.history, ctx.message)]
+E       AssertionError: assert [] == [([{'role': '...'}], '就按这个来')]
+E         
+E         Right contains one more item: ([{'role': 'assistant', 'content': '使用的描述（Seedream 5.0 Flash）：窗边的猫'}, {'role': 'user', 'content': '就这样'}], '就按这个来')
+E         Use -v to get more diff
+
+tests/test_chat_image_tool.py:1032: AssertionError
+_ test_r2_last_assistant_image_followup_calls_planner[\u60f3\u751f\u6210\u4ec0\u4e48\u753b\u9762\uff1f] _
+
+chat_harness = (<module 'services.chat_service' from 'backend/services/chat_service.py'>, ...ent=False), [('tool-user', 'assistant', '普通回复', {'image_path': None, 'conversation_id': 'conversation'})], [], [], ...)
+monkeypatch = <_pytest.monkeypatch.MonkeyPatch object at 0x10dd0d240>
+assistant = '想生成什么画面？'
+
+    @pytest.mark.parametrize("assistant", [
+        "使用的描述（Seedream 5.0 Flash）：窗边的猫", "想生成什么画面？", "你想画什么呀？",
+        "这是整理好的提示词：a cat", "Here is the PROMPT: a cat",
+    ])
+    def test_r2_last_assistant_image_followup_calls_planner(chat_harness, monkeypatch, assistant):
+        chat, ctx, state, saves, images, refunds, traces = chat_harness
+        ctx.message = ctx.user_content = "就按这个来"
+        ctx.history = [{"role": "assistant", "content": assistant}, {"role": "user", "content": "就这样"}]
+        assert not chat.image_planner_prescreen(ctx.message, explicit=False)
+        planner_calls = []
+        async def planner(history, message):
+            planner_calls.append((history, message))
+            return {"status": "draw", "prompt": "一只猫"}
+        monkeypatch.setattr(chat, "plan_image", planner)
+        events = asyncio.run(collect(chat.run_chat(ctx, crisis=False)))
+>       assert planner_calls == [(ctx.history, ctx.message)]
+E       AssertionError: assert [] == [([{'role': '...'}], '就按这个来')]
+E         
+E         Right contains one more item: ([{'role': 'assistant', 'content': '想生成什么画面？'}, {'role': 'user', 'content': '就这样'}], '就按这个来')
+E         Use -v to get more diff
+
+tests/test_chat_image_tool.py:1032: AssertionError
+_ test_r2_last_assistant_image_followup_calls_planner[\u4f60\u60f3\u753b\u4ec0\u4e48\u5440\uff1f] _
+
+chat_harness = (<module 'services.chat_service' from 'backend/services/chat_service.py'>, ...ent=False), [('tool-user', 'assistant', '普通回复', {'image_path': None, 'conversation_id': 'conversation'})], [], [], ...)
+monkeypatch = <_pytest.monkeypatch.MonkeyPatch object at 0x10de33d90>
+assistant = '你想画什么呀？'
+
+    @pytest.mark.parametrize("assistant", [
+        "使用的描述（Seedream 5.0 Flash）：窗边的猫", "想生成什么画面？", "你想画什么呀？",
+        "这是整理好的提示词：a cat", "Here is the PROMPT: a cat",
+    ])
+    def test_r2_last_assistant_image_followup_calls_planner(chat_harness, monkeypatch, assistant):
+        chat, ctx, state, saves, images, refunds, traces = chat_harness
+        ctx.message = ctx.user_content = "就按这个来"
+        ctx.history = [{"role": "assistant", "content": assistant}, {"role": "user", "content": "就这样"}]
+        assert not chat.image_planner_prescreen(ctx.message, explicit=False)
+        planner_calls = []
+        async def planner(history, message):
+            planner_calls.append((history, message))
+            return {"status": "draw", "prompt": "一只猫"}
+        monkeypatch.setattr(chat, "plan_image", planner)
+        events = asyncio.run(collect(chat.run_chat(ctx, crisis=False)))
+>       assert planner_calls == [(ctx.history, ctx.message)]
+E       AssertionError: assert [] == [([{'role': '...'}], '就按这个来')]
+E         
+E         Right contains one more item: ([{'role': 'assistant', 'content': '你想画什么呀？'}, {'role': 'user', 'content': '就这样'}], '就按这个来')
+E         Use -v to get more diff
+
+tests/test_chat_image_tool.py:1032: AssertionError
+_ test_r2_last_assistant_image_followup_calls_planner[\u8fd9\u662f\u6574\u7406\u597d\u7684\u63d0\u793a\u8bcd\uff1aa cat] _
+
+chat_harness = (<module 'services.chat_service' from 'backend/services/chat_service.py'>, ...ent=False), [('tool-user', 'assistant', '普通回复', {'image_path': None, 'conversation_id': 'conversation'})], [], [], ...)
+monkeypatch = <_pytest.monkeypatch.MonkeyPatch object at 0x10dcc5630>
+assistant = '这是整理好的提示词：a cat'
+
+    @pytest.mark.parametrize("assistant", [
+        "使用的描述（Seedream 5.0 Flash）：窗边的猫", "想生成什么画面？", "你想画什么呀？",
+        "这是整理好的提示词：a cat", "Here is the PROMPT: a cat",
+    ])
+    def test_r2_last_assistant_image_followup_calls_planner(chat_harness, monkeypatch, assistant):
+        chat, ctx, state, saves, images, refunds, traces = chat_harness
+        ctx.message = ctx.user_content = "就按这个来"
+        ctx.history = [{"role": "assistant", "content": assistant}, {"role": "user", "content": "就这样"}]
+        assert not chat.image_planner_prescreen(ctx.message, explicit=False)
+        planner_calls = []
+        async def planner(history, message):
+            planner_calls.append((history, message))
+            return {"status": "draw", "prompt": "一只猫"}
+        monkeypatch.setattr(chat, "plan_image", planner)
+        events = asyncio.run(collect(chat.run_chat(ctx, crisis=False)))
+>       assert planner_calls == [(ctx.history, ctx.message)]
+E       AssertionError: assert [] == [([{'role': '...'}], '就按这个来')]
+E         
+E         Right contains one more item: ([{'role': 'assistant', 'content': '这是整理好的提示词：a cat'}, {'role': 'user', 'content': '就这样'}], '就按这个来')
+E         Use -v to get more diff
+
+tests/test_chat_image_tool.py:1032: AssertionError
+_ test_r2_last_assistant_image_followup_calls_planner[Here is the PROMPT: a cat] _
+
+chat_harness = (<module 'services.chat_service' from 'backend/services/chat_service.py'>, ...ent=False), [('tool-user', 'assistant', '普通回复', {'image_path': None, 'conversation_id': 'conversation'})], [], [], ...)
+monkeypatch = <_pytest.monkeypatch.MonkeyPatch object at 0x10dd0fe00>
+assistant = 'Here is the PROMPT: a cat'
+
+    @pytest.mark.parametrize("assistant", [
+        "使用的描述（Seedream 5.0 Flash）：窗边的猫", "想生成什么画面？", "你想画什么呀？",
+        "这是整理好的提示词：a cat", "Here is the PROMPT: a cat",
+    ])
+    def test_r2_last_assistant_image_followup_calls_planner(chat_harness, monkeypatch, assistant):
+        chat, ctx, state, saves, images, refunds, traces = chat_harness
+        ctx.message = ctx.user_content = "就按这个来"
+        ctx.history = [{"role": "assistant", "content": assistant}, {"role": "user", "content": "就这样"}]
+        assert not chat.image_planner_prescreen(ctx.message, explicit=False)
+        planner_calls = []
+        async def planner(history, message):
+            planner_calls.append((history, message))
+            return {"status": "draw", "prompt": "一只猫"}
+        monkeypatch.setattr(chat, "plan_image", planner)
+        events = asyncio.run(collect(chat.run_chat(ctx, crisis=False)))
+>       assert planner_calls == [(ctx.history, ctx.message)]
+E       AssertionError: assert [] == [([{'role': '...'}], '就按这个来')]
+E         
+E         Right contains one more item: ([{'role': 'assistant', 'content': 'Here is the PROMPT: a cat'}, {'role': 'user', 'content': '就这样'}], '就按这个来')
+E         Use -v to get more diff
+
+tests/test_chat_image_tool.py:1032: AssertionError
+_________ test_r2_planner_draw_clears_search_pending_before_next_turn __________
+
+chat_harness = (<module 'services.chat_service' from 'backend/services/chat_service.py'>, ...generated_test.png', 'conversation_id': 'conversation'})], [('猫', '1:1', {'model_id': 'seedream-5.0-flash'})], [], ...)
+monkeypatch = <_pytest.monkeypatch.MonkeyPatch object at 0x1085ef380>
+
+    def test_r2_planner_draw_clears_search_pending_before_next_turn(chat_harness, monkeypatch):
+        chat, ctx, state, saves, images, refunds, traces = chat_harness
+        pending = [{"intent": "web_search", "params": {}, "missing": ["query"]}]
+        clears, searches, planner_calls = [], [], []
+        monkeypatch.setattr(chat, "get_pending", lambda *args: pending[0])
+        def clear(*args):
+            clears.append(args)
+            pending[0] = None
+        monkeypatch.setattr(chat, "clear_pending", clear)
+        async def planner(history, message):
+            planner_calls.append(message)
+            return {"status": "draw", "prompt": "猫"} if len(planner_calls) == 1 else {"status": "no"}
+        monkeypatch.setattr(chat, "plan_image", planner)
+        async def search(ctx, state, remaining):
+            searches.append(remaining)
+            yield chat._sse({"done": True})
+        monkeypatch.setattr(chat, "stream_pending", search)
+        first = asyncio.run(collect(chat.run_chat(ctx, reserved=True, crisis=False)))
+>       assert pending[0] is None and clears == [(ctx.state_key,)]
+E       AssertionError: assert ({'intent': 'web_search', 'params': {}, 'missing': ['query']} is None)
+
+tests/test_chat_image_tool.py:1073: AssertionError
+_________ test_r2_invalid_image_notice_only_separates_existing_lead[] __________
+
+chat_harness = (<module 'services.chat_service' from 'backend/services/chat_service.py'>, ...r', 'assistant', '\n\n（这次没能生成图片，请再描述一次想画的画面。）', {'image_path': None, 'conversation_id': 'conversation'})], [], [], ...)
+lead = ''
+
+    @pytest.mark.parametrize("lead", ["", "我来画。"])
+    def test_r2_invalid_image_notice_only_separates_existing_lead(chat_harness, lead):
+        chat, ctx, state, saves, images, *_ = chat_harness
+        state.full_response = lead
+        notice = "（这次没能生成图片，请再描述一次想画的画面。）"
+        text = ("\n\n" if lead else "") + notice
+        events = asyncio.run(collect(chat._stream_invalid_image_tool(ctx, state)))
+>       assert events == [{"text": text}, {"done": True}]
+E       AssertionError: assert [{'text': '\n...'done': True}] == [{'text': '（这...'done': True}]
+E         
+E         At index 0 diff: {'text': '\n\n（这次没能生成图片，请再描述一次想画的画面。）'} != {'text': '（这次没能生成图片，请再描述一次想画的画面。）'}
+E         Use -v to get more diff
+
+tests/test_chat_image_tool.py:1091: AssertionError
+_________ test_r2_execution_records_planner_source_before_first_event __________
+
+chat_harness = (<module 'services.chat_service' from 'backend/services/chat_service.py'>, ...', response_saved=False, billable=False, crisis=False, crisis_level=None, crisis_resource_sent=False), [], [], [], ...)
+
+    def test_r2_execution_records_planner_source_before_first_event(chat_harness):
+        chat, ctx, state, saves, images, *_ = chat_harness
+        async def execute():
+            stream = chat._stream_image_execution(ctx, state, "猫", source="tool", image_source="planner")
+            first = await anext(stream)
+            assert state.trace["image_source"] == "planner"
+            assert json.loads(first[6:])["source"] == "tool"
+            remaining = await collect(stream)
+            assert remaining[-1] == {"done": True}
+>       asyncio.run(execute())
+
+tests/test_chat_image_tool.py:1105: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+<python-stdlib>/asyncio/runners.py:205: in run
+    return runner.run(main)
+           ^^^^^^^^^^^^^^^^
+<python-stdlib>/asyncio/runners.py:128: in run
+    return self._loop.run_until_complete(task)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+<python-stdlib>/asyncio/base_events.py:719: in run_until_complete
+    return future.result()
+           ^^^^^^^^^^^^^^^
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+    async def execute():
+>       stream = chat._stream_image_execution(ctx, state, "猫", source="tool", image_source="planner")
+                 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+E       TypeError: _stream_image_execution() got an unexpected keyword argument 'image_source'
+
+tests/test_chat_image_tool.py:1099: TypeError
+__________ test_r2_cancel_and_followup_patterns_are_exact_and_shared ___________
+
+    def test_r2_cancel_and_followup_patterns_are_exact_and_shared():
+        import inspect
+        import services.chat_service as chat
+>       assert chat.IMAGE_PENDING_CANCEL_PATTERN == r"^(?:算了|取消|不用了|不画了|不要了|停止|别画了)[吧了。！!\s]*$"
+               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+E       AttributeError: module 'services.chat_service' has no attribute 'IMAGE_PENDING_CANCEL_PATTERN'
+
+tests/test_chat_image_tool.py:1112: AttributeError
+=============================== warnings summary ===============================
+tests/test_chat_image_tool.py: 14 warnings
+  backend/.venv/lib/python3.14/site-packages/slowapi/extension.py:720: DeprecationWarning: 'asyncio.iscoroutinefunction' is deprecated and slated for removal in Python 3.16; use inspect.iscoroutinefunction() instead
+    if asyncio.iscoroutinefunction(func):
+
+-- Docs: https://docs.pytest.org/en/stable/how-to/capture-warnings.html
+=========================== short test summary info ============================
+FAILED tests/test_chat_image_tool.py::test_r1_no_draw_routes_without_tools_or_image_candidate[\u4f60\u597d-False-no]
+FAILED tests/test_chat_image_tool.py::test_r2_image_pending_answer_calls_planner_without_current_prescreen[draw]
+FAILED tests/test_chat_image_tool.py::test_r2_image_pending_answer_calls_planner_without_current_prescreen[no]
+FAILED tests/test_chat_image_tool.py::test_r2_pending_cancel_does_not_call_planner[\u4e0d\u753b\u4e86\uff01]
+FAILED tests/test_chat_image_tool.py::test_r2_pending_cancel_does_not_call_planner[\u522b\u753b\u4e86]
+FAILED tests/test_chat_image_tool.py::test_r2_last_assistant_image_followup_calls_planner[\u4f7f\u7528\u7684\u63cf\u8ff0\uff08Seedream 5.0 Flash\uff09\uff1a\u7a97\u8fb9\u7684\u732b]
+FAILED tests/test_chat_image_tool.py::test_r2_last_assistant_image_followup_calls_planner[\u60f3\u751f\u6210\u4ec0\u4e48\u753b\u9762\uff1f]
+FAILED tests/test_chat_image_tool.py::test_r2_last_assistant_image_followup_calls_planner[\u4f60\u60f3\u753b\u4ec0\u4e48\u5440\uff1f]
+FAILED tests/test_chat_image_tool.py::test_r2_last_assistant_image_followup_calls_planner[\u8fd9\u662f\u6574\u7406\u597d\u7684\u63d0\u793a\u8bcd\uff1aa cat]
+FAILED tests/test_chat_image_tool.py::test_r2_last_assistant_image_followup_calls_planner[Here is the PROMPT: a cat]
+FAILED tests/test_chat_image_tool.py::test_r2_planner_draw_clears_search_pending_before_next_turn
+FAILED tests/test_chat_image_tool.py::test_r2_invalid_image_notice_only_separates_existing_lead[]
+FAILED tests/test_chat_image_tool.py::test_r2_execution_records_planner_source_before_first_event
+FAILED tests/test_chat_image_tool.py::test_r2_cancel_and_followup_patterns_are_exact_and_shared
+14 failed, 197 passed, 14 warnings in 1.92s

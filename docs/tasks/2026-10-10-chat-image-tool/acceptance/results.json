@@ -1,0 +1,90 @@
+[
+  {
+    "name": "5.4a-default",
+    "command": [
+      "python",
+      "-m",
+      "pytest",
+      "-q"
+    ],
+    "cwd": "backend",
+    "overrides": {},
+    "exit_code": 1,
+    "elapsed": 75.31,
+    "output": "acceptance/5.4a-default.txt"
+  },
+  {
+    "name": "5.4b-on",
+    "command": [
+      "python",
+      "-m",
+      "pytest",
+      "-q"
+    ],
+    "cwd": "backend",
+    "overrides": {
+      "FIONA_CHAT_IMAGE_TOOL": "1"
+    },
+    "exit_code": 1,
+    "elapsed": 75.27,
+    "output": "acceptance/5.4b-on.txt"
+  },
+  {
+    "name": "5.4c-new",
+    "command": [
+      "python",
+      "-m",
+      "pytest",
+      "-q",
+      "tests/test_chat_image_tool.py",
+      "tests/test_byok_image_tool.py",
+      "tests/test_chat_image_tool_docs.py",
+      "tests/test_chat_image_tool_frontend.py"
+    ],
+    "cwd": "backend",
+    "overrides": {},
+    "exit_code": 0,
+    "elapsed": 3.01,
+    "output": "acceptance/5.4c-new.txt"
+  },
+  {
+    "name": "5.5-pip-check",
+    "command": [
+      "python",
+      "-m",
+      "pip",
+      "check"
+    ],
+    "cwd": "backend",
+    "overrides": {},
+    "exit_code": 0,
+    "elapsed": 0.19,
+    "output": "acceptance/5.5-pip-check.txt"
+  },
+  {
+    "name": "5.6-tsc",
+    "command": [
+      "npx",
+      "tsc",
+      "--noEmit"
+    ],
+    "cwd": "frontend",
+    "overrides": {},
+    "exit_code": 0,
+    "elapsed": 0.98,
+    "output": "acceptance/5.6-tsc.txt"
+  },
+  {
+    "name": "5.6-eslint",
+    "command": [
+      "npx",
+      "eslint",
+      "."
+    ],
+    "cwd": "frontend",
+    "overrides": {},
+    "exit_code": 0,
+    "elapsed": 3.42,
+    "output": "acceptance/5.6-eslint.txt"
+  }
+]

@@ -13,6 +13,7 @@
 """
 import asyncio
 import json
+import logging
 import os
 import re
 import threading
@@ -44,7 +45,8 @@ from rate_limit import check_chat_daily_cap
 from safety import CRISIS_GUIDANCE, CRISIS_RESOURCE_NOTE, assess_crisis, is_informational_crisis_context
 from tools.fetch_card import fetch_card as _fetch_card_impl
 from tools.hot_topics import hot_topics
-from tools.image_generation import DEFAULT_IMAGE_MODEL, ImageGenerationError, edit_image, generate_image
+from tools.image_generation import DEFAULT_IMAGE_MODEL, ImageGenerationError, edit_image, generate_image, image_model_available
+from services.image_tool import image_planner_prescreen, plan_image, validate_image_tool_call
 from tools.open_app import open_application
 from tools.reminder import set_reminder
 from tools.route import route as route_query
@@ -71,7 +73,12 @@ _BYOK_ACTIVE = 0
 _BYOK_POOL: ThreadPoolExecutor | None = None
 _BYOK_POOL_SIZE = 0
 _BYOK_POOL_LOCK = threading.Lock()
+TOOL_DEFAULT_IMAGE_MODEL = "seedream-5.0-flash"
+_IMAGE_MODEL_LABELS = {"seedream-5.0-flash": "Seedream 5.0 Flash", "qwen-image-3.0": "Qwen Image 3.0"}
+_IMAGE_TOOL_ENV_WARNED = False
 _IMAGE_HEARTBEAT_SECONDS = 10
+IMAGE_PENDING_CANCEL_PATTERN = r"^(?:算了|取消|不用了|不画了|不要了|停止|别画了)[吧了。！!\s]*$"
+IMAGE_PLANNER_FOLLOWUP_PATTERN = "使用的描述|想生成什么画面|画|提示词|prompt"
 _BYOK_HEARTBEAT_SECONDS = 10
 # 视觉分支拼进 VL 请求的历史条数上限（T2a）。
 _VL_HISTORY_TURNS = 10
@@ -237,6 +244,44 @@ def _wants_byok(ctx: "ChatContext", state: "ChatState") -> bool:
     )
 
 
+def _image_tool_enabled(ctx: "ChatContext", state: "ChatState") -> bool:
+    """Single routing decision; read the rollout switch for every turn."""
+    global _IMAGE_TOOL_ENV_WARNED
+    value = os.getenv("FIONA_CHAT_IMAGE_TOOL", "1")
+    if value == "0":
+        return False
+    if value != "1" and not _IMAGE_TOOL_ENV_WARNED:
+        logging.getLogger(__name__).warning("FIONA_CHAT_IMAGE_TOOL 非法值，按 1 处理")
+        _IMAGE_TOOL_ENV_WARNED = True
+    if (ctx.request_mode != "chat" or ctx.has_image or state.crisis_level is not None
+        or ctx.byok_unreserved or ctx.byok_error is not None):
+        return False
+    return True
+
+
+def _image_tool_mode(ctx: "ChatContext") -> str:
+    """Only the tested BYOK families decide image calls natively."""
+    config = ctx.byok_config
+    if config and config.get("enabled"):
+        provider, model = config.get("provider"), config.get("model")
+        if provider == "anthropic" or (
+            provider == "deepseek" and model in {"deepseek-v4-pro", "deepseek-flash"}
+        ):
+            return "native"
+    return "planner"
+
+
+async def _stream_invalid_image_tool(ctx: "ChatContext", state: "ChatState"):
+    """Persist an invalid tool notice without billing its leading text."""
+    text = ("\n\n" if state.full_response else "") + "（这次没能生成图片，请再描述一次想画的画面。）"
+    state.full_response += text
+    state.billable = False
+    yield _sse({"text": text})
+    async for event in _save_text_reply(ctx, state):
+        yield event
+    yield _sse({"done": True})
+
+
 async def _unreserved_error(ctx: "ChatContext", state: "ChatState"):
     state.trace["error"] = "InsufficientStrawberries"
     if _needs_crisis_resource(state):
@@ -244,7 +289,7 @@ async def _unreserved_error(ctx: "ChatContext", state: "ChatState"):
     yield _sse({"error": strawberry_insufficient_message()})
 
 
-async def _stream_byok_reply(ctx: "ChatContext", state: "ChatState", *, mirror: bool):
+async def _stream_byok_reply(ctx: "ChatContext", state: "ChatState", *, mirror: bool, image_tool: bool = False):
     """Both reply branches use this isolated consumer; errors never fall back."""
     async def wait_with_heartbeats(task):
         try:
@@ -260,6 +305,9 @@ async def _stream_byok_reply(ctx: "ChatContext", state: "ChatState", *, mirror: 
                 await asyncio.gather(task, return_exceptions=True)
 
     stream = None
+    image_tool = image_tool and not mirror and state.crisis_level is None and _image_tool_mode(ctx) == "native"
+    tool_call = None
+    tool_invalid = False
     state.trace["model"] = "byok"
     if ctx.byok_config and ctx.byok_config.get("provider"):
         state.trace["byok_provider"] = ctx.byok_config["provider"]
@@ -286,10 +334,11 @@ async def _stream_byok_reply(ctx: "ChatContext", state: "ChatState", *, mirror: 
                 raise _ByokBusyError(message)
             from functools import partial
             control = ReplyStreamControl()
+            tool_kwargs = {"tools": "generate_image"} if image_tool else {}
             task = asyncio.create_task(_byok_call(pool, partial(
                 open_reply_stream, config,
                 [{"role": "system", "content": state.sys_prompt_final}] + ctx.messages,
-                mirror=mirror, username=ctx.user, control=control,
+                mirror=mirror, username=ctx.user, control=control, **tool_kwargs,
             ), control=control))
             try:
                 async with aclosing(wait_with_heartbeats(task)) as waiting:
@@ -335,10 +384,19 @@ async def _stream_byok_reply(ctx: "ChatContext", state: "ChatState", *, mirror: 
                         await _byok_call(pool, stream.close, control=control)
                     except Exception as exc:
                         print(f"[byok] close failed type={type(exc).__name__}", flush=True)
+        if image_tool:
+            tool_call = getattr(stream, "tool_call", None)
+            tool_invalid = bool(getattr(stream, "tool_call_invalid", False))
+            if tool_call is not None:
+                tool_call = validate_image_tool_call(tool_call)
+                tool_invalid = tool_invalid or tool_call is None
+            if tool_call is not None or tool_invalid:
+                if not labelled:
+                    yield _sse({"reply_model": {"source": "byok", "label": provider_label(config["provider"], config["model"])}})
         refused = bool(getattr(stream, "refused", False) or getattr(stream, "stop_reason", None) == "refusal")
-        if not state.full_response.strip():
+        if tool_call is None and not tool_invalid and not state.full_response.strip():
             raise RefusalError() if refused else EmptyReplyError()
-        if refused:
+        if refused and tool_call is None and not tool_invalid:
             text = "（Claude 中止了这条回复）"
             state.full_response += text
             yield _sse({"text": text})
@@ -355,6 +413,20 @@ async def _stream_byok_reply(ctx: "ChatContext", state: "ChatState", *, mirror: 
         if _needs_crisis_resource(state):
             yield _crisis_resource_event(state)
         yield _sse({"error": error_message(exc)})
+        return
+    # Image execution happens after the socket, timeout and admission slot close,
+    # outside BYOK error classification and its total time limit.
+    if tool_invalid:
+        async for event in _stream_invalid_image_tool(ctx, state):
+            yield event
+        return
+    if tool_call is not None:
+        async with aclosing(_stream_image_execution(
+            ctx, state, tool_call["prompt"], model_id=tool_call.get("model"),
+            aspect_ratio=tool_call.get("aspect_ratio"), lead_text=state.full_response, source="tool",
+        )) as execution:
+            async for event in execution:
+                yield event
         return
     # Persistence belongs to the platform chat lifecycle, not the BYOK call.
     async for event in _save_text_reply(ctx, state):
@@ -837,15 +909,44 @@ async def _ensure_active_conversation(ctx: ChatContext) -> None:
 async def stream_generated_image(
     ctx: ChatContext, state: ChatState, prompt: str, *, aspect_ratio: str | None = None,
 ):
+    """保留面板和旧路由调用契约，由执行核心负责附件生命周期。"""
+    async with aclosing(_stream_image_execution(ctx, state, prompt, aspect_ratio=aspect_ratio)) as execution:
+        async for event in execution:
+            yield event
+
+
+async def _stream_image_execution(
+    ctx: ChatContext, state: ChatState, prompt: str, *, aspect_ratio: str | None = None,
+    model_id: str | None = None, lead_text: str = "", source: str | None = None,
+    image_source: str = "tool",
+):
     """生成图先保存到固定会话，再交给页面；中断和删除均不留下孤立附件。"""
+    tool_source = source == "tool"
+    fallback_note = ""
+    if tool_source:
+        selected_model = model_id or TOOL_DEFAULT_IMAGE_MODEL
+        state.trace.update({"intent": "generate_image", "tool": "generate_image", "image_source": image_source,
+                            "image_model": selected_model, "image_fallback": False})
+        fallback = not image_model_available(selected_model)
+        if fallback:
+            alternate = DEFAULT_IMAGE_MODEL if selected_model == TOOL_DEFAULT_IMAGE_MODEL else TOOL_DEFAULT_IMAGE_MODEL
+            if not image_model_available(alternate):
+                state.trace["error"] = "ImageGenerationError"
+                yield _sse({"error": "图片生成服务尚未配置，请联系管理员。"})
+                return
+            fallback_note = f"（{_IMAGE_MODEL_LABELS[selected_model]} 暂未配置，这次用 {_IMAGE_MODEL_LABELS[alternate]} 生成。）"
+            selected_model = alternate
+        state.trace.update({"intent": "generate_image", "tool": "generate_image", "image_source": image_source,
+                            "image_model": selected_model, "image_fallback": fallback})
     if ctx.byok_unreserved:
         async for event in _unreserved_error(ctx, state):
             yield event
         return
     await _ensure_active_conversation(ctx)
-    editing = ctx.request_mode == "image_edit"
+    editing = ctx.request_mode == "image_edit" and not tool_source
     tool = "edit_image" if editing else "generate_image"
-    state.trace.update({"intent": tool, "tool": tool, "image_model": ctx.image_model or DEFAULT_IMAGE_MODEL})
+    if not tool_source:
+        state.trace.update({"intent": tool, "tool": tool, "image_model": ctx.image_model or DEFAULT_IMAGE_MODEL})
     if ctx.user in _IMAGE_GENERATION_USERS:
         state.trace["error"] = "ImageGenerationBusy"
         if _needs_crisis_resource(state):
@@ -869,9 +970,17 @@ async def stream_generated_image(
                     prompt, references[0] if len(references) == 1 else references, ctx.aspect_ratio,
                     model_id=ctx.image_model,
                 ))
+        elif tool_source:
+            yield _sse({"status": "generating_image", "message": f"正在用 {_IMAGE_MODEL_LABELS[selected_model]} 生成图片…", "source": "tool"})
+            # 仅发送回复模型根据对话撰写的画面描述，不发送 system 或私有记忆。
+            ratio = aspect_ratio or image_aspect_ratio(prompt, fallback="1:1")
+            if selected_model == DEFAULT_IMAGE_MODEL:
+                task = asyncio.create_task(generate_image(prompt, ratio))
+            else:
+                task = asyncio.create_task(generate_image(prompt, ratio, model_id=selected_model))
         else:
             yield _sse({"status": "generating_image", "message": "正在生成图片，请稍候…"})
-            # 只发送本次画面描述，不夹带人设、私有记忆或其他会话内容。
+            # 面板及旧路由仅发送用户本次画面描述。
             if ctx.request_mode == "image":
                 # 图片按钮的用户选项保留最高优先级。
                 ratio = ctx.aspect_ratio or aspect_ratio or image_aspect_ratio(prompt)
@@ -890,9 +999,15 @@ async def stream_generated_image(
         generated = task.result()
         image_path = generated["image_path"]
         await _ensure_active_conversation(ctx)
-        state.trace["model"] = generated["model"]
+        if not tool_source:
+            state.trace["model"] = generated["model"]
         image_reply = "图片已修改。" if editing else "图片已生成。"
-        state.full_response = image_reply
+        if tool_source:
+            lead_text = lead_text.strip()
+            description_line = f"\n\n使用的描述（{_IMAGE_MODEL_LABELS[selected_model]}）：{prompt}"
+            state.full_response = (lead_text + "\n\n" if lead_text else "") + image_reply + description_line + fallback_note
+        else:
+            state.full_response = image_reply
         resource_needed = _needs_crisis_resource(state)
         if resource_needed:
             state.full_response += "\n\n" + CRISIS_RESOURCE_NOTE
@@ -908,7 +1023,11 @@ async def stream_generated_image(
         if editing:
             generated = {**generated, "reference_image_path": references[0], "reference_image_paths": references}
         yield _sse({"generated_image": generated})
-        yield _sse({"text": image_reply})
+        yield _sse({"text": ("\n\n" if tool_source and lead_text else "") + image_reply})
+        if tool_source:
+            yield _sse({"text": description_line, "speak": False})
+            if fallback_note:
+                yield _sse({"text": fallback_note, "speak": False})
         if resource_needed:
             state.crisis_resource_sent = True
             yield _sse({"text": "\n\n" + CRISIS_RESOURCE_NOTE})
@@ -921,7 +1040,13 @@ async def stream_generated_image(
             state.trace["provider_code"] = exc.provider_code
         if _needs_crisis_resource(state):
             yield _crisis_resource_event(state)
-        yield _sse({"error": str(exc)})
+        message = str(exc)
+        if tool_source:
+            if exc.category == "moderation":
+                message = "这次画面描述没通过内容审核，换个说法再让我画吧。"
+            elif exc.category == "unavailable" and selected_model == TOOL_DEFAULT_IMAGE_MODEL:
+                message = "Seedream 暂时用不了（可能未开通或欠费），可以说『用千问画』改用 Qwen Image 3.0。"
+        yield _sse({"error": message})
     finally:
         with anyio.CancelScope(shield=True):
             if task is not None:
@@ -1379,6 +1504,107 @@ async def _normal_followups(ctx: ChatContext, state: ChatState, _actually_qwen: 
 
 # ────────────────────────── 4. 编排 ──────────────────────────
 
+async def _stream_native_image_reply(ctx: ChatContext, state: ChatState):
+    """Native image calls are confined to the supported BYOK reply families."""
+    async with aclosing(_stream_byok_reply(ctx, state, mirror=False, image_tool=True)) as reply:
+        async for event in reply:
+            yield event
+    if state.response_saved and "error" not in state.trace:
+        await _normal_followups(ctx, state, True)
+
+
+async def _run_chat_with_image_tool(ctx: ChatContext, state: ChatState, *, native: bool):
+    """Continue the selected image mode without changing the legacy route."""
+    intent_result = None
+    intent_checked = False
+    image_candidate = explicit_image_intent(ctx.message) if native else None
+    if image_candidate:
+        try:
+            intent_result = await asyncio.to_thread(recognize_intent_with_fallback, ctx.message, ctx.history)
+        except Exception as error:
+            print(f"[chat] image candidate classification failed type={type(error).__name__}", flush=True)
+            intent_result = {"intent": None}
+        if not isinstance(intent_result, dict):
+            intent_result = {"intent": None}
+        intent_checked = True
+        await _ensure_active_conversation(ctx)
+        state.trace["intent"] = intent_result.get("intent")
+        if intent_result.get("intent") == "generate_image":
+            await asyncio.to_thread(clear_pending, ctx.state_key)
+            state.trace["mode"] = "friend"
+            state.sys_prompt_final = _final_system_prompt(
+                apply_mode_prompt(_without_safety(ctx.system_prompt), "friend"),
+                trailing_system=_has_trailing_system(ctx),
+            )
+            async with aclosing(_stream_native_image_reply(ctx, state)) as reply:
+                async for event in reply:
+                    yield event
+            return
+
+    image_pending = await asyncio.to_thread(get_pending, ctx.state_key)
+    if image_pending and image_pending.get("intent") == "generate_image":
+        if re.match(IMAGE_PENDING_CANCEL_PATTERN, ctx.message.strip()):
+            async for event in stream_pending(ctx, state, image_pending):
+                yield event
+            return
+        await asyncio.to_thread(clear_pending, ctx.state_key)
+
+    mode = await asyncio.to_thread(detect_mode, client, ctx.state_key, ctx.message, ctx.history)
+    await _ensure_active_conversation(ctx)
+    state.trace["mode"] = mode
+    state.sys_prompt_final = _final_system_prompt(
+        apply_mode_prompt(_without_safety(ctx.system_prompt), mode),
+        trailing_system=_has_trailing_system(ctx),
+    )
+    if mode == "mirror":
+        async with aclosing(stream_mirror(ctx, state)) as reply:
+            async for event in reply:
+                yield event
+        return
+
+    # Weather and all other pending/tool intents retain their existing behavior.
+    pending = await asyncio.to_thread(get_pending, ctx.state_key)
+    if pending and pending.get("intent") == "generate_image":
+        # Image pending belongs exclusively to the clear/cancel handling above.
+        pending = None
+    if pending and pending.get("intent") == "weather":
+        if re.match(r"^(?:算了|取消|不用了|不查了|不要了|没事了)[吧了。！!\s]*$", ctx.message.strip()):
+            await asyncio.to_thread(clear_pending, ctx.state_key)
+            state.full_response = "好，已取消。"
+            yield _sse({"text": state.full_response})
+            async for event in _save_text_reply(ctx, state):
+                yield event
+            yield _sse({"done": True})
+            return
+        if not normalize_city(ctx.message):
+            await asyncio.to_thread(clear_pending, ctx.state_key)
+            pending = None
+    if pending:
+        async for event in stream_pending(ctx, state, pending):
+            yield event
+        return
+
+    if not intent_checked:
+        try:
+            intent_result = await asyncio.to_thread(recognize_intent_with_fallback, ctx.message, ctx.history)
+        except Exception as error:
+            print(f"[chat] intent classification failed type={type(error).__name__}", flush=True)
+            intent_result = {"intent": None}
+    if not isinstance(intent_result, dict):
+        intent_result = {"intent": None}
+    await _ensure_active_conversation(ctx)
+    intent = intent_result.get("intent")
+    state.trace["intent"] = None if intent == "generate_image" else intent
+    if intent is not None and intent != "generate_image":
+        async for event in stream_intent(ctx, state, intent_result):
+            yield event
+        return
+    reply_stream = _stream_native_image_reply(ctx, state) if native else stream_normal(ctx, state)
+    async with aclosing(reply_stream) as reply:
+        async for event in reply:
+            yield event
+
+
 async def run_chat(
     ctx: ChatContext, *, reserved: bool = False, crisis: str | bool | None = None,
     tracker: ChatRunTracker | None = None,
@@ -1443,6 +1669,48 @@ async def run_chat(
                 yield event
             yield _sse({"done": True})
             return
+        image_tool_on = _image_tool_enabled(ctx, state)
+        if image_tool_on:
+            image_mode = _image_tool_mode(ctx)
+            if image_mode == "planner":
+                planned = None
+                pending = await asyncio.to_thread(get_pending, ctx.state_key)
+                image_pending = bool(pending and pending.get("intent") == "generate_image")
+                image_pending_cancelled = image_pending and re.match(IMAGE_PENDING_CANCEL_PATTERN, ctx.message.strip())
+                last_assistant = next(
+                    (message.get("content", "") for message in reversed(ctx.history) if message.get("role") == "assistant"),
+                    "",
+                )
+                if not image_pending_cancelled and (
+                    image_planner_prescreen(ctx.message, explicit=bool(explicit_image_intent(ctx.message)))
+                    or image_pending
+                    or re.search(IMAGE_PLANNER_FOLLOWUP_PATTERN, last_assistant, re.IGNORECASE)
+                ):
+                    planned = await plan_image(ctx.history, ctx.message)
+                if planned and planned["status"] == "error":
+                    state.trace.update({
+                        "image_planner": "error",
+                        "image_planner_exception_type": planned["exception_type"],
+                        "image_planner_elapsed_ms": planned["elapsed_ms"],
+                    })
+                    image_tool_on = False
+                elif planned and planned["status"] == "draw":
+                    await asyncio.to_thread(clear_pending, ctx.state_key)
+                    state.trace["image_planner"] = "draw"
+                    async with aclosing(_stream_image_execution(
+                        ctx, state, planned["prompt"], model_id=planned.get("model"),
+                        aspect_ratio=planned.get("aspect_ratio"), lead_text="", source="tool", image_source="planner",
+                    )) as execution:
+                        async for event in execution:
+                            yield event
+                    return
+                elif planned:
+                    state.trace["image_planner"] = "no"
+            if image_tool_on:
+                async with aclosing(_run_chat_with_image_tool(ctx, state, native=image_mode == "native")) as reply:
+                    async for event in reply:
+                        yield event
+                return
         # 正则只提名候选。模型确认在旧 pending 和镜子模式之前进行；
         # 确认结果留给后续路由复用，单轮不会为同一句话再识别一次。
         intent_result = None

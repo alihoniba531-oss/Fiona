@@ -61,10 +61,12 @@ interface ChatStreamEvent {
   reference_image_paths?: string[];
   tool?: unknown;
   text?: string;
+  speak?: boolean;
   card?: CardData;
   error?: string;
   done?: boolean;
   status?: "generating_image" | "editing_image";
+  source?: string;
   message?: string;
   generated_image?: { image_path: string; model: string; width: number; height: number; reference_image_paths?: string[]; reference_image_path?: string };
 }
@@ -1722,6 +1724,7 @@ export default function ChatPage() {
     let reply = "";
     const replyId = `${Date.now()}-reply`;
     let generatingImage = requestMode !== "chat";
+    let imageGenerationFromTool = false;
     let editingImage = requestMode === "image_edit";
     let generatedImageReceived = false;
     let responseComplete = false;
@@ -1835,6 +1838,7 @@ export default function ChatPage() {
           }
           if (data.status === "generating_image" || data.status === "editing_image") {
             generatingImage = true;
+            imageGenerationFromTool = imageGenerationFromTool || data.source === "tool";
             editingImage = data.status === "editing_image";
             setMessages((prev) => prev.map((m) => m.id === replyId
               ? { ...m, generationStatus: data.message || (editingImage ? "正在修改图片…" : "正在生成图片…") } : m));
@@ -1854,8 +1858,10 @@ export default function ChatPage() {
           }
           if (data.text) {
             reply += data.text;
-            ttsBuf += data.text;
-            flushSentences();
+            if (data.speak !== false) {
+              ttsBuf += data.text;
+              flushSentences();
+            }
             setMessages((prev) =>
               prev.map((m) => (m.id === replyId ? { ...m, content: reply } : m)),
             );
@@ -1932,7 +1938,7 @@ export default function ChatPage() {
         content: `${reply ? `${reply}\n\n` : ""}错误：${errMsg}`,
         generationStatus: undefined,
         isTyping: false,
-        imageGenerationRetry: generatingImage && !generatedImageReceived ? {
+        imageGenerationRetry: generatingImage && !generatedImageReceived && !imageGenerationFromTool ? {
           prompt: text, aspectRatio: requestAspectRatio, imageModel: requestImageModel,
           referenceImages: requestReferenceImages.length ? requestReferenceImages.map(image => ({ ...image })) : undefined,
           owner: username, conversationId: currentConversation.id,

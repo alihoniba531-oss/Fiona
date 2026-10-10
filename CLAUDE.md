@@ -7,14 +7,32 @@
 - `backend/`：FastAPI + SQLite `fiona.db`，入口 `main.py`，通过 `run.py` 监听 `127.0.0.1:8000`。
 - `frontend/`：Next.js 16.2.6 App Router + React 19，开发端口 3000。
 - `desktop/`：Tauri 2 Windows 壳；有配置时建 SSH 隧道，无配置时加载 `https://madchloechat.online`（线上服务已于 2026-09-25 下线，该地址当前不可用）。
-- 模型：DashScope/Qwen；主力 `qwen3.8-omni-flash`，轻量 `qwen3.8-flash`，图片 `qwen-vl-max`，搜索、旅行规划、热点展开和卡片详情 `qwen-plus`，语音使用 Qwen ASR 和 DashScope TTS。这四项走 DashScope 原生接口并强制联网搜索，固定 30 秒 socket 超时、不重试，不受兼容客户端的 `DASHSCOPE_TIMEOUT_SECONDS` / `DASHSCOPE_MAX_RETRIES` 控制；卡片详情路由外层另有 45 秒总超时。热点分类使用 `qwen3.8-flash`，请求固定 8 秒超时、不重试。生图和修图默认 Qwen Image 3.0，可选火山方舟 Seedream 5.0 Flash；两者均扣 10 颗草莓，后者将描述和参考图发送给字节跳动火山引擎。
+- 模型：DashScope/Qwen；主力 `qwen3.8-omni-flash`，轻量 `qwen3.8-flash`，图片 `qwen-vl-max`，搜索、旅行规划、热点展开和卡片详情 `qwen-plus`，语音使用 Qwen ASR 和 DashScope TTS。这四项走 DashScope 原生接口并强制联网搜索，固定 30 秒 socket 超时、不重试，不受兼容客户端的 `DASHSCOPE_TIMEOUT_SECONDS` / `DASHSCOPE_MAX_RETRIES` 控制；卡片详情路由外层另有 45 秒总超时。热点分类使用 `qwen3.8-flash`，请求固定 8 秒超时、不重试。聊天生图工具默认火山方舟 Seedream 5.0 Flash；面板生图和修图默认 Qwen Image 3.0，也可选 Seedream；两者均扣 10 颗草莓，后者将描述和参考图发送给字节跳动火山引擎。
 - 天气：独立 `weather` 意图，使用阿里云百炼托管的高德地图 MCP（Amap Maps）；需在百炼控制台开通，复用 `DASHSCOPE_API_KEY`，目前限时免费，结束后按量计费，单价以控制台为准。每次只向该服务发送用户明确说出的城市名，不发送聊天历史、私有记忆或用户位置，不做 IP 定位、不默认城市。
 - 数据：SQLite、`backend/uploads/`、`backend/.env` 都是本机/单机状态，不进入 Git。
+
+## 聊天模型调用生图工具
+
+`FIONA_CHAT_IMAGE_TOOL` 默认 `1`，只有字面 `0` 关闭，每次调用时读取；其他非法值按开启处理并只告警一次。仅普通 chat、无本轮图片、非 high/possible 危机、未触发零余额守卫且 BYOK 配置正常时启用新生图流程，不再按回复模型白名单排除。关闭开关或判断器不可用时退回旧路由，仍跟随面板选择。危机轮不经新路径生图；possible 信息/求助语境的生图 pending 沿用旧路由，可能清除；非信息语境的 possible 轮保留生图 pending。
+
+两种模式：**原生工具模式 native** 仅用于 BYOK Claude 三个型号及 DeepSeek 精确型号 `deepseek-v4-pro` / `deepseek-flash`，由用户模型根据完整对话调用 `generate_image`。**判断器模式 planner** 用于平台主力/轻量槽、BYOK DashScope（所有型号）、Moonshot/Kimi、智谱、自定义地址及 DeepSeek 其他型号。Kimi、智谱、自定义地址改走判断器模式，回复模型不下发任何工具；平台 `stream_normal` 恢复原 700 token 文字回复。
+
+判断器使用平台轻量模型 `qwen3.8-flash`：本轮预筛命中画图/图片/风格/提示词/模型名等线索或现有显式生图候选、上一条回复与生图相关，或存在待补充的生图请求时，这一轮会多一次约 1–5 秒的判断器调用。已有生图 pending 的取消短语不调用判断器，沿用原取消逻辑。判断器读取最近 6 条对话（含本轮原话，历史每条最多 600 字，本轮原话最多 1500 字（超长时保留首尾）），以「主人：」「你：」前缀按时间排列，发送给阿里云 DashScope；历史 assistant 的「使用的描述」行保留。不传人设或私有记忆。非流式 JSON、关闭思考、600 tokens、在线程执行、8 秒总超时，不重试；超时、异常、非 JSON、非法 draw 或要画时描述为空/超长均判为不可用。判断器不可用时退回旧路由；日志和 trace 不写对话或描述。
+
+判断器判为要画时先清除所有 pending，再直接执行生图，不调用回复模型、意图识别或模式判定，也不消耗 `byok_chat` 次数、不发回复模型标签；判断器模式下镜子模式也能生图。判为不画或未满足判断器调用条件时跳过自然语言生图候选，不新建生图 pending，已有生图 pending 除取消外清除后继续；天气 pending、镜子与其他工具仍按原逻辑，意图识别的 `generate_image` 视为无意图。原生模式候选确认后绕过镜子进入带工具的 friend 回复，非候选镜子回复不下发工具。
+
+两种模式每轮最多一张图，执行后直接结束，不把结果回灌给回复模型；完成文字及「使用的描述」行合在一条 assistant 正文落库，原生模式保留前导文字，判断器模式没有前导文字，刷新及下一轮仍可见。描述行不进入朗读缓冲。新路径忽略面板 `image_model`，默认 Seedream 5.0 Flash；点名千问/通义/Qwen 用 Qwen Image 3.0。选中模型未配置而另一个可用时，发请求前降级并说明；已发请求失败不跨供应商重试。面板生图/修图完全不变，默认 Qwen、按用户选择。成功扣 10 颗、失败退款，BYOK 文字仍免费，每轮不重复预扣。
+
+隐私：判断器读取的最近对话发给阿里云 DashScope；原生模式由用户自选的 Claude 或上述 DeepSeek 型号决定何时生图、撰写描述。两种模式默认把根据对话撰写的描述发送给字节跳动火山引擎，描述可能包含对话里出现过的内容；描述不得含账号名、真实姓名、私有记忆里的个人细节。图片仍由平台执行并扣草莓；Qwen 描述发送给阿里云 DashScope，面板路径只发送本轮描述和所选参考图。
+
+时限：Nginx `proxy_read_timeout` 按两次读之间的间隔计算，BYOK 等待和生图期间每 10 秒有一次心跳。原生模式最坏耗时为 BYOK 首轮（默认 120 秒或高档 180 秒）加生图 150 秒；生图在 BYOK 流关闭并释放并发槽后执行，不计入 BYOK 总时限。判断器模式先最多 8 秒判断，再执行最多 150 秒生图；判为不画才调用回复模型。
+
+已知局限：原生模式下镜子非候选句不出图，其他工具意图仍优先；判断器模式由判断器先裁决，判为不画才进入天气、搜索等意图路由。Qwen 的 `prompt_extend` 会改写描述，显示描述不等于最终渲染所用描述；「改成动漫风」是重新生成新图，不保留原图构图，修改已有图应点「以此图修改」；已配置 Key 但 Seedream 未开通时，每次都会失败并提示「用千问画」。
 
 ## 核心模块
 
 - 聊天主流程：`backend/routers/chat.py`、`backend/services/chat_service.py`
-- 每用户聊天模型：`backend/byok/` 加密配置、SSRF 防护、OpenAI/Anthropic 流适配；`backend/routers/chat_model.py` 提供登录后配置与连接测试。仅普通/镜子回复接管，不影响 high、辅助模型、工具、生图、TTS、画像提取或分身交流/官方搭档。
+- 每用户聊天模型：`backend/byok/` 加密配置、SSRF 防护、OpenAI/Anthropic 流适配；`backend/routers/chat_model.py` 提供登录后配置与连接测试。普通/镜子回复接管；原生模式由 Claude 与两个精确 DeepSeek 型号决定生图，其余使用平台判断器，平台执行图片；high、辅助模型、其他工具、TTS、画像提取及分身交流/官方搭档不变。
 - 分身与会话：`backend/agent_store.py`、`backend/routers/agents.py`、`backend/routers/conversations.py`；消息必须绑定已验证的会话 ID。
 - 私有记忆：分身独立 JSON 和修订号；新会话不得写入旧社会画像或触发旧自动匹配。名片只使用显式公开字段。
 - Persona/成长状态：`backend/persona.py`、`backend/avatar_state.py`、`backend/state_probe.py`
@@ -54,12 +72,12 @@ npm run build
 - 生产必须 `DEV_MODE=0`，设置真实 `DASHSCOPE_API_KEY` 和强 `JWT_SECRET`。
 - 内测登录使用邀请码，`backend/seed_invites.py` 原子分配不会与现有用户、邀请码绑定名或已退役用户名冲突的 `testerNN` 用户名；删号后的编号不回收。
 - `backend/manage_invites.py` 查看、撤销和轮换邀请码；这些操作会使绑定账号的旧会话失效。`backend/manage_strawberries.py` 可查看、补充或设置草莓。三个脚本在导入数据库前加载服务环境文件，生产执行时明确传 `--env-file /etc/fiona/fiona.env`，并核对输出的数据库绝对路径；只有首次建库才传 `--init-db`。
-- 生产私聊实际交付的平台模型回复、图片或成功工具结算 10 颗草莓，并发预扣原子化；BYOK 聊天回复不扣草莓并退还预扣，余额不足但已启用 BYOK 时只允许自带模型聊天，工具/看图/生图仍返回草莓不足。`STRAWBERRY_DAILY_REFILL` 默认关闭，可按 Asia/Shanghai 自然日补到下限。`DEV_MODE=1` 跳过预扣，零余额守卫为空操作。
+- 生产私聊实际交付的平台模型回复、图片或成功工具结算 10 颗草莓，并发预扣原子化；BYOK 纯文字回复不扣草莓并退还预扣，工具图成功时结算原预扣，余额不足但已启用 BYOK 时只允许自带模型聊天，工具/看图/生图仍返回草莓不足。`STRAWBERRY_DAILY_REFILL` 默认关闭，可按 Asia/Shanghai 自然日补到下限。`DEV_MODE=1` 跳过预扣，零余额守卫为空操作。
 - 官方体验不扣草莓。七项每日上限为官方体验 3、热点展开 30、卡片详情 30、ASR 300、天气 30、自带模型聊天 200、测试连接 20；后两项分别由 `FIONA_DAILY_BYOK_CHATS`（`byok_chat`）、`FIONA_DAILY_BYOK_TESTS`（`byok_test`）配置。配置均调用时读取，只接受正整数，非法值回落默认并只告警一次；开发模式或关闭限流器时跳过。官方创建用数据库事务计数，热点展开、卡片详情、ASR、天气分别沿用 `FIONA_DAILY_HOT_EXPANDS`、`FIONA_DAILY_CARD_DETAILS`、`FIONA_DAILY_ASR`、`FIONA_DAILY_WEATHER`；其余六项使用单进程内存计数，重启清零、北京零点换日，上游失败不退还次数。BYOK 聊天先检查并发，再计每日次数；超限在流内报错、退款，测试连接超限仍用 HTTP 200 返回 `ok:false`。 天气缺参追问只检查额度，取消和本地校验失败不计数；天气超限返回聊天错误事件、不写 pending、不扣草莓，成功天气卡才按普通工具结算。
 - `FIONA_AMAP_ENABLED` 默认 `1`，只有字面 `0` 关闭；`FIONA_AMAP_TIMEOUT_SECONDS` 为天气 MCP 请求总预算，默认 `8` 秒，合法范围 `1–30`，非有限值、空串、非数字和越界值回落 `8`；均在调用时读取。固定 MCP 端点不能由环境变量覆盖。
-- BYOK 隐私：启用后，每条聊天回复会把分身设定、用户的私有长期记忆、本会话最近 60 条消息（含平台看图生成的图片描述）与本条消息发送给用户选择的厂商；系统提示中的账号名替换为「（账号已隐藏）」。危机复核、意图识别、模式判定、看图、全部工具、生图、朗读仍由平台处理并读取对话内容，画像提取也仍由平台执行，并会读到用户模型的回复；明确危机轮仍由平台回复。用户模型失败不改用平台模型。Key 加密保存，删除 Key 或删号时删除，数据库备份中最多保留 14 天，无服务端密钥无法解密。长期归档副本须先清除 Key 密文，步骤见部署手册。Claude 的接口不对中国大陆提供服务，大陆服务器通常无法连接该预设。
+- BYOK 隐私：启用后，每条聊天回复会把分身设定、用户的私有长期记忆、本会话最近 60 条消息（含平台看图生成的图片描述）与本条消息发送给用户选择的厂商；系统提示中的账号名替换为「（账号已隐藏）」。危机复核、意图识别、模式判定、看图、其他工具、图片执行及朗读仍由平台处理并读取对话内容；原生模式由用户的 Claude 或两个精确 DeepSeek 型号决定生图，其他 BYOK 使用平台判断器读取最近 6 条对话（历史每条最多 600 字，本轮原话最多 1500 字（超长时保留首尾）），画像提取也仍由平台执行，并会读到用户模型的回复；明确危机轮仍由平台回复。用户模型失败不改用平台模型。Key 加密保存，删除 Key 或删号时删除，数据库备份中最多保留 14 天，无服务端密钥无法解密。长期归档副本须先清除 Key 密文，步骤见部署手册。Claude 的接口不对中国大陆提供服务，大陆服务器通常无法连接该预设。
 - BYOK 运行边界：自定义上游响应上限 4 MiB。custom 强制请求头 Accept-Encoding: identity，拒绝非空且非 identity 的 Content-Encoding，避免解压绕过 4 MiB 上限；错误仍归「连不上该服务」。响应头到达后，所有厂商在总时限或取消时立即中断；上游在返回响应头之前挂起时，预设厂商最多再等 60 秒读超时，custom 在 TLS 建立后立即中断；DNS 解析与 TCP/TLS 建连阶段分别最多等约 5 秒和 60 秒连接超时。中断线程只标记状态并 shutdown socket，阻塞调用返回后由属主 worker 关闭流、客户端和连接池。测试连接的平台限流为 10 次/分钟，命中时仍以 HTTP 200 返回 ok:false 和「操作太频繁，请稍后再试」。Claude 过载显示固定「服务繁忙，请稍后再试」。零余额且已启用 BYOK、未预扣时，generate_image / weather 以外的 pending：「算了/取消/不用了/不要了/不查了/没事了」免费取消并清 pending；以「先聊/聊点/换个话题/先不」开头清 pending、由用户模型回复；其他补参消息仍报草莓不足、pending 保留。天气 pending 的「换个话题」类句子同样清 pending、由用户模型回复；余额充足用户与平台路由保持不变。付费执行在清 pending 前检查余额。
-- Claude 思考强度可选低 / 中 / 高，默认低；聊天底栏和设置页切换立即保存到服务端账号。低、中、高的 `max_tokens` 普通/镜子分别为 4096/2048、8192/4096、16384/8192；低与中总时限为 `FIONA_BYOK_TOTAL_SECONDS`（默认 120 秒），高为 `min(240, FIONA_BYOK_TOTAL_SECONDS×1.5)`（默认 180 秒），必须小于 Nginx 的 300 秒。调高会先思考再回答，用户自己的额度消耗随档位上升；其他厂商不受影响。正文仍限普通 4000 字、镜子 600 字，测试连接固定低档/1024 tokens/原总时限。`user_model_configs` 新增 `effort TEXT NOT NULL DEFAULT 'low'`，老库启动时自动补列，已有行默认低，不新增迁移版本号，`/health` 不变；保存模型、Key 或切换厂商保留档位，只在 Claude 下生效。
+- Claude 思考强度可选低 / 中 / 高，默认低；聊天底栏和设置页切换立即保存到服务端账号。低、中、高的 `max_tokens` 普通/镜子分别为 4096/2048、8192/4096、16384/8192；低与中总时限为 `FIONA_BYOK_TOTAL_SECONDS`（默认 120 秒），高为 `min(240, FIONA_BYOK_TOTAL_SECONDS×1.5)`（默认 180 秒），Nginx 的 300 秒是两次读之间的间隔，并非整轮总时限。调高会先思考再回答，用户自己的额度消耗随档位上升；其他厂商不受影响。正文仍限普通 4000 字、镜子 600 字，测试连接固定低档/1024 tokens/原总时限。`user_model_configs` 新增 `effort TEXT NOT NULL DEFAULT 'low'`，老库启动时自动补列，已有行默认低，不新增迁移版本号，`/health` 不变；保存模型、Key 或切换厂商保留档位，只在 Claude 下生效。
 - BYOK 密钥：服务端 `FIONA_BYOK_SECRET` 为 url-safe base64 编码的 32 字节，单独保管，不进入数据库/媒体备份；丢失时用户重新填写自己的 Key 即可。`FIONA_BYOK_SECRET_PREVIOUS` 为逗号分隔的旧密钥，仅用于解密，用户下次保存使用当前密钥重新加密。缺失或非法密钥、十一项污染客户端的环境变量会使 BYOK 不可用（含 `ANTHROPIC_CUSTOM_HEADERS`，完整清单见部署手册），DEV_MODE 也没有固定回退值。预设厂商（含 Claude）遵循服务器的 HTTP(S)_PROXY / NO_PROXY 出站代理设置；自定义地址不使用环境代理。 `FIONA_BYOK_MAX_STREAMS` 默认 8（1–64），每用户一条流；`FIONA_BYOK_TOTAL_SECONDS` 默认 120（10–240）秒，调用时读取，非法回退默认并只告警一次。生成命令：`python -c "import secrets,base64;print(base64.urlsafe_b64encode(secrets.token_bytes(32)).decode())"`。
 - 浏览器 JWT 只在 `HttpOnly` Cookie 中；新账号的会话版本使用随机正整数，既有账号版本保持原值，HTTP/WebSocket 每次鉴权都核对数据库会话版本，不能恢复 query token 或 JavaScript 可读存储。
 - `DEV_MODE=1` 且请求 socket 对端为回环地址才开放测试登录和 `X-Dev-User` 等开发通道；前端 `npm run dev` 默认只监听 `127.0.0.1`，`npm run dev:lan` 才显式对局域网开放。

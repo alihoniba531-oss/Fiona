@@ -1,0 +1,63 @@
+$ git status --porcelain
+exit_code=0
+ M CLAUDE.md
+ M PLAN.md
+ M README.md
+ M backend/.env.example
+ M backend/byok/client.py
+ M backend/persona.py
+ M backend/services/chat_service.py
+ M backend/tests/conftest.py
+ M backend/tools/image_generation.py
+ M docs/ARCHITECTURE.md
+ M docs/DEPLOYMENT.md
+ M frontend/app/page.tsx
+ M frontend/components/ChatBubble.tsx
+ M frontend/components/ChatModelSection.tsx
+?? backend/services/image_tool.py
+?? backend/tests/test_byok_image_tool.py
+?? backend/tests/test_byok_planner_r1.py
+?? backend/tests/test_chat_image_tool.py
+?? backend/tests/test_chat_image_tool_docs.py
+?? backend/tests/test_chat_image_tool_frontend.py
+?? backend/tests/test_image_planner.py
+?? docs/tasks/2026-10-10-chat-image-tool/
+
+
+$ git diff --exit-code -- backend/llm.py backend/intent_router.py backend/mode_switcher.py backend/crisis_model.py backend/safety.py backend/database.py backend/byok/crypto.py backend/byok/url_safety.py backend/byok/store.py backend/routers/chat_model.py backend/utils/safe_http.py
+exit_code=0
+
+
+$ git diff --stat -- backend/tools
+exit_code=0
+ backend/tools/image_generation.py | 22 +++++++++++++++++-----
+ 1 file changed, 17 insertions(+), 5 deletions(-)
+
+
+$ git diff backend/tests/conftest.py
+exit_code=0
+diff --git a/backend/tests/conftest.py b/backend/tests/conftest.py
+index 60a8b69..f025214 100644
+--- a/backend/tests/conftest.py
++++ b/backend/tests/conftest.py
+@@ -38,6 +38,7 @@ from _fakes import FakeStream
+ os.environ.setdefault("JWT_SECRET", "fiona-ci-smoke-test-secret-0123456789")
+ os.environ.setdefault("DASHSCOPE_API_KEY", "sk-fiona-ci-smoke-test-not-real")
+ os.environ.setdefault("FIONA_CRISIS_MODEL_ENABLED", "0")
++os.environ.setdefault("FIONA_CHAT_IMAGE_TOOL", "0")
+ 
+ 
+ @pytest.fixture
+
+
+$ git diff --exit-code -- 'backend/tests/*.py' ':!backend/tests/conftest.py'
+exit_code=0
+
+
+$ grep -n "DEFAULT_IMAGE_MODEL = " backend/tools/image_generation.py
+exit_code=0
+71:DEFAULT_IMAGE_MODEL = "qwen-image-3.0"
+
+
+$ git diff --check
+exit_code=0

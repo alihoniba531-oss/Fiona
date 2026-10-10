@@ -60,10 +60,12 @@ class ImageGenerationError(Exception):
 
     def __init__(
         self, message: str, *, provider_status: int | None = None, provider_code: str | None = None,
+        category: str = "other",
     ):
         super().__init__(message)
         self.provider_status = provider_status
         self.provider_code = provider_code
+        self.category = category
 
 
 DEFAULT_IMAGE_MODEL = "qwen-image-3.0"
@@ -82,7 +84,7 @@ class ImageModel:
         return {
             "id": self.id,
             "label": self.label,
-            "available": bool(os.getenv(self.api_key_env, "").strip()),
+            "available": image_model_available(self.id),
         }
 
 
@@ -96,6 +98,12 @@ _IMAGE_MODELS = {
         "SEEDREAM_IMAGE_MODEL", "doubao-seedream-5-0-flash-260915", "ARK_API_KEY",
     ),
 }
+
+
+def image_model_available(model_id: str) -> bool:
+    """Read the selected provider key at request time, as the picker does."""
+    selected = _IMAGE_MODELS.get(model_id) if isinstance(model_id, str) else None
+    return bool(selected and os.getenv(selected.api_key_env, "").strip())
 
 
 def get_image_models() -> dict:
@@ -126,32 +134,36 @@ def _ark_error(status: int, data: object) -> ImageGenerationError:
     raw_code = str(error.get("code", "")) if isinstance(error, dict) else ""
     safe_code = re.sub(r"[^A-Za-z0-9._-]", "", raw_code)[:80]
     code = raw_code.lower()
+    category = "other"
     if any(marker in code for marker in (
         "sensitivecontentdetected", "riskdetection", "policyviolation", "privacyinformation", "deepfake",
     )):
+        category = "moderation"
         message = "描述或参考图未通过内容审核，请修改后再试。"
     elif status == 429 or "ratelimit" in code or "quotaexceeded" in code:
+        category = "busy"
         message = "图片生成服务繁忙，请稍后再试。"
     elif status in {401, 403, 404} or any(marker in code for marker in (
         "modelnotopen", "accountoverdue", "invalidendpointormodel",
     )):
+        category = "unavailable"
         message = "Seedream 生图暂不可用，请改选 Qwen Image 3.0。"
     else:
         message = "图片生成失败，请稍后再试。"
-    return ImageGenerationError(message, provider_status=status, provider_code=safe_code)
+    return ImageGenerationError(message, provider_status=status, provider_code=safe_code, category=category)
 
 
 def _provider_error(status: int, data: object) -> ImageGenerationError:
     error = data.get("error", data) if isinstance(data, dict) else {}
     code = str(error.get("code", "")).lower() if isinstance(error, dict) else ""
     if status == 429 or "throttl" in code or "ratelimit" in code:
-        return ImageGenerationError("图片生成服务繁忙，请稍后再试。")
+        return ImageGenerationError("图片生成服务繁忙，请稍后再试。", category="busy")
     if status in {401, 403, 404} or any(
         marker in code for marker in ("invalidapikey", "invalid_api_key", "modelnotfound", "model_not_found", "accessdenied")
     ):
-        return ImageGenerationError("图片生成服务暂不可用，请联系管理员检查模型权限和配置。")
+        return ImageGenerationError("图片生成服务暂不可用，请联系管理员检查模型权限和配置。", category="unavailable")
     if any(marker in code for marker in ("inappropriate", "datainspection", "content_policy", "safety")):
-        return ImageGenerationError("这次图片描述未通过生成服务的内容检查，请调整描述后再试。")
+        return ImageGenerationError("这次图片描述未通过生成服务的内容检查，请调整描述后再试。", category="moderation")
     return ImageGenerationError("图片暂时没有生成成功，请稍后再试。")
 
 

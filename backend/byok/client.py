@@ -14,6 +14,13 @@ import anthropic
 import httpx
 import openai
 
+from services.image_tool import (
+    OpenAIToolCallAccumulator,
+    anthropic_image_tool,
+    extract_anthropic_image_tool_call,
+    openai_image_tool,
+)
+
 from .crypto import ensure_available
 from .errors import ByokTimeoutError, EmptyReplyError, NeedsReentryError, RefusalError
 from .providers import CLAUDE_EFFORTS, DEFAULT_EFFORT, PROVIDERS, validate_model, validate_provider
@@ -198,14 +205,25 @@ class _Resources:
 
 class ReplyStream:
     """One consumer, compatible chunks, and explicit final stop semantics."""
-    def __init__(self, resources: _Resources, *, anthropic_stream: bool, character_limit: int):
+    def __init__(self, resources: _Resources, *, anthropic_stream: bool, character_limit: int, image_tool: bool = False):
         self.resources = resources
         self.anthropic_stream = anthropic_stream
         self.character_limit = character_limit
+        self.image_tool = image_tool
         self.stop_reason: str | None = None
         self.refused = False
         self.text_length = 0
+        self._tool_call: dict | None = None
+        self._tool_call_invalid = False
         self._iterator = self._consume()
+
+    @property
+    def tool_call(self) -> dict | None:
+        return deepcopy(self._tool_call)
+
+    @property
+    def tool_call_invalid(self) -> bool:
+        return self._tool_call_invalid
 
     def __iter__(self):
         return self
@@ -215,6 +233,7 @@ class ReplyStream:
 
     def _consume(self):
         resources = self.resources
+        tool_calls = OpenAIToolCallAccumulator() if self.image_tool and not self.anthropic_stream else None
         try:
             source = resources.stream.text_stream if self.anthropic_stream else resources.stream
             for item in source:
@@ -231,6 +250,8 @@ class ReplyStream:
                         continue
                     choice = choices[0]
                     text = getattr(choice.delta, "content", None)
+                    if tool_calls is not None:
+                        tool_calls.add(getattr(choice.delta, "tool_calls", None))
                     finish = getattr(choice, "finish_reason", None)
                     if finish:
                         self.stop_reason = finish
@@ -238,6 +259,8 @@ class ReplyStream:
                     remaining = self.character_limit - self.text_length
                     if len(text) > remaining:
                         self.stop_reason = "max_tokens"
+                        if tool_calls is not None:
+                            self._tool_call, self._tool_call_invalid = tool_calls.result(self.stop_reason)
                         self.text_length += remaining
                         # Close immediately, even if the consumer pauses at this yield.
                         resources.close()
@@ -253,10 +276,33 @@ class ReplyStream:
                 raise ReplyInterruptedError
             if self.anthropic_stream:
                 final = resources.stream.get_final_message()
+                if self.image_tool:
+                    if resources.timed_out:
+                        raise ByokTimeoutError
+                    if resources.closed:
+                        raise ReplyInterruptedError
                 self.stop_reason = final.stop_reason
                 self.refused = final.stop_reason == "refusal"
+                if self.image_tool:
+                    self._tool_call, self._tool_call_invalid = extract_anthropic_image_tool_call(final)
                 if final.stop_reason == "max_tokens":
                     yield _chunk(None, "length")
+            elif tool_calls is not None:
+                self._tool_call, self._tool_call_invalid = tool_calls.result(self.stop_reason)
+        except ValueError as exc:
+            if resources.timed_out:
+                raise ByokTimeoutError from None
+            if resources.closed:
+                raise ReplyInterruptedError from None
+            if not (
+                self.image_tool and self.anthropic_stream
+                and type(exc) is ValueError
+                and str(exc).startswith("Unable to parse tool parameter JSON")
+            ):
+                raise
+            # The SDK parses streamed tool input while producing the final message.
+            self._tool_call = None
+            self._tool_call_invalid = True
         except Exception:
             if resources.timed_out:
                 raise ByokTimeoutError from None
@@ -271,7 +317,7 @@ class ReplyStream:
         self.resources.abort()
 
 
-def _open(config: dict, messages: list[dict], *, mirror: bool, username: str, testing: bool, control: ReplyStreamControl | None = None) -> ReplyStream:
+def _open(config: dict, messages: list[dict], *, mirror: bool, username: str, testing: bool, control: ReplyStreamControl | None = None, tools: str | None = None) -> ReplyStream:
     ensure_available()
     provider = validate_provider(config.get("provider"))
     model = validate_model(provider, config.get("model"))
@@ -281,6 +327,7 @@ def _open(config: dict, messages: list[dict], *, mirror: bool, username: str, te
     spec = PROVIDERS[provider]
     base_url = normalize_custom_base_url(config.get("base_url")) if provider == "custom" else spec["base_url"]
     system, prepared = convert_messages(provider, messages, username)
+    image_tool = tools == "generate_image" and not mirror
     effort = DEFAULT_EFFORT
     deadline_seconds = total_seconds()
     if provider == "anthropic" and not testing:
@@ -302,6 +349,8 @@ def _open(config: dict, messages: list[dict], *, mirror: bool, username: str, te
                       "max_tokens": 1024 if testing else (2048 if mirror else 4096) * token_multiplier, "output_config": {"effort": effort}}
             if system:
                 kwargs["system"] = system
+            if image_tool:
+                kwargs.update(tools=[anthropic_image_tool()], tool_choice={"type": "auto", "disable_parallel_tool_use": True})
             endpoint = resources.client.messages
             if model in {"claude-opus-5-5", "claude-sonnet-5-5"}:
                 endpoint = resources.client.beta.messages
@@ -321,11 +370,13 @@ def _open(config: dict, messages: list[dict], *, mirror: bool, username: str, te
             kwargs = {"model": model, "messages": prepared, "stream": True, "max_tokens": 16 if testing else (512 if mirror else 2048)}
             if spec.get("extra_body"):
                 kwargs["extra_body"] = deepcopy(spec["extra_body"])
+            if image_tool:
+                kwargs.update(tools=[openai_image_tool()], tool_choice="auto")
             resources.start()
             if resources.closed:
                 raise ByokTimeoutError if resources.timed_out else ReplyInterruptedError
             resources.attach_stream(resources.client.chat.completions.create(**kwargs))
-        return ReplyStream(resources, anthropic_stream=provider == "anthropic", character_limit=600 if mirror else 4000)
+        return ReplyStream(resources, anthropic_stream=provider == "anthropic", character_limit=600 if mirror else 4000, image_tool=image_tool)
     except Exception:
         resources.close()
         if resources.timed_out:
@@ -333,8 +384,8 @@ def _open(config: dict, messages: list[dict], *, mirror: bool, username: str, te
         raise
 
 
-def open_reply_stream(config: dict, messages: list[dict], *, mirror: bool, username: str, control: ReplyStreamControl | None = None) -> ReplyStream:
-    return _open(config, messages, mirror=mirror, username=username, testing=False, control=control)
+def open_reply_stream(config: dict, messages: list[dict], *, mirror: bool, username: str, control: ReplyStreamControl | None = None, tools: str | None = None) -> ReplyStream:
+    return _open(config, messages, mirror=mirror, username=username, testing=False, control=control, tools=tools)
 
 
 def test_connection(config: dict, *, control: ReplyStreamControl | None = None) -> None:

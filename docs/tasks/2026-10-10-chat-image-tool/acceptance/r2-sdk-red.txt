@@ -1,0 +1,281 @@
+...........................FFFFF................................F.FFFFF. [ 72%]
+............................                                             [100%]
+=================================== FAILURES ===================================
+____ test_claude_tool_mode_preserves_unrelated_value_error_identity[error0] ____
+
+monkeypatch = <_pytest.monkeypatch.MonkeyPatch object at 0x10b0f4910>
+error = ValueError('unrelated SDK value failure')
+
+    @pytest.mark.parametrize("error", [
+        ValueError("unrelated SDK value failure"),
+        json.JSONDecodeError("Unable to parse tool parameter JSON", "malformed SSE", 0),
+        UnicodeDecodeError("utf-8", b"\xff", 0, 1, "invalid SSE encoding"),
+    ])
+    def test_claude_tool_mode_preserves_unrelated_value_error_identity(monkeypatch, error):
+        install_sdk(monkeypatch, text=["普通聊天的前半句"], error=error)
+        stream = byok_client.open_reply_stream(config(), MESSAGES, mirror=False, username="", tools="generate_image")
+>       with pytest.raises(type(error)) as raised:
+             ^^^^^^^^^^^^^^^^^^^^^^^^^^
+E       Failed: DID NOT RAISE ValueError
+
+tests/test_byok_image_tool.py:259: Failed
+____ test_claude_tool_mode_preserves_unrelated_value_error_identity[error1] ____
+
+monkeypatch = <_pytest.monkeypatch.MonkeyPatch object at 0x10b1507c0>
+error = JSONDecodeError('Unable to parse tool parameter JSON: line 1 column 1 (char 0)')
+
+    @pytest.mark.parametrize("error", [
+        ValueError("unrelated SDK value failure"),
+        json.JSONDecodeError("Unable to parse tool parameter JSON", "malformed SSE", 0),
+        UnicodeDecodeError("utf-8", b"\xff", 0, 1, "invalid SSE encoding"),
+    ])
+    def test_claude_tool_mode_preserves_unrelated_value_error_identity(monkeypatch, error):
+        install_sdk(monkeypatch, text=["普通聊天的前半句"], error=error)
+        stream = byok_client.open_reply_stream(config(), MESSAGES, mirror=False, username="", tools="generate_image")
+>       with pytest.raises(type(error)) as raised:
+             ^^^^^^^^^^^^^^^^^^^^^^^^^^
+E       Failed: DID NOT RAISE JSONDecodeError
+
+tests/test_byok_image_tool.py:259: Failed
+____ test_claude_tool_mode_preserves_unrelated_value_error_identity[error2] ____
+
+monkeypatch = <_pytest.monkeypatch.MonkeyPatch object at 0x10b150360>
+error = UnicodeDecodeError('utf-8', b'\xff', 0, 1, 'invalid SSE encoding')
+
+    @pytest.mark.parametrize("error", [
+        ValueError("unrelated SDK value failure"),
+        json.JSONDecodeError("Unable to parse tool parameter JSON", "malformed SSE", 0),
+        UnicodeDecodeError("utf-8", b"\xff", 0, 1, "invalid SSE encoding"),
+    ])
+    def test_claude_tool_mode_preserves_unrelated_value_error_identity(monkeypatch, error):
+        install_sdk(monkeypatch, text=["普通聊天的前半句"], error=error)
+        stream = byok_client.open_reply_stream(config(), MESSAGES, mirror=False, username="", tools="generate_image")
+>       with pytest.raises(type(error)) as raised:
+             ^^^^^^^^^^^^^^^^^^^^^^^^^^
+E       Failed: DID NOT RAISE UnicodeDecodeError
+
+tests/test_byok_image_tool.py:259: Failed
+_ test_actual_claude_sdk_bad_sse_without_tool_use_raises_in_tool_mode[event: content_block_delta\ndata: {invalid SSE JSON}\n\n-JSONDecodeError] _
+
+monkeypatch = <_pytest.monkeypatch.MonkeyPatch object at 0x10b0f5d30>
+malformed = b'event: content_block_delta\ndata: {invalid SSE JSON}\n\n'
+exception_type = <class 'json.decoder.JSONDecodeError'>
+
+    @pytest.mark.parametrize("malformed,exception_type", [
+        (b"event: content_block_delta\ndata: {invalid SSE JSON}\n\n", json.JSONDecodeError),
+        (b"event: content_block_delta\ndata: \xff\n\n", UnicodeDecodeError),
+    ])
+    def test_actual_claude_sdk_bad_sse_without_tool_use_raises_in_tool_mode(monkeypatch, malformed, exception_type):
+        model = "claude-haiku-5-5"
+        events = [
+            ("message_start", {"type": "message_start", "message": {
+                "id": "msg_offline", "type": "message", "role": "assistant", "model": model,
+                "content": [], "stop_reason": None, "stop_sequence": None,
+                "usage": {"input_tokens": 1, "output_tokens": 0}}}),
+            ("content_block_start", {"type": "content_block_start", "index": 0,
+                                     "content_block": {"type": "text", "text": ""}}),
+            ("content_block_delta", {"type": "content_block_delta", "index": 0,
+                                     "delta": {"type": "text_delta", "text": "今天聊点别的，"}}),
+        ]
+        response_bytes = "".join(f"event: {name}\ndata: {json.dumps(payload)}\n\n" for name, payload in events).encode() + malformed
+        captured, clients = [], []
+    
+        def handler(request):
+            captured.append(json.loads(request.content))
+            return httpx2.Response(200, headers={"content-type": "text/event-stream"}, content=response_bytes)
+    
+        constructor = byok_client.anthropic.Anthropic
+    
+        def offline_constructor(**kwargs):
+            kwargs["http_client"] = httpx2.Client(transport=httpx2.MockTransport(handler), trust_env=False)
+            sdk = constructor(**kwargs)
+            clients.append(sdk)
+            return sdk
+    
+        monkeypatch.setattr(byok_client.anthropic, "Anthropic", offline_constructor)
+        stream = byok_client.open_reply_stream(config(model=model), MESSAGES, mirror=False, username="", tools="generate_image")
+        text = []
+>       with pytest.raises(exception_type):
+             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+E       Failed: DID NOT RAISE JSONDecodeError
+
+tests/test_byok_image_tool.py:299: Failed
+_ test_actual_claude_sdk_bad_sse_without_tool_use_raises_in_tool_mode[event: content_block_delta\ndata: \xff\n\n-UnicodeDecodeError] _
+
+monkeypatch = <_pytest.monkeypatch.MonkeyPatch object at 0x10b0f5940>
+malformed = b'event: content_block_delta\ndata: \xff\n\n'
+exception_type = <class 'UnicodeDecodeError'>
+
+    @pytest.mark.parametrize("malformed,exception_type", [
+        (b"event: content_block_delta\ndata: {invalid SSE JSON}\n\n", json.JSONDecodeError),
+        (b"event: content_block_delta\ndata: \xff\n\n", UnicodeDecodeError),
+    ])
+    def test_actual_claude_sdk_bad_sse_without_tool_use_raises_in_tool_mode(monkeypatch, malformed, exception_type):
+        model = "claude-haiku-5-5"
+        events = [
+            ("message_start", {"type": "message_start", "message": {
+                "id": "msg_offline", "type": "message", "role": "assistant", "model": model,
+                "content": [], "stop_reason": None, "stop_sequence": None,
+                "usage": {"input_tokens": 1, "output_tokens": 0}}}),
+            ("content_block_start", {"type": "content_block_start", "index": 0,
+                                     "content_block": {"type": "text", "text": ""}}),
+            ("content_block_delta", {"type": "content_block_delta", "index": 0,
+                                     "delta": {"type": "text_delta", "text": "今天聊点别的，"}}),
+        ]
+        response_bytes = "".join(f"event: {name}\ndata: {json.dumps(payload)}\n\n" for name, payload in events).encode() + malformed
+        captured, clients = [], []
+    
+        def handler(request):
+            captured.append(json.loads(request.content))
+            return httpx2.Response(200, headers={"content-type": "text/event-stream"}, content=response_bytes)
+    
+        constructor = byok_client.anthropic.Anthropic
+    
+        def offline_constructor(**kwargs):
+            kwargs["http_client"] = httpx2.Client(transport=httpx2.MockTransport(handler), trust_env=False)
+            sdk = constructor(**kwargs)
+            clients.append(sdk)
+            return sdk
+    
+        monkeypatch.setattr(byok_client.anthropic, "Anthropic", offline_constructor)
+        stream = byok_client.open_reply_stream(config(model=model), MESSAGES, mirror=False, username="", tools="generate_image")
+        text = []
+>       with pytest.raises(exception_type):
+             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+E       Failed: DID NOT RAISE UnicodeDecodeError
+
+tests/test_byok_image_tool.py:299: Failed
+_ test_input_is_last_six_chronological_messages_history_600_current_preserved __
+
+monkeypatch = <_pytest.monkeypatch.MonkeyPatch object at 0x10b150670>
+
+    def test_input_is_last_six_chronological_messages_history_600_current_preserved(monkeypatch):
+        _, calls, _ = install_client(monkeypatch, '{"draw":false,"prompt":""}')
+        history = [{"role": "user" if index % 2 == 0 else "assistant", "content": str(index) + "文" * 800} for index in range(9)]
+        history[-1]["content"] = "图片已生成。\n\n使用的描述（Seedream 5.0 Flash）：A cozy cat"
+        original = deepcopy(history)
+        current = "画" * 900
+        assert run_plan(history, current) == {"status": "no"}
+        text = calls[0]["messages"][1]["content"]
+        expected = [("主人：" if row["role"] == "user" else "你：") + row["content"][:600] for row in history[-5:]]
+>       assert text == "\n".join(expected + ["主人：" + current])
+E       AssertionError: assert '主人：4文文文文文文文文...画画画画画画画画画画画画画' == '主人：4文文文文文文文文...画画画画画画画画画画画画画'
+E         
+E         Skipping 3054 identical leading characters in diff, use -v to show
+E         - 画画画画画画画画画画画画画画画画画画画画画画画画画画画画画画画画画画画画画画画画画画画画画画画画画画画画画画画画画画画画画画画画画画画画画画画画画画画画画画画画画画画画画画画画画画画画画画画画画画画画画画画画画画画画画画画画画画画画画画画画画画画画画画画画画画画画画画画画画画画画画画画画画画画画画画画画画画画画画画画画画画画画画画画画画画画画画画画画画画画画画画画画画画画画画画画画画画画画画画画画画画画画画画画画画画画画画画画画画画画画画画画画画画画画画画画画画画画画画画画画画画画画画画画画画画画画画画画画画画画画画画画画画画画画画画画画画画画画画画画画画画画画画画画画画画画画画画画画画画画画画画画画画画画画画画画
+E         + 画画画画画画画画画画画
+
+tests/test_image_planner.py:103: AssertionError
+_________ test_current_message_at_most_1500_is_preserved_in_full[601] __________
+
+monkeypatch = <_pytest.monkeypatch.MonkeyPatch object at 0x10c9ab5b0>
+length = 601
+
+    @pytest.mark.parametrize("length", [600, 601, 1499, 1500])
+    def test_current_message_at_most_1500_is_preserved_in_full(monkeypatch, length):
+        _, calls, _ = install_client(monkeypatch, '{"draw":false}')
+        current = "a" * (length - len("用 Seedream 画出来")) + "用 Seedream 画出来"
+        assert len(current) == length
+        assert run_plan(message=current) == {"status": "no"}
+>       assert calls[0]["messages"][1]["content"] == "主人：" + current
+E       AssertionError: assert '主人：aaaaaaaaa...用 Seedream 画出' == '主人：aaaaaaaaa... Seedream 画出来'
+E         
+E         Skipping 592 identical leading characters in diff, use -v to show
+E         - Seedream 画出来
+E         ?            -
+E         + Seedream 画出
+
+tests/test_image_planner.py:114: AssertionError
+_________ test_current_message_at_most_1500_is_preserved_in_full[1499] _________
+
+monkeypatch = <_pytest.monkeypatch.MonkeyPatch object at 0x10b0f6430>
+length = 1499
+
+    @pytest.mark.parametrize("length", [600, 601, 1499, 1500])
+    def test_current_message_at_most_1500_is_preserved_in_full(monkeypatch, length):
+        _, calls, _ = install_client(monkeypatch, '{"draw":false}')
+        current = "a" * (length - len("用 Seedream 画出来")) + "用 Seedream 画出来"
+        assert len(current) == length
+        assert run_plan(message=current) == {"status": "no"}
+>       assert calls[0]["messages"][1]["content"] == "主人：" + current
+E       AssertionError: assert '主人：aaaaaaaaa...aaaaaaaaaaaaa' == '主人：aaaaaaaaa... Seedream 画出来'
+E         
+E         Skipping 592 identical leading characters in diff, use -v to show
+E         - aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa...
+E         
+E         ...Full output truncated (2 lines hidden), use '-vv' to show
+
+tests/test_image_planner.py:114: AssertionError
+_________ test_current_message_at_most_1500_is_preserved_in_full[1500] _________
+
+monkeypatch = <_pytest.monkeypatch.MonkeyPatch object at 0x10c9ab4d0>
+length = 1500
+
+    @pytest.mark.parametrize("length", [600, 601, 1499, 1500])
+    def test_current_message_at_most_1500_is_preserved_in_full(monkeypatch, length):
+        _, calls, _ = install_client(monkeypatch, '{"draw":false}')
+        current = "a" * (length - len("用 Seedream 画出来")) + "用 Seedream 画出来"
+        assert len(current) == length
+        assert run_plan(message=current) == {"status": "no"}
+>       assert calls[0]["messages"][1]["content"] == "主人：" + current
+E       AssertionError: assert '主人：aaaaaaaaa...aaaaaaaaaaaaa' == '主人：aaaaaaaaa... Seedream 画出来'
+E         
+E         Skipping 592 identical leading characters in diff, use -v to show
+E         - aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa...
+E         
+E         ...Full output truncated (2 lines hidden), use '-vv' to show
+
+tests/test_image_planner.py:114: AssertionError
+_______ test_long_current_message_retains_first_1000_and_last_500[1501] ________
+
+monkeypatch = <_pytest.monkeypatch.MonkeyPatch object at 0x10b1506e0>
+length = 1501
+
+    @pytest.mark.parametrize("length", [1501, 2400])
+    def test_long_current_message_retains_first_1000_and_last_500(monkeypatch, length):
+        _, calls, _ = install_client(monkeypatch, '{"draw":false}')
+        current = "FIRST_PRIVATE_PROMPT_R2" + "a" * (length - len("FIRST_PRIVATE_PROMPT_R2") - len("用 Seedream 画出来")) + "用 Seedream 画出来"
+        assert len(current) == length
+        assert run_plan(message=current) == {"status": "no"}
+>       assert calls[0]["messages"][1]["content"] == "主人：" + current[:1000] + "……" + current[-500:]
+E       AssertionError: assert '主人：FIRST_PRI...aaaaaaaaaaaaa' == '主人：FIRST_PRI... Seedream 画出来'
+E         
+E         Skipping 592 identical leading characters in diff, use -v to show
+E         - aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa……aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa...
+E         
+E         ...Full output truncated (2 lines hidden), use '-vv' to show
+
+tests/test_image_planner.py:123: AssertionError
+_______ test_long_current_message_retains_first_1000_and_last_500[2400] ________
+
+monkeypatch = <_pytest.monkeypatch.MonkeyPatch object at 0x10c9abcb0>
+length = 2400
+
+    @pytest.mark.parametrize("length", [1501, 2400])
+    def test_long_current_message_retains_first_1000_and_last_500(monkeypatch, length):
+        _, calls, _ = install_client(monkeypatch, '{"draw":false}')
+        current = "FIRST_PRIVATE_PROMPT_R2" + "a" * (length - len("FIRST_PRIVATE_PROMPT_R2") - len("用 Seedream 画出来")) + "用 Seedream 画出来"
+        assert len(current) == length
+        assert run_plan(message=current) == {"status": "no"}
+>       assert calls[0]["messages"][1]["content"] == "主人：" + current[:1000] + "……" + current[-500:]
+E       AssertionError: assert '主人：FIRST_PRI...aaaaaaaaaaaaa' == '主人：FIRST_PRI... Seedream 画出来'
+E         
+E         Skipping 592 identical leading characters in diff, use -v to show
+E         - aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa……aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa...
+E         
+E         ...Full output truncated (2 lines hidden), use '-vv' to show
+
+tests/test_image_planner.py:123: AssertionError
+=========================== short test summary info ============================
+FAILED tests/test_byok_image_tool.py::test_claude_tool_mode_preserves_unrelated_value_error_identity[error0]
+FAILED tests/test_byok_image_tool.py::test_claude_tool_mode_preserves_unrelated_value_error_identity[error1]
+FAILED tests/test_byok_image_tool.py::test_claude_tool_mode_preserves_unrelated_value_error_identity[error2]
+FAILED tests/test_byok_image_tool.py::test_actual_claude_sdk_bad_sse_without_tool_use_raises_in_tool_mode[event: content_block_delta\ndata: {invalid SSE JSON}\n\n-JSONDecodeError]
+FAILED tests/test_byok_image_tool.py::test_actual_claude_sdk_bad_sse_without_tool_use_raises_in_tool_mode[event: content_block_delta\ndata: \xff\n\n-UnicodeDecodeError]
+FAILED tests/test_image_planner.py::test_input_is_last_six_chronological_messages_history_600_current_preserved
+FAILED tests/test_image_planner.py::test_current_message_at_most_1500_is_preserved_in_full[601]
+FAILED tests/test_image_planner.py::test_current_message_at_most_1500_is_preserved_in_full[1499]
+FAILED tests/test_image_planner.py::test_current_message_at_most_1500_is_preserved_in_full[1500]
+FAILED tests/test_image_planner.py::test_long_current_message_retains_first_1000_and_last_500[1501]
+FAILED tests/test_image_planner.py::test_long_current_message_retains_first_1000_and_last_500[2400]
+11 failed, 89 passed in 1.08s

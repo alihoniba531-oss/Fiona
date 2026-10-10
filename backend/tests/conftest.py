@@ -38,6 +38,7 @@ from _fakes import FakeStream
 os.environ.setdefault("JWT_SECRET", "fiona-ci-smoke-test-secret-0123456789")
 os.environ.setdefault("DASHSCOPE_API_KEY", "sk-fiona-ci-smoke-test-not-real")
 os.environ.setdefault("FIONA_CRISIS_MODEL_ENABLED", "0")
+os.environ.setdefault("FIONA_CHAT_IMAGE_TOOL", "0")
 
 
 @pytest.fixture

@@ -1,0 +1,243 @@
+FFF................F                                                     [100%]
+=================================== FAILURES ===================================
+_______ test_chat_reply_stream_headers_prevent_proxy_compression[False] ________
+
+client = <starlette.testclient.TestClient object at 0x10d7e1160>
+dev_headers = {'X-Dev-User': 'smoke_tester'}
+monkeypatch = <_pytest.monkeypatch.MonkeyPatch object at 0x10706a3f0>
+reserved = False
+
+    @pytest.mark.parametrize("reserved", [False, True])
+    def test_chat_reply_stream_headers_prevent_proxy_compression(
+        client, dev_headers, monkeypatch, reserved,
+    ):
+        import database
+        import routers.chat as router
+        from auth import create_token
+        from rate_limit import limiter
+    
+        monkeypatch.setattr(limiter, "enabled", False)
+        monkeypatch.setattr(router, "assess_crisis", lambda message: None)
+    
+        async def classify(message):
+            return None
+    
+        requests = []
+    
+        async def build_context(req, user, **kwargs):
+            requests.append((req.message, user))
+            return SimpleNamespace(user=user)
+    
+        reply_calls = []
+    
+        async def reply(ctx, **kwargs):
+            reply_calls.append(kwargs)
+            if kwargs.get("tracker") is not None:
+                kwargs["tracker"].started = True
+            yield 'data: {"text": "普通回复"}\n\n'
+            yield 'data: {"done": true}\n\n'
+    
+        monkeypatch.setattr(router.crisis_model, "classify", classify)
+        monkeypatch.setattr(router, "build_context", build_context)
+        monkeypatch.setattr(router, "run_chat", reply)
+        headers = dev_headers
+        user = dev_headers["X-Dev-User"]
+        if reserved:
+            assert client.get("/profile", headers=dev_headers).status_code == 200
+            version = asyncio.run(database.get_session_version(user))
+            headers = {"Authorization": "Bearer " + create_token(user, version)}
+            monkeypatch.setenv("DEV_MODE", "0")
+    
+            async def reserve(*args):
+                return 10
+    
+            monkeypatch.setattr(router, "reserve_strawberries", reserve)
+    
+        response = client.post("/chat", headers=headers, json={"message": "普通测试消息"})
+        assert requests == [("普通测试消息", user)]
+        assert len(reply_calls) == 1
+        assert reply_calls[0].get("reserved", False) is reserved
+        assert _events(response) == [{"text": "普通回复"}, {"done": True}]
+>       _assert_stream_headers(response)
+
+tests/test_chat_image_tool_headers.py:96: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+response = <Response [200 OK]>
+
+    def _assert_stream_headers(response):
+        assert response.status_code == 200
+        assert response.headers["content-type"].startswith("text/event-stream")
+>       assert response.headers["cache-control"] == "no-cache, no-transform"
+E       AssertionError: assert 'no-cache' == 'no-cache, no-transform'
+E         
+E         - no-cache, no-transform
+E         + no-cache
+
+tests/test_chat_image_tool_headers.py:41: AssertionError
+________ test_chat_reply_stream_headers_prevent_proxy_compression[True] ________
+
+client = <starlette.testclient.TestClient object at 0x10d7fdbd0>
+dev_headers = {'X-Dev-User': 'smoke_tester'}
+monkeypatch = <_pytest.monkeypatch.MonkeyPatch object at 0x107069a70>
+reserved = True
+
+    @pytest.mark.parametrize("reserved", [False, True])
+    def test_chat_reply_stream_headers_prevent_proxy_compression(
+        client, dev_headers, monkeypatch, reserved,
+    ):
+        import database
+        import routers.chat as router
+        from auth import create_token
+        from rate_limit import limiter
+    
+        monkeypatch.setattr(limiter, "enabled", False)
+        monkeypatch.setattr(router, "assess_crisis", lambda message: None)
+    
+        async def classify(message):
+            return None
+    
+        requests = []
+    
+        async def build_context(req, user, **kwargs):
+            requests.append((req.message, user))
+            return SimpleNamespace(user=user)
+    
+        reply_calls = []
+    
+        async def reply(ctx, **kwargs):
+            reply_calls.append(kwargs)
+            if kwargs.get("tracker") is not None:
+                kwargs["tracker"].started = True
+            yield 'data: {"text": "普通回复"}\n\n'
+            yield 'data: {"done": true}\n\n'
+    
+        monkeypatch.setattr(router.crisis_model, "classify", classify)
+        monkeypatch.setattr(router, "build_context", build_context)
+        monkeypatch.setattr(router, "run_chat", reply)
+        headers = dev_headers
+        user = dev_headers["X-Dev-User"]
+        if reserved:
+            assert client.get("/profile", headers=dev_headers).status_code == 200
+            version = asyncio.run(database.get_session_version(user))
+            headers = {"Authorization": "Bearer " + create_token(user, version)}
+            monkeypatch.setenv("DEV_MODE", "0")
+    
+            async def reserve(*args):
+                return 10
+    
+            monkeypatch.setattr(router, "reserve_strawberries", reserve)
+    
+        response = client.post("/chat", headers=headers, json={"message": "普通测试消息"})
+        assert requests == [("普通测试消息", user)]
+        assert len(reply_calls) == 1
+        assert reply_calls[0].get("reserved", False) is reserved
+        assert _events(response) == [{"text": "普通回复"}, {"done": True}]
+>       _assert_stream_headers(response)
+
+tests/test_chat_image_tool_headers.py:96: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+response = <Response [200 OK]>
+
+    def _assert_stream_headers(response):
+        assert response.status_code == 200
+        assert response.headers["content-type"].startswith("text/event-stream")
+>       assert response.headers["cache-control"] == "no-cache, no-transform"
+E       AssertionError: assert 'no-cache' == 'no-cache, no-transform'
+E         
+E         - no-cache, no-transform
+E         + no-cache
+
+tests/test_chat_image_tool_headers.py:41: AssertionError
+________ test_chat_text_stream_error_headers_prevent_proxy_compression _________
+
+client = <starlette.testclient.TestClient object at 0x10d7fd1d0>
+dev_headers = {'X-Dev-User': 'smoke_tester'}
+monkeypatch = <_pytest.monkeypatch.MonkeyPatch object at 0x10d809370>
+
+    def test_chat_text_stream_error_headers_prevent_proxy_compression(
+        client, dev_headers, monkeypatch,
+    ):
+        import routers.chat as router
+        from rate_limit import limiter
+    
+        monkeypatch.setattr(limiter, "enabled", False)
+        monkeypatch.setattr(router, "assess_crisis", lambda message: "possible")
+    
+        async def classify(message):
+            return None
+    
+        def unexpected_reply(*args, **kwargs):
+            raise AssertionError("Invalid crisis request must use _text_stream before reply")
+    
+        monkeypatch.setattr(router.crisis_model, "classify", classify)
+        monkeypatch.setattr(router, "run_chat", unexpected_reply)
+        response = client.post("/chat", headers=dev_headers, json={"message": ""})
+        assert _events(response) == [
+            {"text": router.CRISIS_RESOURCE_NOTE},
+            {"error": "message 和图片不能同时为空"},
+        ]
+>       _assert_stream_headers(response)
+
+tests/test_chat_image_tool_headers.py:121: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+tests/test_chat_image_tool_headers.py:41: in _assert_stream_headers
+    assert response.headers["cache-control"] == "no-cache, no-transform"
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+self = Headers({'content-type': 'text/event-stream; charset=utf-8'})
+key = 'cache-control'
+
+    def __getitem__(self, key: str) -> str:
+        """
+        Return a single header value.
+    
+        If there are multiple headers with the same key, then we concatenate
+        them with commas. See: https://tools.ietf.org/html/rfc7230#section-3.2.2
+        """
+        normalized_key = key.lower().encode(self.encoding)
+    
+        items = [
+            header_value.decode(self.encoding)
+            for _, header_key, header_value in self._list
+            if header_key == normalized_key
+        ]
+    
+        if items:
+            return ", ".join(items)
+    
+>       raise KeyError(key)
+E       KeyError: 'cache-control'
+
+.venv/lib/python3.14/site-packages/httpx2/_models.py:325: KeyError
+_ test_byok_settings_disclose_model_decision_platform_billing_and_seedream_privacy _
+
+    def test_byok_settings_disclose_model_decision_platform_billing_and_seedream_privacy():
+        settings = SETTINGS.read_text()
+        for phrase in (
+            "由你的模型决定何时生图",
+            "平台的生图判断器",
+            "最近 6 条对话",
+            "阿里云 DashScope",
+            "生图由平台执行并扣草莓",
+            "默认使用 Seedream 5.0 Flash",
+            "字节跳动火山引擎",
+        ):
+>           assert phrase in settings
+E           assert '平台的生图判断器' in '"use client";\n\nimport { useCallback, useEffect, useRef, useState } from "react";\nimport { cn } from "@/lib/utils";...n          onClick={() => { setError(""); setLoading(true); load(); }}>重试</button>}\n      </div>}\n  </section>;\n}\n'
+
+tests/test_chat_image_tool_frontend.py:157: AssertionError
+=============================== warnings summary ===============================
+tests/test_chat_image_tool_headers.py: 14 warnings
+  backend/.venv/lib/python3.14/site-packages/slowapi/extension.py:720: DeprecationWarning: 'asyncio.iscoroutinefunction' is deprecated and slated for removal in Python 3.16; use inspect.iscoroutinefunction() instead
+    if asyncio.iscoroutinefunction(func):
+
+-- Docs: https://docs.pytest.org/en/stable/how-to/capture-warnings.html
+=========================== short test summary info ============================
+FAILED tests/test_chat_image_tool_headers.py::test_chat_reply_stream_headers_prevent_proxy_compression[False]
+FAILED tests/test_chat_image_tool_headers.py::test_chat_reply_stream_headers_prevent_proxy_compression[True]
+FAILED tests/test_chat_image_tool_headers.py::test_chat_text_stream_error_headers_prevent_proxy_compression
+FAILED tests/test_chat_image_tool_frontend.py::test_byok_settings_disclose_model_decision_platform_billing_and_seedream_privacy
+4 failed, 16 passed, 14 warnings in 1.65s

@@ -1,0 +1,2202 @@
+........................................................................ [  2%]
+........................................................................ [  4%]
+........................................................................ [  6%]
+........................................................................ [  9%]
+........................................................................ [ 11%]
+........................................................................ [ 13%]
+........................................................................ [ 16%]
+........................................................................ [ 18%]
+.....................................................F.................. [ 20%]
+...............F......FF................................................ [ 23%]
+........................................................................ [ 25%]
+...........................ss.................ssss...................... [ 27%]
+........................................................................ [ 30%]
+........................................................................ [ 32%]
+........................................................................ [ 34%]
+........................................................................ [ 37%]
+........................................................................ [ 39%]
+...................FFF........FFFFFFFFF................................. [ 41%]
+........................................................................ [ 44%]
+........................................................................ [ 46%]
+........................................................................ [ 48%]
+........................................................................ [ 50%]
+........................................................................ [ 53%]
+........................................................................ [ 55%]
+........................................................................ [ 57%]
+........................................................................ [ 60%]
+.......................................................EF............... [ 62%]
+........................................................................ [ 64%]
+........................................................................ [ 67%]
+........................................................................ [ 69%]
+........................................................................ [ 71%]
+........................................................FFFF....FFFF.... [ 74%]
+......F..F...........................FFFFFF............................. [ 76%]
+........................................................................ [ 78%]
+........................................................................ [ 81%]
+........................................................................ [ 83%]
+...................EEE.E................................................ [ 85%]
+........................................................................ [ 88%]
+........................................................................ [ 90%]
+........................................................................ [ 92%]
+........................................................................ [ 95%]
+........................................................................ [ 97%]
+........................................................................ [ 99%]
+..........                                                               [100%]
+==================================== ERRORS ====================================
+_ ERROR at setup of test_eight_exchanges_and_eight_drip_cards_leave_chat_responsive _
+
+monkeypatch = <_pytest.monkeypatch.MonkeyPatch object at 0x10fd44980>
+
+    @pytest.fixture
+    def local_fetch_server(monkeypatch):
+>       server = ThreadingHTTPServer(("127.0.0.1", 0), _Handler)
+                 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+tests/test_safe_http_deadline.py:51: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+<python-stdlib>/socketserver.py:457: in __init__
+    self.server_bind()
+<python-stdlib>/http/server.py:148: in server_bind
+    socketserver.TCPServer.server_bind(self)
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+self = <http.server.ThreadingHTTPServer object at 0x10ff3dbf0>
+
+    def server_bind(self):
+        """Called by constructor to bind the socket.
+    
+        May be overridden.
+    
+        """
+        if self.allow_reuse_address and hasattr(socket, "SO_REUSEADDR"):
+            self.socket.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
+        # Since Linux 6.12.9, SO_REUSEPORT is not allowed
+        # on other address families than AF_INET/AF_INET6.
+        if (
+            self.allow_reuse_port and hasattr(socket, "SO_REUSEPORT")
+            and self.address_family in (socket.AF_INET, socket.AF_INET6)
+        ):
+            self.socket.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEPORT, 1)
+>       self.socket.bind(self.server_address)
+E       PermissionError: [Errno 1] Operation not permitted
+
+<python-stdlib>/socketserver.py:478: PermissionError
+_____ ERROR at setup of test_drip_response_obeys_total_wall_clock_deadline _____
+
+monkeypatch = <_pytest.monkeypatch.MonkeyPatch object at 0x110043a10>
+
+    @pytest.fixture
+    def local_fetch_server(monkeypatch):
+>       server = ThreadingHTTPServer(("127.0.0.1", 0), _Handler)
+                 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+tests/test_safe_http_deadline.py:51: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+<python-stdlib>/socketserver.py:457: in __init__
+    self.server_bind()
+<python-stdlib>/http/server.py:148: in server_bind
+    socketserver.TCPServer.server_bind(self)
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+self = <http.server.ThreadingHTTPServer object at 0x112fda140>
+
+    def server_bind(self):
+        """Called by constructor to bind the socket.
+    
+        May be overridden.
+    
+        """
+        if self.allow_reuse_address and hasattr(socket, "SO_REUSEADDR"):
+            self.socket.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
+        # Since Linux 6.12.9, SO_REUSEPORT is not allowed
+        # on other address families than AF_INET/AF_INET6.
+        if (
+            self.allow_reuse_port and hasattr(socket, "SO_REUSEPORT")
+            and self.address_family in (socket.AF_INET, socket.AF_INET6)
+        ):
+            self.socket.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEPORT, 1)
+>       self.socket.bind(self.server_address)
+E       PermissionError: [Errno 1] Operation not permitted
+
+<python-stdlib>/socketserver.py:478: PermissionError
+_________ ERROR at setup of test_fast_response_and_redirect_still_work _________
+
+monkeypatch = <_pytest.monkeypatch.MonkeyPatch object at 0x110042900>
+
+    @pytest.fixture
+    def local_fetch_server(monkeypatch):
+>       server = ThreadingHTTPServer(("127.0.0.1", 0), _Handler)
+                 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+tests/test_safe_http_deadline.py:51: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+<python-stdlib>/socketserver.py:457: in __init__
+    self.server_bind()
+<python-stdlib>/http/server.py:148: in server_bind
+    socketserver.TCPServer.server_bind(self)
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+self = <http.server.ThreadingHTTPServer object at 0x10fdbba50>
+
+    def server_bind(self):
+        """Called by constructor to bind the socket.
+    
+        May be overridden.
+    
+        """
+        if self.allow_reuse_address and hasattr(socket, "SO_REUSEADDR"):
+            self.socket.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
+        # Since Linux 6.12.9, SO_REUSEPORT is not allowed
+        # on other address families than AF_INET/AF_INET6.
+        if (
+            self.allow_reuse_port and hasattr(socket, "SO_REUSEPORT")
+            and self.address_family in (socket.AF_INET, socket.AF_INET6)
+        ):
+            self.socket.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEPORT, 1)
+>       self.socket.bind(self.server_address)
+E       PermissionError: [Errno 1] Operation not permitted
+
+<python-stdlib>/socketserver.py:478: PermissionError
+______ ERROR at setup of test_drip_headers_obey_total_wall_clock_deadline ______
+
+monkeypatch = <_pytest.monkeypatch.MonkeyPatch object at 0x1127ee580>
+
+    @pytest.fixture
+    def local_fetch_server(monkeypatch):
+>       server = ThreadingHTTPServer(("127.0.0.1", 0), _Handler)
+                 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+tests/test_safe_http_deadline.py:51: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+<python-stdlib>/socketserver.py:457: in __init__
+    self.server_bind()
+<python-stdlib>/http/server.py:148: in server_bind
+    socketserver.TCPServer.server_bind(self)
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+self = <http.server.ThreadingHTTPServer object at 0x112b13450>
+
+    def server_bind(self):
+        """Called by constructor to bind the socket.
+    
+        May be overridden.
+    
+        """
+        if self.allow_reuse_address and hasattr(socket, "SO_REUSEADDR"):
+            self.socket.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
+        # Since Linux 6.12.9, SO_REUSEPORT is not allowed
+        # on other address families than AF_INET/AF_INET6.
+        if (
+            self.allow_reuse_port and hasattr(socket, "SO_REUSEPORT")
+            and self.address_family in (socket.AF_INET, socket.AF_INET6)
+        ):
+            self.socket.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEPORT, 1)
+>       self.socket.bind(self.server_address)
+E       PermissionError: [Errno 1] Operation not permitted
+
+<python-stdlib>/socketserver.py:478: PermissionError
+___ ERROR at setup of test_four_stuck_resolutions_do_not_block_another_fetch ___
+
+monkeypatch = <_pytest.monkeypatch.MonkeyPatch object at 0x110042350>
+
+    @pytest.fixture
+    def local_fetch_server(monkeypatch):
+>       server = ThreadingHTTPServer(("127.0.0.1", 0), _Handler)
+                 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+tests/test_safe_http_deadline.py:51: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+<python-stdlib>/socketserver.py:457: in __init__
+    self.server_bind()
+<python-stdlib>/http/server.py:148: in server_bind
+    socketserver.TCPServer.server_bind(self)
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+self = <http.server.ThreadingHTTPServer object at 0x112cdf5c0>
+
+    def server_bind(self):
+        """Called by constructor to bind the socket.
+    
+        May be overridden.
+    
+        """
+        if self.allow_reuse_address and hasattr(socket, "SO_REUSEADDR"):
+            self.socket.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
+        # Since Linux 6.12.9, SO_REUSEPORT is not allowed
+        # on other address families than AF_INET/AF_INET6.
+        if (
+            self.allow_reuse_port and hasattr(socket, "SO_REUSEPORT")
+            and self.address_family in (socket.AF_INET, socket.AF_INET6)
+        ):
+            self.socket.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEPORT, 1)
+>       self.socket.bind(self.server_address)
+E       PermissionError: [Errno 1] Operation not permitted
+
+<python-stdlib>/socketserver.py:478: PermissionError
+=================================== FAILURES ===================================
+___________________ test_paid_branches_still_cost_ten[image] ___________________
+
+client = <starlette.testclient.TestClient object at 0x1117468b0>
+dev_headers = {'X-Dev-User': 'smoke_tester'}
+monkeypatch = <_pytest.monkeypatch.MonkeyPatch object at 0x109f379a0>
+branch = 'image'
+
+    @pytest.mark.parametrize("branch", ["weather", "image", "vision"])
+    def test_paid_branches_still_cost_ten(client, dev_headers, monkeypatch, branch):
+        import services.chat_service as chat
+        from pathlib import Path
+        from utils import media
+        user, conversation, headers = setup(client, dev_headers, monkeypatch)
+        calls, platform, *_ = stub_reply(monkeypatch)
+        monkeypatch.setattr(chat, "recognize_intent", lambda *a, **k: {
+            "intent": "generate_image" if branch == "image" else "weather", "params": {"city": "北京"}, "missing": [],
+        })
+        monkeypatch.setattr(chat, "execute_intent", lambda *a, **k: {"type": "card", "subtype": "weather", "points": ["晴"]})
+        async def generate(*a, **k):
+            path = "/uploads/generated_" + "f" * 32 + ".png"
+            Path(media.UPLOADS_DIR, path.rsplit("/", 1)[1]).write_bytes(b"image")
+            return {"image_path": path, "model": "platform-image"}
+        monkeypatch.setattr(chat, "generate_image", generate)
+        monkeypatch.setattr(chat.QWEN_CLIENT.chat.completions, "create", lambda *a, **k: FakeStream())
+        payload = {"message": "画一只猫" if branch == "image" else "北京天气", "conversation_id": conversation}
+        if branch == "vision":
+            payload["image_base64"] = "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mNk+A8AAQUBAScY42YAAAAASUVORK5CYII="
+        result = events(client.post("/chat", headers=headers, json=payload))
+        assert result[-1] == {"done": True}
+>       assert not calls and not platform and balance(user) == 0
+E       AssertionError: assert (not [{'mirror': False, 'username': 'smoke_tester', 'control': <byok.client.ReplyStreamControl object at 0x111747460>, 'tools': 'generate_image'}])
+
+tests/test_byok_chat.py:205: AssertionError
+----------------------------- Captured stdout call -----------------------------
+[硬词检测] chars=4, detected_count=0
+[意图识别] chars=4, intent=generate_image, missing=[]
+_______ test_r1_pending_api_free_actions_and_paid_guards[image_fill-10] ________
+
+client = <starlette.testclient.TestClient object at 0x111744d10>
+dev_headers = {'X-Dev-User': 'smoke_tester'}
+monkeypatch = <_pytest.monkeypatch.MonkeyPatch object at 0x111703ee0>
+amount = 10, case = 'image_fill'
+
+    @pytest.mark.parametrize("amount", [0, 10])
+    @pytest.mark.parametrize("case", [
+        "image_topic", "image_cancel", "image_fill", "weather_cancel", "weather_fill",
+        "weather_chat", "image_new_tool", "image_thanks", "image_discussion",
+        "image_question", "manual_mirror", "missing_edit_reference",
+    ])
+    def test_r1_pending_api_free_actions_and_paid_guards(client, dev_headers, monkeypatch, amount, case):
+        import database
+        import services.chat_service as chat
+        from intent_router import get_pending, set_pending
+        from pathlib import Path
+        from utils import media
+        user, conversation, headers = setup(client, dev_headers, monkeypatch, balance=amount)
+        key = (user, conversation)
+        calls, platform, *_ = stub_reply(monkeypatch)
+        caps, generated, tools = [], [], []
+    
+        def classify(_client, message, history):
+            if message == "帮我画张图":
+                return {"intent": "generate_image", "params": {}, "missing": ["prompt"]}
+            if message == "查一下北京明天天气":
+                return {"intent": "weather", "params": {"city": "北京"}, "missing": []}
+            return {"intent": None, "params": {}, "missing": []}
+    
+        def cap(kind, username, *, hit):
+            caps.append((kind, hit))
+            return None
+    
+        def execute(intent, params):
+            tools.append((intent, dict(params)))
+            return {"type": "card", "subtype": "weather", "points": ["天气晴"]}
+    
+        async def image(*a, **k):
+            generated.append(1)
+            path = "/uploads/generated_" + "e" * 32 + ".png"
+            Path(media.UPLOADS_DIR, path.rsplit("/", 1)[1]).write_bytes(b"image")
+            return {"image_path": path, "model": "platform-image"}
+    
+        monkeypatch.setattr(chat, "recognize_intent", classify)
+        monkeypatch.setattr(chat, "check_chat_daily_cap", cap)
+        monkeypatch.setattr(chat, "execute_intent", execute)
+        monkeypatch.setattr(chat, "generate_image", image)
+        weather_pending = case.startswith("weather_") or case == "manual_mirror"
+        pending = {"intent": "weather" if weather_pending else "generate_image", "params": {}, "missing": ["city" if weather_pending else "prompt"]}
+        if case == "image_new_tool":
+            # Manufacture the pending through the real paid route, then lower balance.
+            with sqlite3.connect(database.DB_PATH) as db:
+                db.execute("UPDATE users SET strawberry_balance = 10 WHERE username = ?", (user,))
+            seed = events(client.post("/chat", headers=headers, json={"message": "帮我画张图", "conversation_id": conversation}))
+            assert seed[-1] == {"done": True} and get_pending(key) == pending
+            with sqlite3.connect(database.DB_PATH) as db:
+                db.execute("UPDATE users SET strawberry_balance = ? WHERE username = ?", (amount, user))
+            caps.clear()
+        else:
+            set_pending(key, pending)
+        messages = {
+            "image_topic": "换个话题", "image_cancel": "算了", "image_fill": "一只橘猫",
+            "weather_cancel": "算了", "weather_fill": "上海", "weather_chat": "我今天心情不好",
+            "image_new_tool": "查一下北京明天天气", "image_thanks": "谢谢",
+            "image_discussion": "生图多少钱", "image_question": "你觉得呢？",
+            "manual_mirror": "聊聊今天", "missing_edit_reference": "把刚才的图片天空改成黄昏",
+        }
+        if case == "manual_mirror":
+            monkeypatch.setattr(chat, "detect_mode", lambda *a, **k: "mirror")
+            monkeypatch.setattr(chat, "get_user_mode", lambda *a, **k: {"last_trigger": "manual_request"})
+        result = events(client.post("/chat", headers=headers, json={"message": messages[case], "conversation_id": conversation}))
+        paid = case in {"image_fill", "weather_fill", "image_new_tool"}
+        if paid and amount == 0:
+            assert result == [{"error": database.strawberry_insufficient_message()}]
+            assert not generated and not tools and not calls and not platform
+            assert all(kind != "weather" or hit is False for kind, hit in caps)
+            assert get_pending(key) == pending
+            assert balance(user) == amount
+        else:
+            assert get_pending(key) is None
+            assert result[-1] == {"done": True}
+            if case in {"image_cancel", "weather_cancel"}:
+                assert result == [{"text": "好，已取消。"}, {"done": True}]
+                assert not calls
+            elif case == "missing_edit_reference":
+                assert "请先点击" in result[0]["text"] and not calls
+            elif paid:
+>               assert bool(generated) is (case == "image_fill")
+E               AssertionError: assert False is ('image_fill' == 'image_fill'
+E                +  where False = bool([])
+E                 
+E                   image_fill)
+
+tests/test_byok_chat.py:550: AssertionError
+----------------------------- Captured stdout call -----------------------------
+[硬词检测] chars=4, detected_count=0
+[意图识别] chars=4, intent=None, missing=[]
+______ test_r1_pending_api_free_actions_and_paid_guards[image_new_tool-0] ______
+
+client = <starlette.testclient.TestClient object at 0x111745f20>
+dev_headers = {'X-Dev-User': 'smoke_tester'}
+monkeypatch = <_pytest.monkeypatch.MonkeyPatch object at 0x10dceff50>
+amount = 0, case = 'image_new_tool'
+
+    @pytest.mark.parametrize("amount", [0, 10])
+    @pytest.mark.parametrize("case", [
+        "image_topic", "image_cancel", "image_fill", "weather_cancel", "weather_fill",
+        "weather_chat", "image_new_tool", "image_thanks", "image_discussion",
+        "image_question", "manual_mirror", "missing_edit_reference",
+    ])
+    def test_r1_pending_api_free_actions_and_paid_guards(client, dev_headers, monkeypatch, amount, case):
+        import database
+        import services.chat_service as chat
+        from intent_router import get_pending, set_pending
+        from pathlib import Path
+        from utils import media
+        user, conversation, headers = setup(client, dev_headers, monkeypatch, balance=amount)
+        key = (user, conversation)
+        calls, platform, *_ = stub_reply(monkeypatch)
+        caps, generated, tools = [], [], []
+    
+        def classify(_client, message, history):
+            if message == "帮我画张图":
+                return {"intent": "generate_image", "params": {}, "missing": ["prompt"]}
+            if message == "查一下北京明天天气":
+                return {"intent": "weather", "params": {"city": "北京"}, "missing": []}
+            return {"intent": None, "params": {}, "missing": []}
+    
+        def cap(kind, username, *, hit):
+            caps.append((kind, hit))
+            return None
+    
+        def execute(intent, params):
+            tools.append((intent, dict(params)))
+            return {"type": "card", "subtype": "weather", "points": ["天气晴"]}
+    
+        async def image(*a, **k):
+            generated.append(1)
+            path = "/uploads/generated_" + "e" * 32 + ".png"
+            Path(media.UPLOADS_DIR, path.rsplit("/", 1)[1]).write_bytes(b"image")
+            return {"image_path": path, "model": "platform-image"}
+    
+        monkeypatch.setattr(chat, "recognize_intent", classify)
+        monkeypatch.setattr(chat, "check_chat_daily_cap", cap)
+        monkeypatch.setattr(chat, "execute_intent", execute)
+        monkeypatch.setattr(chat, "generate_image", image)
+        weather_pending = case.startswith("weather_") or case == "manual_mirror"
+        pending = {"intent": "weather" if weather_pending else "generate_image", "params": {}, "missing": ["city" if weather_pending else "prompt"]}
+        if case == "image_new_tool":
+            # Manufacture the pending through the real paid route, then lower balance.
+            with sqlite3.connect(database.DB_PATH) as db:
+                db.execute("UPDATE users SET strawberry_balance = 10 WHERE username = ?", (user,))
+            seed = events(client.post("/chat", headers=headers, json={"message": "帮我画张图", "conversation_id": conversation}))
+>           assert seed[-1] == {"done": True} and get_pending(key) == pending
+E           AssertionError: assert ({'done': True} == {'done': True}
+E             
+E             Omitting 1 identical items, use -vv to show
+E             Use -v to get more diff and None == {'intent': 'generate_image', 'params': {}, 'missing': ['prompt']})
+E            +  where None = <function get_pending at 0x10e8b8670>(('smoke_tester', 'bba6c106-4275-4e4f-a23c-9b3e8050a70b'))
+
+tests/test_byok_chat.py:517: AssertionError
+----------------------------- Captured stdout call -----------------------------
+[硬词检测] chars=5, detected_count=0
+[意图识别] chars=5, intent=generate_image, missing=['prompt']
+_____ test_r1_pending_api_free_actions_and_paid_guards[image_new_tool-10] ______
+
+client = <starlette.testclient.TestClient object at 0x111746be0>
+dev_headers = {'X-Dev-User': 'smoke_tester'}
+monkeypatch = <_pytest.monkeypatch.MonkeyPatch object at 0x10a22a270>
+amount = 10, case = 'image_new_tool'
+
+    @pytest.mark.parametrize("amount", [0, 10])
+    @pytest.mark.parametrize("case", [
+        "image_topic", "image_cancel", "image_fill", "weather_cancel", "weather_fill",
+        "weather_chat", "image_new_tool", "image_thanks", "image_discussion",
+        "image_question", "manual_mirror", "missing_edit_reference",
+    ])
+    def test_r1_pending_api_free_actions_and_paid_guards(client, dev_headers, monkeypatch, amount, case):
+        import database
+        import services.chat_service as chat
+        from intent_router import get_pending, set_pending
+        from pathlib import Path
+        from utils import media
+        user, conversation, headers = setup(client, dev_headers, monkeypatch, balance=amount)
+        key = (user, conversation)
+        calls, platform, *_ = stub_reply(monkeypatch)
+        caps, generated, tools = [], [], []
+    
+        def classify(_client, message, history):
+            if message == "帮我画张图":
+                return {"intent": "generate_image", "params": {}, "missing": ["prompt"]}
+            if message == "查一下北京明天天气":
+                return {"intent": "weather", "params": {"city": "北京"}, "missing": []}
+            return {"intent": None, "params": {}, "missing": []}
+    
+        def cap(kind, username, *, hit):
+            caps.append((kind, hit))
+            return None
+    
+        def execute(intent, params):
+            tools.append((intent, dict(params)))
+            return {"type": "card", "subtype": "weather", "points": ["天气晴"]}
+    
+        async def image(*a, **k):
+            generated.append(1)
+            path = "/uploads/generated_" + "e" * 32 + ".png"
+            Path(media.UPLOADS_DIR, path.rsplit("/", 1)[1]).write_bytes(b"image")
+            return {"image_path": path, "model": "platform-image"}
+    
+        monkeypatch.setattr(chat, "recognize_intent", classify)
+        monkeypatch.setattr(chat, "check_chat_daily_cap", cap)
+        monkeypatch.setattr(chat, "execute_intent", execute)
+        monkeypatch.setattr(chat, "generate_image", image)
+        weather_pending = case.startswith("weather_") or case == "manual_mirror"
+        pending = {"intent": "weather" if weather_pending else "generate_image", "params": {}, "missing": ["city" if weather_pending else "prompt"]}
+        if case == "image_new_tool":
+            # Manufacture the pending through the real paid route, then lower balance.
+            with sqlite3.connect(database.DB_PATH) as db:
+                db.execute("UPDATE users SET strawberry_balance = 10 WHERE username = ?", (user,))
+            seed = events(client.post("/chat", headers=headers, json={"message": "帮我画张图", "conversation_id": conversation}))
+>           assert seed[-1] == {"done": True} and get_pending(key) == pending
+E           AssertionError: assert ({'done': True} == {'done': True}
+E             
+E             Omitting 1 identical items, use -vv to show
+E             Use -v to get more diff and None == {'intent': 'generate_image', 'params': {}, 'missing': ['prompt']})
+E            +  where None = <function get_pending at 0x10e8b8670>(('smoke_tester', 'b557b6fc-2d5e-4d5f-a045-836f66bb6e1e'))
+
+tests/test_byok_chat.py:517: AssertionError
+----------------------------- Captured stdout call -----------------------------
+[硬词检测] chars=5, detected_count=0
+[意图识别] chars=5, intent=generate_image, missing=['prompt']
+_ test_natural_request_precedes_mirror_and_old_pending[\u5e2e\u6211\u751f\u6210\u4e00\u5f20\u9752\u7070\u8584\u96fe\u53e4\u5e99\u56fe\u7247\uff0c\u6a2a\u724816:9-16:9] _
+
+client = <starlette.testclient.TestClient object at 0x111ef6f10>
+dev_headers = {'X-Dev-User': 'smoke_tester'}
+image_stub = ([], PosixPath('<pytest-temp>/pytest-12/test_natural_request_precedes_0/generated_test.png'))
+confirmed_image_intent = None
+monkeypatch = <_pytest.monkeypatch.MonkeyPatch object at 0x10a27cad0>
+prompt = '帮我生成一张青灰薄雾古庙图片，横版16:9', ratio = '16:9'
+
+    @pytest.mark.parametrize("prompt,ratio", [
+        ("帮我生成一张青灰薄雾古庙图片，横版16:9", "16:9"),
+        ("画一只趴在窗台的猫", "1:1"),
+        ("请帮我做一张咖啡店海报，竖版", "9:16"),
+    ])
+    def test_natural_request_precedes_mirror_and_old_pending(client, dev_headers, image_stub, confirmed_image_intent, monkeypatch, prompt, ratio):
+        import services.chat_service as chat
+        from intent_router import set_pending, get_pending
+        conversation = new_conversation(client, dev_headers)
+        key = ("smoke_tester", conversation)
+        set_pending(key, {"intent": "route", "params": {}, "missing": ["origin"]})
+        monkeypatch.setattr(chat, "detect_mode", lambda *a: "mirror")
+        output = events(client.post("/chat", headers=dev_headers, json={"conversation_id": conversation, "message": prompt}))
+>       assert image_stub[0] == [(prompt, ratio)]
+E       AssertionError: assert [] == [('帮我生成一张青灰薄雾...6:9', '16:9')]
+E         
+E         Right contains one more item: ('帮我生成一张青灰薄雾古庙图片，横版16:9', '16:9')
+E         Use -v to get more diff
+
+tests/test_chat_image_generation.py:90: AssertionError
+----------------------------- Captured stdout call -----------------------------
+[硬词检测] chars=21, detected_count=0
+[意图识别] chars=21, intent=generate_image, missing=[]
+_ test_natural_request_precedes_mirror_and_old_pending[\u753b\u4e00\u53ea\u8db4\u5728\u7a97\u53f0\u7684\u732b-1:1] _
+
+client = <starlette.testclient.TestClient object at 0x111ef7130>
+dev_headers = {'X-Dev-User': 'smoke_tester'}
+image_stub = ([], PosixPath('<pytest-temp>/pytest-12/test_natural_request_precedes_1/generated_test.png'))
+confirmed_image_intent = None
+monkeypatch = <_pytest.monkeypatch.MonkeyPatch object at 0x10e309710>
+prompt = '画一只趴在窗台的猫', ratio = '1:1'
+
+    @pytest.mark.parametrize("prompt,ratio", [
+        ("帮我生成一张青灰薄雾古庙图片，横版16:9", "16:9"),
+        ("画一只趴在窗台的猫", "1:1"),
+        ("请帮我做一张咖啡店海报，竖版", "9:16"),
+    ])
+    def test_natural_request_precedes_mirror_and_old_pending(client, dev_headers, image_stub, confirmed_image_intent, monkeypatch, prompt, ratio):
+        import services.chat_service as chat
+        from intent_router import set_pending, get_pending
+        conversation = new_conversation(client, dev_headers)
+        key = ("smoke_tester", conversation)
+        set_pending(key, {"intent": "route", "params": {}, "missing": ["origin"]})
+        monkeypatch.setattr(chat, "detect_mode", lambda *a: "mirror")
+        output = events(client.post("/chat", headers=dev_headers, json={"conversation_id": conversation, "message": prompt}))
+>       assert image_stub[0] == [(prompt, ratio)]
+E       AssertionError: assert [] == [('画一只趴在窗台的猫', '1:1')]
+E         
+E         Right contains one more item: ('画一只趴在窗台的猫', '1:1')
+E         Use -v to get more diff
+
+tests/test_chat_image_generation.py:90: AssertionError
+----------------------------- Captured stdout call -----------------------------
+[硬词检测] chars=9, detected_count=0
+[意图识别] chars=9, intent=generate_image, missing=[]
+_ test_natural_request_precedes_mirror_and_old_pending[\u8bf7\u5e2e\u6211\u505a\u4e00\u5f20\u5496\u5561\u5e97\u6d77\u62a5\uff0c\u7ad6\u7248-9:16] _
+
+client = <starlette.testclient.TestClient object at 0x111ef6cf0>
+dev_headers = {'X-Dev-User': 'smoke_tester'}
+image_stub = ([], PosixPath('<pytest-temp>/pytest-12/test_natural_request_precedes_2/generated_test.png'))
+confirmed_image_intent = None
+monkeypatch = <_pytest.monkeypatch.MonkeyPatch object at 0x111761f60>
+prompt = '请帮我做一张咖啡店海报，竖版', ratio = '9:16'
+
+    @pytest.mark.parametrize("prompt,ratio", [
+        ("帮我生成一张青灰薄雾古庙图片，横版16:9", "16:9"),
+        ("画一只趴在窗台的猫", "1:1"),
+        ("请帮我做一张咖啡店海报，竖版", "9:16"),
+    ])
+    def test_natural_request_precedes_mirror_and_old_pending(client, dev_headers, image_stub, confirmed_image_intent, monkeypatch, prompt, ratio):
+        import services.chat_service as chat
+        from intent_router import set_pending, get_pending
+        conversation = new_conversation(client, dev_headers)
+        key = ("smoke_tester", conversation)
+        set_pending(key, {"intent": "route", "params": {}, "missing": ["origin"]})
+        monkeypatch.setattr(chat, "detect_mode", lambda *a: "mirror")
+        output = events(client.post("/chat", headers=dev_headers, json={"conversation_id": conversation, "message": prompt}))
+>       assert image_stub[0] == [(prompt, ratio)]
+E       AssertionError: assert [] == [('请帮我做一张咖啡店海报，竖版', '9:16')]
+E         
+E         Right contains one more item: ('请帮我做一张咖啡店海报，竖版', '9:16')
+E         Use -v to get more diff
+
+tests/test_chat_image_generation.py:90: AssertionError
+----------------------------- Captured stdout call -----------------------------
+[硬词检测] chars=14, detected_count=0
+[意图识别] chars=14, intent=generate_image, missing=[]
+____ test_image_prompt_question_then_description_generates_only_description ____
+
+client = <starlette.testclient.TestClient object at 0x1126ec380>
+dev_headers = {'X-Dev-User': 'smoke_tester'}
+image_stub = ([], PosixPath('<pytest-temp>/pytest-12/test_image_prompt_question_the0/generated_test.png'))
+confirmed_image_intent = None
+
+    def test_image_prompt_question_then_description_generates_only_description(client, dev_headers, image_stub, confirmed_image_intent):
+        conversation = new_conversation(client, dev_headers)
+        first = events(client.post("/chat", headers=dev_headers, json={"conversation_id": conversation, "message": "帮我生成图片"}))
+        assert image_stub[0] == []
+>       assert "想生成什么画面" in first[0]["text"]
+E       AssertionError: assert '想生成什么画面' in '测试'
+
+tests/test_chat_image_generation.py:109: AssertionError
+----------------------------- Captured stdout call -----------------------------
+[硬词检测] chars=6, detected_count=0
+[意图识别] chars=6, intent=generate_image, missing=['prompt']
+_ test_empty_scene_candidate_asks_without_charge_then_generates_from_followup[model_missing0-\u5e2e\u6211\u751f\u6210\u56fe\u7247] _
+
+client = <starlette.testclient.TestClient object at 0x1126ece20>
+dev_headers = {'X-Dev-User': 'smoke_tester'}
+image_stub = ([], PosixPath('<pytest-temp>/pytest-12/test_empty_scene_candidate_ask0/generated_test.png'))
+monkeypatch = <_pytest.monkeypatch.MonkeyPatch object at 0x1126486e0>
+message = '帮我生成图片', model_missing = []
+
+    @pytest.mark.parametrize("message", [
+        "帮我生成图片", "帮我生成一张图片", "画一张图", "给我画一幅画",
+    ])
+    @pytest.mark.parametrize("model_missing", [[], ["prompt"]])
+    def test_empty_scene_candidate_asks_without_charge_then_generates_from_followup(
+        client, dev_headers, image_stub, monkeypatch, message, model_missing,
+    ):
+        import database
+        import services.chat_service as chat
+        from auth import create_token
+        from intent_router import explicit_image_intent, get_pending
+    
+        candidate = explicit_image_intent(message)
+        assert candidate is not None and candidate["missing"] == ["prompt"]
+        conversation = new_conversation(client, dev_headers)
+        key = (dev_headers["X-Dev-User"], conversation)
+        before = asyncio.run(database.get_strawberry_balance(key[0]))
+        version = asyncio.run(database.get_session_version(key[0]))
+        classified = []
+    
+        def classify(_client, text, _history):
+            classified.append(text)
+            if text == message:
+                # A short model prompt cannot fill a subject absent from user text.
+                return {"intent": "generate_image", "params": {"prompt": "模型猜的猫"},
+                        "missing": model_missing}
+            return {"intent": None, "params": {}, "missing": []}
+    
+        monkeypatch.setattr(chat, "recognize_intent", classify)
+        monkeypatch.setenv("DEV_MODE", "0")
+        headers = {"Authorization": f"Bearer {create_token(key[0], version)}"}
+        first = events(client.post("/chat", headers=headers, json={
+            "conversation_id": conversation, "message": message,
+        }))
+        assert classified == [message]
+>       assert first[0]["text"] == "想生成什么画面？可以告诉我主体、场景和风格。"
+E       AssertionError: assert '测试' == '想生成什么画面？可以告诉我主体、场景和风格。'
+E         
+E         - 想生成什么画面？可以告诉我主体、场景和风格。
+E         + 测试
+
+tests/test_chat_image_generation.py:149: AssertionError
+----------------------------- Captured stdout call -----------------------------
+[硬词检测] chars=6, detected_count=0
+[意图识别] chars=6, intent=generate_image, missing=[]
+_ test_empty_scene_candidate_asks_without_charge_then_generates_from_followup[model_missing0-\u5e2e\u6211\u751f\u6210\u4e00\u5f20\u56fe\u7247] _
+
+client = <starlette.testclient.TestClient object at 0x1126ec160>
+dev_headers = {'X-Dev-User': 'smoke_tester'}
+image_stub = ([], PosixPath('<pytest-temp>/pytest-12/test_empty_scene_candidate_ask1/generated_test.png'))
+monkeypatch = <_pytest.monkeypatch.MonkeyPatch object at 0x111aafe00>
+message = '帮我生成一张图片', model_missing = []
+
+    @pytest.mark.parametrize("message", [
+        "帮我生成图片", "帮我生成一张图片", "画一张图", "给我画一幅画",
+    ])
+    @pytest.mark.parametrize("model_missing", [[], ["prompt"]])
+    def test_empty_scene_candidate_asks_without_charge_then_generates_from_followup(
+        client, dev_headers, image_stub, monkeypatch, message, model_missing,
+    ):
+        import database
+        import services.chat_service as chat
+        from auth import create_token
+        from intent_router import explicit_image_intent, get_pending
+    
+        candidate = explicit_image_intent(message)
+        assert candidate is not None and candidate["missing"] == ["prompt"]
+        conversation = new_conversation(client, dev_headers)
+        key = (dev_headers["X-Dev-User"], conversation)
+        before = asyncio.run(database.get_strawberry_balance(key[0]))
+        version = asyncio.run(database.get_session_version(key[0]))
+        classified = []
+    
+        def classify(_client, text, _history):
+            classified.append(text)
+            if text == message:
+                # A short model prompt cannot fill a subject absent from user text.
+                return {"intent": "generate_image", "params": {"prompt": "模型猜的猫"},
+                        "missing": model_missing}
+            return {"intent": None, "params": {}, "missing": []}
+    
+        monkeypatch.setattr(chat, "recognize_intent", classify)
+        monkeypatch.setenv("DEV_MODE", "0")
+        headers = {"Authorization": f"Bearer {create_token(key[0], version)}"}
+        first = events(client.post("/chat", headers=headers, json={
+            "conversation_id": conversation, "message": message,
+        }))
+        assert classified == [message]
+>       assert first[0]["text"] == "想生成什么画面？可以告诉我主体、场景和风格。"
+E       AssertionError: assert '测试' == '想生成什么画面？可以告诉我主体、场景和风格。'
+E         
+E         - 想生成什么画面？可以告诉我主体、场景和风格。
+E         + 测试
+
+tests/test_chat_image_generation.py:149: AssertionError
+----------------------------- Captured stdout call -----------------------------
+[硬词检测] chars=8, detected_count=0
+[意图识别] chars=8, intent=generate_image, missing=[]
+_ test_empty_scene_candidate_asks_without_charge_then_generates_from_followup[model_missing0-\u753b\u4e00\u5f20\u56fe] _
+
+client = <starlette.testclient.TestClient object at 0x1118b3240>
+dev_headers = {'X-Dev-User': 'smoke_tester'}
+image_stub = ([], PosixPath('<pytest-temp>/pytest-12/test_empty_scene_candidate_ask2/generated_test.png'))
+monkeypatch = <_pytest.monkeypatch.MonkeyPatch object at 0x10a27cad0>
+message = '画一张图', model_missing = []
+
+    @pytest.mark.parametrize("message", [
+        "帮我生成图片", "帮我生成一张图片", "画一张图", "给我画一幅画",
+    ])
+    @pytest.mark.parametrize("model_missing", [[], ["prompt"]])
+    def test_empty_scene_candidate_asks_without_charge_then_generates_from_followup(
+        client, dev_headers, image_stub, monkeypatch, message, model_missing,
+    ):
+        import database
+        import services.chat_service as chat
+        from auth import create_token
+        from intent_router import explicit_image_intent, get_pending
+    
+        candidate = explicit_image_intent(message)
+        assert candidate is not None and candidate["missing"] == ["prompt"]
+        conversation = new_conversation(client, dev_headers)
+        key = (dev_headers["X-Dev-User"], conversation)
+        before = asyncio.run(database.get_strawberry_balance(key[0]))
+        version = asyncio.run(database.get_session_version(key[0]))
+        classified = []
+    
+        def classify(_client, text, _history):
+            classified.append(text)
+            if text == message:
+                # A short model prompt cannot fill a subject absent from user text.
+                return {"intent": "generate_image", "params": {"prompt": "模型猜的猫"},
+                        "missing": model_missing}
+            return {"intent": None, "params": {}, "missing": []}
+    
+        monkeypatch.setattr(chat, "recognize_intent", classify)
+        monkeypatch.setenv("DEV_MODE", "0")
+        headers = {"Authorization": f"Bearer {create_token(key[0], version)}"}
+        first = events(client.post("/chat", headers=headers, json={
+            "conversation_id": conversation, "message": message,
+        }))
+        assert classified == [message]
+>       assert first[0]["text"] == "想生成什么画面？可以告诉我主体、场景和风格。"
+E       AssertionError: assert '测试' == '想生成什么画面？可以告诉我主体、场景和风格。'
+E         
+E         - 想生成什么画面？可以告诉我主体、场景和风格。
+E         + 测试
+
+tests/test_chat_image_generation.py:149: AssertionError
+----------------------------- Captured stdout call -----------------------------
+[硬词检测] chars=4, detected_count=0
+[意图识别] chars=4, intent=generate_image, missing=[]
+_ test_empty_scene_candidate_asks_without_charge_then_generates_from_followup[model_missing0-\u7ed9\u6211\u753b\u4e00\u5e45\u753b] _
+
+client = <starlette.testclient.TestClient object at 0x111ef6e00>
+dev_headers = {'X-Dev-User': 'smoke_tester'}
+image_stub = ([], PosixPath('<pytest-temp>/pytest-12/test_empty_scene_candidate_ask3/generated_test.png'))
+monkeypatch = <_pytest.monkeypatch.MonkeyPatch object at 0x111aaedd0>
+message = '给我画一幅画', model_missing = []
+
+    @pytest.mark.parametrize("message", [
+        "帮我生成图片", "帮我生成一张图片", "画一张图", "给我画一幅画",
+    ])
+    @pytest.mark.parametrize("model_missing", [[], ["prompt"]])
+    def test_empty_scene_candidate_asks_without_charge_then_generates_from_followup(
+        client, dev_headers, image_stub, monkeypatch, message, model_missing,
+    ):
+        import database
+        import services.chat_service as chat
+        from auth import create_token
+        from intent_router import explicit_image_intent, get_pending
+    
+        candidate = explicit_image_intent(message)
+        assert candidate is not None and candidate["missing"] == ["prompt"]
+        conversation = new_conversation(client, dev_headers)
+        key = (dev_headers["X-Dev-User"], conversation)
+        before = asyncio.run(database.get_strawberry_balance(key[0]))
+        version = asyncio.run(database.get_session_version(key[0]))
+        classified = []
+    
+        def classify(_client, text, _history):
+            classified.append(text)
+            if text == message:
+                # A short model prompt cannot fill a subject absent from user text.
+                return {"intent": "generate_image", "params": {"prompt": "模型猜的猫"},
+                        "missing": model_missing}
+            return {"intent": None, "params": {}, "missing": []}
+    
+        monkeypatch.setattr(chat, "recognize_intent", classify)
+        monkeypatch.setenv("DEV_MODE", "0")
+        headers = {"Authorization": f"Bearer {create_token(key[0], version)}"}
+        first = events(client.post("/chat", headers=headers, json={
+            "conversation_id": conversation, "message": message,
+        }))
+        assert classified == [message]
+>       assert first[0]["text"] == "想生成什么画面？可以告诉我主体、场景和风格。"
+E       AssertionError: assert '测试' == '想生成什么画面？可以告诉我主体、场景和风格。'
+E         
+E         - 想生成什么画面？可以告诉我主体、场景和风格。
+E         + 测试
+
+tests/test_chat_image_generation.py:149: AssertionError
+----------------------------- Captured stdout call -----------------------------
+[硬词检测] chars=6, detected_count=0
+[意图识别] chars=6, intent=generate_image, missing=[]
+_ test_empty_scene_candidate_asks_without_charge_then_generates_from_followup[model_missing1-\u5e2e\u6211\u751f\u6210\u56fe\u7247] _
+
+client = <starlette.testclient.TestClient object at 0x111ef7df0>
+dev_headers = {'X-Dev-User': 'smoke_tester'}
+image_stub = ([], PosixPath('<pytest-temp>/pytest-12/test_empty_scene_candidate_ask4/generated_test.png'))
+monkeypatch = <_pytest.monkeypatch.MonkeyPatch object at 0x10e8ad780>
+message = '帮我生成图片', model_missing = ['prompt']
+
+    @pytest.mark.parametrize("message", [
+        "帮我生成图片", "帮我生成一张图片", "画一张图", "给我画一幅画",
+    ])
+    @pytest.mark.parametrize("model_missing", [[], ["prompt"]])
+    def test_empty_scene_candidate_asks_without_charge_then_generates_from_followup(
+        client, dev_headers, image_stub, monkeypatch, message, model_missing,
+    ):
+        import database
+        import services.chat_service as chat
+        from auth import create_token
+        from intent_router import explicit_image_intent, get_pending
+    
+        candidate = explicit_image_intent(message)
+        assert candidate is not None and candidate["missing"] == ["prompt"]
+        conversation = new_conversation(client, dev_headers)
+        key = (dev_headers["X-Dev-User"], conversation)
+        before = asyncio.run(database.get_strawberry_balance(key[0]))
+        version = asyncio.run(database.get_session_version(key[0]))
+        classified = []
+    
+        def classify(_client, text, _history):
+            classified.append(text)
+            if text == message:
+                # A short model prompt cannot fill a subject absent from user text.
+                return {"intent": "generate_image", "params": {"prompt": "模型猜的猫"},
+                        "missing": model_missing}
+            return {"intent": None, "params": {}, "missing": []}
+    
+        monkeypatch.setattr(chat, "recognize_intent", classify)
+        monkeypatch.setenv("DEV_MODE", "0")
+        headers = {"Authorization": f"Bearer {create_token(key[0], version)}"}
+        first = events(client.post("/chat", headers=headers, json={
+            "conversation_id": conversation, "message": message,
+        }))
+        assert classified == [message]
+>       assert first[0]["text"] == "想生成什么画面？可以告诉我主体、场景和风格。"
+E       AssertionError: assert '测试' == '想生成什么画面？可以告诉我主体、场景和风格。'
+E         
+E         - 想生成什么画面？可以告诉我主体、场景和风格。
+E         + 测试
+
+tests/test_chat_image_generation.py:149: AssertionError
+----------------------------- Captured stdout call -----------------------------
+[硬词检测] chars=6, detected_count=0
+[意图识别] chars=6, intent=generate_image, missing=['prompt']
+_ test_empty_scene_candidate_asks_without_charge_then_generates_from_followup[model_missing1-\u5e2e\u6211\u751f\u6210\u4e00\u5f20\u56fe\u7247] _
+
+client = <starlette.testclient.TestClient object at 0x1126ec050>
+dev_headers = {'X-Dev-User': 'smoke_tester'}
+image_stub = ([], PosixPath('<pytest-temp>/pytest-12/test_empty_scene_candidate_ask5/generated_test.png'))
+monkeypatch = <_pytest.monkeypatch.MonkeyPatch object at 0x1106f9fd0>
+message = '帮我生成一张图片', model_missing = ['prompt']
+
+    @pytest.mark.parametrize("message", [
+        "帮我生成图片", "帮我生成一张图片", "画一张图", "给我画一幅画",
+    ])
+    @pytest.mark.parametrize("model_missing", [[], ["prompt"]])
+    def test_empty_scene_candidate_asks_without_charge_then_generates_from_followup(
+        client, dev_headers, image_stub, monkeypatch, message, model_missing,
+    ):
+        import database
+        import services.chat_service as chat
+        from auth import create_token
+        from intent_router import explicit_image_intent, get_pending
+    
+        candidate = explicit_image_intent(message)
+        assert candidate is not None and candidate["missing"] == ["prompt"]
+        conversation = new_conversation(client, dev_headers)
+        key = (dev_headers["X-Dev-User"], conversation)
+        before = asyncio.run(database.get_strawberry_balance(key[0]))
+        version = asyncio.run(database.get_session_version(key[0]))
+        classified = []
+    
+        def classify(_client, text, _history):
+            classified.append(text)
+            if text == message:
+                # A short model prompt cannot fill a subject absent from user text.
+                return {"intent": "generate_image", "params": {"prompt": "模型猜的猫"},
+                        "missing": model_missing}
+            return {"intent": None, "params": {}, "missing": []}
+    
+        monkeypatch.setattr(chat, "recognize_intent", classify)
+        monkeypatch.setenv("DEV_MODE", "0")
+        headers = {"Authorization": f"Bearer {create_token(key[0], version)}"}
+        first = events(client.post("/chat", headers=headers, json={
+            "conversation_id": conversation, "message": message,
+        }))
+        assert classified == [message]
+>       assert first[0]["text"] == "想生成什么画面？可以告诉我主体、场景和风格。"
+E       AssertionError: assert '测试' == '想生成什么画面？可以告诉我主体、场景和风格。'
+E         
+E         - 想生成什么画面？可以告诉我主体、场景和风格。
+E         + 测试
+
+tests/test_chat_image_generation.py:149: AssertionError
+----------------------------- Captured stdout call -----------------------------
+[硬词检测] chars=8, detected_count=0
+[意图识别] chars=8, intent=generate_image, missing=['prompt']
+_ test_empty_scene_candidate_asks_without_charge_then_generates_from_followup[model_missing1-\u753b\u4e00\u5f20\u56fe] _
+
+client = <starlette.testclient.TestClient object at 0x1126ed370>
+dev_headers = {'X-Dev-User': 'smoke_tester'}
+image_stub = ([], PosixPath('<pytest-temp>/pytest-12/test_empty_scene_candidate_ask6/generated_test.png'))
+monkeypatch = <_pytest.monkeypatch.MonkeyPatch object at 0x111761f60>
+message = '画一张图', model_missing = ['prompt']
+
+    @pytest.mark.parametrize("message", [
+        "帮我生成图片", "帮我生成一张图片", "画一张图", "给我画一幅画",
+    ])
+    @pytest.mark.parametrize("model_missing", [[], ["prompt"]])
+    def test_empty_scene_candidate_asks_without_charge_then_generates_from_followup(
+        client, dev_headers, image_stub, monkeypatch, message, model_missing,
+    ):
+        import database
+        import services.chat_service as chat
+        from auth import create_token
+        from intent_router import explicit_image_intent, get_pending
+    
+        candidate = explicit_image_intent(message)
+        assert candidate is not None and candidate["missing"] == ["prompt"]
+        conversation = new_conversation(client, dev_headers)
+        key = (dev_headers["X-Dev-User"], conversation)
+        before = asyncio.run(database.get_strawberry_balance(key[0]))
+        version = asyncio.run(database.get_session_version(key[0]))
+        classified = []
+    
+        def classify(_client, text, _history):
+            classified.append(text)
+            if text == message:
+                # A short model prompt cannot fill a subject absent from user text.
+                return {"intent": "generate_image", "params": {"prompt": "模型猜的猫"},
+                        "missing": model_missing}
+            return {"intent": None, "params": {}, "missing": []}
+    
+        monkeypatch.setattr(chat, "recognize_intent", classify)
+        monkeypatch.setenv("DEV_MODE", "0")
+        headers = {"Authorization": f"Bearer {create_token(key[0], version)}"}
+        first = events(client.post("/chat", headers=headers, json={
+            "conversation_id": conversation, "message": message,
+        }))
+        assert classified == [message]
+>       assert first[0]["text"] == "想生成什么画面？可以告诉我主体、场景和风格。"
+E       AssertionError: assert '测试' == '想生成什么画面？可以告诉我主体、场景和风格。'
+E         
+E         - 想生成什么画面？可以告诉我主体、场景和风格。
+E         + 测试
+
+tests/test_chat_image_generation.py:149: AssertionError
+----------------------------- Captured stdout call -----------------------------
+[硬词检测] chars=4, detected_count=0
+[意图识别] chars=4, intent=generate_image, missing=['prompt']
+_ test_empty_scene_candidate_asks_without_charge_then_generates_from_followup[model_missing1-\u7ed9\u6211\u753b\u4e00\u5e45\u753b] _
+
+client = <starlette.testclient.TestClient object at 0x1126ed8c0>
+dev_headers = {'X-Dev-User': 'smoke_tester'}
+image_stub = ([], PosixPath('<pytest-temp>/pytest-12/test_empty_scene_candidate_ask7/generated_test.png'))
+monkeypatch = <_pytest.monkeypatch.MonkeyPatch object at 0x11264aeb0>
+message = '给我画一幅画', model_missing = ['prompt']
+
+    @pytest.mark.parametrize("message", [
+        "帮我生成图片", "帮我生成一张图片", "画一张图", "给我画一幅画",
+    ])
+    @pytest.mark.parametrize("model_missing", [[], ["prompt"]])
+    def test_empty_scene_candidate_asks_without_charge_then_generates_from_followup(
+        client, dev_headers, image_stub, monkeypatch, message, model_missing,
+    ):
+        import database
+        import services.chat_service as chat
+        from auth import create_token
+        from intent_router import explicit_image_intent, get_pending
+    
+        candidate = explicit_image_intent(message)
+        assert candidate is not None and candidate["missing"] == ["prompt"]
+        conversation = new_conversation(client, dev_headers)
+        key = (dev_headers["X-Dev-User"], conversation)
+        before = asyncio.run(database.get_strawberry_balance(key[0]))
+        version = asyncio.run(database.get_session_version(key[0]))
+        classified = []
+    
+        def classify(_client, text, _history):
+            classified.append(text)
+            if text == message:
+                # A short model prompt cannot fill a subject absent from user text.
+                return {"intent": "generate_image", "params": {"prompt": "模型猜的猫"},
+                        "missing": model_missing}
+            return {"intent": None, "params": {}, "missing": []}
+    
+        monkeypatch.setattr(chat, "recognize_intent", classify)
+        monkeypatch.setenv("DEV_MODE", "0")
+        headers = {"Authorization": f"Bearer {create_token(key[0], version)}"}
+        first = events(client.post("/chat", headers=headers, json={
+            "conversation_id": conversation, "message": message,
+        }))
+        assert classified == [message]
+>       assert first[0]["text"] == "想生成什么画面？可以告诉我主体、场景和风格。"
+E       AssertionError: assert '测试' == '想生成什么画面？可以告诉我主体、场景和风格。'
+E         
+E         - 想生成什么画面？可以告诉我主体、场景和风格。
+E         + 测试
+
+tests/test_chat_image_generation.py:149: AssertionError
+----------------------------- Captured stdout call -----------------------------
+[硬词检测] chars=6, detected_count=0
+[意图识别] chars=6, intent=generate_image, missing=['prompt']
+_________ test_stop_disconnects_async_upstream_and_releases_user_slot __________
+
+client = <starlette.testclient.TestClient object at 0x10ff3d7b0>
+monkeypatch = <_pytest.monkeypatch.MonkeyPatch object at 0x1101e50f0>
+
+    def test_stop_disconnects_async_upstream_and_releases_user_slot(client, monkeypatch):
+        import services.exchange_service as service
+    
+        async def start_server():
+            entered, disconnected = asyncio.Event(), asyncio.Event()
+    
+            async def handler(reader, writer):
+                try:
+                    headers = await reader.readuntil(b"\r\n\r\n")
+                    length = 0
+                    for line in headers.split(b"\r\n"):
+                        if line.lower().startswith(b"content-length:"):
+                            length = int(line.split(b":", 1)[1].strip())
+                    if length:
+                        await reader.readexactly(length)
+                    entered.set()
+                    await reader.read(1)
+                    disconnected.set()
+                finally:
+                    writer.close()
+                    await writer.wait_closed()
+    
+            server = await asyncio.start_server(handler, "127.0.0.1", 0)
+            return server, entered, disconnected
+    
+        async def wait_event(event):
+            await asyncio.wait_for(event.wait(), timeout=5)
+    
+>       server, entered, disconnected = client.portal.call(start_server)
+                                        ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+tests/test_exchange_isolation.py:151: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+.venv/lib/python3.14/site-packages/anyio/from_thread.py:338: in call
+    return cast(T_Retval, self.start_task_soon(func, *args).result())
+                          ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+<python-stdlib>/concurrent/futures/_base.py:454: in result
+    return self.__get_result()
+           ^^^^^^^^^^^^^^^^^^^
+<python-stdlib>/concurrent/futures/_base.py:396: in __get_result
+    raise self._exception
+.venv/lib/python3.14/site-packages/anyio/from_thread.py:263: in _call_func
+    retval = await retval_or_awaitable
+             ^^^^^^^^^^^^^^^^^^^^^^^^^
+tests/test_exchange_isolation.py:145: in start_server
+    server = await asyncio.start_server(handler, "127.0.0.1", 0)
+             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+<python-stdlib>/asyncio/streams.py:84: in start_server
+    return await loop.create_server(factory, host, port, **kwds)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+self = <_UnixSelectorEventLoop running=True closed=False debug=False>
+protocol_factory = <function start_server.<locals>.factory at 0x112933a00>
+host = '127.0.0.1', port = 0, family = <AddressFamily.AF_UNSPEC: 0>
+flags = <AddressInfo.AI_PASSIVE: 1>
+sock = <socket.socket [closed] fd=-1, family=2, type=1, proto=6>, backlog = 100
+ssl = None, reuse_address = True, reuse_port = None, keep_alive = None
+ssl_handshake_timeout = None, ssl_shutdown_timeout = None, start_serving = True
+
+    async def create_server(
+            self, protocol_factory, host=None, port=None,
+            *,
+            family=socket.AF_UNSPEC,
+            flags=socket.AI_PASSIVE,
+            sock=None,
+            backlog=100,
+            ssl=None,
+            reuse_address=None,
+            reuse_port=None,
+            keep_alive=None,
+            ssl_handshake_timeout=None,
+            ssl_shutdown_timeout=None,
+            start_serving=True):
+        """Create a TCP server.
+    
+        The host parameter can be a string, in that case the TCP server is
+        bound to host and port.
+    
+        The host parameter can also be a sequence of strings and in that
+        case the TCP server is bound to all hosts of the sequence.  If
+        a host appears multiple times (possibly indirectly e.g. when
+        hostnames resolve to the same IP address), the server is only bound
+        once to that host.
+    
+        Return a Server object which can be used to stop the service.
+    
+        This method is a coroutine.
+        """
+        if isinstance(ssl, bool):
+            raise TypeError('ssl argument must be an SSLContext or None')
+    
+        if ssl_handshake_timeout is not None and ssl is None:
+            raise ValueError(
+                'ssl_handshake_timeout is only meaningful with ssl')
+    
+        if ssl_shutdown_timeout is not None and ssl is None:
+            raise ValueError(
+                'ssl_shutdown_timeout is only meaningful with ssl')
+    
+        if sock is not None:
+            _check_ssl_socket(sock)
+    
+        if host is not None or port is not None:
+            if sock is not None:
+                raise ValueError(
+                    'host/port and sock can not be specified at the same time')
+    
+            if reuse_address is None:
+                reuse_address = os.name == "posix" and sys.platform != "cygwin"
+            sockets = []
+            if host == '':
+                hosts = [None]
+            elif (isinstance(host, str) or
+                  not isinstance(host, collections.abc.Iterable)):
+                hosts = [host]
+            else:
+                hosts = host
+    
+            fs = [self._create_server_getaddrinfo(host, port, family=family,
+                                                  flags=flags)
+                  for host in hosts]
+            infos = await tasks.gather(*fs)
+            infos = set(itertools.chain.from_iterable(infos))
+    
+            completed = False
+            try:
+                for res in infos:
+                    af, socktype, proto, canonname, sa = res
+                    try:
+                        sock = socket.socket(af, socktype, proto)
+                    except socket.error:
+                        # Assume it's a bad family/type/protocol combination.
+                        if self._debug:
+                            logger.warning('create_server() failed to create '
+                                           'socket.socket(%r, %r, %r)',
+                                           af, socktype, proto, exc_info=True)
+                        continue
+                    sockets.append(sock)
+                    if reuse_address:
+                        sock.setsockopt(
+                            socket.SOL_SOCKET, socket.SO_REUSEADDR, True)
+                    # Since Linux 6.12.9, SO_REUSEPORT is not allowed
+                    # on other address families than AF_INET/AF_INET6.
+                    if reuse_port and af in (socket.AF_INET, socket.AF_INET6):
+                        _set_reuseport(sock)
+                    if keep_alive:
+                        sock.setsockopt(
+                            socket.SOL_SOCKET, socket.SO_KEEPALIVE, True)
+                    # Disable IPv4/IPv6 dual stack support (enabled by
+                    # default on Linux) which makes a single socket
+                    # listen on both address families.
+                    if (_HAS_IPv6 and
+                            af == socket.AF_INET6 and
+                            hasattr(socket, 'IPPROTO_IPV6')):
+                        sock.setsockopt(socket.IPPROTO_IPV6,
+                                        socket.IPV6_V6ONLY,
+                                        True)
+                    try:
+                        sock.bind(sa)
+                    except OSError as err:
+                        msg = ('error while attempting '
+                               'to bind on address %r: %s'
+                               % (sa, str(err).lower()))
+                        if err.errno == errno.EADDRNOTAVAIL:
+                            # Assume the family is not enabled (bpo-30945)
+                            sockets.pop()
+                            sock.close()
+                            if self._debug:
+                                logger.warning(msg)
+                            continue
+>                       raise OSError(err.errno, msg) from None
+E                       PermissionError: [Errno 1] error while attempting to bind on address ('127.0.0.1', 0): [errno 1] operation not permitted
+
+<python-stdlib>/asyncio/base_events.py:1637: PermissionError
+__________ test_model_confirmed_candidate_generates_once_and_charges ___________
+
+client = <starlette.testclient.TestClient object at 0x1129f69c0>
+dev_headers = {'X-Dev-User': 'smoke_tester'}
+monkeypatch = <_pytest.monkeypatch.MonkeyPatch object at 0x1106faf20>
+tmp_path = PosixPath('<pytest-temp>/pytest-12/test_model_confirmed_candidate0')
+
+    def test_model_confirmed_candidate_generates_once_and_charges(client, dev_headers, monkeypatch, tmp_path):
+        import services.chat_service as chat
+        import database
+        from auth import create_token
+        from utils import media
+    
+        generated = []
+        path = tmp_path / "generated_precision.png"
+        monkeypatch.setattr(media, "UPLOADS_DIR", str(tmp_path))
+    
+        classified = []
+    
+        def classify(_client, message, _history):
+            classified.append(message)
+            return {"intent": "generate_image", "params": {
+                "prompt": "橘猫在窗边晒太阳", "aspect_ratio": "16:9",
+            }, "missing": []}
+    
+        async def generate(prompt, ratio):
+            generated.append((prompt, ratio))
+            path.write_bytes(b"test-image")
+            return {"image_path": "/uploads/generated_precision.png", "model": "fake", "width": 1, "height": 1}
+    
+        monkeypatch.setattr(chat, "recognize_intent", classify)
+        monkeypatch.setattr(chat, "generate_image", generate)
+    
+        user = dev_headers["X-Dev-User"]
+        assert client.post("/conversations", json={}, headers=dev_headers).status_code == 201
+        before = asyncio.run(database.get_strawberry_balance(user))
+        version = asyncio.run(database.get_session_version(user))
+        monkeypatch.setenv("DEV_MODE", "0")
+        headers = {"Authorization": f"Bearer {create_token(user, version)}"}
+        output = _events(client.post("/chat", headers=headers, json={"message": "画一只猫"}))
+        assert classified == ["画一只猫"]
+>       assert generated == [("画一只猫", "16:9")]
+E       AssertionError: assert [] == [('画一只猫', '16:9')]
+E         
+E         Right contains one more item: ('画一只猫', '16:9')
+E         Use -v to get more diff
+
+tests/test_image_intent_precision.py:176: AssertionError
+----------------------------- Captured stdout call -----------------------------
+[硬词检测] chars=4, detected_count=0
+[意图识别] chars=4, intent=generate_image, missing=[]
+_ test_confirmed_candidate_without_model_prompt_uses_original_text[classified0] _
+
+client = <starlette.testclient.TestClient object at 0x112b73020>
+dev_headers = {'X-Dev-User': 'smoke_tester'}
+monkeypatch = <_pytest.monkeypatch.MonkeyPatch object at 0x11273b9a0>
+tmp_path = PosixPath('<pytest-temp>/pytest-12/test_confirmed_candidate_witho0')
+classified = {'intent': 'generate_image', 'params': {}, 'missing': []}
+
+    @pytest.mark.parametrize("classified", [
+        {"intent": "generate_image", "params": {}, "missing": []},
+        {"intent": "generate_image"},
+    ])
+    def test_confirmed_candidate_without_model_prompt_uses_original_text(
+        client, dev_headers, monkeypatch, tmp_path, classified,
+    ):
+        import services.chat_service as chat
+        from utils import media
+    
+        monkeypatch.setattr(media, "UPLOADS_DIR", str(tmp_path))
+        path = tmp_path / "generated_original_prompt.png"
+        classified_messages = []
+        generated = []
+    
+        def classify(_client, message, _history):
+            classified_messages.append(message)
+            return classified
+    
+        async def generate(prompt, ratio):
+            generated.append((prompt, ratio))
+            path.write_bytes(b"test-image")
+            return {"image_path": "/uploads/generated_original_prompt.png", "model": "fake", "width": 1, "height": 1}
+    
+        monkeypatch.setattr(chat, "recognize_intent", classify)
+        monkeypatch.setattr(chat, "generate_image", generate)
+        output = _events(client.post("/chat", headers=dev_headers, json={"message": "画一只猫"}))
+        assert classified_messages == ["画一只猫"]
+>       assert generated == [("画一只猫", "1:1")]
+E       AssertionError: assert [] == [('画一只猫', '1:1')]
+E         
+E         Right contains one more item: ('画一只猫', '1:1')
+E         Use -v to get more diff
+
+tests/test_image_intent_precision.py:210: AssertionError
+----------------------------- Captured stdout call -----------------------------
+[硬词检测] chars=4, detected_count=0
+[意图识别] chars=4, intent=generate_image, missing=[]
+_ test_confirmed_candidate_without_model_prompt_uses_original_text[classified1] _
+
+client = <starlette.testclient.TestClient object at 0x112b73680>
+dev_headers = {'X-Dev-User': 'smoke_tester'}
+monkeypatch = <_pytest.monkeypatch.MonkeyPatch object at 0x1129afee0>
+tmp_path = PosixPath('<pytest-temp>/pytest-12/test_confirmed_candidate_witho1')
+classified = {'intent': 'generate_image'}
+
+    @pytest.mark.parametrize("classified", [
+        {"intent": "generate_image", "params": {}, "missing": []},
+        {"intent": "generate_image"},
+    ])
+    def test_confirmed_candidate_without_model_prompt_uses_original_text(
+        client, dev_headers, monkeypatch, tmp_path, classified,
+    ):
+        import services.chat_service as chat
+        from utils import media
+    
+        monkeypatch.setattr(media, "UPLOADS_DIR", str(tmp_path))
+        path = tmp_path / "generated_original_prompt.png"
+        classified_messages = []
+        generated = []
+    
+        def classify(_client, message, _history):
+            classified_messages.append(message)
+            return classified
+    
+        async def generate(prompt, ratio):
+            generated.append((prompt, ratio))
+            path.write_bytes(b"test-image")
+            return {"image_path": "/uploads/generated_original_prompt.png", "model": "fake", "width": 1, "height": 1}
+    
+        monkeypatch.setattr(chat, "recognize_intent", classify)
+        monkeypatch.setattr(chat, "generate_image", generate)
+        output = _events(client.post("/chat", headers=dev_headers, json={"message": "画一只猫"}))
+        assert classified_messages == ["画一只猫"]
+>       assert generated == [("画一只猫", "1:1")]
+E       AssertionError: assert [] == [('画一只猫', '1:1')]
+E         
+E         Right contains one more item: ('画一只猫', '1:1')
+E         Use -v to get more diff
+
+tests/test_image_intent_precision.py:210: AssertionError
+----------------------------- Captured stdout call -----------------------------
+[硬词检测] chars=4, detected_count=0
+[意图识别] chars=4, intent=generate_image, missing=None
+________ test_model_missing_prompt_overrides_populated_regex_candidate _________
+
+client = <starlette.testclient.TestClient object at 0x1129f7790>
+dev_headers = {'X-Dev-User': 'smoke_tester'}
+monkeypatch = <_pytest.monkeypatch.MonkeyPatch object at 0x10feb4750>
+
+    def test_model_missing_prompt_overrides_populated_regex_candidate(client, dev_headers, monkeypatch):
+        import database
+        import services.chat_service as chat
+        from auth import create_token
+        from intent_router import get_pending
+    
+        message = "画一只猫"
+        assert explicit_image_intent(message)["missing"] == []
+        conversation = client.post("/conversations", json={}, headers=dev_headers).json()["conversation"]["id"]
+        user = dev_headers["X-Dev-User"]
+        before = asyncio.run(database.get_strawberry_balance(user))
+        version = asyncio.run(database.get_session_version(user))
+        generated = []
+        classified = []
+    
+        def classify(_client, text, _history):
+            classified.append(text)
+            return {"intent": "generate_image", "params": {"prompt": "模型猜的猫"},
+                    "missing": ["prompt"]}
+    
+        async def generate(*args):
+            generated.append(args)
+            raise AssertionError("model says scene is missing")
+    
+        monkeypatch.setattr(chat, "recognize_intent", classify)
+        monkeypatch.setattr(chat, "generate_image", generate)
+        monkeypatch.setenv("DEV_MODE", "0")
+        headers = {"Authorization": f"Bearer {create_token(user, version)}"}
+        output = _events(client.post("/chat", headers=headers, json={
+            "conversation_id": conversation, "message": message,
+        }))
+        assert classified == [message]
+        assert generated == []
+>       assert output[0]["text"].startswith("想生成什么画面")
+E       AssertionError: assert False
+E        +  where False = <built-in method startswith of str object at 0x112a03170>('想生成什么画面')
+E        +    where <built-in method startswith of str object at 0x112a03170> = '测试'.startswith
+
+tests/test_image_intent_precision.py:249: AssertionError
+----------------------------- Captured stdout call -----------------------------
+[硬词检测] chars=4, detected_count=0
+[意图识别] chars=4, intent=generate_image, missing=['prompt']
+_ test_natural_image_uses_complete_message_not_model_excerpt[\u753b\u4e00\u53ea\u5728\u5348\u591c\u706f\u5854\u8fb9\u7b49\u8239\u7684\u9ed1\u732b\uff0c\u80cc\u666f\u662f\u6f6e\u6c50\u4e0e\u84dd\u8272\u7eb8\u706f\uff0c\u6a2a\u724816:9-9:16-16:9-True] _
+
+client = <starlette.testclient.TestClient object at 0x1129f7020>
+dev_headers = {'X-Dev-User': 'smoke_tester'}
+monkeypatch = <_pytest.monkeypatch.MonkeyPatch object at 0x112c5fc40>
+tmp_path = PosixPath('<pytest-temp>/pytest-12/test_natural_image_uses_comple0')
+message = '画一只在午夜灯塔边等船的黑猫，背景是潮汐与蓝色纸灯，横版16:9', model_ratio = '9:16'
+expected_ratio = '16:9', is_candidate = True
+
+    @pytest.mark.parametrize("message,model_ratio,expected_ratio,is_candidate", [
+        ("画一只在午夜灯塔边等船的黑猫，背景是潮汐与蓝色纸灯，横版16:9", "9:16", "16:9", True),
+        ("午夜灯塔旁的黑猫与蓝色纸灯，请将海雾画出来", "9:16", "9:16", False),
+        ("山顶风车与落日，请给我一幅正方形插画", "9:16", "1:1", False),
+    ])
+    def test_natural_image_uses_complete_message_not_model_excerpt(
+        client, dev_headers, monkeypatch, tmp_path, message, model_ratio, expected_ratio, is_candidate,
+    ):
+        """The classifier may truncate or rewrite a prompt; only the user text is sent."""
+        import services.chat_service as chat
+        from utils import media
+    
+        assert bool(explicit_image_intent(message)) is is_candidate
+        monkeypatch.setattr(media, "UPLOADS_DIR", str(tmp_path))
+        generated = []
+        classified = []
+        path = tmp_path / "complete_original.png"
+    
+        def classify(_client, text, _history):
+            classified.append(text)
+            return {"intent": "generate_image", "params": {
+                "prompt": "黑猫", "aspect_ratio": model_ratio,
+            }, "missing": []}
+    
+        async def generate(prompt, ratio):
+            generated.append((prompt, ratio))
+            path.write_bytes(b"test-image")
+            return {"image_path": "/uploads/complete_original.png", "model": "fake", "width": 1, "height": 1}
+    
+        monkeypatch.setattr(chat, "recognize_intent", classify)
+        monkeypatch.setattr(chat, "generate_image", generate)
+        output = _events(client.post("/chat", headers=dev_headers, json={"message": message}))
+        assert classified == [message]
+>       assert generated == [(message, expected_ratio)]
+E       AssertionError: assert [] == [('画一只在午夜灯塔边等...6:9', '16:9')]
+E         
+E         Right contains one more item: ('画一只在午夜灯塔边等船的黑猫，背景是潮汐与蓝色纸灯，横版16:9', '16:9')
+E         Use -v to get more diff
+
+tests/test_image_intent_precision.py:325: AssertionError
+----------------------------- Captured stdout call -----------------------------
+[硬词检测] chars=32, detected_count=0
+[意图识别] chars=32, intent=generate_image, missing=[]
+_ test_natural_image_uses_complete_message_not_model_excerpt[\u5348\u591c\u706f\u5854\u65c1\u7684\u9ed1\u732b\u4e0e\u84dd\u8272\u7eb8\u706f\uff0c\u8bf7\u5c06\u6d77\u96fe\u753b\u51fa\u6765-9:16-9:16-False] _
+
+client = <starlette.testclient.TestClient object at 0x1129f6f10>
+dev_headers = {'X-Dev-User': 'smoke_tester'}
+monkeypatch = <_pytest.monkeypatch.MonkeyPatch object at 0x112afef90>
+tmp_path = PosixPath('<pytest-temp>/pytest-12/test_natural_image_uses_comple1')
+message = '午夜灯塔旁的黑猫与蓝色纸灯，请将海雾画出来', model_ratio = '9:16', expected_ratio = '9:16'
+is_candidate = False
+
+    @pytest.mark.parametrize("message,model_ratio,expected_ratio,is_candidate", [
+        ("画一只在午夜灯塔边等船的黑猫，背景是潮汐与蓝色纸灯，横版16:9", "9:16", "16:9", True),
+        ("午夜灯塔旁的黑猫与蓝色纸灯，请将海雾画出来", "9:16", "9:16", False),
+        ("山顶风车与落日，请给我一幅正方形插画", "9:16", "1:1", False),
+    ])
+    def test_natural_image_uses_complete_message_not_model_excerpt(
+        client, dev_headers, monkeypatch, tmp_path, message, model_ratio, expected_ratio, is_candidate,
+    ):
+        """The classifier may truncate or rewrite a prompt; only the user text is sent."""
+        import services.chat_service as chat
+        from utils import media
+    
+        assert bool(explicit_image_intent(message)) is is_candidate
+        monkeypatch.setattr(media, "UPLOADS_DIR", str(tmp_path))
+        generated = []
+        classified = []
+        path = tmp_path / "complete_original.png"
+    
+        def classify(_client, text, _history):
+            classified.append(text)
+            return {"intent": "generate_image", "params": {
+                "prompt": "黑猫", "aspect_ratio": model_ratio,
+            }, "missing": []}
+    
+        async def generate(prompt, ratio):
+            generated.append((prompt, ratio))
+            path.write_bytes(b"test-image")
+            return {"image_path": "/uploads/complete_original.png", "model": "fake", "width": 1, "height": 1}
+    
+        monkeypatch.setattr(chat, "recognize_intent", classify)
+        monkeypatch.setattr(chat, "generate_image", generate)
+        output = _events(client.post("/chat", headers=dev_headers, json={"message": message}))
+        assert classified == [message]
+>       assert generated == [(message, expected_ratio)]
+E       AssertionError: assert [] == [('午夜灯塔旁的黑猫与蓝...画出来', '9:16')]
+E         
+E         Right contains one more item: ('午夜灯塔旁的黑猫与蓝色纸灯，请将海雾画出来', '9:16')
+E         Use -v to get more diff
+
+tests/test_image_intent_precision.py:325: AssertionError
+----------------------------- Captured stdout call -----------------------------
+[硬词检测] chars=21, detected_count=0
+[意图识别] chars=21, intent=generate_image, missing=[]
+_ test_natural_image_uses_complete_message_not_model_excerpt[\u5c71\u9876\u98ce\u8f66\u4e0e\u843d\u65e5\uff0c\u8bf7\u7ed9\u6211\u4e00\u5e45\u6b63\u65b9\u5f62\u63d2\u753b-9:16-1:1-False] _
+
+client = <starlette.testclient.TestClient object at 0x1129f6e00>
+dev_headers = {'X-Dev-User': 'smoke_tester'}
+monkeypatch = <_pytest.monkeypatch.MonkeyPatch object at 0x11012e5f0>
+tmp_path = PosixPath('<pytest-temp>/pytest-12/test_natural_image_uses_comple2')
+message = '山顶风车与落日，请给我一幅正方形插画', model_ratio = '9:16', expected_ratio = '1:1'
+is_candidate = False
+
+    @pytest.mark.parametrize("message,model_ratio,expected_ratio,is_candidate", [
+        ("画一只在午夜灯塔边等船的黑猫，背景是潮汐与蓝色纸灯，横版16:9", "9:16", "16:9", True),
+        ("午夜灯塔旁的黑猫与蓝色纸灯，请将海雾画出来", "9:16", "9:16", False),
+        ("山顶风车与落日，请给我一幅正方形插画", "9:16", "1:1", False),
+    ])
+    def test_natural_image_uses_complete_message_not_model_excerpt(
+        client, dev_headers, monkeypatch, tmp_path, message, model_ratio, expected_ratio, is_candidate,
+    ):
+        """The classifier may truncate or rewrite a prompt; only the user text is sent."""
+        import services.chat_service as chat
+        from utils import media
+    
+        assert bool(explicit_image_intent(message)) is is_candidate
+        monkeypatch.setattr(media, "UPLOADS_DIR", str(tmp_path))
+        generated = []
+        classified = []
+        path = tmp_path / "complete_original.png"
+    
+        def classify(_client, text, _history):
+            classified.append(text)
+            return {"intent": "generate_image", "params": {
+                "prompt": "黑猫", "aspect_ratio": model_ratio,
+            }, "missing": []}
+    
+        async def generate(prompt, ratio):
+            generated.append((prompt, ratio))
+            path.write_bytes(b"test-image")
+            return {"image_path": "/uploads/complete_original.png", "model": "fake", "width": 1, "height": 1}
+    
+        monkeypatch.setattr(chat, "recognize_intent", classify)
+        monkeypatch.setattr(chat, "generate_image", generate)
+        output = _events(client.post("/chat", headers=dev_headers, json={"message": message}))
+        assert classified == [message]
+>       assert generated == [(message, expected_ratio)]
+E       AssertionError: assert [] == [('山顶风车与落日，请给...方形插画', '1:1')]
+E         
+E         Right contains one more item: ('山顶风车与落日，请给我一幅正方形插画', '1:1')
+E         Use -v to get more diff
+
+tests/test_image_intent_precision.py:325: AssertionError
+----------------------------- Captured stdout call -----------------------------
+[硬词检测] chars=18, detected_count=0
+[意图识别] chars=18, intent=generate_image, missing=[]
+_ test_text_ratio_precedes_chat_field_but_image_button_keeps_selection[chat-16:9-1] _
+
+client = <starlette.testclient.TestClient object at 0x1129f49e0>
+dev_headers = {'X-Dev-User': 'smoke_tester'}
+monkeypatch = <_pytest.monkeypatch.MonkeyPatch object at 0x10f0e0d00>
+tmp_path = PosixPath('<pytest-temp>/pytest-12/test_text_ratio_precedes_chat_0')
+mode = 'chat', expected_ratio = '16:9', expected_classifications = 1
+
+    @pytest.mark.parametrize("mode,expected_ratio,expected_classifications", [
+        ("chat", "16:9", 1),
+        ("image", "9:16", 0),
+    ])
+    def test_text_ratio_precedes_chat_field_but_image_button_keeps_selection(
+        client, dev_headers, monkeypatch, tmp_path, mode, expected_ratio, expected_classifications,
+    ):
+        import services.chat_service as chat
+        from utils import media
+    
+        monkeypatch.setattr(media, "UPLOADS_DIR", str(tmp_path))
+        message = "画一只在雾中等船的黑猫，远处有灯塔，横版16:9"
+        path = tmp_path / "ratio_precedence.png"
+        classified = []
+        generated = []
+    
+        def classify(_client, text, _history):
+            classified.append(text)
+            return {"intent": "generate_image", "params": {
+                "prompt": "被缩短的黑猫", "aspect_ratio": "9:16",
+            }, "missing": []}
+    
+        async def generate(prompt, ratio):
+            generated.append((prompt, ratio))
+            path.write_bytes(b"test-image")
+            return {"image_path": "/uploads/ratio_precedence.png", "model": "fake", "width": 1, "height": 1}
+    
+        monkeypatch.setattr(chat, "recognize_intent", classify)
+        monkeypatch.setattr(chat, "generate_image", generate)
+        output = _events(client.post("/chat", headers=dev_headers, json={
+            "mode": mode, "aspect_ratio": "9:16", "message": message,
+        }))
+        assert classified == [message] * expected_classifications
+>       assert generated == [(message, expected_ratio)]
+E       AssertionError: assert [] == [('画一只在雾中等船的黑...6:9', '16:9')]
+E         
+E         Right contains one more item: ('画一只在雾中等船的黑猫，远处有灯塔，横版16:9', '16:9')
+E         Use -v to get more diff
+
+tests/test_image_intent_precision.py:363: AssertionError
+----------------------------- Captured stdout call -----------------------------
+[硬词检测] chars=24, detected_count=0
+[意图识别] chars=24, intent=generate_image, missing=[]
+_____________ test_rejected_candidate_cannot_fill_old_image_prompt _____________
+
+client = <starlette.testclient.TestClient object at 0x1129f6470>
+dev_headers = {'X-Dev-User': 'smoke_tester'}
+monkeypatch = <_pytest.monkeypatch.MonkeyPatch object at 0x112aff770>
+
+    def test_rejected_candidate_cannot_fill_old_image_prompt(client, dev_headers, monkeypatch):
+        import services.chat_service as chat
+        from intent_router import get_pending, set_pending
+    
+        conversation = client.post("/conversations", json={}, headers=dev_headers).json()["conversation"]["id"]
+        key = ("smoke_tester", conversation)
+        set_pending(key, {"intent": "generate_image", "params": {}, "missing": ["prompt"]})
+        classified = []
+    
+        def classify(_client, message, _history):
+            classified.append(message)
+            return {"intent": None}
+    
+        async def no_image(*args):
+            raise AssertionError("a rejected candidate cannot fill an old image prompt")
+    
+        monkeypatch.setattr(chat, "recognize_intent", classify)
+        monkeypatch.setattr(chat, "generate_image", no_image)
+        output = _events(client.post("/chat", headers=dev_headers, json={
+            "conversation_id": conversation, "message": "生成一张图片失败了",
+        }))
+        assert classified == ["生成一张图片失败了"]
+        assert any("测试" in event.get("text", "") for event in output)
+        assert not any("generated_image" in event for event in output)
+>       assert get_pending(key) is not None
+E       AssertionError: assert None is not None
+E        +  where None = <function get_pending at 0x10e8b8720>(('smoke_tester', '37b09189-b336-4b57-b01f-877df67f2a8b'))
+
+tests/test_image_intent_precision.py:457: AssertionError
+----------------------------- Captured stdout call -----------------------------
+[硬词检测] chars=9, detected_count=0
+[意图识别] chars=9, intent=None, missing=None
+_______________ test_confirmed_candidate_bypasses_active_mirror ________________
+
+client = <starlette.testclient.TestClient object at 0x1129f5ae0>
+dev_headers = {'X-Dev-User': 'smoke_tester'}
+monkeypatch = <_pytest.monkeypatch.MonkeyPatch object at 0x112a66120>
+tmp_path = PosixPath('<pytest-temp>/pytest-12/test_confirmed_candidate_bypas0')
+
+    def test_confirmed_candidate_bypasses_active_mirror(client, dev_headers, monkeypatch, tmp_path):
+        import services.chat_service as chat
+        from mode_switcher import set_user_mode
+        from utils import media
+    
+        conversation = client.post("/conversations", json={}, headers=dev_headers).json()["conversation"]["id"]
+        set_user_mode(("smoke_tester", conversation), "mirror", "manual")
+        monkeypatch.setattr(media, "UPLOADS_DIR", str(tmp_path))
+        path = tmp_path / "mirror_generated.png"
+        calls = []
+        generated = []
+    
+        def classify(_client, message, _history):
+            calls.append(message)
+            return {"intent": "generate_image", "params": {}, "missing": []}
+    
+        async def generate(prompt, ratio):
+            generated.append((prompt, ratio))
+            path.write_bytes(b"test-image")
+            return {"image_path": "/uploads/mirror_generated.png", "model": "fake", "width": 1, "height": 1}
+    
+        async def no_mirror(*args):
+            raise AssertionError("confirmed image request must bypass mirror response")
+            yield ""
+    
+        monkeypatch.setattr(chat, "recognize_intent", classify)
+        monkeypatch.setattr(chat, "generate_image", generate)
+        monkeypatch.setattr(chat, "stream_mirror", no_mirror)
+        monkeypatch.setattr(chat, "detect_mode", lambda *args: (_ for _ in ()).throw(
+            AssertionError("confirmed image request must bypass mode detection")
+        ))
+        output = _events(client.post("/chat", headers=dev_headers, json={
+            "conversation_id": conversation, "message": "画一只猫",
+        }))
+        assert calls == ["画一只猫"]
+>       assert generated == [("画一只猫", "1:1")]
+E       AssertionError: assert [] == [('画一只猫', '1:1')]
+E         
+E         Right contains one more item: ('画一只猫', '1:1')
+E         Use -v to get more diff
+
+tests/test_image_intent_precision.py:543: AssertionError
+----------------------------- Captured stdout call -----------------------------
+[硬词检测] chars=4, detected_count=0
+[意图识别] chars=4, intent=generate_image, missing=[]
+_ test_selection_reaches_every_image_path_without_changing_default_arguments[chat_intent-omitted] _
+
+client = <starlette.testclient.TestClient object at 0x1129f5f20>
+dev_headers = {'X-Dev-User': 'smoke_tester'}
+monkeypatch = <_pytest.monkeypatch.MonkeyPatch object at 0x1129afee0>
+image_env = PosixPath('<pytest-temp>/pytest-12/test_selection_reaches_every_i9/model-images')
+model_id = None, path = 'chat_intent'
+
+    @pytest.mark.parametrize("model_id", [None, _QWEN, _SEEDREAM], ids=["omitted", "default", "seedream"])
+    @pytest.mark.parametrize("path", ["image", "image_edit", "image_edit_multi", "chat_intent", "chat_pending"])
+    def test_selection_reaches_every_image_path_without_changing_default_arguments(
+        client, dev_headers, monkeypatch, image_env, model_id, path,
+    ):
+        import database
+        import services.chat_service as chat
+        from intent_router import get_pending, set_pending
+    
+        conversation = _conversation(client, dev_headers)
+        user = dev_headers["X-Dev-User"]
+        key = (user, conversation)
+        calls = []
+        traces = []
+        prompt = "画一只窗台上的橘猫" if path == "chat_intent" else "窗台上睡觉的橘猫"
+        mode = "image_edit" if path.startswith("image_edit") else ("image" if path == "image" else "chat")
+        body = {"conversation_id": conversation, "message": prompt, "mode": mode}
+        if model_id is not None:
+            body["image_model"] = model_id
+    
+        async def record(*args, **kwargs):
+            calls.append((args, kwargs))
+            name = f"generated_{uuid4().hex}.png"
+            (image_env / name).write_bytes(_png())
+            return {"image_path": f"/uploads/{name}", "model": "actual-provider-model", "width": 24, "height": 16}
+    
+        async def log(*args, **kwargs):
+            traces.append(kwargs["payload"].copy())
+    
+        monkeypatch.setattr(chat, "generate_image", record)
+        monkeypatch.setattr(chat, "edit_image", record)
+        monkeypatch.setattr(chat, "log_event", log)
+        if path.startswith("image_edit"):
+            references = [_reference(image_env, color=color) for color in (
+                ["red", "green"] if path == "image_edit_multi" else ["red"]
+            )]
+            for reference in references:
+                assert asyncio.run(database.save_message(user, "assistant", "参考图", reference, conversation_id=conversation))
+            if path == "image_edit_multi":
+                body["reference_image_paths"] = references
+                expected_args = (prompt, references, None)
+            else:
+                body["reference_image_path"] = references[0]
+                expected_args = (prompt, references[0], None)
+        elif path == "image":
+            body["aspect_ratio"] = "16:9"
+            expected_args = (prompt, "16:9")
+        else:
+            expected_args = (prompt, "1:1")
+            if path == "chat_intent":
+                monkeypatch.setattr(chat, "recognize_intent", lambda *args, **kwargs: {
+                    "intent": "generate_image", "params": {"prompt": "分类器缩短内容"}, "missing": [],
+                })
+            else:
+                set_pending(key, {"intent": "generate_image", "params": {}, "missing": ["prompt"]})
+    
+        output = _events(client.post("/chat", headers=dev_headers, json=body))
+        assert output[-1] == {"done": True}
+>       assert sum("generated_image" in event for event in output) == 1
+E       assert 0 == 1
+E        +  where 0 = sum(<generator object test_selection_reaches_every_image_path_without_changing_default_arguments.<locals>.<genexpr> at 0x112c2a5a0>)
+
+tests/test_image_model_choice.py:291: AssertionError
+----------------------------- Captured stdout call -----------------------------
+[硬词检测] chars=9, detected_count=0
+[意图识别] chars=9, intent=generate_image, missing=[]
+_ test_selection_reaches_every_image_path_without_changing_default_arguments[chat_intent-default] _
+
+client = <starlette.testclient.TestClient object at 0x1129f45a0>
+dev_headers = {'X-Dev-User': 'smoke_tester'}
+monkeypatch = <_pytest.monkeypatch.MonkeyPatch object at 0x112affee0>
+image_env = PosixPath('<pytest-temp>/pytest-12/test_selection_reaches_every_i10/model-images')
+model_id = 'qwen-image-3.0', path = 'chat_intent'
+
+    @pytest.mark.parametrize("model_id", [None, _QWEN, _SEEDREAM], ids=["omitted", "default", "seedream"])
+    @pytest.mark.parametrize("path", ["image", "image_edit", "image_edit_multi", "chat_intent", "chat_pending"])
+    def test_selection_reaches_every_image_path_without_changing_default_arguments(
+        client, dev_headers, monkeypatch, image_env, model_id, path,
+    ):
+        import database
+        import services.chat_service as chat
+        from intent_router import get_pending, set_pending
+    
+        conversation = _conversation(client, dev_headers)
+        user = dev_headers["X-Dev-User"]
+        key = (user, conversation)
+        calls = []
+        traces = []
+        prompt = "画一只窗台上的橘猫" if path == "chat_intent" else "窗台上睡觉的橘猫"
+        mode = "image_edit" if path.startswith("image_edit") else ("image" if path == "image" else "chat")
+        body = {"conversation_id": conversation, "message": prompt, "mode": mode}
+        if model_id is not None:
+            body["image_model"] = model_id
+    
+        async def record(*args, **kwargs):
+            calls.append((args, kwargs))
+            name = f"generated_{uuid4().hex}.png"
+            (image_env / name).write_bytes(_png())
+            return {"image_path": f"/uploads/{name}", "model": "actual-provider-model", "width": 24, "height": 16}
+    
+        async def log(*args, **kwargs):
+            traces.append(kwargs["payload"].copy())
+    
+        monkeypatch.setattr(chat, "generate_image", record)
+        monkeypatch.setattr(chat, "edit_image", record)
+        monkeypatch.setattr(chat, "log_event", log)
+        if path.startswith("image_edit"):
+            references = [_reference(image_env, color=color) for color in (
+                ["red", "green"] if path == "image_edit_multi" else ["red"]
+            )]
+            for reference in references:
+                assert asyncio.run(database.save_message(user, "assistant", "参考图", reference, conversation_id=conversation))
+            if path == "image_edit_multi":
+                body["reference_image_paths"] = references
+                expected_args = (prompt, references, None)
+            else:
+                body["reference_image_path"] = references[0]
+                expected_args = (prompt, references[0], None)
+        elif path == "image":
+            body["aspect_ratio"] = "16:9"
+            expected_args = (prompt, "16:9")
+        else:
+            expected_args = (prompt, "1:1")
+            if path == "chat_intent":
+                monkeypatch.setattr(chat, "recognize_intent", lambda *args, **kwargs: {
+                    "intent": "generate_image", "params": {"prompt": "分类器缩短内容"}, "missing": [],
+                })
+            else:
+                set_pending(key, {"intent": "generate_image", "params": {}, "missing": ["prompt"]})
+    
+        output = _events(client.post("/chat", headers=dev_headers, json=body))
+        assert output[-1] == {"done": True}
+>       assert sum("generated_image" in event for event in output) == 1
+E       assert 0 == 1
+E        +  where 0 = sum(<generator object test_selection_reaches_every_image_path_without_changing_default_arguments.<locals>.<genexpr> at 0x112d3cc70>)
+
+tests/test_image_model_choice.py:291: AssertionError
+----------------------------- Captured stdout call -----------------------------
+[硬词检测] chars=9, detected_count=0
+[意图识别] chars=9, intent=generate_image, missing=[]
+_ test_selection_reaches_every_image_path_without_changing_default_arguments[chat_intent-seedream] _
+
+client = <starlette.testclient.TestClient object at 0x1129f6250>
+dev_headers = {'X-Dev-User': 'smoke_tester'}
+monkeypatch = <_pytest.monkeypatch.MonkeyPatch object at 0x112a67ee0>
+image_env = PosixPath('<pytest-temp>/pytest-12/test_selection_reaches_every_i11/model-images')
+model_id = 'seedream-5.0-flash', path = 'chat_intent'
+
+    @pytest.mark.parametrize("model_id", [None, _QWEN, _SEEDREAM], ids=["omitted", "default", "seedream"])
+    @pytest.mark.parametrize("path", ["image", "image_edit", "image_edit_multi", "chat_intent", "chat_pending"])
+    def test_selection_reaches_every_image_path_without_changing_default_arguments(
+        client, dev_headers, monkeypatch, image_env, model_id, path,
+    ):
+        import database
+        import services.chat_service as chat
+        from intent_router import get_pending, set_pending
+    
+        conversation = _conversation(client, dev_headers)
+        user = dev_headers["X-Dev-User"]
+        key = (user, conversation)
+        calls = []
+        traces = []
+        prompt = "画一只窗台上的橘猫" if path == "chat_intent" else "窗台上睡觉的橘猫"
+        mode = "image_edit" if path.startswith("image_edit") else ("image" if path == "image" else "chat")
+        body = {"conversation_id": conversation, "message": prompt, "mode": mode}
+        if model_id is not None:
+            body["image_model"] = model_id
+    
+        async def record(*args, **kwargs):
+            calls.append((args, kwargs))
+            name = f"generated_{uuid4().hex}.png"
+            (image_env / name).write_bytes(_png())
+            return {"image_path": f"/uploads/{name}", "model": "actual-provider-model", "width": 24, "height": 16}
+    
+        async def log(*args, **kwargs):
+            traces.append(kwargs["payload"].copy())
+    
+        monkeypatch.setattr(chat, "generate_image", record)
+        monkeypatch.setattr(chat, "edit_image", record)
+        monkeypatch.setattr(chat, "log_event", log)
+        if path.startswith("image_edit"):
+            references = [_reference(image_env, color=color) for color in (
+                ["red", "green"] if path == "image_edit_multi" else ["red"]
+            )]
+            for reference in references:
+                assert asyncio.run(database.save_message(user, "assistant", "参考图", reference, conversation_id=conversation))
+            if path == "image_edit_multi":
+                body["reference_image_paths"] = references
+                expected_args = (prompt, references, None)
+            else:
+                body["reference_image_path"] = references[0]
+                expected_args = (prompt, references[0], None)
+        elif path == "image":
+            body["aspect_ratio"] = "16:9"
+            expected_args = (prompt, "16:9")
+        else:
+            expected_args = (prompt, "1:1")
+            if path == "chat_intent":
+                monkeypatch.setattr(chat, "recognize_intent", lambda *args, **kwargs: {
+                    "intent": "generate_image", "params": {"prompt": "分类器缩短内容"}, "missing": [],
+                })
+            else:
+                set_pending(key, {"intent": "generate_image", "params": {}, "missing": ["prompt"]})
+    
+        output = _events(client.post("/chat", headers=dev_headers, json=body))
+        assert output[-1] == {"done": True}
+>       assert sum("generated_image" in event for event in output) == 1
+E       assert 0 == 1
+E        +  where 0 = sum(<generator object test_selection_reaches_every_image_path_without_changing_default_arguments.<locals>.<genexpr> at 0x112c2b370>)
+
+tests/test_image_model_choice.py:291: AssertionError
+----------------------------- Captured stdout call -----------------------------
+[硬词检测] chars=9, detected_count=0
+[意图识别] chars=9, intent=generate_image, missing=[]
+_ test_selection_reaches_every_image_path_without_changing_default_arguments[chat_pending-omitted] _
+
+client = <starlette.testclient.TestClient object at 0x1129f57b0>
+dev_headers = {'X-Dev-User': 'smoke_tester'}
+monkeypatch = <_pytest.monkeypatch.MonkeyPatch object at 0x112a66c10>
+image_env = PosixPath('<pytest-temp>/pytest-12/test_selection_reaches_every_i12/model-images')
+model_id = None, path = 'chat_pending'
+
+    @pytest.mark.parametrize("model_id", [None, _QWEN, _SEEDREAM], ids=["omitted", "default", "seedream"])
+    @pytest.mark.parametrize("path", ["image", "image_edit", "image_edit_multi", "chat_intent", "chat_pending"])
+    def test_selection_reaches_every_image_path_without_changing_default_arguments(
+        client, dev_headers, monkeypatch, image_env, model_id, path,
+    ):
+        import database
+        import services.chat_service as chat
+        from intent_router import get_pending, set_pending
+    
+        conversation = _conversation(client, dev_headers)
+        user = dev_headers["X-Dev-User"]
+        key = (user, conversation)
+        calls = []
+        traces = []
+        prompt = "画一只窗台上的橘猫" if path == "chat_intent" else "窗台上睡觉的橘猫"
+        mode = "image_edit" if path.startswith("image_edit") else ("image" if path == "image" else "chat")
+        body = {"conversation_id": conversation, "message": prompt, "mode": mode}
+        if model_id is not None:
+            body["image_model"] = model_id
+    
+        async def record(*args, **kwargs):
+            calls.append((args, kwargs))
+            name = f"generated_{uuid4().hex}.png"
+            (image_env / name).write_bytes(_png())
+            return {"image_path": f"/uploads/{name}", "model": "actual-provider-model", "width": 24, "height": 16}
+    
+        async def log(*args, **kwargs):
+            traces.append(kwargs["payload"].copy())
+    
+        monkeypatch.setattr(chat, "generate_image", record)
+        monkeypatch.setattr(chat, "edit_image", record)
+        monkeypatch.setattr(chat, "log_event", log)
+        if path.startswith("image_edit"):
+            references = [_reference(image_env, color=color) for color in (
+                ["red", "green"] if path == "image_edit_multi" else ["red"]
+            )]
+            for reference in references:
+                assert asyncio.run(database.save_message(user, "assistant", "参考图", reference, conversation_id=conversation))
+            if path == "image_edit_multi":
+                body["reference_image_paths"] = references
+                expected_args = (prompt, references, None)
+            else:
+                body["reference_image_path"] = references[0]
+                expected_args = (prompt, references[0], None)
+        elif path == "image":
+            body["aspect_ratio"] = "16:9"
+            expected_args = (prompt, "16:9")
+        else:
+            expected_args = (prompt, "1:1")
+            if path == "chat_intent":
+                monkeypatch.setattr(chat, "recognize_intent", lambda *args, **kwargs: {
+                    "intent": "generate_image", "params": {"prompt": "分类器缩短内容"}, "missing": [],
+                })
+            else:
+                set_pending(key, {"intent": "generate_image", "params": {}, "missing": ["prompt"]})
+    
+        output = _events(client.post("/chat", headers=dev_headers, json=body))
+        assert output[-1] == {"done": True}
+>       assert sum("generated_image" in event for event in output) == 1
+E       assert 0 == 1
+E        +  where 0 = sum(<generator object test_selection_reaches_every_image_path_without_changing_default_arguments.<locals>.<genexpr> at 0x112d457d0>)
+
+tests/test_image_model_choice.py:291: AssertionError
+----------------------------- Captured stdout call -----------------------------
+[硬词检测] chars=8, detected_count=0
+[意图识别] chars=8, intent=None, missing=[]
+_ test_selection_reaches_every_image_path_without_changing_default_arguments[chat_pending-default] _
+
+client = <starlette.testclient.TestClient object at 0x1129f6580>
+dev_headers = {'X-Dev-User': 'smoke_tester'}
+monkeypatch = <_pytest.monkeypatch.MonkeyPatch object at 0x112a65c50>
+image_env = PosixPath('<pytest-temp>/pytest-12/test_selection_reaches_every_i13/model-images')
+model_id = 'qwen-image-3.0', path = 'chat_pending'
+
+    @pytest.mark.parametrize("model_id", [None, _QWEN, _SEEDREAM], ids=["omitted", "default", "seedream"])
+    @pytest.mark.parametrize("path", ["image", "image_edit", "image_edit_multi", "chat_intent", "chat_pending"])
+    def test_selection_reaches_every_image_path_without_changing_default_arguments(
+        client, dev_headers, monkeypatch, image_env, model_id, path,
+    ):
+        import database
+        import services.chat_service as chat
+        from intent_router import get_pending, set_pending
+    
+        conversation = _conversation(client, dev_headers)
+        user = dev_headers["X-Dev-User"]
+        key = (user, conversation)
+        calls = []
+        traces = []
+        prompt = "画一只窗台上的橘猫" if path == "chat_intent" else "窗台上睡觉的橘猫"
+        mode = "image_edit" if path.startswith("image_edit") else ("image" if path == "image" else "chat")
+        body = {"conversation_id": conversation, "message": prompt, "mode": mode}
+        if model_id is not None:
+            body["image_model"] = model_id
+    
+        async def record(*args, **kwargs):
+            calls.append((args, kwargs))
+            name = f"generated_{uuid4().hex}.png"
+            (image_env / name).write_bytes(_png())
+            return {"image_path": f"/uploads/{name}", "model": "actual-provider-model", "width": 24, "height": 16}
+    
+        async def log(*args, **kwargs):
+            traces.append(kwargs["payload"].copy())
+    
+        monkeypatch.setattr(chat, "generate_image", record)
+        monkeypatch.setattr(chat, "edit_image", record)
+        monkeypatch.setattr(chat, "log_event", log)
+        if path.startswith("image_edit"):
+            references = [_reference(image_env, color=color) for color in (
+                ["red", "green"] if path == "image_edit_multi" else ["red"]
+            )]
+            for reference in references:
+                assert asyncio.run(database.save_message(user, "assistant", "参考图", reference, conversation_id=conversation))
+            if path == "image_edit_multi":
+                body["reference_image_paths"] = references
+                expected_args = (prompt, references, None)
+            else:
+                body["reference_image_path"] = references[0]
+                expected_args = (prompt, references[0], None)
+        elif path == "image":
+            body["aspect_ratio"] = "16:9"
+            expected_args = (prompt, "16:9")
+        else:
+            expected_args = (prompt, "1:1")
+            if path == "chat_intent":
+                monkeypatch.setattr(chat, "recognize_intent", lambda *args, **kwargs: {
+                    "intent": "generate_image", "params": {"prompt": "分类器缩短内容"}, "missing": [],
+                })
+            else:
+                set_pending(key, {"intent": "generate_image", "params": {}, "missing": ["prompt"]})
+    
+        output = _events(client.post("/chat", headers=dev_headers, json=body))
+        assert output[-1] == {"done": True}
+>       assert sum("generated_image" in event for event in output) == 1
+E       assert 0 == 1
+E        +  where 0 = sum(<generator object test_selection_reaches_every_image_path_without_changing_default_arguments.<locals>.<genexpr> at 0x112d3c860>)
+
+tests/test_image_model_choice.py:291: AssertionError
+----------------------------- Captured stdout call -----------------------------
+[硬词检测] chars=8, detected_count=0
+[意图识别] chars=8, intent=None, missing=[]
+_ test_selection_reaches_every_image_path_without_changing_default_arguments[chat_pending-seedream] _
+
+client = <starlette.testclient.TestClient object at 0x1129f5040>
+dev_headers = {'X-Dev-User': 'smoke_tester'}
+monkeypatch = <_pytest.monkeypatch.MonkeyPatch object at 0x112c0d860>
+image_env = PosixPath('<pytest-temp>/pytest-12/test_selection_reaches_every_i14/model-images')
+model_id = 'seedream-5.0-flash', path = 'chat_pending'
+
+    @pytest.mark.parametrize("model_id", [None, _QWEN, _SEEDREAM], ids=["omitted", "default", "seedream"])
+    @pytest.mark.parametrize("path", ["image", "image_edit", "image_edit_multi", "chat_intent", "chat_pending"])
+    def test_selection_reaches_every_image_path_without_changing_default_arguments(
+        client, dev_headers, monkeypatch, image_env, model_id, path,
+    ):
+        import database
+        import services.chat_service as chat
+        from intent_router import get_pending, set_pending
+    
+        conversation = _conversation(client, dev_headers)
+        user = dev_headers["X-Dev-User"]
+        key = (user, conversation)
+        calls = []
+        traces = []
+        prompt = "画一只窗台上的橘猫" if path == "chat_intent" else "窗台上睡觉的橘猫"
+        mode = "image_edit" if path.startswith("image_edit") else ("image" if path == "image" else "chat")
+        body = {"conversation_id": conversation, "message": prompt, "mode": mode}
+        if model_id is not None:
+            body["image_model"] = model_id
+    
+        async def record(*args, **kwargs):
+            calls.append((args, kwargs))
+            name = f"generated_{uuid4().hex}.png"
+            (image_env / name).write_bytes(_png())
+            return {"image_path": f"/uploads/{name}", "model": "actual-provider-model", "width": 24, "height": 16}
+    
+        async def log(*args, **kwargs):
+            traces.append(kwargs["payload"].copy())
+    
+        monkeypatch.setattr(chat, "generate_image", record)
+        monkeypatch.setattr(chat, "edit_image", record)
+        monkeypatch.setattr(chat, "log_event", log)
+        if path.startswith("image_edit"):
+            references = [_reference(image_env, color=color) for color in (
+                ["red", "green"] if path == "image_edit_multi" else ["red"]
+            )]
+            for reference in references:
+                assert asyncio.run(database.save_message(user, "assistant", "参考图", reference, conversation_id=conversation))
+            if path == "image_edit_multi":
+                body["reference_image_paths"] = references
+                expected_args = (prompt, references, None)
+            else:
+                body["reference_image_path"] = references[0]
+                expected_args = (prompt, references[0], None)
+        elif path == "image":
+            body["aspect_ratio"] = "16:9"
+            expected_args = (prompt, "16:9")
+        else:
+            expected_args = (prompt, "1:1")
+            if path == "chat_intent":
+                monkeypatch.setattr(chat, "recognize_intent", lambda *args, **kwargs: {
+                    "intent": "generate_image", "params": {"prompt": "分类器缩短内容"}, "missing": [],
+                })
+            else:
+                set_pending(key, {"intent": "generate_image", "params": {}, "missing": ["prompt"]})
+    
+        output = _events(client.post("/chat", headers=dev_headers, json=body))
+        assert output[-1] == {"done": True}
+>       assert sum("generated_image" in event for event in output) == 1
+E       assert 0 == 1
+E        +  where 0 = sum(<generator object test_selection_reaches_every_image_path_without_changing_default_arguments.<locals>.<genexpr> at 0x112d51a40>)
+
+tests/test_image_model_choice.py:291: AssertionError
+----------------------------- Captured stdout call -----------------------------
+[硬词检测] chars=8, detected_count=0
+[意图识别] chars=8, intent=None, missing=[]
+=============================== warnings summary ===============================
+.venv/lib/python3.14/site-packages/slowapi/extension.py:720: 2 warnings
+tests/test_account_deletion.py: 12 warnings
+  backend/.venv/lib/python3.14/site-packages/slowapi/extension.py:720: DeprecationWarning: 'asyncio.iscoroutinefunction' is deprecated and slated for removal in Python 3.16; use inspect.iscoroutinefunction() instead
+    if asyncio.iscoroutinefunction(func):
+
+-- Docs: https://docs.pytest.org/en/stable/how-to/capture-warnings.html
+=========================== short test summary info ============================
+FAILED tests/test_byok_chat.py::test_paid_branches_still_cost_ten[image] - As...
+FAILED tests/test_byok_chat.py::test_r1_pending_api_free_actions_and_paid_guards[image_fill-10]
+FAILED tests/test_byok_chat.py::test_r1_pending_api_free_actions_and_paid_guards[image_new_tool-0]
+FAILED tests/test_byok_chat.py::test_r1_pending_api_free_actions_and_paid_guards[image_new_tool-10]
+FAILED tests/test_chat_image_generation.py::test_natural_request_precedes_mirror_and_old_pending[\u5e2e\u6211\u751f\u6210\u4e00\u5f20\u9752\u7070\u8584\u96fe\u53e4\u5e99\u56fe\u7247\uff0c\u6a2a\u724816:9-16:9]
+FAILED tests/test_chat_image_generation.py::test_natural_request_precedes_mirror_and_old_pending[\u753b\u4e00\u53ea\u8db4\u5728\u7a97\u53f0\u7684\u732b-1:1]
+FAILED tests/test_chat_image_generation.py::test_natural_request_precedes_mirror_and_old_pending[\u8bf7\u5e2e\u6211\u505a\u4e00\u5f20\u5496\u5561\u5e97\u6d77\u62a5\uff0c\u7ad6\u7248-9:16]
+FAILED tests/test_chat_image_generation.py::test_image_prompt_question_then_description_generates_only_description
+FAILED tests/test_chat_image_generation.py::test_empty_scene_candidate_asks_without_charge_then_generates_from_followup[model_missing0-\u5e2e\u6211\u751f\u6210\u56fe\u7247]
+FAILED tests/test_chat_image_generation.py::test_empty_scene_candidate_asks_without_charge_then_generates_from_followup[model_missing0-\u5e2e\u6211\u751f\u6210\u4e00\u5f20\u56fe\u7247]
+FAILED tests/test_chat_image_generation.py::test_empty_scene_candidate_asks_without_charge_then_generates_from_followup[model_missing0-\u753b\u4e00\u5f20\u56fe]
+FAILED tests/test_chat_image_generation.py::test_empty_scene_candidate_asks_without_charge_then_generates_from_followup[model_missing0-\u7ed9\u6211\u753b\u4e00\u5e45\u753b]
+FAILED tests/test_chat_image_generation.py::test_empty_scene_candidate_asks_without_charge_then_generates_from_followup[model_missing1-\u5e2e\u6211\u751f\u6210\u56fe\u7247]
+FAILED tests/test_chat_image_generation.py::test_empty_scene_candidate_asks_without_charge_then_generates_from_followup[model_missing1-\u5e2e\u6211\u751f\u6210\u4e00\u5f20\u56fe\u7247]
+FAILED tests/test_chat_image_generation.py::test_empty_scene_candidate_asks_without_charge_then_generates_from_followup[model_missing1-\u753b\u4e00\u5f20\u56fe]
+FAILED tests/test_chat_image_generation.py::test_empty_scene_candidate_asks_without_charge_then_generates_from_followup[model_missing1-\u7ed9\u6211\u753b\u4e00\u5e45\u753b]
+FAILED tests/test_exchange_isolation.py::test_stop_disconnects_async_upstream_and_releases_user_slot
+FAILED tests/test_image_intent_precision.py::test_model_confirmed_candidate_generates_once_and_charges
+FAILED tests/test_image_intent_precision.py::test_confirmed_candidate_without_model_prompt_uses_original_text[classified0]
+FAILED tests/test_image_intent_precision.py::test_confirmed_candidate_without_model_prompt_uses_original_text[classified1]
+FAILED tests/test_image_intent_precision.py::test_model_missing_prompt_overrides_populated_regex_candidate
+FAILED tests/test_image_intent_precision.py::test_natural_image_uses_complete_message_not_model_excerpt[\u753b\u4e00\u53ea\u5728\u5348\u591c\u706f\u5854\u8fb9\u7b49\u8239\u7684\u9ed1\u732b\uff0c\u80cc\u666f\u662f\u6f6e\u6c50\u4e0e\u84dd\u8272\u7eb8\u706f\uff0c\u6a2a\u724816:9-9:16-16:9-True]
+FAILED tests/test_image_intent_precision.py::test_natural_image_uses_complete_message_not_model_excerpt[\u5348\u591c\u706f\u5854\u65c1\u7684\u9ed1\u732b\u4e0e\u84dd\u8272\u7eb8\u706f\uff0c\u8bf7\u5c06\u6d77\u96fe\u753b\u51fa\u6765-9:16-9:16-False]
+FAILED tests/test_image_intent_precision.py::test_natural_image_uses_complete_message_not_model_excerpt[\u5c71\u9876\u98ce\u8f66\u4e0e\u843d\u65e5\uff0c\u8bf7\u7ed9\u6211\u4e00\u5e45\u6b63\u65b9\u5f62\u63d2\u753b-9:16-1:1-False]
+FAILED tests/test_image_intent_precision.py::test_text_ratio_precedes_chat_field_but_image_button_keeps_selection[chat-16:9-1]
+FAILED tests/test_image_intent_precision.py::test_rejected_candidate_cannot_fill_old_image_prompt
+FAILED tests/test_image_intent_precision.py::test_confirmed_candidate_bypasses_active_mirror
+FAILED tests/test_image_model_choice.py::test_selection_reaches_every_image_path_without_changing_default_arguments[chat_intent-omitted]
+FAILED tests/test_image_model_choice.py::test_selection_reaches_every_image_path_without_changing_default_arguments[chat_intent-default]
+FAILED tests/test_image_model_choice.py::test_selection_reaches_every_image_path_without_changing_default_arguments[chat_intent-seedream]
+FAILED tests/test_image_model_choice.py::test_selection_reaches_every_image_path_without_changing_default_arguments[chat_pending-omitted]
+FAILED tests/test_image_model_choice.py::test_selection_reaches_every_image_path_without_changing_default_arguments[chat_pending-default]
+FAILED tests/test_image_model_choice.py::test_selection_reaches_every_image_path_without_changing_default_arguments[chat_pending-seedream]
+ERROR tests/test_exchange_isolation.py::test_eight_exchanges_and_eight_drip_cards_leave_chat_responsive
+ERROR tests/test_safe_http_deadline.py::test_drip_response_obeys_total_wall_clock_deadline
+ERROR tests/test_safe_http_deadline.py::test_fast_response_and_redirect_still_work
+ERROR tests/test_safe_http_deadline.py::test_drip_headers_obey_total_wall_clock_deadline
+ERROR tests/test_safe_http_deadline.py::test_four_stuck_resolutions_do_not_block_another_fetch
+33 failed, 3062 passed, 6 skipped, 14 warnings, 5 errors in 74.40s (0:01:14)

@@ -23,6 +23,7 @@ from services.chat_service import ChatRunTracker, build_context, run_chat
 from utils.media import MAX_IMAGE_BASE64_CHARS
 
 router = APIRouter()
+CHAT_STREAM_HEADERS = {"Cache-Control": "no-cache, no-transform", "X-Accel-Buffering": "no"}
 ReferenceImagePath = Annotated[str, Field(max_length=64, pattern=r"^/uploads/(?:generated|reference)_[0-9a-f]{32}\.png$")]
 
 
@@ -62,7 +63,7 @@ def _text_stream(*events: dict) -> StreamingResponse:
     async def stream():
         for event in events:
             yield f"data: {json.dumps(event, ensure_ascii=False)}\n\n"
-    return StreamingResponse(stream(), media_type="text/event-stream")
+    return StreamingResponse(stream(), media_type="text/event-stream", headers=CHAT_STREAM_HEADERS)
 
 
 def _crisis_error_stream(crisis: str | None, detail: str) -> StreamingResponse:
@@ -217,15 +218,14 @@ async def chat(request: Request, req: ChatRequest, user: str = Depends(get_curre
             if crisis is not None and isinstance(error, Exception):
                 return _crisis_error_stream(crisis, _precheck_error_detail(error))
             raise
-        headers = {"Cache-Control": "no-cache", "X-Accel-Buffering": "no"}
         if reserved:
             tracker = ChatRunTracker()
             stream = run_chat(ctx, reserved=True, crisis=crisis, tracker=tracker)
             return _ReservedChatResponse(
-                stream, user, tracker, media_type="text/event-stream", headers=headers,
+                stream, user, tracker, media_type="text/event-stream", headers=CHAT_STREAM_HEADERS,
             )
         return StreamingResponse(
-            run_chat(ctx, crisis=crisis, **options), media_type="text/event-stream", headers=headers,
+            run_chat(ctx, crisis=crisis, **options), media_type="text/event-stream", headers=CHAT_STREAM_HEADERS,
         )
     finally:
         if model_task is not None:
