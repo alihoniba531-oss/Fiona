@@ -12,6 +12,16 @@ from persona import AGENT_IDENTITY_RULES
 ROOT = Path(__file__).resolve().parents[2]
 
 
+def git_baseline(path, **kwargs):
+    """Read a file at the task baseline; CI's shallow checkout lacks that commit."""
+    try:
+        return subprocess.check_output(
+            ["git", "show", f"7ac7b57:{path}"], text=True, stderr=subprocess.DEVNULL, **kwargs,
+        )
+    except (subprocess.CalledProcessError, FileNotFoundError):
+        pytest.skip("基线提交 7ac7b57 不在本地 git 历史中（如 CI 浅克隆），跳过基线比对")
+
+
 @pytest.fixture(autouse=True)
 def offline_network_guard(monkeypatch):
     def guarded(original):
@@ -111,9 +121,7 @@ def test_r2_docs_describe_planner_followup_triggers(filename):
 
 
 def test_r2_architecture_restores_complete_legacy_image_route():
-    baseline = subprocess.check_output(
-        ["git", "show", "7ac7b57:docs/ARCHITECTURE.md"], cwd=ROOT, text=True,
-    )
+    baseline = git_baseline("docs/ARCHITECTURE.md", cwd=ROOT)
     paragraph = next(p for p in baseline.split("\n\n") if p.startswith("图片生成通过同一个 `POST /chat` 接入："))
     document = (ROOT / "docs/ARCHITECTURE.md").read_text()
     assert "适用于开关关闭、判断器不可用、possible 轮与面板路径。" + paragraph in document

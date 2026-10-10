@@ -280,7 +280,12 @@ def test_stream_normal_is_restored_to_baseline():
     import inspect
     import subprocess
     import services.chat_service as chat
-    baseline = subprocess.check_output(["git", "show", "7ac7b57:backend/services/chat_service.py"], text=True)
+    try:
+        baseline = subprocess.check_output(
+            ["git", "show", "7ac7b57:backend/services/chat_service.py"], text=True, stderr=subprocess.DEVNULL,
+        )
+    except (subprocess.CalledProcessError, FileNotFoundError):
+        pytest.skip("基线提交 7ac7b57 不在本地 git 历史中（如 CI 浅克隆），跳过基线比对")
     start = baseline.index("async def stream_normal(")
     end = baseline.index("\n\nasync def _normal_followups", start)
     assert inspect.getsource(chat.stream_normal).rstrip() == baseline[start:end].rstrip()
