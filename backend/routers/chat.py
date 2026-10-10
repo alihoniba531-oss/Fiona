@@ -14,8 +14,9 @@ import crisis_model
 
 from auth_dep import get_current_user
 from agent_store import ResourceNotFound
+from byok.store import has_enabled_config
 from database import (STRAWBERRY_COST_PER_REPLY, refund_strawberries,
-                      reserve_strawberries, strawberry_daily_refill)
+                      reserve_strawberries, strawberry_insufficient_message)
 from rate_limit import limiter
 from safety import CRISIS_RESOURCE_NOTE, assess_crisis, combine_crisis_levels
 from services.chat_service import ChatRunTracker, build_context, run_chat
@@ -155,6 +156,7 @@ async def chat(request: Request, req: ChatRequest, user: str = Depends(get_curre
             raise
 
         reserved = False
+        byok_unreserved = False
         dev_mode = os.getenv("DEV_MODE", "0") == "1"
         if not dev_mode:
             try:
@@ -168,19 +170,23 @@ async def chat(request: Request, req: ChatRequest, user: str = Depends(get_curre
                 crisis = await final_crisis()
                 if crisis == "high":
                     return _text_stream({"crisis": True}, {"text": CRISIS_RESOURCE_NOTE}, {"done": True})
-                refill = strawberry_daily_refill()
-                message = (
-                    f"今天的草莓用完了，明天会自动补到 {refill} 颗；急用请联系管理员补充 🍓"
-                    if refill else "草莓不足，内测期间请联系管理员补充 🍓"
-                )
-                if crisis == "possible":
-                    return _crisis_error_stream(crisis, message)
-                return _text_stream({"error": message})
-            reserved = True
+                if req.mode == "chat":
+                    try:
+                        byok_unreserved = await has_enabled_config(user)
+                    except Exception:
+                        byok_unreserved = False
+                if not byok_unreserved:
+                    message = strawberry_insufficient_message()
+                    if crisis == "possible":
+                        return _crisis_error_stream(crisis, message)
+                    return _text_stream({"error": message})
+            else:
+                reserved = True
 
         # 预检装配 → 流式编排（具体逻辑见 services/chat_service.py）
         try:
-            ctx = await build_context(req, user, crisis_resolver=final_crisis)
+            options = {"byok_unreserved": True} if byok_unreserved else {}
+            ctx = await build_context(req, user, crisis_resolver=final_crisis, **options)
             crisis = await final_crisis()
         except ResourceNotFound:
             if reserved:
@@ -219,7 +225,7 @@ async def chat(request: Request, req: ChatRequest, user: str = Depends(get_curre
                 stream, user, tracker, media_type="text/event-stream", headers=headers,
             )
         return StreamingResponse(
-            run_chat(ctx, crisis=crisis), media_type="text/event-stream", headers=headers,
+            run_chat(ctx, crisis=crisis, **options), media_type="text/event-stream", headers=headers,
         )
     finally:
         if model_task is not None:

@@ -38,10 +38,11 @@ Browser / Tauri WebView
 | `/community` | 社群兴趣展示 |
 | `/profile` | 旧社交画像；新私有记忆在分身页管理 |
 | `/history` | 对话历史、删除和导出 |
-| `/settings` | 用户偏好和产品设置 |
+| `/settings` | 用户偏好、每用户自带聊天模型与产品设置 |
 
 重要共享模块：
 
+- `frontend/lib/chatModel.ts` 与 `components/ChatModelSection.tsx`：严格校验设置 API JSON，Key 只保留表单内存、从不回填；厂商配置不进入 localStorage，只有 `fiona_chat_model_rev` 版本号用于 iframe 同步。登录、设置抽屉关闭及 storage 事件重新取配置，SSE `reply_model` 仅在当前气泡标注、刷新后消失。
 - `frontend/lib/config.ts`：HTTP/WebSocket API 基址的唯一来源。
 - `frontend/lib/auth.ts`：本地展示身份、Cookie 请求和统一 401 会话失效处理；不读取 JWT。
 - `frontend/proxy.ts`：页面级 Cookie 门禁。
@@ -61,6 +62,7 @@ Browser / Tauri WebView
 |---|---|
 | `routers/auth.py` | 邀请码、开发登录、预留 OTP |
 | `routers/chat.py` | `/chat` SSE 对话入口 |
+| `routers/chat_model.py` | 登录后的 `/chat-model` 配置 GET/PUT/PATCH/DELETE 与 `/chat-model/test`，响应 private, no-store；修改和测试 10/minute |
 | `routers/voice.py` | ASR、TTS HTTP/流式朗读；ASR 叠加按账号每日上限。朗读文本经鉴权 POST 换短时、限次票据，票据有效期为 150 秒；每个用户最多保留 64 张未过期票据，超出先淘汰自己最早的。换票限流有按用户的 120 次/分钟、2000 字/分钟和按 IP 的 240 次/分钟、6000 字/分钟四道闸，429 响应带 `Retry-After`。WebKit 在换票时后台预热非流式合成，后续 Range 请求等待或读取同一份音频。无 Range 请求返回流式 200；首次 `Range: bytes=0-` 且无缓存或预热任务时也流式返回 200，以保留 Chromium/WebView2 的首音速度。闭区间 Range 合成后缓存并返回有限长度的 206；已有缓存的票据对 Range 请求读缓存返回 206 |
 | `routers/hot.py` | 热点源、分类和详情展开 |
 | `routers/match.py` | 匹配生成、待接受卡片和响应 |
@@ -73,18 +75,18 @@ Browser / Tauri WebView
 
 聊天主流程位于 `backend/services/chat_service.py`：
 
-1. 先判规则危机档位，非 `high` 的非空文字消息立即启动异步模型复核；验证请求参数并执行预扣、上下文装配，首次需要档位时才等待复核并取较高档位。生产环境对有余额的聊天原子预扣 10 颗草莓。余额不足的 `high` 危机轮直接用 SSE 返回求助资源，`possible` 轮先返回资源再返回余额错误。
+1. 先判规则危机档位，非 `high` 的非空文字消息立即启动异步模型复核；验证参数、预扣并装配上下文，首次需要档位时等待复核并取较高档位。有余额时原子预扣 10 颗草莓；不足且 `mode=chat`、启用 BYOK 时以显式“未预扣”标记继续，只允许用户模型聊天。余额不足的 `high` 轮直接返回危机标记、资源、done，不调用模型、不落库；其他没有 BYOK 的 `possible` 轮先资源再余额错误。
 2. 将可选 `conversation_id` 解析为本人会话；旧客户端省略时使用默认私有会话，非法归属返回 404。
 3. 保存用户消息和可接受的图片，读取该会话近期消息、独立分身私有记忆、人格和按会话隔离的模式。
 4. 根据图片、对话模式和意图选择模型或工具。
 5. 通过 SSE 返回模型输出。
-6. 将回复写回固定会话 ID，并在后台更新分身私有记忆；没有实际交付的预扣会退还。新私有会话不再触发旧 Layer 1/Layer 2 匹配或广场标签传播。
+6. 将回复写回固定会话 ID，并由平台在后台更新私有记忆（包括读取 BYOK 回复）；BYOK 聊天回复不计费、退还预扣，没有实际交付也退款。新私有会话不触发旧 Layer 1/Layer 2 匹配或广场标签传播。
 
 所有实际聊天都携带解析后的会话 ID。模式识别、意图识别完成后及工具执行前复核会话存活；会话删除后迟到回复不能重建记录或触发新的扣费。已经启动的外部工具无法通过删除会话撤回。
 
-草莓以单条条件更新原子预扣，模型回复保存、图片实际生成并保存或真实工具成功执行才结算；失败、缺参追问、占位工具、未知意图、异常和未交付就断开的流会退款。`DEV_MODE=1` 跳过预扣与结算。`STRAWBERRY_DAILY_REFILL` 默认 `0`（关闭）；开启后，用户在 Asia/Shanghai 自然日首次经登录、`/strawberry` 或预扣时，余额只提升到设定下限，同日不重复补给，日期保存在 `users.strawberry_refill_date`。管理员的 `manage_strawberries.py list` 只读原始余额和日期，不触发补给。
+草莓以单条条件更新原子预扣，仅平台模型回复保存、图片实际生成并保存或真实工具成功执行结算 10 颗；BYOK 普通/镜子回复不设置 billable、退还预扣，失败同样退款。零余额守卫在真正执行工具（天气每日检查之前）、补全参数后的执行分支清理 pending、生图忙锁和看图调用之前返回共享草莓不足文案，不调用这些服务、不消耗天气额度、不清 pending；缺参追问仍走已有免费追问路径；零余额 BYOK 的免费取消与转聊天出口按下文的明确规则清 pending；识别新工具但未预扣时保留原 pending。回复阶段若 BYOK 配置被删、关闭或需重填，也报草莓不足。`DEV_MODE=1` 跳过预扣与结算，显式未预扣标记为 false，守卫为空操作。`STRAWBERRY_DAILY_REFILL` 默认 `0`（关闭）；开启后，用户在 Asia/Shanghai 自然日首次经登录、`/strawberry` 或预扣时，余额只提升到设定下限，同日不重复，日期保存在 `users.strawberry_refill_date`。管理员 `manage_strawberries.py list` 只读原始余额和日期，不触发补给。
 
-私聊危机采用规则加模型复核：规则 `high` 直接进入支持流程；其他非空文字消息由 `qwen3.8-flash` 复核，只看当前消息；超过 2000 字取首尾各 1000 字，中间用“……”连接。取较高档位，不能降档。复核与预扣、上下文装配并行，默认 2 秒超时，失败按规则结果走；只记录档位、异常类型和耗时，不记录原文。复核模块 `backend/crisis_model.py` 在首次有效调用时创建独立 `AsyncOpenAI` 客户端，使用轻量槽模型、关闭思考、JSON 输出、temperature=0、最多 32 tokens、无重试。请求结束时取消并回收未完成任务。`build_context` 通过可选 `crisis_resolver` 在提示词首次需要档位时等待最终结果，升档后省略硬词附录，高危时省略朗读尾部 system，保证危机指引与规则直接命中高危时一致。信息或求助语境仍仅由规则判断，模型从未命中升到 `possible` 按非信息语境处理。私聊危机识别分为 `high`、`possible` 与未命中，规则匹配前仅对分类文本做繁转简，原文继续用于模型复核、存储、回复模型输入和显示。繁体『計畫』与『計劃』判级一致。明确的第一人称危机（`high`）绕开镜子模式、工具及待补参数，不清除待补状态；危机指导放在 system prompt 最后，服务端固定追加求助资源并保存于回复。余额充足时像普通轮次一样预扣、交付结算、未交付退款；余额不足时不调用回复模型，直接返回资源文案。`DEV_MODE=1` 跳过计费。`mode=image` 或 `image_edit` 的明确危机也走文字支持并向前端发送危机标记，不调用生图或修图。`possible` 保留模式判定、镜子、看图、普通回复和计费；除命中 `safety.py` 信息或求助语境规则的轮次外，跳过自然语言生图候选、意图识别、工具及待补参数，保留 pending。信息或求助语境、显式 `mode=image` / `image_edit`、缺少修图参考的固定引导保持原路由；唯一例外是已有天气 pending 时，到达工具路由的 `possible` 信息或求助语句清除该 pending，按新消息路由，不能当作城市名发给高德。正常文字、工具结果、图片及服务端可控制的错误收尾均恰好送达一次求助资源，余额不足时先送资源再提示余额，不发危机标记。FastAPI 在进入 `/chat` 路由前返回的 422 请求校验错误和 429 限流属于例外，无法由该路由附资源。未命中危机信号的轮次，所有 system 消息合计只放一份基础安全规则，位于最后一条 system 消息末尾；朗读强约束仍作为当前 user 消息后的独立 system 消息。
+私聊危机采用规则加模型复核：规则 `high` 直接进入支持流程；其他非空文字消息由 `qwen3.8-flash` 复核，只看当前消息；超过 2000 字取首尾各 1000 字，中间用“……”连接。取较高档位，不能降档。复核与预扣、上下文装配并行，默认 2 秒超时，失败按规则结果走；只记录档位、异常类型和耗时，不记录原文。复核模块 `backend/crisis_model.py` 在首次有效调用时创建独立 `AsyncOpenAI` 客户端，使用轻量槽模型、关闭思考、JSON 输出、temperature=0、最多 32 tokens、无重试。请求结束时取消并回收未完成任务。`build_context` 通过可选 `crisis_resolver` 在提示词首次需要档位时等待最终结果，升档后省略硬词附录，高危时省略朗读尾部 system，保证危机指引与规则直接命中高危时一致。信息或求助语境仍仅由规则判断，模型从未命中升到 `possible` 按非信息语境处理。私聊危机识别分为 `high`、`possible` 与未命中，规则匹配前仅对分类文本做繁转简，原文继续用于模型复核、存储、回复模型输入和显示。繁体『計畫』与『計劃』判级一致。明确的第一人称危机（`high`）绕开镜子模式、工具及待补参数，不清除待补状态；危机指导放在 system prompt 最后，服务端固定追加求助资源并保存于回复。余额充足时像普通轮次一样预扣、交付结算、未交付退款；余额不足时不调用回复模型，直接返回资源文案。`DEV_MODE=1` 跳过计费。`mode=image` 或 `image_edit` 的明确危机也走文字支持并向前端发送危机标记，不调用生图或修图。`possible` 保留模式判定、镜子、看图、普通回复和计费；除命中 `safety.py` 信息或求助语境规则的轮次外，跳过自然语言生图候选、意图识别、工具及待补参数，保留 pending。信息或求助语境、显式 `mode=image` / `image_edit`、缺少修图参考的固定引导保持原路由；唯一例外是已有天气 pending 时，到达工具路由的 `possible` 信息或求助语句清除该 pending，按新消息路由，不能当作城市名发给高德。正常文字、工具结果、图片及服务端可控制的错误收尾均恰好送达一次求助资源，余额不足时先送资源再提示余额，不发危机标记。FastAPI 在进入 `/chat` 路由前返回的 422 请求校验错误和 429 限流属于例外，无法由该路由附资源。未命中危机信号的轮次，所有 system 消息合计只放一份基础安全规则，位于最后一条 system 消息末尾；朗读强约束在平台模型与 BYOK dashscope 预设中作为当前 user 消息后的独立 system 消息；其他 BYOK 厂商合并全部 system（Claude 使用顶层 system），安全规则仍恰好一次且在末尾。
 
 图片生成通过同一个 `POST /chat` 接入：`mode=image` 显式请求，`aspect_ratio` 可选 `1:1/16:9/9:16`；自然语言绘图候选先由正则提名，再由现有意图模型确认，确认生图才执行且复用本轮识别结果。候选句若被模型否决，本轮识别结果会复用于后续路由，与普通消息相比不增加意图模型调用；只有确认生图的候选句，在生图开始前需要等待一次意图模型识别（最多 150 tokens），因此增加该次请求的延迟和调用成本。候选确认与普通意图路径都对模型返回的 `generate_image` 再做讨论句兜底，避免能力咨询、教程与否定句触发生图；意图提示词还要求把价格、扣费、耗时、难度、生成结果评价、回忆、愿望及口语反问等谈论生图本身的句子归为空意图。意图分类仍依赖模型，不能保证所有非命令句都零误判；模型返回其他意图、空意图或失败时继续普通流程。确认生图的分支优先于镜子模式和旧工具补参；正则判断画面主体为空或模型标记缺少 `prompt` 时先追问，不执行生图且不扣费；自然语言生图的画面描述始终使用用户本轮完整原话 `ctx.message.strip()`，分类器返回的短 `prompt` 不用于替换或截短原文。比例优先从原文推断，原文没有比例时可采用模型返回的合法比例。`image_model` 在 chat、image、image_edit 三种请求模式中均接受服务端白名单 id，经 `ChatContext` 透传到统一生图路径（含意图确认和待补参数）。由全局鉴权中间件和 `Depends(get_current_user)` 共同保护的 `GET /image-models` 仅返回默认 id、显示名和对应密钥是否配置；前端仅在用户点击时保存模型偏好，暂时不可用只回落界面选择，之后获取到可用列表时恢复偏好；重试沿用原描述、比例与参考图，并使用当前界面选中的模型。`tools/image_generation.py` 默认使用 Qwen Image 3.0 的固定 DashScope native 多模态接口，也可选 Seedream 5.0 Flash 的固定火山方舟图片接口；只发送本轮描述和修图参考图，不发送私有记忆。选择 Seedream 时这些数据发送给字节跳动火山引擎，选择 Qwen 时发送给阿里云 DashScope；两个模型每次均按现有 10 颗草莓结算，失败退款且不跨供应商回退；每账号同时最多一张，单次 150 秒且不自动重试。SSE 先发 `status=generating_image`，等待期间发送注释心跳，成功落库后才发 `generated_image`、`text`、`done`；普通失败发错误，`possible` 危机轮先发求助资源再发错误；失败不保存成功消息、不扣草莓。生成文件沿用 `messages.image_path`，限定为经过验证的本地 PNG，供应商临时链接不交给浏览器。新 `generated_*` 文件在开发和生产均验证消息归属，使用 `private, no-store`；删除与断开时清理未保存附件，落库期间保护事务结果确认。
 
@@ -108,7 +110,7 @@ Browser / Tauri WebView
 
 官方体验不扣草莓，开启限流且 `DEV_MODE` 不为 `1` 时，默认每账号每个北京时间自然日最多创建 3 次，`FIONA_DAILY_OFFICIAL_EXCHANGES` 在调用时读取。在创建的 `BEGIN IMMEDIATE` 事务内、INSERT 前，按账号与 UTC `created_at` 加 8 小时后的日期计数，包括停止和失败记录；不同账号独立，未知官方 ID 仍先返回 404。不新增表或迁移版本。
 
-热点展开、卡片详情、ASR 和天气同样叠加每日每账号上限，配置默认分别为 30、30、300、30，调用时读取 `FIONA_DAILY_HOT_EXPANDS`、`FIONA_DAILY_CARD_DETAILS`、`FIONA_DAILY_ASR`、`FIONA_DAILY_WEATHER`；连同官方体验共五项，只接受正整数，非法值回落默认并只告警一次。日期统一经 `database._today_shanghai()` 获取，上述四项复用限流器内存计数，北京零点换键，重启会清零；本地校验之后、上游调用之前计数，上游失败不退还。天气缺参追问仅检查不计数，取消、非城市回复和本地校验失败不计数；聊天执行天气前同步检查并计数，超限返回 SSE `error`“今天查天气的次数已用完，明天再试”，不写 pending、不设置计费标记，由收尾退款；需要危机资源时先恰好送达一次资源再发错误。其他四类 HTTP 接口超限仍返回 429，头 `Retry-After` 和 body `retry_after` 为距离次日北京零点向上取整的秒数，body `detail/error` 同文案。原有按 IP 每分钟限流继续生效，开发模式或限流器关闭则跳过每日上限。
+每日每账号上限共七项：官方体验 3、热点展开 30、卡片详情 30、ASR 300、天气 30、BYOK 聊天 200、测试连接 20。后三项分别使用 `FIONA_DAILY_WEATHER`、`FIONA_DAILY_BYOK_CHATS`（`byok_chat`）、`FIONA_DAILY_BYOK_TESTS`（`byok_test`），其余使用原变量；均调用时读取，只接受正整数，非法回退默认且只告警一次。日期由 `database._today_shanghai()` 获取，除官方创建数据库事务计数外六项使用限流器内存计数，重启清零、北京零点换键；上游失败不退次数。天气缺参追问只检查额度，取消、非城市回复和本地失败不计数；天气与 BYOK 聊天超限返回 SSE error、不结算草莓，需要危机资源时先送一次资源。BYOK 聊天并发检查后才计次数，测试连接超限仍返回 200、ok:false。测试连接的平台限流为 10 次/分钟，命中时仍以 HTTP 200 返回 ok:false 和「操作太频繁，请稍后再试」。官方体验、热点展开、卡片详情和 ASR 四类 HTTP 超限仍返回 429、Retry-After 及同文案的 detail/error/retry_after。按 IP 每分钟限流继续生效；开发模式或限流器关闭时跳过每日上限。
 
 官方话题上限由 `OFFICIAL_TOPIC_MAX_LENGTH=10_000` 控制，API 和前端同时校验，入库后完整送入双方及总结的 JSON 上下文，不再截取前 300 字。长历史仍按每条节选压缩以满足 128,000 字节预算，话题本身完整保留。真人邀请主题继续限制为 300 字。前端提供大输入框与计数器，详情中的长话题可展开并在有限高度内滚动。
 
@@ -134,7 +136,15 @@ V4 事务迁移为交流增加 `workflow_version/artifact/artifact_status/comple
 
 `exchange_models.py` 独立选择官方模型：`OFFICIAL_EXCHANGE_PROVIDER` 默认 dashscope，可设为 deepseek；`OFFICIAL_EXCHANGE_MODEL` 指定模型，DeepSeek 默认 deepseek-v4-pro。`DEEPSEEK_API_KEY` 仅在服务端读取，客户端只连接固定的 https://api.deepseek.com。自己的分身发言继续使用 DashScope 主模型，官方搭档发言及总结使用官方模型槽。DeepSeek 通过 `thinking.type=disabled` 关闭默认思考模式，避免短回复预算被推理消耗；不使用 DashScope 特有的 enable_thinking 参数。生成禁用重试和跨供应商回退，逐次记录实际供应商、模型及用量。
 
-当前模型配置以 `backend/llm.py` 和各适配器源码为准：
+每用户 BYOK 由独立 `backend/byok/` 管理，只在普通/镜子回复且配置启用、非 high 时替换平台建流；平台路径仍通过 chat_service 全局 `_create_stream_with_fallback` 查找，BYOK 绝不调用它，分身交流/官方搭档不读取用户模型配置。预设通义、DeepSeek、Kimi、智谱、Claude；custom 只允许公网 HTTPS/443，格式与全部 DNS 应答校验，拒绝代理假 IP、multicast 和危险 NAT64，连接时重新解析固定 IP，TLS SNI/证书仍用原主机名，不跟随重定向，不信任环境代理。自写 httpx transport 只用 httpcore 公开 API；Claude 直接使用 Anthropic SDK（httpx2），两类 HTTP 对象不混用。custom 每连接限制读取 4 MiB 的 HTTP 字节（TLS 之上），超限 abort 并映射为 connection 类别「连不上该服务」；custom 强制请求头 Accept-Encoding: identity，拒绝非空且非 identity 的 Content-Encoding，避免解压绕过 4 MiB 上限；错误仍归「连不上该服务」。预设厂商不受此字节限制影响。错误分类新增「服务繁忙，请稍后再试」，用于 Claude 529/overloaded_error。
+
+零余额且已启用 BYOK、未预扣时，generate_image / weather 以外的 pending：「算了/取消/不用了/不要了/不查了/没事了」免费取消并清 pending；以「先聊/聊点/换个话题/先不」开头清 pending、由用户模型回复；其他补参消息仍报草莓不足、pending 保留。天气 pending 的「换个话题」类句子同样清 pending、由用户模型回复；余额充足用户与平台路由保持不变。
+
+启用后，每条聊天回复会把分身设定、用户的私有长期记忆、本会话最近 60 条消息（含平台看图生成的图片描述）与本条消息发送给用户选择的厂商；系统提示中的账号名替换为「（账号已隐藏）」。危机复核、意图识别、模式判定、看图、全部工具、生图、朗读仍由平台处理并读取对话内容，画像提取仍由平台执行并会读到用户模型的回复；明确危机轮仍由平台回复。用户模型失败不改用平台模型。Key 加密保存，删除 Key 或删号时删除，数据库备份中最多保留 14 天，无服务端密钥无法解密。长期归档副本须先清除 Key 密文，步骤见部署手册。Claude 的接口不对中国大陆提供服务，大陆服务器通常无法连接该预设。
+
+客户端每次显式传 Key/地址/60 秒读超时/max_retries=0，新建后关闭；调用前检查服务端密钥与十一项污染环境变量（完整清单见部署手册，含 `ANTHROPIC_CUSTOM_HEADERS`），读取/解密出错不走平台。预设厂商（含 Claude）遵循服务器的 HTTP(S)_PROXY / NO_PROXY 出站代理设置；自定义地址不使用环境代理。普通/镜子正文限制 4000/600 字；`FIONA_BYOK_TOTAL_SECONDS` 默认 120（10–240）秒从建流计时。响应头到达后，所有厂商在总时限或取消时立即中断；上游在返回响应头之前挂起时，预设厂商最多再等 60 秒读超时，custom 在 TLS 建立后立即中断；DNS 解析与 TCP/TLS 建连阶段分别最多等约 5 秒和 60 秒连接超时。中断线程只标记状态并 shutdown socket，阻塞调用返回后由属主 worker 关闭流、客户端和连接池。`FIONA_BYOK_MAX_STREAMS` 默认 8（1–64），专用有界 `fiona-byok` 池建流与逐块读取，全进程容量和每用户一条流；这两项调用时读取，非法回退并只告警一次。Claude max_tokens 普通4096/镜子2048，effort=low，Opus/Sonnet使用官方内部拒答兜底；OpenAI兼容普通2048/镜子512，不传采样参数。空正文报错不保存assistant；Claude拒答有正文时加中止说明保存。日志/trace仅记异常类型、厂商id、错误类别、耗时，模型trace记byok。
+
+当前平台模型配置以 `backend/llm.py` 和各适配器源码为准：
 
 - `deepseek-v4-pro`：本地已配置的官方搭档发言及单人体验总结；由 `exchange_models.py` 独立配置。
 - `qwen3.8-omni-flash`：主力对话、匹配和复杂判断。
@@ -187,7 +197,7 @@ HTTP 默认经过 `backend/main.py` 的鉴权中间件，身份来源优先级�
 `/var/lib/fiona/fiona.db` 和 `/var/lib/fiona/uploads/`；API Key/JWT Secret 位于
 权限为 `0600` 的 `/etc/fiona/fiona.env`，不写入只读代码目录。
 
-SQLite 表由 `backend/database.py:init_db()` 在启动时创建，初始化时启用持久的 WAL 模式，连接设置一致且不低于 5 秒的 busy timeout。历史字段仍使用旧的容错式 `ALTER TABLE`，其中包括可空列 `users.strawberry_refill_date`；兼容建表还增加 `retired_usernames`。新增分身与会话由 `backend/agent_store.py:migrate_avatar_schema()` 执行版本化事务迁移，版本记入 `schema_migrations`。当前没有通用迁移框架或 PostgreSQL 实现。
+SQLite 表由 `backend/database.py:init_db()` 在启动时创建，初始化时启用持久的 WAL 模式，连接设置一致且不低于 5 秒的 busy timeout。历史字段仍使用旧的容错式 `ALTER TABLE`，其中包括可空列 `users.strawberry_refill_date`；兼容建表还包括 `retired_usernames`、`user_model_configs`；后者在 init_db 直接执行模块 DDL，不新增迁移版本，health 与五道迁移不变。新增分身与会话由 `backend/agent_store.py:migrate_avatar_schema()` 执行版本化事务迁移，版本记入 `schema_migrations`。当前没有通用迁移框架或 PostgreSQL 实现。
 
 `agents` 对每个 owner 设置唯一约束，保存可编辑身份，以及不经名片 API 输出的 `private_memory_json/memory_revision`。初次创建时复制本人旧画像作为私有基线，之后与 `users.profile_json` 分开；旧社会画像仍用于原有显式匹配流程。公开名片只经字段白名单返回，不返回用户名、人格设定或私有记忆。
 
@@ -195,7 +205,9 @@ SQLite 表由 `backend/database.py:init_db()` 在启动时创建，初始化时�
 
 画像提取使用会话内消息和私有记忆修订号，通过条件写入避免清空记忆、删除会话或账号后的迟到回填。清空记忆同时清理私有副本与旧社会画像，保留原始聊天记录；未来交流可以形成新的记忆。待补全工具参数和模式以 `(username, conversation_id)` 隔离并保存在 SQLite 的 `chat_slot_state` 表，重启后在有效期内可恢复；异步请求路径把同步槽位读写交给工作线程，避免阻塞事件循环，连接不再重复建表。
 
-主要数据域包括：用户和画像、消息、匹配、待接受卡片、真人消息、帖子/点赞、标签与时间偏好、用户成长状态、事件、OTP、邀请码、退役用户名、槽位状态和上传清理队列。
+`user_model_configs` 每用户名一行，保存厂商、custom 地址、模型、版本化 AES-256-GCM 密文、HMAC key_id、Key末四位、启用位与时间戳；AAD绑定用户名/厂商/地址，改变厂商或地址必须重填Key，模型可单独修改。写入 BEGIN IMMEDIATE 后检查用户存在，迟到保存不能复活删号配置；公开读取白名单字段、不返回密文或Key，解密失败标 needs_reentry，内部取Key不缓存。删号在删除 users 前同事务删除该表记录。`FIONA_BYOK_SECRET` 是 url-safe base64 的32字节服务端密钥，单独保管、不进数据库/媒体备份；`FIONA_BYOK_SECRET_PREVIOUS` 逗号分隔旧密钥仅解密，下一次保存用当前密钥重加密。密钥丢失只需用户重填Key，缺失/非法整体不可用，不在导入时raise，DEV_MODE无固定回退。生成命令：`python -c "import secrets,base64;print(base64.urlsafe_b64encode(secrets.token_bytes(32)).decode())"`。
+
+主要数据域包括：加密自带模型配置、用户和画像、消息、匹配、待接受卡片、真人消息、帖子/点赞、标签与时间偏好、用户成长状态、事件、OTP、邀请码、退役用户名、槽位状态和上传清理队列。
 
 `fiona.db` 与 `uploads/` 必须作为一个隐私数据集合共同备份和清理。WAL 模式下在线数据库备份必须使用 SQLite `.backup` 或在线备份 API；只复制主数据库文件会漏掉未检查点的提交。`deploy/fiona-backup.sh` 以数据库属主运行并校验备份完整性，媒体与库用同一时间戳、权限 `0600`，默认保留 14 天；systemd timer 每天北京时间 04:00 执行并补跑。`backend/migrate.py` 默认在数据库及伴生文件的临时副本上只执行 `init_db`，不恢复交流或清理文件，明确 `--in-place` 才迁移指定库。删除单条消息、清空历史或删除账户时，数据库会在同一事务中找出不再被消息/帖子引用的媒体并写入 `upload_cleanup_queue`；文件会立即清理，失败项在后端启动时和运行期间周期重试，每轮异常只记类型并继续。新帖子在库内保存 owner；能通过当前 HMAC 或旧 MD5 匿名标识识别的历史帖子会自动回填，无法识别的旧行仍需人工处置。
 
@@ -224,7 +236,7 @@ Layer 2 会为双方创建待接受卡片；Layer 1、Layer 2 和手动匹配都
 - SQLite 每次操作创建连接；WAL、统一 busy timeout 和异步路径的槽位读写隔离已启用，正式迁移和更高并发能力仍待建设。
 - 模型预算计数是单进程内存状态，不是供应商账单或集群级配额；草莓预扣、退款和每日补给已原子化，真实 usage 与持久化成本控制仍待完成。
 - 消息/账户删除已有引用检查和持久化文件清理周期重试；全目录孤儿扫描与保留期限尚未完成。
-- ASGI 层限制总请求体为 25 MB，Chat/图片、ASR、TTS、帖子和分页还有更严格的领域边界；上传图片验证真实格式、完整性和像素量并去元数据，广场视频由 ffmpeg remux 去元数据，处理失败拒绝保存。官方体验、热点展开、卡片详情、ASR 和天气已叠加五项每日每账号上限，天气超限通过聊天错误事件退款；兼容模型客户端已有可配置超时和有限重试，搜索、旅行规划、热点展开和卡片详情的原生调用则固定 30 秒 socket 超时、无重试且不受兼容客户端超时/重试环境变量控制；热点分类使用 `qwen3.8-flash`，固定 8 秒超时、不重试。并发边界、公共热点缓存和持久化成本上限仍需继续治理。
+- ASGI 层限制总请求体为 25 MB，Chat/图片、ASR、TTS、帖子和分页还有更严格的领域边界；上传图片验证真实格式、完整性和像素量并去元数据，广场视频由 ffmpeg remux 去元数据，处理失败拒绝保存。官方体验、热点展开、卡片详情、ASR、天气、BYOK 聊天和测试连接已叠加七项每日每账号上限，天气超限通过聊天错误事件退款；兼容模型客户端已有可配置超时和有限重试，搜索、旅行规划、热点展开和卡片详情的原生调用则固定 30 秒 socket 超时、无重试且不受兼容客户端超时/重试环境变量控制；热点分类使用 `qwen3.8-flash`，固定 8 秒超时、不重试。并发边界、公共热点缓存和持久化成本上限仍需继续治理。
 - 热点与网页卡片的服务端抓取通过只允许公网 HTTP(S) 的客户端访问，每次 DNS 和重定向都会重新校验并限制响应体与超时；搜索与旅行卡片只展示原生搜索结果中经公网 HTTP(S) 格式校验的链接，模型生成的 URL 不进入这两类卡片。
 - 前端主页面承担职责过多，多个隐藏 iframe 会继续运行轮询或 3D 场景。
 - 仓库已增加后端与 Web 质量门禁工作流；Windows 桌面工作流会运行 Rust 单测再打包。新工作流仍需在 GitHub 首次运行中确认 runner 环境。

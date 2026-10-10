@@ -9,6 +9,7 @@ import InkLandscape from "@/components/InkLandscape";
 import { useTheme } from "@/lib/useTheme";
 import { apiFetch, clearAuth, setAuth } from "@/lib/auth";
 import { useAccountIdentity } from "@/lib/useAccountIdentity";
+import ChatModelSection from "@/components/ChatModelSection";
 
 import { API_BASE as API } from "@/lib/config";
 
@@ -108,7 +109,7 @@ function SettingsContent() {
 
   const deleteAccount = async () => {
     if (!username || deleteConfirmation !== username || deleting) return;
-    if (!confirm(`将永久删除「${username}」的账号、聊天、画像、匹配、帖子和上传文件。确定继续？`)) return;
+    if (!confirm(`将永久删除「${username}」的账号、聊天、画像、匹配、帖子、上传文件、自带模型配置与 Key。确定继续？`)) return;
     setDeleting(true);
     setDeleteError("");
     try {
@@ -146,7 +147,7 @@ function SettingsContent() {
           <Glaze variant="panel" fur className="relative z-[1] box-border min-h-full w-full max-w-[712px] self-start rounded-[18px] px-12 pb-8 pt-7 mobile:px-6 mobile:pb-6 mobile:pt-5">
             <header>
               <h1 className="mt-[18px] text-[30px] font-medium tracking-[0.24em]">设置</h1>
-              <p className="mt-2 text-sm tracking-[0.04em] text-[color:var(--ink2)]">账号、外观与数据。</p>
+              <p className="mt-2 text-sm tracking-[0.04em] text-[color:var(--ink2)]">账号、外观、模型与数据。</p>
             </header>
 
             <section className={`${sectionClass} mt-7`}>
@@ -209,6 +210,8 @@ function SettingsContent() {
                 </div>
               </div>
             </section>
+
+            <ChatModelSection key={username} username={username} sectionClass={sectionClass} headingClass={headingClass} />
 
             <section className={sectionClass}>
               <h2 className={headingClass}>数据管理</h2>

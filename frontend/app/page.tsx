@@ -24,6 +24,8 @@ import { apiFetch, getUsername as readStoredUsername } from "@/lib/auth";
 import { requestTtsTicket, type TtsBackoff } from "@/lib/ttsTicket";
 import { generatedImagePath, referenceImagePath, referencePreviewUrl, isLocalReferenceDataUrl, type ReferenceImageInput } from "@/lib/generatedImages";
 import { readLocalReferenceImage, MAX_REFERENCE_FILE_BYTES, REFERENCE_FILE_TYPES } from "@/lib/localReferenceImages";
+import { useAccountRequest } from "@/lib/useAccountIdentity";
+import { CHAT_MODEL_REV_KEY, chatModelErrorMessage, getChatModel, setChatModelEnabled, publishChatModelRevision, parseReplyModel, type ChatModelSettings } from "@/lib/chatModel";
 
 import { API_BASE as API, WS_BASE } from "@/lib/config";
 
@@ -53,6 +55,7 @@ interface PendingMatch {
 }
 
 interface ChatStreamEvent {
+  reply_model?: unknown;
   type?: "reference_images";
   crisis?: boolean;
   reference_image_paths?: string[];
@@ -276,6 +279,94 @@ function weatherForecastCondition(forecast: WeatherForecastDay) {
 }
 
 // ── main page ──
+
+function ChatModelFooter({ username, settingsOpen, chatMode, loading }: {
+  username: string; settingsOpen: boolean; chatMode: boolean; loading: boolean;
+}) {
+  const [settings, setSettings] = useState<ChatModelSettings | null>(null);
+  const [busy, setBusy] = useState(false);
+  const [error, setError] = useState("");
+  const { beginRequest } = useAccountRequest(username);
+  const { beginRequest: beginMutation } = useAccountRequest(username);
+  const revision = useRef(0);
+  const refreshError = useRef(false);
+  const refresh = useCallback(() => {
+    const request = beginRequest();
+    if (!request) return;
+    const readRevision = revision.current;
+    getChatModel(request.signal).then(value => {
+      if (!request.isCurrent() || readRevision !== revision.current) return;
+      setSettings(value);
+      if (refreshError.current) {
+        refreshError.current = false;
+        setError("");
+      }
+    }).catch(cause => {
+      if (request.isCurrent() && readRevision === revision.current) {
+        refreshError.current = true;
+        setError(chatModelErrorMessage(cause));
+      }
+    });
+  }, [beginRequest]);
+  useEffect(() => {
+    const onStorage = (event: StorageEvent) => {
+      if (event.key === CHAT_MODEL_REV_KEY) refresh();
+    };
+    const onVisible = () => {
+      if (document.visibilityState === "visible") refresh();
+    };
+    if (!settingsOpen) refresh();
+    window.addEventListener("storage", onStorage);
+    document.addEventListener("visibilitychange", onVisible);
+    return () => {
+      window.removeEventListener("storage", onStorage);
+      document.removeEventListener("visibilitychange", onVisible);
+    };
+  }, [refresh, settingsOpen]);
+
+  const toggle = async () => {
+    if (!settings?.config || busy || loading) return;
+    const request = beginMutation();
+    if (!request) return;
+    refreshError.current = false;
+    revision.current += 1;
+    setBusy(true); setError("");
+    try {
+      const config = await setChatModelEnabled(!settings.config.enabled, request.signal);
+      if (!request.isCurrent()) return;
+      revision.current += 1;
+      setSettings(previous => previous ? { ...previous, config } : previous);
+      publishChatModelRevision();
+    } catch (cause) {
+      if (request.isCurrent()) {
+        refreshError.current = false;
+        setError(chatModelErrorMessage(cause));
+      }
+    } finally {
+      if (request.isCurrent()) setBusy(false);
+    }
+  };
+
+  const config = settings?.config;
+  const provider = settings?.providers.find(item => item.id === config?.provider);
+  return <div className="flex min-w-0 flex-col items-end gap-1 max-md:items-start">
+    {chatMode && config ? <div className="flex max-w-full flex-wrap items-center justify-end gap-x-2 gap-y-1 max-md:justify-start">
+      <span className="break-all">{config.enabled
+        ? `聊天：${provider?.name ?? config.provider} · ${config.model}（不扣草莓）`
+        : "聊天：平台 · 每条 10 颗草莓"}</span>
+      <button type="button" disabled={busy || loading || (!config.enabled && (config.status !== "ok" || !settings.available))}
+        title={!config.enabled && config.status !== "ok" ? "请在设置中重新填写 Key" : undefined}
+        onClick={() => void toggle()} className="btn btn-quiet h-7 shrink-0 px-2 text-xs max-md:min-h-10">
+        {busy ? "正在切换…" : config.enabled ? "改用平台" : "改用我的模型"}
+      </button>
+    </div> : <span>每条消息消耗 <b className="readout">10</b> 颗草莓</span>}
+    {chatMode && error && <div className="flex items-center gap-2 text-[color:var(--seal)]">
+      <span role="alert">{error}</span>
+      {!settings && <button type="button" disabled={busy || loading} onClick={refresh}
+        className="btn btn-quiet h-7 shrink-0 px-2 text-xs max-md:min-h-10">重试</button>}
+    </div>}
+  </div>;
+}
 
 export default function ChatPage() {
   // ---- core chat state ----
@@ -1659,6 +1750,11 @@ export default function ChatPage() {
             setMessages((prev) => prev.map((m) => m.id === replyId
               ? { ...m, generationStatus: undefined, imageGenerationRetry: undefined } : m));
           }
+          const replyModel = parseReplyModel(data.reply_model);
+          if (replyModel) {
+            setMessages(previous => previous.map(message => message.id === replyId
+              ? { ...message, replyModelLabel: replyModel.label } : message));
+          }
           if (data.tool) {
             // Keep focus in the avatar form while a background reply continues.
             setTimeout(focusChatInput, 100);
@@ -2146,7 +2242,7 @@ export default function ChatPage() {
                 >
                   <AudioLines size={13} className="md:hidden" /><span className="max-md:hidden">免提</span>
                 </button>
-                <span className="hidden shrink-0 flex-col items-end gap-0.5 whitespace-nowrap text-xs max-md:inline-flex" title="草莓余额，每条消息消耗 10 颗">
+                <span className="hidden shrink-0 flex-col items-end gap-0.5 whitespace-nowrap text-xs max-md:inline-flex" title="平台模型每条消息消耗 10 颗；自带模型聊天不扣">
                   <b className="readout" style={{ color: strawberryBalance !== null && strawberryBalance < 30 ? "var(--rec)" : "var(--foreground)" }}>
                     {strawberryBalance === null ? "…" : strawberryBalance}
                   </b>
@@ -2306,9 +2402,9 @@ export default function ChatPage() {
                   </div>
                 </div>
                 {voiceText && <p className="mt-2 text-xs text-muted-foreground">{voiceText}</p>}
-                <div className="mt-2 flex items-center justify-between border-t border-[var(--carve)] pt-2 text-xs text-muted-foreground shadow-[inset_0_1px_0_var(--etch)]">
-                  <span className="max-md:hidden">Enter 发送，Shift + Enter 换行</span>
-                  <span>每条消息消耗 <b className="readout">10</b> 颗草莓</span>
+                <div className="mt-2 flex items-center justify-between gap-3 border-t border-[var(--carve)] pt-2 text-xs text-muted-foreground shadow-[inset_0_1px_0_var(--etch)]">
+                  <span className="shrink-0 max-md:hidden">Enter 发送，Shift + Enter 换行</span>
+                  <ChatModelFooter key={username} username={username} settingsOpen={settingsOpen} chatMode={!imageMode && !hasReferenceImages} loading={isLoading} />
                 </div>
               </div>
             </Glaze>

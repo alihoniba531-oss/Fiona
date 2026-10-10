@@ -37,11 +37,12 @@ import aiosqlite
 import database
 from database import get_pending_upload_cleanup, init_db, mark_upload_cleanup_done
 from rate_limit import limiter
-from routers import agent_exchanges, agents, auth, cards, chat, conversations, hot, image_models, match, me, peer, plaza, voice
+from routers import agent_exchanges, agents, auth, cards, chat, chat_model, conversations, hot, image_models, match, me, peer, plaza, voice
 from utils import media
 from utils.background_tasks import create_background_task, shutdown_background_tasks
 from utils.request_limits import MAX_REQUEST_BODY_BYTES, RequestBodyLimitMiddleware
 from utils.slow_pool import shutdown_slow_pool
+from services.chat_service import shutdown_byok_pool
 
 if os.getenv("DEV_MODE", "0") == "1":
     import selectors as _selectors
@@ -128,6 +129,7 @@ async def lifespan(app: FastAPI):
     finally:
         await shutdown_background_tasks()
         shutdown_slow_pool()
+        shutdown_byok_pool()
 
 app = FastAPI(title="Chloe API", lifespan=lifespan)
 app.add_middleware(RequestBodyLimitMiddleware, max_bytes=MAX_REQUEST_BODY_BYTES)
@@ -136,7 +138,18 @@ app.add_middleware(RequestBodyLimitMiddleware, max_bytes=MAX_REQUEST_BODY_BYTES)
 # 不设全局 default_limits，免误伤 /uploads、TTS 流等；只在具体端点上挂 @limiter.limit。
 # key_func 由 rate_limit.py 校验受信任代理；uvicorn 可能已改写 client.host。
 app.state.limiter = limiter
-app.add_exception_handler(RateLimitExceeded, _rate_limit_exceeded_handler)
+
+
+def _handle_rate_limit_exceeded(request: Request, exc: RateLimitExceeded):
+    if request.url.path.rstrip("/") == "/chat-model/test":
+        return JSONResponse(
+            {"ok": False, "message": "操作太频繁，请稍后再试"},
+            status_code=200, headers={"Cache-Control": "private, no-store"},
+        )
+    return _rate_limit_exceeded_handler(request, exc)
+
+
+app.add_exception_handler(RateLimitExceeded, _handle_rate_limit_exceeded)
 
 app.mount("/uploads", StaticFiles(directory=media.UPLOADS_DIR), name="uploads")
 
@@ -147,6 +160,7 @@ app.include_router(plaza.router)
 app.include_router(auth.router)
 app.include_router(peer.router)
 app.include_router(chat.router)
+app.include_router(chat_model.router)
 app.include_router(image_models.router)
 app.include_router(match.router)
 app.include_router(me.router)
@@ -238,7 +252,9 @@ async def require_auth(request: Request, call_next):
                 from database import get_or_create_user
                 await get_or_create_user(user)
     if not user:
-        response = JSONResponse({"detail": "未鉴权或鉴权失败"}, status_code=401)
+        chat_model_path = path.rstrip("/") in {"/chat-model", "/chat-model/test"}
+        headers = {"Cache-Control": "private, no-store"} if chat_model_path else None
+        response = JSONResponse({"detail": "未鉴权或鉴权失败"}, status_code=403 if chat_model_path else 401, headers=headers)
         response.delete_cookie("fiona_token", path="/")
         return response
     # 把鉴权结果挂到 request.state，路由里 Depends(get_current_user) 直接读，避免重复解码。
@@ -248,6 +264,8 @@ async def require_auth(request: Request, call_next):
     if private_chat_image and not await _can_view_generated_image(user, upload_path):
         return JSONResponse({"detail": "图片不存在或无权访问"}, status_code=404, headers={"Cache-Control": "private, no-store"})
     response = await call_next(request)
+    if path.rstrip("/") in {"/chat-model", "/chat-model/test"}:
+        response.headers["Cache-Control"] = "private, no-store"
     if private_chat_image:
         # Do not retain private files in browser/shared caches after deletion/logout.
         response.headers["Cache-Control"] = "private, no-store"

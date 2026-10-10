@@ -66,6 +66,8 @@ _DAILY_SETTINGS = {
     "card_detail": ("FIONA_DAILY_CARD_DETAILS", 30),
     "asr": ("FIONA_DAILY_ASR", 300),
     "weather": ("FIONA_DAILY_WEATHER", 30),
+    "byok_chat": ("FIONA_DAILY_BYOK_CHATS", 200),
+    "byok_test": ("FIONA_DAILY_BYOK_TESTS", 20),
 }
 _INVALID_DAILY_WARNED: set[str] = set()
 
@@ -97,6 +99,8 @@ def daily_cap_message(kind: str, amount: int | None = None) -> str:
         "card_detail": "今天的详情查看次数已用完，明天再来吧。",
         "asr": "今天的语音识别次数已用完，明天再来吧，可以先打字。",
         "weather": "今天查天气的次数已用完，明天再试",
+        "byok_chat": "今天用自带模型聊天的次数已用完，明天再试，或在输入框下方改用平台",
+        "byok_test": "今天测试自带模型连接的次数已用完，明天再试",
     }
     if kind == "official_exchange":
         amount = daily_cap(kind) if amount is None else amount

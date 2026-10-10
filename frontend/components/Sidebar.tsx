@@ -102,7 +102,7 @@ export default function Sidebar({
       <button type="button" onClick={toggleTheme} className="grid h-10 w-10 place-items-center rounded-full border border-[var(--rule2)] text-sm text-[var(--ink2)] hover:text-[var(--ink)]" title={dark ? "切换浅色":"切换深色"} aria-label={dark ? "切换浅色":"切换深色"}>
         <span className="theme-day">夜</span><span className="theme-night">昼</span>
       </button>
-      <div className="mt-[18px] text-center leading-[1.3]" title="草莓余额，每条消息消耗 10 颗">
+      <div className="mt-[18px] text-center leading-[1.3]" title="平台模型每条消息消耗 10 颗；自带模型聊天不扣">
         <div className="text-sm tabular-nums" style={{color:balance !== null && balance < 30 ? "var(--seal)":"var(--ink)"}}>{balance === null ? "…":balance}</div>
         <div className="text-[11px] tracking-[.1em] text-[var(--ink2)]">草莓</div>
       </div>

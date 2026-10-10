@@ -14,3 +14,5 @@ urllib3>=2.0,<3
 pydantic==2.13.4
 python-multipart==0.0.31
 slowapi>=0.1.9
+anthropic==1.12.1
+cryptography==50.0.0

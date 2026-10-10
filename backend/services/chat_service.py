@@ -13,8 +13,11 @@
 """
 import asyncio
 import json
+import os
 import re
-from contextlib import aclosing
+import threading
+from concurrent.futures import ThreadPoolExecutor
+from contextlib import aclosing, contextmanager
 from dataclasses import dataclass, field
 from datetime import datetime, timezone
 
@@ -23,9 +26,14 @@ from fastapi import HTTPException
 
 from avatar_state import AvatarStage, build_tone_description, extract_tone_profile, get_stage
 from agent_store import ResourceNotFound, get_memory_snapshot, resolve_chat_conversation
+from byok.client import ReplyStreamControl, max_streams, open_reply_stream, test_connection
+from byok.errors import EmptyReplyError, RefusalError, error_category, error_message
+from byok.providers import provider_label
+from byok.store import get_internal_config, get_public_config
 from conversation_matcher import detect_and_save as detect_matches_and_save
 from database import (STRAWBERRY_COST_PER_REPLY, count_messages, get_messages,
-                      refund_strawberries, save_message, set_message_image_summary)
+                      refund_strawberries, save_message, set_message_image_summary,
+                      strawberry_insufficient_message)
 from extractor import extract_and_update
 from intent_router import ask_missing, clear_pending, explicit_image_intent, fill_param, get_pending, image_aspect_ratio, image_edit_requires_reference, image_generation_discussion, recognize_intent, set_pending
 from llm import QWEN_CLIENT, _create_stream_with_fallback, client
@@ -58,6 +66,11 @@ _STREAM_END = object()
 _UPSTREAM_ERROR_MESSAGE = "服务暂时不可用，请稍后再试"
 _MODEL_ARREARAGE_MESSAGE = "模型服务账户欠费，暂时无法生成回复。请联系平台管理员恢复模型服务后重试。"
 _IMAGE_GENERATION_USERS: set[str] = set()
+_BYOK_USERS: set[str] = set()
+_BYOK_ACTIVE = 0
+_BYOK_POOL: ThreadPoolExecutor | None = None
+_BYOK_POOL_SIZE = 0
+_BYOK_POOL_LOCK = threading.Lock()
 _IMAGE_HEARTBEAT_SECONDS = 10
 # 视觉分支拼进 VL 请求的历史条数上限（T2a）。
 _VL_HISTORY_TURNS = 10
@@ -141,6 +154,180 @@ async def _iter_sync_stream(stream):
         except Exception as e:
             # 关闭失败不能覆盖原始流异常或改变 SSE 输出。
             print(f"[chat] stream close error type={type(e).__name__}", flush=True)
+
+
+class _ByokBusyError(Exception):
+    def __init__(self, message):
+        self.message = message
+
+
+@contextmanager
+def _byok_slot(username: str | None = None):
+    """Admit before submitting work, so the executor has no waiting streams."""
+    global _BYOK_POOL, _BYOK_POOL_SIZE, _BYOK_ACTIVE
+    with _BYOK_POOL_LOCK:
+        limit = max_streams()
+        if username is not None and username in _BYOK_USERS:
+            raise _ByokBusyError("你的模型正在回复上一条消息，请稍候")
+        if _BYOK_ACTIVE == 0 and (_BYOK_POOL is None or _BYOK_POOL_SIZE != limit):
+            if _BYOK_POOL is not None:
+                _BYOK_POOL.shutdown(wait=False)
+            _BYOK_POOL = ThreadPoolExecutor(max_workers=limit, thread_name_prefix="fiona-byok")
+            _BYOK_POOL_SIZE = limit
+        if _BYOK_ACTIVE >= min(limit, _BYOK_POOL_SIZE):
+            raise _ByokBusyError("自带模型通道繁忙，请稍后再试")
+        _BYOK_ACTIVE += 1
+        if username is not None:
+            _BYOK_USERS.add(username)
+        pool = _BYOK_POOL
+    try:
+        yield pool
+    finally:
+        with _BYOK_POOL_LOCK:
+            _BYOK_ACTIVE -= 1
+            if username is not None:
+                _BYOK_USERS.discard(username)
+
+
+def shutdown_byok_pool() -> None:
+    global _BYOK_POOL, _BYOK_POOL_SIZE
+    with _BYOK_POOL_LOCK:
+        pool, _BYOK_POOL = _BYOK_POOL, None
+        _BYOK_POOL_SIZE = 0
+    if pool is not None:
+        pool.shutdown(wait=False)
+
+
+async def _byok_call(pool, function, *args, control: ReplyStreamControl | None = None):
+    future = asyncio.get_running_loop().run_in_executor(pool, function, *args)
+    try:
+        await asyncio.wait({future})
+        return future.result()
+    except asyncio.CancelledError:
+        if control is not None:
+            # Interrupt the socket before waiting for a blocked SDK worker.
+            control.abort()
+        # Do not release the admission slot while a worker still owns a socket.
+        with anyio.CancelScope(shield=True):
+            await asyncio.wait({future})
+            # Retrieve interrupted-worker exceptions without a shield callback
+            # logging their traceback after the caller has been cancelled.
+            if not future.cancelled() and future.exception() is None:
+                close = getattr(future.result(), "close", None)
+                if callable(close):
+                    try:
+                        await _byok_call(pool, close)
+                    except Exception:
+                        # Cleanup must preserve the original cancellation.
+                        pass
+        raise
+
+
+async def run_byok_connection_test(config: dict) -> None:
+    from functools import partial
+    control = ReplyStreamControl()
+    with _byok_slot() as pool:
+        await _byok_call(pool, partial(test_connection, config, control=control), control=control)
+
+
+def _wants_byok(ctx: "ChatContext", state: "ChatState") -> bool:
+    return not state.crisis and bool(
+        ctx.byok_error is not None or (ctx.byok_config and ctx.byok_config.get("enabled"))
+    )
+
+
+async def _unreserved_error(ctx: "ChatContext", state: "ChatState"):
+    state.trace["error"] = "InsufficientStrawberries"
+    if _needs_crisis_resource(state):
+        yield _crisis_resource_event(state)
+    yield _sse({"error": strawberry_insufficient_message()})
+
+
+async def _stream_byok_reply(ctx: "ChatContext", state: "ChatState", *, mirror: bool):
+    """Both reply branches use this isolated consumer; errors never fall back."""
+    stream = None
+    state.trace["model"] = "byok"
+    if ctx.byok_config and ctx.byok_config.get("provider"):
+        state.trace["byok_provider"] = ctx.byok_config["provider"]
+    elif ctx.byok_error is not None and getattr(ctx.byok_error, "byok_provider", None):
+        state.trace["byok_provider"] = ctx.byok_error.byok_provider
+    try:
+        config = ctx.byok_config
+        if ctx.byok_unreserved:
+            try:
+                config = await get_internal_config(ctx.user)
+            except Exception:
+                config = None
+            if not config or not config.get("enabled") or not config.get("api_key"):
+                async for event in _unreserved_error(ctx, state):
+                    yield event
+                return
+        elif ctx.byok_error is not None:
+            raise ctx.byok_error
+        state.trace["model"] = "byok"
+        state.trace["byok_provider"] = config["provider"]
+        with _byok_slot(ctx.user) as pool:
+            message = check_chat_daily_cap("byok_chat", ctx.user, hit=True)
+            if message:
+                raise _ByokBusyError(message)
+            from functools import partial
+            control = ReplyStreamControl()
+            stream = await _byok_call(pool, partial(
+                open_reply_stream, config,
+                [{"role": "system", "content": state.sys_prompt_final}] + ctx.messages,
+                mirror=mirror, username=ctx.user, control=control,
+            ), control=control)
+            labelled = False
+            exhausted = False
+            try:
+                iterator = iter(stream)
+                while True:
+                    chunk = await _byok_call(pool, next, iterator, _STREAM_END, control=control)
+                    if chunk is _STREAM_END:
+                        exhausted = True
+                        break
+                    if not chunk.choices:
+                        continue
+                    text = chunk.choices[0].delta.content or ""
+                    if text:
+                        if not labelled:
+                            yield _sse({"reply_model": {"source": "byok", "label": provider_label(config["provider"], config["model"])}})
+                            labelled = True
+                        state.full_response += text
+                        yield _sse({"text": text})
+            finally:
+                if not exhausted:
+                    control.abort()
+                with anyio.CancelScope(shield=True):
+                    try:
+                        await _byok_call(pool, stream.close, control=control)
+                    except Exception as exc:
+                        print(f"[byok] close failed type={type(exc).__name__}", flush=True)
+        refused = bool(getattr(stream, "refused", False) or getattr(stream, "stop_reason", None) == "refusal")
+        if not state.full_response.strip():
+            raise RefusalError() if refused else EmptyReplyError()
+        if refused:
+            text = "（Claude 中止了这条回复）"
+            state.full_response += text
+            yield _sse({"text": text})
+    except _ByokBusyError as exc:
+        state.trace["error"] = "ByokLimitExceeded"
+        if _needs_crisis_resource(state):
+            yield _crisis_resource_event(state)
+        yield _sse({"error": exc.message})
+        return
+    except Exception as exc:
+        state.trace["error"] = type(exc).__name__
+        state.trace["byok_error"] = error_category(exc)
+        print(f"[byok] reply failed category={error_category(exc)}", flush=True)
+        if _needs_crisis_resource(state):
+            yield _crisis_resource_event(state)
+        yield _sse({"error": error_message(exc)})
+        return
+    # Persistence belongs to the platform chat lifecycle, not the BYOK call.
+    async for event in _save_text_reply(ctx, state):
+        yield event
+    yield _sse({"done": True})
 
 
 def _track_background_task(coro) -> asyncio.Task:
@@ -377,6 +564,9 @@ class ChatContext:
     reference_sources_submitted: bool = False
     uploaded_image_path: str | None = None
     image_model: str | None = None
+    byok_config: dict | None = None
+    byok_error: Exception | None = None
+    byok_unreserved: bool = False
 
     @property
     def state_key(self) -> str | tuple[str, str]:
@@ -453,10 +643,22 @@ async def _persist_edit_references(req, user: str, conversation_id: str, user_co
             delete_uploaded_files(fresh)
 
 
-async def build_context(req, user: str, *, crisis_resolver=None) -> ChatContext:
+async def build_context(req, user: str, *, crisis_resolver=None, byok_unreserved: bool = False) -> ChatContext:
     """预检装配（不含余额检查 —— 那个要在 handler 早返回）。
     req 需有 .message 和 .image_base64，可带 .conversation_id。"""
     has_image = bool(req.image_base64)
+    byok_unreserved = byok_unreserved and os.getenv("DEV_MODE", "0") != "1"
+    byok_config = None
+    byok_error = None
+    try:
+        byok_config = await get_internal_config(user)
+    except Exception as exc:
+        # A failed read can never be interpreted as an absent configuration.
+        byok_error = exc
+        try:
+            byok_config = await get_public_config(user)
+        except Exception:
+            pass
 
     resolved = await resolve_chat_conversation(user, getattr(req, "conversation_id", None))
     conversation = resolved["conversation"]
@@ -577,6 +779,9 @@ async def build_context(req, user: str, *, crisis_resolver=None) -> ChatContext:
         reference_sources_submitted=getattr(req, "reference_images", None) is not None,
         uploaded_image_path=image_path if has_image else None,
         image_model=getattr(req, "image_model", None),
+        byok_config=byok_config,
+        byok_error=byok_error,
+        byok_unreserved=byok_unreserved,
     )
 
 
@@ -601,6 +806,10 @@ async def stream_generated_image(
     ctx: ChatContext, state: ChatState, prompt: str, *, aspect_ratio: str | None = None,
 ):
     """生成图先保存到固定会话，再交给页面；中断和删除均不留下孤立附件。"""
+    if ctx.byok_unreserved:
+        async for event in _unreserved_error(ctx, state):
+            yield event
+        return
     await _ensure_active_conversation(ctx)
     editing = ctx.request_mode == "image_edit"
     tool = "edit_image" if editing else "generate_image"
@@ -705,6 +914,16 @@ async def stream_mirror(ctx: ChatContext, state: ChatState, *, preserve_pending:
         await asyncio.to_thread(clear_pending, ctx.state_key)
     _slot = choose_model(ctx.user, ctx.user_content, "mirror", len(ctx.history))
     state.trace["model"] = _slot
+    if _wants_byok(ctx, state):
+        _actually_qwen = True
+        async with aclosing(_stream_byok_reply(ctx, state, mirror=True)) as reply:
+            async for event in reply:
+                yield event
+        return
+    if ctx.byok_unreserved:
+        async for event in _unreserved_error(ctx, state):
+            yield event
+        return
     try:
         stream, _actually_qwen = await asyncio.to_thread(
             _create_stream_with_fallback,
@@ -746,6 +965,10 @@ async def stream_mirror(ctx: ChatContext, state: ChatState, *, preserve_pending:
 
 async def stream_image(ctx: ChatContext, state: ChatState):
     """有图片：用 qwen-vl-max 看图，跳过意图识别。"""
+    if ctx.byok_unreserved:
+        async for event in _unreserved_error(ctx, state):
+            yield event
+        return
     # base64 直接喂 VL，避免落盘再读盘
     _img_raw = ctx.image_base64 or ""
     _mime = "png"
@@ -838,6 +1061,25 @@ async def stream_pending(ctx: ChatContext, state: ChatState, pending: dict):
     filled = fill_param(pending, ctx.message)
     if not filled["missing"]:
         # 参数补全，执行
+        if ctx.byok_unreserved and filled["intent"] not in {"generate_image", "weather"}:
+            if re.match(r"^(?:算了|取消|不用了|不要了|不查了|没事了)[吧了。！!\s]*$", ctx.message.strip()):
+                await asyncio.to_thread(clear_pending, ctx.state_key)
+                state.full_response = "好，已取消。"
+                yield _sse({"text": state.full_response})
+                async for event in _save_text_reply(ctx, state):
+                    yield event
+                yield _sse({"done": True})
+                return
+            if re.match(r"^(?:先聊|聊点|换个话题|先不)", ctx.message.strip()):
+                await asyncio.to_thread(clear_pending, ctx.state_key)
+                async with aclosing(stream_normal(ctx, state)) as reply:
+                    async for event in reply:
+                        yield event
+                return
+        if ctx.byok_unreserved:
+            async for event in _unreserved_error(ctx, state):
+                yield event
+            return
         await asyncio.to_thread(clear_pending, ctx.state_key)
         if filled["intent"] == "generate_image":
             async for event in stream_generated_image(ctx, state, ctx.message.strip()):
@@ -930,6 +1172,10 @@ def recognize_intent_with_fallback(message: str, history: list[dict]) -> dict:
 
 async def stream_intent(ctx: ChatContext, state: ChatState, intent_result: dict):
     """意图明确：参数完整直接执行，缺参数则存 pending 追问。"""
+    if ctx.byok_unreserved:
+        async for event in _unreserved_error(ctx, state):
+            yield event
+        return
     await _ensure_active_conversation(ctx)
     if intent_result["intent"] == "generate_image":
         if intent_result.get("missing"):
@@ -1005,6 +1251,18 @@ async def stream_normal(ctx: ChatContext, state: ChatState):
     """普通对话，走 Chloe（路由决定使用哪个模型槽）+ 后台画像提取/匹配检测。"""
     _slot = choose_model(ctx.user, ctx.user_content, "normal", len(ctx.history))
     state.trace["model"] = _slot
+    if _wants_byok(ctx, state):
+        _actually_qwen = True
+        async with aclosing(_stream_byok_reply(ctx, state, mirror=False)) as reply:
+            async for event in reply:
+                yield event
+        if state.response_saved and "error" not in state.trace:
+            await _normal_followups(ctx, state, _actually_qwen)
+        return
+    if ctx.byok_unreserved:
+        async for event in _unreserved_error(ctx, state):
+            yield event
+        return
     _use_light = (_slot == "light")
     # max_tokens 统一给 700：_create_stream_with_fallback 会在轻量槽失败时
     # 自动切主力大脑，但 max_tokens 是事先传入的参数，给小了 fallback 后
@@ -1059,6 +1317,10 @@ async def stream_normal(ctx: ChatContext, state: ChatState):
         await _save_response(ctx, state)
     yield _sse({"done": True})
 
+    await _normal_followups(ctx, state, _actually_qwen)
+
+
+async def _normal_followups(ctx: ChatContext, state: ChatState, _actually_qwen: bool):
     try:
         # These follow-up tasks cannot change the already delivered answer.
         if not _actually_qwen:
@@ -1088,8 +1350,10 @@ async def stream_normal(ctx: ChatContext, state: ChatState):
 async def run_chat(
     ctx: ChatContext, *, reserved: bool = False, crisis: str | bool | None = None,
     tracker: ChatRunTracker | None = None,
+    byok_unreserved: bool = False,
 ):
     """Dispatch one chat turn and settle a reservation against actual delivery."""
+    ctx.byok_unreserved = (ctx.byok_unreserved or byok_unreserved) and os.getenv("DEV_MODE", "0") != "1"
     crisis_level = assess_crisis(ctx.message) if crisis is None else (
         "high" if crisis is True else None if crisis is False else crisis
     )
@@ -1128,8 +1392,9 @@ async def run_chat(
                 async for event in stream_image(ctx, state):
                     yield event
             else:
-                async for event in stream_normal(ctx, state):
-                    yield event
+                async with aclosing(stream_normal(ctx, state)) as reply:
+                    async for event in reply:
+                        yield event
             return
         if ctx.request_mode in {"image", "image_edit"}:
             await asyncio.to_thread(clear_pending, ctx.state_key)
@@ -1200,7 +1465,10 @@ async def run_chat(
                 intent_result = replacement
                 intent_checked = True
             if replacement.get("intent") and replacement["intent"] != "generate_image":
-                await asyncio.to_thread(clear_pending, ctx.state_key)
+                # An unreserved replacement tool must preserve the pending
+                # image request (specification 6.9 #11 / R1-2 #4).
+                if not ctx.byok_unreserved:
+                    await asyncio.to_thread(clear_pending, ctx.state_key)
                 async for event in stream_intent(ctx, state, replacement):
                     yield event
                 return
@@ -1225,8 +1493,9 @@ async def run_chat(
 
         if mode == "mirror":
             mirror_stream = stream_mirror(ctx, state, preserve_pending=True) if skip_tools else stream_mirror(ctx, state)
-            async for s in mirror_stream:
-                yield s
+            async with aclosing(mirror_stream) as reply:
+                async for s in reply:
+                    yield s
             return
 
         # ── 朋友模式：保留现有完整逻辑 ──
@@ -1238,8 +1507,9 @@ async def run_chat(
         if skip_tools:
             # Possible crisis turns keep pending intact and use an ordinary
             # reply; only information or help-seeking context keeps tools.
-            async for s in stream_normal(ctx, state):
-                yield s
+            async with aclosing(stream_normal(ctx, state)) as reply:
+                async for s in reply:
+                    yield s
             return
 
         # ── 1. 检查是否有等待补全参数的 pending intent ──
@@ -1253,7 +1523,10 @@ async def run_chat(
                     yield event
                 yield _sse({"done": True})
                 return
-            if state.crisis_level in {"high", "possible"} or not normalize_city(ctx.message):
+            if ctx.byok_unreserved and re.match(r"^(?:先聊|聊点|换个话题|先不)", ctx.message.strip()):
+                await asyncio.to_thread(clear_pending, ctx.state_key)
+                pending = None
+            elif state.crisis_level in {"high", "possible"} or not normalize_city(ctx.message):
                 await asyncio.to_thread(clear_pending, ctx.state_key)
                 pending = None
         if pending and not (image_candidate_rejected and pending.get("intent") == "generate_image"):
@@ -1272,8 +1545,9 @@ async def run_chat(
             return
 
         # ── 3. 普通对话 ──
-        async for s in stream_normal(ctx, state):
-            yield s
+        async with aclosing(stream_normal(ctx, state)) as reply:
+            async for s in reply:
+                yield s
 
     except ResourceNotFound:
         missing_conversation = True

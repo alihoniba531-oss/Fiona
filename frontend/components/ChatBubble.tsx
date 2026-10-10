@@ -119,6 +119,7 @@ export interface Message {
   localReferenceImageUrls?: string[];
   generatedImage?: { width: number; height: number; model: string };
   generationStatus?: string;
+  replyModelLabel?: string; // 仅记录本次 SSE 标注，不写入历史或浏览器存储。
   imageGenerationRetry?: ImageGenerationRetry;
   cardData?: CardData;  // 网页卡片(fetch_card 意图)——非空时整条消息渲染为卡片
   pendingTtsText?: string;  // 搜索类回复待询问播报的文本；非空时气泡下方出现 [帮我读]/[不用] 按钮
@@ -191,6 +192,7 @@ function ChatBubble({ message, agentName = "Chloe", onDelete, onConfirmTts, onDe
       <div className={cn("flex min-w-0 flex-col gap-2", isUser ? "items-end" : "w-full")}>
         {!isUser && <div className="text-[13px] tracking-[0.1em] text-[color:var(--ink2)]" title={`${agentName} · AI 分身`}>
           {agentName}
+          {message.replyModelLabel && <span title={message.replyModelLabel}> · 由你的模型回复</span>}
         </div>}
 
         {/* 图片（如果有） */}

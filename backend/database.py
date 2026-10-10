@@ -38,6 +38,15 @@ def _today_shanghai() -> str:
         tz = timezone(timedelta(hours=8))
     return datetime.now(tz).date().isoformat()
 
+
+def strawberry_insufficient_message() -> str:
+    """Keep route prechecks and unreserved BYOK guards on the same wording."""
+    refill = strawberry_daily_refill()
+    return (
+        f"今天的草莓用完了，明天会自动补到 {refill} 颗；急用请联系管理员补充 🍓"
+        if refill else "草莓不足，内测期间请联系管理员补充 🍓"
+    )
+
 import json as _json
 
 
@@ -297,6 +306,8 @@ async def init_db():
         await _safe_migrate(db, "ALTER TABLE invite_codes ADD COLUMN revoked_at TIMESTAMP DEFAULT NULL")
         await _safe_migrate(db, "ALTER TABLE invite_codes ADD COLUMN use_count INTEGER NOT NULL DEFAULT 0")
         await _safe_migrate(db, "ALTER TABLE invite_codes ADD COLUMN last_used_at TIMESTAMP DEFAULT NULL")
+        from byok.store import USER_MODEL_CONFIGS_DDL
+        await db.execute(USER_MODEL_CONFIGS_DDL)
         await db.execute("""
             CREATE TABLE IF NOT EXISTS retired_usernames (
                 username   TEXT PRIMARY KEY,
@@ -870,6 +881,7 @@ async def delete_account_data(username: str) -> dict:
             "INSERT OR IGNORE INTO retired_usernames (username) VALUES (?)",
             (username,),
         )
+        await db.execute("DELETE FROM user_model_configs WHERE username = ?", (username,))
         await db.execute("DELETE FROM users WHERE username = ?", (username,))
 
         # UUID 文件理论上不会共享；仍在事务内复核引用，避免误删异常旧数据。
