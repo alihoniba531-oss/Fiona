@@ -38,6 +38,7 @@ import database
 from database import get_pending_upload_cleanup, init_db, mark_upload_cleanup_done
 from rate_limit import limiter
 from routers import agent_exchanges, agents, auth, cards, chat, chat_model, conversations, hot, image_models, match, me, peer, plaza, voice
+from routers import novel
 from routers import local_watch
 from utils import media
 from utils.background_tasks import create_background_task, shutdown_background_tasks
@@ -120,6 +121,8 @@ async def lifespan(app: FastAPI):
     await init_db()
     from exchange_store import recover_interrupted_exchanges
     await recover_interrupted_exchanges()
+    from novel.runner import recover_interrupted_novels
+    await recover_interrupted_novels()
     await _run_upload_cleanup_once()
     create_background_task(
         _run_upload_cleanup_periodically(),
@@ -128,6 +131,8 @@ async def lifespan(app: FastAPI):
     try:
         yield
     finally:
+        from novel.runner import shutdown_novel_tasks
+        await shutdown_novel_tasks()
         await shutdown_background_tasks()
         shutdown_slow_pool()
         shutdown_byok_pool()
@@ -168,6 +173,7 @@ app.include_router(me.router)
 app.include_router(agents.router)
 app.include_router(conversations.router)
 app.include_router(agent_exchanges.router)
+app.include_router(novel.router)
 app.include_router(local_watch.router)
 
 app.add_middleware(

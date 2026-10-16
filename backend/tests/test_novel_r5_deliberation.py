@@ -58,7 +58,9 @@ def test_critique_runs_plan_then_parallel_advisors_then_finalize(workshop):
     assert meeting["decision"]["chosen_proposal_ids"] == []
     assert meeting["decision"]["user_note_responses"][0]["note_id"] == "N1"
     assert [item["objection_id"] for item in meeting["decision"]["objection_responses"]] == [
-        item["id"] for item in meeting["objections"]]
+        item["id"] for item in meeting["objections"] if item["id"].startswith("O")]
+    assert [item["alternative_id"] for item in meeting["decision"]["alternative_responses"]] == [
+        item["id"] for item in meeting["objections"] if item["id"].startswith("A")]
     for request in router.requests[1:4]:
         payload = FakeLLM.payload(request)
         assert payload["brief"] == meeting["brief"]
@@ -120,7 +122,9 @@ def test_whitespace_only_optional_alternative_does_not_get_an_a_id(workshop):
     assert alternatives[0]["id"] == "A1"
     assert alternatives[0]["author"] == "twist_designer"
     assert [item["objection_id"] for item in meeting["decision"]["objection_responses"]] == [
-        item["id"] for item in meeting["objections"]]
+        item["id"] for item in meeting["objections"] if item["id"].startswith("O")]
+    assert [item["alternative_id"] for item in meeting["decision"]["alternative_responses"]] == [
+        item["id"] for item in meeting["objections"] if item["id"].startswith("A")]
 
 
 @pytest.mark.parametrize("prefix", ["O", "A"])
@@ -130,8 +134,9 @@ def test_finalize_requires_exactly_one_response_to_every_objection_and_alternati
         if FakeLLM.payload(request)["task"] != "finalize":
             return None
         response = FakeLLM().default_response(request)
-        responses = response["objection_responses"]
-        selected = next(item for item in responses if item["objection_id"].startswith(prefix))
+        responses = response["alternative_responses" if prefix == "A" else "objection_responses"]
+        id_field = "alternative_id" if prefix == "A" else "objection_id"
+        selected = next(item for item in responses if item[id_field].startswith(prefix))
         if fault == "missing":
             responses.remove(selected)
         else:

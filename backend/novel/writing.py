@@ -6,7 +6,7 @@ from copy import deepcopy
 import re
 
 from .bible import apply_archive
-from .context import build_review_bible, build_writer_context
+from .context import build_review_bible, build_writer_context, trim_bible
 from .deliberation import messages_for
 from .schemas import ValidationError, validate_archive, validate_review
 
@@ -79,6 +79,54 @@ def _chapter_number(value):
     return total + number
 
 
+async def apply_archived_chapter(router, config, compass, bible, archive, *,
+                                 chapter, title, beat_sheet, arm, arc_step_key=None):
+    """Apply one canonical delta and shared P1 metadata/paid volume-summary task.
+
+    Both a newly written chapter and a user-edited latest chapter use this path.
+    Callers provide the complete previous bible, not its context-only view.
+    """
+    next_bible = apply_archive(bible, archive, chapter, title)
+    if config.get("enable_context_compression"):
+        old_ids = {item["id"] for item in bible["locked"]["characters"]}
+        new_ids = [item["id"] for item in next_bible["locked"]["characters"]
+                   if item["id"] not in old_ids]
+        seen = list(dict.fromkeys([*beat_sheet["characters"], *new_ids]))
+        next_bible["dynamic"]["chapter_summaries"][-1]["characters"] = seen
+        for identifier in seen:
+            next_bible["dynamic"]["character_states"][identifier]["last_seen_chapter"] = chapter
+    if config.get("enable_arc_summaries") and chapter % 10 == 0:
+        arc_start = chapter - 9
+        summaries = [item for item in next_bible["dynamic"]["chapter_summaries"]
+                     if arc_start <= item["chapter"] <= chapter]
+
+        def validate_arc(data):
+            if (not isinstance(data, dict) or not isinstance(data.get("summary"), str)
+                    or not 1 <= len(data["summary"].strip()) <= 600):
+                raise ValidationError(["卷摘要必须为 1–600 字的非空文本"])
+            return {"summary": data["summary"].strip()}
+
+        arc_bible = (trim_bible(next_bible, chapter + 1, beat_sheet["characters"])
+                     if config.get("enable_context_compression") else next_bible)
+        payload = {"task": "arc_summary", "chapter": chapter,
+                   "start_chapter": arc_start, "end_chapter": chapter,
+                   "chapter_summaries": summaries,
+                   "bible": {"locked": deepcopy(arc_bible["locked"]),
+                             "compass": deepcopy(compass)}}
+        card, messages = messages_for("archivist", payload, task="arc_summary",
+            chapter_words=config["target"]["chapter_words"],
+            split_context=config.get("enable_context_compression", False))
+        arc = await router.call(
+            step_key=arc_step_key or f"arm-{arm}/ch{chapter:03d}/07-arc-summary-archivist.json",
+            role="archivist", model=config["agents"]["archivist"], messages=messages,
+            max_tokens=card["max_tokens"], output=card["output"],
+            experiment=config["experiment"], arm=arm, chapter=chapter, validator=validate_arc)
+        arcs = next_bible["dynamic"].setdefault("arc_summaries", [])
+        arcs[:] = [item for item in arcs if item.get("end_chapter") != chapter]
+        arcs.append({"start_chapter": arc_start, "end_chapter": chapter, "summary": arc["summary"]})
+    return next_bible
+
+
 async def write_chapter(router, config, compass, bible, meeting, *, chapter, arm,
                         previous_text=""):
     """Write and archive one accepted decision, with at most two review revisions.
@@ -93,7 +141,8 @@ async def write_chapter(router, config, compass, bible, meeting, *, chapter, arm
     length_range = {"min": (3 * words + 4) // 5, "max": 8 * words // 5,
                     "target": words}
     context = build_writer_context(compass, bible, beat_sheet, chapter,
-                                   previous_text=previous_text)
+                                   previous_text=previous_text,
+                                   compressed=config.get("enable_context_compression", False))
     prefix = f"arm-{arm}/ch{chapter:03d}"
     flags, reviews = [], []
     body = ""
@@ -102,7 +151,8 @@ async def write_chapter(router, config, compass, bible, meeting, *, chapter, arm
 
     async def call(role, task, filename, payload, validator):
         card, messages = messages_for(role, {"task": task, "chapter": chapter, **payload},
-                                      chapter_words=words, task=task)
+                                      chapter_words=words, task=task,
+                                      split_context=config.get("enable_context_compression", False))
         return await router.call(
             step_key=f"{prefix}/{filename}", role=role, model=config["agents"][role],
             messages=messages, max_tokens=card["max_tokens"], validator=validator,
@@ -134,7 +184,8 @@ async def write_chapter(router, config, compass, bible, meeting, *, chapter, arm
             break
         review_payload = {
             "body": body, "beat_sheet": beat_sheet,
-            "bible": build_review_bible(compass, bible), "review_round": revision}
+            "bible": build_review_bible(compass, bible, chapter, beat_sheet["characters"]),
+            "review_round": revision}
         if revision >= 1:
             review_payload["previous_blocking_issues"] = deepcopy(blocking_issues)
         review = await call(
@@ -157,9 +208,13 @@ async def write_chapter(router, config, compass, bible, meeting, *, chapter, arm
         flags.insert(0, "length_out_of_range")
     archive = await call(
         "archivist", "archive", "06-archive-archivist.json",
-        {"body": body, "beat_sheet": beat_sheet, "bible": bible},
+        {"body": body, "beat_sheet": beat_sheet,
+         "bible": (build_review_bible(compass, bible, chapter, beat_sheet["characters"])
+                   if config.get("enable_context_compression") else bible)},
         lambda data: validate_archive(data, bible))
-    next_bible = apply_archive(bible, archive, chapter, title)
+    next_bible = await apply_archived_chapter(
+        router, config, compass, bible, archive, chapter=chapter, title=title,
+        beat_sheet=beat_sheet, arm=arm)
     if archive["locked_conflicts"]:
         flags.append("locked_conflict")
     if archive["deviation_from_beat_sheet"]["deviated"]:

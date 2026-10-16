@@ -740,3 +740,13 @@ sudo -u fiona env FIONA_UPLOADS_DIR=/var/lib/fiona/uploads \
 已知局限：只支持 macOS；窗口最小化后截不到；OCR 可能有错字；只能看到窗口当前显示的内容。Fiona 页面关闭时不会实时弹出，但提醒照样落库。上线前作者核验屏幕录制授权、真实中文 OCR、窗口匹配/最小化、30 秒心跳与断网退避、令牌吊销 401、launchd、后台提醒落库及浏览器通知授权；真实厂商请求须用作者自己的服务环境单独验证。
 
 屏幕锁定或显示器休眠时 macOS 不允许截取窗口，期间无法监控。如果需要离开电脑时也能监控，可以在 系统设置 → 锁定屏幕 中延长自动锁定时间，但要自行权衡安全。部署后核验每条规则的截图状态：锁屏或休眠时提示截图失败，窗口关闭或最小化时提示没有匹配窗口，解锁并成功截图后显示「监控中」。截图失败日志只记录规则 id、应用名及错误域/码；同规则同错误每 60 秒最多一次，恢复成功记一次。状态只保留在后端内存，超过 5 分钟无状态心跳时显示「监控程序未在运行」。
+
+## 小说工坊 P1 配置
+
+默认 `FIONA_NOVEL=0`。仅作者验收后设置 `FIONA_NOVEL=1`，并在 `FIONA_NOVEL_USERS` 以逗号列出允许账号；空名单拒绝所有人。接口均位于 `/novels`，要求登录与白名单，可建书、估价、查询进度/章节、确认立项/细纲、重定稿、暂停/继续、留言、改稿、确认/延长完结、导出 Markdown 和删除。
+
+可配置 `FIONA_NOVEL_MAX_RUNNING=3`、`FIONA_DAILY_NOVEL_CHAPTERS=30`；章节额度按北京时间换日，达到额度后用户手动恢复。`FIONA_NOVEL_PRICE_JSON` 必须完整包含以下三个规格的 input/output 数值（单位：草莓/千 token）：`dashscope:qwen3.8-max` 默认 1.80/5.40，`deepseek:deepseek-flash` 默认 0.33/1.30，`ark:doubao-seed-2-1-pro-260915` 默认 0.90/4.50。非法覆盖回落默认值并仅告警一次。开发模式、BYOK 和 fake 不计费。
+
+平台分别使用服务器环境中的 DASHSCOPE_API_KEY、DEEPSEEK_API_KEY、ARK_API_KEY；不提供平台 Claude。Claude 只能使用用户已启用的 BYOK；仅 anthropic/dashscope/deepseek 预设和引擎已知型号开放。发布前应告知作者：思路、圣经、正文与留言会发送给所选的阿里云百炼、DeepSeek、火山方舟或用户自带厂商（可能含 Anthropic）。小说表不存 Key 或完整提示词，日志只含运行元数据。
+
+启动以 CREATE TABLE IF NOT EXISTS 创建 novels、novel_bible_versions、novel_chapters、novel_steps、novel_notes，不增加迁移版本，/health 不变。备份 SQLite 会包含私有小说正文与模型产物，应按私有数据管理。关闭时先取消小说任务并退款；重启时先退还未结算预扣、标为 interrupted，再按并发槽恢复 setup_running/running 任务。删书与删号删除五张表中的对应记录。

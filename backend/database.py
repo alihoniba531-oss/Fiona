@@ -308,6 +308,9 @@ async def init_db():
         await _safe_migrate(db, "ALTER TABLE invite_codes ADD COLUMN last_used_at TIMESTAMP DEFAULT NULL")
         from byok.store import USER_MODEL_CONFIGS_DDL
         await db.execute(USER_MODEL_CONFIGS_DDL)
+        from novel.store_db import NOVEL_TABLES_DDL
+        for novel_table_ddl in NOVEL_TABLES_DDL:
+            await db.execute(novel_table_ddl)
         for watch_table_ddl in LOCAL_WATCH_TABLES_DDL:
             await db.execute(watch_table_ddl)
         await db.execute("CREATE INDEX IF NOT EXISTS idx_watch_rules_username ON watch_rules(username)")
@@ -789,6 +792,10 @@ async def delete_account_data(username: str) -> dict:
     import hashlib
     from utils.pseudonym import anonymous_id
 
+    # Cancellation and refunds must finish before taking the deletion lock.
+    from novel.runner import cancel_user_tasks
+    await cancel_user_tasks(username)
+
     aliases = (
         anonymous_id(username, "plaza-author", length=12),
         hashlib.md5(("fiona_plaza_" + username).encode()).hexdigest()[:8],
@@ -888,6 +895,12 @@ async def delete_account_data(username: str) -> dict:
             (username,),
         )
         await db.execute("DELETE FROM user_model_configs WHERE username = ?", (username,))
+        for novel_table in ("novel_bible_versions", "novel_chapters", "novel_steps", "novel_notes"):
+            await db.execute(
+                f"DELETE FROM {novel_table} WHERE novel_id IN (SELECT id FROM novels WHERE username = ?)",
+                (username,),
+            )
+        await db.execute("DELETE FROM novels WHERE username = ?", (username,))
         for watch_table in ("watch_devices", "watch_rules", "watch_alerts"):
             await db.execute(f"DELETE FROM {watch_table} WHERE username = ?", (username,))
         await db.execute("DELETE FROM users WHERE username = ?", (username,))

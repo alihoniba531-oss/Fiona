@@ -72,7 +72,7 @@ def meet(workshop, router, arm="panel"):
     ("proposal", set()),
     ("critique", {"proposals", "proposal_ids"}),
     ("decision", {"proposals", "scores", "objections", "proposal_ids", "objection_ids",
-                  "user_notes", "note_ids", "solo"}),
+                  "user_notes", "note_ids", "solo", "required_response_ids"}),
 ])
 def test_deliberation_payload_has_one_brief_and_only_phase_fields(workshop, task, extras):
     router = CaptureRouter()

@@ -80,7 +80,8 @@ def test_a2_five_chapters_use_plan_consultants_finalize_and_keep_solo(experiment
         assert meeting["plan"]["chosen_proposal_ids"] == []
         assert meeting["decision"]["chosen_proposal_ids"] == []
         ids = [item["id"] for item in meeting["objections"]]
-        assert {item["objection_id"] for item in meeting["decision"]["objection_responses"]} == set(ids)
+        assert ({item["objection_id"] for item in meeting["decision"]["objection_responses"]}
+                | {item["alternative_id"] for item in meeting["decision"]["alternative_responses"]}) == set(ids)
         assert any(key.startswith("A") for key in ids)
         solo = out / f"arm-solo/ch{chapter:03d}"
         assert (solo / "03-decision-editor.json").is_file()

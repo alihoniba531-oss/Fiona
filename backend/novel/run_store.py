@@ -9,6 +9,32 @@ import os
 from pathlib import Path
 import tempfile
 from datetime import datetime, timezone
+from typing import Any, Protocol
+
+
+class StepStore(Protocol):
+    """The engine's storage surface; implementations may return awaitables.
+
+    Token counters describe engine limits, independently of strawberry billing.
+    File artifacts remain available to the P0 CLI; the database implementation
+    maps them to chapter data without requiring filesystem paths.
+    """
+    manifest: dict
+    budget_lock: Any
+    reserved_tokens: int
+    max_total_tokens: int
+
+    @property
+    def total_tokens(self) -> int: ...
+
+    def read_step(self, step_key: str) -> Any: ...
+    def write_step(self, step_key: str, record: dict) -> Any: ...
+    def append_usage(self, record: dict) -> Any: ...
+    def mark_usage(self, record: dict, *, ok: bool) -> Any: ...
+    def set_status(self, status: str, **fields) -> Any: ...
+    def write_json(self, relative: str, data: Any) -> Any: ...
+    def read_json(self, relative: str) -> Any: ...
+    def write_text(self, relative: str, text: str) -> Any: ...
 
 
 class ConfigurationError(ValueError):
@@ -85,6 +111,13 @@ class RunStore:
 
     def read_json(self, relative):
         return json.loads(self._path(relative).read_text(encoding="utf-8"))
+
+    def read_step(self, step_key):
+        path = self._path(step_key)
+        return self.read_json(step_key) if path.exists() else None
+
+    def write_step(self, step_key, record):
+        return self.write_json(step_key, record)
 
     def read_usage(self):
         path = self.out / "usage.jsonl"

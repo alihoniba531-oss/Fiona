@@ -300,3 +300,15 @@ Layer 2 会为双方创建待接受卡片；Layer 1、Layer 2 和手动匹配都
 聊天页登录且可见时每 10 秒轮询，首次只记游标，不回放历史；404 停止轮询。当前空闲会话追加提醒，其他会话显示可点击提示；浏览器通知需设置页主动允许。已知局限：只支持 macOS；窗口最小化后截不到；OCR 可能有错字；只能看到窗口当前显示的内容。Fiona 页面关闭时不会实时弹出，但提醒照样落库。当前为单后端进程部署，窗口清单与每日内存额度重启后清零。
 
 屏幕锁定或显示器休眠时 macOS 不允许截取窗口，期间无法监控。如果需要离开电脑时也能监控，可以在 系统设置 → 锁定屏幕 中延长自动锁定时间，但要自行权衡安全。监控心跳附带每条规则的 `capture_status`（规则 id、是否成功、原始错误域/码、状态开始时间）；不包含截图、标题或 OCR 文字。同一规则同一种截图错误每 60 秒最多记一次日志，成功恢复只记一次。后端按设备与用户在内存保存状态，以服务器接收时间判断 5 分钟有效期；`GET /local-watch/rules` 增加 `capture` 中文提示，设置页逐条显示。
+
+## 小说工坊 P1
+
+登录后的 `/novels` 路由调用 `novel/service.py`，业务层只写入状态和指令，`novel/runner.py` 使用统一后台任务追踪器执行 P0 `deliberate` 与 `write_chapter`，不阻塞 HTTP 等待模型。每用户最多一本运行书，全局默认三个槽，排队任务保持 running；SQLite run_token 与账号存在条件保护每次后台写库。启动恢复退款 reserved 并从步骤缓存续跑，关闭、暂停和删除先取消任务并退款。
+
+五张 SQLite 表为 `novels`（配置、进度、预算、运行令牌）、`novel_bible_versions`（版本圣经）、`novel_chapters`（正文、推演、审校与档案）、`novel_steps`（请求 sha256、产物、token/缓存命中量和计费状态）、`novel_notes`（待处理留言和主编回应）。各表均带 username；版本/章节/步骤以 novel_id 复合主键，关联表按 novel_id 索引，novels 按 username/status 索引。`init_db` 幂等建表，无新迁移版本；删号同事务删除全部小说数据。
+
+`DbStepStore` 与离线 `RunStore` 实现同一最小存储协议；`LLMRouter` 按每次真实尝试调用 `NovelBilling` 预扣、结算或退款，缓存与 BYOK 不收费。P1 默认 critique，也提供 solo；锁定设定、完结守卫、审校证据校验继续共用 P0。上下文压缩保留最近十章摘要、卷摘要、全部开放伏笔与最近五条已回收伏笔、十条时间线、三十条桥段；每十章归档后调用档案员生成卷摘要。稳定首 user 块和变化块分离，Anthropic 标记 ephemeral 缓存。
+
+数据流：思路、圣经、正文与留言发送到用户选择的阿里云百炼、DeepSeek、火山方舟或 BYOK 厂商（包括 Anthropic）。BYOK 仅允许已知型号的 anthropic/dashscope/deepseek 预设，Key 调用时通过 `byok.store.get_internal_config` 在内存取得。平台仅读取 DASHSCOPE_API_KEY、DEEPSEEK_API_KEY、ARK_API_KEY；小说日志不记思路、正文、提示词或 Key。
+
+开关：FIONA_NOVEL 默认 0，仅字面 1 开启；FIONA_NOVEL_USERS 空白名单拒绝全部用户；FIONA_NOVEL_MAX_RUNNING 默认 3；FIONA_DAILY_NOVEL_CHAPTERS 默认 30；FIONA_NOVEL_PRICE_JSON 是完整价格覆盖。

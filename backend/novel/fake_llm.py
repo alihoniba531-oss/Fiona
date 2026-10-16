@@ -56,12 +56,23 @@ class FakeLLM:
 
     @staticmethod
     def payload(request):
+        merged = {}
+
+        def merge(target, source):
+            for key, value in source.items():
+                if isinstance(value, dict) and isinstance(target.get(key), dict):
+                    merge(target[key], value)
+                else:
+                    target[key] = copy.deepcopy(value)
+
         for message in request.get("messages", []):
             if message.get("role") == "user":
                 try:
                     value = json.loads(message.get("content", ""))
-                    if isinstance(value, dict) and "task" in value:
-                        return value
+                    if isinstance(value, dict):
+                        merge(merged, value)
+                        if "task" in value:
+                            return merged
                 except (ValueError, TypeError):
                     pass
         return request.get("payload", {})
@@ -166,6 +177,11 @@ class FakeLLM:
             ids = [identifier for identifier in ids if identifier]
             objections = payload.get("objections", [])
             objection_ids = payload.get("objection_ids") or [item.get("id", item.get("objection_id")) for item in objections]
+            split_alternatives = task == "finalize" and "alternative_ids" in payload
+            if split_alternatives:
+                # Current finalize inputs separate alternatives. Legacy requests
+                # without this field retain the original combined response shape.
+                objection_ids = payload.get("objection_ids", [])
             if task == "plan":
                 objection_ids = []
             note_ids = payload.get("note_ids") or [item.get("id", item.get("note_id")) for item in payload.get("user_notes", [])]
@@ -174,7 +190,7 @@ class FakeLLM:
             ending = "end" if mode == "final" or (experiment == "B" and chapter >= 9) else "continue"
             open_major = [item["id"] for item in bible.get("dynamic", {}).get("foreshadowing", [])
                           if item.get("status") == "open" and item.get("importance") == "major"]
-            return {"chosen_proposal_ids": [] if payload.get("solo", False) or task != "decision" else ids[:1],
+            result = {"chosen_proposal_ids": [] if payload.get("solo", False) or task != "decision" else ids[:1],
                 "merge_note": "以核对证据为主，保留人物选择。", "objection_responses": [
                     {"objection_id": identifier, "response": (
                         "不采纳：本章保留原来的证据核对方向，替代走向需要更多既有线索铺垫。"
@@ -189,6 +205,12 @@ class FakeLLM:
                     "ending_hook": "屏幕亮起一个新的签名。", "foreshadowing_plant": [],
                     "foreshadowing_resolve": open_major if ending == "end" else []},
                 "ending_status": ending, "closing_chapters_left": 0, "unresolved_major_handling": []}
+            if split_alternatives:
+                result["alternative_responses"] = [
+                    {"alternative_id": identifier, "decision": "reject",
+                     "response": "本章保留原来的证据核对方向，替代走向需要更多既有线索铺垫。"}
+                    for identifier in payload["alternative_ids"]]
+            return result
         if task == "write":
             title = payload.get("title") or _find(payload, "title", f"第{chapter}次核验")
             target = payload.get("target_words") or _find(payload, "chapter_words", 1500)
@@ -215,6 +237,10 @@ class FakeLLM:
                         {"id": identifier, "note": "通过原始记录确认银色发夹反光的来源。"} for identifier in resolved],
                     "used_beats_add": [f"第{chapter}章核对记录"], "new_characters": [],
                     "deviation_from_beat_sheet": {"deviated": False, "note": ""}, "locked_conflicts": []}
+        if task == "arc_summary":
+            return {"summary": (f"第{payload.get('start_chapter', chapter - 9)}至{chapter}章："
+                                "林澈持续核对并保存原始记录，循签名线索追查旧案；"
+                                "在删除压力下选择保留证据，逐步确认记录与自身的关联。")}
         if task == "corrupt":
             body = payload.get("body", "")
             preferred = ["林澈把黑色短发拨到耳后，银色发夹在灯下闪了一下。",

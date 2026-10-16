@@ -140,10 +140,15 @@ def _critique_summary(meeting, decision) -> list[str]:
     for critique in meeting.get("critiques", []):
         lines += ["", f"顾问 {critique.get('author_name', critique['author'])} 保留建议：{critique['keep']}"]
     replies = {item["objection_id"]: item["response"] for item in decision["objection_responses"]}
+    alternatives = {item["alternative_id"]: item for item in decision.get("alternative_responses", [])}
+    decisions = {"adopt": "采纳", "partial": "部分采纳", "reject": "不采纳"}
     for objection in meeting.get("objections", []):
         author = objection.get("author_name", objection["author"])
         if objection["id"].startswith("A"):
-            lines += ["", f"替代走向 {objection['id']}（{author}）：{objection['alternative']}；主编回应：{replies.get(objection['id'], '')}"]
+            reply = alternatives.get(objection["id"])
+            response = (f"主编决定：{decisions[reply['decision']]}；主编回应：{reply['response']}"
+                        if reply else f"主编回应：{replies.get(objection['id'], '')}")
+            lines += ["", f"替代走向 {objection['id']}（{author}）：{objection['alternative']}；{response}"]
         else:
             lines += ["", f"意见 {objection['id']}（{author}，{objection['severity']}）：针对{objection['target']}；问题：{objection['problem']}；改法：{objection['suggestion']}；主编回应：{replies.get(objection['id'], '')}"]
     fields = ("title", "chapter_goal", "beats", "scenes", "opening_hook", "ending_hook",

@@ -448,3 +448,9 @@ Fiona 的目标已确认调整为“每个用户拥有自己的 AI 分身，分�
 已知局限：只支持 macOS；窗口最小化后截不到；OCR 可能有错字；只能看到窗口当前显示的内容。Fiona 页面关闭时不会实时弹出，但提醒照样落库。真机屏幕录制授权、最小化窗口、launchd 和浏览器通知仍须作者验证；本次自动验收实际结果见 `docs/tasks/2026-10-11-local-watch/03-report.md`。
 
 屏幕锁定或显示器休眠时 macOS 不允许截取窗口，期间无法监控。如果需要离开电脑时也能监控，可以在 系统设置 → 锁定屏幕 中延长自动锁定时间，但要自行权衡安全。R3 已补充截图失败的节流日志、恢复日志、心跳状态上报、后端 5 分钟过期及设置页逐条状态展示；锁屏、休眠与解锁后的恢复须在真机复验。
+
+## 小说工坊 P1 后端
+
+实现基于现有 P0 引擎的 `/novels` 内测 API、SQLite 五表、可恢复后台状态机、立项/细纲/审阅/完结关卡、按 token 草莓计费、受限 BYOK、上下文压缩与卷摘要。配置为 `FIONA_NOVEL`、`FIONA_NOVEL_USERS`、`FIONA_NOVEL_MAX_RUNNING`、`FIONA_DAILY_NOVEL_CHAPTERS`、`FIONA_NOVEL_PRICE_JSON`。默认关闭、空白名单拒绝，平台仅千问/DeepSeek/豆包，Claude 通过 BYOK。
+
+思路、圣经、正文和留言会发送至所选的阿里云百炼、DeepSeek、火山方舟及 BYOK 厂商。新增数据表 novels、novel_bible_versions、novel_chapters、novel_steps、novel_notes，同事务删号清理。P2 前端、真实厂商质量与成本验收留待后续；当前测试只使用 fake 或本地 MockTransport。

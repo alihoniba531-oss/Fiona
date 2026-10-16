@@ -70,7 +70,7 @@ def test_r1_meetings_and_execution_inputs_have_no_duplicate_outer_context(source
     meeting_base = {"task", "chapter", "mode", "brief"}
     stages = {"proposal": set(), "critique": {"proposals", "proposal_ids"},
               "decision": {"proposals", "scores", "objections", "proposal_ids", "objection_ids",
-                           "user_notes", "note_ids", "solo"}}
+                           "user_notes", "note_ids", "solo", "required_response_ids"}}
     for path in out.glob("arm-*/ch*/*.json"):
         record = read(path)
         if "messages" not in record:

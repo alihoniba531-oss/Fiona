@@ -289,7 +289,25 @@ def validate_critique_plan(data: Any, role: str) -> dict:
     return c.finish(data)
 
 
-def _responses(c: _Check, value: Any, path: str, allowed: set[str], id_field: str, *, notes=False):
+def _response_id_errors(c: _Check, seen: list, allowed: set[str], path: str, error_start: int):
+    if len(seen) != len(allowed) or any(seen.count(key) != 1 for key in allowed) or any(not isinstance(key, str) or key not in allowed for key in seen):
+        c.errors.insert(error_start, f"{path}：本次下发的每条意见或留言必须恰好回应一次，不得出现其他 ID")
+        seen_ids = {key for key in seen if isinstance(key, str)}
+        categories = (("缺少", allowed - seen_ids), ("多出", seen_ids - allowed),
+                      ("重复", {key for key in seen_ids if seen.count(key) > 1}))
+        for label, identifiers in categories:
+            # Display only generated ID shapes. Model-controlled ID fields may
+            # otherwise contain prose or instructions; never echo that text.
+            safe_ids = [key for key in identifiers if isinstance(key, str) and len(key) <= 32
+                        and re.fullmatch(r"[OAN][0-9]+", key)]
+            safe_ids.sort(key=lambda key: ("OAN".index(key[0]), int(key[1:]), key))
+            if safe_ids:
+                c.fail(path, label + "：" + "、".join(safe_ids))
+
+
+def _responses(c: _Check, value: Any, path: str, allowed: set[str], id_field: str, *, notes=False,
+               additional_ids=()):
+    error_start = len(c.errors)
     seen = []
     for i, response in enumerate(c.array(value, path)):
         field_path = f"{path}[{i}]"
@@ -299,13 +317,33 @@ def _responses(c: _Check, value: Any, path: str, allowed: set[str], id_field: st
         c.text(item.get("response"), f"{field_path}.response", minimum=1)
         if notes:
             c.boolean(item.get("adopted"), f"{field_path}.adopted")
-    if len(seen) != len(allowed) or any(seen.count(key) != 1 for key in allowed) or any(not isinstance(key, str) or key not in allowed for key in seen):
-        c.fail(path, "本次下发的每条意见或留言必须恰好回应一次，不得出现其他 ID")
+    _response_id_errors(c, [*seen, *additional_ids], allowed, path, error_start)
+
+
+def _alternative_responses(c: _Check, value: Any, allowed: set[str]) -> list[str]:
+    """Validate the new field while allowing each A response in either field."""
+    path = "decision.alternative_responses"
+    error_start = len(c.errors)
+    seen = []
+    for i, response in enumerate(c.array(value, path)):
+        field_path = f"{path}[{i}]"
+        item = c.obj(response, field_path, ("alternative_id", "decision", "response"))
+        c.text(item.get("alternative_id"), f"{field_path}.alternative_id", minimum=1)
+        seen.append(item.get("alternative_id"))
+        c.enum(item.get("decision"), f"{field_path}.decision", ("adopt", "partial", "reject"))
+        c.text(item.get("response"), f"{field_path}.response", minimum=1)
+    present = {key for key in seen if isinstance(key, str) and key in allowed}
+    # Missing alternatives may be answered in the old field. Unknown IDs and
+    # duplicates in this field still receive its own concrete diagnostics.
+    _response_id_errors(c, seen, present, path, error_start)
+    # Count unknown A IDs across both fields too, so an unrequested A cannot
+    # evade duplicate diagnostics. O/N in this field never satisfy old replies.
+    return [key for key in seen if isinstance(key, str) and re.fullmatch(r"A[0-9]+", key)]
 
 
 def validate_decision(data: Any, *, compass: dict, bible: dict, chapter: int,
                       mode: str, proposal_ids: Iterable[str], objection_ids: Iterable[str],
-                      note_ids: Iterable[str], solo=False) -> dict:
+                      note_ids: Iterable[str], solo=False, alternative_ids: Iterable[str] = ()) -> dict:
     data = _normalized_copy(data)
     if (isinstance(data, dict) and data.get("ending_status") != "closing"
             and data.get("closing_chapters_left") is None):
@@ -317,7 +355,14 @@ def validate_decision(data: Any, *, compass: dict, bible: dict, chapter: int,
         c.fail("decision.chosen_proposal_ids", "独自构思模式必须为空列表")
     c.text(root.get("merge_note"), "decision.merge_note")
     c.text(root.get("rationale"), "decision.rationale", minimum=1)
-    _responses(c, root.get("objection_responses"), "decision.objection_responses", set(objection_ids), "objection_id")
+    response_ids = set(objection_ids) | set(alternative_ids)
+    alternative_ids = {key for key in response_ids if isinstance(key, str) and re.fullmatch(r"A[0-9]+", key)}
+    alternative_check = _Check()
+    answered_alternatives = (_alternative_responses(alternative_check, root["alternative_responses"], alternative_ids)
+                             if "alternative_responses" in root else [])
+    _responses(c, root.get("objection_responses"), "decision.objection_responses", response_ids, "objection_id",
+               additional_ids=answered_alternatives)
+    c.errors.extend(alternative_check.errors)
     _responses(c, root.get("user_note_responses"), "decision.user_note_responses", set(note_ids), "note_id", notes=True)
     beat = c.obj(root.get("beat_sheet"), "decision.beat_sheet", ("title", "chapter_goal", "advances_threads", "characters", "scenes", "beats", "opening_hook", "ending_hook", "foreshadowing_plant", "foreshadowing_resolve"))
     for field in ("title", "chapter_goal", "opening_hook", "ending_hook"):

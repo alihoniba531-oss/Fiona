@@ -68,6 +68,7 @@ _DAILY_SETTINGS = {
     "weather": ("FIONA_DAILY_WEATHER", 30),
     "byok_chat": ("FIONA_DAILY_BYOK_CHATS", 200),
     "byok_test": ("FIONA_DAILY_BYOK_TESTS", 20),
+    "novel_chapter": ("FIONA_DAILY_NOVEL_CHAPTERS", 30),
     "watch_judge": ("FIONA_DAILY_WATCH_JUDGE", 500),
 }
 _INVALID_DAILY_WARNED: set[str] = set()
@@ -102,6 +103,7 @@ def daily_cap_message(kind: str, amount: int | None = None) -> str:
         "weather": "今天查天气的次数已用完，明天再试",
         "byok_chat": "今天用自带模型聊天的次数已用完，明天再试，或在输入框下方改用平台",
         "byok_test": "今天测试自带模型连接的次数已用完，明天再试",
+        "novel_chapter": "今天的小说章节额度已用完，请在北京时间零点后手动继续。",
         "watch_judge": "今天的本机监控 AI 判断次数已用完，明天再试。",
     }
     if kind == "official_exchange":

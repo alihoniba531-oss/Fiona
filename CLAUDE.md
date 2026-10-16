@@ -145,3 +145,11 @@ npm run build
 已知局限：只支持 macOS；窗口最小化后截不到；OCR 可能有错字；只能看到窗口当前显示的内容。Fiona 页面关闭时不会实时弹出，但提醒照样落库。浏览器通知默认不弹，需用户主动允许。实现和验收细节见 `docs/tasks/2026-10-11-local-watch/03-report.md` 与 `watcher-mac/README.md`。
 
 屏幕锁定或显示器休眠时 macOS 不允许截取窗口，期间无法监控。如果需要离开电脑时也能监控，可以在 系统设置 → 锁定屏幕 中延长自动锁定时间，但要自行权衡安全。截图状态随心跳按规则上报，后端只在内存保留 5 分钟并映射中文提示；设置页逐条显示正常、截图失败、窗口未找到或监控程序未在运行。
+
+## 小说工坊
+
+P1 后端入口 `backend/routers/novel.py`（`/novels`），业务层 `novel/service.py`，状态机 `novel/runner.py`，数据库适配 `novel/store_db.py`，计费 `novel/billing.py`，BYOK 适配 `novel/byok_bridge.py`。必须复用 P0 deliberate/write_chapter，离线 pilot 的步骤键与流程不得改变。
+
+开关 `FIONA_NOVEL=1` 且用户名位于 `FIONA_NOVEL_USERS` 才开放；并发 FIONA_NOVEL_MAX_RUNNING 默认 3，每日 FIONA_DAILY_NOVEL_CHAPTERS 默认 30，完整价目覆盖 FIONA_NOVEL_PRICE_JSON。SQLite 五表 novels、novel_bible_versions、novel_chapters、novel_steps、novel_notes 由 init_db 幂等创建，无新迁移版本，删号前取消任务/退款，同事务删全部关联行。后台写库需 run_token 与 users 存在检查。
+
+平台模型使用 DASHSCOPE_API_KEY、DEEPSEEK_API_KEY、ARK_API_KEY；Claude 只经 BYOK。思路、圣经、正文与留言会发给阿里云百炼、DeepSeek、火山方舟或用户自带厂商（包括 Anthropic）。Key 仅调用时从 byok.store 取用，不写小说库、日志或响应；步骤只存请求摘要，不存提示词。测试必须离线、不得读仓库外输入或依赖 git 历史；本机监控原有内容不得修改或移动。
