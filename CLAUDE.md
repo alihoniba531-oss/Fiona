@@ -148,6 +148,8 @@ npm run build
 
 ## 小说工坊
 
+P2 前端入口为第六个书签「书斋」；`frontend/app/novels/page.tsx` 是书架，`new/page.tsx` 为三步向导，`[id]/page.tsx` 为单本工作台，拆分组件在 `components/novel/`，请求与类型在 `lib/novels.ts`。主页 `novel-drawer` 常驻 iframe `/novels?embed=1`，内链保留 embed，三页均尊重 `data-shell` / `mobile:`。运行态可见时每 3 秒链式轮询，操作后立即刷新；账号身份与请求取消沿用 `useAccountIdentity` / `useAccountRequest`。完整圣经与留言使用新增只读 GET `/{id}/bible` 和 `/{id}/notes`，P1 详情仍裁剪。状态只用文字 tag/chip，不用朱印；不新增颜色、字体或依赖。
+
 P1 后端入口 `backend/routers/novel.py`（`/novels`），业务层 `novel/service.py`，状态机 `novel/runner.py`，数据库适配 `novel/store_db.py`，计费 `novel/billing.py`，BYOK 适配 `novel/byok_bridge.py`。必须复用 P0 deliberate/write_chapter，离线 pilot 的步骤键与流程不得改变。
 
 开关 `FIONA_NOVEL=1` 且用户名位于 `FIONA_NOVEL_USERS` 才开放；并发 FIONA_NOVEL_MAX_RUNNING 默认 3，每日 FIONA_DAILY_NOVEL_CHAPTERS 默认 30，完整价目覆盖 FIONA_NOVEL_PRICE_JSON。SQLite 五表 novels、novel_bible_versions、novel_chapters、novel_steps、novel_notes 由 init_db 幂等创建，无新迁移版本，删号前取消任务/退款，同事务删全部关联行。后台写库需 run_token 与 users 存在检查。

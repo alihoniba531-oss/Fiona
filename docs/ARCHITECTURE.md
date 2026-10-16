@@ -301,7 +301,11 @@ Layer 2 会为双方创建待接受卡片；Layer 1、Layer 2 和手动匹配都
 
 屏幕锁定或显示器休眠时 macOS 不允许截取窗口，期间无法监控。如果需要离开电脑时也能监控，可以在 系统设置 → 锁定屏幕 中延长自动锁定时间，但要自行权衡安全。监控心跳附带每条规则的 `capture_status`（规则 id、是否成功、原始错误域/码、状态开始时间）；不包含截图、标题或 OCR 文字。同一规则同一种截图错误每 60 秒最多记一次日志，成功恢复只记一次。后端按设备与用户在内存保存状态，以服务器接收时间判断 5 分钟有效期；`GET /local-watch/rules` 增加 `capture` 中文提示，设置页逐条显示。
 
-## 小说工坊 P1
+## 小说工坊 P1 / P2
+
+前端入口为侧栏「书斋」与主页 `novel-drawer`，保持原五项导航的样式和行为。App Router 页面 `/novels`（书架）、`/novels/new`（三步向导）、`/novels/[id]`（工作台）通过 `lib/novels.ts` 统一请求 `/api/novels`；共享 `apiFetch` / `apiJson` / `ApiError`，账号切换时按 owner 重挂载并取消旧请求。主页常驻 iframe 使用 `/novels?embed=1`，内链保留 embed，布局尊重根文档 `data-shell` 和 `mobile:` 变体。工作台桌面三栏、手机三标签；运行态用 3 秒 `setTimeout` 链刷新，文档隐藏时暂停，其余状态停止。
+
+P2 新增只读 `GET /novels/{id}/bible` 返回最新未裁剪圣经和罗盘，`GET /novels/{id}/notes` 返回按时间排序的全部留言和主编回应；复用相同开关、白名单和所有权校验。R1 经作者授权仅增补列表摘要整数 `max_chapters` 与详情目录布尔 `edited_by_user`，书架每轮仅请求列表，工作台不再逐章补读元数据；既有字段、上下文裁剪及写操作语义保持原样。工作台运行轮询仅取 detail，圣经按版本/首次打开、留言按可见/提交/章数状态变化、当前章按摘要签名或切章按需读取。工作台按内容容器1040px切换三栏与三标签，适配窄桌面抽屉；独立页内容在 main 内滚动，侧栏保持首屏。界面用现有影青釉令牌和宋体，正文纯文本展示，导出校验 Markdown Content-Type 后下载 Blob。
 
 登录后的 `/novels` 路由调用 `novel/service.py`，业务层只写入状态和指令，`novel/runner.py` 使用统一后台任务追踪器执行 P0 `deliberate` 与 `write_chapter`，不阻塞 HTTP 等待模型。每用户最多一本运行书，全局默认三个槽，排队任务保持 running；SQLite run_token 与账号存在条件保护每次后台写库。启动恢复退款 reserved 并从步骤缓存续跑，关闭、暂停和删除先取消任务并退款。
 

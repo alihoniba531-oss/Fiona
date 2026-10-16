@@ -431,7 +431,7 @@ export default function ChatPage() {
   const [input, setInput] = useState("");
   const [isLoading, setIsLoading] = useState(false);
   // 右侧面板互斥，分身管理也在当前聊天页内打开。
-  type DrawerName = "agent" | "exchange" | "plaza" | "settings" | null;
+  type DrawerName = "agent" | "exchange" | "plaza" | "settings" | "novel" | null;
   const [drawer, setDrawer] = useState<DrawerName>(null);
   const [worldTab, setWorldTab] = useState<"plaza" | "match">("plaza");
   const [settingsTab, setSettingsTab] = useState<"settings" | "profile">("settings");
@@ -471,6 +471,27 @@ export default function ChatPage() {
   }, [agentOpen, exchangeOpen]);
   const plazaOpen     = drawer === "plaza";
   const settingsOpen  = drawer === "settings";
+  const novelOpen = drawer === "novel";
+  const novelFrameRef = useRef<HTMLIFrameElement>(null);
+  const novelPanelRef = useRef<HTMLElement>(null);
+  useEffect(() => {
+    if (novelOpen) novelPanelRef.current?.focus();
+  }, [novelOpen]);
+  useEffect(() => {
+    const openNovelSettings = (event: MessageEvent) => {
+      if (event.origin !== window.location.origin || event.source !== novelFrameRef.current?.contentWindow) return;
+      if (event.data?.type === "fiona-novel-open-settings") {
+        setSettingsTab("settings");
+        setDrawer("settings");
+      } else if (event.data?.type === "fiona-novel-close") {
+        setDrawer(current => current === "novel" ? null : current);
+        Array.from(document.querySelectorAll<HTMLButtonElement>('button[aria-controls="novel-drawer"]'))
+          .find(button => button.getClientRects().length > 0)?.focus();
+      }
+    };
+    window.addEventListener("message", openNovelSettings);
+    return () => window.removeEventListener("message", openNovelSettings);
+  }, []);
   const anyDrawerOpen = drawer !== null;
   useEffect(() => {
     if (!conversationPickerOpen) return;
@@ -2259,6 +2280,8 @@ export default function ChatPage() {
           plazaActive={plazaOpen}
           onSettingsClick={() => toggleDrawer("settings")}
           settingsActive={settingsOpen}
+          onNovelClick={() => toggleDrawer("novel")}
+          novelActive={novelOpen}
           onBalanceChange={setStrawberryBalance}
         />
 
@@ -2693,6 +2716,37 @@ export default function ChatPage() {
         ) : (
           <div role="status" className="flex-1 p-5 text-sm text-muted-foreground">正在加载身份…</div>
         )}
+      </Glaze>
+
+      {/* 书斋抽屉与设置使用相同外壳；关闭后保留 iframe 中的页面状态。 */}
+      <Glaze variant="panel"
+        id="novel-drawer"
+        ref={novelPanelRef}
+        tabIndex={-1}
+        aria-label="书斋"
+        aria-hidden={!novelOpen}
+        inert={!novelOpen}
+        onKeyDown={event => {
+          if (event.key === "Escape") { closeDrawer(); focusVisibleDrawerTrigger("novel-drawer"); }
+        }}
+        lens={false}
+        backdrop={false}
+        className="fixed top-3 bottom-3 right-3 z-[55] flex flex-col overflow-hidden outline-none max-md:left-0 max-md:top-0 max-md:right-0 max-md:bottom-[calc(var(--tabbar-h)+env(safe-area-inset-bottom))]! max-md:w-screen! max-md:rounded-none max-md:pt-[env(safe-area-inset-top)]"
+        style={{
+          width: "calc((100vw - var(--rail-w) - 12px) * 2 / 3)",
+          borderLeft: "1px solid var(--glass-border)",
+          ...drawerStyle(novelOpen),
+          willChange: "transform",
+        }}
+      >
+        <div className="flex shrink-0 items-center justify-between border-b px-4 py-2" style={{ background: "var(--hi)", borderColor: "var(--glass-border)" }}>
+          <span className="text-xs font-medium text-muted-foreground">书斋</span>
+          <button type="button" onClick={() => { closeDrawer(); focusVisibleDrawerTrigger("novel-drawer"); }}
+            className="w-6 h-6 flex items-center justify-center rounded text-muted-foreground hover:bg-secondary hover:text-foreground max-md:h-10 max-md:w-10"
+            title="收起书斋" aria-label="收起书斋"><X size={14} /></button>
+        </div>
+        {username ? <iframe ref={novelFrameRef} title="书斋工作区" src="/novels?embed=1" className="min-h-0 w-full flex-1 border-0" />
+          : <div role="status" className="flex-1 p-5 text-sm text-muted-foreground">正在加载身份…</div>}
       </Glaze>
 
       {/* 抽屉外部点击关闭 — 任一右侧抽屉打开时铺一层透明背板，盖在抽屉之下、聊天区之上。

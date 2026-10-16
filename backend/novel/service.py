@@ -157,7 +157,9 @@ async def estimate(username, data):
 
 
 def summary(book):
-    return {key: book[key] for key in ('id','title','status','pause_reason','bible_version','chapters_done','words_done','budget_strawberries','spent_strawberries','reserved_strawberries','created_at','updated_at','completed_at')}
+    result = {key: book[key] for key in ('id','title','status','pause_reason','bible_version','chapters_done','words_done','budget_strawberries','spent_strawberries','reserved_strawberries','created_at','updated_at','completed_at')}
+    result['max_chapters'] = int(json.loads(book['config_json']).get('target', {}).get('max_chapters', Target().max_chapters))
+    return result
 
 
 async def catalog(username):
@@ -199,14 +201,39 @@ async def detail(username, novel_id):
     async with get_db() as db:
         book = await owned(db,username,novel_id)
         version = await row(db,'SELECT bible_json FROM novel_bible_versions WHERE novel_id=? AND version=?',(novel_id,book['bible_version']))
-        chapters = await rows(db,'SELECT chapter,title,status,flags_json,body FROM novel_chapters WHERE novel_id=? ORDER BY chapter',(novel_id,))
+        chapters = await rows(db,'SELECT chapter,title,status,flags_json,body,edited_by_user FROM novel_chapters WHERE novel_id=? ORDER BY chapter',(novel_id,))
         count = await row(db,"SELECT COUNT(*) AS n FROM novel_notes WHERE novel_id=? AND status='pending'",(novel_id,))
     result=summary(book)
-    result.update(config=json.loads(book['config_json']), compass=json.loads(book['compass_json']) if book['compass_json'] else None, bible=json.loads(version['bible_json']) if version else None, chapters=[{**{key:value for key,value in ch.items() if key not in ('flags_json','body')},'words':compact_length(ch['body'] or ''),'flags':json.loads(ch['flags_json'] or '[]')} for ch in chapters], pending_gate=book['status'] if book['status'].startswith('awaiting_') else None,pending_notes=count['n'])
+    result.update(config=json.loads(book['config_json']), compass=json.loads(book['compass_json']) if book['compass_json'] else None, bible=json.loads(version['bible_json']) if version else None, chapters=[{**{key:value for key,value in ch.items() if key not in ('flags_json','body','edited_by_user')},'words':compact_length(ch['body'] or ''),'flags':json.loads(ch['flags_json'] or '[]'),'edited_by_user':bool(ch['edited_by_user'])} for ch in chapters], pending_gate=book['status'] if book['status'].startswith('awaiting_') else None,pending_notes=count['n'])
     if result['bible']:
         from .context import trim_bible
         result['bible']=trim_bible(result['bible'],chapter=book['chapters_done']+1)
     result['last_error']=result['config'].pop('_last_error',None)
+    return result
+
+
+async def bible(username, novel_id):
+    """Return the canonical latest bible, without the model context window."""
+    async with get_db() as db:
+        book = await owned(db,username,novel_id)
+        version = await row(db,'SELECT bible_json FROM novel_bible_versions WHERE novel_id=? AND username=? AND version=?',(novel_id,username,book['bible_version']))
+    if not version:
+        return None
+    result = json.loads(version['bible_json'])
+    result['compass'] = json.loads(book['compass_json']) if book['compass_json'] else None
+    return result
+
+
+async def notes(username, novel_id):
+    """List every author note and its editor response in stable time order."""
+    async with get_db() as db:
+        await owned(db,username,novel_id)
+        result = await rows(db,'SELECT id,text,status,delivered_chapter,created_at,response_json FROM novel_notes WHERE novel_id=? AND username=? ORDER BY created_at,id',(novel_id,username))
+    for item in result:
+        raw_response = item.pop('response_json')
+        response = json.loads(raw_response) if item['status'] == 'delivered' and raw_response else {}
+        item['adopted'] = response.get('adopted')
+        item['response'] = response.get('response')
     return result
 
 

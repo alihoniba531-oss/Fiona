@@ -16,6 +16,7 @@ const navItems = [
   { href: "/agents", label: "广场" },
   { href: "/plaza", label: "世界" },
   { href: "/settings", label: "设置" },
+  { href: "/novels", label: "书斋" },
 ];
 
 export default function Sidebar({
@@ -28,6 +29,8 @@ export default function Sidebar({
   plazaActive,
   onSettingsClick,
   settingsActive,
+  onNovelClick,
+  novelActive,
   onBalanceChange,
 }: {
   onHistoryClick?: () => void;
@@ -40,6 +43,8 @@ export default function Sidebar({
   plazaActive?: boolean;
   onSettingsClick?: () => void;
   settingsActive?: boolean;
+  onNovelClick?: () => void;
+  novelActive?: boolean;
   onBalanceChange?: (balance: number | null) => void;
 }) {
   const pathname = usePathname();
@@ -81,11 +86,11 @@ export default function Sidebar({
 
   const shared = !!onChatClick;
   const items = navItems.map(({href,label}) => {
-    const drawerActive=(href === "/agents/me" && agentActive) || (href === "/agents" && exchangeActive) || (href === "/plaza" && plazaActive) || (href === "/settings" && settingsActive);
-    const anyDrawer=!!(agentActive || exchangeActive || plazaActive || settingsActive);
-    const active=!!drawerActive || (href === "/" && pathname === "/" && !anyDrawer) || (href !== "/" && pathname === href);
-    const callback=href === "/" ? onChatClick : href === "/agents/me" ? onAgentClick : href === "/agents" ? onExchangeClick : href === "/plaza" ? onPlazaClick : onSettingsClick;
-    const drawerId=href === "/agents/me" ? "agent-drawer" : href === "/agents" ? "exchange-drawer" : href === "/plaza" ? "plaza-drawer" : href === "/settings" ? "settings-drawer" : undefined;
+    const drawerActive=(href === "/agents/me" && agentActive) || (href === "/agents" && exchangeActive) || (href === "/plaza" && plazaActive) || (href === "/settings" && settingsActive) || (href === "/novels" && novelActive);
+    const anyDrawer=!!(agentActive || exchangeActive || plazaActive || settingsActive || novelActive);
+    const active=!!drawerActive || (href === "/" && pathname === "/" && !anyDrawer) || (href !== "/" && (pathname === href || (href === "/novels" && pathname.startsWith("/novels/"))));
+    const callback=href === "/" ? onChatClick : href === "/agents/me" ? onAgentClick : href === "/agents" ? onExchangeClick : href === "/plaza" ? onPlazaClick : href === "/novels" ? onNovelClick : onSettingsClick;
+    const drawerId=href === "/agents/me" ? "agent-drawer" : href === "/agents" ? "exchange-drawer" : href === "/plaza" ? "plaza-drawer" : href === "/settings" ? "settings-drawer" : href === "/novels" ? "novel-drawer" : undefined;
     return {href,label,active,callback,drawerActive,drawerId};
   });
   const desktop = <aside className={cn(shared && "relative z-[2] my-3 ml-3", "bookmark-sidebar flex min-h-0 w-[var(--nav-w)] shrink-0 flex-col items-center border-r border-[var(--carve)] py-[22px] max-md:hidden")} aria-label="主导航">

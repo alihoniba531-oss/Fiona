@@ -48,6 +48,16 @@ async def detail(novel_id: str,user: str = Depends(workshop_user)):
     return await service.detail(user,novel_id)
 
 
+@router.get('/{novel_id}/bible')
+async def bible(novel_id: str,user: str = Depends(workshop_user)):
+    return await service.bible(user,novel_id)
+
+
+@router.get('/{novel_id}/notes')
+async def notes(novel_id: str,user: str = Depends(workshop_user)):
+    return await service.notes(user,novel_id)
+
+
 @router.get('/{novel_id}/chapters/{number}')
 async def chapter(novel_id: str,number: int = Path(ge=1,le=300),user: str = Depends(workshop_user)):
     return await service.chapter(user,novel_id,number)

@@ -453,4 +453,10 @@ Fiona 的目标已确认调整为“每个用户拥有自己的 AI 分身，分�
 
 实现基于现有 P0 引擎的 `/novels` 内测 API、SQLite 五表、可恢复后台状态机、立项/细纲/审阅/完结关卡、按 token 草莓计费、受限 BYOK、上下文压缩与卷摘要。配置为 `FIONA_NOVEL`、`FIONA_NOVEL_USERS`、`FIONA_NOVEL_MAX_RUNNING`、`FIONA_DAILY_NOVEL_CHAPTERS`、`FIONA_NOVEL_PRICE_JSON`。默认关闭、空白名单拒绝，平台仅千问/DeepSeek/豆包，Claude 通过 BYOK。
 
-思路、圣经、正文和留言会发送至所选的阿里云百炼、DeepSeek、火山方舟及 BYOK 厂商。新增数据表 novels、novel_bible_versions、novel_chapters、novel_steps、novel_notes，同事务删号清理。P2 前端、真实厂商质量与成本验收留待后续；当前测试只使用 fake 或本地 MockTransport。
+思路、圣经、正文和留言会发送至所选的阿里云百炼、DeepSeek、火山方舟及 BYOK 厂商。新增数据表 novels、novel_bible_versions、novel_chapters、novel_steps、novel_notes，同事务删号清理。真实厂商质量与成本验收留待后续；当前测试只使用 fake 或本地 MockTransport。
+
+## 2026-10-16：小说工坊 P2 书斋前端
+
+已实现「书斋」侧栏/手机底栏入口、常驻主页抽屉、`/novels` 书架、`/novels/new` 三步建书向导、`/novels/[id]` 三栏工作台。覆盖立项卡与细纲编辑、批次审阅、完结、暂停/恢复、调整模型与预算、改稿、完整推演时间线、圣经、留言、Markdown 导出和删除确认；运行态仅在页面可见时每 3 秒轮询。补充完整圣经/全部留言两个只读接口及离线源码/接口测试，P1 计费和运行器不变，失败重试照常计费。
+
+门禁、逐节对应和待人工验证的屏幕尺寸/四主题截图记录见 `docs/tasks/2026-10-16-novel-workshop-p2/03-report.md`；真实厂商质量、成本和可达性仍需作者验收。
