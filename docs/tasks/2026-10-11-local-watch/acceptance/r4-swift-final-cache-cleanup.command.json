@@ -1,0 +1,9 @@
+{
+  "cwd": ".",
+  "command": [
+    "rm",
+    "-rf",
+    "watcher-mac/.build"
+  ],
+  "environment_overrides": {}
+}

@@ -1,0 +1,32 @@
+F                                                                        [100%]
+=================================== FAILURES ===================================
+___________________ test_alerts_after_limit_fields_isolation ___________________
+
+client = <starlette.testclient.TestClient object at 0x10d11fb60>
+dev_headers = {'X-Dev-User': 'smoke_tester'}
+
+    def test_alerts_after_limit_fields_isolation(client, dev_headers):
+        import database
+        mine, other = rule(client), rule(client, "someone_else")
+        with sqlite3.connect(database.DB_PATH) as connection:
+            for i in range(55): connection.execute("INSERT INTO watch_alerts(username,rule_id,summary,message_id,conversation_id) VALUES(?,?,?,?,?)", ("smoke_tester", mine["id"], str(i), i, "target"))
+            connection.execute("INSERT INTO watch_alerts(username,rule_id,summary,message_id,conversation_id) VALUES(?,?,?,?,?)", ("someone_else", other["id"], "private", 1, "other"))
+        alerts = client.get("/local-watch/alerts?after=2", headers=dev_headers).json()
+        assert len(alerts) == 50 and alerts[0]["id"] == 3 and alerts[-1]["id"] == 52
+>       assert set(alerts[0]) == {"id", "rule_name", "summary", "created_at", "conversation_id", "message_id", "content"}
+E       AssertionError: assert {'conversatio...e', 'summary'} == {'content', '...le_name', ...}
+E         
+E         Extra items in the right set:
+E         'content'
+E         Use -v to get more diff
+
+tests/test_local_watch_backend.py:204: AssertionError
+=============================== warnings summary ===============================
+tests/test_local_watch_backend.py: 14 warnings
+  /Users/yangjing/Desktop/ai-workspace/Fiona/backend/.venv/lib/python3.14/site-packages/slowapi/extension.py:720: DeprecationWarning: 'asyncio.iscoroutinefunction' is deprecated and slated for removal in Python 3.16; use inspect.iscoroutinefunction() instead
+    if asyncio.iscoroutinefunction(func):
+
+-- Docs: https://docs.pytest.org/en/stable/how-to/capture-warnings.html
+=========================== short test summary info ============================
+FAILED tests/test_local_watch_backend.py::test_alerts_after_limit_fields_isolation
+1 failed, 14 warnings in 1.42s

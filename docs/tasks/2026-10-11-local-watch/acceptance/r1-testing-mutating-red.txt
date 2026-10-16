@@ -1,0 +1,32 @@
+....F..                                                                  [100%]
+=================================== FAILURES ===================================
+________ test_retry_payload_queue_and_backoff_assertions_are_preserved _________
+
+    def test_retry_payload_queue_and_backoff_assertions_are_preserved():
+        source = compact((TEST_DIRECTORY / "test_local_watch_scheduling.swift").read_text(encoding="utf-8"))
+        expected = (
+            "failed.ruleID==1",
+            "queue.takeReady(at:now)?.ruleID==2",
+            "queue.takeReady(at:now)==nil",
+            'queue.takeReady(at:now.addingTimeInterval(1))?.lines==["第一条"]',
+            "queue.count(for:1)==20",
+            "queue.count(for:1)==20",
+            'queue.takeReady(at:now.addingTimeInterval(1))?.lines==["消息0"]',
+            'queue.takeReady(at:now.addingTimeInterval(1))?.lines==["消息\\(index)"]',
+            "queue.count(for:1)==0",
+            "(0..<9).map{_inbackoff.next()}==[1,2,4,8,16,32,60,60,60]",
+        )
+        assert source.count("#expect(") == len(expected)
+        for expression in expected:
+            assert "#expect(" + expression + ")" in source
+        # Swift Testing evaluates a function-call receiver through an immutable
+        # macro parameter. Read the mutating queue once before unwrapping its value.
+>       assert source.count("letready=queue.takeReady(at:now)letfailed=try#require(ready)") == 2
+E       AssertionError: assert 0 == 2
+E        +  where 0 = <built-in method count of str object at 0x788ceba400>('letready=queue.takeReady(at:now)letfailed=try#require(ready)')
+E        +    where <built-in method count of str object at 0x788ceba400> = 'importFoundationimportTesting@testableimportFionaWatcherCorestructLocalWatchSchedulingTests{@TestfunctestRetryDoesNot...everExceedsSixtySeconds(){varbackoff=RetryBackoff()#expect((0..<9).map{_inbackoff.next()}==[1,2,4,8,16,32,60,60,60])}}'.count
+
+tests/test_local_watch_swift_testing.py:108: AssertionError
+=========================== short test summary info ============================
+FAILED tests/test_local_watch_swift_testing.py::test_retry_payload_queue_and_backoff_assertions_are_preserved
+1 failed, 6 passed in 0.16s

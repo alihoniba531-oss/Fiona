@@ -1,0 +1,45 @@
+Building for production...
+[Planning deferred tasks]
+[14 / 26]
+[15 / 27] FionaWatcherCore
+[28 / 157]
+[38 / 157]
+[41 / 157]
+[49 / 157]
+[53 / 157]
+[59 / 157]
+[64 / 157]
+[65 / 157]
+[78 / 157]
+[80 / 157]
+[91 / 157]
+[93 / 157]
+[94 / 157]
+[100 / 157]
+[102 / 157]
+[108 / 157]
+[109 / 157]
+[111 / 157]
+[112 / 157]
+[114 / 157]
+[126 / 157]
+[131 / 157]
+[138 / 157]
+[141 / 157]
+[142 / 157]
+[143 / 157]
+[144 / 157]
+[145 / 157]
+[146 / 157] FionaWatcherCore
+[153 / 158] fiona-watcher-product
+[155 / 159] fiona-watcher-product
+[157 / 159] fiona-watcher-product
+warning: /Users/yangjing/Library/org.swift.swiftpm/configuration is not accessible or not writable, disabling user-level cache features.
+warning: /Users/yangjing/Library/org.swift.swiftpm/security is not accessible or not writable, disabling user-level cache features.
+/Users/yangjing/Desktop/ai-workspace/Fiona/watcher-mac/Package.swift: FionaWatcherCore: ld: warning: search path '/Library/Developer/CommandLineTools/Developer/Library/Frameworks' not found
+/Users/yangjing/Desktop/ai-workspace/Fiona/watcher-mac/Package.swift: fiona-watcher-product: ld: warning: search path '/Library/Developer/CommandLineTools/Developer/usr/lib' not found
+/Users/yangjing/Desktop/ai-workspace/Fiona/watcher-mac/Package.swift: fiona-watcher-product: ld: warning: search path '/Library/Developer/CommandLineTools/Developer/Library/Frameworks' not found
+error: Operation not permitted
+error: GenerateDSYMFile /Users/yangjing/Desktop/ai-workspace/Fiona/watcher-mac/.build/out/Products/Release/fiona-watcher.dSYM /Users/yangjing/Desktop/ai-workspace/Fiona/watcher-mac/.build/out/Products/Release/fiona-watcher failed with a nonzero exit code. Command line:     cd /Users/yangjing/Desktop/ai-workspace/Fiona/watcher-mac
+    /Library/Developer/CommandLineTools/usr/bin/dsymutil /Users/yangjing/Desktop/ai-workspace/Fiona/watcher-mac/.build/out/Products/Release/fiona-watcher -o /Users/yangjing/Desktop/ai-workspace/Fiona/watcher-mac/.build/out/Products/Release/fiona-watcher.dSYM
+error: Build failed

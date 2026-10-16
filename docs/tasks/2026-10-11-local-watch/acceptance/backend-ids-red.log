@@ -1,0 +1,1883 @@
+FFFF                                                                     [100%]
+=================================== FAILURES ===================================
+________ test_ids_outside_sqlite_range_rejected[DELETE-/devices/-None] _________
+  + Exception Group Traceback (most recent call last):
+  |   File "/Users/yangjing/Desktop/ai-workspace/Fiona/backend/.venv/lib/python3.14/site-packages/starlette/_utils.py", line 85, in create_collapsing_task_group
+  |     async with anyio.create_task_group() as tg:
+  |                ~~~~~~~~~~~~~~~~~~~~~~~^^
+  |   File "/Users/yangjing/Desktop/ai-workspace/Fiona/backend/.venv/lib/python3.14/site-packages/anyio/_backends/_asyncio.py", line 815, in __aexit__
+  |     raise BaseExceptionGroup(
+  |         "unhandled errors in a TaskGroup", self._exceptions
+  |     ) from None
+  | ExceptionGroup: unhandled errors in a TaskGroup (1 sub-exception)
+  +-+---------------- 1 ----------------
+    | Traceback (most recent call last):
+    |   File "/Users/yangjing/Desktop/ai-workspace/Fiona/backend/.venv/lib/python3.14/site-packages/_pytest/runner.py", line 361, in from_call
+    |     result: TResult | None = func()
+    |                              ~~~~^^
+    |   File "/Users/yangjing/Desktop/ai-workspace/Fiona/backend/.venv/lib/python3.14/site-packages/_pytest/runner.py", line 250, in <lambda>
+    |     lambda: runtest_hook(item=item, **kwds),
+    |             ~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^
+    |   File "/Users/yangjing/Desktop/ai-workspace/Fiona/backend/.venv/lib/python3.14/site-packages/pluggy/_hooks.py", line 512, in __call__
+    |     return self._hookexec(self.name, self._hookimpls.copy(), kwargs, firstresult)
+    |            ~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+    |   File "/Users/yangjing/Desktop/ai-workspace/Fiona/backend/.venv/lib/python3.14/site-packages/pluggy/_manager.py", line 120, in _hookexec
+    |     return self._inner_hookexec(hook_name, methods, kwargs, firstresult)
+    |            ~~~~~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+    |   File "/Users/yangjing/Desktop/ai-workspace/Fiona/backend/.venv/lib/python3.14/site-packages/pluggy/_callers.py", line 167, in _multicall
+    |     raise exception
+    |   File "/Users/yangjing/Desktop/ai-workspace/Fiona/backend/.venv/lib/python3.14/site-packages/pluggy/_callers.py", line 139, in _multicall
+    |     teardown.throw(exception)
+    |     ~~~~~~~~~~~~~~^^^^^^^^^^^
+    |   File "/Users/yangjing/Desktop/ai-workspace/Fiona/backend/.venv/lib/python3.14/site-packages/_pytest/logging.py", line 865, in pytest_runtest_call
+    |     yield
+    |   File "/Users/yangjing/Desktop/ai-workspace/Fiona/backend/.venv/lib/python3.14/site-packages/pluggy/_callers.py", line 139, in _multicall
+    |     teardown.throw(exception)
+    |     ~~~~~~~~~~~~~~^^^^^^^^^^^
+    |   File "/Users/yangjing/Desktop/ai-workspace/Fiona/backend/.venv/lib/python3.14/site-packages/_pytest/capture.py", line 900, in pytest_runtest_call
+    |     return (yield)
+    |             ^^^^^
+    |   File "/Users/yangjing/Desktop/ai-workspace/Fiona/backend/.venv/lib/python3.14/site-packages/pluggy/_callers.py", line 139, in _multicall
+    |     teardown.throw(exception)
+    |     ~~~~~~~~~~~~~~^^^^^^^^^^^
+    |   File "/Users/yangjing/Desktop/ai-workspace/Fiona/backend/.venv/lib/python3.14/site-packages/_pytest/skipping.py", line 268, in pytest_runtest_call
+    |     return (yield)
+    |             ^^^^^
+    |   File "/Users/yangjing/Desktop/ai-workspace/Fiona/backend/.venv/lib/python3.14/site-packages/pluggy/_callers.py", line 121, in _multicall
+    |     res = hook_impl.function(*args)
+    |   File "/Users/yangjing/Desktop/ai-workspace/Fiona/backend/.venv/lib/python3.14/site-packages/_pytest/runner.py", line 184, in pytest_runtest_call
+    |     item.runtest()
+    |     ~~~~~~~~~~~~^^
+    |   File "/Users/yangjing/Desktop/ai-workspace/Fiona/backend/.venv/lib/python3.14/site-packages/_pytest/python.py", line 1707, in runtest
+    |     self.ihook.pytest_pyfunc_call(pyfuncitem=self)
+    |     ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^
+    |   File "/Users/yangjing/Desktop/ai-workspace/Fiona/backend/.venv/lib/python3.14/site-packages/pluggy/_hooks.py", line 512, in __call__
+    |     return self._hookexec(self.name, self._hookimpls.copy(), kwargs, firstresult)
+    |            ~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+    |   File "/Users/yangjing/Desktop/ai-workspace/Fiona/backend/.venv/lib/python3.14/site-packages/pluggy/_manager.py", line 120, in _hookexec
+    |     return self._inner_hookexec(hook_name, methods, kwargs, firstresult)
+    |            ~~~~~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+    |   File "/Users/yangjing/Desktop/ai-workspace/Fiona/backend/.venv/lib/python3.14/site-packages/pluggy/_callers.py", line 167, in _multicall
+    |     raise exception
+    |   File "/Users/yangjing/Desktop/ai-workspace/Fiona/backend/.venv/lib/python3.14/site-packages/pluggy/_callers.py", line 121, in _multicall
+    |     res = hook_impl.function(*args)
+    |   File "/Users/yangjing/Desktop/ai-workspace/Fiona/backend/.venv/lib/python3.14/site-packages/_pytest/python.py", line 167, in pytest_pyfunc_call
+    |     result = testfunction(**testargs)
+    |   File "/Users/yangjing/Desktop/ai-workspace/Fiona/backend/tests/test_local_watch_backend.py", line 284, in test_ids_outside_sqlite_range_rejected
+    |     response = client.request(method, "/local-watch" + path + str(2**64), headers=dev_headers, json=body)
+    |   File "/Users/yangjing/Desktop/ai-workspace/Fiona/backend/.venv/lib/python3.14/site-packages/starlette/testclient.py", line 454, in request
+    |     return super().request(
+    |            ~~~~~~~~~~~~~~~^
+    |         method,
+    |         ^^^^^^^
+    |     ...<11 lines>...
+    |         extensions=extensions,
+    |         ^^^^^^^^^^^^^^^^^^^^^^
+    |     )
+    |     ^
+    |   File "/Users/yangjing/Desktop/ai-workspace/Fiona/backend/.venv/lib/python3.14/site-packages/httpx2/_client.py", line 797, in request
+    |     return self.send(request, auth=auth, follow_redirects=follow_redirects)
+    |            ~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+    |   File "/Users/yangjing/Desktop/ai-workspace/Fiona/backend/.venv/lib/python3.14/site-packages/httpx2/_client.py", line 980, in send
+    |     response = self._send_handling_auth(
+    |         request,
+    |     ...<2 lines>...
+    |         history=[],
+    |     )
+    |   File "/Users/yangjing/Desktop/ai-workspace/Fiona/backend/.venv/lib/python3.14/site-packages/httpx2/_client.py", line 1008, in _send_handling_auth
+    |     response = self._send_handling_redirects(
+    |         request,
+    |         follow_redirects=follow_redirects,
+    |         history=history,
+    |     )
+    |   File "/Users/yangjing/Desktop/ai-workspace/Fiona/backend/.venv/lib/python3.14/site-packages/httpx2/_client.py", line 1043, in _send_handling_redirects
+    |     response = self._send_single_request(request)
+    |   File "/Users/yangjing/Desktop/ai-workspace/Fiona/backend/.venv/lib/python3.14/site-packages/httpx2/_client.py", line 1076, in _send_single_request
+    |     response = transport.handle_request(request)
+    |   File "/Users/yangjing/Desktop/ai-workspace/Fiona/backend/.venv/lib/python3.14/site-packages/starlette/testclient.py", line 356, in handle_request
+    |     raise exc
+    |   File "/Users/yangjing/Desktop/ai-workspace/Fiona/backend/.venv/lib/python3.14/site-packages/starlette/testclient.py", line 353, in handle_request
+    |     portal.call(self.app, scope, receive, send)
+    |     ~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+    |   File "/Users/yangjing/Desktop/ai-workspace/Fiona/backend/.venv/lib/python3.14/site-packages/anyio/from_thread.py", line 338, in call
+    |     return cast(T_Retval, self.start_task_soon(func, *args).result())
+    |                           ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~^^
+    |   File "/opt/homebrew/Cellar/python@3.14/3.14.6/Frameworks/Python.framework/Versions/3.14/lib/python3.14/concurrent/futures/_base.py", line 454, in result
+    |     return self.__get_result()
+    |            ~~~~~~~~~~~~~~~~~^^
+    |   File "/opt/homebrew/Cellar/python@3.14/3.14.6/Frameworks/Python.framework/Versions/3.14/lib/python3.14/concurrent/futures/_base.py", line 396, in __get_result
+    |     raise self._exception
+    |   File "/Users/yangjing/Desktop/ai-workspace/Fiona/backend/.venv/lib/python3.14/site-packages/anyio/from_thread.py", line 263, in _call_func
+    |     retval = await retval_or_awaitable
+    |              ^^^^^^^^^^^^^^^^^^^^^^^^^
+    |   File "/Users/yangjing/Desktop/ai-workspace/Fiona/backend/.venv/lib/python3.14/site-packages/fastapi/applications.py", line 1159, in __call__
+    |     await super().__call__(scope, receive, send)
+    |   File "/Users/yangjing/Desktop/ai-workspace/Fiona/backend/.venv/lib/python3.14/site-packages/starlette/applications.py", line 90, in __call__
+    |     await self.middleware_stack(scope, receive, send)
+    |   File "/Users/yangjing/Desktop/ai-workspace/Fiona/backend/.venv/lib/python3.14/site-packages/starlette/middleware/errors.py", line 186, in __call__
+    |     raise exc
+    |   File "/Users/yangjing/Desktop/ai-workspace/Fiona/backend/.venv/lib/python3.14/site-packages/starlette/middleware/errors.py", line 164, in __call__
+    |     await self.app(scope, receive, _send)
+    |   File "/Users/yangjing/Desktop/ai-workspace/Fiona/backend/.venv/lib/python3.14/site-packages/starlette/middleware/base.py", line 193, in __call__
+    |     response = await self.dispatch_func(request, call_next)
+    |                ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+    |   File "/Users/yangjing/Desktop/ai-workspace/Fiona/backend/main.py", line 292, in private_local_watch
+    |     response = await call_next(request)
+    |                ^^^^^^^^^^^^^^^^^^^^^^^^
+    |   File "/Users/yangjing/Desktop/ai-workspace/Fiona/backend/.venv/lib/python3.14/site-packages/starlette/middleware/base.py", line 168, in call_next
+    |     raise app_exc from app_exc.__cause__ or app_exc.__context__
+    |   File "/Users/yangjing/Desktop/ai-workspace/Fiona/backend/.venv/lib/python3.14/site-packages/starlette/middleware/base.py", line 144, in coro
+    |     await self.app(scope, receive_or_disconnect, send_no_error)
+    |   File "/Users/yangjing/Desktop/ai-workspace/Fiona/backend/.venv/lib/python3.14/site-packages/starlette/middleware/base.py", line 193, in __call__
+    |     response = await self.dispatch_func(request, call_next)
+    |                ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+    |   File "/Users/yangjing/Desktop/ai-workspace/Fiona/backend/main.py", line 272, in require_auth
+    |     response = await call_next(request)
+    |                ^^^^^^^^^^^^^^^^^^^^^^^^
+    |   File "/Users/yangjing/Desktop/ai-workspace/Fiona/backend/.venv/lib/python3.14/site-packages/starlette/middleware/base.py", line 168, in call_next
+    |     raise app_exc from app_exc.__cause__ or app_exc.__context__
+    |   File "/Users/yangjing/Desktop/ai-workspace/Fiona/backend/.venv/lib/python3.14/site-packages/starlette/middleware/base.py", line 144, in coro
+    |     await self.app(scope, receive_or_disconnect, send_no_error)
+    |   File "/Users/yangjing/Desktop/ai-workspace/Fiona/backend/.venv/lib/python3.14/site-packages/starlette/middleware/cors.py", line 88, in __call__
+    |     await self.app(scope, receive, send)
+    |   File "/Users/yangjing/Desktop/ai-workspace/Fiona/backend/utils/request_limits.py", line 57, in __call__
+    |     await self.app(scope, limited_receive, tracked_send)
+    |   File "/Users/yangjing/Desktop/ai-workspace/Fiona/backend/.venv/lib/python3.14/site-packages/starlette/middleware/exceptions.py", line 63, in __call__
+    |     await wrap_app_handling_exceptions(self.app, conn)(scope, receive, send)
+    |   File "/Users/yangjing/Desktop/ai-workspace/Fiona/backend/.venv/lib/python3.14/site-packages/starlette/_exception_handler.py", line 53, in wrapped_app
+    |     raise exc
+    |   File "/Users/yangjing/Desktop/ai-workspace/Fiona/backend/.venv/lib/python3.14/site-packages/starlette/_exception_handler.py", line 42, in wrapped_app
+    |     await app(scope, receive, sender)
+    |   File "/Users/yangjing/Desktop/ai-workspace/Fiona/backend/.venv/lib/python3.14/site-packages/fastapi/middleware/asyncexitstack.py", line 18, in __call__
+    |     await self.app(scope, receive, send)
+    |   File "/Users/yangjing/Desktop/ai-workspace/Fiona/backend/.venv/lib/python3.14/site-packages/starlette/routing.py", line 660, in __call__
+    |     await self.middleware_stack(scope, receive, send)
+    |   File "/Users/yangjing/Desktop/ai-workspace/Fiona/backend/.venv/lib/python3.14/site-packages/starlette/routing.py", line 680, in app
+    |     await route.handle(scope, receive, send)
+    |   File "/Users/yangjing/Desktop/ai-workspace/Fiona/backend/.venv/lib/python3.14/site-packages/starlette/routing.py", line 276, in handle
+    |     await self.app(scope, receive, send)
+    |   File "/Users/yangjing/Desktop/ai-workspace/Fiona/backend/.venv/lib/python3.14/site-packages/fastapi/routing.py", line 134, in app
+    |     await wrap_app_handling_exceptions(app, request)(scope, receive, send)
+    |   File "/Users/yangjing/Desktop/ai-workspace/Fiona/backend/.venv/lib/python3.14/site-packages/starlette/_exception_handler.py", line 53, in wrapped_app
+    |     raise exc
+    |   File "/Users/yangjing/Desktop/ai-workspace/Fiona/backend/.venv/lib/python3.14/site-packages/starlette/_exception_handler.py", line 42, in wrapped_app
+    |     await app(scope, receive, sender)
+    |   File "/Users/yangjing/Desktop/ai-workspace/Fiona/backend/.venv/lib/python3.14/site-packages/fastapi/routing.py", line 120, in app
+    |     response = await f(request)
+    |                ^^^^^^^^^^^^^^^^
+    |   File "/Users/yangjing/Desktop/ai-workspace/Fiona/backend/.venv/lib/python3.14/site-packages/fastapi/routing.py", line 674, in app
+    |     raw_response = await run_endpoint_function(
+    |                    ^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+    |     ...<3 lines>...
+    |     )
+    |     ^
+    |   File "/Users/yangjing/Desktop/ai-workspace/Fiona/backend/.venv/lib/python3.14/site-packages/fastapi/routing.py", line 328, in run_endpoint_function
+    |     return await dependant.call(**values)
+    |            ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+    |   File "/Users/yangjing/Desktop/ai-workspace/Fiona/backend/routers/local_watch.py", line 149, in revoke_device
+    |     if not await database.revoke_watch_device(user, device_id):
+    |            ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+    |   File "/Users/yangjing/Desktop/ai-workspace/Fiona/backend/database.py", line 1765, in revoke_watch_device
+    |     cursor = await db.execute("UPDATE watch_devices SET revoked=1 WHERE id=? AND username=?", (device_id, username))
+    |              ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+    |   File "/Users/yangjing/Desktop/ai-workspace/Fiona/backend/.venv/lib/python3.14/site-packages/aiosqlite/core.py", line 223, in execute
+    |     cursor = await self._execute(self._conn.execute, sql, parameters)
+    |              ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+    |   File "/Users/yangjing/Desktop/ai-workspace/Fiona/backend/.venv/lib/python3.14/site-packages/aiosqlite/core.py", line 160, in _execute
+    |     return await future
+    |            ^^^^^^^^^^^^
+    |   File "/Users/yangjing/Desktop/ai-workspace/Fiona/backend/.venv/lib/python3.14/site-packages/aiosqlite/core.py", line 63, in _connection_worker_thread
+    |     result = function()
+    | OverflowError: Python int too large to convert to SQLite INTEGER
+    +------------------------------------
+
+The above exception was the direct cause of the following exception:
+
+Traceback (most recent call last):
+  File "/Users/yangjing/Desktop/ai-workspace/Fiona/backend/tests/test_local_watch_backend.py", line 284, in test_ids_outside_sqlite_range_rejected
+    response = client.request(method, "/local-watch" + path + str(2**64), headers=dev_headers, json=body)
+  File "/Users/yangjing/Desktop/ai-workspace/Fiona/backend/.venv/lib/python3.14/site-packages/starlette/testclient.py", line 454, in request
+    return super().request(
+           ~~~~~~~~~~~~~~~^
+        method,
+        ^^^^^^^
+    ...<11 lines>...
+        extensions=extensions,
+        ^^^^^^^^^^^^^^^^^^^^^^
+    )
+    ^
+  File "/Users/yangjing/Desktop/ai-workspace/Fiona/backend/.venv/lib/python3.14/site-packages/httpx2/_client.py", line 797, in request
+    return self.send(request, auth=auth, follow_redirects=follow_redirects)
+           ~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/Users/yangjing/Desktop/ai-workspace/Fiona/backend/.venv/lib/python3.14/site-packages/httpx2/_client.py", line 980, in send
+    response = self._send_handling_auth(
+        request,
+    ...<2 lines>...
+        history=[],
+    )
+  File "/Users/yangjing/Desktop/ai-workspace/Fiona/backend/.venv/lib/python3.14/site-packages/httpx2/_client.py", line 1008, in _send_handling_auth
+    response = self._send_handling_redirects(
+        request,
+        follow_redirects=follow_redirects,
+        history=history,
+    )
+  File "/Users/yangjing/Desktop/ai-workspace/Fiona/backend/.venv/lib/python3.14/site-packages/httpx2/_client.py", line 1043, in _send_handling_redirects
+    response = self._send_single_request(request)
+  File "/Users/yangjing/Desktop/ai-workspace/Fiona/backend/.venv/lib/python3.14/site-packages/httpx2/_client.py", line 1076, in _send_single_request
+    response = transport.handle_request(request)
+  File "/Users/yangjing/Desktop/ai-workspace/Fiona/backend/.venv/lib/python3.14/site-packages/starlette/testclient.py", line 356, in handle_request
+    raise exc
+  File "/Users/yangjing/Desktop/ai-workspace/Fiona/backend/.venv/lib/python3.14/site-packages/starlette/testclient.py", line 353, in handle_request
+    portal.call(self.app, scope, receive, send)
+    ~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/Users/yangjing/Desktop/ai-workspace/Fiona/backend/.venv/lib/python3.14/site-packages/anyio/from_thread.py", line 338, in call
+    return cast(T_Retval, self.start_task_soon(func, *args).result())
+                          ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~^^
+  File "/opt/homebrew/Cellar/python@3.14/3.14.6/Frameworks/Python.framework/Versions/3.14/lib/python3.14/concurrent/futures/_base.py", line 454, in result
+    return self.__get_result()
+           ~~~~~~~~~~~~~~~~~^^
+  File "/opt/homebrew/Cellar/python@3.14/3.14.6/Frameworks/Python.framework/Versions/3.14/lib/python3.14/concurrent/futures/_base.py", line 396, in __get_result
+    raise self._exception
+  File "/Users/yangjing/Desktop/ai-workspace/Fiona/backend/.venv/lib/python3.14/site-packages/anyio/from_thread.py", line 263, in _call_func
+    retval = await retval_or_awaitable
+             ^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/Users/yangjing/Desktop/ai-workspace/Fiona/backend/.venv/lib/python3.14/site-packages/fastapi/applications.py", line 1159, in __call__
+    await super().__call__(scope, receive, send)
+  File "/Users/yangjing/Desktop/ai-workspace/Fiona/backend/.venv/lib/python3.14/site-packages/starlette/applications.py", line 90, in __call__
+    await self.middleware_stack(scope, receive, send)
+  File "/Users/yangjing/Desktop/ai-workspace/Fiona/backend/.venv/lib/python3.14/site-packages/starlette/middleware/errors.py", line 186, in __call__
+    raise exc
+  File "/Users/yangjing/Desktop/ai-workspace/Fiona/backend/.venv/lib/python3.14/site-packages/starlette/middleware/errors.py", line 164, in __call__
+    await self.app(scope, receive, _send)
+  File "/Users/yangjing/Desktop/ai-workspace/Fiona/backend/.venv/lib/python3.14/site-packages/starlette/middleware/base.py", line 193, in __call__
+    response = await self.dispatch_func(request, call_next)
+               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/Users/yangjing/Desktop/ai-workspace/Fiona/backend/main.py", line 292, in private_local_watch
+    response = await call_next(request)
+               ^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/Users/yangjing/Desktop/ai-workspace/Fiona/backend/.venv/lib/python3.14/site-packages/starlette/middleware/base.py", line 168, in call_next
+    raise app_exc from app_exc.__cause__ or app_exc.__context__
+  File "/Users/yangjing/Desktop/ai-workspace/Fiona/backend/.venv/lib/python3.14/site-packages/starlette/middleware/base.py", line 144, in coro
+    await self.app(scope, receive_or_disconnect, send_no_error)
+  File "/Users/yangjing/Desktop/ai-workspace/Fiona/backend/.venv/lib/python3.14/site-packages/starlette/middleware/base.py", line 193, in __call__
+    response = await self.dispatch_func(request, call_next)
+               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/Users/yangjing/Desktop/ai-workspace/Fiona/backend/main.py", line 272, in require_auth
+    response = await call_next(request)
+               ^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/Users/yangjing/Desktop/ai-workspace/Fiona/backend/.venv/lib/python3.14/site-packages/starlette/middleware/base.py", line 168, in call_next
+    raise app_exc from app_exc.__cause__ or app_exc.__context__
+  File "/Users/yangjing/Desktop/ai-workspace/Fiona/backend/.venv/lib/python3.14/site-packages/starlette/middleware/base.py", line 144, in coro
+    await self.app(scope, receive_or_disconnect, send_no_error)
+  File "/Users/yangjing/Desktop/ai-workspace/Fiona/backend/.venv/lib/python3.14/site-packages/starlette/middleware/cors.py", line 88, in __call__
+    await self.app(scope, receive, send)
+  File "/Users/yangjing/Desktop/ai-workspace/Fiona/backend/utils/request_limits.py", line 57, in __call__
+    await self.app(scope, limited_receive, tracked_send)
+  File "/Users/yangjing/Desktop/ai-workspace/Fiona/backend/.venv/lib/python3.14/site-packages/starlette/middleware/exceptions.py", line 63, in __call__
+    await wrap_app_handling_exceptions(self.app, conn)(scope, receive, send)
+  File "/Users/yangjing/Desktop/ai-workspace/Fiona/backend/.venv/lib/python3.14/site-packages/starlette/_exception_handler.py", line 53, in wrapped_app
+    raise exc
+  File "/Users/yangjing/Desktop/ai-workspace/Fiona/backend/.venv/lib/python3.14/site-packages/starlette/_exception_handler.py", line 42, in wrapped_app
+    await app(scope, receive, sender)
+  File "/Users/yangjing/Desktop/ai-workspace/Fiona/backend/.venv/lib/python3.14/site-packages/fastapi/middleware/asyncexitstack.py", line 18, in __call__
+    await self.app(scope, receive, send)
+  File "/Users/yangjing/Desktop/ai-workspace/Fiona/backend/.venv/lib/python3.14/site-packages/starlette/routing.py", line 660, in __call__
+    await self.middleware_stack(scope, receive, send)
+  File "/Users/yangjing/Desktop/ai-workspace/Fiona/backend/.venv/lib/python3.14/site-packages/starlette/routing.py", line 680, in app
+    await route.handle(scope, receive, send)
+  File "/Users/yangjing/Desktop/ai-workspace/Fiona/backend/.venv/lib/python3.14/site-packages/starlette/routing.py", line 276, in handle
+    await self.app(scope, receive, send)
+  File "/Users/yangjing/Desktop/ai-workspace/Fiona/backend/.venv/lib/python3.14/site-packages/fastapi/routing.py", line 134, in app
+    await wrap_app_handling_exceptions(app, request)(scope, receive, send)
+  File "/Users/yangjing/Desktop/ai-workspace/Fiona/backend/.venv/lib/python3.14/site-packages/starlette/_exception_handler.py", line 53, in wrapped_app
+    raise exc
+  File "/Users/yangjing/Desktop/ai-workspace/Fiona/backend/.venv/lib/python3.14/site-packages/starlette/_exception_handler.py", line 42, in wrapped_app
+    await app(scope, receive, sender)
+  File "/Users/yangjing/Desktop/ai-workspace/Fiona/backend/.venv/lib/python3.14/site-packages/fastapi/routing.py", line 120, in app
+    response = await f(request)
+               ^^^^^^^^^^^^^^^^
+  File "/Users/yangjing/Desktop/ai-workspace/Fiona/backend/.venv/lib/python3.14/site-packages/fastapi/routing.py", line 674, in app
+    raw_response = await run_endpoint_function(
+                   ^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+    ...<3 lines>...
+    )
+    ^
+  File "/Users/yangjing/Desktop/ai-workspace/Fiona/backend/.venv/lib/python3.14/site-packages/fastapi/routing.py", line 328, in run_endpoint_function
+    return await dependant.call(**values)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/Users/yangjing/Desktop/ai-workspace/Fiona/backend/routers/local_watch.py", line 149, in revoke_device
+    if not await database.revoke_watch_device(user, device_id):
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/Users/yangjing/Desktop/ai-workspace/Fiona/backend/database.py", line 1765, in revoke_watch_device
+    cursor = await db.execute("UPDATE watch_devices SET revoked=1 WHERE id=? AND username=?", (device_id, username))
+             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/Users/yangjing/Desktop/ai-workspace/Fiona/backend/.venv/lib/python3.14/site-packages/aiosqlite/core.py", line 223, in execute
+    cursor = await self._execute(self._conn.execute, sql, parameters)
+             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/Users/yangjing/Desktop/ai-workspace/Fiona/backend/.venv/lib/python3.14/site-packages/aiosqlite/core.py", line 160, in _execute
+    return await future
+           ^^^^^^^^^^^^
+  File "/Users/yangjing/Desktop/ai-workspace/Fiona/backend/.venv/lib/python3.14/site-packages/aiosqlite/core.py", line 63, in _connection_worker_thread
+    result = function()
+OverflowError: Python int too large to convert to SQLite INTEGER
+
+The above exception was the direct cause of the following exception:
+
+client = <starlette.testclient.TestClient object at 0x10d37b770>
+dev_headers = {'X-Dev-User': 'smoke_tester'}, method = 'DELETE'
+path = '/devices/', body = None
+
+    @pytest.mark.parametrize("method,path,body", [("DELETE", "/devices/", None), ("PATCH", "/rules/", {"enabled": True}), ("DELETE", "/rules/", None), ("GET", "/alerts?after=", None)])
+    def test_ids_outside_sqlite_range_rejected(client, dev_headers, method, path, body):
+>       response = client.request(method, "/local-watch" + path + str(2**64), headers=dev_headers, json=body)
+                   ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+backend/tests/test_local_watch_backend.py:284: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+backend/.venv/lib/python3.14/site-packages/starlette/testclient.py:454: in request
+    return super().request(
+backend/.venv/lib/python3.14/site-packages/httpx2/_client.py:797: in request
+    return self.send(request, auth=auth, follow_redirects=follow_redirects)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+backend/.venv/lib/python3.14/site-packages/httpx2/_client.py:980: in send
+    response = self._send_handling_auth(
+backend/.venv/lib/python3.14/site-packages/httpx2/_client.py:1008: in _send_handling_auth
+    response = self._send_handling_redirects(
+backend/.venv/lib/python3.14/site-packages/httpx2/_client.py:1043: in _send_handling_redirects
+    response = self._send_single_request(request)
+               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+backend/.venv/lib/python3.14/site-packages/httpx2/_client.py:1076: in _send_single_request
+    response = transport.handle_request(request)
+               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+backend/.venv/lib/python3.14/site-packages/starlette/testclient.py:356: in handle_request
+    raise exc
+backend/.venv/lib/python3.14/site-packages/starlette/testclient.py:353: in handle_request
+    portal.call(self.app, scope, receive, send)
+backend/.venv/lib/python3.14/site-packages/anyio/from_thread.py:338: in call
+    return cast(T_Retval, self.start_task_soon(func, *args).result())
+                          ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+/opt/homebrew/Cellar/python@3.14/3.14.6/Frameworks/Python.framework/Versions/3.14/lib/python3.14/concurrent/futures/_base.py:454: in result
+    return self.__get_result()
+           ^^^^^^^^^^^^^^^^^^^
+/opt/homebrew/Cellar/python@3.14/3.14.6/Frameworks/Python.framework/Versions/3.14/lib/python3.14/concurrent/futures/_base.py:396: in __get_result
+    raise self._exception
+backend/.venv/lib/python3.14/site-packages/anyio/from_thread.py:263: in _call_func
+    retval = await retval_or_awaitable
+             ^^^^^^^^^^^^^^^^^^^^^^^^^
+backend/.venv/lib/python3.14/site-packages/fastapi/applications.py:1159: in __call__
+    await super().__call__(scope, receive, send)
+backend/.venv/lib/python3.14/site-packages/starlette/applications.py:90: in __call__
+    await self.middleware_stack(scope, receive, send)
+backend/.venv/lib/python3.14/site-packages/starlette/middleware/errors.py:186: in __call__
+    raise exc
+backend/.venv/lib/python3.14/site-packages/starlette/middleware/errors.py:164: in __call__
+    await self.app(scope, receive, _send)
+backend/.venv/lib/python3.14/site-packages/starlette/middleware/base.py:193: in __call__
+    response = await self.dispatch_func(request, call_next)
+               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+backend/main.py:292: in private_local_watch
+    response = await call_next(request)
+               ^^^^^^^^^^^^^^^^^^^^^^^^
+backend/.venv/lib/python3.14/site-packages/starlette/middleware/base.py:168: in call_next
+    raise app_exc from app_exc.__cause__ or app_exc.__context__
+backend/.venv/lib/python3.14/site-packages/starlette/middleware/base.py:144: in coro
+    await self.app(scope, receive_or_disconnect, send_no_error)
+backend/.venv/lib/python3.14/site-packages/starlette/middleware/base.py:193: in __call__
+    response = await self.dispatch_func(request, call_next)
+               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+backend/main.py:272: in require_auth
+    response = await call_next(request)
+               ^^^^^^^^^^^^^^^^^^^^^^^^
+backend/.venv/lib/python3.14/site-packages/starlette/middleware/base.py:168: in call_next
+    raise app_exc from app_exc.__cause__ or app_exc.__context__
+backend/.venv/lib/python3.14/site-packages/starlette/middleware/base.py:144: in coro
+    await self.app(scope, receive_or_disconnect, send_no_error)
+backend/.venv/lib/python3.14/site-packages/starlette/middleware/cors.py:88: in __call__
+    await self.app(scope, receive, send)
+backend/utils/request_limits.py:57: in __call__
+    await self.app(scope, limited_receive, tracked_send)
+backend/.venv/lib/python3.14/site-packages/starlette/middleware/exceptions.py:63: in __call__
+    await wrap_app_handling_exceptions(self.app, conn)(scope, receive, send)
+backend/.venv/lib/python3.14/site-packages/starlette/_exception_handler.py:53: in wrapped_app
+    raise exc
+backend/.venv/lib/python3.14/site-packages/starlette/_exception_handler.py:42: in wrapped_app
+    await app(scope, receive, sender)
+backend/.venv/lib/python3.14/site-packages/fastapi/middleware/asyncexitstack.py:18: in __call__
+    await self.app(scope, receive, send)
+backend/.venv/lib/python3.14/site-packages/starlette/routing.py:660: in __call__
+    await self.middleware_stack(scope, receive, send)
+backend/.venv/lib/python3.14/site-packages/starlette/routing.py:680: in app
+    await route.handle(scope, receive, send)
+backend/.venv/lib/python3.14/site-packages/starlette/routing.py:276: in handle
+    await self.app(scope, receive, send)
+backend/.venv/lib/python3.14/site-packages/fastapi/routing.py:134: in app
+    await wrap_app_handling_exceptions(app, request)(scope, receive, send)
+backend/.venv/lib/python3.14/site-packages/starlette/_exception_handler.py:53: in wrapped_app
+    raise exc
+backend/.venv/lib/python3.14/site-packages/starlette/_exception_handler.py:42: in wrapped_app
+    await app(scope, receive, sender)
+backend/.venv/lib/python3.14/site-packages/fastapi/routing.py:120: in app
+    response = await f(request)
+               ^^^^^^^^^^^^^^^^
+backend/.venv/lib/python3.14/site-packages/fastapi/routing.py:674: in app
+    raw_response = await run_endpoint_function(
+backend/.venv/lib/python3.14/site-packages/fastapi/routing.py:328: in run_endpoint_function
+    return await dependant.call(**values)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+backend/routers/local_watch.py:149: in revoke_device
+    if not await database.revoke_watch_device(user, device_id):
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+backend/database.py:1765: in revoke_watch_device
+    cursor = await db.execute("UPDATE watch_devices SET revoked=1 WHERE id=? AND username=?", (device_id, username))
+             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+backend/.venv/lib/python3.14/site-packages/aiosqlite/core.py:223: in execute
+    cursor = await self._execute(self._conn.execute, sql, parameters)
+             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+backend/.venv/lib/python3.14/site-packages/aiosqlite/core.py:160: in _execute
+    return await future
+           ^^^^^^^^^^^^
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+tx = <_queue.SimpleQueue object at 0x10d438880>
+
+    def _connection_worker_thread(tx: _TxQueue):
+        """
+        Execute function calls on a separate thread.
+    
+        :meta private:
+        """
+        while True:
+            # Continues running until all queue items are processed,
+            # even after connection is closed (so we can finalize all
+            # futures)
+    
+            future, function = tx.get()
+    
+            try:
+                LOG.debug("executing %s", function)
+>               result = function()
+                         ^^^^^^^^^^
+E               OverflowError: Python int too large to convert to SQLite INTEGER
+
+backend/.venv/lib/python3.14/site-packages/aiosqlite/core.py:63: OverflowError
+_________ test_ids_outside_sqlite_range_rejected[PATCH-/rules/-body1] __________
+  + Exception Group Traceback (most recent call last):
+  |   File "/Users/yangjing/Desktop/ai-workspace/Fiona/backend/.venv/lib/python3.14/site-packages/starlette/_utils.py", line 85, in create_collapsing_task_group
+  |     async with anyio.create_task_group() as tg:
+  |                ~~~~~~~~~~~~~~~~~~~~~~~^^
+  |   File "/Users/yangjing/Desktop/ai-workspace/Fiona/backend/.venv/lib/python3.14/site-packages/anyio/_backends/_asyncio.py", line 815, in __aexit__
+  |     raise BaseExceptionGroup(
+  |         "unhandled errors in a TaskGroup", self._exceptions
+  |     ) from None
+  | ExceptionGroup: unhandled errors in a TaskGroup (1 sub-exception)
+  +-+---------------- 1 ----------------
+    | Traceback (most recent call last):
+    |   File "/Users/yangjing/Desktop/ai-workspace/Fiona/backend/.venv/lib/python3.14/site-packages/_pytest/runner.py", line 361, in from_call
+    |     result: TResult | None = func()
+    |                              ~~~~^^
+    |   File "/Users/yangjing/Desktop/ai-workspace/Fiona/backend/.venv/lib/python3.14/site-packages/_pytest/runner.py", line 250, in <lambda>
+    |     lambda: runtest_hook(item=item, **kwds),
+    |             ~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^
+    |   File "/Users/yangjing/Desktop/ai-workspace/Fiona/backend/.venv/lib/python3.14/site-packages/pluggy/_hooks.py", line 512, in __call__
+    |     return self._hookexec(self.name, self._hookimpls.copy(), kwargs, firstresult)
+    |            ~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+    |   File "/Users/yangjing/Desktop/ai-workspace/Fiona/backend/.venv/lib/python3.14/site-packages/pluggy/_manager.py", line 120, in _hookexec
+    |     return self._inner_hookexec(hook_name, methods, kwargs, firstresult)
+    |            ~~~~~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+    |   File "/Users/yangjing/Desktop/ai-workspace/Fiona/backend/.venv/lib/python3.14/site-packages/pluggy/_callers.py", line 167, in _multicall
+    |     raise exception
+    |   File "/Users/yangjing/Desktop/ai-workspace/Fiona/backend/.venv/lib/python3.14/site-packages/pluggy/_callers.py", line 139, in _multicall
+    |     teardown.throw(exception)
+    |     ~~~~~~~~~~~~~~^^^^^^^^^^^
+    |   File "/Users/yangjing/Desktop/ai-workspace/Fiona/backend/.venv/lib/python3.14/site-packages/_pytest/logging.py", line 865, in pytest_runtest_call
+    |     yield
+    |   File "/Users/yangjing/Desktop/ai-workspace/Fiona/backend/.venv/lib/python3.14/site-packages/pluggy/_callers.py", line 139, in _multicall
+    |     teardown.throw(exception)
+    |     ~~~~~~~~~~~~~~^^^^^^^^^^^
+    |   File "/Users/yangjing/Desktop/ai-workspace/Fiona/backend/.venv/lib/python3.14/site-packages/_pytest/capture.py", line 900, in pytest_runtest_call
+    |     return (yield)
+    |             ^^^^^
+    |   File "/Users/yangjing/Desktop/ai-workspace/Fiona/backend/.venv/lib/python3.14/site-packages/pluggy/_callers.py", line 139, in _multicall
+    |     teardown.throw(exception)
+    |     ~~~~~~~~~~~~~~^^^^^^^^^^^
+    |   File "/Users/yangjing/Desktop/ai-workspace/Fiona/backend/.venv/lib/python3.14/site-packages/_pytest/skipping.py", line 268, in pytest_runtest_call
+    |     return (yield)
+    |             ^^^^^
+    |   File "/Users/yangjing/Desktop/ai-workspace/Fiona/backend/.venv/lib/python3.14/site-packages/pluggy/_callers.py", line 121, in _multicall
+    |     res = hook_impl.function(*args)
+    |   File "/Users/yangjing/Desktop/ai-workspace/Fiona/backend/.venv/lib/python3.14/site-packages/_pytest/runner.py", line 184, in pytest_runtest_call
+    |     item.runtest()
+    |     ~~~~~~~~~~~~^^
+    |   File "/Users/yangjing/Desktop/ai-workspace/Fiona/backend/.venv/lib/python3.14/site-packages/_pytest/python.py", line 1707, in runtest
+    |     self.ihook.pytest_pyfunc_call(pyfuncitem=self)
+    |     ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^
+    |   File "/Users/yangjing/Desktop/ai-workspace/Fiona/backend/.venv/lib/python3.14/site-packages/pluggy/_hooks.py", line 512, in __call__
+    |     return self._hookexec(self.name, self._hookimpls.copy(), kwargs, firstresult)
+    |            ~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+    |   File "/Users/yangjing/Desktop/ai-workspace/Fiona/backend/.venv/lib/python3.14/site-packages/pluggy/_manager.py", line 120, in _hookexec
+    |     return self._inner_hookexec(hook_name, methods, kwargs, firstresult)
+    |            ~~~~~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+    |   File "/Users/yangjing/Desktop/ai-workspace/Fiona/backend/.venv/lib/python3.14/site-packages/pluggy/_callers.py", line 167, in _multicall
+    |     raise exception
+    |   File "/Users/yangjing/Desktop/ai-workspace/Fiona/backend/.venv/lib/python3.14/site-packages/pluggy/_callers.py", line 121, in _multicall
+    |     res = hook_impl.function(*args)
+    |   File "/Users/yangjing/Desktop/ai-workspace/Fiona/backend/.venv/lib/python3.14/site-packages/_pytest/python.py", line 167, in pytest_pyfunc_call
+    |     result = testfunction(**testargs)
+    |   File "/Users/yangjing/Desktop/ai-workspace/Fiona/backend/tests/test_local_watch_backend.py", line 284, in test_ids_outside_sqlite_range_rejected
+    |     response = client.request(method, "/local-watch" + path + str(2**64), headers=dev_headers, json=body)
+    |   File "/Users/yangjing/Desktop/ai-workspace/Fiona/backend/.venv/lib/python3.14/site-packages/starlette/testclient.py", line 454, in request
+    |     return super().request(
+    |            ~~~~~~~~~~~~~~~^
+    |         method,
+    |         ^^^^^^^
+    |     ...<11 lines>...
+    |         extensions=extensions,
+    |         ^^^^^^^^^^^^^^^^^^^^^^
+    |     )
+    |     ^
+    |   File "/Users/yangjing/Desktop/ai-workspace/Fiona/backend/.venv/lib/python3.14/site-packages/httpx2/_client.py", line 797, in request
+    |     return self.send(request, auth=auth, follow_redirects=follow_redirects)
+    |            ~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+    |   File "/Users/yangjing/Desktop/ai-workspace/Fiona/backend/.venv/lib/python3.14/site-packages/httpx2/_client.py", line 980, in send
+    |     response = self._send_handling_auth(
+    |         request,
+    |     ...<2 lines>...
+    |         history=[],
+    |     )
+    |   File "/Users/yangjing/Desktop/ai-workspace/Fiona/backend/.venv/lib/python3.14/site-packages/httpx2/_client.py", line 1008, in _send_handling_auth
+    |     response = self._send_handling_redirects(
+    |         request,
+    |         follow_redirects=follow_redirects,
+    |         history=history,
+    |     )
+    |   File "/Users/yangjing/Desktop/ai-workspace/Fiona/backend/.venv/lib/python3.14/site-packages/httpx2/_client.py", line 1043, in _send_handling_redirects
+    |     response = self._send_single_request(request)
+    |   File "/Users/yangjing/Desktop/ai-workspace/Fiona/backend/.venv/lib/python3.14/site-packages/httpx2/_client.py", line 1076, in _send_single_request
+    |     response = transport.handle_request(request)
+    |   File "/Users/yangjing/Desktop/ai-workspace/Fiona/backend/.venv/lib/python3.14/site-packages/starlette/testclient.py", line 356, in handle_request
+    |     raise exc
+    |   File "/Users/yangjing/Desktop/ai-workspace/Fiona/backend/.venv/lib/python3.14/site-packages/starlette/testclient.py", line 353, in handle_request
+    |     portal.call(self.app, scope, receive, send)
+    |     ~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+    |   File "/Users/yangjing/Desktop/ai-workspace/Fiona/backend/.venv/lib/python3.14/site-packages/anyio/from_thread.py", line 338, in call
+    |     return cast(T_Retval, self.start_task_soon(func, *args).result())
+    |                           ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~^^
+    |   File "/opt/homebrew/Cellar/python@3.14/3.14.6/Frameworks/Python.framework/Versions/3.14/lib/python3.14/concurrent/futures/_base.py", line 454, in result
+    |     return self.__get_result()
+    |            ~~~~~~~~~~~~~~~~~^^
+    |   File "/opt/homebrew/Cellar/python@3.14/3.14.6/Frameworks/Python.framework/Versions/3.14/lib/python3.14/concurrent/futures/_base.py", line 396, in __get_result
+    |     raise self._exception
+    |   File "/Users/yangjing/Desktop/ai-workspace/Fiona/backend/.venv/lib/python3.14/site-packages/anyio/from_thread.py", line 263, in _call_func
+    |     retval = await retval_or_awaitable
+    |              ^^^^^^^^^^^^^^^^^^^^^^^^^
+    |   File "/Users/yangjing/Desktop/ai-workspace/Fiona/backend/.venv/lib/python3.14/site-packages/fastapi/applications.py", line 1159, in __call__
+    |     await super().__call__(scope, receive, send)
+    |   File "/Users/yangjing/Desktop/ai-workspace/Fiona/backend/.venv/lib/python3.14/site-packages/starlette/applications.py", line 90, in __call__
+    |     await self.middleware_stack(scope, receive, send)
+    |   File "/Users/yangjing/Desktop/ai-workspace/Fiona/backend/.venv/lib/python3.14/site-packages/starlette/middleware/errors.py", line 186, in __call__
+    |     raise exc
+    |   File "/Users/yangjing/Desktop/ai-workspace/Fiona/backend/.venv/lib/python3.14/site-packages/starlette/middleware/errors.py", line 164, in __call__
+    |     await self.app(scope, receive, _send)
+    |   File "/Users/yangjing/Desktop/ai-workspace/Fiona/backend/.venv/lib/python3.14/site-packages/starlette/middleware/base.py", line 193, in __call__
+    |     response = await self.dispatch_func(request, call_next)
+    |                ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+    |   File "/Users/yangjing/Desktop/ai-workspace/Fiona/backend/main.py", line 292, in private_local_watch
+    |     response = await call_next(request)
+    |                ^^^^^^^^^^^^^^^^^^^^^^^^
+    |   File "/Users/yangjing/Desktop/ai-workspace/Fiona/backend/.venv/lib/python3.14/site-packages/starlette/middleware/base.py", line 168, in call_next
+    |     raise app_exc from app_exc.__cause__ or app_exc.__context__
+    |   File "/Users/yangjing/Desktop/ai-workspace/Fiona/backend/.venv/lib/python3.14/site-packages/starlette/middleware/base.py", line 144, in coro
+    |     await self.app(scope, receive_or_disconnect, send_no_error)
+    |   File "/Users/yangjing/Desktop/ai-workspace/Fiona/backend/.venv/lib/python3.14/site-packages/starlette/middleware/base.py", line 193, in __call__
+    |     response = await self.dispatch_func(request, call_next)
+    |                ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+    |   File "/Users/yangjing/Desktop/ai-workspace/Fiona/backend/main.py", line 272, in require_auth
+    |     response = await call_next(request)
+    |                ^^^^^^^^^^^^^^^^^^^^^^^^
+    |   File "/Users/yangjing/Desktop/ai-workspace/Fiona/backend/.venv/lib/python3.14/site-packages/starlette/middleware/base.py", line 168, in call_next
+    |     raise app_exc from app_exc.__cause__ or app_exc.__context__
+    |   File "/Users/yangjing/Desktop/ai-workspace/Fiona/backend/.venv/lib/python3.14/site-packages/starlette/middleware/base.py", line 144, in coro
+    |     await self.app(scope, receive_or_disconnect, send_no_error)
+    |   File "/Users/yangjing/Desktop/ai-workspace/Fiona/backend/.venv/lib/python3.14/site-packages/starlette/middleware/cors.py", line 88, in __call__
+    |     await self.app(scope, receive, send)
+    |   File "/Users/yangjing/Desktop/ai-workspace/Fiona/backend/utils/request_limits.py", line 57, in __call__
+    |     await self.app(scope, limited_receive, tracked_send)
+    |   File "/Users/yangjing/Desktop/ai-workspace/Fiona/backend/.venv/lib/python3.14/site-packages/starlette/middleware/exceptions.py", line 63, in __call__
+    |     await wrap_app_handling_exceptions(self.app, conn)(scope, receive, send)
+    |   File "/Users/yangjing/Desktop/ai-workspace/Fiona/backend/.venv/lib/python3.14/site-packages/starlette/_exception_handler.py", line 53, in wrapped_app
+    |     raise exc
+    |   File "/Users/yangjing/Desktop/ai-workspace/Fiona/backend/.venv/lib/python3.14/site-packages/starlette/_exception_handler.py", line 42, in wrapped_app
+    |     await app(scope, receive, sender)
+    |   File "/Users/yangjing/Desktop/ai-workspace/Fiona/backend/.venv/lib/python3.14/site-packages/fastapi/middleware/asyncexitstack.py", line 18, in __call__
+    |     await self.app(scope, receive, send)
+    |   File "/Users/yangjing/Desktop/ai-workspace/Fiona/backend/.venv/lib/python3.14/site-packages/starlette/routing.py", line 660, in __call__
+    |     await self.middleware_stack(scope, receive, send)
+    |   File "/Users/yangjing/Desktop/ai-workspace/Fiona/backend/.venv/lib/python3.14/site-packages/starlette/routing.py", line 680, in app
+    |     await route.handle(scope, receive, send)
+    |   File "/Users/yangjing/Desktop/ai-workspace/Fiona/backend/.venv/lib/python3.14/site-packages/starlette/routing.py", line 276, in handle
+    |     await self.app(scope, receive, send)
+    |   File "/Users/yangjing/Desktop/ai-workspace/Fiona/backend/.venv/lib/python3.14/site-packages/fastapi/routing.py", line 134, in app
+    |     await wrap_app_handling_exceptions(app, request)(scope, receive, send)
+    |   File "/Users/yangjing/Desktop/ai-workspace/Fiona/backend/.venv/lib/python3.14/site-packages/starlette/_exception_handler.py", line 53, in wrapped_app
+    |     raise exc
+    |   File "/Users/yangjing/Desktop/ai-workspace/Fiona/backend/.venv/lib/python3.14/site-packages/starlette/_exception_handler.py", line 42, in wrapped_app
+    |     await app(scope, receive, sender)
+    |   File "/Users/yangjing/Desktop/ai-workspace/Fiona/backend/.venv/lib/python3.14/site-packages/fastapi/routing.py", line 120, in app
+    |     response = await f(request)
+    |                ^^^^^^^^^^^^^^^^
+    |   File "/Users/yangjing/Desktop/ai-workspace/Fiona/backend/.venv/lib/python3.14/site-packages/fastapi/routing.py", line 674, in app
+    |     raw_response = await run_endpoint_function(
+    |                    ^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+    |     ...<3 lines>...
+    |     )
+    |     ^
+    |   File "/Users/yangjing/Desktop/ai-workspace/Fiona/backend/.venv/lib/python3.14/site-packages/fastapi/routing.py", line 328, in run_endpoint_function
+    |     return await dependant.call(**values)
+    |            ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+    |   File "/Users/yangjing/Desktop/ai-workspace/Fiona/backend/routers/local_watch.py", line 172, in patch_rule
+    |     previous = await database.get_watch_rule(user, rule_id)
+    |                ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+    |   File "/Users/yangjing/Desktop/ai-workspace/Fiona/backend/database.py", line 1794, in get_watch_rule
+    |     async with db.execute("SELECT * FROM watch_rules WHERE username=? AND id=?", (username, rule_id)) as cursor:
+    |                ~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+    |   File "/Users/yangjing/Desktop/ai-workspace/Fiona/backend/.venv/lib/python3.14/site-packages/aiosqlite/context.py", line 41, in __aenter__
+    |     self._obj = await self._coro
+    |                 ^^^^^^^^^^^^^^^^
+    |   File "/Users/yangjing/Desktop/ai-workspace/Fiona/backend/.venv/lib/python3.14/site-packages/aiosqlite/core.py", line 223, in execute
+    |     cursor = await self._execute(self._conn.execute, sql, parameters)
+    |              ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+    |   File "/Users/yangjing/Desktop/ai-workspace/Fiona/backend/.venv/lib/python3.14/site-packages/aiosqlite/core.py", line 160, in _execute
+    |     return await future
+    |            ^^^^^^^^^^^^
+    |   File "/Users/yangjing/Desktop/ai-workspace/Fiona/backend/.venv/lib/python3.14/site-packages/aiosqlite/core.py", line 63, in _connection_worker_thread
+    |     result = function()
+    | OverflowError: Python int too large to convert to SQLite INTEGER
+    +------------------------------------
+
+The above exception was the direct cause of the following exception:
+
+Traceback (most recent call last):
+  File "/Users/yangjing/Desktop/ai-workspace/Fiona/backend/tests/test_local_watch_backend.py", line 284, in test_ids_outside_sqlite_range_rejected
+    response = client.request(method, "/local-watch" + path + str(2**64), headers=dev_headers, json=body)
+  File "/Users/yangjing/Desktop/ai-workspace/Fiona/backend/.venv/lib/python3.14/site-packages/starlette/testclient.py", line 454, in request
+    return super().request(
+           ~~~~~~~~~~~~~~~^
+        method,
+        ^^^^^^^
+    ...<11 lines>...
+        extensions=extensions,
+        ^^^^^^^^^^^^^^^^^^^^^^
+    )
+    ^
+  File "/Users/yangjing/Desktop/ai-workspace/Fiona/backend/.venv/lib/python3.14/site-packages/httpx2/_client.py", line 797, in request
+    return self.send(request, auth=auth, follow_redirects=follow_redirects)
+           ~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/Users/yangjing/Desktop/ai-workspace/Fiona/backend/.venv/lib/python3.14/site-packages/httpx2/_client.py", line 980, in send
+    response = self._send_handling_auth(
+        request,
+    ...<2 lines>...
+        history=[],
+    )
+  File "/Users/yangjing/Desktop/ai-workspace/Fiona/backend/.venv/lib/python3.14/site-packages/httpx2/_client.py", line 1008, in _send_handling_auth
+    response = self._send_handling_redirects(
+        request,
+        follow_redirects=follow_redirects,
+        history=history,
+    )
+  File "/Users/yangjing/Desktop/ai-workspace/Fiona/backend/.venv/lib/python3.14/site-packages/httpx2/_client.py", line 1043, in _send_handling_redirects
+    response = self._send_single_request(request)
+  File "/Users/yangjing/Desktop/ai-workspace/Fiona/backend/.venv/lib/python3.14/site-packages/httpx2/_client.py", line 1076, in _send_single_request
+    response = transport.handle_request(request)
+  File "/Users/yangjing/Desktop/ai-workspace/Fiona/backend/.venv/lib/python3.14/site-packages/starlette/testclient.py", line 356, in handle_request
+    raise exc
+  File "/Users/yangjing/Desktop/ai-workspace/Fiona/backend/.venv/lib/python3.14/site-packages/starlette/testclient.py", line 353, in handle_request
+    portal.call(self.app, scope, receive, send)
+    ~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/Users/yangjing/Desktop/ai-workspace/Fiona/backend/.venv/lib/python3.14/site-packages/anyio/from_thread.py", line 338, in call
+    return cast(T_Retval, self.start_task_soon(func, *args).result())
+                          ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~^^
+  File "/opt/homebrew/Cellar/python@3.14/3.14.6/Frameworks/Python.framework/Versions/3.14/lib/python3.14/concurrent/futures/_base.py", line 454, in result
+    return self.__get_result()
+           ~~~~~~~~~~~~~~~~~^^
+  File "/opt/homebrew/Cellar/python@3.14/3.14.6/Frameworks/Python.framework/Versions/3.14/lib/python3.14/concurrent/futures/_base.py", line 396, in __get_result
+    raise self._exception
+  File "/Users/yangjing/Desktop/ai-workspace/Fiona/backend/.venv/lib/python3.14/site-packages/anyio/from_thread.py", line 263, in _call_func
+    retval = await retval_or_awaitable
+             ^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/Users/yangjing/Desktop/ai-workspace/Fiona/backend/.venv/lib/python3.14/site-packages/fastapi/applications.py", line 1159, in __call__
+    await super().__call__(scope, receive, send)
+  File "/Users/yangjing/Desktop/ai-workspace/Fiona/backend/.venv/lib/python3.14/site-packages/starlette/applications.py", line 90, in __call__
+    await self.middleware_stack(scope, receive, send)
+  File "/Users/yangjing/Desktop/ai-workspace/Fiona/backend/.venv/lib/python3.14/site-packages/starlette/middleware/errors.py", line 186, in __call__
+    raise exc
+  File "/Users/yangjing/Desktop/ai-workspace/Fiona/backend/.venv/lib/python3.14/site-packages/starlette/middleware/errors.py", line 164, in __call__
+    await self.app(scope, receive, _send)
+  File "/Users/yangjing/Desktop/ai-workspace/Fiona/backend/.venv/lib/python3.14/site-packages/starlette/middleware/base.py", line 193, in __call__
+    response = await self.dispatch_func(request, call_next)
+               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/Users/yangjing/Desktop/ai-workspace/Fiona/backend/main.py", line 292, in private_local_watch
+    response = await call_next(request)
+               ^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/Users/yangjing/Desktop/ai-workspace/Fiona/backend/.venv/lib/python3.14/site-packages/starlette/middleware/base.py", line 168, in call_next
+    raise app_exc from app_exc.__cause__ or app_exc.__context__
+  File "/Users/yangjing/Desktop/ai-workspace/Fiona/backend/.venv/lib/python3.14/site-packages/starlette/middleware/base.py", line 144, in coro
+    await self.app(scope, receive_or_disconnect, send_no_error)
+  File "/Users/yangjing/Desktop/ai-workspace/Fiona/backend/.venv/lib/python3.14/site-packages/starlette/middleware/base.py", line 193, in __call__
+    response = await self.dispatch_func(request, call_next)
+               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/Users/yangjing/Desktop/ai-workspace/Fiona/backend/main.py", line 272, in require_auth
+    response = await call_next(request)
+               ^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/Users/yangjing/Desktop/ai-workspace/Fiona/backend/.venv/lib/python3.14/site-packages/starlette/middleware/base.py", line 168, in call_next
+    raise app_exc from app_exc.__cause__ or app_exc.__context__
+  File "/Users/yangjing/Desktop/ai-workspace/Fiona/backend/.venv/lib/python3.14/site-packages/starlette/middleware/base.py", line 144, in coro
+    await self.app(scope, receive_or_disconnect, send_no_error)
+  File "/Users/yangjing/Desktop/ai-workspace/Fiona/backend/.venv/lib/python3.14/site-packages/starlette/middleware/cors.py", line 88, in __call__
+    await self.app(scope, receive, send)
+  File "/Users/yangjing/Desktop/ai-workspace/Fiona/backend/utils/request_limits.py", line 57, in __call__
+    await self.app(scope, limited_receive, tracked_send)
+  File "/Users/yangjing/Desktop/ai-workspace/Fiona/backend/.venv/lib/python3.14/site-packages/starlette/middleware/exceptions.py", line 63, in __call__
+    await wrap_app_handling_exceptions(self.app, conn)(scope, receive, send)
+  File "/Users/yangjing/Desktop/ai-workspace/Fiona/backend/.venv/lib/python3.14/site-packages/starlette/_exception_handler.py", line 53, in wrapped_app
+    raise exc
+  File "/Users/yangjing/Desktop/ai-workspace/Fiona/backend/.venv/lib/python3.14/site-packages/starlette/_exception_handler.py", line 42, in wrapped_app
+    await app(scope, receive, sender)
+  File "/Users/yangjing/Desktop/ai-workspace/Fiona/backend/.venv/lib/python3.14/site-packages/fastapi/middleware/asyncexitstack.py", line 18, in __call__
+    await self.app(scope, receive, send)
+  File "/Users/yangjing/Desktop/ai-workspace/Fiona/backend/.venv/lib/python3.14/site-packages/starlette/routing.py", line 660, in __call__
+    await self.middleware_stack(scope, receive, send)
+  File "/Users/yangjing/Desktop/ai-workspace/Fiona/backend/.venv/lib/python3.14/site-packages/starlette/routing.py", line 680, in app
+    await route.handle(scope, receive, send)
+  File "/Users/yangjing/Desktop/ai-workspace/Fiona/backend/.venv/lib/python3.14/site-packages/starlette/routing.py", line 276, in handle
+    await self.app(scope, receive, send)
+  File "/Users/yangjing/Desktop/ai-workspace/Fiona/backend/.venv/lib/python3.14/site-packages/fastapi/routing.py", line 134, in app
+    await wrap_app_handling_exceptions(app, request)(scope, receive, send)
+  File "/Users/yangjing/Desktop/ai-workspace/Fiona/backend/.venv/lib/python3.14/site-packages/starlette/_exception_handler.py", line 53, in wrapped_app
+    raise exc
+  File "/Users/yangjing/Desktop/ai-workspace/Fiona/backend/.venv/lib/python3.14/site-packages/starlette/_exception_handler.py", line 42, in wrapped_app
+    await app(scope, receive, sender)
+  File "/Users/yangjing/Desktop/ai-workspace/Fiona/backend/.venv/lib/python3.14/site-packages/fastapi/routing.py", line 120, in app
+    response = await f(request)
+               ^^^^^^^^^^^^^^^^
+  File "/Users/yangjing/Desktop/ai-workspace/Fiona/backend/.venv/lib/python3.14/site-packages/fastapi/routing.py", line 674, in app
+    raw_response = await run_endpoint_function(
+                   ^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+    ...<3 lines>...
+    )
+    ^
+  File "/Users/yangjing/Desktop/ai-workspace/Fiona/backend/.venv/lib/python3.14/site-packages/fastapi/routing.py", line 328, in run_endpoint_function
+    return await dependant.call(**values)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/Users/yangjing/Desktop/ai-workspace/Fiona/backend/routers/local_watch.py", line 172, in patch_rule
+    previous = await database.get_watch_rule(user, rule_id)
+               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/Users/yangjing/Desktop/ai-workspace/Fiona/backend/database.py", line 1794, in get_watch_rule
+    async with db.execute("SELECT * FROM watch_rules WHERE username=? AND id=?", (username, rule_id)) as cursor:
+               ~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/Users/yangjing/Desktop/ai-workspace/Fiona/backend/.venv/lib/python3.14/site-packages/aiosqlite/context.py", line 41, in __aenter__
+    self._obj = await self._coro
+                ^^^^^^^^^^^^^^^^
+  File "/Users/yangjing/Desktop/ai-workspace/Fiona/backend/.venv/lib/python3.14/site-packages/aiosqlite/core.py", line 223, in execute
+    cursor = await self._execute(self._conn.execute, sql, parameters)
+             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/Users/yangjing/Desktop/ai-workspace/Fiona/backend/.venv/lib/python3.14/site-packages/aiosqlite/core.py", line 160, in _execute
+    return await future
+           ^^^^^^^^^^^^
+  File "/Users/yangjing/Desktop/ai-workspace/Fiona/backend/.venv/lib/python3.14/site-packages/aiosqlite/core.py", line 63, in _connection_worker_thread
+    result = function()
+OverflowError: Python int too large to convert to SQLite INTEGER
+
+The above exception was the direct cause of the following exception:
+
+client = <starlette.testclient.TestClient object at 0x10d2a2ad0>
+dev_headers = {'X-Dev-User': 'smoke_tester'}, method = 'PATCH', path = '/rules/'
+body = {'enabled': True}
+
+    @pytest.mark.parametrize("method,path,body", [("DELETE", "/devices/", None), ("PATCH", "/rules/", {"enabled": True}), ("DELETE", "/rules/", None), ("GET", "/alerts?after=", None)])
+    def test_ids_outside_sqlite_range_rejected(client, dev_headers, method, path, body):
+>       response = client.request(method, "/local-watch" + path + str(2**64), headers=dev_headers, json=body)
+                   ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+backend/tests/test_local_watch_backend.py:284: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+backend/.venv/lib/python3.14/site-packages/starlette/testclient.py:454: in request
+    return super().request(
+backend/.venv/lib/python3.14/site-packages/httpx2/_client.py:797: in request
+    return self.send(request, auth=auth, follow_redirects=follow_redirects)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+backend/.venv/lib/python3.14/site-packages/httpx2/_client.py:980: in send
+    response = self._send_handling_auth(
+backend/.venv/lib/python3.14/site-packages/httpx2/_client.py:1008: in _send_handling_auth
+    response = self._send_handling_redirects(
+backend/.venv/lib/python3.14/site-packages/httpx2/_client.py:1043: in _send_handling_redirects
+    response = self._send_single_request(request)
+               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+backend/.venv/lib/python3.14/site-packages/httpx2/_client.py:1076: in _send_single_request
+    response = transport.handle_request(request)
+               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+backend/.venv/lib/python3.14/site-packages/starlette/testclient.py:356: in handle_request
+    raise exc
+backend/.venv/lib/python3.14/site-packages/starlette/testclient.py:353: in handle_request
+    portal.call(self.app, scope, receive, send)
+backend/.venv/lib/python3.14/site-packages/anyio/from_thread.py:338: in call
+    return cast(T_Retval, self.start_task_soon(func, *args).result())
+                          ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+/opt/homebrew/Cellar/python@3.14/3.14.6/Frameworks/Python.framework/Versions/3.14/lib/python3.14/concurrent/futures/_base.py:454: in result
+    return self.__get_result()
+           ^^^^^^^^^^^^^^^^^^^
+/opt/homebrew/Cellar/python@3.14/3.14.6/Frameworks/Python.framework/Versions/3.14/lib/python3.14/concurrent/futures/_base.py:396: in __get_result
+    raise self._exception
+backend/.venv/lib/python3.14/site-packages/anyio/from_thread.py:263: in _call_func
+    retval = await retval_or_awaitable
+             ^^^^^^^^^^^^^^^^^^^^^^^^^
+backend/.venv/lib/python3.14/site-packages/fastapi/applications.py:1159: in __call__
+    await super().__call__(scope, receive, send)
+backend/.venv/lib/python3.14/site-packages/starlette/applications.py:90: in __call__
+    await self.middleware_stack(scope, receive, send)
+backend/.venv/lib/python3.14/site-packages/starlette/middleware/errors.py:186: in __call__
+    raise exc
+backend/.venv/lib/python3.14/site-packages/starlette/middleware/errors.py:164: in __call__
+    await self.app(scope, receive, _send)
+backend/.venv/lib/python3.14/site-packages/starlette/middleware/base.py:193: in __call__
+    response = await self.dispatch_func(request, call_next)
+               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+backend/main.py:292: in private_local_watch
+    response = await call_next(request)
+               ^^^^^^^^^^^^^^^^^^^^^^^^
+backend/.venv/lib/python3.14/site-packages/starlette/middleware/base.py:168: in call_next
+    raise app_exc from app_exc.__cause__ or app_exc.__context__
+backend/.venv/lib/python3.14/site-packages/starlette/middleware/base.py:144: in coro
+    await self.app(scope, receive_or_disconnect, send_no_error)
+backend/.venv/lib/python3.14/site-packages/starlette/middleware/base.py:193: in __call__
+    response = await self.dispatch_func(request, call_next)
+               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+backend/main.py:272: in require_auth
+    response = await call_next(request)
+               ^^^^^^^^^^^^^^^^^^^^^^^^
+backend/.venv/lib/python3.14/site-packages/starlette/middleware/base.py:168: in call_next
+    raise app_exc from app_exc.__cause__ or app_exc.__context__
+backend/.venv/lib/python3.14/site-packages/starlette/middleware/base.py:144: in coro
+    await self.app(scope, receive_or_disconnect, send_no_error)
+backend/.venv/lib/python3.14/site-packages/starlette/middleware/cors.py:88: in __call__
+    await self.app(scope, receive, send)
+backend/utils/request_limits.py:57: in __call__
+    await self.app(scope, limited_receive, tracked_send)
+backend/.venv/lib/python3.14/site-packages/starlette/middleware/exceptions.py:63: in __call__
+    await wrap_app_handling_exceptions(self.app, conn)(scope, receive, send)
+backend/.venv/lib/python3.14/site-packages/starlette/_exception_handler.py:53: in wrapped_app
+    raise exc
+backend/.venv/lib/python3.14/site-packages/starlette/_exception_handler.py:42: in wrapped_app
+    await app(scope, receive, sender)
+backend/.venv/lib/python3.14/site-packages/fastapi/middleware/asyncexitstack.py:18: in __call__
+    await self.app(scope, receive, send)
+backend/.venv/lib/python3.14/site-packages/starlette/routing.py:660: in __call__
+    await self.middleware_stack(scope, receive, send)
+backend/.venv/lib/python3.14/site-packages/starlette/routing.py:680: in app
+    await route.handle(scope, receive, send)
+backend/.venv/lib/python3.14/site-packages/starlette/routing.py:276: in handle
+    await self.app(scope, receive, send)
+backend/.venv/lib/python3.14/site-packages/fastapi/routing.py:134: in app
+    await wrap_app_handling_exceptions(app, request)(scope, receive, send)
+backend/.venv/lib/python3.14/site-packages/starlette/_exception_handler.py:53: in wrapped_app
+    raise exc
+backend/.venv/lib/python3.14/site-packages/starlette/_exception_handler.py:42: in wrapped_app
+    await app(scope, receive, sender)
+backend/.venv/lib/python3.14/site-packages/fastapi/routing.py:120: in app
+    response = await f(request)
+               ^^^^^^^^^^^^^^^^
+backend/.venv/lib/python3.14/site-packages/fastapi/routing.py:674: in app
+    raw_response = await run_endpoint_function(
+backend/.venv/lib/python3.14/site-packages/fastapi/routing.py:328: in run_endpoint_function
+    return await dependant.call(**values)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+backend/routers/local_watch.py:172: in patch_rule
+    previous = await database.get_watch_rule(user, rule_id)
+               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+backend/database.py:1794: in get_watch_rule
+    async with db.execute("SELECT * FROM watch_rules WHERE username=? AND id=?", (username, rule_id)) as cursor:
+               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+backend/.venv/lib/python3.14/site-packages/aiosqlite/context.py:41: in __aenter__
+    self._obj = await self._coro
+                ^^^^^^^^^^^^^^^^
+backend/.venv/lib/python3.14/site-packages/aiosqlite/core.py:223: in execute
+    cursor = await self._execute(self._conn.execute, sql, parameters)
+             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+backend/.venv/lib/python3.14/site-packages/aiosqlite/core.py:160: in _execute
+    return await future
+           ^^^^^^^^^^^^
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+tx = <_queue.SimpleQueue object at 0x10e8d1c60>
+
+    def _connection_worker_thread(tx: _TxQueue):
+        """
+        Execute function calls on a separate thread.
+    
+        :meta private:
+        """
+        while True:
+            # Continues running until all queue items are processed,
+            # even after connection is closed (so we can finalize all
+            # futures)
+    
+            future, function = tx.get()
+    
+            try:
+                LOG.debug("executing %s", function)
+>               result = function()
+                         ^^^^^^^^^^
+E               OverflowError: Python int too large to convert to SQLite INTEGER
+
+backend/.venv/lib/python3.14/site-packages/aiosqlite/core.py:63: OverflowError
+_________ test_ids_outside_sqlite_range_rejected[DELETE-/rules/-None] __________
+  + Exception Group Traceback (most recent call last):
+  |   File "/Users/yangjing/Desktop/ai-workspace/Fiona/backend/.venv/lib/python3.14/site-packages/starlette/_utils.py", line 85, in create_collapsing_task_group
+  |     async with anyio.create_task_group() as tg:
+  |                ~~~~~~~~~~~~~~~~~~~~~~~^^
+  |   File "/Users/yangjing/Desktop/ai-workspace/Fiona/backend/.venv/lib/python3.14/site-packages/anyio/_backends/_asyncio.py", line 815, in __aexit__
+  |     raise BaseExceptionGroup(
+  |         "unhandled errors in a TaskGroup", self._exceptions
+  |     ) from None
+  | ExceptionGroup: unhandled errors in a TaskGroup (1 sub-exception)
+  +-+---------------- 1 ----------------
+    | Traceback (most recent call last):
+    |   File "/Users/yangjing/Desktop/ai-workspace/Fiona/backend/.venv/lib/python3.14/site-packages/_pytest/runner.py", line 361, in from_call
+    |     result: TResult | None = func()
+    |                              ~~~~^^
+    |   File "/Users/yangjing/Desktop/ai-workspace/Fiona/backend/.venv/lib/python3.14/site-packages/_pytest/runner.py", line 250, in <lambda>
+    |     lambda: runtest_hook(item=item, **kwds),
+    |             ~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^
+    |   File "/Users/yangjing/Desktop/ai-workspace/Fiona/backend/.venv/lib/python3.14/site-packages/pluggy/_hooks.py", line 512, in __call__
+    |     return self._hookexec(self.name, self._hookimpls.copy(), kwargs, firstresult)
+    |            ~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+    |   File "/Users/yangjing/Desktop/ai-workspace/Fiona/backend/.venv/lib/python3.14/site-packages/pluggy/_manager.py", line 120, in _hookexec
+    |     return self._inner_hookexec(hook_name, methods, kwargs, firstresult)
+    |            ~~~~~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+    |   File "/Users/yangjing/Desktop/ai-workspace/Fiona/backend/.venv/lib/python3.14/site-packages/pluggy/_callers.py", line 167, in _multicall
+    |     raise exception
+    |   File "/Users/yangjing/Desktop/ai-workspace/Fiona/backend/.venv/lib/python3.14/site-packages/pluggy/_callers.py", line 139, in _multicall
+    |     teardown.throw(exception)
+    |     ~~~~~~~~~~~~~~^^^^^^^^^^^
+    |   File "/Users/yangjing/Desktop/ai-workspace/Fiona/backend/.venv/lib/python3.14/site-packages/_pytest/logging.py", line 865, in pytest_runtest_call
+    |     yield
+    |   File "/Users/yangjing/Desktop/ai-workspace/Fiona/backend/.venv/lib/python3.14/site-packages/pluggy/_callers.py", line 139, in _multicall
+    |     teardown.throw(exception)
+    |     ~~~~~~~~~~~~~~^^^^^^^^^^^
+    |   File "/Users/yangjing/Desktop/ai-workspace/Fiona/backend/.venv/lib/python3.14/site-packages/_pytest/capture.py", line 900, in pytest_runtest_call
+    |     return (yield)
+    |             ^^^^^
+    |   File "/Users/yangjing/Desktop/ai-workspace/Fiona/backend/.venv/lib/python3.14/site-packages/pluggy/_callers.py", line 139, in _multicall
+    |     teardown.throw(exception)
+    |     ~~~~~~~~~~~~~~^^^^^^^^^^^
+    |   File "/Users/yangjing/Desktop/ai-workspace/Fiona/backend/.venv/lib/python3.14/site-packages/_pytest/skipping.py", line 268, in pytest_runtest_call
+    |     return (yield)
+    |             ^^^^^
+    |   File "/Users/yangjing/Desktop/ai-workspace/Fiona/backend/.venv/lib/python3.14/site-packages/pluggy/_callers.py", line 121, in _multicall
+    |     res = hook_impl.function(*args)
+    |   File "/Users/yangjing/Desktop/ai-workspace/Fiona/backend/.venv/lib/python3.14/site-packages/_pytest/runner.py", line 184, in pytest_runtest_call
+    |     item.runtest()
+    |     ~~~~~~~~~~~~^^
+    |   File "/Users/yangjing/Desktop/ai-workspace/Fiona/backend/.venv/lib/python3.14/site-packages/_pytest/python.py", line 1707, in runtest
+    |     self.ihook.pytest_pyfunc_call(pyfuncitem=self)
+    |     ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^
+    |   File "/Users/yangjing/Desktop/ai-workspace/Fiona/backend/.venv/lib/python3.14/site-packages/pluggy/_hooks.py", line 512, in __call__
+    |     return self._hookexec(self.name, self._hookimpls.copy(), kwargs, firstresult)
+    |            ~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+    |   File "/Users/yangjing/Desktop/ai-workspace/Fiona/backend/.venv/lib/python3.14/site-packages/pluggy/_manager.py", line 120, in _hookexec
+    |     return self._inner_hookexec(hook_name, methods, kwargs, firstresult)
+    |            ~~~~~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+    |   File "/Users/yangjing/Desktop/ai-workspace/Fiona/backend/.venv/lib/python3.14/site-packages/pluggy/_callers.py", line 167, in _multicall
+    |     raise exception
+    |   File "/Users/yangjing/Desktop/ai-workspace/Fiona/backend/.venv/lib/python3.14/site-packages/pluggy/_callers.py", line 121, in _multicall
+    |     res = hook_impl.function(*args)
+    |   File "/Users/yangjing/Desktop/ai-workspace/Fiona/backend/.venv/lib/python3.14/site-packages/_pytest/python.py", line 167, in pytest_pyfunc_call
+    |     result = testfunction(**testargs)
+    |   File "/Users/yangjing/Desktop/ai-workspace/Fiona/backend/tests/test_local_watch_backend.py", line 284, in test_ids_outside_sqlite_range_rejected
+    |     response = client.request(method, "/local-watch" + path + str(2**64), headers=dev_headers, json=body)
+    |   File "/Users/yangjing/Desktop/ai-workspace/Fiona/backend/.venv/lib/python3.14/site-packages/starlette/testclient.py", line 454, in request
+    |     return super().request(
+    |            ~~~~~~~~~~~~~~~^
+    |         method,
+    |         ^^^^^^^
+    |     ...<11 lines>...
+    |         extensions=extensions,
+    |         ^^^^^^^^^^^^^^^^^^^^^^
+    |     )
+    |     ^
+    |   File "/Users/yangjing/Desktop/ai-workspace/Fiona/backend/.venv/lib/python3.14/site-packages/httpx2/_client.py", line 797, in request
+    |     return self.send(request, auth=auth, follow_redirects=follow_redirects)
+    |            ~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+    |   File "/Users/yangjing/Desktop/ai-workspace/Fiona/backend/.venv/lib/python3.14/site-packages/httpx2/_client.py", line 980, in send
+    |     response = self._send_handling_auth(
+    |         request,
+    |     ...<2 lines>...
+    |         history=[],
+    |     )
+    |   File "/Users/yangjing/Desktop/ai-workspace/Fiona/backend/.venv/lib/python3.14/site-packages/httpx2/_client.py", line 1008, in _send_handling_auth
+    |     response = self._send_handling_redirects(
+    |         request,
+    |         follow_redirects=follow_redirects,
+    |         history=history,
+    |     )
+    |   File "/Users/yangjing/Desktop/ai-workspace/Fiona/backend/.venv/lib/python3.14/site-packages/httpx2/_client.py", line 1043, in _send_handling_redirects
+    |     response = self._send_single_request(request)
+    |   File "/Users/yangjing/Desktop/ai-workspace/Fiona/backend/.venv/lib/python3.14/site-packages/httpx2/_client.py", line 1076, in _send_single_request
+    |     response = transport.handle_request(request)
+    |   File "/Users/yangjing/Desktop/ai-workspace/Fiona/backend/.venv/lib/python3.14/site-packages/starlette/testclient.py", line 356, in handle_request
+    |     raise exc
+    |   File "/Users/yangjing/Desktop/ai-workspace/Fiona/backend/.venv/lib/python3.14/site-packages/starlette/testclient.py", line 353, in handle_request
+    |     portal.call(self.app, scope, receive, send)
+    |     ~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+    |   File "/Users/yangjing/Desktop/ai-workspace/Fiona/backend/.venv/lib/python3.14/site-packages/anyio/from_thread.py", line 338, in call
+    |     return cast(T_Retval, self.start_task_soon(func, *args).result())
+    |                           ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~^^
+    |   File "/opt/homebrew/Cellar/python@3.14/3.14.6/Frameworks/Python.framework/Versions/3.14/lib/python3.14/concurrent/futures/_base.py", line 454, in result
+    |     return self.__get_result()
+    |            ~~~~~~~~~~~~~~~~~^^
+    |   File "/opt/homebrew/Cellar/python@3.14/3.14.6/Frameworks/Python.framework/Versions/3.14/lib/python3.14/concurrent/futures/_base.py", line 396, in __get_result
+    |     raise self._exception
+    |   File "/Users/yangjing/Desktop/ai-workspace/Fiona/backend/.venv/lib/python3.14/site-packages/anyio/from_thread.py", line 263, in _call_func
+    |     retval = await retval_or_awaitable
+    |              ^^^^^^^^^^^^^^^^^^^^^^^^^
+    |   File "/Users/yangjing/Desktop/ai-workspace/Fiona/backend/.venv/lib/python3.14/site-packages/fastapi/applications.py", line 1159, in __call__
+    |     await super().__call__(scope, receive, send)
+    |   File "/Users/yangjing/Desktop/ai-workspace/Fiona/backend/.venv/lib/python3.14/site-packages/starlette/applications.py", line 90, in __call__
+    |     await self.middleware_stack(scope, receive, send)
+    |   File "/Users/yangjing/Desktop/ai-workspace/Fiona/backend/.venv/lib/python3.14/site-packages/starlette/middleware/errors.py", line 186, in __call__
+    |     raise exc
+    |   File "/Users/yangjing/Desktop/ai-workspace/Fiona/backend/.venv/lib/python3.14/site-packages/starlette/middleware/errors.py", line 164, in __call__
+    |     await self.app(scope, receive, _send)
+    |   File "/Users/yangjing/Desktop/ai-workspace/Fiona/backend/.venv/lib/python3.14/site-packages/starlette/middleware/base.py", line 193, in __call__
+    |     response = await self.dispatch_func(request, call_next)
+    |                ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+    |   File "/Users/yangjing/Desktop/ai-workspace/Fiona/backend/main.py", line 292, in private_local_watch
+    |     response = await call_next(request)
+    |                ^^^^^^^^^^^^^^^^^^^^^^^^
+    |   File "/Users/yangjing/Desktop/ai-workspace/Fiona/backend/.venv/lib/python3.14/site-packages/starlette/middleware/base.py", line 168, in call_next
+    |     raise app_exc from app_exc.__cause__ or app_exc.__context__
+    |   File "/Users/yangjing/Desktop/ai-workspace/Fiona/backend/.venv/lib/python3.14/site-packages/starlette/middleware/base.py", line 144, in coro
+    |     await self.app(scope, receive_or_disconnect, send_no_error)
+    |   File "/Users/yangjing/Desktop/ai-workspace/Fiona/backend/.venv/lib/python3.14/site-packages/starlette/middleware/base.py", line 193, in __call__
+    |     response = await self.dispatch_func(request, call_next)
+    |                ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+    |   File "/Users/yangjing/Desktop/ai-workspace/Fiona/backend/main.py", line 272, in require_auth
+    |     response = await call_next(request)
+    |                ^^^^^^^^^^^^^^^^^^^^^^^^
+    |   File "/Users/yangjing/Desktop/ai-workspace/Fiona/backend/.venv/lib/python3.14/site-packages/starlette/middleware/base.py", line 168, in call_next
+    |     raise app_exc from app_exc.__cause__ or app_exc.__context__
+    |   File "/Users/yangjing/Desktop/ai-workspace/Fiona/backend/.venv/lib/python3.14/site-packages/starlette/middleware/base.py", line 144, in coro
+    |     await self.app(scope, receive_or_disconnect, send_no_error)
+    |   File "/Users/yangjing/Desktop/ai-workspace/Fiona/backend/.venv/lib/python3.14/site-packages/starlette/middleware/cors.py", line 88, in __call__
+    |     await self.app(scope, receive, send)
+    |   File "/Users/yangjing/Desktop/ai-workspace/Fiona/backend/utils/request_limits.py", line 57, in __call__
+    |     await self.app(scope, limited_receive, tracked_send)
+    |   File "/Users/yangjing/Desktop/ai-workspace/Fiona/backend/.venv/lib/python3.14/site-packages/starlette/middleware/exceptions.py", line 63, in __call__
+    |     await wrap_app_handling_exceptions(self.app, conn)(scope, receive, send)
+    |   File "/Users/yangjing/Desktop/ai-workspace/Fiona/backend/.venv/lib/python3.14/site-packages/starlette/_exception_handler.py", line 53, in wrapped_app
+    |     raise exc
+    |   File "/Users/yangjing/Desktop/ai-workspace/Fiona/backend/.venv/lib/python3.14/site-packages/starlette/_exception_handler.py", line 42, in wrapped_app
+    |     await app(scope, receive, sender)
+    |   File "/Users/yangjing/Desktop/ai-workspace/Fiona/backend/.venv/lib/python3.14/site-packages/fastapi/middleware/asyncexitstack.py", line 18, in __call__
+    |     await self.app(scope, receive, send)
+    |   File "/Users/yangjing/Desktop/ai-workspace/Fiona/backend/.venv/lib/python3.14/site-packages/starlette/routing.py", line 660, in __call__
+    |     await self.middleware_stack(scope, receive, send)
+    |   File "/Users/yangjing/Desktop/ai-workspace/Fiona/backend/.venv/lib/python3.14/site-packages/starlette/routing.py", line 680, in app
+    |     await route.handle(scope, receive, send)
+    |   File "/Users/yangjing/Desktop/ai-workspace/Fiona/backend/.venv/lib/python3.14/site-packages/starlette/routing.py", line 276, in handle
+    |     await self.app(scope, receive, send)
+    |   File "/Users/yangjing/Desktop/ai-workspace/Fiona/backend/.venv/lib/python3.14/site-packages/fastapi/routing.py", line 134, in app
+    |     await wrap_app_handling_exceptions(app, request)(scope, receive, send)
+    |   File "/Users/yangjing/Desktop/ai-workspace/Fiona/backend/.venv/lib/python3.14/site-packages/starlette/_exception_handler.py", line 53, in wrapped_app
+    |     raise exc
+    |   File "/Users/yangjing/Desktop/ai-workspace/Fiona/backend/.venv/lib/python3.14/site-packages/starlette/_exception_handler.py", line 42, in wrapped_app
+    |     await app(scope, receive, sender)
+    |   File "/Users/yangjing/Desktop/ai-workspace/Fiona/backend/.venv/lib/python3.14/site-packages/fastapi/routing.py", line 120, in app
+    |     response = await f(request)
+    |                ^^^^^^^^^^^^^^^^
+    |   File "/Users/yangjing/Desktop/ai-workspace/Fiona/backend/.venv/lib/python3.14/site-packages/fastapi/routing.py", line 674, in app
+    |     raw_response = await run_endpoint_function(
+    |                    ^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+    |     ...<3 lines>...
+    |     )
+    |     ^
+    |   File "/Users/yangjing/Desktop/ai-workspace/Fiona/backend/.venv/lib/python3.14/site-packages/fastapi/routing.py", line 328, in run_endpoint_function
+    |     return await dependant.call(**values)
+    |            ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+    |   File "/Users/yangjing/Desktop/ai-workspace/Fiona/backend/routers/local_watch.py", line 189, in delete_rule
+    |     if not await database.delete_watch_rule(user, rule_id):
+    |            ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+    |   File "/Users/yangjing/Desktop/ai-workspace/Fiona/backend/database.py", line 1834, in delete_watch_rule
+    |     cursor = await db.execute("DELETE FROM watch_rules WHERE username=? AND id=?", (username, rule_id))
+    |              ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+    |   File "/Users/yangjing/Desktop/ai-workspace/Fiona/backend/.venv/lib/python3.14/site-packages/aiosqlite/core.py", line 223, in execute
+    |     cursor = await self._execute(self._conn.execute, sql, parameters)
+    |              ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+    |   File "/Users/yangjing/Desktop/ai-workspace/Fiona/backend/.venv/lib/python3.14/site-packages/aiosqlite/core.py", line 160, in _execute
+    |     return await future
+    |            ^^^^^^^^^^^^
+    |   File "/Users/yangjing/Desktop/ai-workspace/Fiona/backend/.venv/lib/python3.14/site-packages/aiosqlite/core.py", line 63, in _connection_worker_thread
+    |     result = function()
+    | OverflowError: Python int too large to convert to SQLite INTEGER
+    +------------------------------------
+
+The above exception was the direct cause of the following exception:
+
+Traceback (most recent call last):
+  File "/Users/yangjing/Desktop/ai-workspace/Fiona/backend/tests/test_local_watch_backend.py", line 284, in test_ids_outside_sqlite_range_rejected
+    response = client.request(method, "/local-watch" + path + str(2**64), headers=dev_headers, json=body)
+  File "/Users/yangjing/Desktop/ai-workspace/Fiona/backend/.venv/lib/python3.14/site-packages/starlette/testclient.py", line 454, in request
+    return super().request(
+           ~~~~~~~~~~~~~~~^
+        method,
+        ^^^^^^^
+    ...<11 lines>...
+        extensions=extensions,
+        ^^^^^^^^^^^^^^^^^^^^^^
+    )
+    ^
+  File "/Users/yangjing/Desktop/ai-workspace/Fiona/backend/.venv/lib/python3.14/site-packages/httpx2/_client.py", line 797, in request
+    return self.send(request, auth=auth, follow_redirects=follow_redirects)
+           ~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/Users/yangjing/Desktop/ai-workspace/Fiona/backend/.venv/lib/python3.14/site-packages/httpx2/_client.py", line 980, in send
+    response = self._send_handling_auth(
+        request,
+    ...<2 lines>...
+        history=[],
+    )
+  File "/Users/yangjing/Desktop/ai-workspace/Fiona/backend/.venv/lib/python3.14/site-packages/httpx2/_client.py", line 1008, in _send_handling_auth
+    response = self._send_handling_redirects(
+        request,
+        follow_redirects=follow_redirects,
+        history=history,
+    )
+  File "/Users/yangjing/Desktop/ai-workspace/Fiona/backend/.venv/lib/python3.14/site-packages/httpx2/_client.py", line 1043, in _send_handling_redirects
+    response = self._send_single_request(request)
+  File "/Users/yangjing/Desktop/ai-workspace/Fiona/backend/.venv/lib/python3.14/site-packages/httpx2/_client.py", line 1076, in _send_single_request
+    response = transport.handle_request(request)
+  File "/Users/yangjing/Desktop/ai-workspace/Fiona/backend/.venv/lib/python3.14/site-packages/starlette/testclient.py", line 356, in handle_request
+    raise exc
+  File "/Users/yangjing/Desktop/ai-workspace/Fiona/backend/.venv/lib/python3.14/site-packages/starlette/testclient.py", line 353, in handle_request
+    portal.call(self.app, scope, receive, send)
+    ~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/Users/yangjing/Desktop/ai-workspace/Fiona/backend/.venv/lib/python3.14/site-packages/anyio/from_thread.py", line 338, in call
+    return cast(T_Retval, self.start_task_soon(func, *args).result())
+                          ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~^^
+  File "/opt/homebrew/Cellar/python@3.14/3.14.6/Frameworks/Python.framework/Versions/3.14/lib/python3.14/concurrent/futures/_base.py", line 454, in result
+    return self.__get_result()
+           ~~~~~~~~~~~~~~~~~^^
+  File "/opt/homebrew/Cellar/python@3.14/3.14.6/Frameworks/Python.framework/Versions/3.14/lib/python3.14/concurrent/futures/_base.py", line 396, in __get_result
+    raise self._exception
+  File "/Users/yangjing/Desktop/ai-workspace/Fiona/backend/.venv/lib/python3.14/site-packages/anyio/from_thread.py", line 263, in _call_func
+    retval = await retval_or_awaitable
+             ^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/Users/yangjing/Desktop/ai-workspace/Fiona/backend/.venv/lib/python3.14/site-packages/fastapi/applications.py", line 1159, in __call__
+    await super().__call__(scope, receive, send)
+  File "/Users/yangjing/Desktop/ai-workspace/Fiona/backend/.venv/lib/python3.14/site-packages/starlette/applications.py", line 90, in __call__
+    await self.middleware_stack(scope, receive, send)
+  File "/Users/yangjing/Desktop/ai-workspace/Fiona/backend/.venv/lib/python3.14/site-packages/starlette/middleware/errors.py", line 186, in __call__
+    raise exc
+  File "/Users/yangjing/Desktop/ai-workspace/Fiona/backend/.venv/lib/python3.14/site-packages/starlette/middleware/errors.py", line 164, in __call__
+    await self.app(scope, receive, _send)
+  File "/Users/yangjing/Desktop/ai-workspace/Fiona/backend/.venv/lib/python3.14/site-packages/starlette/middleware/base.py", line 193, in __call__
+    response = await self.dispatch_func(request, call_next)
+               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/Users/yangjing/Desktop/ai-workspace/Fiona/backend/main.py", line 292, in private_local_watch
+    response = await call_next(request)
+               ^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/Users/yangjing/Desktop/ai-workspace/Fiona/backend/.venv/lib/python3.14/site-packages/starlette/middleware/base.py", line 168, in call_next
+    raise app_exc from app_exc.__cause__ or app_exc.__context__
+  File "/Users/yangjing/Desktop/ai-workspace/Fiona/backend/.venv/lib/python3.14/site-packages/starlette/middleware/base.py", line 144, in coro
+    await self.app(scope, receive_or_disconnect, send_no_error)
+  File "/Users/yangjing/Desktop/ai-workspace/Fiona/backend/.venv/lib/python3.14/site-packages/starlette/middleware/base.py", line 193, in __call__
+    response = await self.dispatch_func(request, call_next)
+               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/Users/yangjing/Desktop/ai-workspace/Fiona/backend/main.py", line 272, in require_auth
+    response = await call_next(request)
+               ^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/Users/yangjing/Desktop/ai-workspace/Fiona/backend/.venv/lib/python3.14/site-packages/starlette/middleware/base.py", line 168, in call_next
+    raise app_exc from app_exc.__cause__ or app_exc.__context__
+  File "/Users/yangjing/Desktop/ai-workspace/Fiona/backend/.venv/lib/python3.14/site-packages/starlette/middleware/base.py", line 144, in coro
+    await self.app(scope, receive_or_disconnect, send_no_error)
+  File "/Users/yangjing/Desktop/ai-workspace/Fiona/backend/.venv/lib/python3.14/site-packages/starlette/middleware/cors.py", line 88, in __call__
+    await self.app(scope, receive, send)
+  File "/Users/yangjing/Desktop/ai-workspace/Fiona/backend/utils/request_limits.py", line 57, in __call__
+    await self.app(scope, limited_receive, tracked_send)
+  File "/Users/yangjing/Desktop/ai-workspace/Fiona/backend/.venv/lib/python3.14/site-packages/starlette/middleware/exceptions.py", line 63, in __call__
+    await wrap_app_handling_exceptions(self.app, conn)(scope, receive, send)
+  File "/Users/yangjing/Desktop/ai-workspace/Fiona/backend/.venv/lib/python3.14/site-packages/starlette/_exception_handler.py", line 53, in wrapped_app
+    raise exc
+  File "/Users/yangjing/Desktop/ai-workspace/Fiona/backend/.venv/lib/python3.14/site-packages/starlette/_exception_handler.py", line 42, in wrapped_app
+    await app(scope, receive, sender)
+  File "/Users/yangjing/Desktop/ai-workspace/Fiona/backend/.venv/lib/python3.14/site-packages/fastapi/middleware/asyncexitstack.py", line 18, in __call__
+    await self.app(scope, receive, send)
+  File "/Users/yangjing/Desktop/ai-workspace/Fiona/backend/.venv/lib/python3.14/site-packages/starlette/routing.py", line 660, in __call__
+    await self.middleware_stack(scope, receive, send)
+  File "/Users/yangjing/Desktop/ai-workspace/Fiona/backend/.venv/lib/python3.14/site-packages/starlette/routing.py", line 680, in app
+    await route.handle(scope, receive, send)
+  File "/Users/yangjing/Desktop/ai-workspace/Fiona/backend/.venv/lib/python3.14/site-packages/starlette/routing.py", line 276, in handle
+    await self.app(scope, receive, send)
+  File "/Users/yangjing/Desktop/ai-workspace/Fiona/backend/.venv/lib/python3.14/site-packages/fastapi/routing.py", line 134, in app
+    await wrap_app_handling_exceptions(app, request)(scope, receive, send)
+  File "/Users/yangjing/Desktop/ai-workspace/Fiona/backend/.venv/lib/python3.14/site-packages/starlette/_exception_handler.py", line 53, in wrapped_app
+    raise exc
+  File "/Users/yangjing/Desktop/ai-workspace/Fiona/backend/.venv/lib/python3.14/site-packages/starlette/_exception_handler.py", line 42, in wrapped_app
+    await app(scope, receive, sender)
+  File "/Users/yangjing/Desktop/ai-workspace/Fiona/backend/.venv/lib/python3.14/site-packages/fastapi/routing.py", line 120, in app
+    response = await f(request)
+               ^^^^^^^^^^^^^^^^
+  File "/Users/yangjing/Desktop/ai-workspace/Fiona/backend/.venv/lib/python3.14/site-packages/fastapi/routing.py", line 674, in app
+    raw_response = await run_endpoint_function(
+                   ^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+    ...<3 lines>...
+    )
+    ^
+  File "/Users/yangjing/Desktop/ai-workspace/Fiona/backend/.venv/lib/python3.14/site-packages/fastapi/routing.py", line 328, in run_endpoint_function
+    return await dependant.call(**values)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/Users/yangjing/Desktop/ai-workspace/Fiona/backend/routers/local_watch.py", line 189, in delete_rule
+    if not await database.delete_watch_rule(user, rule_id):
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/Users/yangjing/Desktop/ai-workspace/Fiona/backend/database.py", line 1834, in delete_watch_rule
+    cursor = await db.execute("DELETE FROM watch_rules WHERE username=? AND id=?", (username, rule_id))
+             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/Users/yangjing/Desktop/ai-workspace/Fiona/backend/.venv/lib/python3.14/site-packages/aiosqlite/core.py", line 223, in execute
+    cursor = await self._execute(self._conn.execute, sql, parameters)
+             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/Users/yangjing/Desktop/ai-workspace/Fiona/backend/.venv/lib/python3.14/site-packages/aiosqlite/core.py", line 160, in _execute
+    return await future
+           ^^^^^^^^^^^^
+  File "/Users/yangjing/Desktop/ai-workspace/Fiona/backend/.venv/lib/python3.14/site-packages/aiosqlite/core.py", line 63, in _connection_worker_thread
+    result = function()
+OverflowError: Python int too large to convert to SQLite INTEGER
+
+The above exception was the direct cause of the following exception:
+
+client = <starlette.testclient.TestClient object at 0x10d443d90>
+dev_headers = {'X-Dev-User': 'smoke_tester'}, method = 'DELETE'
+path = '/rules/', body = None
+
+    @pytest.mark.parametrize("method,path,body", [("DELETE", "/devices/", None), ("PATCH", "/rules/", {"enabled": True}), ("DELETE", "/rules/", None), ("GET", "/alerts?after=", None)])
+    def test_ids_outside_sqlite_range_rejected(client, dev_headers, method, path, body):
+>       response = client.request(method, "/local-watch" + path + str(2**64), headers=dev_headers, json=body)
+                   ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+backend/tests/test_local_watch_backend.py:284: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+backend/.venv/lib/python3.14/site-packages/starlette/testclient.py:454: in request
+    return super().request(
+backend/.venv/lib/python3.14/site-packages/httpx2/_client.py:797: in request
+    return self.send(request, auth=auth, follow_redirects=follow_redirects)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+backend/.venv/lib/python3.14/site-packages/httpx2/_client.py:980: in send
+    response = self._send_handling_auth(
+backend/.venv/lib/python3.14/site-packages/httpx2/_client.py:1008: in _send_handling_auth
+    response = self._send_handling_redirects(
+backend/.venv/lib/python3.14/site-packages/httpx2/_client.py:1043: in _send_handling_redirects
+    response = self._send_single_request(request)
+               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+backend/.venv/lib/python3.14/site-packages/httpx2/_client.py:1076: in _send_single_request
+    response = transport.handle_request(request)
+               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+backend/.venv/lib/python3.14/site-packages/starlette/testclient.py:356: in handle_request
+    raise exc
+backend/.venv/lib/python3.14/site-packages/starlette/testclient.py:353: in handle_request
+    portal.call(self.app, scope, receive, send)
+backend/.venv/lib/python3.14/site-packages/anyio/from_thread.py:338: in call
+    return cast(T_Retval, self.start_task_soon(func, *args).result())
+                          ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+/opt/homebrew/Cellar/python@3.14/3.14.6/Frameworks/Python.framework/Versions/3.14/lib/python3.14/concurrent/futures/_base.py:454: in result
+    return self.__get_result()
+           ^^^^^^^^^^^^^^^^^^^
+/opt/homebrew/Cellar/python@3.14/3.14.6/Frameworks/Python.framework/Versions/3.14/lib/python3.14/concurrent/futures/_base.py:396: in __get_result
+    raise self._exception
+backend/.venv/lib/python3.14/site-packages/anyio/from_thread.py:263: in _call_func
+    retval = await retval_or_awaitable
+             ^^^^^^^^^^^^^^^^^^^^^^^^^
+backend/.venv/lib/python3.14/site-packages/fastapi/applications.py:1159: in __call__
+    await super().__call__(scope, receive, send)
+backend/.venv/lib/python3.14/site-packages/starlette/applications.py:90: in __call__
+    await self.middleware_stack(scope, receive, send)
+backend/.venv/lib/python3.14/site-packages/starlette/middleware/errors.py:186: in __call__
+    raise exc
+backend/.venv/lib/python3.14/site-packages/starlette/middleware/errors.py:164: in __call__
+    await self.app(scope, receive, _send)
+backend/.venv/lib/python3.14/site-packages/starlette/middleware/base.py:193: in __call__
+    response = await self.dispatch_func(request, call_next)
+               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+backend/main.py:292: in private_local_watch
+    response = await call_next(request)
+               ^^^^^^^^^^^^^^^^^^^^^^^^
+backend/.venv/lib/python3.14/site-packages/starlette/middleware/base.py:168: in call_next
+    raise app_exc from app_exc.__cause__ or app_exc.__context__
+backend/.venv/lib/python3.14/site-packages/starlette/middleware/base.py:144: in coro
+    await self.app(scope, receive_or_disconnect, send_no_error)
+backend/.venv/lib/python3.14/site-packages/starlette/middleware/base.py:193: in __call__
+    response = await self.dispatch_func(request, call_next)
+               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+backend/main.py:272: in require_auth
+    response = await call_next(request)
+               ^^^^^^^^^^^^^^^^^^^^^^^^
+backend/.venv/lib/python3.14/site-packages/starlette/middleware/base.py:168: in call_next
+    raise app_exc from app_exc.__cause__ or app_exc.__context__
+backend/.venv/lib/python3.14/site-packages/starlette/middleware/base.py:144: in coro
+    await self.app(scope, receive_or_disconnect, send_no_error)
+backend/.venv/lib/python3.14/site-packages/starlette/middleware/cors.py:88: in __call__
+    await self.app(scope, receive, send)
+backend/utils/request_limits.py:57: in __call__
+    await self.app(scope, limited_receive, tracked_send)
+backend/.venv/lib/python3.14/site-packages/starlette/middleware/exceptions.py:63: in __call__
+    await wrap_app_handling_exceptions(self.app, conn)(scope, receive, send)
+backend/.venv/lib/python3.14/site-packages/starlette/_exception_handler.py:53: in wrapped_app
+    raise exc
+backend/.venv/lib/python3.14/site-packages/starlette/_exception_handler.py:42: in wrapped_app
+    await app(scope, receive, sender)
+backend/.venv/lib/python3.14/site-packages/fastapi/middleware/asyncexitstack.py:18: in __call__
+    await self.app(scope, receive, send)
+backend/.venv/lib/python3.14/site-packages/starlette/routing.py:660: in __call__
+    await self.middleware_stack(scope, receive, send)
+backend/.venv/lib/python3.14/site-packages/starlette/routing.py:680: in app
+    await route.handle(scope, receive, send)
+backend/.venv/lib/python3.14/site-packages/starlette/routing.py:276: in handle
+    await self.app(scope, receive, send)
+backend/.venv/lib/python3.14/site-packages/fastapi/routing.py:134: in app
+    await wrap_app_handling_exceptions(app, request)(scope, receive, send)
+backend/.venv/lib/python3.14/site-packages/starlette/_exception_handler.py:53: in wrapped_app
+    raise exc
+backend/.venv/lib/python3.14/site-packages/starlette/_exception_handler.py:42: in wrapped_app
+    await app(scope, receive, sender)
+backend/.venv/lib/python3.14/site-packages/fastapi/routing.py:120: in app
+    response = await f(request)
+               ^^^^^^^^^^^^^^^^
+backend/.venv/lib/python3.14/site-packages/fastapi/routing.py:674: in app
+    raw_response = await run_endpoint_function(
+backend/.venv/lib/python3.14/site-packages/fastapi/routing.py:328: in run_endpoint_function
+    return await dependant.call(**values)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+backend/routers/local_watch.py:189: in delete_rule
+    if not await database.delete_watch_rule(user, rule_id):
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+backend/database.py:1834: in delete_watch_rule
+    cursor = await db.execute("DELETE FROM watch_rules WHERE username=? AND id=?", (username, rule_id))
+             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+backend/.venv/lib/python3.14/site-packages/aiosqlite/core.py:223: in execute
+    cursor = await self._execute(self._conn.execute, sql, parameters)
+             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+backend/.venv/lib/python3.14/site-packages/aiosqlite/core.py:160: in _execute
+    return await future
+           ^^^^^^^^^^^^
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+tx = <_queue.SimpleQueue object at 0x10d3a3d60>
+
+    def _connection_worker_thread(tx: _TxQueue):
+        """
+        Execute function calls on a separate thread.
+    
+        :meta private:
+        """
+        while True:
+            # Continues running until all queue items are processed,
+            # even after connection is closed (so we can finalize all
+            # futures)
+    
+            future, function = tx.get()
+    
+            try:
+                LOG.debug("executing %s", function)
+>               result = function()
+                         ^^^^^^^^^^
+E               OverflowError: Python int too large to convert to SQLite INTEGER
+
+backend/.venv/lib/python3.14/site-packages/aiosqlite/core.py:63: OverflowError
+_______ test_ids_outside_sqlite_range_rejected[GET-/alerts?after=-None] ________
+  + Exception Group Traceback (most recent call last):
+  |   File "/Users/yangjing/Desktop/ai-workspace/Fiona/backend/.venv/lib/python3.14/site-packages/starlette/_utils.py", line 85, in create_collapsing_task_group
+  |     async with anyio.create_task_group() as tg:
+  |                ~~~~~~~~~~~~~~~~~~~~~~~^^
+  |   File "/Users/yangjing/Desktop/ai-workspace/Fiona/backend/.venv/lib/python3.14/site-packages/anyio/_backends/_asyncio.py", line 815, in __aexit__
+  |     raise BaseExceptionGroup(
+  |         "unhandled errors in a TaskGroup", self._exceptions
+  |     ) from None
+  | ExceptionGroup: unhandled errors in a TaskGroup (1 sub-exception)
+  +-+---------------- 1 ----------------
+    | Traceback (most recent call last):
+    |   File "/Users/yangjing/Desktop/ai-workspace/Fiona/backend/.venv/lib/python3.14/site-packages/_pytest/runner.py", line 361, in from_call
+    |     result: TResult | None = func()
+    |                              ~~~~^^
+    |   File "/Users/yangjing/Desktop/ai-workspace/Fiona/backend/.venv/lib/python3.14/site-packages/_pytest/runner.py", line 250, in <lambda>
+    |     lambda: runtest_hook(item=item, **kwds),
+    |             ~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^
+    |   File "/Users/yangjing/Desktop/ai-workspace/Fiona/backend/.venv/lib/python3.14/site-packages/pluggy/_hooks.py", line 512, in __call__
+    |     return self._hookexec(self.name, self._hookimpls.copy(), kwargs, firstresult)
+    |            ~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+    |   File "/Users/yangjing/Desktop/ai-workspace/Fiona/backend/.venv/lib/python3.14/site-packages/pluggy/_manager.py", line 120, in _hookexec
+    |     return self._inner_hookexec(hook_name, methods, kwargs, firstresult)
+    |            ~~~~~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+    |   File "/Users/yangjing/Desktop/ai-workspace/Fiona/backend/.venv/lib/python3.14/site-packages/pluggy/_callers.py", line 167, in _multicall
+    |     raise exception
+    |   File "/Users/yangjing/Desktop/ai-workspace/Fiona/backend/.venv/lib/python3.14/site-packages/pluggy/_callers.py", line 139, in _multicall
+    |     teardown.throw(exception)
+    |     ~~~~~~~~~~~~~~^^^^^^^^^^^
+    |   File "/Users/yangjing/Desktop/ai-workspace/Fiona/backend/.venv/lib/python3.14/site-packages/_pytest/logging.py", line 865, in pytest_runtest_call
+    |     yield
+    |   File "/Users/yangjing/Desktop/ai-workspace/Fiona/backend/.venv/lib/python3.14/site-packages/pluggy/_callers.py", line 139, in _multicall
+    |     teardown.throw(exception)
+    |     ~~~~~~~~~~~~~~^^^^^^^^^^^
+    |   File "/Users/yangjing/Desktop/ai-workspace/Fiona/backend/.venv/lib/python3.14/site-packages/_pytest/capture.py", line 900, in pytest_runtest_call
+    |     return (yield)
+    |             ^^^^^
+    |   File "/Users/yangjing/Desktop/ai-workspace/Fiona/backend/.venv/lib/python3.14/site-packages/pluggy/_callers.py", line 139, in _multicall
+    |     teardown.throw(exception)
+    |     ~~~~~~~~~~~~~~^^^^^^^^^^^
+    |   File "/Users/yangjing/Desktop/ai-workspace/Fiona/backend/.venv/lib/python3.14/site-packages/_pytest/skipping.py", line 268, in pytest_runtest_call
+    |     return (yield)
+    |             ^^^^^
+    |   File "/Users/yangjing/Desktop/ai-workspace/Fiona/backend/.venv/lib/python3.14/site-packages/pluggy/_callers.py", line 121, in _multicall
+    |     res = hook_impl.function(*args)
+    |   File "/Users/yangjing/Desktop/ai-workspace/Fiona/backend/.venv/lib/python3.14/site-packages/_pytest/runner.py", line 184, in pytest_runtest_call
+    |     item.runtest()
+    |     ~~~~~~~~~~~~^^
+    |   File "/Users/yangjing/Desktop/ai-workspace/Fiona/backend/.venv/lib/python3.14/site-packages/_pytest/python.py", line 1707, in runtest
+    |     self.ihook.pytest_pyfunc_call(pyfuncitem=self)
+    |     ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^
+    |   File "/Users/yangjing/Desktop/ai-workspace/Fiona/backend/.venv/lib/python3.14/site-packages/pluggy/_hooks.py", line 512, in __call__
+    |     return self._hookexec(self.name, self._hookimpls.copy(), kwargs, firstresult)
+    |            ~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+    |   File "/Users/yangjing/Desktop/ai-workspace/Fiona/backend/.venv/lib/python3.14/site-packages/pluggy/_manager.py", line 120, in _hookexec
+    |     return self._inner_hookexec(hook_name, methods, kwargs, firstresult)
+    |            ~~~~~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+    |   File "/Users/yangjing/Desktop/ai-workspace/Fiona/backend/.venv/lib/python3.14/site-packages/pluggy/_callers.py", line 167, in _multicall
+    |     raise exception
+    |   File "/Users/yangjing/Desktop/ai-workspace/Fiona/backend/.venv/lib/python3.14/site-packages/pluggy/_callers.py", line 121, in _multicall
+    |     res = hook_impl.function(*args)
+    |   File "/Users/yangjing/Desktop/ai-workspace/Fiona/backend/.venv/lib/python3.14/site-packages/_pytest/python.py", line 167, in pytest_pyfunc_call
+    |     result = testfunction(**testargs)
+    |   File "/Users/yangjing/Desktop/ai-workspace/Fiona/backend/tests/test_local_watch_backend.py", line 284, in test_ids_outside_sqlite_range_rejected
+    |     response = client.request(method, "/local-watch" + path + str(2**64), headers=dev_headers, json=body)
+    |   File "/Users/yangjing/Desktop/ai-workspace/Fiona/backend/.venv/lib/python3.14/site-packages/starlette/testclient.py", line 454, in request
+    |     return super().request(
+    |            ~~~~~~~~~~~~~~~^
+    |         method,
+    |         ^^^^^^^
+    |     ...<11 lines>...
+    |         extensions=extensions,
+    |         ^^^^^^^^^^^^^^^^^^^^^^
+    |     )
+    |     ^
+    |   File "/Users/yangjing/Desktop/ai-workspace/Fiona/backend/.venv/lib/python3.14/site-packages/httpx2/_client.py", line 797, in request
+    |     return self.send(request, auth=auth, follow_redirects=follow_redirects)
+    |            ~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+    |   File "/Users/yangjing/Desktop/ai-workspace/Fiona/backend/.venv/lib/python3.14/site-packages/httpx2/_client.py", line 980, in send
+    |     response = self._send_handling_auth(
+    |         request,
+    |     ...<2 lines>...
+    |         history=[],
+    |     )
+    |   File "/Users/yangjing/Desktop/ai-workspace/Fiona/backend/.venv/lib/python3.14/site-packages/httpx2/_client.py", line 1008, in _send_handling_auth
+    |     response = self._send_handling_redirects(
+    |         request,
+    |         follow_redirects=follow_redirects,
+    |         history=history,
+    |     )
+    |   File "/Users/yangjing/Desktop/ai-workspace/Fiona/backend/.venv/lib/python3.14/site-packages/httpx2/_client.py", line 1043, in _send_handling_redirects
+    |     response = self._send_single_request(request)
+    |   File "/Users/yangjing/Desktop/ai-workspace/Fiona/backend/.venv/lib/python3.14/site-packages/httpx2/_client.py", line 1076, in _send_single_request
+    |     response = transport.handle_request(request)
+    |   File "/Users/yangjing/Desktop/ai-workspace/Fiona/backend/.venv/lib/python3.14/site-packages/starlette/testclient.py", line 356, in handle_request
+    |     raise exc
+    |   File "/Users/yangjing/Desktop/ai-workspace/Fiona/backend/.venv/lib/python3.14/site-packages/starlette/testclient.py", line 353, in handle_request
+    |     portal.call(self.app, scope, receive, send)
+    |     ~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+    |   File "/Users/yangjing/Desktop/ai-workspace/Fiona/backend/.venv/lib/python3.14/site-packages/anyio/from_thread.py", line 338, in call
+    |     return cast(T_Retval, self.start_task_soon(func, *args).result())
+    |                           ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~^^
+    |   File "/opt/homebrew/Cellar/python@3.14/3.14.6/Frameworks/Python.framework/Versions/3.14/lib/python3.14/concurrent/futures/_base.py", line 454, in result
+    |     return self.__get_result()
+    |            ~~~~~~~~~~~~~~~~~^^
+    |   File "/opt/homebrew/Cellar/python@3.14/3.14.6/Frameworks/Python.framework/Versions/3.14/lib/python3.14/concurrent/futures/_base.py", line 396, in __get_result
+    |     raise self._exception
+    |   File "/Users/yangjing/Desktop/ai-workspace/Fiona/backend/.venv/lib/python3.14/site-packages/anyio/from_thread.py", line 263, in _call_func
+    |     retval = await retval_or_awaitable
+    |              ^^^^^^^^^^^^^^^^^^^^^^^^^
+    |   File "/Users/yangjing/Desktop/ai-workspace/Fiona/backend/.venv/lib/python3.14/site-packages/fastapi/applications.py", line 1159, in __call__
+    |     await super().__call__(scope, receive, send)
+    |   File "/Users/yangjing/Desktop/ai-workspace/Fiona/backend/.venv/lib/python3.14/site-packages/starlette/applications.py", line 90, in __call__
+    |     await self.middleware_stack(scope, receive, send)
+    |   File "/Users/yangjing/Desktop/ai-workspace/Fiona/backend/.venv/lib/python3.14/site-packages/starlette/middleware/errors.py", line 186, in __call__
+    |     raise exc
+    |   File "/Users/yangjing/Desktop/ai-workspace/Fiona/backend/.venv/lib/python3.14/site-packages/starlette/middleware/errors.py", line 164, in __call__
+    |     await self.app(scope, receive, _send)
+    |   File "/Users/yangjing/Desktop/ai-workspace/Fiona/backend/.venv/lib/python3.14/site-packages/starlette/middleware/base.py", line 193, in __call__
+    |     response = await self.dispatch_func(request, call_next)
+    |                ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+    |   File "/Users/yangjing/Desktop/ai-workspace/Fiona/backend/main.py", line 292, in private_local_watch
+    |     response = await call_next(request)
+    |                ^^^^^^^^^^^^^^^^^^^^^^^^
+    |   File "/Users/yangjing/Desktop/ai-workspace/Fiona/backend/.venv/lib/python3.14/site-packages/starlette/middleware/base.py", line 168, in call_next
+    |     raise app_exc from app_exc.__cause__ or app_exc.__context__
+    |   File "/Users/yangjing/Desktop/ai-workspace/Fiona/backend/.venv/lib/python3.14/site-packages/starlette/middleware/base.py", line 144, in coro
+    |     await self.app(scope, receive_or_disconnect, send_no_error)
+    |   File "/Users/yangjing/Desktop/ai-workspace/Fiona/backend/.venv/lib/python3.14/site-packages/starlette/middleware/base.py", line 193, in __call__
+    |     response = await self.dispatch_func(request, call_next)
+    |                ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+    |   File "/Users/yangjing/Desktop/ai-workspace/Fiona/backend/main.py", line 272, in require_auth
+    |     response = await call_next(request)
+    |                ^^^^^^^^^^^^^^^^^^^^^^^^
+    |   File "/Users/yangjing/Desktop/ai-workspace/Fiona/backend/.venv/lib/python3.14/site-packages/starlette/middleware/base.py", line 168, in call_next
+    |     raise app_exc from app_exc.__cause__ or app_exc.__context__
+    |   File "/Users/yangjing/Desktop/ai-workspace/Fiona/backend/.venv/lib/python3.14/site-packages/starlette/middleware/base.py", line 144, in coro
+    |     await self.app(scope, receive_or_disconnect, send_no_error)
+    |   File "/Users/yangjing/Desktop/ai-workspace/Fiona/backend/.venv/lib/python3.14/site-packages/starlette/middleware/cors.py", line 88, in __call__
+    |     await self.app(scope, receive, send)
+    |   File "/Users/yangjing/Desktop/ai-workspace/Fiona/backend/utils/request_limits.py", line 57, in __call__
+    |     await self.app(scope, limited_receive, tracked_send)
+    |   File "/Users/yangjing/Desktop/ai-workspace/Fiona/backend/.venv/lib/python3.14/site-packages/starlette/middleware/exceptions.py", line 63, in __call__
+    |     await wrap_app_handling_exceptions(self.app, conn)(scope, receive, send)
+    |   File "/Users/yangjing/Desktop/ai-workspace/Fiona/backend/.venv/lib/python3.14/site-packages/starlette/_exception_handler.py", line 53, in wrapped_app
+    |     raise exc
+    |   File "/Users/yangjing/Desktop/ai-workspace/Fiona/backend/.venv/lib/python3.14/site-packages/starlette/_exception_handler.py", line 42, in wrapped_app
+    |     await app(scope, receive, sender)
+    |   File "/Users/yangjing/Desktop/ai-workspace/Fiona/backend/.venv/lib/python3.14/site-packages/fastapi/middleware/asyncexitstack.py", line 18, in __call__
+    |     await self.app(scope, receive, send)
+    |   File "/Users/yangjing/Desktop/ai-workspace/Fiona/backend/.venv/lib/python3.14/site-packages/starlette/routing.py", line 660, in __call__
+    |     await self.middleware_stack(scope, receive, send)
+    |   File "/Users/yangjing/Desktop/ai-workspace/Fiona/backend/.venv/lib/python3.14/site-packages/starlette/routing.py", line 680, in app
+    |     await route.handle(scope, receive, send)
+    |   File "/Users/yangjing/Desktop/ai-workspace/Fiona/backend/.venv/lib/python3.14/site-packages/starlette/routing.py", line 276, in handle
+    |     await self.app(scope, receive, send)
+    |   File "/Users/yangjing/Desktop/ai-workspace/Fiona/backend/.venv/lib/python3.14/site-packages/fastapi/routing.py", line 134, in app
+    |     await wrap_app_handling_exceptions(app, request)(scope, receive, send)
+    |   File "/Users/yangjing/Desktop/ai-workspace/Fiona/backend/.venv/lib/python3.14/site-packages/starlette/_exception_handler.py", line 53, in wrapped_app
+    |     raise exc
+    |   File "/Users/yangjing/Desktop/ai-workspace/Fiona/backend/.venv/lib/python3.14/site-packages/starlette/_exception_handler.py", line 42, in wrapped_app
+    |     await app(scope, receive, sender)
+    |   File "/Users/yangjing/Desktop/ai-workspace/Fiona/backend/.venv/lib/python3.14/site-packages/fastapi/routing.py", line 120, in app
+    |     response = await f(request)
+    |                ^^^^^^^^^^^^^^^^
+    |   File "/Users/yangjing/Desktop/ai-workspace/Fiona/backend/.venv/lib/python3.14/site-packages/fastapi/routing.py", line 674, in app
+    |     raw_response = await run_endpoint_function(
+    |                    ^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+    |     ...<3 lines>...
+    |     )
+    |     ^
+    |   File "/Users/yangjing/Desktop/ai-workspace/Fiona/backend/.venv/lib/python3.14/site-packages/fastapi/routing.py", line 328, in run_endpoint_function
+    |     return await dependant.call(**values)
+    |            ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+    |   File "/Users/yangjing/Desktop/ai-workspace/Fiona/backend/routers/local_watch.py", line 205, in list_alerts
+    |     return JSONResponse(await database.list_watch_alerts(user, after), headers=_HEADERS)
+    |                         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+    |   File "/Users/yangjing/Desktop/ai-workspace/Fiona/backend/database.py", line 1889, in list_watch_alerts
+    |     async with db.execute("""SELECT a.id,COALESCE(r.name,'已删除规则') AS rule_name,
+    |                ~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+    |             a.summary,a.created_at,a.conversation_id,a.message_id
+    |             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+    |         FROM watch_alerts a LEFT JOIN watch_rules r ON r.id=a.rule_id AND r.username=a.username
+    |         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+    |         WHERE a.username=? AND a.id>? ORDER BY a.id LIMIT 50""", (username, after)) as cursor:
+    |         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+    |   File "/Users/yangjing/Desktop/ai-workspace/Fiona/backend/.venv/lib/python3.14/site-packages/aiosqlite/context.py", line 41, in __aenter__
+    |     self._obj = await self._coro
+    |                 ^^^^^^^^^^^^^^^^
+    |   File "/Users/yangjing/Desktop/ai-workspace/Fiona/backend/.venv/lib/python3.14/site-packages/aiosqlite/core.py", line 223, in execute
+    |     cursor = await self._execute(self._conn.execute, sql, parameters)
+    |              ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+    |   File "/Users/yangjing/Desktop/ai-workspace/Fiona/backend/.venv/lib/python3.14/site-packages/aiosqlite/core.py", line 160, in _execute
+    |     return await future
+    |            ^^^^^^^^^^^^
+    |   File "/Users/yangjing/Desktop/ai-workspace/Fiona/backend/.venv/lib/python3.14/site-packages/aiosqlite/core.py", line 63, in _connection_worker_thread
+    |     result = function()
+    | OverflowError: Python int too large to convert to SQLite INTEGER
+    +------------------------------------
+
+The above exception was the direct cause of the following exception:
+
+Traceback (most recent call last):
+  File "/Users/yangjing/Desktop/ai-workspace/Fiona/backend/tests/test_local_watch_backend.py", line 284, in test_ids_outside_sqlite_range_rejected
+    response = client.request(method, "/local-watch" + path + str(2**64), headers=dev_headers, json=body)
+  File "/Users/yangjing/Desktop/ai-workspace/Fiona/backend/.venv/lib/python3.14/site-packages/starlette/testclient.py", line 454, in request
+    return super().request(
+           ~~~~~~~~~~~~~~~^
+        method,
+        ^^^^^^^
+    ...<11 lines>...
+        extensions=extensions,
+        ^^^^^^^^^^^^^^^^^^^^^^
+    )
+    ^
+  File "/Users/yangjing/Desktop/ai-workspace/Fiona/backend/.venv/lib/python3.14/site-packages/httpx2/_client.py", line 797, in request
+    return self.send(request, auth=auth, follow_redirects=follow_redirects)
+           ~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/Users/yangjing/Desktop/ai-workspace/Fiona/backend/.venv/lib/python3.14/site-packages/httpx2/_client.py", line 980, in send
+    response = self._send_handling_auth(
+        request,
+    ...<2 lines>...
+        history=[],
+    )
+  File "/Users/yangjing/Desktop/ai-workspace/Fiona/backend/.venv/lib/python3.14/site-packages/httpx2/_client.py", line 1008, in _send_handling_auth
+    response = self._send_handling_redirects(
+        request,
+        follow_redirects=follow_redirects,
+        history=history,
+    )
+  File "/Users/yangjing/Desktop/ai-workspace/Fiona/backend/.venv/lib/python3.14/site-packages/httpx2/_client.py", line 1043, in _send_handling_redirects
+    response = self._send_single_request(request)
+  File "/Users/yangjing/Desktop/ai-workspace/Fiona/backend/.venv/lib/python3.14/site-packages/httpx2/_client.py", line 1076, in _send_single_request
+    response = transport.handle_request(request)
+  File "/Users/yangjing/Desktop/ai-workspace/Fiona/backend/.venv/lib/python3.14/site-packages/starlette/testclient.py", line 356, in handle_request
+    raise exc
+  File "/Users/yangjing/Desktop/ai-workspace/Fiona/backend/.venv/lib/python3.14/site-packages/starlette/testclient.py", line 353, in handle_request
+    portal.call(self.app, scope, receive, send)
+    ~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/Users/yangjing/Desktop/ai-workspace/Fiona/backend/.venv/lib/python3.14/site-packages/anyio/from_thread.py", line 338, in call
+    return cast(T_Retval, self.start_task_soon(func, *args).result())
+                          ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~^^
+  File "/opt/homebrew/Cellar/python@3.14/3.14.6/Frameworks/Python.framework/Versions/3.14/lib/python3.14/concurrent/futures/_base.py", line 454, in result
+    return self.__get_result()
+           ~~~~~~~~~~~~~~~~~^^
+  File "/opt/homebrew/Cellar/python@3.14/3.14.6/Frameworks/Python.framework/Versions/3.14/lib/python3.14/concurrent/futures/_base.py", line 396, in __get_result
+    raise self._exception
+  File "/Users/yangjing/Desktop/ai-workspace/Fiona/backend/.venv/lib/python3.14/site-packages/anyio/from_thread.py", line 263, in _call_func
+    retval = await retval_or_awaitable
+             ^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/Users/yangjing/Desktop/ai-workspace/Fiona/backend/.venv/lib/python3.14/site-packages/fastapi/applications.py", line 1159, in __call__
+    await super().__call__(scope, receive, send)
+  File "/Users/yangjing/Desktop/ai-workspace/Fiona/backend/.venv/lib/python3.14/site-packages/starlette/applications.py", line 90, in __call__
+    await self.middleware_stack(scope, receive, send)
+  File "/Users/yangjing/Desktop/ai-workspace/Fiona/backend/.venv/lib/python3.14/site-packages/starlette/middleware/errors.py", line 186, in __call__
+    raise exc
+  File "/Users/yangjing/Desktop/ai-workspace/Fiona/backend/.venv/lib/python3.14/site-packages/starlette/middleware/errors.py", line 164, in __call__
+    await self.app(scope, receive, _send)
+  File "/Users/yangjing/Desktop/ai-workspace/Fiona/backend/.venv/lib/python3.14/site-packages/starlette/middleware/base.py", line 193, in __call__
+    response = await self.dispatch_func(request, call_next)
+               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/Users/yangjing/Desktop/ai-workspace/Fiona/backend/main.py", line 292, in private_local_watch
+    response = await call_next(request)
+               ^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/Users/yangjing/Desktop/ai-workspace/Fiona/backend/.venv/lib/python3.14/site-packages/starlette/middleware/base.py", line 168, in call_next
+    raise app_exc from app_exc.__cause__ or app_exc.__context__
+  File "/Users/yangjing/Desktop/ai-workspace/Fiona/backend/.venv/lib/python3.14/site-packages/starlette/middleware/base.py", line 144, in coro
+    await self.app(scope, receive_or_disconnect, send_no_error)
+  File "/Users/yangjing/Desktop/ai-workspace/Fiona/backend/.venv/lib/python3.14/site-packages/starlette/middleware/base.py", line 193, in __call__
+    response = await self.dispatch_func(request, call_next)
+               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/Users/yangjing/Desktop/ai-workspace/Fiona/backend/main.py", line 272, in require_auth
+    response = await call_next(request)
+               ^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/Users/yangjing/Desktop/ai-workspace/Fiona/backend/.venv/lib/python3.14/site-packages/starlette/middleware/base.py", line 168, in call_next
+    raise app_exc from app_exc.__cause__ or app_exc.__context__
+  File "/Users/yangjing/Desktop/ai-workspace/Fiona/backend/.venv/lib/python3.14/site-packages/starlette/middleware/base.py", line 144, in coro
+    await self.app(scope, receive_or_disconnect, send_no_error)
+  File "/Users/yangjing/Desktop/ai-workspace/Fiona/backend/.venv/lib/python3.14/site-packages/starlette/middleware/cors.py", line 88, in __call__
+    await self.app(scope, receive, send)
+  File "/Users/yangjing/Desktop/ai-workspace/Fiona/backend/utils/request_limits.py", line 57, in __call__
+    await self.app(scope, limited_receive, tracked_send)
+  File "/Users/yangjing/Desktop/ai-workspace/Fiona/backend/.venv/lib/python3.14/site-packages/starlette/middleware/exceptions.py", line 63, in __call__
+    await wrap_app_handling_exceptions(self.app, conn)(scope, receive, send)
+  File "/Users/yangjing/Desktop/ai-workspace/Fiona/backend/.venv/lib/python3.14/site-packages/starlette/_exception_handler.py", line 53, in wrapped_app
+    raise exc
+  File "/Users/yangjing/Desktop/ai-workspace/Fiona/backend/.venv/lib/python3.14/site-packages/starlette/_exception_handler.py", line 42, in wrapped_app
+    await app(scope, receive, sender)
+  File "/Users/yangjing/Desktop/ai-workspace/Fiona/backend/.venv/lib/python3.14/site-packages/fastapi/middleware/asyncexitstack.py", line 18, in __call__
+    await self.app(scope, receive, send)
+  File "/Users/yangjing/Desktop/ai-workspace/Fiona/backend/.venv/lib/python3.14/site-packages/starlette/routing.py", line 660, in __call__
+    await self.middleware_stack(scope, receive, send)
+  File "/Users/yangjing/Desktop/ai-workspace/Fiona/backend/.venv/lib/python3.14/site-packages/starlette/routing.py", line 680, in app
+    await route.handle(scope, receive, send)
+  File "/Users/yangjing/Desktop/ai-workspace/Fiona/backend/.venv/lib/python3.14/site-packages/starlette/routing.py", line 276, in handle
+    await self.app(scope, receive, send)
+  File "/Users/yangjing/Desktop/ai-workspace/Fiona/backend/.venv/lib/python3.14/site-packages/fastapi/routing.py", line 134, in app
+    await wrap_app_handling_exceptions(app, request)(scope, receive, send)
+  File "/Users/yangjing/Desktop/ai-workspace/Fiona/backend/.venv/lib/python3.14/site-packages/starlette/_exception_handler.py", line 53, in wrapped_app
+    raise exc
+  File "/Users/yangjing/Desktop/ai-workspace/Fiona/backend/.venv/lib/python3.14/site-packages/starlette/_exception_handler.py", line 42, in wrapped_app
+    await app(scope, receive, sender)
+  File "/Users/yangjing/Desktop/ai-workspace/Fiona/backend/.venv/lib/python3.14/site-packages/fastapi/routing.py", line 120, in app
+    response = await f(request)
+               ^^^^^^^^^^^^^^^^
+  File "/Users/yangjing/Desktop/ai-workspace/Fiona/backend/.venv/lib/python3.14/site-packages/fastapi/routing.py", line 674, in app
+    raw_response = await run_endpoint_function(
+                   ^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+    ...<3 lines>...
+    )
+    ^
+  File "/Users/yangjing/Desktop/ai-workspace/Fiona/backend/.venv/lib/python3.14/site-packages/fastapi/routing.py", line 328, in run_endpoint_function
+    return await dependant.call(**values)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/Users/yangjing/Desktop/ai-workspace/Fiona/backend/routers/local_watch.py", line 205, in list_alerts
+    return JSONResponse(await database.list_watch_alerts(user, after), headers=_HEADERS)
+                        ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/Users/yangjing/Desktop/ai-workspace/Fiona/backend/database.py", line 1889, in list_watch_alerts
+    async with db.execute("""SELECT a.id,COALESCE(r.name,'已删除规则') AS rule_name,
+               ~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+            a.summary,a.created_at,a.conversation_id,a.message_id
+            ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+        FROM watch_alerts a LEFT JOIN watch_rules r ON r.id=a.rule_id AND r.username=a.username
+        ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+        WHERE a.username=? AND a.id>? ORDER BY a.id LIMIT 50""", (username, after)) as cursor:
+        ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/Users/yangjing/Desktop/ai-workspace/Fiona/backend/.venv/lib/python3.14/site-packages/aiosqlite/context.py", line 41, in __aenter__
+    self._obj = await self._coro
+                ^^^^^^^^^^^^^^^^
+  File "/Users/yangjing/Desktop/ai-workspace/Fiona/backend/.venv/lib/python3.14/site-packages/aiosqlite/core.py", line 223, in execute
+    cursor = await self._execute(self._conn.execute, sql, parameters)
+             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/Users/yangjing/Desktop/ai-workspace/Fiona/backend/.venv/lib/python3.14/site-packages/aiosqlite/core.py", line 160, in _execute
+    return await future
+           ^^^^^^^^^^^^
+  File "/Users/yangjing/Desktop/ai-workspace/Fiona/backend/.venv/lib/python3.14/site-packages/aiosqlite/core.py", line 63, in _connection_worker_thread
+    result = function()
+OverflowError: Python int too large to convert to SQLite INTEGER
+
+The above exception was the direct cause of the following exception:
+
+client = <starlette.testclient.TestClient object at 0x10d787a80>
+dev_headers = {'X-Dev-User': 'smoke_tester'}, method = 'GET'
+path = '/alerts?after=', body = None
+
+    @pytest.mark.parametrize("method,path,body", [("DELETE", "/devices/", None), ("PATCH", "/rules/", {"enabled": True}), ("DELETE", "/rules/", None), ("GET", "/alerts?after=", None)])
+    def test_ids_outside_sqlite_range_rejected(client, dev_headers, method, path, body):
+>       response = client.request(method, "/local-watch" + path + str(2**64), headers=dev_headers, json=body)
+                   ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+backend/tests/test_local_watch_backend.py:284: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+backend/.venv/lib/python3.14/site-packages/starlette/testclient.py:454: in request
+    return super().request(
+backend/.venv/lib/python3.14/site-packages/httpx2/_client.py:797: in request
+    return self.send(request, auth=auth, follow_redirects=follow_redirects)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+backend/.venv/lib/python3.14/site-packages/httpx2/_client.py:980: in send
+    response = self._send_handling_auth(
+backend/.venv/lib/python3.14/site-packages/httpx2/_client.py:1008: in _send_handling_auth
+    response = self._send_handling_redirects(
+backend/.venv/lib/python3.14/site-packages/httpx2/_client.py:1043: in _send_handling_redirects
+    response = self._send_single_request(request)
+               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+backend/.venv/lib/python3.14/site-packages/httpx2/_client.py:1076: in _send_single_request
+    response = transport.handle_request(request)
+               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+backend/.venv/lib/python3.14/site-packages/starlette/testclient.py:356: in handle_request
+    raise exc
+backend/.venv/lib/python3.14/site-packages/starlette/testclient.py:353: in handle_request
+    portal.call(self.app, scope, receive, send)
+backend/.venv/lib/python3.14/site-packages/anyio/from_thread.py:338: in call
+    return cast(T_Retval, self.start_task_soon(func, *args).result())
+                          ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+/opt/homebrew/Cellar/python@3.14/3.14.6/Frameworks/Python.framework/Versions/3.14/lib/python3.14/concurrent/futures/_base.py:454: in result
+    return self.__get_result()
+           ^^^^^^^^^^^^^^^^^^^
+/opt/homebrew/Cellar/python@3.14/3.14.6/Frameworks/Python.framework/Versions/3.14/lib/python3.14/concurrent/futures/_base.py:396: in __get_result
+    raise self._exception
+backend/.venv/lib/python3.14/site-packages/anyio/from_thread.py:263: in _call_func
+    retval = await retval_or_awaitable
+             ^^^^^^^^^^^^^^^^^^^^^^^^^
+backend/.venv/lib/python3.14/site-packages/fastapi/applications.py:1159: in __call__
+    await super().__call__(scope, receive, send)
+backend/.venv/lib/python3.14/site-packages/starlette/applications.py:90: in __call__
+    await self.middleware_stack(scope, receive, send)
+backend/.venv/lib/python3.14/site-packages/starlette/middleware/errors.py:186: in __call__
+    raise exc
+backend/.venv/lib/python3.14/site-packages/starlette/middleware/errors.py:164: in __call__
+    await self.app(scope, receive, _send)
+backend/.venv/lib/python3.14/site-packages/starlette/middleware/base.py:193: in __call__
+    response = await self.dispatch_func(request, call_next)
+               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+backend/main.py:292: in private_local_watch
+    response = await call_next(request)
+               ^^^^^^^^^^^^^^^^^^^^^^^^
+backend/.venv/lib/python3.14/site-packages/starlette/middleware/base.py:168: in call_next
+    raise app_exc from app_exc.__cause__ or app_exc.__context__
+backend/.venv/lib/python3.14/site-packages/starlette/middleware/base.py:144: in coro
+    await self.app(scope, receive_or_disconnect, send_no_error)
+backend/.venv/lib/python3.14/site-packages/starlette/middleware/base.py:193: in __call__
+    response = await self.dispatch_func(request, call_next)
+               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+backend/main.py:272: in require_auth
+    response = await call_next(request)
+               ^^^^^^^^^^^^^^^^^^^^^^^^
+backend/.venv/lib/python3.14/site-packages/starlette/middleware/base.py:168: in call_next
+    raise app_exc from app_exc.__cause__ or app_exc.__context__
+backend/.venv/lib/python3.14/site-packages/starlette/middleware/base.py:144: in coro
+    await self.app(scope, receive_or_disconnect, send_no_error)
+backend/.venv/lib/python3.14/site-packages/starlette/middleware/cors.py:88: in __call__
+    await self.app(scope, receive, send)
+backend/utils/request_limits.py:57: in __call__
+    await self.app(scope, limited_receive, tracked_send)
+backend/.venv/lib/python3.14/site-packages/starlette/middleware/exceptions.py:63: in __call__
+    await wrap_app_handling_exceptions(self.app, conn)(scope, receive, send)
+backend/.venv/lib/python3.14/site-packages/starlette/_exception_handler.py:53: in wrapped_app
+    raise exc
+backend/.venv/lib/python3.14/site-packages/starlette/_exception_handler.py:42: in wrapped_app
+    await app(scope, receive, sender)
+backend/.venv/lib/python3.14/site-packages/fastapi/middleware/asyncexitstack.py:18: in __call__
+    await self.app(scope, receive, send)
+backend/.venv/lib/python3.14/site-packages/starlette/routing.py:660: in __call__
+    await self.middleware_stack(scope, receive, send)
+backend/.venv/lib/python3.14/site-packages/starlette/routing.py:680: in app
+    await route.handle(scope, receive, send)
+backend/.venv/lib/python3.14/site-packages/starlette/routing.py:276: in handle
+    await self.app(scope, receive, send)
+backend/.venv/lib/python3.14/site-packages/fastapi/routing.py:134: in app
+    await wrap_app_handling_exceptions(app, request)(scope, receive, send)
+backend/.venv/lib/python3.14/site-packages/starlette/_exception_handler.py:53: in wrapped_app
+    raise exc
+backend/.venv/lib/python3.14/site-packages/starlette/_exception_handler.py:42: in wrapped_app
+    await app(scope, receive, sender)
+backend/.venv/lib/python3.14/site-packages/fastapi/routing.py:120: in app
+    response = await f(request)
+               ^^^^^^^^^^^^^^^^
+backend/.venv/lib/python3.14/site-packages/fastapi/routing.py:674: in app
+    raw_response = await run_endpoint_function(
+backend/.venv/lib/python3.14/site-packages/fastapi/routing.py:328: in run_endpoint_function
+    return await dependant.call(**values)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+backend/routers/local_watch.py:205: in list_alerts
+    return JSONResponse(await database.list_watch_alerts(user, after), headers=_HEADERS)
+                        ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+backend/database.py:1889: in list_watch_alerts
+    async with db.execute("""SELECT a.id,COALESCE(r.name,'已删除规则') AS rule_name,
+backend/.venv/lib/python3.14/site-packages/aiosqlite/context.py:41: in __aenter__
+    self._obj = await self._coro
+                ^^^^^^^^^^^^^^^^
+backend/.venv/lib/python3.14/site-packages/aiosqlite/core.py:223: in execute
+    cursor = await self._execute(self._conn.execute, sql, parameters)
+             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+backend/.venv/lib/python3.14/site-packages/aiosqlite/core.py:160: in _execute
+    return await future
+           ^^^^^^^^^^^^
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+tx = <_queue.SimpleQueue object at 0x10dbe3f40>
+
+    def _connection_worker_thread(tx: _TxQueue):
+        """
+        Execute function calls on a separate thread.
+    
+        :meta private:
+        """
+        while True:
+            # Continues running until all queue items are processed,
+            # even after connection is closed (so we can finalize all
+            # futures)
+    
+            future, function = tx.get()
+    
+            try:
+                LOG.debug("executing %s", function)
+>               result = function()
+                         ^^^^^^^^^^
+E               OverflowError: Python int too large to convert to SQLite INTEGER
+
+backend/.venv/lib/python3.14/site-packages/aiosqlite/core.py:63: OverflowError
+=============================== warnings summary ===============================
+backend/tests/test_local_watch_backend.py: 14 warnings
+  /Users/yangjing/Desktop/ai-workspace/Fiona/backend/.venv/lib/python3.14/site-packages/slowapi/extension.py:720: DeprecationWarning: 'asyncio.iscoroutinefunction' is deprecated and slated for removal in Python 3.16; use inspect.iscoroutinefunction() instead
+    if asyncio.iscoroutinefunction(func):
+
+-- Docs: https://docs.pytest.org/en/stable/how-to/capture-warnings.html
+=========================== short test summary info ============================
+FAILED backend/tests/test_local_watch_backend.py::test_ids_outside_sqlite_range_rejected[DELETE-/devices/-None]
+FAILED backend/tests/test_local_watch_backend.py::test_ids_outside_sqlite_range_rejected[PATCH-/rules/-body1]
+FAILED backend/tests/test_local_watch_backend.py::test_ids_outside_sqlite_range_rejected[DELETE-/rules/-None]
+FAILED backend/tests/test_local_watch_backend.py::test_ids_outside_sqlite_range_rejected[GET-/alerts?after=-None]
+4 failed, 51 deselected, 14 warnings in 1.90s

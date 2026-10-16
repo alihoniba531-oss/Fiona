@@ -1,0 +1,9 @@
+{
+  "cwd": ".",
+  "command": [
+    "git",
+    "diff",
+    "--check"
+  ],
+  "environment_overrides": {}
+}

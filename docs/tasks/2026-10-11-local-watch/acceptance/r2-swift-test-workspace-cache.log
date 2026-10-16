@@ -1,0 +1,49 @@
+warning: /Users/yangjing/Library/org.swift.swiftpm/configuration is not accessible or not writable, disabling user-level cache features.
+warning: /Users/yangjing/Library/org.swift.swiftpm/security is not accessible or not writable, disabling user-level cache features.
+Building for debugging...
+[2 / 10] FionaWatcherCore
+[7 / 15] FionaWatcherCore
+[10 / 19] FionaWatcherCore
+/Users/yangjing/Desktop/ai-workspace/Fiona/watcher-mac/Package.swift: FionaWatcherCore: ld: warning: search path '/Library/Developer/CommandLineTools/Developer/Library/Frameworks' not found
+[14 / 21] fiona-watcher-product
+[19 / 24] FionaWatcherCoreTests-product
+/Users/yangjing/Desktop/ai-workspace/Fiona/watcher-mac/Package.swift: FionaWatcherCoreTests-product: ld: warning: search path '/Library/Developer/CommandLineTools/Developer/usr/lib' not found
+/Users/yangjing/Desktop/ai-workspace/Fiona/watcher-mac/Package.swift: FionaWatcherCoreTests-product: ld: warning: search path '/Library/Developer/CommandLineTools/Developer/Library/Frameworks' not found
+[26 / 27] FionaWatcherCoreTests-product
+/Users/yangjing/Desktop/ai-workspace/Fiona/watcher-mac/Package.swift: fiona-watcher-product: ld: warning: search path '/Library/Developer/CommandLineTools/Developer/usr/lib' not found
+/Users/yangjing/Desktop/ai-workspace/Fiona/watcher-mac/Package.swift: fiona-watcher-product: ld: warning: search path '/Library/Developer/CommandLineTools/Developer/Library/Frameworks' not found
+[28 / 29] fiona-watcher-product
+Build complete! (1.58秒)
+◇ Test run started.
+↳ Testing Library Version: 2084
+↳ Target Platform: arm64e-apple-macos14.0
+◇ Suite LocalWatchSnapshotTests started.
+◇ Suite LocalWatchOCRTests started.
+◇ Suite LocalWatchNormalizationTests started.
+◇ Suite LocalWatchSchedulingTests started.
+◇ Test testTrimsAndCollapsesWhitespaceAndDropsNoise() started.
+◇ Test testRecognizesChineseAndEnglishDrawnByCoreGraphics() started.
+◇ Test testRetryDoesNotBlockReadyObservationForAnotherRule() started.
+◇ Test testPendingQueueRetainsEveryBatchAndFailedPayload() started.
+◇ Test testExponentialBackoffNeverExceedsSixtySeconds() started.
+◇ Test testDuplicateLinesOnlyReportOnceAndEmptyFirstSnapshotIsBaseline() started.
+◇ Test testMixedNumericContentRemainsAndUnicodeWhitespaceCollapses() started.
+◇ Test testFirstSnapshotIsBaselineAndRecentThreeSuppressRepeatedLines() started.
+◇ Test testObservationBoundsPreserveOrder() started.
+✔ Test testExponentialBackoffNeverExceedsSixtySeconds() passed after 0.001 seconds.
+✔ Test testRetryDoesNotBlockReadyObservationForAnotherRule() passed after 0.001 seconds.
+✔ Test testDuplicateLinesOnlyReportOnceAndEmptyFirstSnapshotIsBaseline() passed after 0.001 seconds.
+✔ Test testFirstSnapshotIsBaselineAndRecentThreeSuppressRepeatedLines() passed after 0.001 seconds.
+✔ Test testPendingQueueRetainsEveryBatchAndFailedPayload() passed after 0.001 seconds.
+✔ Test testObservationBoundsPreserveOrder() passed after 0.001 seconds.
+✔ Suite LocalWatchSchedulingTests passed after 0.001 seconds.
+✔ Suite LocalWatchSnapshotTests passed after 0.001 seconds.
+✔ Test testMixedNumericContentRemainsAndUnicodeWhitespaceCollapses() passed after 0.001 seconds.
+✔ Test testTrimsAndCollapsesWhitespaceAndDropsNoise() passed after 0.001 seconds.
+✔ Suite LocalWatchNormalizationTests passed after 0.001 seconds.
+✘ Test testRecognizesChineseAndEnglishDrawnByCoreGraphics() recorded an issue at test_local_watch_ocr.swift:7:6: Caught error: .nilError
+✘ Test testRecognizesChineseAndEnglishDrawnByCoreGraphics() failed after 0.053 seconds with 1 issue.
+✘ Suite LocalWatchOCRTests failed after 0.054 seconds with 1 issue.
+✘ Test run with 9 tests in 4 suites failed after 0.054 seconds with 1 issue.
+Note: Some test targets reported failures:
+  - FionaWatcherCoreTests (Swift Testing)

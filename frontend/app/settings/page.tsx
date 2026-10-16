@@ -10,6 +10,7 @@ import { useTheme } from "@/lib/useTheme";
 import { apiFetch, clearAuth, setAuth } from "@/lib/auth";
 import { useAccountIdentity } from "@/lib/useAccountIdentity";
 import ChatModelSection from "@/components/ChatModelSection";
+import LocalWatchSection from "@/components/LocalWatchSection";
 
 import { API_BASE as API } from "@/lib/config";
 
@@ -212,6 +213,8 @@ function SettingsContent() {
             </section>
 
             <ChatModelSection key={username} username={username} sectionClass={sectionClass} headingClass={headingClass} />
+
+            <LocalWatchSection key={username} username={username} sectionClass={sectionClass} headingClass={headingClass} />
 
             <section className={sectionClass}>
               <h2 className={headingClass}>数据管理</h2>

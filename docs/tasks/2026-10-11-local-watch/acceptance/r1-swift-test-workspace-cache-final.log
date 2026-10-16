@@ -1,0 +1,52 @@
+warning: /Users/yangjing/Library/org.swift.swiftpm/configuration is not accessible or not writable, disabling user-level cache features.
+warning: /Users/yangjing/Library/org.swift.swiftpm/security is not accessible or not writable, disabling user-level cache features.
+Building for debugging...
+[3 / 27] FionaWatcherCore
+[7 / 23] FionaWatcherCore
+[8 / 19] FionaWatcherCoreTests-product
+[12 / 23] FionaWatcherCoreTests-product
+[15 / 21] FionaWatcherCoreTests-product
+/Users/yangjing/Desktop/ai-workspace/Fiona/watcher-mac/Tests/FionaWatcherCoreTests/test_local_watch_ocr.swift:78:22: warning: '#require(_:_:)' will always fail here; use 'Bool(false)' to silence this warning (from macro 'require')
+76 |             }
+77 |         }
+78 |         try #require(false, "System font lacks a required glyph")
+   |                      `- warning: '#require(_:_:)' will always fail here; use 'Bool(false)' to silence this warning (from macro 'require')
+79 |         return 0
+80 |     }
+[17 / 21] FionaWatcherCoreTests-product/Users/yangjing/Desktop/ai-workspace/Fiona/watcher-mac/Package.swift: FionaWatcherCoreTests-product: ld: warning: search path '/Library/Developer/CommandLineTools/Developer/usr/lib' not found
+/Users/yangjing/Desktop/ai-workspace/Fiona/watcher-mac/Package.swift: FionaWatcherCoreTests-product: ld: warning: search path '/Library/Developer/CommandLineTools/Developer/Library/Frameworks' not found
+
+Build complete! (1.34秒)
+◇ Test run started.
+↳ Testing Library Version: 2084
+↳ Target Platform: arm64e-apple-macos14.0
+◇ Suite LocalWatchOCRTests started.
+◇ Suite LocalWatchSnapshotTests started.
+◇ Suite LocalWatchNormalizationTests started.
+◇ Suite LocalWatchSchedulingTests started.
+◇ Test testFirstSnapshotIsBaselineAndRecentThreeSuppressRepeatedLines() started.
+◇ Test testMixedNumericContentRemainsAndUnicodeWhitespaceCollapses() started.
+◇ Test testRecognizesChineseAndEnglishDrawnByCoreGraphics() started.
+◇ Test testTrimsAndCollapsesWhitespaceAndDropsNoise() started.
+◇ Test testDuplicateLinesOnlyReportOnceAndEmptyFirstSnapshotIsBaseline() started.
+◇ Test testObservationBoundsPreserveOrder() started.
+◇ Test testPendingQueueRetainsEveryBatchAndFailedPayload() started.
+◇ Test testRetryDoesNotBlockReadyObservationForAnotherRule() started.
+◇ Test testExponentialBackoffNeverExceedsSixtySeconds() started.
+✔ Test testFirstSnapshotIsBaselineAndRecentThreeSuppressRepeatedLines() passed after 0.001 seconds.
+✔ Test testExponentialBackoffNeverExceedsSixtySeconds() passed after 0.001 seconds.
+✔ Test testDuplicateLinesOnlyReportOnceAndEmptyFirstSnapshotIsBaseline() passed after 0.001 seconds.
+✔ Test testRetryDoesNotBlockReadyObservationForAnotherRule() passed after 0.001 seconds.
+✔ Test testPendingQueueRetainsEveryBatchAndFailedPayload() passed after 0.001 seconds.
+✔ Test testObservationBoundsPreserveOrder() passed after 0.001 seconds.
+✔ Suite LocalWatchSnapshotTests passed after 0.001 seconds.
+✔ Suite LocalWatchSchedulingTests passed after 0.001 seconds.
+✔ Test testMixedNumericContentRemainsAndUnicodeWhitespaceCollapses() passed after 0.001 seconds.
+✔ Test testTrimsAndCollapsesWhitespaceAndDropsNoise() passed after 0.001 seconds.
+✔ Suite LocalWatchNormalizationTests passed after 0.001 seconds.
+✘ Test testRecognizesChineseAndEnglishDrawnByCoreGraphics() recorded an issue at test_local_watch_ocr.swift:7:6: Caught error: .nilError
+✘ Test testRecognizesChineseAndEnglishDrawnByCoreGraphics() failed after 0.048 seconds with 1 issue.
+✘ Suite LocalWatchOCRTests failed after 0.048 seconds with 1 issue.
+✘ Test run with 9 tests in 4 suites failed after 0.048 seconds with 1 issue.
+Note: Some test targets reported failures:
+  - FionaWatcherCoreTests (Swift Testing)

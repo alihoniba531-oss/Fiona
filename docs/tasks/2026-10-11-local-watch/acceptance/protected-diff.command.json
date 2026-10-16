@@ -1,0 +1,21 @@
+{
+  "cwd": ".",
+  "command": [
+    "git",
+    "diff",
+    "--exit-code",
+    "--",
+    "backend/llm.py",
+    "backend/intent_router.py",
+    "backend/mode_switcher.py",
+    "backend/crisis_model.py",
+    "backend/safety.py",
+    "backend/byok",
+    "backend/services/chat_service.py",
+    "backend/services/claude_agent.py",
+    "backend/routers/chat.py",
+    "backend/tools",
+    "desktop"
+  ],
+  "existing_environment": "backend/.venv; npm offline"
+}

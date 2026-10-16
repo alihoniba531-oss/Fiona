@@ -1,0 +1,246 @@
+F.....FF..FFFFFFFFF                                                      [100%]
+=================================== FAILURES ===================================
+________ test_neutral_capture_is_optional_and_still_read_only_metadata _________
+
+    def test_neutral_capture_is_optional_and_still_read_only_metadata():
+        source = LOGIC.read_text(encoding="utf-8")
+        capture = source.split("export interface LocalWatchCapture {", 1)[1].split("}", 1)[0]
+>       assert re.search(r"\bneutral\?\s*:\s*boolean\b", capture)
+E       AssertionError: assert None
+E        +  where None = <function search at 0x107357320>('\\bneutral\\?\\s*:\\s*boolean\\b', '\n  ok: boolean; message: string; since?: string;\n')
+E        +    where <function search at 0x107357320> = re.search
+
+tests/test_local_watch_capture_frontend_r4.py:109: AssertionError
+___ test_real_rule_row_uses_ordinary_color_for_neutral_status[capture1-True] ___
+
+capture = {'ok': False, 'neutral': True, 'message': '已停用'}, ordinary = True
+
+    @pytest.mark.parametrize("capture,ordinary", [
+        ({"ok": True, "message": "监控中"}, True),
+        ({"ok": False, "neutral": True, "message": "已停用"}, True),
+        ({"ok": False, "neutral": True, "message": "等待首次截图"}, True),
+        ({"ok": False, "message": "监控程序未在运行"}, False),
+        ({"ok": False, "message": "截图失败，请查看监控程序日志"}, False),
+    ])
+    def test_real_rule_row_uses_ordinary_color_for_neutral_status(capture, ordinary):
+        source = SETTINGS.read_text(encoding="utf-8")
+        row = source.split("{rules.map(rule =>", 1)[1].split("</li>)}</ul>", 1)[0]
+        status = row.split("{localWatchCaptureMessage(rule)}", 1)[0].rsplit("<p", 1)[1]
+        assert 'role="status"' in status and "break-all" in status
+        expression = status.split("${", 1)[1].split("}", 1)[0]
+        script = "const noteClass='ordinary',rule={capture:" + json.dumps(capture) + "};\n"
+        script += "process.stdout.write(JSON.stringify(" + expression + "));"
+        actual = node_json(script)
+>       assert (actual == "ordinary") is ordinary
+E       AssertionError: assert ('text-[13px] ...:var(--seal)]' == 'ordinary'
+E         
+E         - ordinary
+E         + text-[13px] leading-[1.85] text-[color:var(--seal)]) is True
+
+tests/test_local_watch_capture_frontend_r4.py:142: AssertionError
+___ test_real_rule_row_uses_ordinary_color_for_neutral_status[capture2-True] ___
+
+capture = {'ok': False, 'neutral': True, 'message': '等待首次截图'}, ordinary = True
+
+    @pytest.mark.parametrize("capture,ordinary", [
+        ({"ok": True, "message": "监控中"}, True),
+        ({"ok": False, "neutral": True, "message": "已停用"}, True),
+        ({"ok": False, "neutral": True, "message": "等待首次截图"}, True),
+        ({"ok": False, "message": "监控程序未在运行"}, False),
+        ({"ok": False, "message": "截图失败，请查看监控程序日志"}, False),
+    ])
+    def test_real_rule_row_uses_ordinary_color_for_neutral_status(capture, ordinary):
+        source = SETTINGS.read_text(encoding="utf-8")
+        row = source.split("{rules.map(rule =>", 1)[1].split("</li>)}</ul>", 1)[0]
+        status = row.split("{localWatchCaptureMessage(rule)}", 1)[0].rsplit("<p", 1)[1]
+        assert 'role="status"' in status and "break-all" in status
+        expression = status.split("${", 1)[1].split("}", 1)[0]
+        script = "const noteClass='ordinary',rule={capture:" + json.dumps(capture) + "};\n"
+        script += "process.stdout.write(JSON.stringify(" + expression + "));"
+        actual = node_json(script)
+>       assert (actual == "ordinary") is ordinary
+E       AssertionError: assert ('text-[13px] ...:var(--seal)]' == 'ordinary'
+E         
+E         - ordinary
+E         + text-[13px] leading-[1.85] text-[color:var(--seal)]) is True
+
+tests/test_local_watch_capture_frontend_r4.py:142: AssertionError
+_______________ test_actual_visible_interval_fetches_only_rules ________________
+
+    def test_actual_visible_interval_fetches_only_rules():
+        actual = settings_runner("""
+          interval();await flush();interval();await flush();cleanup();
+          process.stdout.write(JSON.stringify({paths:calls.map(call=>call.path),chat:chatCalls.length,
+            timerDelay,ruleUpdates:updates.filter(item=>item[0]==='rules').length,clearCount}));
+        """)
+>       assert actual == {"paths": ["/rules", "/rules"], "chat": 0, "timerDelay": 10000,
+                          "ruleUpdates": 2, "clearCount": 1}
+E       AssertionError: assert {'paths': ['/...ates': 2, ...} == {'paths': ['/...ates': 2, ...}
+E         
+E         Omitting 3 identical items, use -vv to show
+E         Differing items:
+E         {'paths': ['/devices', '/rules', '/windows', 'local/conversations', '/devices', '/rules', ...]} != {'paths': ['/rules', '/rules']}
+E         {'chat': 2} != {'chat': 0}
+E         Use -v to get more diff
+
+tests/test_local_watch_capture_frontend_r4.py:153: AssertionError
+_____________ test_poll_does_not_cancel_slow_initial_full_refresh ______________
+
+    def test_poll_does_not_cancel_slow_initial_full_refresh():
+        actual = settings_runner("""
+          mode='pending';const initial=refresh();const first=calls[0].signal;
+          interval();await flush();const aborted=first.aborted;
+          resolvers.splice(0).forEach(resolve=>resolve());await initial;await flush();cleanup();
+          process.stdout.write(JSON.stringify({aborted,paths:calls.map(call=>call.path),chat:chatCalls.length,
+            received:updates.filter(item=>['devices','windows','conversations','claude'].includes(item[0])).map(item=>item[0])}));
+        """)
+>       assert actual["aborted"] is False
+E       assert True is False
+
+tests/test_local_watch_capture_frontend_r4.py:165: AssertionError
+_________ test_pending_intervals_never_overlap_or_queue_more_requests __________
+
+    def test_pending_intervals_never_overlap_or_queue_more_requests():
+        actual = settings_runner("""
+          mode='pending';interval();interval();interval();await flush();const pending=calls.length;
+          resolvers.splice(0).forEach(resolve=>resolve());await flush();mode='ready';interval();await flush();cleanup();
+          process.stdout.write(JSON.stringify({pending,paths:calls.map(call=>call.path)}));
+        """)
+>       assert actual == {"pending": 1, "paths": ["/rules", "/rules"]}
+E       AssertionError: assert {'pending': 1.../rules', ...]} == {'pending': 1...s', '/rules']}
+E         
+E         Differing items:
+E         {'paths': ['/devices', '/rules', '/windows', 'local/conversations', '/devices', '/rules', ...]} != {'paths': ['/rules', '/rules']}
+E         {'pending': 12} != {'pending': 1}
+E         Use -v to get more diff
+
+tests/test_local_watch_capture_frontend_r4.py:177: AssertionError
+______ test_hidden_page_cancels_pending_poll_and_resumes_with_rules_only _______
+
+    def test_hidden_page_cancels_pending_poll_and_resumes_with_rules_only():
+        actual = settings_runner("""
+          document.visibilityState='hidden';interval();await flush();const initial=calls.length;
+          document.visibilityState='visible';document.listeners.visibilitychange?.();await flush();
+          mode='pending';interval();await flush();const signal=calls.at(-1).signal;
+          document.visibilityState='hidden';document.listeners.visibilitychange?.();interval();
+          resolvers.splice(0).forEach(resolve=>resolve());await flush();
+          const hiddenUpdates=updates.filter(item=>item[0]==='rules').length;
+          mode='ready';document.visibilityState='visible';document.listeners.visibilitychange?.();await flush();cleanup();
+          process.stdout.write(JSON.stringify({initial,aborted:signal.aborted,hiddenUpdates,
+            paths:calls.map(call=>call.path),listeners:Object.keys(document.listeners)}));
+        """)
+>       assert actual == {"initial": 0, "aborted": True, "hiddenUpdates": 1,
+                          "paths": ["/rules", "/rules", "/rules"], "listeners": []}
+E       AssertionError: assert {'initial': 0...ations'], ...} == {'initial': 0.../rules'], ...}
+E         
+E         Omitting 3 identical items, use -vv to show
+E         Differing items:
+E         {'paths': ['/devices', '/rules', '/windows', 'local/conversations']} != {'paths': ['/rules', '/rules', '/rules']}
+E         {'aborted': False} != {'aborted': True}
+E         Use -v to get more diff
+
+tests/test_local_watch_capture_frontend_r4.py:192: AssertionError
+__ test_old_account_or_unmounted_poll_cannot_publish_a_late_response[unmount] __
+
+stop = 'unmount'
+
+    @pytest.mark.parametrize("stop", ["unmount", "account"])
+    def test_old_account_or_unmounted_poll_cannot_publish_a_late_response(stop):
+        stopping = "cleanup();" if stop == "unmount" else "owner='bob';controllers.forEach(controller=>controller.abort());"
+        actual = settings_runner("""
+          mode='pending';interval();await flush();const signal=calls[0].signal;
+        """ + stopping + """
+          resolvers.splice(0).forEach(resolve=>resolve());await flush();interval();await flush();
+          process.stdout.write(JSON.stringify({aborted:signal.aborted,paths:calls.map(call=>call.path),
+            rules:updates.filter(item=>item[0]==='rules').length}));
+        """)
+>       assert actual == {"aborted": True, "paths": ["/rules"], "rules": 0}
+E       AssertionError: assert {'aborted': T...], 'rules': 1} == {'aborted': T...], 'rules': 0}
+E         
+E         Omitting 1 identical items, use -vv to show
+E         Differing items:
+E         {'paths': ['/devices', '/rules', '/windows', 'local/conversations', '/devices', '/rules', ...]} != {'paths': ['/rules']}
+E         {'rules': 1} != {'rules': 0}
+E         Use -v to get more diff
+
+tests/test_local_watch_capture_frontend_r4.py:206: AssertionError
+__ test_old_account_or_unmounted_poll_cannot_publish_a_late_response[account] __
+
+stop = 'account'
+
+    @pytest.mark.parametrize("stop", ["unmount", "account"])
+    def test_old_account_or_unmounted_poll_cannot_publish_a_late_response(stop):
+        stopping = "cleanup();" if stop == "unmount" else "owner='bob';controllers.forEach(controller=>controller.abort());"
+        actual = settings_runner("""
+          mode='pending';interval();await flush();const signal=calls[0].signal;
+        """ + stopping + """
+          resolvers.splice(0).forEach(resolve=>resolve());await flush();interval();await flush();
+          process.stdout.write(JSON.stringify({aborted:signal.aborted,paths:calls.map(call=>call.path),
+            rules:updates.filter(item=>item[0]==='rules').length}));
+        """)
+>       assert actual == {"aborted": True, "paths": ["/rules"], "rules": 0}
+E       AssertionError: assert {'aborted': T...], 'rules': 0} == {'aborted': T...], 'rules': 0}
+E         
+E         Omitting 2 identical items, use -vv to show
+E         Differing items:
+E         {'paths': ['/devices', '/rules', '/windows', 'local/conversations']} != {'paths': ['/rules']}
+E         Use -v to get more diff
+
+tests/test_local_watch_capture_frontend_r4.py:206: AssertionError
+_________ test_404_stops_actual_interval_and_marks_feature_unavailable _________
+
+    def test_404_stops_actual_interval_and_marks_feature_unavailable():
+        actual = settings_runner("""
+          mode='404';interval();await flush();interval();await flush();
+          process.stdout.write(JSON.stringify({paths:calls.map(call=>call.path),available,clearCount}));
+        """)
+>       assert actual == {"paths": ["/rules"], "available": False, "clearCount": 1}
+E       AssertionError: assert {'paths': ['/...learCount': 0} == {'paths': ['/...learCount': 1}
+E         
+E         Omitting 1 identical items, use -vv to show
+E         Differing items:
+E         {'paths': ['/devices', '/rules', '/windows', 'local/conversations', '/devices', '/rules', ...]} != {'paths': ['/rules']}
+E         {'clearCount': 0} != {'clearCount': 1}
+E         Use -v to get more diff
+
+tests/test_local_watch_capture_frontend_r4.py:214: AssertionError
+________________ test_transient_poll_failure_retries_next_tick _________________
+
+    def test_transient_poll_failure_retries_next_tick():
+        actual = settings_runner("""
+          const original=localWatchRequest;localWatchRequest=()=>{calls.push({path:'/rules'});return Promise.reject(Error('offline'));};
+          interval();await flush();localWatchRequest=original;interval();await flush();cleanup();
+          process.stdout.write(JSON.stringify({paths:calls.map(call=>call.path),available,
+            rules:updates.filter(item=>item[0]==='rules').length}));
+        """)
+>       assert actual == {"paths": ["/rules", "/rules"], "available": True, "rules": 1}
+E       AssertionError: assert {'paths': ['/...e, 'rules': 1} == {'paths': ['/...e, 'rules': 1}
+E         
+E         Omitting 2 identical items, use -vv to show
+E         Differing items:
+E         {'paths': ['/rules', '/rules', '/rules', 'local/conversations', '/devices', '/rules', ...]} != {'paths': ['/rules', '/rules']}
+E         Use -v to get more diff
+
+tests/test_local_watch_capture_frontend_r4.py:224: AssertionError
+____________ test_poll_uses_separate_account_lane_and_dependencies _____________
+
+    def test_poll_uses_separate_account_lane_and_dependencies():
+        source = SETTINGS.read_text(encoding="utf-8")
+>       assert "const { beginRequest: beginRulesRead } = useAccountRequest(username);" in source
+E       assert 'const { beginRequest: beginRulesRead } = useAccountRequest(username);' in '"use client";\n\nimport { useCallback, useEffect, useState } from "react";\nimport { apiFetch } from "@/lib/auth";\ni...a 用于判断，不落日志。AI 判断规则会把新出现的文字发给阿里云千问（选 Claude 时发给 Anthropic）。只会保存提醒摘要。</p>\n      </div>\n    </div>\n  </section>;\n}\n'
+
+tests/test_local_watch_capture_frontend_r4.py:229: AssertionError
+=========================== short test summary info ============================
+FAILED tests/test_local_watch_capture_frontend_r4.py::test_neutral_capture_is_optional_and_still_read_only_metadata
+FAILED tests/test_local_watch_capture_frontend_r4.py::test_real_rule_row_uses_ordinary_color_for_neutral_status[capture1-True]
+FAILED tests/test_local_watch_capture_frontend_r4.py::test_real_rule_row_uses_ordinary_color_for_neutral_status[capture2-True]
+FAILED tests/test_local_watch_capture_frontend_r4.py::test_actual_visible_interval_fetches_only_rules
+FAILED tests/test_local_watch_capture_frontend_r4.py::test_poll_does_not_cancel_slow_initial_full_refresh
+FAILED tests/test_local_watch_capture_frontend_r4.py::test_pending_intervals_never_overlap_or_queue_more_requests
+FAILED tests/test_local_watch_capture_frontend_r4.py::test_hidden_page_cancels_pending_poll_and_resumes_with_rules_only
+FAILED tests/test_local_watch_capture_frontend_r4.py::test_old_account_or_unmounted_poll_cannot_publish_a_late_response[unmount]
+FAILED tests/test_local_watch_capture_frontend_r4.py::test_old_account_or_unmounted_poll_cannot_publish_a_late_response[account]
+FAILED tests/test_local_watch_capture_frontend_r4.py::test_404_stops_actual_interval_and_marks_feature_unavailable
+FAILED tests/test_local_watch_capture_frontend_r4.py::test_transient_poll_failure_retries_next_tick
+FAILED tests/test_local_watch_capture_frontend_r4.py::test_poll_uses_separate_account_lane_and_dependencies
+12 failed, 7 passed in 0.69s

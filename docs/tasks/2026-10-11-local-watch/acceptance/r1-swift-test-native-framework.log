@@ -1,0 +1,75 @@
+warning: /Users/yangjing/Library/org.swift.swiftpm/configuration is not accessible or not writable, disabling user-level cache features.
+warning: /Users/yangjing/Library/org.swift.swiftpm/security is not accessible or not writable, disabling user-level cache features.
+[0/1] Planning build
+Building for debugging...
+[0/6] Write swift-version--1AB21518FC5DEDBE.txt
+[2/11] Emitting module FionaWatcherCore
+[3/11] Compiling FionaWatcherCore Watcher.swift
+[4/11] Compiling FionaWatcherCore LineProcessing.swift
+[5/11] Compiling FionaWatcherCore Scheduling.swift
+[6/11] Compiling FionaWatcherCore OCR.swift
+[7/17] Emitting module fiona_watcher
+[8/17] Compiling fiona_watcher main.swift
+[8/17] Write Objects.LinkFileList
+[9/17] Linking fiona-watcher
+[10/17] Applying fiona-watcher
+[12/17] Emitting module FionaWatcherCoreTests
+[13/17] Compiling FionaWatcherCoreTests test_local_watch_ocr.swift
+/Users/yangjing/Desktop/ai-workspace/Fiona/watcher-mac/Tests/FionaWatcherCoreTests/test_local_watch_ocr.swift:78:22: warning: '#require(_:_:)' will always fail here; use 'Bool(false)' to silence this warning (from macro 'require')
+76 |             }
+77 |         }
+78 |         try #require(false, "System font lacks a required glyph")
+   |                      `- warning: '#require(_:_:)' will always fail here; use 'Bool(false)' to silence this warning (from macro 'require')
+79 |         return 0
+80 |     }
+[14/17] Compiling FionaWatcherCoreTests test_local_watch_logic.swift
+[15/17] Compiling FionaWatcherCoreTests test_local_watch_scheduling.swift
+macro expansion #require:2:6: error: cannot use mutating member on immutable value: '$0' is immutable
+`- /Users/yangjing/Desktop/ai-workspace/Fiona/watcher-mac/Tests/FionaWatcherCoreTests/test_local_watch_scheduling.swift:12:60: note: expanded code originates here
+10 |         queue.enqueue(PendingObservation(ruleID: 1, lines: ["第一条"], capturedAt: now, appName: "应用甲"))
+11 |         queue.enqueue(PendingObservation(ruleID: 2, lines: ["第二条"], capturedAt: now, appName: "应用乙"))
+12 |         let failed = try #require(queue.takeReady(at: now))
+   |                          `- note: in expansion of macro 'require' here
+   +--- macro expansion #require ---------------------------------------
+   |1 | Testing.__checkFunctionCall(queue.self,calling: {
+   |2 |   $0.takeReady(at: $1)
+   |  |      `- error: cannot use mutating member on immutable value: '$0' is immutable
+   |3 | },now,expression: .__fromFunctionCall(.__fromSyntaxNode("queue"),"takeReady",("at",.__fromSyntaxNode("now"))),comments: [],isRequired: true,sourceLocation: Testing.SourceLocation.__here()).__required()
+   +--------------------------------------------------------------------
+13 |         #expect(failed.ruleID == 1)
+14 |         queue.retry(failed, at: now)
+
+/Users/yangjing/Desktop/ai-workspace/Fiona/watcher-mac/Tests/FionaWatcherCoreTests/test_local_watch_scheduling.swift:12:22: warning: no calls to throwing functions occur within 'try' expression [#UnnecessaryEffectMarker]
+10 |         queue.enqueue(PendingObservation(ruleID: 1, lines: ["第一条"], capturedAt: now, appName: "应用甲"))
+11 |         queue.enqueue(PendingObservation(ruleID: 2, lines: ["第二条"], capturedAt: now, appName: "应用乙"))
+12 |         let failed = try #require(queue.takeReady(at: now))
+   |                      `- warning: no calls to throwing functions occur within 'try' expression [#UnnecessaryEffectMarker]
+13 |         #expect(failed.ruleID == 1)
+14 |         queue.retry(failed, at: now)
+
+macro expansion #require:2:6: error: cannot use mutating member on immutable value: '$0' is immutable
+`- /Users/yangjing/Desktop/ai-workspace/Fiona/watcher-mac/Tests/FionaWatcherCoreTests/test_local_watch_scheduling.swift:28:60: note: expanded code originates here
+26 |         }
+27 |         #expect(queue.count(for: 1) == 20)
+28 |         let failed = try #require(queue.takeReady(at: now))
+   |                          `- note: in expansion of macro 'require' here
+   +--- macro expansion #require ---------------------------------------
+   |1 | Testing.__checkFunctionCall(queue.self,calling: {
+   |2 |   $0.takeReady(at: $1)
+   |  |      `- error: cannot use mutating member on immutable value: '$0' is immutable
+   |3 | },now,expression: .__fromFunctionCall(.__fromSyntaxNode("queue"),"takeReady",("at",.__fromSyntaxNode("now"))),comments: [],isRequired: true,sourceLocation: Testing.SourceLocation.__here()).__required()
+   +--------------------------------------------------------------------
+29 |         queue.retry(failed, at: now)
+30 |         #expect(queue.count(for: 1) == 20)
+
+/Users/yangjing/Desktop/ai-workspace/Fiona/watcher-mac/Tests/FionaWatcherCoreTests/test_local_watch_scheduling.swift:28:22: warning: no calls to throwing functions occur within 'try' expression [#UnnecessaryEffectMarker]
+26 |         }
+27 |         #expect(queue.count(for: 1) == 20)
+28 |         let failed = try #require(queue.takeReady(at: now))
+   |                      `- warning: no calls to throwing functions occur within 'try' expression [#UnnecessaryEffectMarker]
+29 |         queue.retry(failed, at: now)
+30 |         #expect(queue.count(for: 1) == 20)
+
+[#UnnecessaryEffectMarker]: <https://docs.swift.org/compiler/documentation/diagnostics/unnecessary-effect-marker>
+warning: '--build-system native' has been deprecated and will be removed in a future release; please report an issue at https://github.com/swiftlang/swift-package-manager/issues if you are unable to adopt the default build system.
+error: fatalError

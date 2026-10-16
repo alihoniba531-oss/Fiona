@@ -1,0 +1,13 @@
+def capture_message(status):
+    if status["ok"]:
+        return "监控中"
+    error = status["error"]
+    if error == "window_not_found":
+        return "没有找到匹配的窗口（窗口可能已关闭或最小化）"
+    domain = error.partition("/")[0] if error else ""
+    # 真机上报的是带前缀的完整错误域，例如
+    # com.apple.ScreenCaptureKit.SCStreamErrorDomain，只比较最后一段。
+    short = domain.rpartition(".")[2]
+    if short in {"SCStream", "SCStreamErrorDomain", "SCErrorDomain", "SCScreenshotErrorDomain"} or "ScreenCaptureKit" in domain:
+        return "截图失败：屏幕可能已锁定或显示器已休眠，也可能缺少屏幕录制权限"
+    return "截图失败，请查看监控程序日志"

@@ -1,0 +1,134 @@
+FFFFFFF                                                                  [100%]
+=================================== FAILURES ===================================
+_ test_all_existing_cases_are_discoverable_without_xctest[test_local_watch_logic.swift-methods0] _
+
+filename = 'test_local_watch_logic.swift'
+methods = ('testTrimsAndCollapsesWhitespaceAndDropsNoise', 'testMixedNumericContentRemainsAndUnicodeWhitespaceCollapses', 'testF...epeatedLines', 'testDuplicateLinesOnlyReportOnceAndEmptyFirstSnapshotIsBaseline', 'testObservationBoundsPreserveOrder')
+
+    @pytest.mark.parametrize("filename,methods", FILES_AND_METHODS.items())
+    def test_all_existing_cases_are_discoverable_without_xctest(filename, methods):
+        source = (TEST_DIRECTORY / filename).read_text(encoding="utf-8")
+>       assert "import Testing" in source
+E       assert 'import Testing' in 'import XCTest\n@testable import FionaWatcherCore\n\nfinal class LocalWatchNormalizationTests: XCTestCase {\n    func ...   XCTAssertEqual(bounded.map(\\.count).reduce(0, +), 4000)\n        XCTAssertEqual(bounded.last, "中文中文中")\n    }\n}\n'
+
+tests/test_local_watch_swift_testing.py:56: AssertionError
+_ test_all_existing_cases_are_discoverable_without_xctest[test_local_watch_scheduling.swift-methods1] _
+
+filename = 'test_local_watch_scheduling.swift'
+methods = ('testRetryDoesNotBlockReadyObservationForAnotherRule', 'testPendingQueueRetainsEveryBatchAndFailedPayload', 'testExponentialBackoffNeverExceedsSixtySeconds')
+
+    @pytest.mark.parametrize("filename,methods", FILES_AND_METHODS.items())
+    def test_all_existing_cases_are_discoverable_without_xctest(filename, methods):
+        source = (TEST_DIRECTORY / filename).read_text(encoding="utf-8")
+>       assert "import Testing" in source
+E       AssertionError: assert 'import Testing' in 'import Foundation\nimport XCTest\n@testable import FionaWatcherCore\n\nfinal class LocalWatchSchedulingTests: XCTestC...ryBackoff()\n        XCTAssertEqual((0..<9).map { _ in backoff.next() }, [1, 2, 4, 8, 16, 32, 60, 60, 60])\n    }\n}\n'
+
+tests/test_local_watch_swift_testing.py:56: AssertionError
+_ test_all_existing_cases_are_discoverable_without_xctest[test_local_watch_ocr.swift-methods2] _
+
+filename = 'test_local_watch_ocr.swift'
+methods = ('testRecognizesChineseAndEnglishDrawnByCoreGraphics',)
+
+    @pytest.mark.parametrize("filename,methods", FILES_AND_METHODS.items())
+    def test_all_existing_cases_are_discoverable_without_xctest(filename, methods):
+        source = (TEST_DIRECTORY / filename).read_text(encoding="utf-8")
+>       assert "import Testing" in source
+E       assert 'import Testing' in 'import CoreGraphics\nimport Foundation\nimport XCTest\n@testable import FionaWatcherCore\n\nfinal class LocalWatchOCR...      }\n            }\n        }\n        XCTFail("System font lacks a required glyph")\n        return 0\n    }\n}\n'
+
+tests/test_local_watch_swift_testing.py:56: AssertionError
+_______ test_normalization_and_snapshot_assertion_strength_is_preserved ________
+
+    def test_normalization_and_snapshot_assertion_strength_is_preserved():
+        source = compact((TEST_DIRECTORY / "test_local_watch_logic.swift").read_text(encoding="utf-8"))
+        expected = (
+            'LineNormalizer.normalize(["张三：今晚开会","Download\\tcomplete","A","1234","-1,234.50%",'
+            '"12:30","12:30:05","昨天","星期一","周日","！！…","___","","价格100","今天下午开会","@我"])'
+            '==["张三：今晚开会","Downloadcomplete","价格100","今天下午开会","@我"]',
+            'LineNormalizer.normalize(["价格\\u{3000}-12.5%","版本2","OK"])==["价格-12.5%","版本2","OK"]',
+            'history.observe(["甲消息","旧行"])==[]',
+            'history.observe(["乙消息"])==["乙消息"]',
+            'history.observe(["丙消息"])==["丙消息"]',
+            'history.observe(["甲消息","丁消息"])==["丁消息"]',
+            'history.observe(["旧行"])==["旧行"]',
+            'history.observe([])==[]',
+            'history.observe(["新消息","新消息","其他消息"])==["新消息","其他消息"]',
+            'history.observe(["新消息"])==[]',
+            'ObservationLimits.lines(Array(repeating:"消息",count:55)).count==50',
+            'bounded.map(\\.count).reduce(0,+)==4000',
+            'bounded.last=="中文中文中"',
+        )
+>       assert source.count("#expect(") == len(expected)
+E       assert 0 == 13
+E        +  where 0 = <built-in method count of str object at 0x783043e400>('#expect(')
+E        +    where <built-in method count of str object at 0x783043e400> = 'importXCTest@testableimportFionaWatcherCorefinalclassLocalWatchNormalizationTests:XCTestCase{functestTrimsAndCollapse..."甲",count:3995),"中文中文中文"])XCTAssertEqual(bounded.map(\\.count).reduce(0,+),4000)XCTAssertEqual(bounded.last,"中文中文中")}}'.count
+E        +  and   13 = len(('LineNormalizer.normalize(["张三：今晚开会","Download\\tcomplete","A","1234","-1,234.50%","12:30","12:30:05","昨天","星期一","周日"...istory.observe(["乙消息"])==["乙消息"]', 'history.observe(["丙消息"])==["丙消息"]', 'history.observe(["甲消息","丁消息"])==["丁消息"]', ...))
+
+tests/test_local_watch_swift_testing.py:83: AssertionError
+________ test_retry_payload_queue_and_backoff_assertions_are_preserved _________
+
+    def test_retry_payload_queue_and_backoff_assertions_are_preserved():
+        source = compact((TEST_DIRECTORY / "test_local_watch_scheduling.swift").read_text(encoding="utf-8"))
+        expected = (
+            "failed.ruleID==1",
+            "queue.takeReady(at:now)?.ruleID==2",
+            "queue.takeReady(at:now)==nil",
+            'queue.takeReady(at:now.addingTimeInterval(1))?.lines==["第一条"]',
+            "queue.count(for:1)==20",
+            "queue.count(for:1)==20",
+            'queue.takeReady(at:now.addingTimeInterval(1))?.lines==["消息0"]',
+            'queue.takeReady(at:now.addingTimeInterval(1))?.lines==["消息\\(index)"]',
+            "queue.count(for:1)==0",
+            "(0..<9).map{_inbackoff.next()}==[1,2,4,8,16,32,60,60,60]",
+        )
+>       assert source.count("#expect(") == len(expected)
+E       assert 0 == 10
+E        +  where 0 = <built-in method count of str object at 0x7830fee400>('#expect(')
+E        +    where <built-in method count of str object at 0x7830fee400> = 'importFoundationimportXCTest@testableimportFionaWatcherCorefinalclassLocalWatchSchedulingTests:XCTestCase{functestRet...ceedsSixtySeconds(){varbackoff=RetryBackoff()XCTAssertEqual((0..<9).map{_inbackoff.next()},[1,2,4,8,16,32,60,60,60])}}'.count
+E        +  and   10 = len(('failed.ruleID==1', 'queue.takeReady(at:now)?.ruleID==2', 'queue.takeReady(at:now)==nil', 'queue.takeReady(at:now.addingTimeInterval(1))?.lines==["第一条"]', 'queue.count(for:1)==20', 'queue.count(for:1)==20', ...))
+
+tests/test_local_watch_swift_testing.py:103: AssertionError
+_____ test_coregraphics_ocr_fixture_and_strict_bilingual_assertions_remain _____
+
+    def test_coregraphics_ocr_fixture_and_strict_bilingual_assertions_remain():
+        source = compact((TEST_DIRECTORY / "test_local_watch_ocr.swift").read_text(encoding="utf-8"))
+        for required in (
+            "importCoreGraphics", "try#require(CGContext(", "width:1200,height:340",
+            'trydraw("张三：今晚开会",fontName:"PingFangSC-Regular",y:240,in:context)',
+            'trydraw("Downloadcomplete",fontName:"Helvetica",y:85,in:context)',
+            "try#require(context.makeImage())", "tryOCRRecognizer.lines(in:image)",
+            '#expect(lines.contains(where:{$0.contains("张三：今晚开会")}))',
+            '#expect(lines.contains(where:{$0.contains("Downloadcomplete")}))',
+            'try#require(lines.firstIndex(where:{$0.contains("张三")}))',
+            'try#require(lines.firstIndex(where:{$0.contains("Download")}))',
+            "#expect(chineseIndex<englishIndex)", "try#require(CGFont(fontNameasCFString))",
+            "try#require(font.table(for:0x636D6170))",
+            "try#require(font.getGlyphAdvances(glyphs:glyphs,count:glyphs.count,advances:&advances))",
+            "context.showGlyphs(glyphs,at:positions)", "ifu16(table)==12",
+            "elseifu16(table)==4&&scalar<=0xFFFF",
+            'try#require(false,"Systemfontlacksarequiredglyph")',
+        ):
+>           assert required in source
+E           assert 'try#require(CGContext(' in 'importCoreGraphicsimportFoundationimportXCTest@testableimportFionaWatcherCorefinalclassLocalWatchOCRTests:XCTestCase{...arts+segment*2)))letvalue=u16(offset)returnvalue==0?0:value&+delta}}}XCTFail("Systemfontlacksarequiredglyph")return0}}'
+
+tests/test_local_watch_swift_testing.py:128: AssertionError
+__ test_every_swift_test_uses_the_clt_testing_framework_without_dependencies ___
+
+    def test_every_swift_test_uses_the_clt_testing_framework_without_dependencies():
+        files = sorted((ROOT / "watcher-mac/Tests").rglob("*.swift"))
+        assert {item.name for item in files} == set(FILES_AND_METHODS)
+        for file in files:
+>           assert "import Testing" in file.read_text(encoding="utf-8")
+E           assert 'import Testing' in 'import XCTest\n@testable import FionaWatcherCore\n\nfinal class LocalWatchNormalizationTests: XCTestCase {\n    func ...   XCTAssertEqual(bounded.map(\\.count).reduce(0, +), 4000)\n        XCTAssertEqual(bounded.last, "中文中文中")\n    }\n}\n'
+E            +  where 'import XCTest\n@testable import FionaWatcherCore\n\nfinal class LocalWatchNormalizationTests: XCTestCase {\n    func ...   XCTAssertEqual(bounded.map(\\.count).reduce(0, +), 4000)\n        XCTAssertEqual(bounded.last, "中文中文中")\n    }\n}\n' = read_text(encoding='utf-8')
+E            +    where read_text = PosixPath('/Users/yangjing/Desktop/ai-workspace/Fiona/watcher-mac/Tests/FionaWatcherCoreTests/test_local_watch_logic.swift').read_text
+
+tests/test_local_watch_swift_testing.py:138: AssertionError
+=========================== short test summary info ============================
+FAILED tests/test_local_watch_swift_testing.py::test_all_existing_cases_are_discoverable_without_xctest[test_local_watch_logic.swift-methods0]
+FAILED tests/test_local_watch_swift_testing.py::test_all_existing_cases_are_discoverable_without_xctest[test_local_watch_scheduling.swift-methods1]
+FAILED tests/test_local_watch_swift_testing.py::test_all_existing_cases_are_discoverable_without_xctest[test_local_watch_ocr.swift-methods2]
+FAILED tests/test_local_watch_swift_testing.py::test_normalization_and_snapshot_assertion_strength_is_preserved
+FAILED tests/test_local_watch_swift_testing.py::test_retry_payload_queue_and_backoff_assertions_are_preserved
+FAILED tests/test_local_watch_swift_testing.py::test_coregraphics_ocr_fixture_and_strict_bilingual_assertions_remain
+FAILED tests/test_local_watch_swift_testing.py::test_every_swift_test_uses_the_clt_testing_framework_without_dependencies
+7 failed in 0.17s

@@ -1,0 +1,33 @@
+{
+  "r3-swift-unit-red": {
+    "exit": 1,
+    "cleaned_before": true,
+    "cleaned_after": true
+  },
+  "r3-swift-unit-red-native": {
+    "exit": 1,
+    "cleaned_before": true,
+    "cleaned_after": true
+  },
+  "r3-swift-build-release-default": {
+    "exit": 1,
+    "cleaned_before": true,
+    "cleaned_after": true
+  },
+  "r3-swift-test-default": {
+    "exit": 1,
+    "cleaned_before": true,
+    "cleaned_after": true
+  },
+  "r3-swift-test-native-plugin": {
+    "exit": 1,
+    "cleaned_before": true,
+    "cleaned_after": true
+  },
+  "r3-swift-build-release-native": {
+    "exit": 0,
+    "cleaned_before": true,
+    "cleaned_after": true
+  },
+  "final_build_directory_exists": false
+}

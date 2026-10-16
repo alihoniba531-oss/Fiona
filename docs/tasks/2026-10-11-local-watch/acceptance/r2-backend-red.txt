@@ -1,0 +1,1074 @@
+FFFFFFFFFFFFFFFFFFFFFFFF                                                 [100%]
+=================================== FAILURES ===================================
+_ test_forged_bearer_authentication_never_takes_write_lock_or_updates[heartbeat] _
+
+client = <starlette.testclient.TestClient object at 0x111057b60>
+monkeypatch = <_pytest.monkeypatch.MonkeyPatch object at 0x10a9028b0>
+path = 'heartbeat'
+
+    @pytest.mark.parametrize("path", ["heartbeat", "observations"])
+    def test_forged_bearer_authentication_never_takes_write_lock_or_updates(client, monkeypatch, path):
+        statements, commits = record_execute(monkeypatch)
+        result = client.post("/local-watch/" + path, headers=bearer("invented-token"), content="{broken")
+        assert result.status_code == 401
+        assert any(sql.startswith("SELECT") for sql in statements)
+>       assert not any(sql.startswith(("BEGIN", "UPDATE", "INSERT", "DELETE")) for sql in statements)
+E       assert not True
+E        +  where True = any(<generator object test_forged_bearer_authentication_never_takes_write_lock_or_updates.<locals>.<genexpr> at 0x1110bfae0>)
+
+tests/test_local_watch_backend_r2.py:111: AssertionError
+_ test_forged_bearer_authentication_never_takes_write_lock_or_updates[observations] _
+
+client = <starlette.testclient.TestClient object at 0x110f8afd0>
+monkeypatch = <_pytest.monkeypatch.MonkeyPatch object at 0x110f5ee70>
+path = 'observations'
+
+    @pytest.mark.parametrize("path", ["heartbeat", "observations"])
+    def test_forged_bearer_authentication_never_takes_write_lock_or_updates(client, monkeypatch, path):
+        statements, commits = record_execute(monkeypatch)
+        result = client.post("/local-watch/" + path, headers=bearer("invented-token"), content="{broken")
+        assert result.status_code == 401
+        assert any(sql.startswith("SELECT") for sql in statements)
+>       assert not any(sql.startswith(("BEGIN", "UPDATE", "INSERT", "DELETE")) for sql in statements)
+E       assert not True
+E        +  where True = any(<generator object test_forged_bearer_authentication_never_takes_write_lock_or_updates.<locals>.<genexpr> at 0x11119d620>)
+
+tests/test_local_watch_backend_r2.py:111: AssertionError
+__ test_forged_bearer_can_be_rejected_while_other_connection_holds_write_lock __
+  + Exception Group Traceback (most recent call last):
+  |   File "/Users/yangjing/Desktop/ai-workspace/Fiona/backend/.venv/lib/python3.14/site-packages/starlette/_utils.py", line 85, in create_collapsing_task_group
+  |     async with anyio.create_task_group() as tg:
+  |                ~~~~~~~~~~~~~~~~~~~~~~~^^
+  |   File "/Users/yangjing/Desktop/ai-workspace/Fiona/backend/.venv/lib/python3.14/site-packages/anyio/_backends/_asyncio.py", line 815, in __aexit__
+  |     raise BaseExceptionGroup(
+  |         "unhandled errors in a TaskGroup", self._exceptions
+  |     ) from None
+  | ExceptionGroup: unhandled errors in a TaskGroup (1 sub-exception)
+  +-+---------------- 1 ----------------
+    | Traceback (most recent call last):
+    |   File "/Users/yangjing/Desktop/ai-workspace/Fiona/backend/.venv/lib/python3.14/site-packages/_pytest/runner.py", line 361, in from_call
+    |     result: TResult | None = func()
+    |                              ~~~~^^
+    |   File "/Users/yangjing/Desktop/ai-workspace/Fiona/backend/.venv/lib/python3.14/site-packages/_pytest/runner.py", line 250, in <lambda>
+    |     lambda: runtest_hook(item=item, **kwds),
+    |             ~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^
+    |   File "/Users/yangjing/Desktop/ai-workspace/Fiona/backend/.venv/lib/python3.14/site-packages/pluggy/_hooks.py", line 512, in __call__
+    |     return self._hookexec(self.name, self._hookimpls.copy(), kwargs, firstresult)
+    |            ~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+    |   File "/Users/yangjing/Desktop/ai-workspace/Fiona/backend/.venv/lib/python3.14/site-packages/pluggy/_manager.py", line 120, in _hookexec
+    |     return self._inner_hookexec(hook_name, methods, kwargs, firstresult)
+    |            ~~~~~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+    |   File "/Users/yangjing/Desktop/ai-workspace/Fiona/backend/.venv/lib/python3.14/site-packages/pluggy/_callers.py", line 167, in _multicall
+    |     raise exception
+    |   File "/Users/yangjing/Desktop/ai-workspace/Fiona/backend/.venv/lib/python3.14/site-packages/pluggy/_callers.py", line 139, in _multicall
+    |     teardown.throw(exception)
+    |     ~~~~~~~~~~~~~~^^^^^^^^^^^
+    |   File "/Users/yangjing/Desktop/ai-workspace/Fiona/backend/.venv/lib/python3.14/site-packages/_pytest/logging.py", line 865, in pytest_runtest_call
+    |     yield
+    |   File "/Users/yangjing/Desktop/ai-workspace/Fiona/backend/.venv/lib/python3.14/site-packages/pluggy/_callers.py", line 139, in _multicall
+    |     teardown.throw(exception)
+    |     ~~~~~~~~~~~~~~^^^^^^^^^^^
+    |   File "/Users/yangjing/Desktop/ai-workspace/Fiona/backend/.venv/lib/python3.14/site-packages/_pytest/capture.py", line 900, in pytest_runtest_call
+    |     return (yield)
+    |             ^^^^^
+    |   File "/Users/yangjing/Desktop/ai-workspace/Fiona/backend/.venv/lib/python3.14/site-packages/pluggy/_callers.py", line 139, in _multicall
+    |     teardown.throw(exception)
+    |     ~~~~~~~~~~~~~~^^^^^^^^^^^
+    |   File "/Users/yangjing/Desktop/ai-workspace/Fiona/backend/.venv/lib/python3.14/site-packages/_pytest/skipping.py", line 268, in pytest_runtest_call
+    |     return (yield)
+    |             ^^^^^
+    |   File "/Users/yangjing/Desktop/ai-workspace/Fiona/backend/.venv/lib/python3.14/site-packages/pluggy/_callers.py", line 121, in _multicall
+    |     res = hook_impl.function(*args)
+    |   File "/Users/yangjing/Desktop/ai-workspace/Fiona/backend/.venv/lib/python3.14/site-packages/_pytest/runner.py", line 184, in pytest_runtest_call
+    |     item.runtest()
+    |     ~~~~~~~~~~~~^^
+    |   File "/Users/yangjing/Desktop/ai-workspace/Fiona/backend/.venv/lib/python3.14/site-packages/_pytest/python.py", line 1707, in runtest
+    |     self.ihook.pytest_pyfunc_call(pyfuncitem=self)
+    |     ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^
+    |   File "/Users/yangjing/Desktop/ai-workspace/Fiona/backend/.venv/lib/python3.14/site-packages/pluggy/_hooks.py", line 512, in __call__
+    |     return self._hookexec(self.name, self._hookimpls.copy(), kwargs, firstresult)
+    |            ~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+    |   File "/Users/yangjing/Desktop/ai-workspace/Fiona/backend/.venv/lib/python3.14/site-packages/pluggy/_manager.py", line 120, in _hookexec
+    |     return self._inner_hookexec(hook_name, methods, kwargs, firstresult)
+    |            ~~~~~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+    |   File "/Users/yangjing/Desktop/ai-workspace/Fiona/backend/.venv/lib/python3.14/site-packages/pluggy/_callers.py", line 167, in _multicall
+    |     raise exception
+    |   File "/Users/yangjing/Desktop/ai-workspace/Fiona/backend/.venv/lib/python3.14/site-packages/pluggy/_callers.py", line 121, in _multicall
+    |     res = hook_impl.function(*args)
+    |   File "/Users/yangjing/Desktop/ai-workspace/Fiona/backend/.venv/lib/python3.14/site-packages/_pytest/python.py", line 167, in pytest_pyfunc_call
+    |     result = testfunction(**testargs)
+    |   File "/Users/yangjing/Desktop/ai-workspace/Fiona/backend/tests/test_local_watch_backend_r2.py", line 120, in test_forged_bearer_can_be_rejected_while_other_connection_holds_write_lock
+    |     result = heartbeat(client, "invented-while-write-locked")
+    |   File "/Users/yangjing/Desktop/ai-workspace/Fiona/backend/tests/test_local_watch_backend_r2.py", line 69, in heartbeat
+    |     return client.post("/local-watch/heartbeat", headers=bearer(token), json=payload)
+    |            ~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+    |   File "/Users/yangjing/Desktop/ai-workspace/Fiona/backend/.venv/lib/python3.14/site-packages/starlette/testclient.py", line 555, in post
+    |     return super().post(
+    |            ~~~~~~~~~~~~^
+    |         url,
+    |         ^^^^
+    |     ...<10 lines>...
+    |         extensions=extensions,
+    |         ^^^^^^^^^^^^^^^^^^^^^^
+    |     )
+    |     ^
+    |   File "/Users/yangjing/Desktop/ai-workspace/Fiona/backend/.venv/lib/python3.14/site-packages/httpx2/_client.py", line 1204, in post
+    |     return self.request(
+    |            ~~~~~~~~~~~~^
+    |         "POST",
+    |         ^^^^^^^
+    |     ...<11 lines>...
+    |         extensions=extensions,
+    |         ^^^^^^^^^^^^^^^^^^^^^^
+    |     )
+    |     ^
+    |   File "/Users/yangjing/Desktop/ai-workspace/Fiona/backend/.venv/lib/python3.14/site-packages/starlette/testclient.py", line 454, in request
+    |     return super().request(
+    |            ~~~~~~~~~~~~~~~^
+    |         method,
+    |         ^^^^^^^
+    |     ...<11 lines>...
+    |         extensions=extensions,
+    |         ^^^^^^^^^^^^^^^^^^^^^^
+    |     )
+    |     ^
+    |   File "/Users/yangjing/Desktop/ai-workspace/Fiona/backend/.venv/lib/python3.14/site-packages/httpx2/_client.py", line 797, in request
+    |     return self.send(request, auth=auth, follow_redirects=follow_redirects)
+    |            ~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+    |   File "/Users/yangjing/Desktop/ai-workspace/Fiona/backend/.venv/lib/python3.14/site-packages/httpx2/_client.py", line 980, in send
+    |     response = self._send_handling_auth(
+    |         request,
+    |     ...<2 lines>...
+    |         history=[],
+    |     )
+    |   File "/Users/yangjing/Desktop/ai-workspace/Fiona/backend/.venv/lib/python3.14/site-packages/httpx2/_client.py", line 1008, in _send_handling_auth
+    |     response = self._send_handling_redirects(
+    |         request,
+    |         follow_redirects=follow_redirects,
+    |         history=history,
+    |     )
+    |   File "/Users/yangjing/Desktop/ai-workspace/Fiona/backend/.venv/lib/python3.14/site-packages/httpx2/_client.py", line 1043, in _send_handling_redirects
+    |     response = self._send_single_request(request)
+    |   File "/Users/yangjing/Desktop/ai-workspace/Fiona/backend/.venv/lib/python3.14/site-packages/httpx2/_client.py", line 1076, in _send_single_request
+    |     response = transport.handle_request(request)
+    |   File "/Users/yangjing/Desktop/ai-workspace/Fiona/backend/.venv/lib/python3.14/site-packages/starlette/testclient.py", line 356, in handle_request
+    |     raise exc
+    |   File "/Users/yangjing/Desktop/ai-workspace/Fiona/backend/.venv/lib/python3.14/site-packages/starlette/testclient.py", line 353, in handle_request
+    |     portal.call(self.app, scope, receive, send)
+    |     ~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+    |   File "/Users/yangjing/Desktop/ai-workspace/Fiona/backend/.venv/lib/python3.14/site-packages/anyio/from_thread.py", line 338, in call
+    |     return cast(T_Retval, self.start_task_soon(func, *args).result())
+    |                           ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~^^
+    |   File "/opt/homebrew/Cellar/python@3.14/3.14.6/Frameworks/Python.framework/Versions/3.14/lib/python3.14/concurrent/futures/_base.py", line 454, in result
+    |     return self.__get_result()
+    |            ~~~~~~~~~~~~~~~~~^^
+    |   File "/opt/homebrew/Cellar/python@3.14/3.14.6/Frameworks/Python.framework/Versions/3.14/lib/python3.14/concurrent/futures/_base.py", line 396, in __get_result
+    |     raise self._exception
+    |   File "/Users/yangjing/Desktop/ai-workspace/Fiona/backend/.venv/lib/python3.14/site-packages/anyio/from_thread.py", line 263, in _call_func
+    |     retval = await retval_or_awaitable
+    |              ^^^^^^^^^^^^^^^^^^^^^^^^^
+    |   File "/Users/yangjing/Desktop/ai-workspace/Fiona/backend/.venv/lib/python3.14/site-packages/fastapi/applications.py", line 1159, in __call__
+    |     await super().__call__(scope, receive, send)
+    |   File "/Users/yangjing/Desktop/ai-workspace/Fiona/backend/.venv/lib/python3.14/site-packages/starlette/applications.py", line 90, in __call__
+    |     await self.middleware_stack(scope, receive, send)
+    |   File "/Users/yangjing/Desktop/ai-workspace/Fiona/backend/.venv/lib/python3.14/site-packages/starlette/middleware/errors.py", line 186, in __call__
+    |     raise exc
+    |   File "/Users/yangjing/Desktop/ai-workspace/Fiona/backend/.venv/lib/python3.14/site-packages/starlette/middleware/errors.py", line 164, in __call__
+    |     await self.app(scope, receive, _send)
+    |   File "/Users/yangjing/Desktop/ai-workspace/Fiona/backend/.venv/lib/python3.14/site-packages/starlette/middleware/base.py", line 193, in __call__
+    |     response = await self.dispatch_func(request, call_next)
+    |                ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+    |   File "/Users/yangjing/Desktop/ai-workspace/Fiona/backend/main.py", line 292, in private_local_watch
+    |     response = await call_next(request)
+    |                ^^^^^^^^^^^^^^^^^^^^^^^^
+    |   File "/Users/yangjing/Desktop/ai-workspace/Fiona/backend/.venv/lib/python3.14/site-packages/starlette/middleware/base.py", line 168, in call_next
+    |     raise app_exc from app_exc.__cause__ or app_exc.__context__
+    |   File "/Users/yangjing/Desktop/ai-workspace/Fiona/backend/.venv/lib/python3.14/site-packages/starlette/middleware/base.py", line 144, in coro
+    |     await self.app(scope, receive_or_disconnect, send_no_error)
+    |   File "/Users/yangjing/Desktop/ai-workspace/Fiona/backend/.venv/lib/python3.14/site-packages/starlette/middleware/base.py", line 193, in __call__
+    |     response = await self.dispatch_func(request, call_next)
+    |                ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+    |   File "/Users/yangjing/Desktop/ai-workspace/Fiona/backend/main.py", line 220, in require_auth
+    |     return await call_next(request)
+    |            ^^^^^^^^^^^^^^^^^^^^^^^^
+    |   File "/Users/yangjing/Desktop/ai-workspace/Fiona/backend/.venv/lib/python3.14/site-packages/starlette/middleware/base.py", line 168, in call_next
+    |     raise app_exc from app_exc.__cause__ or app_exc.__context__
+    |   File "/Users/yangjing/Desktop/ai-workspace/Fiona/backend/.venv/lib/python3.14/site-packages/starlette/middleware/base.py", line 144, in coro
+    |     await self.app(scope, receive_or_disconnect, send_no_error)
+    |   File "/Users/yangjing/Desktop/ai-workspace/Fiona/backend/.venv/lib/python3.14/site-packages/starlette/middleware/cors.py", line 88, in __call__
+    |     await self.app(scope, receive, send)
+    |   File "/Users/yangjing/Desktop/ai-workspace/Fiona/backend/utils/request_limits.py", line 57, in __call__
+    |     await self.app(scope, limited_receive, tracked_send)
+    |   File "/Users/yangjing/Desktop/ai-workspace/Fiona/backend/.venv/lib/python3.14/site-packages/starlette/middleware/exceptions.py", line 63, in __call__
+    |     await wrap_app_handling_exceptions(self.app, conn)(scope, receive, send)
+    |   File "/Users/yangjing/Desktop/ai-workspace/Fiona/backend/.venv/lib/python3.14/site-packages/starlette/_exception_handler.py", line 53, in wrapped_app
+    |     raise exc
+    |   File "/Users/yangjing/Desktop/ai-workspace/Fiona/backend/.venv/lib/python3.14/site-packages/starlette/_exception_handler.py", line 42, in wrapped_app
+    |     await app(scope, receive, sender)
+    |   File "/Users/yangjing/Desktop/ai-workspace/Fiona/backend/.venv/lib/python3.14/site-packages/fastapi/middleware/asyncexitstack.py", line 18, in __call__
+    |     await self.app(scope, receive, send)
+    |   File "/Users/yangjing/Desktop/ai-workspace/Fiona/backend/.venv/lib/python3.14/site-packages/starlette/routing.py", line 660, in __call__
+    |     await self.middleware_stack(scope, receive, send)
+    |   File "/Users/yangjing/Desktop/ai-workspace/Fiona/backend/.venv/lib/python3.14/site-packages/starlette/routing.py", line 680, in app
+    |     await route.handle(scope, receive, send)
+    |   File "/Users/yangjing/Desktop/ai-workspace/Fiona/backend/.venv/lib/python3.14/site-packages/starlette/routing.py", line 276, in handle
+    |     await self.app(scope, receive, send)
+    |   File "/Users/yangjing/Desktop/ai-workspace/Fiona/backend/.venv/lib/python3.14/site-packages/fastapi/routing.py", line 134, in app
+    |     await wrap_app_handling_exceptions(app, request)(scope, receive, send)
+    |   File "/Users/yangjing/Desktop/ai-workspace/Fiona/backend/.venv/lib/python3.14/site-packages/starlette/_exception_handler.py", line 53, in wrapped_app
+    |     raise exc
+    |   File "/Users/yangjing/Desktop/ai-workspace/Fiona/backend/.venv/lib/python3.14/site-packages/starlette/_exception_handler.py", line 42, in wrapped_app
+    |     await app(scope, receive, sender)
+    |   File "/Users/yangjing/Desktop/ai-workspace/Fiona/backend/.venv/lib/python3.14/site-packages/fastapi/routing.py", line 120, in app
+    |     response = await f(request)
+    |                ^^^^^^^^^^^^^^^^
+    |   File "/Users/yangjing/Desktop/ai-workspace/Fiona/backend/.venv/lib/python3.14/site-packages/fastapi/routing.py", line 457, in app
+    |     solved_result = await solve_dependencies(
+    |                     ^^^^^^^^^^^^^^^^^^^^^^^^^
+    |     ...<6 lines>...
+    |     )
+    |     ^
+    |   File "/Users/yangjing/Desktop/ai-workspace/Fiona/backend/.venv/lib/python3.14/site-packages/fastapi/dependencies/utils.py", line 678, in solve_dependencies
+    |     solved = await call(**solved_result.values)
+    |              ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+    |   File "/Users/yangjing/Desktop/ai-workspace/Fiona/backend/routers/local_watch.py", line 124, in current_device
+    |     device = await database.authenticate_watch_device(hashlib.sha256(token.encode()).hexdigest())
+    |              ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+    |   File "/Users/yangjing/Desktop/ai-workspace/Fiona/backend/database.py", line 1773, in authenticate_watch_device
+    |     await db.execute("BEGIN IMMEDIATE")
+    |   File "/Users/yangjing/Desktop/ai-workspace/Fiona/backend/.venv/lib/python3.14/site-packages/aiosqlite/core.py", line 223, in execute
+    |     cursor = await self._execute(self._conn.execute, sql, parameters)
+    |              ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+    |   File "/Users/yangjing/Desktop/ai-workspace/Fiona/backend/.venv/lib/python3.14/site-packages/aiosqlite/core.py", line 160, in _execute
+    |     return await future
+    |            ^^^^^^^^^^^^
+    |   File "/Users/yangjing/Desktop/ai-workspace/Fiona/backend/.venv/lib/python3.14/site-packages/aiosqlite/core.py", line 63, in _connection_worker_thread
+    |     result = function()
+    | sqlite3.OperationalError: database is locked
+    +------------------------------------
+
+The above exception was the direct cause of the following exception:
+
+Traceback (most recent call last):
+  File "/Users/yangjing/Desktop/ai-workspace/Fiona/backend/tests/test_local_watch_backend_r2.py", line 120, in test_forged_bearer_can_be_rejected_while_other_connection_holds_write_lock
+    result = heartbeat(client, "invented-while-write-locked")
+  File "/Users/yangjing/Desktop/ai-workspace/Fiona/backend/tests/test_local_watch_backend_r2.py", line 69, in heartbeat
+    return client.post("/local-watch/heartbeat", headers=bearer(token), json=payload)
+           ~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/Users/yangjing/Desktop/ai-workspace/Fiona/backend/.venv/lib/python3.14/site-packages/starlette/testclient.py", line 555, in post
+    return super().post(
+           ~~~~~~~~~~~~^
+        url,
+        ^^^^
+    ...<10 lines>...
+        extensions=extensions,
+        ^^^^^^^^^^^^^^^^^^^^^^
+    )
+    ^
+  File "/Users/yangjing/Desktop/ai-workspace/Fiona/backend/.venv/lib/python3.14/site-packages/httpx2/_client.py", line 1204, in post
+    return self.request(
+           ~~~~~~~~~~~~^
+        "POST",
+        ^^^^^^^
+    ...<11 lines>...
+        extensions=extensions,
+        ^^^^^^^^^^^^^^^^^^^^^^
+    )
+    ^
+  File "/Users/yangjing/Desktop/ai-workspace/Fiona/backend/.venv/lib/python3.14/site-packages/starlette/testclient.py", line 454, in request
+    return super().request(
+           ~~~~~~~~~~~~~~~^
+        method,
+        ^^^^^^^
+    ...<11 lines>...
+        extensions=extensions,
+        ^^^^^^^^^^^^^^^^^^^^^^
+    )
+    ^
+  File "/Users/yangjing/Desktop/ai-workspace/Fiona/backend/.venv/lib/python3.14/site-packages/httpx2/_client.py", line 797, in request
+    return self.send(request, auth=auth, follow_redirects=follow_redirects)
+           ~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/Users/yangjing/Desktop/ai-workspace/Fiona/backend/.venv/lib/python3.14/site-packages/httpx2/_client.py", line 980, in send
+    response = self._send_handling_auth(
+        request,
+    ...<2 lines>...
+        history=[],
+    )
+  File "/Users/yangjing/Desktop/ai-workspace/Fiona/backend/.venv/lib/python3.14/site-packages/httpx2/_client.py", line 1008, in _send_handling_auth
+    response = self._send_handling_redirects(
+        request,
+        follow_redirects=follow_redirects,
+        history=history,
+    )
+  File "/Users/yangjing/Desktop/ai-workspace/Fiona/backend/.venv/lib/python3.14/site-packages/httpx2/_client.py", line 1043, in _send_handling_redirects
+    response = self._send_single_request(request)
+  File "/Users/yangjing/Desktop/ai-workspace/Fiona/backend/.venv/lib/python3.14/site-packages/httpx2/_client.py", line 1076, in _send_single_request
+    response = transport.handle_request(request)
+  File "/Users/yangjing/Desktop/ai-workspace/Fiona/backend/.venv/lib/python3.14/site-packages/starlette/testclient.py", line 356, in handle_request
+    raise exc
+  File "/Users/yangjing/Desktop/ai-workspace/Fiona/backend/.venv/lib/python3.14/site-packages/starlette/testclient.py", line 353, in handle_request
+    portal.call(self.app, scope, receive, send)
+    ~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/Users/yangjing/Desktop/ai-workspace/Fiona/backend/.venv/lib/python3.14/site-packages/anyio/from_thread.py", line 338, in call
+    return cast(T_Retval, self.start_task_soon(func, *args).result())
+                          ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~^^
+  File "/opt/homebrew/Cellar/python@3.14/3.14.6/Frameworks/Python.framework/Versions/3.14/lib/python3.14/concurrent/futures/_base.py", line 454, in result
+    return self.__get_result()
+           ~~~~~~~~~~~~~~~~~^^
+  File "/opt/homebrew/Cellar/python@3.14/3.14.6/Frameworks/Python.framework/Versions/3.14/lib/python3.14/concurrent/futures/_base.py", line 396, in __get_result
+    raise self._exception
+  File "/Users/yangjing/Desktop/ai-workspace/Fiona/backend/.venv/lib/python3.14/site-packages/anyio/from_thread.py", line 263, in _call_func
+    retval = await retval_or_awaitable
+             ^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/Users/yangjing/Desktop/ai-workspace/Fiona/backend/.venv/lib/python3.14/site-packages/fastapi/applications.py", line 1159, in __call__
+    await super().__call__(scope, receive, send)
+  File "/Users/yangjing/Desktop/ai-workspace/Fiona/backend/.venv/lib/python3.14/site-packages/starlette/applications.py", line 90, in __call__
+    await self.middleware_stack(scope, receive, send)
+  File "/Users/yangjing/Desktop/ai-workspace/Fiona/backend/.venv/lib/python3.14/site-packages/starlette/middleware/errors.py", line 186, in __call__
+    raise exc
+  File "/Users/yangjing/Desktop/ai-workspace/Fiona/backend/.venv/lib/python3.14/site-packages/starlette/middleware/errors.py", line 164, in __call__
+    await self.app(scope, receive, _send)
+  File "/Users/yangjing/Desktop/ai-workspace/Fiona/backend/.venv/lib/python3.14/site-packages/starlette/middleware/base.py", line 193, in __call__
+    response = await self.dispatch_func(request, call_next)
+               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/Users/yangjing/Desktop/ai-workspace/Fiona/backend/main.py", line 292, in private_local_watch
+    response = await call_next(request)
+               ^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/Users/yangjing/Desktop/ai-workspace/Fiona/backend/.venv/lib/python3.14/site-packages/starlette/middleware/base.py", line 168, in call_next
+    raise app_exc from app_exc.__cause__ or app_exc.__context__
+  File "/Users/yangjing/Desktop/ai-workspace/Fiona/backend/.venv/lib/python3.14/site-packages/starlette/middleware/base.py", line 144, in coro
+    await self.app(scope, receive_or_disconnect, send_no_error)
+  File "/Users/yangjing/Desktop/ai-workspace/Fiona/backend/.venv/lib/python3.14/site-packages/starlette/middleware/base.py", line 193, in __call__
+    response = await self.dispatch_func(request, call_next)
+               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/Users/yangjing/Desktop/ai-workspace/Fiona/backend/main.py", line 220, in require_auth
+    return await call_next(request)
+           ^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/Users/yangjing/Desktop/ai-workspace/Fiona/backend/.venv/lib/python3.14/site-packages/starlette/middleware/base.py", line 168, in call_next
+    raise app_exc from app_exc.__cause__ or app_exc.__context__
+  File "/Users/yangjing/Desktop/ai-workspace/Fiona/backend/.venv/lib/python3.14/site-packages/starlette/middleware/base.py", line 144, in coro
+    await self.app(scope, receive_or_disconnect, send_no_error)
+  File "/Users/yangjing/Desktop/ai-workspace/Fiona/backend/.venv/lib/python3.14/site-packages/starlette/middleware/cors.py", line 88, in __call__
+    await self.app(scope, receive, send)
+  File "/Users/yangjing/Desktop/ai-workspace/Fiona/backend/utils/request_limits.py", line 57, in __call__
+    await self.app(scope, limited_receive, tracked_send)
+  File "/Users/yangjing/Desktop/ai-workspace/Fiona/backend/.venv/lib/python3.14/site-packages/starlette/middleware/exceptions.py", line 63, in __call__
+    await wrap_app_handling_exceptions(self.app, conn)(scope, receive, send)
+  File "/Users/yangjing/Desktop/ai-workspace/Fiona/backend/.venv/lib/python3.14/site-packages/starlette/_exception_handler.py", line 53, in wrapped_app
+    raise exc
+  File "/Users/yangjing/Desktop/ai-workspace/Fiona/backend/.venv/lib/python3.14/site-packages/starlette/_exception_handler.py", line 42, in wrapped_app
+    await app(scope, receive, sender)
+  File "/Users/yangjing/Desktop/ai-workspace/Fiona/backend/.venv/lib/python3.14/site-packages/fastapi/middleware/asyncexitstack.py", line 18, in __call__
+    await self.app(scope, receive, send)
+  File "/Users/yangjing/Desktop/ai-workspace/Fiona/backend/.venv/lib/python3.14/site-packages/starlette/routing.py", line 660, in __call__
+    await self.middleware_stack(scope, receive, send)
+  File "/Users/yangjing/Desktop/ai-workspace/Fiona/backend/.venv/lib/python3.14/site-packages/starlette/routing.py", line 680, in app
+    await route.handle(scope, receive, send)
+  File "/Users/yangjing/Desktop/ai-workspace/Fiona/backend/.venv/lib/python3.14/site-packages/starlette/routing.py", line 276, in handle
+    await self.app(scope, receive, send)
+  File "/Users/yangjing/Desktop/ai-workspace/Fiona/backend/.venv/lib/python3.14/site-packages/fastapi/routing.py", line 134, in app
+    await wrap_app_handling_exceptions(app, request)(scope, receive, send)
+  File "/Users/yangjing/Desktop/ai-workspace/Fiona/backend/.venv/lib/python3.14/site-packages/starlette/_exception_handler.py", line 53, in wrapped_app
+    raise exc
+  File "/Users/yangjing/Desktop/ai-workspace/Fiona/backend/.venv/lib/python3.14/site-packages/starlette/_exception_handler.py", line 42, in wrapped_app
+    await app(scope, receive, sender)
+  File "/Users/yangjing/Desktop/ai-workspace/Fiona/backend/.venv/lib/python3.14/site-packages/fastapi/routing.py", line 120, in app
+    response = await f(request)
+               ^^^^^^^^^^^^^^^^
+  File "/Users/yangjing/Desktop/ai-workspace/Fiona/backend/.venv/lib/python3.14/site-packages/fastapi/routing.py", line 457, in app
+    solved_result = await solve_dependencies(
+                    ^^^^^^^^^^^^^^^^^^^^^^^^^
+    ...<6 lines>...
+    )
+    ^
+  File "/Users/yangjing/Desktop/ai-workspace/Fiona/backend/.venv/lib/python3.14/site-packages/fastapi/dependencies/utils.py", line 678, in solve_dependencies
+    solved = await call(**solved_result.values)
+             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/Users/yangjing/Desktop/ai-workspace/Fiona/backend/routers/local_watch.py", line 124, in current_device
+    device = await database.authenticate_watch_device(hashlib.sha256(token.encode()).hexdigest())
+             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/Users/yangjing/Desktop/ai-workspace/Fiona/backend/database.py", line 1773, in authenticate_watch_device
+    await db.execute("BEGIN IMMEDIATE")
+  File "/Users/yangjing/Desktop/ai-workspace/Fiona/backend/.venv/lib/python3.14/site-packages/aiosqlite/core.py", line 223, in execute
+    cursor = await self._execute(self._conn.execute, sql, parameters)
+             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/Users/yangjing/Desktop/ai-workspace/Fiona/backend/.venv/lib/python3.14/site-packages/aiosqlite/core.py", line 160, in _execute
+    return await future
+           ^^^^^^^^^^^^
+  File "/Users/yangjing/Desktop/ai-workspace/Fiona/backend/.venv/lib/python3.14/site-packages/aiosqlite/core.py", line 63, in _connection_worker_thread
+    result = function()
+sqlite3.OperationalError: database is locked
+
+The above exception was the direct cause of the following exception:
+
+client = <starlette.testclient.TestClient object at 0x110f8a850>
+
+    def test_forged_bearer_can_be_rejected_while_other_connection_holds_write_lock(client):
+        import database
+        with sqlite3.connect(database.DB_PATH) as connection:
+            connection.execute("BEGIN IMMEDIATE")
+>           result = heartbeat(client, "invented-while-write-locked")
+                     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+tests/test_local_watch_backend_r2.py:120: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+tests/test_local_watch_backend_r2.py:69: in heartbeat
+    return client.post("/local-watch/heartbeat", headers=bearer(token), json=payload)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+.venv/lib/python3.14/site-packages/starlette/testclient.py:555: in post
+    return super().post(
+.venv/lib/python3.14/site-packages/httpx2/_client.py:1204: in post
+    return self.request(
+.venv/lib/python3.14/site-packages/starlette/testclient.py:454: in request
+    return super().request(
+.venv/lib/python3.14/site-packages/httpx2/_client.py:797: in request
+    return self.send(request, auth=auth, follow_redirects=follow_redirects)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+.venv/lib/python3.14/site-packages/httpx2/_client.py:980: in send
+    response = self._send_handling_auth(
+.venv/lib/python3.14/site-packages/httpx2/_client.py:1008: in _send_handling_auth
+    response = self._send_handling_redirects(
+.venv/lib/python3.14/site-packages/httpx2/_client.py:1043: in _send_handling_redirects
+    response = self._send_single_request(request)
+               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+.venv/lib/python3.14/site-packages/httpx2/_client.py:1076: in _send_single_request
+    response = transport.handle_request(request)
+               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+.venv/lib/python3.14/site-packages/starlette/testclient.py:356: in handle_request
+    raise exc
+.venv/lib/python3.14/site-packages/starlette/testclient.py:353: in handle_request
+    portal.call(self.app, scope, receive, send)
+.venv/lib/python3.14/site-packages/anyio/from_thread.py:338: in call
+    return cast(T_Retval, self.start_task_soon(func, *args).result())
+                          ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+/opt/homebrew/Cellar/python@3.14/3.14.6/Frameworks/Python.framework/Versions/3.14/lib/python3.14/concurrent/futures/_base.py:454: in result
+    return self.__get_result()
+           ^^^^^^^^^^^^^^^^^^^
+/opt/homebrew/Cellar/python@3.14/3.14.6/Frameworks/Python.framework/Versions/3.14/lib/python3.14/concurrent/futures/_base.py:396: in __get_result
+    raise self._exception
+.venv/lib/python3.14/site-packages/anyio/from_thread.py:263: in _call_func
+    retval = await retval_or_awaitable
+             ^^^^^^^^^^^^^^^^^^^^^^^^^
+.venv/lib/python3.14/site-packages/fastapi/applications.py:1159: in __call__
+    await super().__call__(scope, receive, send)
+.venv/lib/python3.14/site-packages/starlette/applications.py:90: in __call__
+    await self.middleware_stack(scope, receive, send)
+.venv/lib/python3.14/site-packages/starlette/middleware/errors.py:186: in __call__
+    raise exc
+.venv/lib/python3.14/site-packages/starlette/middleware/errors.py:164: in __call__
+    await self.app(scope, receive, _send)
+.venv/lib/python3.14/site-packages/starlette/middleware/base.py:193: in __call__
+    response = await self.dispatch_func(request, call_next)
+               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+main.py:292: in private_local_watch
+    response = await call_next(request)
+               ^^^^^^^^^^^^^^^^^^^^^^^^
+.venv/lib/python3.14/site-packages/starlette/middleware/base.py:168: in call_next
+    raise app_exc from app_exc.__cause__ or app_exc.__context__
+.venv/lib/python3.14/site-packages/starlette/middleware/base.py:144: in coro
+    await self.app(scope, receive_or_disconnect, send_no_error)
+.venv/lib/python3.14/site-packages/starlette/middleware/base.py:193: in __call__
+    response = await self.dispatch_func(request, call_next)
+               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+main.py:220: in require_auth
+    return await call_next(request)
+           ^^^^^^^^^^^^^^^^^^^^^^^^
+.venv/lib/python3.14/site-packages/starlette/middleware/base.py:168: in call_next
+    raise app_exc from app_exc.__cause__ or app_exc.__context__
+.venv/lib/python3.14/site-packages/starlette/middleware/base.py:144: in coro
+    await self.app(scope, receive_or_disconnect, send_no_error)
+.venv/lib/python3.14/site-packages/starlette/middleware/cors.py:88: in __call__
+    await self.app(scope, receive, send)
+utils/request_limits.py:57: in __call__
+    await self.app(scope, limited_receive, tracked_send)
+.venv/lib/python3.14/site-packages/starlette/middleware/exceptions.py:63: in __call__
+    await wrap_app_handling_exceptions(self.app, conn)(scope, receive, send)
+.venv/lib/python3.14/site-packages/starlette/_exception_handler.py:53: in wrapped_app
+    raise exc
+.venv/lib/python3.14/site-packages/starlette/_exception_handler.py:42: in wrapped_app
+    await app(scope, receive, sender)
+.venv/lib/python3.14/site-packages/fastapi/middleware/asyncexitstack.py:18: in __call__
+    await self.app(scope, receive, send)
+.venv/lib/python3.14/site-packages/starlette/routing.py:660: in __call__
+    await self.middleware_stack(scope, receive, send)
+.venv/lib/python3.14/site-packages/starlette/routing.py:680: in app
+    await route.handle(scope, receive, send)
+.venv/lib/python3.14/site-packages/starlette/routing.py:276: in handle
+    await self.app(scope, receive, send)
+.venv/lib/python3.14/site-packages/fastapi/routing.py:134: in app
+    await wrap_app_handling_exceptions(app, request)(scope, receive, send)
+.venv/lib/python3.14/site-packages/starlette/_exception_handler.py:53: in wrapped_app
+    raise exc
+.venv/lib/python3.14/site-packages/starlette/_exception_handler.py:42: in wrapped_app
+    await app(scope, receive, sender)
+.venv/lib/python3.14/site-packages/fastapi/routing.py:120: in app
+    response = await f(request)
+               ^^^^^^^^^^^^^^^^
+.venv/lib/python3.14/site-packages/fastapi/routing.py:457: in app
+    solved_result = await solve_dependencies(
+.venv/lib/python3.14/site-packages/fastapi/dependencies/utils.py:678: in solve_dependencies
+    solved = await call(**solved_result.values)
+             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+routers/local_watch.py:124: in current_device
+    device = await database.authenticate_watch_device(hashlib.sha256(token.encode()).hexdigest())
+             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+database.py:1773: in authenticate_watch_device
+    await db.execute("BEGIN IMMEDIATE")
+.venv/lib/python3.14/site-packages/aiosqlite/core.py:223: in execute
+    cursor = await self._execute(self._conn.execute, sql, parameters)
+             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+.venv/lib/python3.14/site-packages/aiosqlite/core.py:160: in _execute
+    return await future
+           ^^^^^^^^^^^^
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+tx = <_queue.SimpleQueue object at 0x11110b3a0>
+
+    def _connection_worker_thread(tx: _TxQueue):
+        """
+        Execute function calls on a separate thread.
+    
+        :meta private:
+        """
+        while True:
+            # Continues running until all queue items are processed,
+            # even after connection is closed (so we can finalize all
+            # futures)
+    
+            future, function = tx.get()
+    
+            try:
+                LOG.debug("executing %s", function)
+>               result = function()
+                         ^^^^^^^^^^
+E               sqlite3.OperationalError: database is locked
+
+.venv/lib/python3.14/site-packages/aiosqlite/core.py:63: OperationalError
+_ test_valid_device_last_seen_updated_once_then_read_only_within_sixty_seconds _
+
+client = <starlette.testclient.TestClient object at 0x11122cc30>
+monkeypatch = <_pytest.monkeypatch.MonkeyPatch object at 0x1111f8270>
+
+    def test_valid_device_last_seen_updated_once_then_read_only_within_sixty_seconds(client, monkeypatch):
+        item = device(client)
+        statements, commits = record_execute(monkeypatch)
+        for _ in range(5):
+            assert heartbeat(client, item["token"]).status_code == 200
+>       assert sum(sql.startswith("UPDATE WATCH_DEVICES") for sql in statements) == 1
+E       assert 5 == 1
+E        +  where 5 = sum(<generator object test_valid_device_last_seen_updated_once_then_read_only_within_sixty_seconds.<locals>.<genexpr> at 0x1112499a0>)
+
+tests/test_local_watch_backend_r2.py:130: AssertionError
+_ test_last_seen_uses_database_clock_and_refreshes_only_when_sixty_seconds_elapsed _
+
+client = <starlette.testclient.TestClient object at 0x11122eea0>
+monkeypatch = <_pytest.monkeypatch.MonkeyPatch object at 0x11122a650>
+
+    def test_last_seen_uses_database_clock_and_refreshes_only_when_sixty_seconds_elapsed(client, monkeypatch):
+        import database
+        item = device(client)
+        with sqlite3.connect(database.DB_PATH) as connection:
+            connection.execute("UPDATE watch_devices SET last_seen_at=datetime('now','-30 seconds') WHERE id=?", (item["id"],))
+        statements, commits = record_execute(monkeypatch)
+        assert heartbeat(client, item["token"]).status_code == 200
+>       assert not any(sql.startswith("UPDATE WATCH_DEVICES") for sql in statements)
+E       assert not True
+E        +  where True = any(<generator object test_last_seen_uses_database_clock_and_refreshes_only_when_sixty_seconds_elapsed.<locals>.<genexpr> at 0x11124be60>)
+
+tests/test_local_watch_backend_r2.py:143: AssertionError
+_ test_concurrent_authentication_does_not_refresh_database_value_more_than_once _
+
+client = <starlette.testclient.TestClient object at 0x1110fe690>
+
+    def test_concurrent_authentication_does_not_refresh_database_value_more_than_once(client):
+        import database
+        item = device(client)
+        token_hash = hashlib.sha256(item["token"].encode()).hexdigest()
+        events = []
+        with sqlite3.connect(database.DB_PATH) as connection:
+            connection.execute("CREATE TABLE r2_touch_events(id INTEGER)")
+            connection.execute("CREATE TRIGGER r2_touch AFTER UPDATE OF last_seen_at ON watch_devices BEGIN INSERT INTO r2_touch_events VALUES(NEW.id); END")
+    
+        async def authenticate_all():
+            return await asyncio.gather(*(database.authenticate_watch_device_throttled(token_hash) for _ in range(12)))
+    
+>       events = asyncio.run(authenticate_all())
+                 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+tests/test_local_watch_backend_r2.py:164: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+/opt/homebrew/Cellar/python@3.14/3.14.6/Frameworks/Python.framework/Versions/3.14/lib/python3.14/asyncio/runners.py:205: in run
+    return runner.run(main)
+           ^^^^^^^^^^^^^^^^
+/opt/homebrew/Cellar/python@3.14/3.14.6/Frameworks/Python.framework/Versions/3.14/lib/python3.14/asyncio/runners.py:128: in run
+    return self._loop.run_until_complete(task)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+/opt/homebrew/Cellar/python@3.14/3.14.6/Frameworks/Python.framework/Versions/3.14/lib/python3.14/asyncio/base_events.py:719: in run_until_complete
+    return future.result()
+           ^^^^^^^^^^^^^^^
+tests/test_local_watch_backend_r2.py:162: in authenticate_all
+    return await asyncio.gather(*(database.authenticate_watch_device_throttled(token_hash) for _ in range(12)))
+                 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+.0 = <range_iterator object at 0x10fbf4390>
+
+>   return await asyncio.gather(*(database.authenticate_watch_device_throttled(token_hash) for _ in range(12)))
+                                  ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+E   AttributeError: module 'database' has no attribute 'authenticate_watch_device_throttled'. Did you mean: 'authenticate_watch_device'?
+
+tests/test_local_watch_backend_r2.py:162: AttributeError
+_ test_throttled_authentication_rejects_revoked_device_and_deleted_owner_without_writes _
+
+client = <starlette.testclient.TestClient object at 0x1111fb460>
+monkeypatch = <_pytest.monkeypatch.MonkeyPatch object at 0x111f3eb70>
+
+    def test_throttled_authentication_rejects_revoked_device_and_deleted_owner_without_writes(client, monkeypatch):
+        import database
+        first, second = device(client), device(client, "someone_else")
+        assert heartbeat(client, first["token"]).status_code == 200
+        assert heartbeat(client, second["token"]).status_code == 200
+        with sqlite3.connect(database.DB_PATH) as connection:
+            connection.execute("UPDATE watch_devices SET revoked=1 WHERE id=?", (first["id"],))
+            connection.execute("DELETE FROM users WHERE username='someone_else'")
+        statements, commits = record_execute(monkeypatch)
+        assert heartbeat(client, first["token"]).status_code == 401
+        assert heartbeat(client, second["token"]).status_code == 401
+>       assert not any(sql.startswith(("BEGIN", "UPDATE")) for sql in statements)
+E       assert not True
+E        +  where True = any(<generator object test_throttled_authentication_rejects_revoked_device_and_deleted_owner_without_writes.<locals>.<genexpr> at 0x111249d20>)
+
+tests/test_local_watch_backend_r2.py:180: AssertionError
+_ test_all_authentication_failures_count_by_real_client_ip_before_body_or_rule_validation[heartbeat] _
+
+client = <starlette.testclient.TestClient object at 0x1111f9ae0>
+monkeypatch = <_pytest.monkeypatch.MonkeyPatch object at 0x111f3de50>
+path = 'heartbeat'
+
+    @pytest.mark.parametrize("path", ["heartbeat", "observations"])
+    def test_all_authentication_failures_count_by_real_client_ip_before_body_or_rule_validation(client, monkeypatch, path):
+        from routers import local_watch as router
+        from starlette.requests import Request
+        failures = [{}, {"Authorization": "Basic invalid"}, bearer(""), bearer("invented"), bearer("x" * 300)]
+        for index in range(30):
+            headers = {**failures[index % len(failures)], "X-Forwarded-For": f"192.0.2.{index}"}
+            result = client.post("/local-watch/" + path, headers=headers, content="{invalid JSON")
+            assert result.status_code == 401, (index, result.text)
+    
+        async def forbidden(*args, **kwargs):
+            raise AssertionError("rate limited requests cannot parse body or query rules")
+    
+        monkeypatch.setattr(Request, "json", forbidden)
+        monkeypatch.setattr(router.database, "get_watch_rule", forbidden)
+        monkeypatch.setattr(router.database, "list_watch_rules", forbidden)
+        result = client.post("/local-watch/" + path, headers=bearer("invented"), content="{invalid")
+>       assert result.status_code == 429
+E       assert 401 == 429
+E        +  where 401 = <Response [401 Unauthorized]>.status_code
+
+tests/test_local_watch_backend_r2.py:201: AssertionError
+_ test_all_authentication_failures_count_by_real_client_ip_before_body_or_rule_validation[observations] _
+
+client = <starlette.testclient.TestClient object at 0x1111fbf00>
+monkeypatch = <_pytest.monkeypatch.MonkeyPatch object at 0x111db5d30>
+path = 'observations'
+
+    @pytest.mark.parametrize("path", ["heartbeat", "observations"])
+    def test_all_authentication_failures_count_by_real_client_ip_before_body_or_rule_validation(client, monkeypatch, path):
+        from routers import local_watch as router
+        from starlette.requests import Request
+        failures = [{}, {"Authorization": "Basic invalid"}, bearer(""), bearer("invented"), bearer("x" * 300)]
+        for index in range(30):
+            headers = {**failures[index % len(failures)], "X-Forwarded-For": f"192.0.2.{index}"}
+            result = client.post("/local-watch/" + path, headers=headers, content="{invalid JSON")
+            assert result.status_code == 401, (index, result.text)
+    
+        async def forbidden(*args, **kwargs):
+            raise AssertionError("rate limited requests cannot parse body or query rules")
+    
+        monkeypatch.setattr(Request, "json", forbidden)
+        monkeypatch.setattr(router.database, "get_watch_rule", forbidden)
+        monkeypatch.setattr(router.database, "list_watch_rules", forbidden)
+        result = client.post("/local-watch/" + path, headers=bearer("invented"), content="{invalid")
+>       assert result.status_code == 429
+E       assert 401 == 429
+E        +  where 401 = <Response [401 Unauthorized]>.status_code
+
+tests/test_local_watch_backend_r2.py:201: AssertionError
+________ test_authentication_failure_window_resets_after_sixty_seconds _________
+
+client = <starlette.testclient.TestClient object at 0x1111facf0>
+monkeypatch = <_pytest.monkeypatch.MonkeyPatch object at 0x11119d9b0>
+
+    def test_authentication_failure_window_resets_after_sixty_seconds(client, monkeypatch):
+        from routers import local_watch as router
+        clock = [100.0]
+        monkeypatch.setattr(router.time, "monotonic", lambda: clock[0])
+        for _ in range(30):
+            assert heartbeat(client, "invented").status_code == 401
+>       assert heartbeat(client, "invented").status_code == 429
+E       AssertionError: assert 401 == 429
+E        +  where 401 = <Response [401 Unauthorized]>.status_code
+E        +    where <Response [401 Unauthorized]> = heartbeat(<starlette.testclient.TestClient object at 0x1111facf0>, 'invented')
+
+tests/test_local_watch_backend_r2.py:212: AssertionError
+________ test_authentication_failure_limit_is_independent_per_client_ip ________
+
+client = <starlette.testclient.TestClient object at 0x1111f8050>
+
+    def test_authentication_failure_limit_is_independent_per_client_ip(client):
+        for _ in range(30):
+            assert heartbeat(client, "invented").status_code == 401
+>       assert heartbeat(client, "invented").status_code == 429
+E       AssertionError: assert 401 == 429
+E        +  where 401 = <Response [401 Unauthorized]>.status_code
+E        +    where <Response [401 Unauthorized]> = heartbeat(<starlette.testclient.TestClient object at 0x1111f8050>, 'invented')
+
+tests/test_local_watch_backend_r2.py:220: AssertionError
+__ test_invalid_observations_count_before_validation_and_lookup[not JSON-422] __
+
+client = <starlette.testclient.TestClient object at 0x1111f9480>
+monkeypatch = <_pytest.monkeypatch.MonkeyPatch object at 0x1111ca990>
+invalid_payload = 'not JSON', status = 422
+
+    @pytest.mark.parametrize("invalid_payload,status", [("not JSON", 422), ("{}", 422), ('{"rule_id":999,"new_lines":["xx"],"captured_at":"2026-10-11T12:00:00Z"}', 404)])
+    def test_invalid_observations_count_before_validation_and_lookup(client, monkeypatch, invalid_payload, status):
+        from routers import local_watch as router
+        from starlette.requests import Request
+        item = device(client)
+        for _ in range(60):
+            result = client.post("/local-watch/observations", headers=bearer(item["token"]), content=invalid_payload)
+            assert result.status_code == status
+    
+        async def forbidden(*args, **kwargs):
+            raise AssertionError("full observation bucket must short circuit parsing and rule lookup")
+    
+        monkeypatch.setattr(Request, "json", forbidden)
+        monkeypatch.setattr(router.database, "get_watch_rule", forbidden)
+        result = client.post("/local-watch/observations", headers=bearer(item["token"]), content=invalid_payload)
+>       assert result.status_code == 429
+E       assert 422 == 429
+E        +  where 422 = <Response [422 Unprocessable Content]>.status_code
+
+tests/test_local_watch_backend_r2.py:244: AssertionError
+_____ test_invalid_observations_count_before_validation_and_lookup[{}-422] _____
+
+client = <starlette.testclient.TestClient object at 0x1110b3bd0>
+monkeypatch = <_pytest.monkeypatch.MonkeyPatch object at 0x110f51850>
+invalid_payload = '{}', status = 422
+
+    @pytest.mark.parametrize("invalid_payload,status", [("not JSON", 422), ("{}", 422), ('{"rule_id":999,"new_lines":["xx"],"captured_at":"2026-10-11T12:00:00Z"}', 404)])
+    def test_invalid_observations_count_before_validation_and_lookup(client, monkeypatch, invalid_payload, status):
+        from routers import local_watch as router
+        from starlette.requests import Request
+        item = device(client)
+        for _ in range(60):
+            result = client.post("/local-watch/observations", headers=bearer(item["token"]), content=invalid_payload)
+            assert result.status_code == status
+    
+        async def forbidden(*args, **kwargs):
+            raise AssertionError("full observation bucket must short circuit parsing and rule lookup")
+    
+        monkeypatch.setattr(Request, "json", forbidden)
+        monkeypatch.setattr(router.database, "get_watch_rule", forbidden)
+        result = client.post("/local-watch/observations", headers=bearer(item["token"]), content=invalid_payload)
+>       assert result.status_code == 429
+E       assert 422 == 429
+E        +  where 422 = <Response [422 Unprocessable Content]>.status_code
+
+tests/test_local_watch_backend_r2.py:244: AssertionError
+_ test_invalid_observations_count_before_validation_and_lookup[{"rule_id":999,"new_lines":["xx"],"captured_at":"2026-10-11T12:00:00Z"}-404] _
+
+client = <starlette.testclient.TestClient object at 0x1110b3ac0>
+monkeypatch = <_pytest.monkeypatch.MonkeyPatch object at 0x111263490>
+invalid_payload = '{"rule_id":999,"new_lines":["xx"],"captured_at":"2026-10-11T12:00:00Z"}'
+status = 404
+
+    @pytest.mark.parametrize("invalid_payload,status", [("not JSON", 422), ("{}", 422), ('{"rule_id":999,"new_lines":["xx"],"captured_at":"2026-10-11T12:00:00Z"}', 404)])
+    def test_invalid_observations_count_before_validation_and_lookup(client, monkeypatch, invalid_payload, status):
+        from routers import local_watch as router
+        from starlette.requests import Request
+        item = device(client)
+        for _ in range(60):
+            result = client.post("/local-watch/observations", headers=bearer(item["token"]), content=invalid_payload)
+            assert result.status_code == status
+    
+        async def forbidden(*args, **kwargs):
+            raise AssertionError("full observation bucket must short circuit parsing and rule lookup")
+    
+        monkeypatch.setattr(Request, "json", forbidden)
+        monkeypatch.setattr(router.database, "get_watch_rule", forbidden)
+        result = client.post("/local-watch/observations", headers=bearer(item["token"]), content=invalid_payload)
+>       assert result.status_code == 429
+E       assert 422 == 429
+E        +  where 422 = <Response [422 Unprocessable Content]>.status_code
+
+tests/test_local_watch_backend_r2.py:244: AssertionError
+___ test_observation_rate_limit_is_per_device_and_resets_after_sixty_seconds ___
+
+client = <starlette.testclient.TestClient object at 0x1111f85a0>
+monkeypatch = <_pytest.monkeypatch.MonkeyPatch object at 0x111812a40>
+
+    def test_observation_rate_limit_is_per_device_and_resets_after_sixty_seconds(client, monkeypatch):
+        from routers import local_watch as router
+        first, second = device(client), device(client)
+        clock = [100.0]
+        monkeypatch.setattr(router.time, "monotonic", lambda: clock[0])
+        for _ in range(60):
+            assert observe(client, first["token"], 999).status_code == 404
+>       assert observe(client, first["token"], 999).status_code == 429
+E       AssertionError: assert 404 == 429
+E        +  where 404 = <Response [404 Not Found]>.status_code
+E        +    where <Response [404 Not Found]> = observe(<starlette.testclient.TestClient object at 0x1111f85a0>, 'ac11482a4c6d4eaa7e9389df6e386c137f95ca51fb9f75d97d527e4d3866056e', 999)
+
+tests/test_local_watch_backend_r2.py:256: AssertionError
+_ test_heartbeat_maximum_ten_per_device_before_parsing_and_rule_queries[not JSON-422] _
+
+client = <starlette.testclient.TestClient object at 0x10a912030>
+monkeypatch = <_pytest.monkeypatch.MonkeyPatch object at 0x111de7c50>
+payload = 'not JSON', status = 422
+
+    @pytest.mark.parametrize("payload,status", [('not JSON', 422), ('{"windows":[]}', 200)])
+    def test_heartbeat_maximum_ten_per_device_before_parsing_and_rule_queries(client, monkeypatch, payload, status):
+        from routers import local_watch as router
+        from starlette.requests import Request
+        first, second = device(client), device(client)
+        clock = [100.0]
+        monkeypatch.setattr(router.time, "monotonic", lambda: clock[0])
+        for _ in range(10):
+            result = client.post("/local-watch/heartbeat", headers=bearer(first["token"]), content=payload)
+            assert result.status_code == status
+    
+        async def forbidden(*args, **kwargs):
+            raise AssertionError("full heartbeat bucket must short circuit parsing and rule lookup")
+    
+        with monkeypatch.context() as patch:
+            patch.setattr(Request, "json", forbidden)
+            patch.setattr(router.database, "list_watch_rules", forbidden)
+            result = client.post("/local-watch/heartbeat", headers=bearer(first["token"]), content=payload)
+>           assert result.status_code == 429
+E           assert 422 == 429
+E            +  where 422 = <Response [422 Unprocessable Content]>.status_code
+
+tests/test_local_watch_backend_r2.py:280: AssertionError
+_ test_heartbeat_maximum_ten_per_device_before_parsing_and_rule_queries[{"windows":[]}-200] _
+
+client = <starlette.testclient.TestClient object at 0x1111fbce0>
+monkeypatch = <_pytest.monkeypatch.MonkeyPatch object at 0x1111d5c70>
+payload = '{"windows":[]}', status = 200
+
+    @pytest.mark.parametrize("payload,status", [('not JSON', 422), ('{"windows":[]}', 200)])
+    def test_heartbeat_maximum_ten_per_device_before_parsing_and_rule_queries(client, monkeypatch, payload, status):
+        from routers import local_watch as router
+        from starlette.requests import Request
+        first, second = device(client), device(client)
+        clock = [100.0]
+        monkeypatch.setattr(router.time, "monotonic", lambda: clock[0])
+        for _ in range(10):
+            result = client.post("/local-watch/heartbeat", headers=bearer(first["token"]), content=payload)
+            assert result.status_code == status
+    
+        async def forbidden(*args, **kwargs):
+            raise AssertionError("full heartbeat bucket must short circuit parsing and rule lookup")
+    
+        with monkeypatch.context() as patch:
+            patch.setattr(Request, "json", forbidden)
+            patch.setattr(router.database, "list_watch_rules", forbidden)
+            result = client.post("/local-watch/heartbeat", headers=bearer(first["token"]), content=payload)
+>           assert result.status_code == 429
+E           assert 422 == 429
+E            +  where 422 = <Response [422 Unprocessable Content]>.status_code
+
+tests/test_local_watch_backend_r2.py:280: AssertionError
+_ test_database_scope_does_not_reuse_rate_buckets_between_different_databases __
+
+client = <starlette.testclient.TestClient object at 0x1111f9040>
+monkeypatch = <_pytest.monkeypatch.MonkeyPatch object at 0x111723bd0>
+tmp_path = PosixPath('/private/var/folders/8q/xrv13jp544l_3cc6cggv04r00000gn/T/pytest-of-yangjing/pytest-134/test_database_scope_does_not_r0')
+
+    def test_database_scope_does_not_reuse_rate_buckets_between_different_databases(client, monkeypatch, tmp_path):
+        import database
+        item = device(client)
+        for _ in range(10):
+            assert heartbeat(client, item["token"]).status_code == 200
+>       assert heartbeat(client, item["token"]).status_code == 429
+E       AssertionError: assert 200 == 429
+E        +  where 200 = <Response [200 OK]>.status_code
+E        +    where <Response [200 OK]> = heartbeat(<starlette.testclient.TestClient object at 0x1111f9040>, '288edd1b809630b20b2d0f198cba88e8d1a948157ffd1405cfe75e9a59b0e6d7')
+
+tests/test_local_watch_backend_r2.py:293: AssertionError
+_ test_alert_content_is_exact_stored_message_after_application_label_rule_rename_and_delete _
+
+client = <starlette.testclient.TestClient object at 0x1111f96a0>
+dev_headers = {'X-Dev-User': 'smoke_tester'}
+
+    def test_alert_content_is_exact_stored_message_after_application_label_rule_rename_and_delete(client, dev_headers):
+        item = device(client)
+        watched = rule(client)
+        assert heartbeat(client, item["token"], windows=[{"app_name": "微信 WeChat", "bundle_id": "com.wechat", "title": "会议"}]).status_code == 200
+        assert observe(client, item["token"], watched["id"]).json()["alert"] is True
+        message = sql_rows("SELECT id,content,conversation_id FROM messages WHERE role='assistant'")[0]
+        assert message["content"].startswith("【本机提醒 · 微信 WeChat】")
+        assert client.patch(f"/local-watch/rules/{watched['id']}", headers=dev_headers, json={"name": "新规则名"}).status_code == 200
+        renamed = client.get("/local-watch/alerts", headers=dev_headers).json()[0]
+>       assert renamed["content"] == message["content"]
+               ^^^^^^^^^^^^^^^^^^
+E       KeyError: 'content'
+
+tests/test_local_watch_backend_r2.py:314: KeyError
+_ test_alert_content_join_never_discloses_another_owner_conversation_or_non_assistant_message[username] _
+
+client = <starlette.testclient.TestClient object at 0x1111f8270>
+dev_headers = {'X-Dev-User': 'smoke_tester'}, changed_field = 'username'
+
+    @pytest.mark.parametrize("changed_field", ["username", "conversation_id", "role", "missing"])
+    def test_alert_content_join_never_discloses_another_owner_conversation_or_non_assistant_message(client, dev_headers, changed_field):
+        import database
+        item = device(client)
+        watched = rule(client)
+        assert observe(client, item["token"], watched["id"]).json()["alert"] is True
+        alert = sql_rows("SELECT * FROM watch_alerts")[0]
+        with sqlite3.connect(database.DB_PATH) as connection:
+            if changed_field == "missing":
+                connection.execute("DELETE FROM messages WHERE id=?", (alert["message_id"],))
+            else:
+                value = {"username": "someone_else", "conversation_id": "wrong-target", "role": "user"}[changed_field]
+                connection.execute(f"UPDATE messages SET {changed_field}=? WHERE id=?", (value, alert["message_id"]))
+        response = client.get("/local-watch/alerts", headers=dev_headers)
+        assert response.status_code == 200
+>       assert response.json()[0]["content"] == ""
+               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+E       KeyError: 'content'
+
+tests/test_local_watch_backend_r2.py:338: KeyError
+_ test_alert_content_join_never_discloses_another_owner_conversation_or_non_assistant_message[conversation_id] _
+
+client = <starlette.testclient.TestClient object at 0x1111faf10>
+dev_headers = {'X-Dev-User': 'smoke_tester'}, changed_field = 'conversation_id'
+
+    @pytest.mark.parametrize("changed_field", ["username", "conversation_id", "role", "missing"])
+    def test_alert_content_join_never_discloses_another_owner_conversation_or_non_assistant_message(client, dev_headers, changed_field):
+        import database
+        item = device(client)
+        watched = rule(client)
+        assert observe(client, item["token"], watched["id"]).json()["alert"] is True
+        alert = sql_rows("SELECT * FROM watch_alerts")[0]
+        with sqlite3.connect(database.DB_PATH) as connection:
+            if changed_field == "missing":
+                connection.execute("DELETE FROM messages WHERE id=?", (alert["message_id"],))
+            else:
+                value = {"username": "someone_else", "conversation_id": "wrong-target", "role": "user"}[changed_field]
+                connection.execute(f"UPDATE messages SET {changed_field}=? WHERE id=?", (value, alert["message_id"]))
+        response = client.get("/local-watch/alerts", headers=dev_headers)
+        assert response.status_code == 200
+>       assert response.json()[0]["content"] == ""
+               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+E       KeyError: 'content'
+
+tests/test_local_watch_backend_r2.py:338: KeyError
+_ test_alert_content_join_never_discloses_another_owner_conversation_or_non_assistant_message[role] _
+
+client = <starlette.testclient.TestClient object at 0x1111f89e0>
+dev_headers = {'X-Dev-User': 'smoke_tester'}, changed_field = 'role'
+
+    @pytest.mark.parametrize("changed_field", ["username", "conversation_id", "role", "missing"])
+    def test_alert_content_join_never_discloses_another_owner_conversation_or_non_assistant_message(client, dev_headers, changed_field):
+        import database
+        item = device(client)
+        watched = rule(client)
+        assert observe(client, item["token"], watched["id"]).json()["alert"] is True
+        alert = sql_rows("SELECT * FROM watch_alerts")[0]
+        with sqlite3.connect(database.DB_PATH) as connection:
+            if changed_field == "missing":
+                connection.execute("DELETE FROM messages WHERE id=?", (alert["message_id"],))
+            else:
+                value = {"username": "someone_else", "conversation_id": "wrong-target", "role": "user"}[changed_field]
+                connection.execute(f"UPDATE messages SET {changed_field}=? WHERE id=?", (value, alert["message_id"]))
+        response = client.get("/local-watch/alerts", headers=dev_headers)
+        assert response.status_code == 200
+>       assert response.json()[0]["content"] == ""
+               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+E       KeyError: 'content'
+
+tests/test_local_watch_backend_r2.py:338: KeyError
+_ test_alert_content_join_never_discloses_another_owner_conversation_or_non_assistant_message[missing] _
+
+client = <starlette.testclient.TestClient object at 0x1111fb020>
+dev_headers = {'X-Dev-User': 'smoke_tester'}, changed_field = 'missing'
+
+    @pytest.mark.parametrize("changed_field", ["username", "conversation_id", "role", "missing"])
+    def test_alert_content_join_never_discloses_another_owner_conversation_or_non_assistant_message(client, dev_headers, changed_field):
+        import database
+        item = device(client)
+        watched = rule(client)
+        assert observe(client, item["token"], watched["id"]).json()["alert"] is True
+        alert = sql_rows("SELECT * FROM watch_alerts")[0]
+        with sqlite3.connect(database.DB_PATH) as connection:
+            if changed_field == "missing":
+                connection.execute("DELETE FROM messages WHERE id=?", (alert["message_id"],))
+            else:
+                value = {"username": "someone_else", "conversation_id": "wrong-target", "role": "user"}[changed_field]
+                connection.execute(f"UPDATE messages SET {changed_field}=? WHERE id=?", (value, alert["message_id"]))
+        response = client.get("/local-watch/alerts", headers=dev_headers)
+        assert response.status_code == 200
+>       assert response.json()[0]["content"] == ""
+               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+E       KeyError: 'content'
+
+tests/test_local_watch_backend_r2.py:338: KeyError
+_ test_three_watch_indexes_are_added_to_existing_database_idempotently_without_changing_data _
+
+client = <starlette.testclient.TestClient object at 0x1110b3ce0>
+
+    def test_three_watch_indexes_are_added_to_existing_database_idempotently_without_changing_data(client):
+        import database
+        watched = rule(client)
+        device(client)
+        before = sql_rows("SELECT * FROM watch_rules")
+        with sqlite3.connect(database.DB_PATH) as connection:
+            expected = {("username",), ("username", "id"), ("rule_id", "id")}
+            actual = set()
+            for table in ("watch_rules", "watch_alerts"):
+                for row in connection.execute(f"PRAGMA index_list({table})"):
+                    actual.add(tuple(value[2] for value in connection.execute(f'PRAGMA index_info("{row[1]}")')))
+>           assert expected <= actual
+E           AssertionError: assert {('rule_id', ...rname', 'id')} <= set()
+E             
+E             Extra items in the left set:
+E             ('username',)
+E             ('rule_id', 'id')
+E             ('username', 'id')
+
+tests/test_local_watch_backend_r2.py:353: AssertionError
+=============================== warnings summary ===============================
+tests/test_local_watch_backend_r2.py: 14 warnings
+  /Users/yangjing/Desktop/ai-workspace/Fiona/backend/.venv/lib/python3.14/site-packages/slowapi/extension.py:720: DeprecationWarning: 'asyncio.iscoroutinefunction' is deprecated and slated for removal in Python 3.16; use inspect.iscoroutinefunction() instead
+    if asyncio.iscoroutinefunction(func):
+
+-- Docs: https://docs.pytest.org/en/stable/how-to/capture-warnings.html
+=========================== short test summary info ============================
+FAILED tests/test_local_watch_backend_r2.py::test_forged_bearer_authentication_never_takes_write_lock_or_updates[heartbeat]
+FAILED tests/test_local_watch_backend_r2.py::test_forged_bearer_authentication_never_takes_write_lock_or_updates[observations]
+FAILED tests/test_local_watch_backend_r2.py::test_forged_bearer_can_be_rejected_while_other_connection_holds_write_lock
+FAILED tests/test_local_watch_backend_r2.py::test_valid_device_last_seen_updated_once_then_read_only_within_sixty_seconds
+FAILED tests/test_local_watch_backend_r2.py::test_last_seen_uses_database_clock_and_refreshes_only_when_sixty_seconds_elapsed
+FAILED tests/test_local_watch_backend_r2.py::test_concurrent_authentication_does_not_refresh_database_value_more_than_once
+FAILED tests/test_local_watch_backend_r2.py::test_throttled_authentication_rejects_revoked_device_and_deleted_owner_without_writes
+FAILED tests/test_local_watch_backend_r2.py::test_all_authentication_failures_count_by_real_client_ip_before_body_or_rule_validation[heartbeat]
+FAILED tests/test_local_watch_backend_r2.py::test_all_authentication_failures_count_by_real_client_ip_before_body_or_rule_validation[observations]
+FAILED tests/test_local_watch_backend_r2.py::test_authentication_failure_window_resets_after_sixty_seconds
+FAILED tests/test_local_watch_backend_r2.py::test_authentication_failure_limit_is_independent_per_client_ip
+FAILED tests/test_local_watch_backend_r2.py::test_invalid_observations_count_before_validation_and_lookup[not JSON-422]
+FAILED tests/test_local_watch_backend_r2.py::test_invalid_observations_count_before_validation_and_lookup[{}-422]
+FAILED tests/test_local_watch_backend_r2.py::test_invalid_observations_count_before_validation_and_lookup[{"rule_id":999,"new_lines":["xx"],"captured_at":"2026-10-11T12:00:00Z"}-404]
+FAILED tests/test_local_watch_backend_r2.py::test_observation_rate_limit_is_per_device_and_resets_after_sixty_seconds
+FAILED tests/test_local_watch_backend_r2.py::test_heartbeat_maximum_ten_per_device_before_parsing_and_rule_queries[not JSON-422]
+FAILED tests/test_local_watch_backend_r2.py::test_heartbeat_maximum_ten_per_device_before_parsing_and_rule_queries[{"windows":[]}-200]
+FAILED tests/test_local_watch_backend_r2.py::test_database_scope_does_not_reuse_rate_buckets_between_different_databases
+FAILED tests/test_local_watch_backend_r2.py::test_alert_content_is_exact_stored_message_after_application_label_rule_rename_and_delete
+FAILED tests/test_local_watch_backend_r2.py::test_alert_content_join_never_discloses_another_owner_conversation_or_non_assistant_message[username]
+FAILED tests/test_local_watch_backend_r2.py::test_alert_content_join_never_discloses_another_owner_conversation_or_non_assistant_message[conversation_id]
+FAILED tests/test_local_watch_backend_r2.py::test_alert_content_join_never_discloses_another_owner_conversation_or_non_assistant_message[role]
+FAILED tests/test_local_watch_backend_r2.py::test_alert_content_join_never_discloses_another_owner_conversation_or_non_assistant_message[missing]
+FAILED tests/test_local_watch_backend_r2.py::test_three_watch_indexes_are_added_to_existing_database_idempotently_without_changing_data
+24 failed, 14 warnings in 8.00s

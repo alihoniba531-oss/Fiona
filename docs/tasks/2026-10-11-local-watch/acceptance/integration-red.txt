@@ -1,0 +1,417 @@
+FFFFFFFFFFFFFFF                                                          [100%]
+=================================== FAILURES ===================================
+_ test_disabled_main_app_returns_private_404_before_auth[GET-/local-watch/devices-None] _
+
+client = <starlette.testclient.TestClient object at 0x10f619010>
+monkeypatch = <_pytest.monkeypatch.MonkeyPatch object at 0x108e9e780>
+method = 'GET', path = '/local-watch/devices', body = None
+
+    @pytest.mark.parametrize("method,path,body", [
+        ("GET", "/local-watch/devices", None),
+        ("POST", "/local-watch/devices", {"name": "Mac"}),
+        ("DELETE", "/local-watch/devices/1", None),
+        ("GET", "/local-watch/rules", None),
+        ("POST", "/local-watch/rules", {}),
+        ("PATCH", "/local-watch/rules/1", {}),
+        ("DELETE", "/local-watch/rules/1", None),
+        ("GET", "/local-watch/windows", None),
+        ("GET", "/local-watch/alerts?after=0", None),
+        ("POST", "/local-watch/heartbeat", {"windows": []}),
+        ("POST", "/local-watch/observations", {}),
+        ("OPTIONS", "/local-watch/heartbeat", None),
+    ])
+    def test_disabled_main_app_returns_private_404_before_auth(client, monkeypatch, method, path, body):
+        monkeypatch.setenv("FIONA_LOCAL_WATCH", "0")
+        response = client.request(method, path, json=body)
+>       assert response.status_code == 404
+E       assert 401 == 404
+E        +  where 401 = <Response [401 Unauthorized]>.status_code
+
+tests/test_local_watch_integration.py:48: AssertionError
+_ test_disabled_main_app_returns_private_404_before_auth[POST-/local-watch/devices-body1] _
+
+client = <starlette.testclient.TestClient object at 0x10f5416d0>
+monkeypatch = <_pytest.monkeypatch.MonkeyPatch object at 0x10f4f9250>
+method = 'POST', path = '/local-watch/devices', body = {'name': 'Mac'}
+
+    @pytest.mark.parametrize("method,path,body", [
+        ("GET", "/local-watch/devices", None),
+        ("POST", "/local-watch/devices", {"name": "Mac"}),
+        ("DELETE", "/local-watch/devices/1", None),
+        ("GET", "/local-watch/rules", None),
+        ("POST", "/local-watch/rules", {}),
+        ("PATCH", "/local-watch/rules/1", {}),
+        ("DELETE", "/local-watch/rules/1", None),
+        ("GET", "/local-watch/windows", None),
+        ("GET", "/local-watch/alerts?after=0", None),
+        ("POST", "/local-watch/heartbeat", {"windows": []}),
+        ("POST", "/local-watch/observations", {}),
+        ("OPTIONS", "/local-watch/heartbeat", None),
+    ])
+    def test_disabled_main_app_returns_private_404_before_auth(client, monkeypatch, method, path, body):
+        monkeypatch.setenv("FIONA_LOCAL_WATCH", "0")
+        response = client.request(method, path, json=body)
+>       assert response.status_code == 404
+E       assert 401 == 404
+E        +  where 401 = <Response [401 Unauthorized]>.status_code
+
+tests/test_local_watch_integration.py:48: AssertionError
+_ test_disabled_main_app_returns_private_404_before_auth[DELETE-/local-watch/devices/1-None] _
+
+client = <starlette.testclient.TestClient object at 0x10f541a90>
+monkeypatch = <_pytest.monkeypatch.MonkeyPatch object at 0x10f60f350>
+method = 'DELETE', path = '/local-watch/devices/1', body = None
+
+    @pytest.mark.parametrize("method,path,body", [
+        ("GET", "/local-watch/devices", None),
+        ("POST", "/local-watch/devices", {"name": "Mac"}),
+        ("DELETE", "/local-watch/devices/1", None),
+        ("GET", "/local-watch/rules", None),
+        ("POST", "/local-watch/rules", {}),
+        ("PATCH", "/local-watch/rules/1", {}),
+        ("DELETE", "/local-watch/rules/1", None),
+        ("GET", "/local-watch/windows", None),
+        ("GET", "/local-watch/alerts?after=0", None),
+        ("POST", "/local-watch/heartbeat", {"windows": []}),
+        ("POST", "/local-watch/observations", {}),
+        ("OPTIONS", "/local-watch/heartbeat", None),
+    ])
+    def test_disabled_main_app_returns_private_404_before_auth(client, monkeypatch, method, path, body):
+        monkeypatch.setenv("FIONA_LOCAL_WATCH", "0")
+        response = client.request(method, path, json=body)
+>       assert response.status_code == 404
+E       assert 401 == 404
+E        +  where 401 = <Response [401 Unauthorized]>.status_code
+
+tests/test_local_watch_integration.py:48: AssertionError
+_ test_disabled_main_app_returns_private_404_before_auth[GET-/local-watch/rules-None] _
+
+client = <starlette.testclient.TestClient object at 0x10f656190>
+monkeypatch = <_pytest.monkeypatch.MonkeyPatch object at 0x10f76c270>
+method = 'GET', path = '/local-watch/rules', body = None
+
+    @pytest.mark.parametrize("method,path,body", [
+        ("GET", "/local-watch/devices", None),
+        ("POST", "/local-watch/devices", {"name": "Mac"}),
+        ("DELETE", "/local-watch/devices/1", None),
+        ("GET", "/local-watch/rules", None),
+        ("POST", "/local-watch/rules", {}),
+        ("PATCH", "/local-watch/rules/1", {}),
+        ("DELETE", "/local-watch/rules/1", None),
+        ("GET", "/local-watch/windows", None),
+        ("GET", "/local-watch/alerts?after=0", None),
+        ("POST", "/local-watch/heartbeat", {"windows": []}),
+        ("POST", "/local-watch/observations", {}),
+        ("OPTIONS", "/local-watch/heartbeat", None),
+    ])
+    def test_disabled_main_app_returns_private_404_before_auth(client, monkeypatch, method, path, body):
+        monkeypatch.setenv("FIONA_LOCAL_WATCH", "0")
+        response = client.request(method, path, json=body)
+>       assert response.status_code == 404
+E       assert 401 == 404
+E        +  where 401 = <Response [401 Unauthorized]>.status_code
+
+tests/test_local_watch_integration.py:48: AssertionError
+_ test_disabled_main_app_returns_private_404_before_auth[POST-/local-watch/rules-body4] _
+
+client = <starlette.testclient.TestClient object at 0x10f656060>
+monkeypatch = <_pytest.monkeypatch.MonkeyPatch object at 0x10f4dbd50>
+method = 'POST', path = '/local-watch/rules', body = {}
+
+    @pytest.mark.parametrize("method,path,body", [
+        ("GET", "/local-watch/devices", None),
+        ("POST", "/local-watch/devices", {"name": "Mac"}),
+        ("DELETE", "/local-watch/devices/1", None),
+        ("GET", "/local-watch/rules", None),
+        ("POST", "/local-watch/rules", {}),
+        ("PATCH", "/local-watch/rules/1", {}),
+        ("DELETE", "/local-watch/rules/1", None),
+        ("GET", "/local-watch/windows", None),
+        ("GET", "/local-watch/alerts?after=0", None),
+        ("POST", "/local-watch/heartbeat", {"windows": []}),
+        ("POST", "/local-watch/observations", {}),
+        ("OPTIONS", "/local-watch/heartbeat", None),
+    ])
+    def test_disabled_main_app_returns_private_404_before_auth(client, monkeypatch, method, path, body):
+        monkeypatch.setenv("FIONA_LOCAL_WATCH", "0")
+        response = client.request(method, path, json=body)
+>       assert response.status_code == 404
+E       assert 401 == 404
+E        +  where 401 = <Response [401 Unauthorized]>.status_code
+
+tests/test_local_watch_integration.py:48: AssertionError
+_ test_disabled_main_app_returns_private_404_before_auth[PATCH-/local-watch/rules/1-body5] _
+
+client = <starlette.testclient.TestClient object at 0x10f4f9c70>
+monkeypatch = <_pytest.monkeypatch.MonkeyPatch object at 0x10f768450>
+method = 'PATCH', path = '/local-watch/rules/1', body = {}
+
+    @pytest.mark.parametrize("method,path,body", [
+        ("GET", "/local-watch/devices", None),
+        ("POST", "/local-watch/devices", {"name": "Mac"}),
+        ("DELETE", "/local-watch/devices/1", None),
+        ("GET", "/local-watch/rules", None),
+        ("POST", "/local-watch/rules", {}),
+        ("PATCH", "/local-watch/rules/1", {}),
+        ("DELETE", "/local-watch/rules/1", None),
+        ("GET", "/local-watch/windows", None),
+        ("GET", "/local-watch/alerts?after=0", None),
+        ("POST", "/local-watch/heartbeat", {"windows": []}),
+        ("POST", "/local-watch/observations", {}),
+        ("OPTIONS", "/local-watch/heartbeat", None),
+    ])
+    def test_disabled_main_app_returns_private_404_before_auth(client, monkeypatch, method, path, body):
+        monkeypatch.setenv("FIONA_LOCAL_WATCH", "0")
+        response = client.request(method, path, json=body)
+>       assert response.status_code == 404
+E       assert 401 == 404
+E        +  where 401 = <Response [401 Unauthorized]>.status_code
+
+tests/test_local_watch_integration.py:48: AssertionError
+_ test_disabled_main_app_returns_private_404_before_auth[DELETE-/local-watch/rules/1-None] _
+
+client = <starlette.testclient.TestClient object at 0x10f76d8c0>
+monkeypatch = <_pytest.monkeypatch.MonkeyPatch object at 0x10f788f50>
+method = 'DELETE', path = '/local-watch/rules/1', body = None
+
+    @pytest.mark.parametrize("method,path,body", [
+        ("GET", "/local-watch/devices", None),
+        ("POST", "/local-watch/devices", {"name": "Mac"}),
+        ("DELETE", "/local-watch/devices/1", None),
+        ("GET", "/local-watch/rules", None),
+        ("POST", "/local-watch/rules", {}),
+        ("PATCH", "/local-watch/rules/1", {}),
+        ("DELETE", "/local-watch/rules/1", None),
+        ("GET", "/local-watch/windows", None),
+        ("GET", "/local-watch/alerts?after=0", None),
+        ("POST", "/local-watch/heartbeat", {"windows": []}),
+        ("POST", "/local-watch/observations", {}),
+        ("OPTIONS", "/local-watch/heartbeat", None),
+    ])
+    def test_disabled_main_app_returns_private_404_before_auth(client, monkeypatch, method, path, body):
+        monkeypatch.setenv("FIONA_LOCAL_WATCH", "0")
+        response = client.request(method, path, json=body)
+>       assert response.status_code == 404
+E       assert 401 == 404
+E        +  where 401 = <Response [401 Unauthorized]>.status_code
+
+tests/test_local_watch_integration.py:48: AssertionError
+_ test_disabled_main_app_returns_private_404_before_auth[GET-/local-watch/windows-None] _
+
+client = <starlette.testclient.TestClient object at 0x10f76dbf0>
+monkeypatch = <_pytest.monkeypatch.MonkeyPatch object at 0x10f789130>
+method = 'GET', path = '/local-watch/windows', body = None
+
+    @pytest.mark.parametrize("method,path,body", [
+        ("GET", "/local-watch/devices", None),
+        ("POST", "/local-watch/devices", {"name": "Mac"}),
+        ("DELETE", "/local-watch/devices/1", None),
+        ("GET", "/local-watch/rules", None),
+        ("POST", "/local-watch/rules", {}),
+        ("PATCH", "/local-watch/rules/1", {}),
+        ("DELETE", "/local-watch/rules/1", None),
+        ("GET", "/local-watch/windows", None),
+        ("GET", "/local-watch/alerts?after=0", None),
+        ("POST", "/local-watch/heartbeat", {"windows": []}),
+        ("POST", "/local-watch/observations", {}),
+        ("OPTIONS", "/local-watch/heartbeat", None),
+    ])
+    def test_disabled_main_app_returns_private_404_before_auth(client, monkeypatch, method, path, body):
+        monkeypatch.setenv("FIONA_LOCAL_WATCH", "0")
+        response = client.request(method, path, json=body)
+>       assert response.status_code == 404
+E       assert 401 == 404
+E        +  where 401 = <Response [401 Unauthorized]>.status_code
+
+tests/test_local_watch_integration.py:48: AssertionError
+_ test_disabled_main_app_returns_private_404_before_auth[GET-/local-watch/alerts?after=0-None] _
+
+client = <starlette.testclient.TestClient object at 0x10f76e250>
+monkeypatch = <_pytest.monkeypatch.MonkeyPatch object at 0x10f77d550>
+method = 'GET', path = '/local-watch/alerts?after=0', body = None
+
+    @pytest.mark.parametrize("method,path,body", [
+        ("GET", "/local-watch/devices", None),
+        ("POST", "/local-watch/devices", {"name": "Mac"}),
+        ("DELETE", "/local-watch/devices/1", None),
+        ("GET", "/local-watch/rules", None),
+        ("POST", "/local-watch/rules", {}),
+        ("PATCH", "/local-watch/rules/1", {}),
+        ("DELETE", "/local-watch/rules/1", None),
+        ("GET", "/local-watch/windows", None),
+        ("GET", "/local-watch/alerts?after=0", None),
+        ("POST", "/local-watch/heartbeat", {"windows": []}),
+        ("POST", "/local-watch/observations", {}),
+        ("OPTIONS", "/local-watch/heartbeat", None),
+    ])
+    def test_disabled_main_app_returns_private_404_before_auth(client, monkeypatch, method, path, body):
+        monkeypatch.setenv("FIONA_LOCAL_WATCH", "0")
+        response = client.request(method, path, json=body)
+>       assert response.status_code == 404
+E       assert 401 == 404
+E        +  where 401 = <Response [401 Unauthorized]>.status_code
+
+tests/test_local_watch_integration.py:48: AssertionError
+_ test_disabled_main_app_returns_private_404_before_auth[POST-/local-watch/heartbeat-body9] _
+
+client = <starlette.testclient.TestClient object at 0x10f76f130>
+monkeypatch = <_pytest.monkeypatch.MonkeyPatch object at 0x10f77d7f0>
+method = 'POST', path = '/local-watch/heartbeat', body = {'windows': []}
+
+    @pytest.mark.parametrize("method,path,body", [
+        ("GET", "/local-watch/devices", None),
+        ("POST", "/local-watch/devices", {"name": "Mac"}),
+        ("DELETE", "/local-watch/devices/1", None),
+        ("GET", "/local-watch/rules", None),
+        ("POST", "/local-watch/rules", {}),
+        ("PATCH", "/local-watch/rules/1", {}),
+        ("DELETE", "/local-watch/rules/1", None),
+        ("GET", "/local-watch/windows", None),
+        ("GET", "/local-watch/alerts?after=0", None),
+        ("POST", "/local-watch/heartbeat", {"windows": []}),
+        ("POST", "/local-watch/observations", {}),
+        ("OPTIONS", "/local-watch/heartbeat", None),
+    ])
+    def test_disabled_main_app_returns_private_404_before_auth(client, monkeypatch, method, path, body):
+        monkeypatch.setenv("FIONA_LOCAL_WATCH", "0")
+        response = client.request(method, path, json=body)
+>       assert response.status_code == 404
+E       assert 401 == 404
+E        +  where 401 = <Response [401 Unauthorized]>.status_code
+
+tests/test_local_watch_integration.py:48: AssertionError
+_ test_disabled_main_app_returns_private_404_before_auth[POST-/local-watch/observations-body10] _
+
+client = <starlette.testclient.TestClient object at 0x10f76f570>
+monkeypatch = <_pytest.monkeypatch.MonkeyPatch object at 0x10f717ee0>
+method = 'POST', path = '/local-watch/observations', body = {}
+
+    @pytest.mark.parametrize("method,path,body", [
+        ("GET", "/local-watch/devices", None),
+        ("POST", "/local-watch/devices", {"name": "Mac"}),
+        ("DELETE", "/local-watch/devices/1", None),
+        ("GET", "/local-watch/rules", None),
+        ("POST", "/local-watch/rules", {}),
+        ("PATCH", "/local-watch/rules/1", {}),
+        ("DELETE", "/local-watch/rules/1", None),
+        ("GET", "/local-watch/windows", None),
+        ("GET", "/local-watch/alerts?after=0", None),
+        ("POST", "/local-watch/heartbeat", {"windows": []}),
+        ("POST", "/local-watch/observations", {}),
+        ("OPTIONS", "/local-watch/heartbeat", None),
+    ])
+    def test_disabled_main_app_returns_private_404_before_auth(client, monkeypatch, method, path, body):
+        monkeypatch.setenv("FIONA_LOCAL_WATCH", "0")
+        response = client.request(method, path, json=body)
+>       assert response.status_code == 404
+E       assert 401 == 404
+E        +  where 401 = <Response [401 Unauthorized]>.status_code
+
+tests/test_local_watch_integration.py:48: AssertionError
+_ test_disabled_main_app_returns_private_404_before_auth[OPTIONS-/local-watch/heartbeat-None] _
+
+client = <starlette.testclient.TestClient object at 0x10f7a8050>
+monkeypatch = <_pytest.monkeypatch.MonkeyPatch object at 0x10f774d10>
+method = 'OPTIONS', path = '/local-watch/heartbeat', body = None
+
+    @pytest.mark.parametrize("method,path,body", [
+        ("GET", "/local-watch/devices", None),
+        ("POST", "/local-watch/devices", {"name": "Mac"}),
+        ("DELETE", "/local-watch/devices/1", None),
+        ("GET", "/local-watch/rules", None),
+        ("POST", "/local-watch/rules", {}),
+        ("PATCH", "/local-watch/rules/1", {}),
+        ("DELETE", "/local-watch/rules/1", None),
+        ("GET", "/local-watch/windows", None),
+        ("GET", "/local-watch/alerts?after=0", None),
+        ("POST", "/local-watch/heartbeat", {"windows": []}),
+        ("POST", "/local-watch/observations", {}),
+        ("OPTIONS", "/local-watch/heartbeat", None),
+    ])
+    def test_disabled_main_app_returns_private_404_before_auth(client, monkeypatch, method, path, body):
+        monkeypatch.setenv("FIONA_LOCAL_WATCH", "0")
+        response = client.request(method, path, json=body)
+        assert response.status_code == 404
+>       assert response.headers.get("cache-control") == "private, no-store"
+E       AssertionError: assert None == 'private, no-store'
+E        +  where None = get('cache-control')
+E        +    where get = Headers({'content-length': '22', 'content-type': 'application/json'}).get
+E        +      where Headers({'content-length': '22', 'content-type': 'application/json'}) = <Response [404 Not Found]>.headers
+
+tests/test_local_watch_integration.py:49: AssertionError
+_ test_device_authentication_cannot_borrow_cookie_or_dev_identity[/local-watch/heartbeat-body0] _
+
+client = <starlette.testclient.TestClient object at 0x10f60f8a0>
+monkeypatch = <_pytest.monkeypatch.MonkeyPatch object at 0x10f71f950>
+path = '/local-watch/heartbeat', body = {'windows': []}
+
+    @pytest.mark.parametrize("path,body", [
+        ("/local-watch/heartbeat", {"windows": []}),
+        ("/local-watch/observations", {"rule_id": 1, "new_lines": [], "captured_at": "2026-10-11T12:00:00Z"}),
+    ])
+    def test_device_authentication_cannot_borrow_cookie_or_dev_identity(client, monkeypatch, path, body):
+        monkeypatch.setenv("FIONA_LOCAL_WATCH", "1")
+        response = client.post(path, json=body, headers={"X-Dev-User": "smoke_tester"})
+>       assert response.status_code == 401
+E       assert 404 == 401
+E        +  where 404 = <Response [404 Not Found]>.status_code
+
+tests/test_local_watch_integration.py:59: AssertionError
+_ test_device_authentication_cannot_borrow_cookie_or_dev_identity[/local-watch/observations-body1] _
+
+client = <starlette.testclient.TestClient object at 0x10f60f020>
+monkeypatch = <_pytest.monkeypatch.MonkeyPatch object at 0x10f652360>
+path = '/local-watch/observations'
+body = {'rule_id': 1, 'new_lines': [], 'captured_at': '2026-10-11T12:00:00Z'}
+
+    @pytest.mark.parametrize("path,body", [
+        ("/local-watch/heartbeat", {"windows": []}),
+        ("/local-watch/observations", {"rule_id": 1, "new_lines": [], "captured_at": "2026-10-11T12:00:00Z"}),
+    ])
+    def test_device_authentication_cannot_borrow_cookie_or_dev_identity(client, monkeypatch, path, body):
+        monkeypatch.setenv("FIONA_LOCAL_WATCH", "1")
+        response = client.post(path, json=body, headers={"X-Dev-User": "smoke_tester"})
+>       assert response.status_code == 401
+E       assert 404 == 401
+E        +  where 404 = <Response [404 Not Found]>.status_code
+
+tests/test_local_watch_integration.py:59: AssertionError
+_______ test_cookie_user_device_bearer_and_deleted_conversation_fallback _______
+
+client = <starlette.testclient.TestClient object at 0x10f60f680>
+monkeypatch = <_pytest.monkeypatch.MonkeyPatch object at 0x10f71ad00>
+
+    def test_cookie_user_device_bearer_and_deleted_conversation_fallback(client, monkeypatch):
+        import agent_store
+        import database
+        login_cookie(client, monkeypatch)
+        device = client.post("/local-watch/devices", json={"name": "Cookie Mac"})
+>       assert device.status_code in (200, 201), device.text
+E       AssertionError: {"detail":"Not Found"}
+E       assert 404 in (200, 201)
+E        +  where 404 = <Response [404 Not Found]>.status_code
+
+tests/test_local_watch_integration.py:76: AssertionError
+=============================== warnings summary ===============================
+tests/test_local_watch_integration.py: 14 warnings
+  /Users/yangjing/Desktop/ai-workspace/Fiona/backend/.venv/lib/python3.14/site-packages/slowapi/extension.py:720: DeprecationWarning: 'asyncio.iscoroutinefunction' is deprecated and slated for removal in Python 3.16; use inspect.iscoroutinefunction() instead
+    if asyncio.iscoroutinefunction(func):
+
+-- Docs: https://docs.pytest.org/en/stable/how-to/capture-warnings.html
+=========================== short test summary info ============================
+FAILED tests/test_local_watch_integration.py::test_disabled_main_app_returns_private_404_before_auth[GET-/local-watch/devices-None]
+FAILED tests/test_local_watch_integration.py::test_disabled_main_app_returns_private_404_before_auth[POST-/local-watch/devices-body1]
+FAILED tests/test_local_watch_integration.py::test_disabled_main_app_returns_private_404_before_auth[DELETE-/local-watch/devices/1-None]
+FAILED tests/test_local_watch_integration.py::test_disabled_main_app_returns_private_404_before_auth[GET-/local-watch/rules-None]
+FAILED tests/test_local_watch_integration.py::test_disabled_main_app_returns_private_404_before_auth[POST-/local-watch/rules-body4]
+FAILED tests/test_local_watch_integration.py::test_disabled_main_app_returns_private_404_before_auth[PATCH-/local-watch/rules/1-body5]
+FAILED tests/test_local_watch_integration.py::test_disabled_main_app_returns_private_404_before_auth[DELETE-/local-watch/rules/1-None]
+FAILED tests/test_local_watch_integration.py::test_disabled_main_app_returns_private_404_before_auth[GET-/local-watch/windows-None]
+FAILED tests/test_local_watch_integration.py::test_disabled_main_app_returns_private_404_before_auth[GET-/local-watch/alerts?after=0-None]
+FAILED tests/test_local_watch_integration.py::test_disabled_main_app_returns_private_404_before_auth[POST-/local-watch/heartbeat-body9]
+FAILED tests/test_local_watch_integration.py::test_disabled_main_app_returns_private_404_before_auth[POST-/local-watch/observations-body10]
+FAILED tests/test_local_watch_integration.py::test_disabled_main_app_returns_private_404_before_auth[OPTIONS-/local-watch/heartbeat-None]
+FAILED tests/test_local_watch_integration.py::test_device_authentication_cannot_borrow_cookie_or_dev_identity[/local-watch/heartbeat-body0]
+FAILED tests/test_local_watch_integration.py::test_device_authentication_cannot_borrow_cookie_or_dev_identity[/local-watch/observations-body1]
+FAILED tests/test_local_watch_integration.py::test_cookie_user_device_bearer_and_deleted_conversation_fallback
+15 failed, 14 warnings in 2.06s

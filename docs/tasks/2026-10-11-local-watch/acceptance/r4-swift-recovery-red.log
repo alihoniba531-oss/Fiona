@@ -1,0 +1,104 @@
+FFFFF                                                                    [100%]
+=================================== FAILURES ===================================
+_________ test_recovery_throttle_on_the_actual_swift_tracker[boundary] _________
+
+compiled_tracker = PosixPath('/private/var/folders/8q/xrv13jp544l_3cc6cggv04r00000gn/T/pytest-of-yangjing/pytest-158/local-watch-recovery0/recovery')
+scenario = 'boundary'
+
+    @pytest.mark.parametrize("scenario", ["boundary", "per_rule", "oscillation", "reconcile", "failure_throttle"])
+    def test_recovery_throttle_on_the_actual_swift_tracker(compiled_tracker, scenario):
+        process = subprocess.run([str(compiled_tracker), scenario], capture_output=True, text=True, timeout=10)
+        assert process.returncode == 0, process.stdout + process.stderr
+        checks = json.loads(process.stdout)
+        assert checks
+>       assert all(checks.values()), checks
+E       AssertionError: {'59.99_seconds_is_throttled': False, '60_seconds_is_allowed': True, 'first_recovery': True}
+E       assert False
+E        +  where False = all(dict_values([False, True, True]))
+E        +    where dict_values([False, True, True]) = <built-in method values of dict object at 0x10747a900>()
+E        +      where <built-in method values of dict object at 0x10747a900> = {'59.99_seconds_is_throttled': False, '60_seconds_is_allowed': True, 'first_recovery': True}.values
+
+tests/test_local_watch_swift_recovery_r4.py:133: AssertionError
+_________ test_recovery_throttle_on_the_actual_swift_tracker[per_rule] _________
+
+compiled_tracker = PosixPath('/private/var/folders/8q/xrv13jp544l_3cc6cggv04r00000gn/T/pytest-of-yangjing/pytest-158/local-watch-recovery0/recovery')
+scenario = 'per_rule'
+
+    @pytest.mark.parametrize("scenario", ["boundary", "per_rule", "oscillation", "reconcile", "failure_throttle"])
+    def test_recovery_throttle_on_the_actual_swift_tracker(compiled_tracker, scenario):
+        process = subprocess.run([str(compiled_tracker), scenario], capture_output=True, text=True, timeout=10)
+        assert process.returncode == 0, process.stdout + process.stderr
+        checks = json.loads(process.stdout)
+        assert checks
+>       assert all(checks.values()), checks
+E       AssertionError: {'first_recovery_2': True, 'first_recovery_1': True, 'repeated_recovery_2': False, 'repeated_recovery_1': False}
+E       assert False
+E        +  where False = all(dict_values([True, True, False, False]))
+E        +    where dict_values([True, True, False, False]) = <built-in method values of dict object at 0x10747e6c0>()
+E        +      where <built-in method values of dict object at 0x10747e6c0> = {'first_recovery_2': True, 'first_recovery_1': True, 'repeated_recovery_2': False, 'repeated_recovery_1': False}.values
+
+tests/test_local_watch_swift_recovery_r4.py:133: AssertionError
+_______ test_recovery_throttle_on_the_actual_swift_tracker[oscillation] ________
+
+compiled_tracker = PosixPath('/private/var/folders/8q/xrv13jp544l_3cc6cggv04r00000gn/T/pytest-of-yangjing/pytest-158/local-watch-recovery0/recovery')
+scenario = 'oscillation'
+
+    @pytest.mark.parametrize("scenario", ["boundary", "per_rule", "oscillation", "reconcile", "failure_throttle"])
+    def test_recovery_throttle_on_the_actual_swift_tracker(compiled_tracker, scenario):
+        process = subprocess.run([str(compiled_tracker), scenario], capture_output=True, text=True, timeout=10)
+        assert process.returncode == 0, process.stdout + process.stderr
+        checks = json.loads(process.stdout)
+        assert checks
+>       assert all(checks.values()), checks
+E       AssertionError: {'healthy_since_remains_stable': True, 'only_one_recovery_log': False, 'all_transitions_update_state': True}
+E       assert False
+E        +  where False = all(dict_values([True, False, True]))
+E        +    where dict_values([True, False, True]) = <built-in method values of dict object at 0x1074755c0>()
+E        +      where <built-in method values of dict object at 0x1074755c0> = {'healthy_since_remains_stable': True, 'only_one_recovery_log': False, 'all_transitions_update_state': True}.values
+
+tests/test_local_watch_swift_recovery_r4.py:133: AssertionError
+________ test_recovery_throttle_on_the_actual_swift_tracker[reconcile] _________
+
+compiled_tracker = PosixPath('/private/var/folders/8q/xrv13jp544l_3cc6cggv04r00000gn/T/pytest-of-yangjing/pytest-158/local-watch-recovery0/recovery')
+scenario = 'reconcile'
+
+    @pytest.mark.parametrize("scenario", ["boundary", "per_rule", "oscillation", "reconcile", "failure_throttle"])
+    def test_recovery_throttle_on_the_actual_swift_tracker(compiled_tracker, scenario):
+        process = subprocess.run([str(compiled_tracker), scenario], capture_output=True, text=True, timeout=10)
+        assert process.returncode == 0, process.stdout + process.stderr
+        checks = json.loads(process.stdout)
+        assert checks
+>       assert all(checks.values()), checks
+E       AssertionError: {'first_recovery': True, 'remove_does_not_reset_throttle': False, 'expiry_still_allows_recovery': True, 'reconcile_does_not_reset_throttle': False}
+E       assert False
+E        +  where False = all(dict_values([True, False, True, False]))
+E        +    where dict_values([True, False, True, False]) = <built-in method values of dict object at 0x107497300>()
+E        +      where <built-in method values of dict object at 0x107497300> = {'first_recovery': True, 'remove_does_not_reset_throttle': False, 'expiry_still_allows_recovery': True, 'reconcile_does_not_reset_throttle': False}.values
+
+tests/test_local_watch_swift_recovery_r4.py:133: AssertionError
+_____ test_recovery_throttle_on_the_actual_swift_tracker[failure_throttle] _____
+
+compiled_tracker = PosixPath('/private/var/folders/8q/xrv13jp544l_3cc6cggv04r00000gn/T/pytest-of-yangjing/pytest-158/local-watch-recovery0/recovery')
+scenario = 'failure_throttle'
+
+    @pytest.mark.parametrize("scenario", ["boundary", "per_rule", "oscillation", "reconcile", "failure_throttle"])
+    def test_recovery_throttle_on_the_actual_swift_tracker(compiled_tracker, scenario):
+        process = subprocess.run([str(compiled_tracker), scenario], capture_output=True, text=True, timeout=10)
+        assert process.returncode == 0, process.stdout + process.stderr
+        checks = json.loads(process.stdout)
+        assert checks
+>       assert all(checks.values()), checks
+E       AssertionError: {'different_error_is_independent': True, 'first_recovery': True, 'same_error_is_throttled': True, 'first_failure': True, ...}
+E       assert False
+E        +  where False = all(dict_values([True, True, True, True, False, True, False, True, True]))
+E        +    where dict_values([True, True, True, True, False, True, False, True, True]) = <built-in method values of dict object at 0x1074a0f40>()
+E        +      where <built-in method values of dict object at 0x1074a0f40> = {'different_error_is_independent': True, 'first_recovery': True, 'same_error_is_throttled': True, 'first_failure': True, ...}.values
+
+tests/test_local_watch_swift_recovery_r4.py:133: AssertionError
+=========================== short test summary info ============================
+FAILED tests/test_local_watch_swift_recovery_r4.py::test_recovery_throttle_on_the_actual_swift_tracker[boundary]
+FAILED tests/test_local_watch_swift_recovery_r4.py::test_recovery_throttle_on_the_actual_swift_tracker[per_rule]
+FAILED tests/test_local_watch_swift_recovery_r4.py::test_recovery_throttle_on_the_actual_swift_tracker[oscillation]
+FAILED tests/test_local_watch_swift_recovery_r4.py::test_recovery_throttle_on_the_actual_swift_tracker[reconcile]
+FAILED tests/test_local_watch_swift_recovery_r4.py::test_recovery_throttle_on_the_actual_swift_tracker[failure_throttle]
+5 failed in 14.94s

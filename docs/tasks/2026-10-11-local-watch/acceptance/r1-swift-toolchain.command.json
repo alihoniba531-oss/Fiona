@@ -1,0 +1,8 @@
+{
+  "cwd": ".",
+  "command": [
+    "swift",
+    "--version"
+  ],
+  "environment_overrides": {}
+}

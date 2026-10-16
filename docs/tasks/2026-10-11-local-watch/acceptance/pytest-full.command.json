@@ -1,0 +1,10 @@
+{
+  "cwd": "backend",
+  "command": [
+    "python",
+    "-m",
+    "pytest",
+    "-q"
+  ],
+  "existing_environment": "backend/.venv; npm offline"
+}

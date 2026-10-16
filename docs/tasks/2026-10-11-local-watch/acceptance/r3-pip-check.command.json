@@ -1,0 +1,12 @@
+{
+  "cwd": "backend",
+  "command": [
+    "python",
+    "-m",
+    "pip",
+    "check"
+  ],
+  "environment_overrides": {
+    "PATH": "{repo}/backend/.venv/bin:{existing_PATH}"
+  }
+}

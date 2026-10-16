@@ -1,0 +1,10 @@
+{
+  "cwd": ".",
+  "command": [
+    "git",
+    "diff",
+    "--",
+    "backend/database.py"
+  ],
+  "environment_overrides": {}
+}

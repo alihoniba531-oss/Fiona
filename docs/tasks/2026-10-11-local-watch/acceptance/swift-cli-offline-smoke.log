@@ -1,0 +1,11 @@
+usage exit=1
+用法：fiona-watcher list-windows | ocr <png路径> | run [--server URL] [--token-file 路径]
+
+invalid_image exit=1
+图片无法处理。
+
+token_permissions exit=1
+令牌文件权限必须是 600。请执行 chmod 600 ~/.fiona/watcher.token（使用自定义路径时请替换路径），然后重新运行。
+
+launchd_plist exit=0
+/Users/yangjing/Desktop/ai-workspace/Fiona/watcher-mac/launchd/com.fiona.watcher.plist.example: OK

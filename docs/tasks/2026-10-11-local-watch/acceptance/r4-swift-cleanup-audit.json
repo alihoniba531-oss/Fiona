@@ -1,0 +1,32 @@
+{
+  "commands": {
+    "r4-swift-recovery-red": {
+      "build_directory_removed": true
+    },
+    "r4-swift-recovery-green": {
+      "build_directory_removed": true
+    },
+    "r4-swift-build-release-default": {
+      "build_directory_removed": true
+    },
+    "r4-swift-test-default": {
+      "build_directory_removed": true
+    },
+    "r4-swift-build-release-native": {
+      "build_directory_removed": true
+    },
+    "r4-swift-test-native-plugin": {
+      "build_directory_removed": true
+    },
+    "r4-swift-final-cache-cleanup": {
+      "build_directory_removed": true
+    }
+  },
+  "final_build_directory_absent": true,
+  "original_swift_tests_unchanged": [
+    "watcher-mac/Tests/FionaWatcherCoreTests/test_local_watch_scheduling.swift",
+    "watcher-mac/Tests/FionaWatcherCoreTests/test_local_watch_logic.swift",
+    "watcher-mac/Tests/FionaWatcherCoreTests/test_local_watch_ocr.swift"
+  ],
+  "harness_compiler_cache": "pytest temporary directory; never watcher-mac/.build"
+}

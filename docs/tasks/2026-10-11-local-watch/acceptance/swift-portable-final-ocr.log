@@ -1,0 +1,3 @@
+Portable pure logic checks: 8 passed (normalization, snapshots, bounds, independent retry scheduling, complete pending preservation)
+Generated OCR fixture: width=1200, height=340, row_bytes=4800, black_pixel_bytes=36840
+Vision OCR unavailable: Foundation._GenericObjCError

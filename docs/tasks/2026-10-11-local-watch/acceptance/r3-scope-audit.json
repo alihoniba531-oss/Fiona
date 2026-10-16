@@ -1,0 +1,44 @@
+{
+  "changed_existing_files": [
+    "CLAUDE.md",
+    "PLAN.md",
+    "README.md",
+    "backend/.env.example",
+    "backend/routers/local_watch.py",
+    "docs/ARCHITECTURE.md",
+    "docs/DEPLOYMENT.md",
+    "docs/tasks/2026-10-11-local-watch/03-report.md",
+    "frontend/components/LocalWatchSection.tsx",
+    "frontend/lib/localWatch.ts",
+    "watcher-mac/Package.swift",
+    "watcher-mac/README.md",
+    "watcher-mac/Sources/FionaWatcherCore/Watcher.swift"
+  ],
+  "new_implementation_and_test_files": [
+    "backend/tests/test_local_watch_capture_backend_r3.py",
+    "backend/tests/test_local_watch_capture_docs_r3.py",
+    "backend/tests/test_local_watch_capture_frontend_r3.py",
+    "backend/tests/test_local_watch_swift_capture_r3.py",
+    "watcher-mac/CaptureStatusTests/test_local_watch_capture_status.swift",
+    "watcher-mac/Sources/FionaWatcherCore/CaptureStatus.swift"
+  ],
+  "unexpected_changed_files": [],
+  "generated_cache_excluded": [
+    "frontend/tsconfig.tsbuildinfo"
+  ],
+  "r3_start_test_files_unchanged": 114,
+  "r3_start_python_swift_test_sources_unchanged": 112,
+  "original_task_test_files_unchanged": 99,
+  "protected_files_unchanged": 57,
+  "database_r3_diff": {
+    "added": 0,
+    "deleted": 0
+  },
+  "database_original_task_diff": {
+    "added": 249,
+    "deleted": 0
+  },
+  "previous_report_bytes_preserved": 40697,
+  "report_append_only": true,
+  "watcher_build_cache_exists_after_acceptance": false
+}

@@ -1,0 +1,9 @@
+{
+  "cwd": "frontend",
+  "command": [
+    "npx",
+    "eslint",
+    "."
+  ],
+  "existing_environment": "backend/.venv; npm offline"
+}

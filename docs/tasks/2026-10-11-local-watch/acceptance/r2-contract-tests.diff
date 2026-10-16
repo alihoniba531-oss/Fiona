@@ -1,0 +1,33 @@
+--- before/backend/tests/test_local_watch_backend.py
++++ after/backend/tests/test_local_watch_backend.py
+@@ -201,7 +201,7 @@
+         connection.execute("INSERT INTO watch_alerts(username,rule_id,summary,message_id,conversation_id) VALUES(?,?,?,?,?)", ("someone_else", other["id"], "private", 1, "other"))
+     alerts = client.get("/local-watch/alerts?after=2", headers=dev_headers).json()
+     assert len(alerts) == 50 and alerts[0]["id"] == 3 and alerts[-1]["id"] == 52
+-    assert set(alerts[0]) == {"id", "rule_name", "summary", "created_at", "conversation_id", "message_id"}
++    assert set(alerts[0]) == {"id", "rule_name", "summary", "created_at", "conversation_id", "message_id", "content"}
+     assert len(client.get("/local-watch/alerts?after=52", headers=dev_headers).json()) == 3
+     assert len(client.get("/local-watch/alerts", headers={"X-Dev-User": "someone_else"}).json()) == 1
+ 
+--- before/backend/tests/test_local_watch_frontend.py
++++ after/backend/tests/test_local_watch_frontend.py
+@@ -175,8 +175,8 @@
+ def test_current_conversation_alert_inserted_once_and_busy_reply_kept_safe():
+     actual = run_logic("""
+       const existing=[{id:'db-2',dbId:2,role:'assistant',content:'existing'}];
+-      const alerts=[{id:3,message_id:3,conversation_id:'current',rule_name:'下载',summary:'下载完成',created_at:'2026-10-11 12:00:00'},
+-        {id:4,message_id:4,conversation_id:'other',rule_name:'股价',summary:'价格上涨',created_at:'2026-10-11 12:00:00'}];
++      const alerts=[{id:3,message_id:3,conversation_id:'current',rule_name:'下载',summary:'下载完成',content:'【本机提醒 · Safari】下载完成（规则：下载）',created_at:'2026-10-11 12:00:00'},
++        {id:4,message_id:4,conversation_id:'other',rule_name:'股价',summary:'价格上涨',content:'【本机提醒 · 行情】价格上涨（规则：股价）',created_at:'2026-10-11 12:00:00'}];
+       const inserted=appendLocalWatchMessages(existing,alerts,'current',false);
+       const repeated=appendLocalWatchMessages(inserted,alerts,'current',false);
+       const busy=appendLocalWatchMessages(existing,alerts,'current',true);
+@@ -186,7 +186,7 @@
+     assert actual["busy"] == actual["inserted"][:1]
+     message = actual["inserted"][1]
+     assert message["role"] == "assistant" and message["dbId"] == 3
+-    assert message["content"] == "【本机提醒 · 下载】下载完成（规则：下载）"
++    assert message["content"] == "【本机提醒 · Safari】下载完成（规则：下载）"
+     assert message["timestamp"].endswith("Z")
+ 
+ 

@@ -1,0 +1,241 @@
+warning: /Users/yangjing/Library/org.swift.swiftpm/configuration is not accessible or not writable, disabling user-level cache features.
+warning: /Users/yangjing/Library/org.swift.swiftpm/security is not accessible or not writable, disabling user-level cache features.
+Building for debugging...
+[Planning deferred tasks]
+[41 / 86]
+[42 / 87] FionaWatcherCore
+[54 / 222]
+[64 / 222]
+[67 / 222]
+[75 / 222]
+[79 / 222]
+[85 / 222]
+[90 / 222]
+[91 / 222]
+[105 / 222]
+[112 / 222]
+[119 / 222]
+[120 / 222]
+[127 / 222]
+[129 / 222]
+[135 / 222]
+[136 / 222]
+[138 / 222]
+[139 / 222]
+[141 / 222]
+[153 / 222]
+[158 / 222]
+[165 / 222]
+[168 / 222]
+[169 / 222]
+[170 / 222]
+[171 / 222]
+[172 / 222]
+[177 / 222] FionaWatcherCore
+[190 / 223] fiona-watcher-product
+[193 / 225] FionaWatcherCore
+[194 / 225] FionaWatcherCore
+/Users/yangjing/Desktop/ai-workspace/Fiona/watcher-mac/Package.swift: FionaWatcherCore: ld: warning: search path '/Library/Developer/CommandLineTools/Developer/Library/Frameworks' not found
+[203 / 227] fiona-watcher-product/Users/yangjing/Desktop/ai-workspace/Fiona/watcher-mac/Package.swift: fiona-watcher-product: ld: warning: search path '/Library/Developer/CommandLineTools/Developer/usr/lib' not found
+/Users/yangjing/Desktop/ai-workspace/Fiona/watcher-mac/Package.swift: fiona-watcher-product: ld: warning: search path '/Library/Developer/CommandLineTools/Developer/Library/Frameworks' not found
+
+[205 / 227] FionaWatcherCaptureStatusTests-product
+[206 / 238]
+error: SwiftCompile normal arm64 failed with a nonzero exit code. Command line:     cd /Users/yangjing/Desktop/ai-workspace/Fiona
+    
+/Users/yangjing/Desktop/ai-workspace/Fiona/watcher-mac/Tests/FionaWatcherCoreTests/test_local_watch_logic.swift:6:10: error: external macro implementation type 'TestingMacros.TestDeclarationMacro' could not be found for macro 'Test'; plugin for module 'TestingMacros' not found
+ 4 | struct LocalWatchNormalizationTests {
+ 5 |     @Test
+ 6 |     func testTrimsAndCollapsesWhitespaceAndDropsNoise() {
+   |          `- error: external macro implementation type 'TestingMacros.TestDeclarationMacro' could not be found for macro 'Test'; plugin for module 'TestingMacros' not found
+ 7 |         #expect(LineNormalizer.normalize([
+ 8 |             "  张三：今晚开会  ", "Download\t  complete", "A", "1234", "-1,234.50%",
+
+Testing.Test:1:30: note: 'Test' declared here
+1 | @attached(peer) public macro Test(_ traits: any Testing.TestTrait...) = #externalMacro(module: "TestingMacros", type: "TestDeclarationMacro")
+  |                              `- note: 'Test' declared here
+
+/Users/yangjing/Desktop/ai-workspace/Fiona/watcher-mac/Tests/FionaWatcherCoreTests/test_local_watch_logic.swift:15:10: error: external macro implementation type 'TestingMacros.TestDeclarationMacro' could not be found for macro 'Test'; plugin for module 'TestingMacros' not found
+13 | 
+14 |     @Test
+15 |     func testMixedNumericContentRemainsAndUnicodeWhitespaceCollapses() {
+   |          `- error: external macro implementation type 'TestingMacros.TestDeclarationMacro' could not be found for macro 'Test'; plugin for module 'TestingMacros' not found
+16 |         #expect(LineNormalizer.normalize(["价格\u{3000}  -12.5%", "版本 2", "OK"]) ==
+17 |                 ["价格 -12.5%", "版本 2", "OK"])
+
+Testing.Test:1:30: note: 'Test' declared here
+1 | @attached(peer) public macro Test(_ traits: any Testing.TestTrait...) = #externalMacro(module: "TestingMacros", type: "TestDeclarationMacro")
+  |                              `- note: 'Test' declared here
+
+/Users/yangjing/Desktop/ai-workspace/Fiona/watcher-mac/Tests/FionaWatcherCoreTests/test_local_watch_logic.swift:23:10: error: external macro implementation type 'TestingMacros.TestDeclarationMacro' could not be found for macro 'Test'; plugin for module 'TestingMacros' not found
+21 | struct LocalWatchSnapshotTests {
+22 |     @Test
+23 |     func testFirstSnapshotIsBaselineAndRecentThreeSuppressRepeatedLines() {
+   |          `- error: external macro implementation type 'TestingMacros.TestDeclarationMacro' could not be found for macro 'Test'; plugin for module 'TestingMacros' not found
+24 |         var history = SnapshotHistory()
+25 |         #expect(history.observe(["甲消息", "旧行"]) == [])
+
+Testing.Test:1:30: note: 'Test' declared here
+1 | @attached(peer) public macro Test(_ traits: any Testing.TestTrait...) = #externalMacro(module: "TestingMacros", type: "TestDeclarationMacro")
+  |                              `- note: 'Test' declared here
+
+/Users/yangjing/Desktop/ai-workspace/Fiona/watcher-mac/Tests/FionaWatcherCoreTests/test_local_watch_logic.swift:33:10: error: external macro implementation type 'TestingMacros.TestDeclarationMacro' could not be found for macro 'Test'; plugin for module 'TestingMacros' not found
+31 | 
+32 |     @Test
+33 |     func testDuplicateLinesOnlyReportOnceAndEmptyFirstSnapshotIsBaseline() {
+   |          `- error: external macro implementation type 'TestingMacros.TestDeclarationMacro' could not be found for macro 'Test'; plugin for module 'TestingMacros' not found
+34 |         var history = SnapshotHistory()
+35 |         #expect(history.observe([]) == [])
+
+Testing.Test:1:30: note: 'Test' declared here
+1 | @attached(peer) public macro Test(_ traits: any Testing.TestTrait...) = #externalMacro(module: "TestingMacros", type: "TestDeclarationMacro")
+  |                              `- note: 'Test' declared here
+
+/Users/yangjing/Desktop/ai-workspace/Fiona/watcher-mac/Tests/FionaWatcherCoreTests/test_local_watch_logic.swift:41:10: error: external macro implementation type 'TestingMacros.TestDeclarationMacro' could not be found for macro 'Test'; plugin for module 'TestingMacros' not found
+39 | 
+40 |     @Test
+41 |     func testObservationBoundsPreserveOrder() {
+   |          `- error: external macro implementation type 'TestingMacros.TestDeclarationMacro' could not be found for macro 'Test'; plugin for module 'TestingMacros' not found
+42 |         #expect(ObservationLimits.lines(Array(repeating: "消息", count: 55)).count == 50)
+43 |         let bounded = ObservationLimits.lines([String(repeating: "甲", count: 3995), "中文中文中文"])
+
+Testing.Test:1:30: note: 'Test' declared here
+1 | @attached(peer) public macro Test(_ traits: any Testing.TestTrait...) = #externalMacro(module: "TestingMacros", type: "TestDeclarationMacro")
+  |                              `- note: 'Test' declared here
+
+/Users/yangjing/Desktop/ai-workspace/Fiona/watcher-mac/Tests/FionaWatcherCoreTests/test_local_watch_ocr.swift:8:10: error: external macro implementation type 'TestingMacros.TestDeclarationMacro' could not be found for macro 'Test'; plugin for module 'TestingMacros' not found
+ 6 | struct LocalWatchOCRTests {
+ 7 |     @Test
+ 8 |     func testRecognizesChineseAndEnglishDrawnByCoreGraphics() throws {
+   |          `- error: external macro implementation type 'TestingMacros.TestDeclarationMacro' could not be found for macro 'Test'; plugin for module 'TestingMacros' not found
+ 9 |         let context = try #require(CGContext(
+10 |             data: nil, width: 1200, height: 340, bitsPerComponent: 8, bytesPerRow: 0,
+
+Testing.Test:1:30: note: 'Test' declared here
+1 | @attached(peer) public macro Test(_ traits: any Testing.TestTrait...) = #externalMacro(module: "TestingMacros", type: "TestDeclarationMacro")
+  |                              `- note: 'Test' declared here
+
+/Users/yangjing/Desktop/ai-workspace/Fiona/watcher-mac/Tests/FionaWatcherCoreTests/test_local_watch_scheduling.swift:7:10: error: external macro implementation type 'TestingMacros.TestDeclarationMacro' could not be found for macro 'Test'; plugin for module 'TestingMacros' not found
+ 5 | struct LocalWatchSchedulingTests {
+ 6 |     @Test
+ 7 |     func testRetryDoesNotBlockReadyObservationForAnotherRule() throws {
+   |          `- error: external macro implementation type 'TestingMacros.TestDeclarationMacro' could not be found for macro 'Test'; plugin for module 'TestingMacros' not found
+ 8 |         var queue = ObservationQueue()
+ 9 |         let now = Date(timeIntervalSince1970: 100)
+
+Testing.Test:1:30: note: 'Test' declared here
+1 | @attached(peer) public macro Test(_ traits: any Testing.TestTrait...) = #externalMacro(module: "TestingMacros", type: "TestDeclarationMacro")
+  |                              `- note: 'Test' declared here
+
+/Users/yangjing/Desktop/ai-workspace/Fiona/watcher-mac/Tests/FionaWatcherCoreTests/test_local_watch_scheduling.swift:22:10: error: external macro implementation type 'TestingMacros.TestDeclarationMacro' could not be found for macro 'Test'; plugin for module 'TestingMacros' not found
+20 | 
+21 |     @Test
+22 |     func testPendingQueueRetainsEveryBatchAndFailedPayload() throws {
+   |          `- error: external macro implementation type 'TestingMacros.TestDeclarationMacro' could not be found for macro 'Test'; plugin for module 'TestingMacros' not found
+23 |         var queue = ObservationQueue()
+24 |         let now = Date(timeIntervalSince1970: 100)
+
+Testing.Test:1:30: note: 'Test' declared here
+1 | @attached(peer) public macro Test(_ traits: any Testing.TestTrait...) = #externalMacro(module: "TestingMacros", type: "TestDeclarationMacro")
+  |                              `- note: 'Test' declared here
+
+/Users/yangjing/Desktop/ai-workspace/Fiona/watcher-mac/Tests/FionaWatcherCoreTests/test_local_watch_scheduling.swift:42:10: error: external macro implementation type 'TestingMacros.TestDeclarationMacro' could not be found for macro 'Test'; plugin for module 'TestingMacros' not found
+40 | 
+41 |     @Test
+42 |     func testExponentialBackoffNeverExceedsSixtySeconds() {
+   |          `- error: external macro implementation type 'TestingMacros.TestDeclarationMacro' could not be found for macro 'Test'; plugin for module 'TestingMacros' not found
+43 |         var backoff = RetryBackoff()
+44 |         #expect((0..<9).map { _ in backoff.next() } == [1, 2, 4, 8, 16, 32, 60, 60, 60])
+
+Testing.Test:1:30: note: 'Test' declared here
+1 | @attached(peer) public macro Test(_ traits: any Testing.TestTrait...) = #externalMacro(module: "TestingMacros", type: "TestDeclarationMacro")
+  |                              `- note: 'Test' declared here
+Failed frontend command:
+/Library/Developer/CommandLineTools/usr/bin/swift-frontend -frontend -emit-module -experimental-skip-non-inlinable-function-bodies-without-types /Users/yangjing/Desktop/ai-workspace/Fiona/watcher-mac/.build/out/Intermediates.noindex/FionaWatcher.build/Debug/FionaWatcherCoreTests-p.build/DerivedSources/test_entry_point.swift /Users/yangjing/Desktop/ai-workspace/Fiona/watcher-mac/Tests/FionaWatcherCoreTests/test_local_watch_logic.swift /Users/yangjing/Desktop/ai-workspace/Fiona/watcher-mac/Tests/FionaWatcherCoreTests/test_local_watch_ocr.swift /Users/yangjing/Desktop/ai-workspace/Fiona/watcher-mac/Tests/FionaWatcherCoreTests/test_local_watch_scheduling.swift -target arm64-apple-macos14.0 -module-can-import-version Testing 2084 0 -disable-cross-import-overlay-search -swift-module-cross-import Testing /Library/Developer/CommandLineTools/Library/Developer/Frameworks/Testing.framework/Modules/Testing.swiftcrossimport/AppKit.swiftoverlay -swift-module-cross-import Testing /Library/Developer/CommandLineTools/Library/Developer/Frameworks/Testing.framework/Modules/Testing.swiftcrossimport/CoreGraphics.swiftoverlay -swift-module-cross-import Testing /Library/Developer/CommandLineTools/Library/Developer/Frameworks/Testing.framework/Modules/Testing.swiftcrossimport/CoreImage.swiftoverlay -swift-module-cross-import Testing /Library/Developer/CommandLineTools/Library/Developer/Frameworks/Testing.framework/Modules/Testing.swiftcrossimport/CoreTransferable.swiftoverlay -swift-module-cross-import Testing /Library/Developer/CommandLineTools/Library/Developer/Frameworks/Testing.framework/Modules/Testing.swiftcrossimport/Foundation.swiftoverlay -load-resolved-plugin /Library/Developer/CommandLineTools/usr/lib/swift/host/plugins/libObservationMacros.dylib\#\#ObservationMacros -load-resolved-plugin /Library/Developer/CommandLineTools/usr/lib/swift/host/plugins/libSwiftMacros.dylib\#\#SwiftMacros -disable-implicit-swift-modules -Xcc -fno-implicit-modules -Xcc -fno-implicit-module-maps -explicit-swift-module-map-file /Users/yangjing/Desktop/ai-workspace/Fiona/watcher-mac/.build/out/Intermediates.noindex/FionaWatcher.build/Debug/FionaWatcherCoreTests-p.build/Objects-normal/arm64/FionaWatcherCoreTests-dependencies-1.json -Xllvm -aarch64-use-tbi -enable-objc-interop -stack-check -sdk /Library/Developer/CommandLineTools/SDKs/MacOSX27.0.sdk -I /Users/yangjing/Desktop/ai-workspace/Fiona/watcher-mac/.build/out/Products/Debug -Isystem /Library/Developer/CommandLineTools/Developer/usr/lib -F /Users/yangjing/Desktop/ai-workspace/Fiona/watcher-mac/.build/out/Products/Debug/PackageFrameworks -F /Users/yangjing/Desktop/ai-workspace/Fiona/watcher-mac/.build/out/Products/Debug -F /Library/Developer/CommandLineTools/Library/Developer/Frameworks -F /Library/Developer/CommandLineTools/Developer/Library/Frameworks -module-cache-path /Users/yangjing/Desktop/ai-workspace/Fiona/watcher-mac/.build/out/Intermediates.noindex/SwiftExplicitPrecompiledModules -no-color-diagnostics -Xcc -fno-color-diagnostics -enable-testing -g -debug-info-format\=dwarf -dwarf-version\=4 -swift-version 5 -Onone -D SWIFT_PACKAGE -D DEBUG -D Xcode -serialize-debugging-options -enable-experimental-feature DebugDescriptionMacro -empty-abi-descriptor -validate-clang-modules-once -clang-build-session-file /Users/yangjing/Desktop/ai-workspace/Fiona/watcher-mac/.build/out/ModuleCache.noindex/Session.modulevalidation -disable-sandbox -Xcc -working-directory -Xcc /Users/yangjing/Desktop/ai-workspace/Fiona -enable-anonymous-context-mangled-names -file-compilation-dir /Users/yangjing/Desktop/ai-workspace/Fiona -Xcc -D_LIBCPP_HARDENING_MODE\=_LIBCPP_HARDENING_MODE_DEBUG -Xcc -ivfsstatcache -Xcc /Users/yangjing/Desktop/ai-workspace/Fiona/watcher-mac/.build/out/SDKStatCaches.noindex/macosx27.0-26A425-a0facfad118c1a7a18f0aad9463f6549ffd68ff603bdaacc80b00cb8898de72d.sdkstatcache -Xcc -fmodules-prune-interval\=86400 -Xcc -fmodules-prune-after\=345600 -Xcc -I/Users/yangjing/Desktop/ai-workspace/Fiona/watcher-mac/.build/out/Products/Debug/include -Xcc -I/Users/yangjing/Desktop/ai-workspace/Fiona/watcher-mac/.build/out/Intermediates.noindex/FionaWatcher.build/Debug/FionaWatcherCoreTests-p.build/DerivedSources-normal/arm64 -Xcc -I/Users/yangjing/Desktop/ai-workspace/Fiona/watcher-mac/.build/out/Intermediates.noindex/FionaWatcher.build/Debug/FionaWatcherCoreTests-p.build/DerivedSources/arm64 -Xcc -I/Users/yangjing/Desktop/ai-workspace/Fiona/watcher-mac/.build/out/Intermediates.noindex/FionaWatcher.build/Debug/FionaWatcherCoreTests-p.build/DerivedSources -Xcc -DSWIFT_PACKAGE -Xcc -DDEBUG\=1 -no-auto-bridging-header-chaining -module-name FionaWatcherCoreTests -package-name watcher_mac -const-gather-protocols-file /Users/yangjing/Desktop/ai-workspace/Fiona/watcher-mac/.build/out/Intermediates.noindex/FionaWatcher.build/Debug/FionaWatcherCoreTests-p.build/Objects-normal/arm64/FionaWatcherCoreTests_const_extract_protocols.json -disable-clang-spi -clang-target arm64-apple-macos27.0 -target-sdk-version 27.0 -target-sdk-name macosx27.0 -in-process-plugin-server-path /Library/Developer/CommandLineTools/usr/lib/swift/host/libSwiftInProcPluginServer.dylib -emit-module-doc-path /Users/yangjing/Desktop/ai-workspace/Fiona/watcher-mac/.build/out/Intermediates.noindex/FionaWatcher.build/Debug/FionaWatcherCoreTests-p.build/Objects-normal/arm64/FionaWatcherCoreTests.swiftdoc -emit-module-source-info-path /Users/yangjing/Desktop/ai-workspace/Fiona/watcher-mac/.build/out/Intermediates.noindex/FionaWatcher.build/Debug/FionaWatcherCoreTests-p.build/Objects-normal/arm64/FionaWatcherCoreTests.swiftsourceinfo -serialize-diagnostics-path /Users/yangjing/Desktop/ai-workspace/Fiona/watcher-mac/.build/out/Intermediates.noindex/FionaWatcher.build/Debug/FionaWatcherCoreTests-p.build/Objects-normal/arm64/FionaWatcherCoreTests-primary-emit-module.dia -emit-dependencies-path /Users/yangjing/Desktop/ai-workspace/Fiona/watcher-mac/.build/out/Intermediates.noindex/FionaWatcher.build/Debug/FionaWatcherCoreTests-p.build/Objects-normal/arm64/FionaWatcherCoreTests-primary-emit-module.d -parse-as-library -o /Users/yangjing/Desktop/ai-workspace/Fiona/watcher-mac/.build/out/Intermediates.noindex/FionaWatcher.build/Debug/FionaWatcherCoreTests-p.build/Objects-normal/arm64/FionaWatcherCoreTests.swiftmodule -emit-abi-descriptor-path /Users/yangjing/Desktop/ai-workspace/Fiona/watcher-mac/.build/out/Intermediates.noindex/FionaWatcher.build/Debug/FionaWatcherCoreTests-p.build/Objects-normal/arm64/FionaWatcherCoreTests.abi.json
+/Users/yangjing/Desktop/ai-workspace/Fiona/watcher-mac/CaptureStatusTests/test_local_watch_capture_status.swift:14:10: error: external macro implementation type 'TestingMacros.TestDeclarationMacro' could not be found for macro 'Test'; plugin for module 'TestingMacros' not found
+ 12 | 
+ 13 |     @Test
+ 14 |     func testSameErrorIsThrottledForSixtySecondsPerRule() {
+    |          `- error: external macro implementation type 'TestingMacros.TestDeclarationMacro' could not be found for macro 'Test'; plugin for module 'TestingMacros' not found
+ 15 |         var tracker = CaptureStatusTracker()
+ 16 |         #expect(tracker.failed(ruleID: 1, appName: "微信", error: error(), at: start) ==
+
+Testing.Test:1:30: note: 'Test' declared here
+1 | @attached(peer) public macro Test(_ traits: any Testing.TestTrait...) = #externalMacro(module: "TestingMacros", type: "TestDeclarationMacro")
+  |                              `- note: 'Test' declared here
+
+/Users/yangjing/Desktop/ai-workspace/Fiona/watcher-mac/CaptureStatusTests/test_local_watch_capture_status.swift:24:10: error: external macro implementation type 'TestingMacros.TestDeclarationMacro' could not be found for macro 'Test'; plugin for module 'TestingMacros' not found
+ 22 | 
+ 23 |     @Test
+ 24 |     func testChangingErrorsDoesNotBypassThePerErrorThrottle() {
+    |          `- error: external macro implementation type 'TestingMacros.TestDeclarationMacro' could not be found for macro 'Test'; plugin for module 'TestingMacros' not found
+ 25 |         var tracker = CaptureStatusTracker()
+ 26 |         #expect(tracker.failed(ruleID: 1, appName: "微信", error: error(), at: start).count == 1)
+
+Testing.Test:1:30: note: 'Test' declared here
+1 | @attached(peer) public macro Test(_ traits: any Testing.TestTrait...) = #externalMacro(module: "TestingMacros", type: "TestDeclarationMacro")
+  |                              `- note: 'Test' declared here
+
+/Users/yangjing/Desktop/ai-workspace/Fiona/watcher-mac/CaptureStatusTests/test_local_watch_capture_status.swift:34:10: error: external macro implementation type 'TestingMacros.TestDeclarationMacro' could not be found for macro 'Test'; plugin for module 'TestingMacros' not found
+ 32 | 
+ 33 |     @Test
+ 34 |     func testRecoveryIsLoggedExactlyOnceWithoutResettingTheThrottle() {
+    |          `- error: external macro implementation type 'TestingMacros.TestDeclarationMacro' could not be found for macro 'Test'; plugin for module 'TestingMacros' not found
+ 35 |         var tracker = CaptureStatusTracker()
+ 36 |         _ = tracker.failed(ruleID: 1, appName: "微信", error: error(), at: start)
+
+Testing.Test:1:30: note: 'Test' declared here
+1 | @attached(peer) public macro Test(_ traits: any Testing.TestTrait...) = #externalMacro(module: "TestingMacros", type: "TestDeclarationMacro")
+  |                              `- note: 'Test' declared here
+
+/Users/yangjing/Desktop/ai-workspace/Fiona/watcher-mac/CaptureStatusTests/test_local_watch_capture_status.swift:44:10: error: external macro implementation type 'TestingMacros.TestDeclarationMacro' could not be found for macro 'Test'; plugin for module 'TestingMacros' not found
+ 42 | 
+ 43 |     @Test
+ 44 |     func testSinceChangesOnlyWhenCaptureStateChanges() throws {
+    |          `- error: external macro implementation type 'TestingMacros.TestDeclarationMacro' could not be found for macro 'Test'; plugin for module 'TestingMacros' not found
+ 45 |         var tracker = CaptureStatusTracker()
+ 46 |         _ = tracker.failed(ruleID: 1, appName: "微信", error: error(), at: start)
+
+Testing.Test:1:30: note: 'Test' declared here
+1 | @attached(peer) public macro Test(_ traits: any Testing.TestTrait...) = #externalMacro(module: "TestingMacros", type: "TestDeclarationMacro")
+  |                              `- note: 'Test' declared here
+
+/Users/yangjing/Desktop/ai-workspace/Fiona/watcher-mac/CaptureStatusTests/test_local_watch_capture_status.swift:60:10: error: external macro implementation type 'TestingMacros.TestDeclarationMacro' could not be found for macro 'Test'; plugin for module 'TestingMacros' not found
+ 58 | 
+ 59 |     @Test
+ 60 |     func testHeartbeatContainsEveryRuleAndExplicitNullWithISO8601() throws {
+    |          `- error: external macro implementation type 'TestingMacros.TestDeclarationMacro' could not be found for macro 'Test'; plugin for module 'TestingMacros' not found
+ 61 |         var tracker = CaptureStatusTracker()
+ 62 |         tracker.reconcile(ruleIDs: [2, 1], at: start)
+
+Testing.Test:1:30: note: 'Test' declared here
+1 | @attached(peer) public macro Test(_ traits: any Testing.TestTrait...) = #externalMacro(module: "TestingMacros", type: "TestDeclarationMacro")
+  |                              `- note: 'Test' declared here
+
+/Users/yangjing/Desktop/ai-workspace/Fiona/watcher-mac/CaptureStatusTests/test_local_watch_capture_status.swift:84:10: error: external macro implementation type 'TestingMacros.TestDeclarationMacro' could not be found for macro 'Test'; plugin for module 'TestingMacros' not found
+ 82 | 
+ 83 |     @Test
+ 84 |     func testMissingWindowsRemainStableAndDeletedRulesAreRemoved() throws {
+    |          `- error: external macro implementation type 'TestingMacros.TestDeclarationMacro' could not be found for macro 'Test'; plugin for module 'TestingMacros' not found
+ 85 |         var tracker = CaptureStatusTracker()
+ 86 |         tracker.reconcile(ruleIDs: [1, 2], at: start)
+
+Testing.Test:1:30: note: 'Test' declared here
+1 | @attached(peer) public macro Test(_ traits: any Testing.TestTrait...) = #externalMacro(module: "TestingMacros", type: "TestDeclarationMacro")
+  |                              `- note: 'Test' declared here
+
+/Users/yangjing/Desktop/ai-workspace/Fiona/watcher-mac/CaptureStatusTests/test_local_watch_capture_status.swift:100:10: error: external macro implementation type 'TestingMacros.TestDeclarationMacro' could not be found for macro 'Test'; plugin for module 'TestingMacros' not found
+ 98 | 
+ 99 |     @Test
+100 |     func testLogsNeverIncludeNSErrorDescriptionsOrWindowText() throws {
+    |          `- error: external macro implementation type 'TestingMacros.TestDeclarationMacro' could not be found for macro 'Test'; plugin for module 'TestingMacros' not found
+101 |         var tracker = CaptureStatusTracker()
+102 |         let lines = tracker.failed(ruleID: 3, appName: "Safari\n应用", error: error(), at: start)
+
+Testing.Test:1:30: note: 'Test' declared here
+1 | @attached(peer) public macro Test(_ traits: any Testing.TestTrait...) = #externalMacro(module: "TestingMacros", type: "TestDeclarationMacro")
+  |                              `- note: 'Test' declared here
+Failed frontend command:
+/Library/Developer/CommandLineTools/usr/bin/swift-frontend -frontend -emit-module -experimental-skip-non-inlinable-function-bodies-without-types /Users/yangjing/Desktop/ai-workspace/Fiona/watcher-mac/.build/out/Intermediates.noindex/FionaWatcher.build/Debug/FionaWatcherCaptureStatusTests-p.build/DerivedSources/test_entry_point.swift /Users/yangjing/Desktop/ai-workspace/Fiona/watcher-mac/CaptureStatusTests/test_local_watch_capture_status.swift -target arm64-apple-macos14.0 -module-can-import-version Testing 2084 0 -disable-cross-import-overlay-search -swift-module-cross-import Testing /Library/Developer/CommandLineTools/Library/Developer/Frameworks/Testing.framework/Modules/Testing.swiftcrossimport/AppKit.swiftoverlay -swift-module-cross-import Testing /Library/Developer/CommandLineTools/Library/Developer/Frameworks/Testing.framework/Modules/Testing.swiftcrossimport/CoreGraphics.swiftoverlay -swift-module-cross-import Testing /Library/Developer/CommandLineTools/Library/Developer/Frameworks/Testing.framework/Modules/Testing.swiftcrossimport/CoreImage.swiftoverlay -swift-module-cross-import Testing /Library/Developer/CommandLineTools/Library/Developer/Frameworks/Testing.framework/Modules/Testing.swiftcrossimport/CoreTransferable.swiftoverlay -swift-module-cross-import Testing /Library/Developer/CommandLineTools/Library/Developer/Frameworks/Testing.framework/Modules/Testing.swiftcrossimport/Foundation.swiftoverlay -load-resolved-plugin /Library/Developer/CommandLineTools/usr/lib/swift/host/plugins/libObservationMacros.dylib\#\#ObservationMacros -load-resolved-plugin /Library/Developer/CommandLineTools/usr/lib/swift/host/plugins/libSwiftMacros.dylib\#\#SwiftMacros -disable-implicit-swift-modules -Xcc -fno-implicit-modules -Xcc -fno-implicit-module-maps -explicit-swift-module-map-file /Users/yangjing/Desktop/ai-workspace/Fiona/watcher-mac/.build/out/Intermediates.noindex/FionaWatcher.build/Debug/FionaWatcherCaptureStatusTests-p.build/Objects-normal/arm64/FionaWatcherCaptureStatusTests-dependencies-1.json -Xllvm -aarch64-use-tbi -enable-objc-interop -stack-check -sdk /Library/Developer/CommandLineTools/SDKs/MacOSX27.0.sdk -I /Users/yangjing/Desktop/ai-workspace/Fiona/watcher-mac/.build/out/Products/Debug -Isystem /Library/Developer/CommandLineTools/Developer/usr/lib -F /Users/yangjing/Desktop/ai-workspace/Fiona/watcher-mac/.build/out/Products/Debug/PackageFrameworks -F /Users/yangjing/Desktop/ai-workspace/Fiona/watcher-mac/.build/out/Products/Debug -F /Library/Developer/CommandLineTools/Library/Developer/Frameworks -F /Library/Developer/CommandLineTools/Developer/Library/Frameworks -module-cache-path /Users/yangjing/Desktop/ai-workspace/Fiona/watcher-mac/.build/out/Intermediates.noindex/SwiftExplicitPrecompiledModules -no-color-diagnostics -Xcc -fno-color-diagnostics -enable-testing -g -debug-info-format\=dwarf -dwarf-version\=4 -swift-version 5 -Onone -D SWIFT_PACKAGE -D DEBUG -D Xcode -serialize-debugging-options -enable-experimental-feature DebugDescriptionMacro -empty-abi-descriptor -validate-clang-modules-once -clang-build-session-file /Users/yangjing/Desktop/ai-workspace/Fiona/watcher-mac/.build/out/ModuleCache.noindex/Session.modulevalidation -disable-sandbox -Xcc -working-directory -Xcc /Users/yangjing/Desktop/ai-workspace/Fiona -enable-anonymous-context-mangled-names -file-compilation-dir /Users/yangjing/Desktop/ai-workspace/Fiona -Xcc -D_LIBCPP_HARDENING_MODE\=_LIBCPP_HARDENING_MODE_DEBUG -Xcc -ivfsstatcache -Xcc /Users/yangjing/Desktop/ai-workspace/Fiona/watcher-mac/.build/out/SDKStatCaches.noindex/macosx27.0-26A425-a0facfad118c1a7a18f0aad9463f6549ffd68ff603bdaacc80b00cb8898de72d.sdkstatcache -Xcc -fmodules-prune-interval\=86400 -Xcc -fmodules-prune-after\=345600 -Xcc -I/Users/yangjing/Desktop/ai-workspace/Fiona/watcher-mac/.build/out/Products/Debug/include -Xcc -I/Users/yangjing/Desktop/ai-workspace/Fiona/watcher-mac/.build/out/Intermediates.noindex/FionaWatcher.build/Debug/FionaWatcherCaptureStatusTests-p.build/DerivedSources-normal/arm64 -Xcc -I/Users/yangjing/Desktop/ai-workspace/Fiona/watcher-mac/.build/out/Intermediates.noindex/FionaWatcher.build/Debug/FionaWatcherCaptureStatusTests-p.build/DerivedSources/arm64 -Xcc -I/Users/yangjing/Desktop/ai-workspace/Fiona/watcher-mac/.build/out/Intermediates.noindex/FionaWatcher.build/Debug/FionaWatcherCaptureStatusTests-p.build/DerivedSources -Xcc -DSWIFT_PACKAGE -Xcc -DDEBUG\=1 -no-auto-bridging-header-chaining -module-name FionaWatcherCaptureStatusTests -package-name watcher_mac -const-gather-protocols-file /Users/yangjing/Desktop/ai-workspace/Fiona/watcher-mac/.build/out/Intermediates.noindex/FionaWatcher.build/Debug/FionaWatcherCaptureStatusTests-p.build/Objects-normal/arm64/FionaWatcherCaptureStatusTests_const_extract_protocols.json -disable-clang-spi -clang-target arm64-apple-macos27.0 -target-sdk-version 27.0 -target-sdk-name macosx27.0 -in-process-plugin-server-path /Library/Developer/CommandLineTools/usr/lib/swift/host/libSwiftInProcPluginServer.dylib -emit-module-doc-path /Users/yangjing/Desktop/ai-workspace/Fiona/watcher-mac/.build/out/Intermediates.noindex/FionaWatcher.build/Debug/FionaWatcherCaptureStatusTests-p.build/Objects-normal/arm64/FionaWatcherCaptureStatusTests.swiftdoc -emit-module-source-info-path /Users/yangjing/Desktop/ai-workspace/Fiona/watcher-mac/.build/out/Intermediates.noindex/FionaWatcher.build/Debug/FionaWatcherCaptureStatusTests-p.build/Objects-normal/arm64/FionaWatcherCaptureStatusTests.swiftsourceinfo -serialize-diagnostics-path /Users/yangjing/Desktop/ai-workspace/Fiona/watcher-mac/.build/out/Intermediates.noindex/FionaWatcher.build/Debug/FionaWatcherCaptureStatusTests-p.build/Objects-normal/arm64/FionaWatcherCaptureStatusTests-primary-emit-module.dia -emit-dependencies-path /Users/yangjing/Desktop/ai-workspace/Fiona/watcher-mac/.build/out/Intermediates.noindex/FionaWatcher.build/Debug/FionaWatcherCaptureStatusTests-p.build/Objects-normal/arm64/FionaWatcherCaptureStatusTests-primary-emit-module.d -parse-as-library -o /Users/yangjing/Desktop/ai-workspace/Fiona/watcher-mac/.build/out/Intermediates.noindex/FionaWatcher.build/Debug/FionaWatcherCaptureStatusTests-p.build/Objects-normal/arm64/FionaWatcherCaptureStatusTests.swiftmodule -emit-abi-descriptor-path /Users/yangjing/Desktop/ai-workspace/Fiona/watcher-mac/.build/out/Intermediates.noindex/FionaWatcher.build/Debug/FionaWatcherCaptureStatusTests-p.build/Objects-normal/arm64/FionaWatcherCaptureStatusTests.abi.json
+error: Build failed
+error: fatalError

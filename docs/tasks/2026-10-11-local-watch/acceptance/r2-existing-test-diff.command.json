@@ -1,0 +1,11 @@
+{
+  "cwd": ".",
+  "command": [
+    "git",
+    "diff",
+    "--name-only",
+    "--",
+    "backend/tests"
+  ],
+  "environment_overrides": {}
+}

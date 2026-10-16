@@ -1,0 +1,1538 @@
+FFFFFFFFFFFFFFF...............FFFFFFFFFFFFFF..FF.FF.FF.F..               [100%]
+=================================== FAILURES ===================================
+________ test_false_decision_is_success_and_ignores_summary[-platform] _________
+
+client = <starlette.testclient.TestClient object at 0x111faba10>
+service = <module 'services.local_watch' from '/Users/yangjing/Desktop/ai-workspace/Fiona/backend/services/local_watch.py'>
+monkeypatch = <_pytest.monkeypatch.MonkeyPatch object at 0x10b806650>
+caplog = <_pytest.logging.LogCaptureFixture object at 0x112052660>
+model = 'platform', summary = ''
+
+    @pytest.mark.parametrize("model", ["platform", "claude"])
+    @pytest.mark.parametrize("summary", ["", "  \n ", "长" * 1000, None, 42, ["任意内容"], {"任意": "内容"}])
+    def test_false_decision_is_success_and_ignores_summary(client, service, monkeypatch, caplog, model, summary):
+        import database
+    
+        caplog.set_level(logging.DEBUG)
+        asyncio.run(database.get_or_create_user("r2-negative"))
+        rule = asyncio.run(database.create_watch_rule("r2-negative", ai_rule(model)))
+        model_stub(service, monkeypatch, model, {"alert": False, "summary": summary}, debug=True)
+        failure = []
+>       assert asyncio.run(service.judge_ai("r2-negative", rule["params"], ["R2_PRIVATE_OCR"], failure=failure)) == {"alert": False}
+E       AssertionError: assert None == {'alert': False}
+E        +  where None = <function run at 0x10b6c8ca0>(<coroutine object judge_ai at 0x1120079a0>)
+E        +    where <function run at 0x10b6c8ca0> = asyncio.run
+E        +    and   <coroutine object judge_ai at 0x1120079a0> = <function judge_ai at 0x111ee5850>('r2-negative', {'condition': '下载完成时提醒', 'model': 'platform'}, ['R2_PRIVATE_OCR'], failure=['ValueError'])
+E        +      where <function judge_ai at 0x111ee5850> = <module 'services.local_watch' from '/Users/yangjing/Desktop/ai-workspace/Fiona/backend/services/local_watch.py'>.judge_ai
+
+tests/test_local_watch_service_r2.py:93: AssertionError
+------------------------------ Captured log call -------------------------------
+DEBUG    asyncio:selector_events.py:64 Using selector: KqueueSelector
+DEBUG    aiosqlite:core.py:62 executing <function connect.<locals>.connector at 0x11204f7f0>
+DEBUG    aiosqlite:core.py:67 operation <function connect.<locals>.connector at 0x11204f7f0> completed
+DEBUG    aiosqlite:core.py:62 executing functools.partial(<built-in method execute of sqlite3.Connection object at 0x11203af20>, 'INSERT OR IGNORE INTO users (username, session_version) VALUES (?, ?)', ('r2-negative', 2131358524))
+DEBUG    aiosqlite:core.py:67 operation functools.partial(<built-in method execute of sqlite3.Connection object at 0x11203af20>, 'INSERT OR IGNORE INTO users (username, session_version) VALUES (?, ?)', ('r2-negative', 2131358524)) completed
+DEBUG    aiosqlite:core.py:62 executing functools.partial(<built-in method commit of sqlite3.Connection object at 0x11203af20>)
+DEBUG    aiosqlite:core.py:67 operation functools.partial(<built-in method commit of sqlite3.Connection object at 0x11203af20>) completed
+DEBUG    aiosqlite:core.py:62 executing functools.partial(<built-in method execute of sqlite3.Connection object at 0x11203af20>, 'SELECT * FROM users WHERE username = ?', ('r2-negative',))
+DEBUG    aiosqlite:core.py:67 operation functools.partial(<built-in method execute of sqlite3.Connection object at 0x11203af20>, 'SELECT * FROM users WHERE username = ?', ('r2-negative',)) completed
+DEBUG    aiosqlite:core.py:62 executing functools.partial(<built-in method fetchone of sqlite3.Cursor object at 0x112035b40>)
+DEBUG    aiosqlite:core.py:67 operation functools.partial(<built-in method fetchone of sqlite3.Cursor object at 0x112035b40>) completed
+DEBUG    aiosqlite:core.py:62 executing functools.partial(<built-in method close of sqlite3.Cursor object at 0x112035b40>)
+DEBUG    aiosqlite:core.py:67 operation functools.partial(<built-in method close of sqlite3.Cursor object at 0x112035b40>) completed
+DEBUG    aiosqlite:core.py:62 executing functools.partial(<built-in method close of sqlite3.Connection object at 0x11203af20>)
+DEBUG    aiosqlite:core.py:67 operation functools.partial(<built-in method close of sqlite3.Connection object at 0x11203af20>) completed
+DEBUG    aiosqlite:core.py:62 executing <function Connection.stop.<locals>.close_and_stop at 0x11204fc10>
+DEBUG    aiosqlite:core.py:67 operation <function Connection.stop.<locals>.close_and_stop at 0x11204fc10> completed
+DEBUG    asyncio:selector_events.py:64 Using selector: KqueueSelector
+DEBUG    aiosqlite:core.py:62 executing <function connect.<locals>.connector at 0x11204fe20>
+DEBUG    aiosqlite:core.py:67 operation <function connect.<locals>.connector at 0x11204fe20> completed
+DEBUG    aiosqlite:core.py:62 executing functools.partial(<built-in method execute of sqlite3.Connection object at 0x11203bc40>, 'BEGIN IMMEDIATE', [])
+DEBUG    aiosqlite:core.py:67 operation functools.partial(<built-in method execute of sqlite3.Connection object at 0x11203bc40>, 'BEGIN IMMEDIATE', []) completed
+DEBUG    aiosqlite:core.py:62 executing functools.partial(<built-in method execute of sqlite3.Connection object at 0x11203bc40>, 'SELECT COUNT(*) FROM users WHERE username IN (?)', ('r2-negative',))
+DEBUG    aiosqlite:core.py:67 operation functools.partial(<built-in method execute of sqlite3.Connection object at 0x11203bc40>, 'SELECT COUNT(*) FROM users WHERE username IN (?)', ('r2-negative',)) completed
+DEBUG    aiosqlite:core.py:62 executing functools.partial(<built-in method fetchone of sqlite3.Cursor object at 0x112035f40>)
+DEBUG    aiosqlite:core.py:67 operation functools.partial(<built-in method fetchone of sqlite3.Cursor object at 0x112035f40>) completed
+DEBUG    aiosqlite:core.py:62 executing functools.partial(<built-in method close of sqlite3.Cursor object at 0x112035f40>)
+DEBUG    aiosqlite:core.py:67 operation functools.partial(<built-in method close of sqlite3.Cursor object at 0x112035f40>) completed
+DEBUG    aiosqlite:core.py:62 executing functools.partial(<built-in method execute of sqlite3.Connection object at 0x11203bc40>, 'SELECT COUNT(*) FROM watch_rules WHERE username=?', ('r2-negative',))
+DEBUG    aiosqlite:core.py:67 operation functools.partial(<built-in method execute of sqlite3.Connection object at 0x11203bc40>, 'SELECT COUNT(*) FROM watch_rules WHERE username=?', ('r2-negative',)) completed
+DEBUG    aiosqlite:core.py:62 executing functools.partial(<built-in method fetchone of sqlite3.Cursor object at 0x112035ec0>)
+DEBUG    aiosqlite:core.py:67 operation functools.partial(<built-in method fetchone of sqlite3.Cursor object at 0x112035ec0>) completed
+DEBUG    aiosqlite:core.py:62 executing functools.partial(<built-in method close of sqlite3.Cursor object at 0x112035ec0>)
+DEBUG    aiosqlite:core.py:67 operation functools.partial(<built-in method close of sqlite3.Cursor object at 0x112035ec0>) completed
+DEBUG    aiosqlite:core.py:62 executing functools.partial(<built-in method execute of sqlite3.Connection object at 0x11203bc40>, 'INSERT INTO watch_rules(username,name,app_match,title_match,kind,params,interval_seconds,cooldown_seconds,enabled,conversation_id) VALUES(?,?,?,?,?,?,?,?,?,?)', ['r2-negative', 'R2 判断', 'Terminal', '', 'ai', '{"condition": "下载完成时提醒", "model": "platform"}', 3, 60, True, None])
+DEBUG    aiosqlite:core.py:67 operation functools.partial(<built-in method execute of sqlite3.Connection object at 0x11203bc40>, 'INSERT INTO watch_rules(username,name,app_match,title_match,kind,params,interval_seconds,cooldown_seconds,enabled,conversation_id) VALUES(?,?,?,?,?,?,?,?,?,?)', ['r2-negative', 'R2 判断', 'Terminal', '', 'ai', '{"condition": "下载完成时提醒", "model": "platform"}', 3, 60, True, None]) completed
+DEBUG    aiosqlite:core.py:62 executing functools.partial(<built-in method execute of sqlite3.Connection object at 0x11203bc40>, 'SELECT * FROM watch_rules WHERE id=?', (1,))
+DEBUG    aiosqlite:core.py:67 operation functools.partial(<built-in method execute of sqlite3.Connection object at 0x11203bc40>, 'SELECT * FROM watch_rules WHERE id=?', (1,)) completed
+DEBUG    aiosqlite:core.py:62 executing functools.partial(<built-in method fetchone of sqlite3.Cursor object at 0x112036040>)
+DEBUG    aiosqlite:core.py:67 operation functools.partial(<built-in method fetchone of sqlite3.Cursor object at 0x112036040>) completed
+DEBUG    aiosqlite:core.py:62 executing functools.partial(<built-in method close of sqlite3.Cursor object at 0x112036040>)
+DEBUG    aiosqlite:core.py:67 operation functools.partial(<built-in method close of sqlite3.Cursor object at 0x112036040>) completed
+DEBUG    aiosqlite:core.py:62 executing functools.partial(<built-in method commit of sqlite3.Connection object at 0x11203bc40>)
+DEBUG    aiosqlite:core.py:67 operation functools.partial(<built-in method commit of sqlite3.Connection object at 0x11203bc40>) completed
+DEBUG    aiosqlite:core.py:62 executing functools.partial(<built-in method close of sqlite3.Connection object at 0x11203bc40>)
+DEBUG    aiosqlite:core.py:67 operation functools.partial(<built-in method close of sqlite3.Connection object at 0x11203bc40>) completed
+DEBUG    aiosqlite:core.py:62 executing <function Connection.stop.<locals>.close_and_stop at 0x112068300>
+DEBUG    aiosqlite:core.py:67 operation <function Connection.stop.<locals>.close_and_stop at 0x112068300> completed
+DEBUG    asyncio:selector_events.py:64 Using selector: KqueueSelector
+WARNING  services.local_watch:local_watch.py:154 local_watch exception_type=ValueError
+_________ test_false_decision_is_success_and_ignores_summary[-claude] __________
+
+client = <starlette.testclient.TestClient object at 0x111edec10>
+service = <module 'services.local_watch' from '/Users/yangjing/Desktop/ai-workspace/Fiona/backend/services/local_watch.py'>
+monkeypatch = <_pytest.monkeypatch.MonkeyPatch object at 0x111e79d90>
+caplog = <_pytest.logging.LogCaptureFixture object at 0x1121442d0>
+model = 'claude', summary = ''
+
+    @pytest.mark.parametrize("model", ["platform", "claude"])
+    @pytest.mark.parametrize("summary", ["", "  \n ", "长" * 1000, None, 42, ["任意内容"], {"任意": "内容"}])
+    def test_false_decision_is_success_and_ignores_summary(client, service, monkeypatch, caplog, model, summary):
+        import database
+    
+        caplog.set_level(logging.DEBUG)
+        asyncio.run(database.get_or_create_user("r2-negative"))
+        rule = asyncio.run(database.create_watch_rule("r2-negative", ai_rule(model)))
+        model_stub(service, monkeypatch, model, {"alert": False, "summary": summary}, debug=True)
+        failure = []
+>       assert asyncio.run(service.judge_ai("r2-negative", rule["params"], ["R2_PRIVATE_OCR"], failure=failure)) == {"alert": False}
+E       AssertionError: assert None == {'alert': False}
+E        +  where None = <function run at 0x10b6c8ca0>(<coroutine object judge_ai at 0x112071030>)
+E        +    where <function run at 0x10b6c8ca0> = asyncio.run
+E        +    and   <coroutine object judge_ai at 0x112071030> = <function judge_ai at 0x111ee5850>('r2-negative', {'condition': '下载完成时提醒', 'model': 'claude'}, ['R2_PRIVATE_OCR'], failure=['ValueError'])
+E        +      where <function judge_ai at 0x111ee5850> = <module 'services.local_watch' from '/Users/yangjing/Desktop/ai-workspace/Fiona/backend/services/local_watch.py'>.judge_ai
+
+tests/test_local_watch_service_r2.py:93: AssertionError
+------------------------------ Captured log call -------------------------------
+DEBUG    asyncio:selector_events.py:64 Using selector: KqueueSelector
+DEBUG    aiosqlite:core.py:62 executing <function connect.<locals>.connector at 0x11204f060>
+DEBUG    aiosqlite:core.py:67 operation <function connect.<locals>.connector at 0x11204f060> completed
+DEBUG    aiosqlite:core.py:62 executing functools.partial(<built-in method execute of sqlite3.Connection object at 0x112089300>, 'INSERT OR IGNORE INTO users (username, session_version) VALUES (?, ?)', ('r2-negative', 1794033198))
+DEBUG    aiosqlite:core.py:67 operation functools.partial(<built-in method execute of sqlite3.Connection object at 0x112089300>, 'INSERT OR IGNORE INTO users (username, session_version) VALUES (?, ?)', ('r2-negative', 1794033198)) completed
+DEBUG    aiosqlite:core.py:62 executing functools.partial(<built-in method commit of sqlite3.Connection object at 0x112089300>)
+DEBUG    aiosqlite:core.py:67 operation functools.partial(<built-in method commit of sqlite3.Connection object at 0x112089300>) completed
+DEBUG    aiosqlite:core.py:62 executing functools.partial(<built-in method execute of sqlite3.Connection object at 0x112089300>, 'SELECT * FROM users WHERE username = ?', ('r2-negative',))
+DEBUG    aiosqlite:core.py:67 operation functools.partial(<built-in method execute of sqlite3.Connection object at 0x112089300>, 'SELECT * FROM users WHERE username = ?', ('r2-negative',)) completed
+DEBUG    aiosqlite:core.py:62 executing functools.partial(<built-in method fetchone of sqlite3.Cursor object at 0x1121417c0>)
+DEBUG    aiosqlite:core.py:67 operation functools.partial(<built-in method fetchone of sqlite3.Cursor object at 0x1121417c0>) completed
+DEBUG    aiosqlite:core.py:62 executing functools.partial(<built-in method close of sqlite3.Cursor object at 0x1121417c0>)
+DEBUG    aiosqlite:core.py:67 operation functools.partial(<built-in method close of sqlite3.Cursor object at 0x1121417c0>) completed
+DEBUG    aiosqlite:core.py:62 executing functools.partial(<built-in method close of sqlite3.Connection object at 0x112089300>)
+DEBUG    aiosqlite:core.py:67 operation functools.partial(<built-in method close of sqlite3.Connection object at 0x112089300>) completed
+DEBUG    aiosqlite:core.py:62 executing <function Connection.stop.<locals>.close_and_stop at 0x112134f60>
+DEBUG    aiosqlite:core.py:67 operation <function Connection.stop.<locals>.close_and_stop at 0x112134f60> completed
+DEBUG    asyncio:selector_events.py:64 Using selector: KqueueSelector
+DEBUG    aiosqlite:core.py:62 executing <function connect.<locals>.connector at 0x1121354e0>
+DEBUG    aiosqlite:core.py:67 operation <function connect.<locals>.connector at 0x1121354e0> completed
+DEBUG    aiosqlite:core.py:62 executing functools.partial(<built-in method execute of sqlite3.Connection object at 0x1120893f0>, 'BEGIN IMMEDIATE', [])
+DEBUG    aiosqlite:core.py:67 operation functools.partial(<built-in method execute of sqlite3.Connection object at 0x1120893f0>, 'BEGIN IMMEDIATE', []) completed
+DEBUG    aiosqlite:core.py:62 executing functools.partial(<built-in method execute of sqlite3.Connection object at 0x1120893f0>, 'SELECT COUNT(*) FROM users WHERE username IN (?)', ('r2-negative',))
+DEBUG    aiosqlite:core.py:67 operation functools.partial(<built-in method execute of sqlite3.Connection object at 0x1120893f0>, 'SELECT COUNT(*) FROM users WHERE username IN (?)', ('r2-negative',)) completed
+DEBUG    aiosqlite:core.py:62 executing functools.partial(<built-in method fetchone of sqlite3.Cursor object at 0x112141bc0>)
+DEBUG    aiosqlite:core.py:67 operation functools.partial(<built-in method fetchone of sqlite3.Cursor object at 0x112141bc0>) completed
+DEBUG    aiosqlite:core.py:62 executing functools.partial(<built-in method close of sqlite3.Cursor object at 0x112141bc0>)
+DEBUG    aiosqlite:core.py:67 operation functools.partial(<built-in method close of sqlite3.Cursor object at 0x112141bc0>) completed
+DEBUG    aiosqlite:core.py:62 executing functools.partial(<built-in method execute of sqlite3.Connection object at 0x1120893f0>, 'SELECT COUNT(*) FROM watch_rules WHERE username=?', ('r2-negative',))
+DEBUG    aiosqlite:core.py:67 operation functools.partial(<built-in method execute of sqlite3.Connection object at 0x1120893f0>, 'SELECT COUNT(*) FROM watch_rules WHERE username=?', ('r2-negative',)) completed
+DEBUG    aiosqlite:core.py:62 executing functools.partial(<built-in method fetchone of sqlite3.Cursor object at 0x112141b40>)
+DEBUG    aiosqlite:core.py:67 operation functools.partial(<built-in method fetchone of sqlite3.Cursor object at 0x112141b40>) completed
+DEBUG    aiosqlite:core.py:62 executing functools.partial(<built-in method close of sqlite3.Cursor object at 0x112141b40>)
+DEBUG    aiosqlite:core.py:67 operation functools.partial(<built-in method close of sqlite3.Cursor object at 0x112141b40>) completed
+DEBUG    aiosqlite:core.py:62 executing functools.partial(<built-in method execute of sqlite3.Connection object at 0x1120893f0>, 'INSERT INTO watch_rules(username,name,app_match,title_match,kind,params,interval_seconds,cooldown_seconds,enabled,conversation_id) VALUES(?,?,?,?,?,?,?,?,?,?)', ['r2-negative', 'R2 判断', 'Terminal', '', 'ai', '{"condition": "下载完成时提醒", "model": "claude"}', 3, 60, True, None])
+DEBUG    aiosqlite:core.py:67 operation functools.partial(<built-in method execute of sqlite3.Connection object at 0x1120893f0>, 'INSERT INTO watch_rules(username,name,app_match,title_match,kind,params,interval_seconds,cooldown_seconds,enabled,conversation_id) VALUES(?,?,?,?,?,?,?,?,?,?)', ['r2-negative', 'R2 判断', 'Terminal', '', 'ai', '{"condition": "下载完成时提醒", "model": "claude"}', 3, 60, True, None]) completed
+DEBUG    aiosqlite:core.py:62 executing functools.partial(<built-in method execute of sqlite3.Connection object at 0x1120893f0>, 'SELECT * FROM watch_rules WHERE id=?', (1,))
+DEBUG    aiosqlite:core.py:67 operation functools.partial(<built-in method execute of sqlite3.Connection object at 0x1120893f0>, 'SELECT * FROM watch_rules WHERE id=?', (1,)) completed
+DEBUG    aiosqlite:core.py:62 executing functools.partial(<built-in method fetchone of sqlite3.Cursor object at 0x112141cc0>)
+DEBUG    aiosqlite:core.py:67 operation functools.partial(<built-in method fetchone of sqlite3.Cursor object at 0x112141cc0>) completed
+DEBUG    aiosqlite:core.py:62 executing functools.partial(<built-in method close of sqlite3.Cursor object at 0x112141cc0>)
+DEBUG    aiosqlite:core.py:67 operation functools.partial(<built-in method close of sqlite3.Cursor object at 0x112141cc0>) completed
+DEBUG    aiosqlite:core.py:62 executing functools.partial(<built-in method commit of sqlite3.Connection object at 0x1120893f0>)
+DEBUG    aiosqlite:core.py:67 operation functools.partial(<built-in method commit of sqlite3.Connection object at 0x1120893f0>) completed
+DEBUG    aiosqlite:core.py:62 executing functools.partial(<built-in method close of sqlite3.Connection object at 0x1120893f0>)
+DEBUG    aiosqlite:core.py:67 operation functools.partial(<built-in method close of sqlite3.Connection object at 0x1120893f0>) completed
+DEBUG    aiosqlite:core.py:62 executing <function Connection.stop.<locals>.close_and_stop at 0x112135900>
+DEBUG    aiosqlite:core.py:67 operation <function Connection.stop.<locals>.close_and_stop at 0x112135900> completed
+DEBUG    asyncio:selector_events.py:64 Using selector: KqueueSelector
+WARNING  services.local_watch:local_watch.py:154 local_watch exception_type=ValueError
+______ test_false_decision_is_success_and_ignores_summary[  \n -platform] ______
+
+client = <starlette.testclient.TestClient object at 0x111edfb10>
+service = <module 'services.local_watch' from '/Users/yangjing/Desktop/ai-workspace/Fiona/backend/services/local_watch.py'>
+monkeypatch = <_pytest.monkeypatch.MonkeyPatch object at 0x112007460>
+caplog = <_pytest.logging.LogCaptureFixture object at 0x112145450>
+model = 'platform', summary = '  \n '
+
+    @pytest.mark.parametrize("model", ["platform", "claude"])
+    @pytest.mark.parametrize("summary", ["", "  \n ", "长" * 1000, None, 42, ["任意内容"], {"任意": "内容"}])
+    def test_false_decision_is_success_and_ignores_summary(client, service, monkeypatch, caplog, model, summary):
+        import database
+    
+        caplog.set_level(logging.DEBUG)
+        asyncio.run(database.get_or_create_user("r2-negative"))
+        rule = asyncio.run(database.create_watch_rule("r2-negative", ai_rule(model)))
+        model_stub(service, monkeypatch, model, {"alert": False, "summary": summary}, debug=True)
+        failure = []
+>       assert asyncio.run(service.judge_ai("r2-negative", rule["params"], ["R2_PRIVATE_OCR"], failure=failure)) == {"alert": False}
+E       AssertionError: assert None == {'alert': False}
+E        +  where None = <function run at 0x10b6c8ca0>(<coroutine object judge_ai at 0x112073670>)
+E        +    where <function run at 0x10b6c8ca0> = asyncio.run
+E        +    and   <coroutine object judge_ai at 0x112073670> = <function judge_ai at 0x111ee5850>('r2-negative', {'condition': '下载完成时提醒', 'model': 'platform'}, ['R2_PRIVATE_OCR'], failure=['ValueError'])
+E        +      where <function judge_ai at 0x111ee5850> = <module 'services.local_watch' from '/Users/yangjing/Desktop/ai-workspace/Fiona/backend/services/local_watch.py'>.judge_ai
+
+tests/test_local_watch_service_r2.py:93: AssertionError
+------------------------------ Captured log call -------------------------------
+DEBUG    asyncio:selector_events.py:64 Using selector: KqueueSelector
+DEBUG    aiosqlite:core.py:62 executing <function connect.<locals>.connector at 0x11204f530>
+DEBUG    aiosqlite:core.py:67 operation <function connect.<locals>.connector at 0x11204f530> completed
+DEBUG    aiosqlite:core.py:62 executing functools.partial(<built-in method execute of sqlite3.Connection object at 0x11208a2f0>, 'INSERT OR IGNORE INTO users (username, session_version) VALUES (?, ?)', ('r2-negative', 440577057))
+DEBUG    aiosqlite:core.py:67 operation functools.partial(<built-in method execute of sqlite3.Connection object at 0x11208a2f0>, 'INSERT OR IGNORE INTO users (username, session_version) VALUES (?, ?)', ('r2-negative', 440577057)) completed
+DEBUG    aiosqlite:core.py:62 executing functools.partial(<built-in method commit of sqlite3.Connection object at 0x11208a2f0>)
+DEBUG    aiosqlite:core.py:67 operation functools.partial(<built-in method commit of sqlite3.Connection object at 0x11208a2f0>) completed
+DEBUG    aiosqlite:core.py:62 executing functools.partial(<built-in method execute of sqlite3.Connection object at 0x11208a2f0>, 'SELECT * FROM users WHERE username = ?', ('r2-negative',))
+DEBUG    aiosqlite:core.py:67 operation functools.partial(<built-in method execute of sqlite3.Connection object at 0x11208a2f0>, 'SELECT * FROM users WHERE username = ?', ('r2-negative',)) completed
+DEBUG    aiosqlite:core.py:62 executing functools.partial(<built-in method fetchone of sqlite3.Cursor object at 0x112142540>)
+DEBUG    aiosqlite:core.py:67 operation functools.partial(<built-in method fetchone of sqlite3.Cursor object at 0x112142540>) completed
+DEBUG    aiosqlite:core.py:62 executing functools.partial(<built-in method close of sqlite3.Cursor object at 0x112142540>)
+DEBUG    aiosqlite:core.py:67 operation functools.partial(<built-in method close of sqlite3.Cursor object at 0x112142540>) completed
+DEBUG    aiosqlite:core.py:62 executing functools.partial(<built-in method close of sqlite3.Connection object at 0x11208a2f0>)
+DEBUG    aiosqlite:core.py:67 operation functools.partial(<built-in method close of sqlite3.Connection object at 0x11208a2f0>) completed
+DEBUG    aiosqlite:core.py:62 executing <function Connection.stop.<locals>.close_and_stop at 0x1121354e0>
+DEBUG    aiosqlite:core.py:67 operation <function Connection.stop.<locals>.close_and_stop at 0x1121354e0> completed
+DEBUG    asyncio:selector_events.py:64 Using selector: KqueueSelector
+DEBUG    aiosqlite:core.py:62 executing <function connect.<locals>.connector at 0x1121359b0>
+DEBUG    aiosqlite:core.py:67 operation <function connect.<locals>.connector at 0x1121359b0> completed
+DEBUG    aiosqlite:core.py:62 executing functools.partial(<built-in method execute of sqlite3.Connection object at 0x11208aa70>, 'BEGIN IMMEDIATE', [])
+DEBUG    aiosqlite:core.py:67 operation functools.partial(<built-in method execute of sqlite3.Connection object at 0x11208aa70>, 'BEGIN IMMEDIATE', []) completed
+DEBUG    aiosqlite:core.py:62 executing functools.partial(<built-in method execute of sqlite3.Connection object at 0x11208aa70>, 'SELECT COUNT(*) FROM users WHERE username IN (?)', ('r2-negative',))
+DEBUG    aiosqlite:core.py:67 operation functools.partial(<built-in method execute of sqlite3.Connection object at 0x11208aa70>, 'SELECT COUNT(*) FROM users WHERE username IN (?)', ('r2-negative',)) completed
+DEBUG    aiosqlite:core.py:62 executing functools.partial(<built-in method fetchone of sqlite3.Cursor object at 0x1121429c0>)
+DEBUG    aiosqlite:core.py:67 operation functools.partial(<built-in method fetchone of sqlite3.Cursor object at 0x1121429c0>) completed
+DEBUG    aiosqlite:core.py:62 executing functools.partial(<built-in method close of sqlite3.Cursor object at 0x1121429c0>)
+DEBUG    aiosqlite:core.py:67 operation functools.partial(<built-in method close of sqlite3.Cursor object at 0x1121429c0>) completed
+DEBUG    aiosqlite:core.py:62 executing functools.partial(<built-in method execute of sqlite3.Connection object at 0x11208aa70>, 'SELECT COUNT(*) FROM watch_rules WHERE username=?', ('r2-negative',))
+DEBUG    aiosqlite:core.py:67 operation functools.partial(<built-in method execute of sqlite3.Connection object at 0x11208aa70>, 'SELECT COUNT(*) FROM watch_rules WHERE username=?', ('r2-negative',)) completed
+DEBUG    aiosqlite:core.py:62 executing functools.partial(<built-in method fetchone of sqlite3.Cursor object at 0x112142940>)
+DEBUG    aiosqlite:core.py:67 operation functools.partial(<built-in method fetchone of sqlite3.Cursor object at 0x112142940>) completed
+DEBUG    aiosqlite:core.py:62 executing functools.partial(<built-in method close of sqlite3.Cursor object at 0x112142940>)
+DEBUG    aiosqlite:core.py:67 operation functools.partial(<built-in method close of sqlite3.Cursor object at 0x112142940>) completed
+DEBUG    aiosqlite:core.py:62 executing functools.partial(<built-in method execute of sqlite3.Connection object at 0x11208aa70>, 'INSERT INTO watch_rules(username,name,app_match,title_match,kind,params,interval_seconds,cooldown_seconds,enabled,conversation_id) VALUES(?,?,?,?,?,?,?,?,?,?)', ['r2-negative', 'R2 判断', 'Terminal', '', 'ai', '{"condition": "下载完成时提醒", "model": "platform"}', 3, 60, True, None])
+DEBUG    aiosqlite:core.py:67 operation functools.partial(<built-in method execute of sqlite3.Connection object at 0x11208aa70>, 'INSERT INTO watch_rules(username,name,app_match,title_match,kind,params,interval_seconds,cooldown_seconds,enabled,conversation_id) VALUES(?,?,?,?,?,?,?,?,?,?)', ['r2-negative', 'R2 判断', 'Terminal', '', 'ai', '{"condition": "下载完成时提醒", "model": "platform"}', 3, 60, True, None]) completed
+DEBUG    aiosqlite:core.py:62 executing functools.partial(<built-in method execute of sqlite3.Connection object at 0x11208aa70>, 'SELECT * FROM watch_rules WHERE id=?', (1,))
+DEBUG    aiosqlite:core.py:67 operation functools.partial(<built-in method execute of sqlite3.Connection object at 0x11208aa70>, 'SELECT * FROM watch_rules WHERE id=?', (1,)) completed
+DEBUG    aiosqlite:core.py:62 executing functools.partial(<built-in method fetchone of sqlite3.Cursor object at 0x112142ac0>)
+DEBUG    aiosqlite:core.py:67 operation functools.partial(<built-in method fetchone of sqlite3.Cursor object at 0x112142ac0>) completed
+DEBUG    aiosqlite:core.py:62 executing functools.partial(<built-in method close of sqlite3.Cursor object at 0x112142ac0>)
+DEBUG    aiosqlite:core.py:67 operation functools.partial(<built-in method close of sqlite3.Cursor object at 0x112142ac0>) completed
+DEBUG    aiosqlite:core.py:62 executing functools.partial(<built-in method commit of sqlite3.Connection object at 0x11208aa70>)
+DEBUG    aiosqlite:core.py:67 operation functools.partial(<built-in method commit of sqlite3.Connection object at 0x11208aa70>) completed
+DEBUG    aiosqlite:core.py:62 executing functools.partial(<built-in method close of sqlite3.Connection object at 0x11208aa70>)
+DEBUG    aiosqlite:core.py:67 operation functools.partial(<built-in method close of sqlite3.Connection object at 0x11208aa70>) completed
+DEBUG    aiosqlite:core.py:62 executing <function Connection.stop.<locals>.close_and_stop at 0x112135bc0>
+DEBUG    aiosqlite:core.py:67 operation <function Connection.stop.<locals>.close_and_stop at 0x112135bc0> completed
+DEBUG    asyncio:selector_events.py:64 Using selector: KqueueSelector
+WARNING  services.local_watch:local_watch.py:154 local_watch exception_type=ValueError
+_______ test_false_decision_is_success_and_ignores_summary[  \n -claude] _______
+
+client = <starlette.testclient.TestClient object at 0x112081480>
+service = <module 'services.local_watch' from '/Users/yangjing/Desktop/ai-workspace/Fiona/backend/services/local_watch.py'>
+monkeypatch = <_pytest.monkeypatch.MonkeyPatch object at 0x1120078a0>
+caplog = <_pytest.logging.LogCaptureFixture object at 0x112081e00>
+model = 'claude', summary = '  \n '
+
+    @pytest.mark.parametrize("model", ["platform", "claude"])
+    @pytest.mark.parametrize("summary", ["", "  \n ", "长" * 1000, None, 42, ["任意内容"], {"任意": "内容"}])
+    def test_false_decision_is_success_and_ignores_summary(client, service, monkeypatch, caplog, model, summary):
+        import database
+    
+        caplog.set_level(logging.DEBUG)
+        asyncio.run(database.get_or_create_user("r2-negative"))
+        rule = asyncio.run(database.create_watch_rule("r2-negative", ai_rule(model)))
+        model_stub(service, monkeypatch, model, {"alert": False, "summary": summary}, debug=True)
+        failure = []
+>       assert asyncio.run(service.judge_ai("r2-negative", rule["params"], ["R2_PRIVATE_OCR"], failure=failure)) == {"alert": False}
+E       AssertionError: assert None == {'alert': False}
+E        +  where None = <function run at 0x10b6c8ca0>(<coroutine object judge_ai at 0x112170480>)
+E        +    where <function run at 0x10b6c8ca0> = asyncio.run
+E        +    and   <coroutine object judge_ai at 0x112170480> = <function judge_ai at 0x111ee5850>('r2-negative', {'condition': '下载完成时提醒', 'model': 'claude'}, ['R2_PRIVATE_OCR'], failure=['ValueError'])
+E        +      where <function judge_ai at 0x111ee5850> = <module 'services.local_watch' from '/Users/yangjing/Desktop/ai-workspace/Fiona/backend/services/local_watch.py'>.judge_ai
+
+tests/test_local_watch_service_r2.py:93: AssertionError
+------------------------------ Captured log call -------------------------------
+DEBUG    asyncio:selector_events.py:64 Using selector: KqueueSelector
+DEBUG    aiosqlite:core.py:62 executing <function connect.<locals>.connector at 0x1121356f0>
+DEBUG    aiosqlite:core.py:67 operation <function connect.<locals>.connector at 0x1121356f0> completed
+DEBUG    aiosqlite:core.py:62 executing functools.partial(<built-in method execute of sqlite3.Connection object at 0x11208b6a0>, 'INSERT OR IGNORE INTO users (username, session_version) VALUES (?, ?)', ('r2-negative', 704783806))
+DEBUG    aiosqlite:core.py:67 operation functools.partial(<built-in method execute of sqlite3.Connection object at 0x11208b6a0>, 'INSERT OR IGNORE INTO users (username, session_version) VALUES (?, ?)', ('r2-negative', 704783806)) completed
+DEBUG    aiosqlite:core.py:62 executing functools.partial(<built-in method commit of sqlite3.Connection object at 0x11208b6a0>)
+DEBUG    aiosqlite:core.py:67 operation functools.partial(<built-in method commit of sqlite3.Connection object at 0x11208b6a0>) completed
+DEBUG    aiosqlite:core.py:62 executing functools.partial(<built-in method execute of sqlite3.Connection object at 0x11208b6a0>, 'SELECT * FROM users WHERE username = ?', ('r2-negative',))
+DEBUG    aiosqlite:core.py:67 operation functools.partial(<built-in method execute of sqlite3.Connection object at 0x11208b6a0>, 'SELECT * FROM users WHERE username = ?', ('r2-negative',)) completed
+DEBUG    aiosqlite:core.py:62 executing functools.partial(<built-in method fetchone of sqlite3.Cursor object at 0x1121407c0>)
+DEBUG    aiosqlite:core.py:67 operation functools.partial(<built-in method fetchone of sqlite3.Cursor object at 0x1121407c0>) completed
+DEBUG    aiosqlite:core.py:62 executing functools.partial(<built-in method close of sqlite3.Cursor object at 0x1121407c0>)
+DEBUG    aiosqlite:core.py:67 operation functools.partial(<built-in method close of sqlite3.Cursor object at 0x1121407c0>) completed
+DEBUG    aiosqlite:core.py:62 executing functools.partial(<built-in method close of sqlite3.Connection object at 0x11208b6a0>)
+DEBUG    aiosqlite:core.py:67 operation functools.partial(<built-in method close of sqlite3.Connection object at 0x11208b6a0>) completed
+DEBUG    aiosqlite:core.py:62 executing <function Connection.stop.<locals>.close_and_stop at 0x112135850>
+DEBUG    aiosqlite:core.py:67 operation <function Connection.stop.<locals>.close_and_stop at 0x112135850> completed
+DEBUG    asyncio:selector_events.py:64 Using selector: KqueueSelector
+DEBUG    aiosqlite:core.py:62 executing <function connect.<locals>.connector at 0x112135d20>
+DEBUG    aiosqlite:core.py:67 operation <function connect.<locals>.connector at 0x112135d20> completed
+DEBUG    aiosqlite:core.py:62 executing functools.partial(<built-in method execute of sqlite3.Connection object at 0x11208b790>, 'BEGIN IMMEDIATE', [])
+DEBUG    aiosqlite:core.py:67 operation functools.partial(<built-in method execute of sqlite3.Connection object at 0x11208b790>, 'BEGIN IMMEDIATE', []) completed
+DEBUG    aiosqlite:core.py:62 executing functools.partial(<built-in method execute of sqlite3.Connection object at 0x11208b790>, 'SELECT COUNT(*) FROM users WHERE username IN (?)', ('r2-negative',))
+DEBUG    aiosqlite:core.py:67 operation functools.partial(<built-in method execute of sqlite3.Connection object at 0x11208b790>, 'SELECT COUNT(*) FROM users WHERE username IN (?)', ('r2-negative',)) completed
+DEBUG    aiosqlite:core.py:62 executing functools.partial(<built-in method fetchone of sqlite3.Cursor object at 0x1121410c0>)
+DEBUG    aiosqlite:core.py:67 operation functools.partial(<built-in method fetchone of sqlite3.Cursor object at 0x1121410c0>) completed
+DEBUG    aiosqlite:core.py:62 executing functools.partial(<built-in method close of sqlite3.Cursor object at 0x1121410c0>)
+DEBUG    aiosqlite:core.py:67 operation functools.partial(<built-in method close of sqlite3.Cursor object at 0x1121410c0>) completed
+DEBUG    aiosqlite:core.py:62 executing functools.partial(<built-in method execute of sqlite3.Connection object at 0x11208b790>, 'SELECT COUNT(*) FROM watch_rules WHERE username=?', ('r2-negative',))
+DEBUG    aiosqlite:core.py:67 operation functools.partial(<built-in method execute of sqlite3.Connection object at 0x11208b790>, 'SELECT COUNT(*) FROM watch_rules WHERE username=?', ('r2-negative',)) completed
+DEBUG    aiosqlite:core.py:62 executing functools.partial(<built-in method fetchone of sqlite3.Cursor object at 0x112142cc0>)
+DEBUG    aiosqlite:core.py:67 operation functools.partial(<built-in method fetchone of sqlite3.Cursor object at 0x112142cc0>) completed
+DEBUG    aiosqlite:core.py:62 executing functools.partial(<built-in method close of sqlite3.Cursor object at 0x112142cc0>)
+DEBUG    aiosqlite:core.py:67 operation functools.partial(<built-in method close of sqlite3.Cursor object at 0x112142cc0>) completed
+DEBUG    aiosqlite:core.py:62 executing functools.partial(<built-in method execute of sqlite3.Connection object at 0x11208b790>, 'INSERT INTO watch_rules(username,name,app_match,title_match,kind,params,interval_seconds,cooldown_seconds,enabled,conversation_id) VALUES(?,?,?,?,?,?,?,?,?,?)', ['r2-negative', 'R2 判断', 'Terminal', '', 'ai', '{"condition": "下载完成时提醒", "model": "claude"}', 3, 60, True, None])
+DEBUG    aiosqlite:core.py:67 operation functools.partial(<built-in method execute of sqlite3.Connection object at 0x11208b790>, 'INSERT INTO watch_rules(username,name,app_match,title_match,kind,params,interval_seconds,cooldown_seconds,enabled,conversation_id) VALUES(?,?,?,?,?,?,?,?,?,?)', ['r2-negative', 'R2 判断', 'Terminal', '', 'ai', '{"condition": "下载完成时提醒", "model": "claude"}', 3, 60, True, None]) completed
+DEBUG    aiosqlite:core.py:62 executing functools.partial(<built-in method execute of sqlite3.Connection object at 0x11208b790>, 'SELECT * FROM watch_rules WHERE id=?', (1,))
+DEBUG    aiosqlite:core.py:67 operation functools.partial(<built-in method execute of sqlite3.Connection object at 0x11208b790>, 'SELECT * FROM watch_rules WHERE id=?', (1,)) completed
+DEBUG    aiosqlite:core.py:62 executing functools.partial(<built-in method fetchone of sqlite3.Cursor object at 0x1121432c0>)
+DEBUG    aiosqlite:core.py:67 operation functools.partial(<built-in method fetchone of sqlite3.Cursor object at 0x1121432c0>) completed
+DEBUG    aiosqlite:core.py:62 executing functools.partial(<built-in method close of sqlite3.Cursor object at 0x1121432c0>)
+DEBUG    aiosqlite:core.py:67 operation functools.partial(<built-in method close of sqlite3.Cursor object at 0x1121432c0>) completed
+DEBUG    aiosqlite:core.py:62 executing functools.partial(<built-in method commit of sqlite3.Connection object at 0x11208b790>)
+DEBUG    aiosqlite:core.py:67 operation functools.partial(<built-in method commit of sqlite3.Connection object at 0x11208b790>) completed
+DEBUG    aiosqlite:core.py:62 executing functools.partial(<built-in method close of sqlite3.Connection object at 0x11208b790>)
+DEBUG    aiosqlite:core.py:67 operation functools.partial(<built-in method close of sqlite3.Connection object at 0x11208b790>) completed
+DEBUG    aiosqlite:core.py:62 executing <function Connection.stop.<locals>.close_and_stop at 0x112135f30>
+DEBUG    aiosqlite:core.py:67 operation <function Connection.stop.<locals>.close_and_stop at 0x112135f30> completed
+DEBUG    asyncio:selector_events.py:64 Using selector: KqueueSelector
+WARNING  services.local_watch:local_watch.py:154 local_watch exception_type=ValueError
+_ test_false_decision_is_success_and_ignores_summary[\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f-platform] _
+
+client = <starlette.testclient.TestClient object at 0x112082780>
+service = <module 'services.local_watch' from '/Users/yangjing/Desktop/ai-workspace/Fiona/backend/services/local_watch.py'>
+monkeypatch = <_pytest.monkeypatch.MonkeyPatch object at 0x111ebae50>
+caplog = <_pytest.logging.LogCaptureFixture object at 0x112083100>
+model = 'platform'
+summary = '长长长长长长长长长长长长长长长长长长长长长长长长长长长长长长长长长长长长长长长长长长长长长长长长长长长长长长长长长长长长长长长长长长长长长长长长长长长长长长长长长长长长长长长长长长长长长长长长长长长长长长长长长长长长长长长长长长长长长...长长长长长长长长长长长长长长长长长长长长长长长长长长长长长长长长长长长长长长长长长长长长长长长长长长长长长长长长长长长长长长长长长长长长长长长长长长长长长长长长长长长长长长长长长长长长长长长长长长长长长长长长长长长长长长长长长长长长长长'
+
+    @pytest.mark.parametrize("model", ["platform", "claude"])
+    @pytest.mark.parametrize("summary", ["", "  \n ", "长" * 1000, None, 42, ["任意内容"], {"任意": "内容"}])
+    def test_false_decision_is_success_and_ignores_summary(client, service, monkeypatch, caplog, model, summary):
+        import database
+    
+        caplog.set_level(logging.DEBUG)
+        asyncio.run(database.get_or_create_user("r2-negative"))
+        rule = asyncio.run(database.create_watch_rule("r2-negative", ai_rule(model)))
+        model_stub(service, monkeypatch, model, {"alert": False, "summary": summary}, debug=True)
+        failure = []
+>       assert asyncio.run(service.judge_ai("r2-negative", rule["params"], ["R2_PRIVATE_OCR"], failure=failure)) == {"alert": False}
+E       AssertionError: assert None == {'alert': False}
+E        +  where None = <function run at 0x10b6c8ca0>(<coroutine object judge_ai at 0x112170d00>)
+E        +    where <function run at 0x10b6c8ca0> = asyncio.run
+E        +    and   <coroutine object judge_ai at 0x112170d00> = <function judge_ai at 0x111ee5850>('r2-negative', {'condition': '下载完成时提醒', 'model': 'platform'}, ['R2_PRIVATE_OCR'], failure=['ValueError'])
+E        +      where <function judge_ai at 0x111ee5850> = <module 'services.local_watch' from '/Users/yangjing/Desktop/ai-workspace/Fiona/backend/services/local_watch.py'>.judge_ai
+
+tests/test_local_watch_service_r2.py:93: AssertionError
+------------------------------ Captured log call -------------------------------
+DEBUG    asyncio:selector_events.py:64 Using selector: KqueueSelector
+DEBUG    aiosqlite:core.py:62 executing <function connect.<locals>.connector at 0x112135fe0>
+DEBUG    aiosqlite:core.py:67 operation <function connect.<locals>.connector at 0x112135fe0> completed
+DEBUG    aiosqlite:core.py:62 executing functools.partial(<built-in method execute of sqlite3.Connection object at 0x1121809a0>, 'INSERT OR IGNORE INTO users (username, session_version) VALUES (?, ?)', ('r2-negative', 1945764396))
+DEBUG    aiosqlite:core.py:67 operation functools.partial(<built-in method execute of sqlite3.Connection object at 0x1121809a0>, 'INSERT OR IGNORE INTO users (username, session_version) VALUES (?, ?)', ('r2-negative', 1945764396)) completed
+DEBUG    aiosqlite:core.py:62 executing functools.partial(<built-in method commit of sqlite3.Connection object at 0x1121809a0>)
+DEBUG    aiosqlite:core.py:67 operation functools.partial(<built-in method commit of sqlite3.Connection object at 0x1121809a0>) completed
+DEBUG    aiosqlite:core.py:62 executing functools.partial(<built-in method execute of sqlite3.Connection object at 0x1121809a0>, 'SELECT * FROM users WHERE username = ?', ('r2-negative',))
+DEBUG    aiosqlite:core.py:67 operation functools.partial(<built-in method execute of sqlite3.Connection object at 0x1121809a0>, 'SELECT * FROM users WHERE username = ?', ('r2-negative',)) completed
+DEBUG    aiosqlite:core.py:62 executing functools.partial(<built-in method fetchone of sqlite3.Cursor object at 0x1121439c0>)
+DEBUG    aiosqlite:core.py:67 operation functools.partial(<built-in method fetchone of sqlite3.Cursor object at 0x1121439c0>) completed
+DEBUG    aiosqlite:core.py:62 executing functools.partial(<built-in method close of sqlite3.Cursor object at 0x1121439c0>)
+DEBUG    aiosqlite:core.py:67 operation functools.partial(<built-in method close of sqlite3.Cursor object at 0x1121439c0>) completed
+DEBUG    aiosqlite:core.py:62 executing functools.partial(<built-in method close of sqlite3.Connection object at 0x1121809a0>)
+DEBUG    aiosqlite:core.py:67 operation functools.partial(<built-in method close of sqlite3.Connection object at 0x1121809a0>) completed
+DEBUG    aiosqlite:core.py:62 executing <function Connection.stop.<locals>.close_and_stop at 0x112135f30>
+DEBUG    aiosqlite:core.py:67 operation <function Connection.stop.<locals>.close_and_stop at 0x112135f30> completed
+DEBUG    asyncio:selector_events.py:64 Using selector: KqueueSelector
+DEBUG    aiosqlite:core.py:62 executing <function connect.<locals>.connector at 0x1121359b0>
+DEBUG    aiosqlite:core.py:67 operation <function connect.<locals>.connector at 0x1121359b0> completed
+DEBUG    aiosqlite:core.py:62 executing functools.partial(<built-in method execute of sqlite3.Connection object at 0x112180b80>, 'BEGIN IMMEDIATE', [])
+DEBUG    aiosqlite:core.py:67 operation functools.partial(<built-in method execute of sqlite3.Connection object at 0x112180b80>, 'BEGIN IMMEDIATE', []) completed
+DEBUG    aiosqlite:core.py:62 executing functools.partial(<built-in method execute of sqlite3.Connection object at 0x112180b80>, 'SELECT COUNT(*) FROM users WHERE username IN (?)', ('r2-negative',))
+DEBUG    aiosqlite:core.py:67 operation functools.partial(<built-in method execute of sqlite3.Connection object at 0x112180b80>, 'SELECT COUNT(*) FROM users WHERE username IN (?)', ('r2-negative',)) completed
+DEBUG    aiosqlite:core.py:62 executing functools.partial(<built-in method fetchone of sqlite3.Cursor object at 0x112143d40>)
+DEBUG    aiosqlite:core.py:67 operation functools.partial(<built-in method fetchone of sqlite3.Cursor object at 0x112143d40>) completed
+DEBUG    aiosqlite:core.py:62 executing functools.partial(<built-in method close of sqlite3.Cursor object at 0x112143d40>)
+DEBUG    aiosqlite:core.py:67 operation functools.partial(<built-in method close of sqlite3.Cursor object at 0x112143d40>) completed
+DEBUG    aiosqlite:core.py:62 executing functools.partial(<built-in method execute of sqlite3.Connection object at 0x112180b80>, 'SELECT COUNT(*) FROM watch_rules WHERE username=?', ('r2-negative',))
+DEBUG    aiosqlite:core.py:67 operation functools.partial(<built-in method execute of sqlite3.Connection object at 0x112180b80>, 'SELECT COUNT(*) FROM watch_rules WHERE username=?', ('r2-negative',)) completed
+DEBUG    aiosqlite:core.py:62 executing functools.partial(<built-in method fetchone of sqlite3.Cursor object at 0x1121413c0>)
+DEBUG    aiosqlite:core.py:67 operation functools.partial(<built-in method fetchone of sqlite3.Cursor object at 0x1121413c0>) completed
+DEBUG    aiosqlite:core.py:62 executing functools.partial(<built-in method close of sqlite3.Cursor object at 0x1121413c0>)
+DEBUG    aiosqlite:core.py:67 operation functools.partial(<built-in method close of sqlite3.Cursor object at 0x1121413c0>) completed
+DEBUG    aiosqlite:core.py:62 executing functools.partial(<built-in method execute of sqlite3.Connection object at 0x112180b80>, 'INSERT INTO watch_rules(username,name,app_match,title_match,kind,params,interval_seconds,cooldown_seconds,enabled,conversation_id) VALUES(?,?,?,?,?,?,?,?,?,?)', ['r2-negative', 'R2 判断', 'Terminal', '', 'ai', '{"condition": "下载完成时提醒", "model": "platform"}', 3, 60, True, None])
+DEBUG    aiosqlite:core.py:67 operation functools.partial(<built-in method execute of sqlite3.Connection object at 0x112180b80>, 'INSERT INTO watch_rules(username,name,app_match,title_match,kind,params,interval_seconds,cooldown_seconds,enabled,conversation_id) VALUES(?,?,?,?,?,?,?,?,?,?)', ['r2-negative', 'R2 判断', 'Terminal', '', 'ai', '{"condition": "下载完成时提醒", "model": "platform"}', 3, 60, True, None]) completed
+DEBUG    aiosqlite:core.py:62 executing functools.partial(<built-in method execute of sqlite3.Connection object at 0x112180b80>, 'SELECT * FROM watch_rules WHERE id=?', (1,))
+DEBUG    aiosqlite:core.py:67 operation functools.partial(<built-in method execute of sqlite3.Connection object at 0x112180b80>, 'SELECT * FROM watch_rules WHERE id=?', (1,)) completed
+DEBUG    aiosqlite:core.py:62 executing functools.partial(<built-in method fetchone of sqlite3.Cursor object at 0x112141240>)
+DEBUG    aiosqlite:core.py:67 operation functools.partial(<built-in method fetchone of sqlite3.Cursor object at 0x112141240>) completed
+DEBUG    aiosqlite:core.py:62 executing functools.partial(<built-in method close of sqlite3.Cursor object at 0x112141240>)
+DEBUG    aiosqlite:core.py:67 operation functools.partial(<built-in method close of sqlite3.Cursor object at 0x112141240>) completed
+DEBUG    aiosqlite:core.py:62 executing functools.partial(<built-in method commit of sqlite3.Connection object at 0x112180b80>)
+DEBUG    aiosqlite:core.py:67 operation functools.partial(<built-in method commit of sqlite3.Connection object at 0x112180b80>) completed
+DEBUG    aiosqlite:core.py:62 executing functools.partial(<built-in method close of sqlite3.Connection object at 0x112180b80>)
+DEBUG    aiosqlite:core.py:67 operation functools.partial(<built-in method close of sqlite3.Connection object at 0x112180b80>) completed
+DEBUG    aiosqlite:core.py:62 executing <function Connection.stop.<locals>.close_and_stop at 0x112136610>
+DEBUG    aiosqlite:core.py:67 operation <function Connection.stop.<locals>.close_and_stop at 0x112136610> completed
+DEBUG    asyncio:selector_events.py:64 Using selector: KqueueSelector
+WARNING  services.local_watch:local_watch.py:154 local_watch exception_type=ValueError
+_ test_false_decision_is_success_and_ignores_summary[\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f-claude] _
+
+client = <starlette.testclient.TestClient object at 0x111e7a9f0>
+service = <module 'services.local_watch' from '/Users/yangjing/Desktop/ai-workspace/Fiona/backend/services/local_watch.py'>
+monkeypatch = <_pytest.monkeypatch.MonkeyPatch object at 0x112176050>
+caplog = <_pytest.logging.LogCaptureFixture object at 0x112188830>
+model = 'claude'
+summary = '长长长长长长长长长长长长长长长长长长长长长长长长长长长长长长长长长长长长长长长长长长长长长长长长长长长长长长长长长长长长长长长长长长长长长长长长长长长长长长长长长长长长长长长长长长长长长长长长长长长长长长长长长长长长长长长长长长长长长...长长长长长长长长长长长长长长长长长长长长长长长长长长长长长长长长长长长长长长长长长长长长长长长长长长长长长长长长长长长长长长长长长长长长长长长长长长长长长长长长长长长长长长长长长长长长长长长长长长长长长长长长长长长长长长长长长长长长长长'
+
+    @pytest.mark.parametrize("model", ["platform", "claude"])
+    @pytest.mark.parametrize("summary", ["", "  \n ", "长" * 1000, None, 42, ["任意内容"], {"任意": "内容"}])
+    def test_false_decision_is_success_and_ignores_summary(client, service, monkeypatch, caplog, model, summary):
+        import database
+    
+        caplog.set_level(logging.DEBUG)
+        asyncio.run(database.get_or_create_user("r2-negative"))
+        rule = asyncio.run(database.create_watch_rule("r2-negative", ai_rule(model)))
+        model_stub(service, monkeypatch, model, {"alert": False, "summary": summary}, debug=True)
+        failure = []
+>       assert asyncio.run(service.judge_ai("r2-negative", rule["params"], ["R2_PRIVATE_OCR"], failure=failure)) == {"alert": False}
+E       AssertionError: assert None == {'alert': False}
+E        +  where None = <function run at 0x10b6c8ca0>(<coroutine object judge_ai at 0x112171360>)
+E        +    where <function run at 0x10b6c8ca0> = asyncio.run
+E        +    and   <coroutine object judge_ai at 0x112171360> = <function judge_ai at 0x111ee5850>('r2-negative', {'condition': '下载完成时提醒', 'model': 'claude'}, ['R2_PRIVATE_OCR'], failure=['ValueError'])
+E        +      where <function judge_ai at 0x111ee5850> = <module 'services.local_watch' from '/Users/yangjing/Desktop/ai-workspace/Fiona/backend/services/local_watch.py'>.judge_ai
+
+tests/test_local_watch_service_r2.py:93: AssertionError
+------------------------------ Captured log call -------------------------------
+DEBUG    asyncio:selector_events.py:64 Using selector: KqueueSelector
+DEBUG    aiosqlite:core.py:62 executing <function connect.<locals>.connector at 0x1121368d0>
+DEBUG    aiosqlite:core.py:67 operation <function connect.<locals>.connector at 0x1121368d0> completed
+DEBUG    aiosqlite:core.py:62 executing functools.partial(<built-in method execute of sqlite3.Connection object at 0x112182110>, 'INSERT OR IGNORE INTO users (username, session_version) VALUES (?, ?)', ('r2-negative', 736473200))
+DEBUG    aiosqlite:core.py:67 operation functools.partial(<built-in method execute of sqlite3.Connection object at 0x112182110>, 'INSERT OR IGNORE INTO users (username, session_version) VALUES (?, ?)', ('r2-negative', 736473200)) completed
+DEBUG    aiosqlite:core.py:62 executing functools.partial(<built-in method commit of sqlite3.Connection object at 0x112182110>)
+DEBUG    aiosqlite:core.py:67 operation functools.partial(<built-in method commit of sqlite3.Connection object at 0x112182110>) completed
+DEBUG    aiosqlite:core.py:62 executing functools.partial(<built-in method execute of sqlite3.Connection object at 0x112182110>, 'SELECT * FROM users WHERE username = ?', ('r2-negative',))
+DEBUG    aiosqlite:core.py:67 operation functools.partial(<built-in method execute of sqlite3.Connection object at 0x112182110>, 'SELECT * FROM users WHERE username = ?', ('r2-negative',)) completed
+DEBUG    aiosqlite:core.py:62 executing functools.partial(<built-in method fetchone of sqlite3.Cursor object at 0x112198040>)
+DEBUG    aiosqlite:core.py:67 operation functools.partial(<built-in method fetchone of sqlite3.Cursor object at 0x112198040>) completed
+DEBUG    aiosqlite:core.py:62 executing functools.partial(<built-in method close of sqlite3.Cursor object at 0x112198040>)
+DEBUG    aiosqlite:core.py:67 operation functools.partial(<built-in method close of sqlite3.Cursor object at 0x112198040>) completed
+DEBUG    aiosqlite:core.py:62 executing functools.partial(<built-in method close of sqlite3.Connection object at 0x112182110>)
+DEBUG    aiosqlite:core.py:67 operation functools.partial(<built-in method close of sqlite3.Connection object at 0x112182110>) completed
+DEBUG    aiosqlite:core.py:62 executing <function Connection.stop.<locals>.close_and_stop at 0x112135dd0>
+DEBUG    aiosqlite:core.py:67 operation <function Connection.stop.<locals>.close_and_stop at 0x112135dd0> completed
+DEBUG    asyncio:selector_events.py:64 Using selector: KqueueSelector
+DEBUG    aiosqlite:core.py:62 executing <function connect.<locals>.connector at 0x1121357a0>
+DEBUG    aiosqlite:core.py:67 operation <function connect.<locals>.connector at 0x1121357a0> completed
+DEBUG    aiosqlite:core.py:62 executing functools.partial(<built-in method execute of sqlite3.Connection object at 0x1121822f0>, 'BEGIN IMMEDIATE', [])
+DEBUG    aiosqlite:core.py:67 operation functools.partial(<built-in method execute of sqlite3.Connection object at 0x1121822f0>, 'BEGIN IMMEDIATE', []) completed
+DEBUG    aiosqlite:core.py:62 executing functools.partial(<built-in method execute of sqlite3.Connection object at 0x1121822f0>, 'SELECT COUNT(*) FROM users WHERE username IN (?)', ('r2-negative',))
+DEBUG    aiosqlite:core.py:67 operation functools.partial(<built-in method execute of sqlite3.Connection object at 0x1121822f0>, 'SELECT COUNT(*) FROM users WHERE username IN (?)', ('r2-negative',)) completed
+DEBUG    aiosqlite:core.py:62 executing functools.partial(<built-in method fetchone of sqlite3.Cursor object at 0x1121985c0>)
+DEBUG    aiosqlite:core.py:67 operation functools.partial(<built-in method fetchone of sqlite3.Cursor object at 0x1121985c0>) completed
+DEBUG    aiosqlite:core.py:62 executing functools.partial(<built-in method close of sqlite3.Cursor object at 0x1121985c0>)
+DEBUG    aiosqlite:core.py:67 operation functools.partial(<built-in method close of sqlite3.Cursor object at 0x1121985c0>) completed
+DEBUG    aiosqlite:core.py:62 executing functools.partial(<built-in method execute of sqlite3.Connection object at 0x1121822f0>, 'SELECT COUNT(*) FROM watch_rules WHERE username=?', ('r2-negative',))
+DEBUG    aiosqlite:core.py:67 operation functools.partial(<built-in method execute of sqlite3.Connection object at 0x1121822f0>, 'SELECT COUNT(*) FROM watch_rules WHERE username=?', ('r2-negative',)) completed
+DEBUG    aiosqlite:core.py:62 executing functools.partial(<built-in method fetchone of sqlite3.Cursor object at 0x112198540>)
+DEBUG    aiosqlite:core.py:67 operation functools.partial(<built-in method fetchone of sqlite3.Cursor object at 0x112198540>) completed
+DEBUG    aiosqlite:core.py:62 executing functools.partial(<built-in method close of sqlite3.Cursor object at 0x112198540>)
+DEBUG    aiosqlite:core.py:67 operation functools.partial(<built-in method close of sqlite3.Cursor object at 0x112198540>) completed
+DEBUG    aiosqlite:core.py:62 executing functools.partial(<built-in method execute of sqlite3.Connection object at 0x1121822f0>, 'INSERT INTO watch_rules(username,name,app_match,title_match,kind,params,interval_seconds,cooldown_seconds,enabled,conversation_id) VALUES(?,?,?,?,?,?,?,?,?,?)', ['r2-negative', 'R2 判断', 'Terminal', '', 'ai', '{"condition": "下载完成时提醒", "model": "claude"}', 3, 60, True, None])
+DEBUG    aiosqlite:core.py:67 operation functools.partial(<built-in method execute of sqlite3.Connection object at 0x1121822f0>, 'INSERT INTO watch_rules(username,name,app_match,title_match,kind,params,interval_seconds,cooldown_seconds,enabled,conversation_id) VALUES(?,?,?,?,?,?,?,?,?,?)', ['r2-negative', 'R2 判断', 'Terminal', '', 'ai', '{"condition": "下载完成时提醒", "model": "claude"}', 3, 60, True, None]) completed
+DEBUG    aiosqlite:core.py:62 executing functools.partial(<built-in method execute of sqlite3.Connection object at 0x1121822f0>, 'SELECT * FROM watch_rules WHERE id=?', (1,))
+DEBUG    aiosqlite:core.py:67 operation functools.partial(<built-in method execute of sqlite3.Connection object at 0x1121822f0>, 'SELECT * FROM watch_rules WHERE id=?', (1,)) completed
+DEBUG    aiosqlite:core.py:62 executing functools.partial(<built-in method fetchone of sqlite3.Cursor object at 0x112198740>)
+DEBUG    aiosqlite:core.py:67 operation functools.partial(<built-in method fetchone of sqlite3.Cursor object at 0x112198740>) completed
+DEBUG    aiosqlite:core.py:62 executing functools.partial(<built-in method close of sqlite3.Cursor object at 0x112198740>)
+DEBUG    aiosqlite:core.py:67 operation functools.partial(<built-in method close of sqlite3.Cursor object at 0x112198740>) completed
+DEBUG    aiosqlite:core.py:62 executing functools.partial(<built-in method commit of sqlite3.Connection object at 0x1121822f0>)
+DEBUG    aiosqlite:core.py:67 operation functools.partial(<built-in method commit of sqlite3.Connection object at 0x1121822f0>) completed
+DEBUG    aiosqlite:core.py:62 executing functools.partial(<built-in method close of sqlite3.Connection object at 0x1121822f0>)
+DEBUG    aiosqlite:core.py:67 operation functools.partial(<built-in method close of sqlite3.Connection object at 0x1121822f0>) completed
+DEBUG    aiosqlite:core.py:62 executing <function Connection.stop.<locals>.close_and_stop at 0x112136da0>
+DEBUG    aiosqlite:core.py:67 operation <function Connection.stop.<locals>.close_and_stop at 0x112136da0> completed
+DEBUG    asyncio:selector_events.py:64 Using selector: KqueueSelector
+WARNING  services.local_watch:local_watch.py:154 local_watch exception_type=ValueError
+______ test_false_decision_is_success_and_ignores_summary[None-platform] _______
+
+client = <starlette.testclient.TestClient object at 0x112072250>
+service = <module 'services.local_watch' from '/Users/yangjing/Desktop/ai-workspace/Fiona/backend/services/local_watch.py'>
+monkeypatch = <_pytest.monkeypatch.MonkeyPatch object at 0x1121824e0>
+caplog = <_pytest.logging.LogCaptureFixture object at 0x112072cf0>
+model = 'platform', summary = None
+
+    @pytest.mark.parametrize("model", ["platform", "claude"])
+    @pytest.mark.parametrize("summary", ["", "  \n ", "长" * 1000, None, 42, ["任意内容"], {"任意": "内容"}])
+    def test_false_decision_is_success_and_ignores_summary(client, service, monkeypatch, caplog, model, summary):
+        import database
+    
+        caplog.set_level(logging.DEBUG)
+        asyncio.run(database.get_or_create_user("r2-negative"))
+        rule = asyncio.run(database.create_watch_rule("r2-negative", ai_rule(model)))
+        model_stub(service, monkeypatch, model, {"alert": False, "summary": summary}, debug=True)
+        failure = []
+>       assert asyncio.run(service.judge_ai("r2-negative", rule["params"], ["R2_PRIVATE_OCR"], failure=failure)) == {"alert": False}
+E       AssertionError: assert None == {'alert': False}
+E        +  where None = <function run at 0x10b6c8ca0>(<coroutine object judge_ai at 0x112172130>)
+E        +    where <function run at 0x10b6c8ca0> = asyncio.run
+E        +    and   <coroutine object judge_ai at 0x112172130> = <function judge_ai at 0x111ee5850>('r2-negative', {'condition': '下载完成时提醒', 'model': 'platform'}, ['R2_PRIVATE_OCR'], failure=['ValueError'])
+E        +      where <function judge_ai at 0x111ee5850> = <module 'services.local_watch' from '/Users/yangjing/Desktop/ai-workspace/Fiona/backend/services/local_watch.py'>.judge_ai
+
+tests/test_local_watch_service_r2.py:93: AssertionError
+------------------------------ Captured log call -------------------------------
+DEBUG    asyncio:selector_events.py:64 Using selector: KqueueSelector
+DEBUG    aiosqlite:core.py:62 executing <function connect.<locals>.connector at 0x112136820>
+DEBUG    aiosqlite:core.py:67 operation <function connect.<locals>.connector at 0x112136820> completed
+DEBUG    aiosqlite:core.py:62 executing functools.partial(<built-in method execute of sqlite3.Connection object at 0x1121833d0>, 'INSERT OR IGNORE INTO users (username, session_version) VALUES (?, ?)', ('r2-negative', 2060470713))
+DEBUG    aiosqlite:core.py:67 operation functools.partial(<built-in method execute of sqlite3.Connection object at 0x1121833d0>, 'INSERT OR IGNORE INTO users (username, session_version) VALUES (?, ?)', ('r2-negative', 2060470713)) completed
+DEBUG    aiosqlite:core.py:62 executing functools.partial(<built-in method commit of sqlite3.Connection object at 0x1121833d0>)
+DEBUG    aiosqlite:core.py:67 operation functools.partial(<built-in method commit of sqlite3.Connection object at 0x1121833d0>) completed
+DEBUG    aiosqlite:core.py:62 executing functools.partial(<built-in method execute of sqlite3.Connection object at 0x1121833d0>, 'SELECT * FROM users WHERE username = ?', ('r2-negative',))
+DEBUG    aiosqlite:core.py:67 operation functools.partial(<built-in method execute of sqlite3.Connection object at 0x1121833d0>, 'SELECT * FROM users WHERE username = ?', ('r2-negative',)) completed
+DEBUG    aiosqlite:core.py:62 executing functools.partial(<built-in method fetchone of sqlite3.Cursor object at 0x112198c40>)
+DEBUG    aiosqlite:core.py:67 operation functools.partial(<built-in method fetchone of sqlite3.Cursor object at 0x112198c40>) completed
+DEBUG    aiosqlite:core.py:62 executing functools.partial(<built-in method close of sqlite3.Cursor object at 0x112198c40>)
+DEBUG    aiosqlite:core.py:67 operation functools.partial(<built-in method close of sqlite3.Cursor object at 0x112198c40>) completed
+DEBUG    aiosqlite:core.py:62 executing functools.partial(<built-in method close of sqlite3.Connection object at 0x1121833d0>)
+DEBUG    aiosqlite:core.py:67 operation functools.partial(<built-in method close of sqlite3.Connection object at 0x1121833d0>) completed
+DEBUG    aiosqlite:core.py:62 executing <function Connection.stop.<locals>.close_and_stop at 0x112136980>
+DEBUG    aiosqlite:core.py:67 operation <function Connection.stop.<locals>.close_and_stop at 0x112136980> completed
+DEBUG    asyncio:selector_events.py:64 Using selector: KqueueSelector
+DEBUG    aiosqlite:core.py:62 executing <function connect.<locals>.connector at 0x112135f30>
+DEBUG    aiosqlite:core.py:67 operation <function connect.<locals>.connector at 0x112135f30> completed
+DEBUG    aiosqlite:core.py:62 executing functools.partial(<built-in method execute of sqlite3.Connection object at 0x1121835b0>, 'BEGIN IMMEDIATE', [])
+DEBUG    aiosqlite:core.py:67 operation functools.partial(<built-in method execute of sqlite3.Connection object at 0x1121835b0>, 'BEGIN IMMEDIATE', []) completed
+DEBUG    aiosqlite:core.py:62 executing functools.partial(<built-in method execute of sqlite3.Connection object at 0x1121835b0>, 'SELECT COUNT(*) FROM users WHERE username IN (?)', ('r2-negative',))
+DEBUG    aiosqlite:core.py:67 operation functools.partial(<built-in method execute of sqlite3.Connection object at 0x1121835b0>, 'SELECT COUNT(*) FROM users WHERE username IN (?)', ('r2-negative',)) completed
+DEBUG    aiosqlite:core.py:62 executing functools.partial(<built-in method fetchone of sqlite3.Cursor object at 0x1121988c0>)
+DEBUG    aiosqlite:core.py:67 operation functools.partial(<built-in method fetchone of sqlite3.Cursor object at 0x1121988c0>) completed
+DEBUG    aiosqlite:core.py:62 executing functools.partial(<built-in method close of sqlite3.Cursor object at 0x1121988c0>)
+DEBUG    aiosqlite:core.py:67 operation functools.partial(<built-in method close of sqlite3.Cursor object at 0x1121988c0>) completed
+DEBUG    aiosqlite:core.py:62 executing functools.partial(<built-in method execute of sqlite3.Connection object at 0x1121835b0>, 'SELECT COUNT(*) FROM watch_rules WHERE username=?', ('r2-negative',))
+DEBUG    aiosqlite:core.py:67 operation functools.partial(<built-in method execute of sqlite3.Connection object at 0x1121835b0>, 'SELECT COUNT(*) FROM watch_rules WHERE username=?', ('r2-negative',)) completed
+DEBUG    aiosqlite:core.py:62 executing functools.partial(<built-in method fetchone of sqlite3.Cursor object at 0x1121982c0>)
+DEBUG    aiosqlite:core.py:67 operation functools.partial(<built-in method fetchone of sqlite3.Cursor object at 0x1121982c0>) completed
+DEBUG    aiosqlite:core.py:62 executing functools.partial(<built-in method close of sqlite3.Cursor object at 0x1121982c0>)
+DEBUG    aiosqlite:core.py:67 operation functools.partial(<built-in method close of sqlite3.Cursor object at 0x1121982c0>) completed
+DEBUG    aiosqlite:core.py:62 executing functools.partial(<built-in method execute of sqlite3.Connection object at 0x1121835b0>, 'INSERT INTO watch_rules(username,name,app_match,title_match,kind,params,interval_seconds,cooldown_seconds,enabled,conversation_id) VALUES(?,?,?,?,?,?,?,?,?,?)', ['r2-negative', 'R2 判断', 'Terminal', '', 'ai', '{"condition": "下载完成时提醒", "model": "platform"}', 3, 60, True, None])
+DEBUG    aiosqlite:core.py:67 operation functools.partial(<built-in method execute of sqlite3.Connection object at 0x1121835b0>, 'INSERT INTO watch_rules(username,name,app_match,title_match,kind,params,interval_seconds,cooldown_seconds,enabled,conversation_id) VALUES(?,?,?,?,?,?,?,?,?,?)', ['r2-negative', 'R2 判断', 'Terminal', '', 'ai', '{"condition": "下载完成时提醒", "model": "platform"}', 3, 60, True, None]) completed
+DEBUG    aiosqlite:core.py:62 executing functools.partial(<built-in method execute of sqlite3.Connection object at 0x1121835b0>, 'SELECT * FROM watch_rules WHERE id=?', (1,))
+DEBUG    aiosqlite:core.py:67 operation functools.partial(<built-in method execute of sqlite3.Connection object at 0x1121835b0>, 'SELECT * FROM watch_rules WHERE id=?', (1,)) completed
+DEBUG    aiosqlite:core.py:62 executing functools.partial(<built-in method fetchone of sqlite3.Cursor object at 0x112199140>)
+DEBUG    aiosqlite:core.py:67 operation functools.partial(<built-in method fetchone of sqlite3.Cursor object at 0x112199140>) completed
+DEBUG    aiosqlite:core.py:62 executing functools.partial(<built-in method close of sqlite3.Cursor object at 0x112199140>)
+DEBUG    aiosqlite:core.py:67 operation functools.partial(<built-in method close of sqlite3.Cursor object at 0x112199140>) completed
+DEBUG    aiosqlite:core.py:62 executing functools.partial(<built-in method commit of sqlite3.Connection object at 0x1121835b0>)
+DEBUG    aiosqlite:core.py:67 operation functools.partial(<built-in method commit of sqlite3.Connection object at 0x1121835b0>) completed
+DEBUG    aiosqlite:core.py:62 executing functools.partial(<built-in method close of sqlite3.Connection object at 0x1121835b0>)
+DEBUG    aiosqlite:core.py:67 operation functools.partial(<built-in method close of sqlite3.Connection object at 0x1121835b0>) completed
+DEBUG    aiosqlite:core.py:62 executing <function Connection.stop.<locals>.close_and_stop at 0x1121352d0>
+DEBUG    aiosqlite:core.py:67 operation <function Connection.stop.<locals>.close_and_stop at 0x1121352d0> completed
+DEBUG    asyncio:selector_events.py:64 Using selector: KqueueSelector
+WARNING  services.local_watch:local_watch.py:154 local_watch exception_type=ValueError
+_______ test_false_decision_is_success_and_ignores_summary[None-claude] ________
+
+client = <starlette.testclient.TestClient object at 0x112073130>
+service = <module 'services.local_watch' from '/Users/yangjing/Desktop/ai-workspace/Fiona/backend/services/local_watch.py'>
+monkeypatch = <_pytest.monkeypatch.MonkeyPatch object at 0x1121835c0>
+caplog = <_pytest.logging.LogCaptureFixture object at 0x112073bd0>
+model = 'claude', summary = None
+
+    @pytest.mark.parametrize("model", ["platform", "claude"])
+    @pytest.mark.parametrize("summary", ["", "  \n ", "长" * 1000, None, 42, ["任意内容"], {"任意": "内容"}])
+    def test_false_decision_is_success_and_ignores_summary(client, service, monkeypatch, caplog, model, summary):
+        import database
+    
+        caplog.set_level(logging.DEBUG)
+        asyncio.run(database.get_or_create_user("r2-negative"))
+        rule = asyncio.run(database.create_watch_rule("r2-negative", ai_rule(model)))
+        model_stub(service, monkeypatch, model, {"alert": False, "summary": summary}, debug=True)
+        failure = []
+>       assert asyncio.run(service.judge_ai("r2-negative", rule["params"], ["R2_PRIVATE_OCR"], failure=failure)) == {"alert": False}
+E       AssertionError: assert None == {'alert': False}
+E        +  where None = <function run at 0x10b6c8ca0>(<coroutine object judge_ai at 0x112172680>)
+E        +    where <function run at 0x10b6c8ca0> = asyncio.run
+E        +    and   <coroutine object judge_ai at 0x112172680> = <function judge_ai at 0x111ee5850>('r2-negative', {'condition': '下载完成时提醒', 'model': 'claude'}, ['R2_PRIVATE_OCR'], failure=['ValueError'])
+E        +      where <function judge_ai at 0x111ee5850> = <module 'services.local_watch' from '/Users/yangjing/Desktop/ai-workspace/Fiona/backend/services/local_watch.py'>.judge_ai
+
+tests/test_local_watch_service_r2.py:93: AssertionError
+------------------------------ Captured log call -------------------------------
+DEBUG    asyncio:selector_events.py:64 Using selector: KqueueSelector
+DEBUG    aiosqlite:core.py:62 executing <function connect.<locals>.connector at 0x112136b90>
+DEBUG    aiosqlite:core.py:67 operation <function connect.<locals>.connector at 0x112136b90> completed
+DEBUG    aiosqlite:core.py:62 executing functools.partial(<built-in method execute of sqlite3.Connection object at 0x112180c70>, 'INSERT OR IGNORE INTO users (username, session_version) VALUES (?, ?)', ('r2-negative', 1468734103))
+DEBUG    aiosqlite:core.py:67 operation functools.partial(<built-in method execute of sqlite3.Connection object at 0x112180c70>, 'INSERT OR IGNORE INTO users (username, session_version) VALUES (?, ?)', ('r2-negative', 1468734103)) completed
+DEBUG    aiosqlite:core.py:62 executing functools.partial(<built-in method commit of sqlite3.Connection object at 0x112180c70>)
+DEBUG    aiosqlite:core.py:67 operation functools.partial(<built-in method commit of sqlite3.Connection object at 0x112180c70>) completed
+DEBUG    aiosqlite:core.py:62 executing functools.partial(<built-in method execute of sqlite3.Connection object at 0x112180c70>, 'SELECT * FROM users WHERE username = ?', ('r2-negative',))
+DEBUG    aiosqlite:core.py:67 operation functools.partial(<built-in method execute of sqlite3.Connection object at 0x112180c70>, 'SELECT * FROM users WHERE username = ?', ('r2-negative',)) completed
+DEBUG    aiosqlite:core.py:62 executing functools.partial(<built-in method fetchone of sqlite3.Cursor object at 0x112198640>)
+DEBUG    aiosqlite:core.py:67 operation functools.partial(<built-in method fetchone of sqlite3.Cursor object at 0x112198640>) completed
+DEBUG    aiosqlite:core.py:62 executing functools.partial(<built-in method close of sqlite3.Cursor object at 0x112198640>)
+DEBUG    aiosqlite:core.py:67 operation functools.partial(<built-in method close of sqlite3.Cursor object at 0x112198640>) completed
+DEBUG    aiosqlite:core.py:62 executing functools.partial(<built-in method close of sqlite3.Connection object at 0x112180c70>)
+DEBUG    aiosqlite:core.py:67 operation functools.partial(<built-in method close of sqlite3.Connection object at 0x112180c70>) completed
+DEBUG    aiosqlite:core.py:62 executing <function Connection.stop.<locals>.close_and_stop at 0x112137320>
+DEBUG    aiosqlite:core.py:67 operation <function Connection.stop.<locals>.close_and_stop at 0x112137320> completed
+DEBUG    asyncio:selector_events.py:64 Using selector: KqueueSelector
+DEBUG    aiosqlite:core.py:62 executing <function connect.<locals>.connector at 0x1121378a0>
+DEBUG    aiosqlite:core.py:67 operation <function connect.<locals>.connector at 0x1121378a0> completed
+DEBUG    aiosqlite:core.py:62 executing functools.partial(<built-in method execute of sqlite3.Connection object at 0x1121813f0>, 'BEGIN IMMEDIATE', [])
+DEBUG    aiosqlite:core.py:67 operation functools.partial(<built-in method execute of sqlite3.Connection object at 0x1121813f0>, 'BEGIN IMMEDIATE', []) completed
+DEBUG    aiosqlite:core.py:62 executing functools.partial(<built-in method execute of sqlite3.Connection object at 0x1121813f0>, 'SELECT COUNT(*) FROM users WHERE username IN (?)', ('r2-negative',))
+DEBUG    aiosqlite:core.py:67 operation functools.partial(<built-in method execute of sqlite3.Connection object at 0x1121813f0>, 'SELECT COUNT(*) FROM users WHERE username IN (?)', ('r2-negative',)) completed
+DEBUG    aiosqlite:core.py:62 executing functools.partial(<built-in method fetchone of sqlite3.Cursor object at 0x1121982c0>)
+DEBUG    aiosqlite:core.py:67 operation functools.partial(<built-in method fetchone of sqlite3.Cursor object at 0x1121982c0>) completed
+DEBUG    aiosqlite:core.py:62 executing functools.partial(<built-in method close of sqlite3.Cursor object at 0x1121982c0>)
+DEBUG    aiosqlite:core.py:67 operation functools.partial(<built-in method close of sqlite3.Cursor object at 0x1121982c0>) completed
+DEBUG    aiosqlite:core.py:62 executing functools.partial(<built-in method execute of sqlite3.Connection object at 0x1121813f0>, 'SELECT COUNT(*) FROM watch_rules WHERE username=?', ('r2-negative',))
+DEBUG    aiosqlite:core.py:67 operation functools.partial(<built-in method execute of sqlite3.Connection object at 0x1121813f0>, 'SELECT COUNT(*) FROM watch_rules WHERE username=?', ('r2-negative',)) completed
+DEBUG    aiosqlite:core.py:62 executing functools.partial(<built-in method fetchone of sqlite3.Cursor object at 0x1121988c0>)
+DEBUG    aiosqlite:core.py:67 operation functools.partial(<built-in method fetchone of sqlite3.Cursor object at 0x1121988c0>) completed
+DEBUG    aiosqlite:core.py:62 executing functools.partial(<built-in method close of sqlite3.Cursor object at 0x1121988c0>)
+DEBUG    aiosqlite:core.py:67 operation functools.partial(<built-in method close of sqlite3.Cursor object at 0x1121988c0>) completed
+DEBUG    aiosqlite:core.py:62 executing functools.partial(<built-in method execute of sqlite3.Connection object at 0x1121813f0>, 'INSERT INTO watch_rules(username,name,app_match,title_match,kind,params,interval_seconds,cooldown_seconds,enabled,conversation_id) VALUES(?,?,?,?,?,?,?,?,?,?)', ['r2-negative', 'R2 判断', 'Terminal', '', 'ai', '{"condition": "下载完成时提醒", "model": "claude"}', 3, 60, True, None])
+DEBUG    aiosqlite:core.py:67 operation functools.partial(<built-in method execute of sqlite3.Connection object at 0x1121813f0>, 'INSERT INTO watch_rules(username,name,app_match,title_match,kind,params,interval_seconds,cooldown_seconds,enabled,conversation_id) VALUES(?,?,?,?,?,?,?,?,?,?)', ['r2-negative', 'R2 判断', 'Terminal', '', 'ai', '{"condition": "下载完成时提醒", "model": "claude"}', 3, 60, True, None]) completed
+DEBUG    aiosqlite:core.py:62 executing functools.partial(<built-in method execute of sqlite3.Connection object at 0x1121813f0>, 'SELECT * FROM watch_rules WHERE id=?', (1,))
+DEBUG    aiosqlite:core.py:67 operation functools.partial(<built-in method execute of sqlite3.Connection object at 0x1121813f0>, 'SELECT * FROM watch_rules WHERE id=?', (1,)) completed
+DEBUG    aiosqlite:core.py:62 executing functools.partial(<built-in method fetchone of sqlite3.Cursor object at 0x1121989c0>)
+DEBUG    aiosqlite:core.py:67 operation functools.partial(<built-in method fetchone of sqlite3.Cursor object at 0x1121989c0>) completed
+DEBUG    aiosqlite:core.py:62 executing functools.partial(<built-in method close of sqlite3.Cursor object at 0x1121989c0>)
+DEBUG    aiosqlite:core.py:67 operation functools.partial(<built-in method close of sqlite3.Cursor object at 0x1121989c0>) completed
+DEBUG    aiosqlite:core.py:62 executing functools.partial(<built-in method commit of sqlite3.Connection object at 0x1121813f0>)
+DEBUG    aiosqlite:core.py:67 operation functools.partial(<built-in method commit of sqlite3.Connection object at 0x1121813f0>) completed
+DEBUG    aiosqlite:core.py:62 executing functools.partial(<built-in method close of sqlite3.Connection object at 0x1121813f0>)
+DEBUG    aiosqlite:core.py:67 operation functools.partial(<built-in method close of sqlite3.Connection object at 0x1121813f0>) completed
+DEBUG    aiosqlite:core.py:62 executing <function Connection.stop.<locals>.close_and_stop at 0x112136fb0>
+DEBUG    aiosqlite:core.py:67 operation <function Connection.stop.<locals>.close_and_stop at 0x112136fb0> completed
+DEBUG    asyncio:selector_events.py:64 Using selector: KqueueSelector
+WARNING  services.local_watch:local_watch.py:154 local_watch exception_type=ValueError
+_______ test_false_decision_is_success_and_ignores_summary[42-platform] ________
+
+client = <starlette.testclient.TestClient object at 0x112007790>
+service = <module 'services.local_watch' from '/Users/yangjing/Desktop/ai-workspace/Fiona/backend/services/local_watch.py'>
+monkeypatch = <_pytest.monkeypatch.MonkeyPatch object at 0x11202a510>
+caplog = <_pytest.logging.LogCaptureFixture object at 0x112175a50>
+model = 'platform', summary = 42
+
+    @pytest.mark.parametrize("model", ["platform", "claude"])
+    @pytest.mark.parametrize("summary", ["", "  \n ", "长" * 1000, None, 42, ["任意内容"], {"任意": "内容"}])
+    def test_false_decision_is_success_and_ignores_summary(client, service, monkeypatch, caplog, model, summary):
+        import database
+    
+        caplog.set_level(logging.DEBUG)
+        asyncio.run(database.get_or_create_user("r2-negative"))
+        rule = asyncio.run(database.create_watch_rule("r2-negative", ai_rule(model)))
+        model_stub(service, monkeypatch, model, {"alert": False, "summary": summary}, debug=True)
+        failure = []
+>       assert asyncio.run(service.judge_ai("r2-negative", rule["params"], ["R2_PRIVATE_OCR"], failure=failure)) == {"alert": False}
+E       AssertionError: assert None == {'alert': False}
+E        +  where None = <function run at 0x10b6c8ca0>(<coroutine object judge_ai at 0x112170d00>)
+E        +    where <function run at 0x10b6c8ca0> = asyncio.run
+E        +    and   <coroutine object judge_ai at 0x112170d00> = <function judge_ai at 0x111ee5850>('r2-negative', {'condition': '下载完成时提醒', 'model': 'platform'}, ['R2_PRIVATE_OCR'], failure=['ValueError'])
+E        +      where <function judge_ai at 0x111ee5850> = <module 'services.local_watch' from '/Users/yangjing/Desktop/ai-workspace/Fiona/backend/services/local_watch.py'>.judge_ai
+
+tests/test_local_watch_service_r2.py:93: AssertionError
+------------------------------ Captured log call -------------------------------
+DEBUG    asyncio:selector_events.py:64 Using selector: KqueueSelector
+DEBUG    aiosqlite:core.py:62 executing <function connect.<locals>.connector at 0x112136400>
+DEBUG    aiosqlite:core.py:67 operation <function connect.<locals>.connector at 0x112136400> completed
+DEBUG    aiosqlite:core.py:62 executing functools.partial(<built-in method execute of sqlite3.Connection object at 0x11208bb50>, 'INSERT OR IGNORE INTO users (username, session_version) VALUES (?, ?)', ('r2-negative', 2111051597))
+DEBUG    aiosqlite:core.py:67 operation functools.partial(<built-in method execute of sqlite3.Connection object at 0x11208bb50>, 'INSERT OR IGNORE INTO users (username, session_version) VALUES (?, ?)', ('r2-negative', 2111051597)) completed
+DEBUG    aiosqlite:core.py:62 executing functools.partial(<built-in method commit of sqlite3.Connection object at 0x11208bb50>)
+DEBUG    aiosqlite:core.py:67 operation functools.partial(<built-in method commit of sqlite3.Connection object at 0x11208bb50>) completed
+DEBUG    aiosqlite:core.py:62 executing functools.partial(<built-in method execute of sqlite3.Connection object at 0x11208bb50>, 'SELECT * FROM users WHERE username = ?', ('r2-negative',))
+DEBUG    aiosqlite:core.py:67 operation functools.partial(<built-in method execute of sqlite3.Connection object at 0x11208bb50>, 'SELECT * FROM users WHERE username = ?', ('r2-negative',)) completed
+DEBUG    aiosqlite:core.py:62 executing functools.partial(<built-in method fetchone of sqlite3.Cursor object at 0x112199740>)
+DEBUG    aiosqlite:core.py:67 operation functools.partial(<built-in method fetchone of sqlite3.Cursor object at 0x112199740>) completed
+DEBUG    aiosqlite:core.py:62 executing functools.partial(<built-in method close of sqlite3.Cursor object at 0x112199740>)
+DEBUG    aiosqlite:core.py:67 operation functools.partial(<built-in method close of sqlite3.Cursor object at 0x112199740>) completed
+DEBUG    aiosqlite:core.py:62 executing functools.partial(<built-in method close of sqlite3.Connection object at 0x11208bb50>)
+DEBUG    aiosqlite:core.py:67 operation functools.partial(<built-in method close of sqlite3.Connection object at 0x11208bb50>) completed
+DEBUG    aiosqlite:core.py:62 executing <function Connection.stop.<locals>.close_and_stop at 0x1121373d0>
+DEBUG    aiosqlite:core.py:67 operation <function Connection.stop.<locals>.close_and_stop at 0x1121373d0> completed
+DEBUG    asyncio:selector_events.py:64 Using selector: KqueueSelector
+DEBUG    aiosqlite:core.py:62 executing <function connect.<locals>.connector at 0x112135f30>
+DEBUG    aiosqlite:core.py:67 operation <function connect.<locals>.connector at 0x112135f30> completed
+DEBUG    aiosqlite:core.py:62 executing functools.partial(<built-in method execute of sqlite3.Connection object at 0x11208bd30>, 'BEGIN IMMEDIATE', [])
+DEBUG    aiosqlite:core.py:67 operation functools.partial(<built-in method execute of sqlite3.Connection object at 0x11208bd30>, 'BEGIN IMMEDIATE', []) completed
+DEBUG    aiosqlite:core.py:62 executing functools.partial(<built-in method execute of sqlite3.Connection object at 0x11208bd30>, 'SELECT COUNT(*) FROM users WHERE username IN (?)', ('r2-negative',))
+DEBUG    aiosqlite:core.py:67 operation functools.partial(<built-in method execute of sqlite3.Connection object at 0x11208bd30>, 'SELECT COUNT(*) FROM users WHERE username IN (?)', ('r2-negative',)) completed
+DEBUG    aiosqlite:core.py:62 executing functools.partial(<built-in method fetchone of sqlite3.Cursor object at 0x1121981c0>)
+DEBUG    aiosqlite:core.py:67 operation functools.partial(<built-in method fetchone of sqlite3.Cursor object at 0x1121981c0>) completed
+DEBUG    aiosqlite:core.py:62 executing functools.partial(<built-in method close of sqlite3.Cursor object at 0x1121981c0>)
+DEBUG    aiosqlite:core.py:67 operation functools.partial(<built-in method close of sqlite3.Cursor object at 0x1121981c0>) completed
+DEBUG    aiosqlite:core.py:62 executing functools.partial(<built-in method execute of sqlite3.Connection object at 0x11208bd30>, 'SELECT COUNT(*) FROM watch_rules WHERE username=?', ('r2-negative',))
+DEBUG    aiosqlite:core.py:67 operation functools.partial(<built-in method execute of sqlite3.Connection object at 0x11208bd30>, 'SELECT COUNT(*) FROM watch_rules WHERE username=?', ('r2-negative',)) completed
+DEBUG    aiosqlite:core.py:62 executing functools.partial(<built-in method fetchone of sqlite3.Cursor object at 0x112199140>)
+DEBUG    aiosqlite:core.py:67 operation functools.partial(<built-in method fetchone of sqlite3.Cursor object at 0x112199140>) completed
+DEBUG    aiosqlite:core.py:62 executing functools.partial(<built-in method close of sqlite3.Cursor object at 0x112199140>)
+DEBUG    aiosqlite:core.py:67 operation functools.partial(<built-in method close of sqlite3.Cursor object at 0x112199140>) completed
+DEBUG    aiosqlite:core.py:62 executing functools.partial(<built-in method execute of sqlite3.Connection object at 0x11208bd30>, 'INSERT INTO watch_rules(username,name,app_match,title_match,kind,params,interval_seconds,cooldown_seconds,enabled,conversation_id) VALUES(?,?,?,?,?,?,?,?,?,?)', ['r2-negative', 'R2 判断', 'Terminal', '', 'ai', '{"condition": "下载完成时提醒", "model": "platform"}', 3, 60, True, None])
+DEBUG    aiosqlite:core.py:67 operation functools.partial(<built-in method execute of sqlite3.Connection object at 0x11208bd30>, 'INSERT INTO watch_rules(username,name,app_match,title_match,kind,params,interval_seconds,cooldown_seconds,enabled,conversation_id) VALUES(?,?,?,?,?,?,?,?,?,?)', ['r2-negative', 'R2 判断', 'Terminal', '', 'ai', '{"condition": "下载完成时提醒", "model": "platform"}', 3, 60, True, None]) completed
+DEBUG    aiosqlite:core.py:62 executing functools.partial(<built-in method execute of sqlite3.Connection object at 0x11208bd30>, 'SELECT * FROM watch_rules WHERE id=?', (1,))
+DEBUG    aiosqlite:core.py:67 operation functools.partial(<built-in method execute of sqlite3.Connection object at 0x11208bd30>, 'SELECT * FROM watch_rules WHERE id=?', (1,)) completed
+DEBUG    aiosqlite:core.py:62 executing functools.partial(<built-in method fetchone of sqlite3.Cursor object at 0x112198cc0>)
+DEBUG    aiosqlite:core.py:67 operation functools.partial(<built-in method fetchone of sqlite3.Cursor object at 0x112198cc0>) completed
+DEBUG    aiosqlite:core.py:62 executing functools.partial(<built-in method close of sqlite3.Cursor object at 0x112198cc0>)
+DEBUG    aiosqlite:core.py:67 operation functools.partial(<built-in method close of sqlite3.Cursor object at 0x112198cc0>) completed
+DEBUG    aiosqlite:core.py:62 executing functools.partial(<built-in method commit of sqlite3.Connection object at 0x11208bd30>)
+DEBUG    aiosqlite:core.py:67 operation functools.partial(<built-in method commit of sqlite3.Connection object at 0x11208bd30>) completed
+DEBUG    aiosqlite:core.py:62 executing functools.partial(<built-in method close of sqlite3.Connection object at 0x11208bd30>)
+DEBUG    aiosqlite:core.py:67 operation functools.partial(<built-in method close of sqlite3.Connection object at 0x11208bd30>) completed
+DEBUG    aiosqlite:core.py:62 executing <function Connection.stop.<locals>.close_and_stop at 0x112137cc0>
+DEBUG    aiosqlite:core.py:67 operation <function Connection.stop.<locals>.close_and_stop at 0x112137cc0> completed
+DEBUG    asyncio:selector_events.py:64 Using selector: KqueueSelector
+WARNING  services.local_watch:local_watch.py:154 local_watch exception_type=ValueError
+________ test_false_decision_is_success_and_ignores_summary[42-claude] _________
+
+client = <starlette.testclient.TestClient object at 0x112073f00>
+service = <module 'services.local_watch' from '/Users/yangjing/Desktop/ai-workspace/Fiona/backend/services/local_watch.py'>
+monkeypatch = <_pytest.monkeypatch.MonkeyPatch object at 0x11216da90>
+caplog = <_pytest.logging.LogCaptureFixture object at 0x112174850>
+model = 'claude', summary = 42
+
+    @pytest.mark.parametrize("model", ["platform", "claude"])
+    @pytest.mark.parametrize("summary", ["", "  \n ", "长" * 1000, None, 42, ["任意内容"], {"任意": "内容"}])
+    def test_false_decision_is_success_and_ignores_summary(client, service, monkeypatch, caplog, model, summary):
+        import database
+    
+        caplog.set_level(logging.DEBUG)
+        asyncio.run(database.get_or_create_user("r2-negative"))
+        rule = asyncio.run(database.create_watch_rule("r2-negative", ai_rule(model)))
+        model_stub(service, monkeypatch, model, {"alert": False, "summary": summary}, debug=True)
+        failure = []
+>       assert asyncio.run(service.judge_ai("r2-negative", rule["params"], ["R2_PRIVATE_OCR"], failure=failure)) == {"alert": False}
+E       AssertionError: assert None == {'alert': False}
+E        +  where None = <function run at 0x10b6c8ca0>(<coroutine object judge_ai at 0x112173010>)
+E        +    where <function run at 0x10b6c8ca0> = asyncio.run
+E        +    and   <coroutine object judge_ai at 0x112173010> = <function judge_ai at 0x111ee5850>('r2-negative', {'condition': '下载完成时提醒', 'model': 'claude'}, ['R2_PRIVATE_OCR'], failure=['ValueError'])
+E        +      where <function judge_ai at 0x111ee5850> = <module 'services.local_watch' from '/Users/yangjing/Desktop/ai-workspace/Fiona/backend/services/local_watch.py'>.judge_ai
+
+tests/test_local_watch_service_r2.py:93: AssertionError
+------------------------------ Captured log call -------------------------------
+DEBUG    asyncio:selector_events.py:64 Using selector: KqueueSelector
+DEBUG    aiosqlite:core.py:62 executing <function connect.<locals>.connector at 0x11204dfe0>
+DEBUG    aiosqlite:core.py:67 operation <function connect.<locals>.connector at 0x11204dfe0> completed
+DEBUG    aiosqlite:core.py:62 executing functools.partial(<built-in method execute of sqlite3.Connection object at 0x112088400>, 'INSERT OR IGNORE INTO users (username, session_version) VALUES (?, ?)', ('r2-negative', 853947940))
+DEBUG    aiosqlite:core.py:67 operation functools.partial(<built-in method execute of sqlite3.Connection object at 0x112088400>, 'INSERT OR IGNORE INTO users (username, session_version) VALUES (?, ?)', ('r2-negative', 853947940)) completed
+DEBUG    aiosqlite:core.py:62 executing functools.partial(<built-in method commit of sqlite3.Connection object at 0x112088400>)
+DEBUG    aiosqlite:core.py:67 operation functools.partial(<built-in method commit of sqlite3.Connection object at 0x112088400>) completed
+DEBUG    aiosqlite:core.py:62 executing functools.partial(<built-in method execute of sqlite3.Connection object at 0x112088400>, 'SELECT * FROM users WHERE username = ?', ('r2-negative',))
+DEBUG    aiosqlite:core.py:67 operation functools.partial(<built-in method execute of sqlite3.Connection object at 0x112088400>, 'SELECT * FROM users WHERE username = ?', ('r2-negative',)) completed
+DEBUG    aiosqlite:core.py:62 executing functools.partial(<built-in method fetchone of sqlite3.Cursor object at 0x112199040>)
+DEBUG    aiosqlite:core.py:67 operation functools.partial(<built-in method fetchone of sqlite3.Cursor object at 0x112199040>) completed
+DEBUG    aiosqlite:core.py:62 executing functools.partial(<built-in method close of sqlite3.Cursor object at 0x112199040>)
+DEBUG    aiosqlite:core.py:67 operation functools.partial(<built-in method close of sqlite3.Cursor object at 0x112199040>) completed
+DEBUG    aiosqlite:core.py:62 executing functools.partial(<built-in method close of sqlite3.Connection object at 0x112088400>)
+DEBUG    aiosqlite:core.py:67 operation functools.partial(<built-in method close of sqlite3.Connection object at 0x112088400>) completed
+DEBUG    aiosqlite:core.py:62 executing <function Connection.stop.<locals>.close_and_stop at 0x11204fc10>
+DEBUG    aiosqlite:core.py:67 operation <function Connection.stop.<locals>.close_and_stop at 0x11204fc10> completed
+DEBUG    asyncio:selector_events.py:64 Using selector: KqueueSelector
+DEBUG    aiosqlite:core.py:62 executing <function connect.<locals>.connector at 0x112194040>
+DEBUG    aiosqlite:core.py:67 operation <function connect.<locals>.connector at 0x112194040> completed
+DEBUG    aiosqlite:core.py:62 executing functools.partial(<built-in method execute of sqlite3.Connection object at 0x112088220>, 'BEGIN IMMEDIATE', [])
+DEBUG    aiosqlite:core.py:67 operation functools.partial(<built-in method execute of sqlite3.Connection object at 0x112088220>, 'BEGIN IMMEDIATE', []) completed
+DEBUG    aiosqlite:core.py:62 executing functools.partial(<built-in method execute of sqlite3.Connection object at 0x112088220>, 'SELECT COUNT(*) FROM users WHERE username IN (?)', ('r2-negative',))
+DEBUG    aiosqlite:core.py:67 operation functools.partial(<built-in method execute of sqlite3.Connection object at 0x112088220>, 'SELECT COUNT(*) FROM users WHERE username IN (?)', ('r2-negative',)) completed
+DEBUG    aiosqlite:core.py:62 executing functools.partial(<built-in method fetchone of sqlite3.Cursor object at 0x1121992c0>)
+DEBUG    aiosqlite:core.py:67 operation functools.partial(<built-in method fetchone of sqlite3.Cursor object at 0x1121992c0>) completed
+DEBUG    aiosqlite:core.py:62 executing functools.partial(<built-in method close of sqlite3.Cursor object at 0x1121992c0>)
+DEBUG    aiosqlite:core.py:67 operation functools.partial(<built-in method close of sqlite3.Cursor object at 0x1121992c0>) completed
+DEBUG    aiosqlite:core.py:62 executing functools.partial(<built-in method execute of sqlite3.Connection object at 0x112088220>, 'SELECT COUNT(*) FROM watch_rules WHERE username=?', ('r2-negative',))
+DEBUG    aiosqlite:core.py:67 operation functools.partial(<built-in method execute of sqlite3.Connection object at 0x112088220>, 'SELECT COUNT(*) FROM watch_rules WHERE username=?', ('r2-negative',)) completed
+DEBUG    aiosqlite:core.py:62 executing functools.partial(<built-in method fetchone of sqlite3.Cursor object at 0x112199d40>)
+DEBUG    aiosqlite:core.py:67 operation functools.partial(<built-in method fetchone of sqlite3.Cursor object at 0x112199d40>) completed
+DEBUG    aiosqlite:core.py:62 executing functools.partial(<built-in method close of sqlite3.Cursor object at 0x112199d40>)
+DEBUG    aiosqlite:core.py:67 operation functools.partial(<built-in method close of sqlite3.Cursor object at 0x112199d40>) completed
+DEBUG    aiosqlite:core.py:62 executing functools.partial(<built-in method execute of sqlite3.Connection object at 0x112088220>, 'INSERT INTO watch_rules(username,name,app_match,title_match,kind,params,interval_seconds,cooldown_seconds,enabled,conversation_id) VALUES(?,?,?,?,?,?,?,?,?,?)', ['r2-negative', 'R2 判断', 'Terminal', '', 'ai', '{"condition": "下载完成时提醒", "model": "claude"}', 3, 60, True, None])
+DEBUG    aiosqlite:core.py:67 operation functools.partial(<built-in method execute of sqlite3.Connection object at 0x112088220>, 'INSERT INTO watch_rules(username,name,app_match,title_match,kind,params,interval_seconds,cooldown_seconds,enabled,conversation_id) VALUES(?,?,?,?,?,?,?,?,?,?)', ['r2-negative', 'R2 判断', 'Terminal', '', 'ai', '{"condition": "下载完成时提醒", "model": "claude"}', 3, 60, True, None]) completed
+DEBUG    aiosqlite:core.py:62 executing functools.partial(<built-in method execute of sqlite3.Connection object at 0x112088220>, 'SELECT * FROM watch_rules WHERE id=?', (1,))
+DEBUG    aiosqlite:core.py:67 operation functools.partial(<built-in method execute of sqlite3.Connection object at 0x112088220>, 'SELECT * FROM watch_rules WHERE id=?', (1,)) completed
+DEBUG    aiosqlite:core.py:62 executing functools.partial(<built-in method fetchone of sqlite3.Cursor object at 0x11219a240>)
+DEBUG    aiosqlite:core.py:67 operation functools.partial(<built-in method fetchone of sqlite3.Cursor object at 0x11219a240>) completed
+DEBUG    aiosqlite:core.py:62 executing functools.partial(<built-in method close of sqlite3.Cursor object at 0x11219a240>)
+DEBUG    aiosqlite:core.py:67 operation functools.partial(<built-in method close of sqlite3.Cursor object at 0x11219a240>) completed
+DEBUG    aiosqlite:core.py:62 executing functools.partial(<built-in method commit of sqlite3.Connection object at 0x112088220>)
+DEBUG    aiosqlite:core.py:67 operation functools.partial(<built-in method commit of sqlite3.Connection object at 0x112088220>) completed
+DEBUG    aiosqlite:core.py:62 executing functools.partial(<built-in method close of sqlite3.Connection object at 0x112088220>)
+DEBUG    aiosqlite:core.py:67 operation functools.partial(<built-in method close of sqlite3.Connection object at 0x112088220>) completed
+DEBUG    aiosqlite:core.py:62 executing <function Connection.stop.<locals>.close_and_stop at 0x1121943b0>
+DEBUG    aiosqlite:core.py:67 operation <function Connection.stop.<locals>.close_and_stop at 0x1121943b0> completed
+DEBUG    asyncio:selector_events.py:64 Using selector: KqueueSelector
+WARNING  services.local_watch:local_watch.py:154 local_watch exception_type=ValueError
+____ test_false_decision_is_success_and_ignores_summary[summary5-platform] _____
+
+client = <starlette.testclient.TestClient object at 0x112007460>
+service = <module 'services.local_watch' from '/Users/yangjing/Desktop/ai-workspace/Fiona/backend/services/local_watch.py'>
+monkeypatch = <_pytest.monkeypatch.MonkeyPatch object at 0x112040c80>
+caplog = <_pytest.logging.LogCaptureFixture object at 0x11208a7b0>
+model = 'platform', summary = ['任意内容']
+
+    @pytest.mark.parametrize("model", ["platform", "claude"])
+    @pytest.mark.parametrize("summary", ["", "  \n ", "长" * 1000, None, 42, ["任意内容"], {"任意": "内容"}])
+    def test_false_decision_is_success_and_ignores_summary(client, service, monkeypatch, caplog, model, summary):
+        import database
+    
+        caplog.set_level(logging.DEBUG)
+        asyncio.run(database.get_or_create_user("r2-negative"))
+        rule = asyncio.run(database.create_watch_rule("r2-negative", ai_rule(model)))
+        model_stub(service, monkeypatch, model, {"alert": False, "summary": summary}, debug=True)
+        failure = []
+>       assert asyncio.run(service.judge_ai("r2-negative", rule["params"], ["R2_PRIVATE_OCR"], failure=failure)) == {"alert": False}
+E       AssertionError: assert None == {'alert': False}
+E        +  where None = <function run at 0x10b6c8ca0>(<coroutine object judge_ai at 0x112173450>)
+E        +    where <function run at 0x10b6c8ca0> = asyncio.run
+E        +    and   <coroutine object judge_ai at 0x112173450> = <function judge_ai at 0x111ee5850>('r2-negative', {'condition': '下载完成时提醒', 'model': 'platform'}, ['R2_PRIVATE_OCR'], failure=['ValueError'])
+E        +      where <function judge_ai at 0x111ee5850> = <module 'services.local_watch' from '/Users/yangjing/Desktop/ai-workspace/Fiona/backend/services/local_watch.py'>.judge_ai
+
+tests/test_local_watch_service_r2.py:93: AssertionError
+------------------------------ Captured log call -------------------------------
+DEBUG    asyncio:selector_events.py:64 Using selector: KqueueSelector
+DEBUG    aiosqlite:core.py:62 executing <function connect.<locals>.connector at 0x11218c040>
+DEBUG    aiosqlite:core.py:67 operation <function connect.<locals>.connector at 0x11218c040> completed
+DEBUG    aiosqlite:core.py:62 executing functools.partial(<built-in method execute of sqlite3.Connection object at 0x112194220>, 'INSERT OR IGNORE INTO users (username, session_version) VALUES (?, ?)', ('r2-negative', 1632125690))
+DEBUG    aiosqlite:core.py:67 operation functools.partial(<built-in method execute of sqlite3.Connection object at 0x112194220>, 'INSERT OR IGNORE INTO users (username, session_version) VALUES (?, ?)', ('r2-negative', 1632125690)) completed
+DEBUG    aiosqlite:core.py:62 executing functools.partial(<built-in method commit of sqlite3.Connection object at 0x112194220>)
+DEBUG    aiosqlite:core.py:67 operation functools.partial(<built-in method commit of sqlite3.Connection object at 0x112194220>) completed
+DEBUG    aiosqlite:core.py:62 executing functools.partial(<built-in method execute of sqlite3.Connection object at 0x112194220>, 'SELECT * FROM users WHERE username = ?', ('r2-negative',))
+DEBUG    aiosqlite:core.py:67 operation functools.partial(<built-in method execute of sqlite3.Connection object at 0x112194220>, 'SELECT * FROM users WHERE username = ?', ('r2-negative',)) completed
+DEBUG    aiosqlite:core.py:62 executing functools.partial(<built-in method fetchone of sqlite3.Cursor object at 0x11219abc0>)
+DEBUG    aiosqlite:core.py:67 operation functools.partial(<built-in method fetchone of sqlite3.Cursor object at 0x11219abc0>) completed
+DEBUG    aiosqlite:core.py:62 executing functools.partial(<built-in method close of sqlite3.Cursor object at 0x11219abc0>)
+DEBUG    aiosqlite:core.py:67 operation functools.partial(<built-in method close of sqlite3.Cursor object at 0x11219abc0>) completed
+DEBUG    aiosqlite:core.py:62 executing functools.partial(<built-in method close of sqlite3.Connection object at 0x112194220>)
+DEBUG    aiosqlite:core.py:67 operation functools.partial(<built-in method close of sqlite3.Connection object at 0x112194220>) completed
+DEBUG    aiosqlite:core.py:62 executing <function Connection.stop.<locals>.close_and_stop at 0x11218c3b0>
+DEBUG    aiosqlite:core.py:67 operation <function Connection.stop.<locals>.close_and_stop at 0x11218c3b0> completed
+DEBUG    asyncio:selector_events.py:64 Using selector: KqueueSelector
+DEBUG    aiosqlite:core.py:62 executing <function connect.<locals>.connector at 0x11218c5c0>
+DEBUG    aiosqlite:core.py:67 operation <function connect.<locals>.connector at 0x11218c5c0> completed
+DEBUG    aiosqlite:core.py:62 executing functools.partial(<built-in method execute of sqlite3.Connection object at 0x112194310>, 'BEGIN IMMEDIATE', [])
+DEBUG    aiosqlite:core.py:67 operation functools.partial(<built-in method execute of sqlite3.Connection object at 0x112194310>, 'BEGIN IMMEDIATE', []) completed
+DEBUG    aiosqlite:core.py:62 executing functools.partial(<built-in method execute of sqlite3.Connection object at 0x112194310>, 'SELECT COUNT(*) FROM users WHERE username IN (?)', ('r2-negative',))
+DEBUG    aiosqlite:core.py:67 operation functools.partial(<built-in method execute of sqlite3.Connection object at 0x112194310>, 'SELECT COUNT(*) FROM users WHERE username IN (?)', ('r2-negative',)) completed
+DEBUG    aiosqlite:core.py:62 executing functools.partial(<built-in method fetchone of sqlite3.Cursor object at 0x11219a140>)
+DEBUG    aiosqlite:core.py:67 operation functools.partial(<built-in method fetchone of sqlite3.Cursor object at 0x11219a140>) completed
+DEBUG    aiosqlite:core.py:62 executing functools.partial(<built-in method close of sqlite3.Cursor object at 0x11219a140>)
+DEBUG    aiosqlite:core.py:67 operation functools.partial(<built-in method close of sqlite3.Cursor object at 0x11219a140>) completed
+DEBUG    aiosqlite:core.py:62 executing functools.partial(<built-in method execute of sqlite3.Connection object at 0x112194310>, 'SELECT COUNT(*) FROM watch_rules WHERE username=?', ('r2-negative',))
+DEBUG    aiosqlite:core.py:67 operation functools.partial(<built-in method execute of sqlite3.Connection object at 0x112194310>, 'SELECT COUNT(*) FROM watch_rules WHERE username=?', ('r2-negative',)) completed
+DEBUG    aiosqlite:core.py:62 executing functools.partial(<built-in method fetchone of sqlite3.Cursor object at 0x11219a0c0>)
+DEBUG    aiosqlite:core.py:67 operation functools.partial(<built-in method fetchone of sqlite3.Cursor object at 0x11219a0c0>) completed
+DEBUG    aiosqlite:core.py:62 executing functools.partial(<built-in method close of sqlite3.Cursor object at 0x11219a0c0>)
+DEBUG    aiosqlite:core.py:67 operation functools.partial(<built-in method close of sqlite3.Cursor object at 0x11219a0c0>) completed
+DEBUG    aiosqlite:core.py:62 executing functools.partial(<built-in method execute of sqlite3.Connection object at 0x112194310>, 'INSERT INTO watch_rules(username,name,app_match,title_match,kind,params,interval_seconds,cooldown_seconds,enabled,conversation_id) VALUES(?,?,?,?,?,?,?,?,?,?)', ['r2-negative', 'R2 判断', 'Terminal', '', 'ai', '{"condition": "下载完成时提醒", "model": "platform"}', 3, 60, True, None])
+DEBUG    aiosqlite:core.py:67 operation functools.partial(<built-in method execute of sqlite3.Connection object at 0x112194310>, 'INSERT INTO watch_rules(username,name,app_match,title_match,kind,params,interval_seconds,cooldown_seconds,enabled,conversation_id) VALUES(?,?,?,?,?,?,?,?,?,?)', ['r2-negative', 'R2 判断', 'Terminal', '', 'ai', '{"condition": "下载完成时提醒", "model": "platform"}', 3, 60, True, None]) completed
+DEBUG    aiosqlite:core.py:62 executing functools.partial(<built-in method execute of sqlite3.Connection object at 0x112194310>, 'SELECT * FROM watch_rules WHERE id=?', (1,))
+DEBUG    aiosqlite:core.py:67 operation functools.partial(<built-in method execute of sqlite3.Connection object at 0x112194310>, 'SELECT * FROM watch_rules WHERE id=?', (1,)) completed
+DEBUG    aiosqlite:core.py:62 executing functools.partial(<built-in method fetchone of sqlite3.Cursor object at 0x112198440>)
+DEBUG    aiosqlite:core.py:67 operation functools.partial(<built-in method fetchone of sqlite3.Cursor object at 0x112198440>) completed
+DEBUG    aiosqlite:core.py:62 executing functools.partial(<built-in method close of sqlite3.Cursor object at 0x112198440>)
+DEBUG    aiosqlite:core.py:67 operation functools.partial(<built-in method close of sqlite3.Cursor object at 0x112198440>) completed
+DEBUG    aiosqlite:core.py:62 executing functools.partial(<built-in method commit of sqlite3.Connection object at 0x112194310>)
+DEBUG    aiosqlite:core.py:67 operation functools.partial(<built-in method commit of sqlite3.Connection object at 0x112194310>) completed
+DEBUG    aiosqlite:core.py:62 executing functools.partial(<built-in method close of sqlite3.Connection object at 0x112194310>)
+DEBUG    aiosqlite:core.py:67 operation functools.partial(<built-in method close of sqlite3.Connection object at 0x112194310>) completed
+DEBUG    aiosqlite:core.py:62 executing <function Connection.stop.<locals>.close_and_stop at 0x11218c9e0>
+DEBUG    aiosqlite:core.py:67 operation <function Connection.stop.<locals>.close_and_stop at 0x11218c9e0> completed
+DEBUG    asyncio:selector_events.py:64 Using selector: KqueueSelector
+WARNING  services.local_watch:local_watch.py:154 local_watch exception_type=ValueError
+_____ test_false_decision_is_success_and_ignores_summary[summary5-claude] ______
+
+client = <starlette.testclient.TestClient object at 0x112071f20>
+service = <module 'services.local_watch' from '/Users/yangjing/Desktop/ai-workspace/Fiona/backend/services/local_watch.py'>
+monkeypatch = <_pytest.monkeypatch.MonkeyPatch object at 0x11212d610>
+caplog = <_pytest.logging.LogCaptureFixture object at 0x1120895e0>
+model = 'claude', summary = ['任意内容']
+
+    @pytest.mark.parametrize("model", ["platform", "claude"])
+    @pytest.mark.parametrize("summary", ["", "  \n ", "长" * 1000, None, 42, ["任意内容"], {"任意": "内容"}])
+    def test_false_decision_is_success_and_ignores_summary(client, service, monkeypatch, caplog, model, summary):
+        import database
+    
+        caplog.set_level(logging.DEBUG)
+        asyncio.run(database.get_or_create_user("r2-negative"))
+        rule = asyncio.run(database.create_watch_rule("r2-negative", ai_rule(model)))
+        model_stub(service, monkeypatch, model, {"alert": False, "summary": summary}, debug=True)
+        failure = []
+>       assert asyncio.run(service.judge_ai("r2-negative", rule["params"], ["R2_PRIVATE_OCR"], failure=failure)) == {"alert": False}
+E       AssertionError: assert None == {'alert': False}
+E        +  where None = <function run at 0x10b6c8ca0>(<coroutine object judge_ai at 0x112173890>)
+E        +    where <function run at 0x10b6c8ca0> = asyncio.run
+E        +    and   <coroutine object judge_ai at 0x112173890> = <function judge_ai at 0x111ee5850>('r2-negative', {'condition': '下载完成时提醒', 'model': 'claude'}, ['R2_PRIVATE_OCR'], failure=['ValueError'])
+E        +      where <function judge_ai at 0x111ee5850> = <module 'services.local_watch' from '/Users/yangjing/Desktop/ai-workspace/Fiona/backend/services/local_watch.py'>.judge_ai
+
+tests/test_local_watch_service_r2.py:93: AssertionError
+------------------------------ Captured log call -------------------------------
+DEBUG    asyncio:selector_events.py:64 Using selector: KqueueSelector
+DEBUG    aiosqlite:core.py:62 executing <function connect.<locals>.connector at 0x11218c720>
+DEBUG    aiosqlite:core.py:67 operation <function connect.<locals>.connector at 0x11218c720> completed
+DEBUG    aiosqlite:core.py:62 executing functools.partial(<built-in method execute of sqlite3.Connection object at 0x112195f30>, 'INSERT OR IGNORE INTO users (username, session_version) VALUES (?, ?)', ('r2-negative', 675275289))
+DEBUG    aiosqlite:core.py:67 operation functools.partial(<built-in method execute of sqlite3.Connection object at 0x112195f30>, 'INSERT OR IGNORE INTO users (username, session_version) VALUES (?, ?)', ('r2-negative', 675275289)) completed
+DEBUG    aiosqlite:core.py:62 executing functools.partial(<built-in method commit of sqlite3.Connection object at 0x112195f30>)
+DEBUG    aiosqlite:core.py:67 operation functools.partial(<built-in method commit of sqlite3.Connection object at 0x112195f30>) completed
+DEBUG    aiosqlite:core.py:62 executing functools.partial(<built-in method execute of sqlite3.Connection object at 0x112195f30>, 'SELECT * FROM users WHERE username = ?', ('r2-negative',))
+DEBUG    aiosqlite:core.py:67 operation functools.partial(<built-in method execute of sqlite3.Connection object at 0x112195f30>, 'SELECT * FROM users WHERE username = ?', ('r2-negative',)) completed
+DEBUG    aiosqlite:core.py:62 executing functools.partial(<built-in method fetchone of sqlite3.Cursor object at 0x112199a40>)
+DEBUG    aiosqlite:core.py:67 operation functools.partial(<built-in method fetchone of sqlite3.Cursor object at 0x112199a40>) completed
+DEBUG    aiosqlite:core.py:62 executing functools.partial(<built-in method close of sqlite3.Cursor object at 0x112199a40>)
+DEBUG    aiosqlite:core.py:67 operation functools.partial(<built-in method close of sqlite3.Cursor object at 0x112199a40>) completed
+DEBUG    aiosqlite:core.py:62 executing functools.partial(<built-in method close of sqlite3.Connection object at 0x112195f30>)
+DEBUG    aiosqlite:core.py:67 operation functools.partial(<built-in method close of sqlite3.Connection object at 0x112195f30>) completed
+DEBUG    aiosqlite:core.py:62 executing <function Connection.stop.<locals>.close_and_stop at 0x11218c9e0>
+DEBUG    aiosqlite:core.py:67 operation <function Connection.stop.<locals>.close_and_stop at 0x11218c9e0> completed
+DEBUG    asyncio:selector_events.py:64 Using selector: KqueueSelector
+DEBUG    aiosqlite:core.py:62 executing <function connect.<locals>.connector at 0x11218cbf0>
+DEBUG    aiosqlite:core.py:67 operation <function connect.<locals>.connector at 0x11218cbf0> completed
+DEBUG    aiosqlite:core.py:62 executing functools.partial(<built-in method execute of sqlite3.Connection object at 0x112196020>, 'BEGIN IMMEDIATE', [])
+DEBUG    aiosqlite:core.py:67 operation functools.partial(<built-in method execute of sqlite3.Connection object at 0x112196020>, 'BEGIN IMMEDIATE', []) completed
+DEBUG    aiosqlite:core.py:62 executing functools.partial(<built-in method execute of sqlite3.Connection object at 0x112196020>, 'SELECT COUNT(*) FROM users WHERE username IN (?)', ('r2-negative',))
+DEBUG    aiosqlite:core.py:67 operation functools.partial(<built-in method execute of sqlite3.Connection object at 0x112196020>, 'SELECT COUNT(*) FROM users WHERE username IN (?)', ('r2-negative',)) completed
+DEBUG    aiosqlite:core.py:62 executing functools.partial(<built-in method fetchone of sqlite3.Cursor object at 0x11219b1c0>)
+DEBUG    aiosqlite:core.py:67 operation functools.partial(<built-in method fetchone of sqlite3.Cursor object at 0x11219b1c0>) completed
+DEBUG    aiosqlite:core.py:62 executing functools.partial(<built-in method close of sqlite3.Cursor object at 0x11219b1c0>)
+DEBUG    aiosqlite:core.py:67 operation functools.partial(<built-in method close of sqlite3.Cursor object at 0x11219b1c0>) completed
+DEBUG    aiosqlite:core.py:62 executing functools.partial(<built-in method execute of sqlite3.Connection object at 0x112196020>, 'SELECT COUNT(*) FROM watch_rules WHERE username=?', ('r2-negative',))
+DEBUG    aiosqlite:core.py:67 operation functools.partial(<built-in method execute of sqlite3.Connection object at 0x112196020>, 'SELECT COUNT(*) FROM watch_rules WHERE username=?', ('r2-negative',)) completed
+DEBUG    aiosqlite:core.py:62 executing functools.partial(<built-in method fetchone of sqlite3.Cursor object at 0x11219b140>)
+DEBUG    aiosqlite:core.py:67 operation functools.partial(<built-in method fetchone of sqlite3.Cursor object at 0x11219b140>) completed
+DEBUG    aiosqlite:core.py:62 executing functools.partial(<built-in method close of sqlite3.Cursor object at 0x11219b140>)
+DEBUG    aiosqlite:core.py:67 operation functools.partial(<built-in method close of sqlite3.Cursor object at 0x11219b140>) completed
+DEBUG    aiosqlite:core.py:62 executing functools.partial(<built-in method execute of sqlite3.Connection object at 0x112196020>, 'INSERT INTO watch_rules(username,name,app_match,title_match,kind,params,interval_seconds,cooldown_seconds,enabled,conversation_id) VALUES(?,?,?,?,?,?,?,?,?,?)', ['r2-negative', 'R2 判断', 'Terminal', '', 'ai', '{"condition": "下载完成时提醒", "model": "claude"}', 3, 60, True, None])
+DEBUG    aiosqlite:core.py:67 operation functools.partial(<built-in method execute of sqlite3.Connection object at 0x112196020>, 'INSERT INTO watch_rules(username,name,app_match,title_match,kind,params,interval_seconds,cooldown_seconds,enabled,conversation_id) VALUES(?,?,?,?,?,?,?,?,?,?)', ['r2-negative', 'R2 判断', 'Terminal', '', 'ai', '{"condition": "下载完成时提醒", "model": "claude"}', 3, 60, True, None]) completed
+DEBUG    aiosqlite:core.py:62 executing functools.partial(<built-in method execute of sqlite3.Connection object at 0x112196020>, 'SELECT * FROM watch_rules WHERE id=?', (1,))
+DEBUG    aiosqlite:core.py:67 operation functools.partial(<built-in method execute of sqlite3.Connection object at 0x112196020>, 'SELECT * FROM watch_rules WHERE id=?', (1,)) completed
+DEBUG    aiosqlite:core.py:62 executing functools.partial(<built-in method fetchone of sqlite3.Cursor object at 0x11219b2c0>)
+DEBUG    aiosqlite:core.py:67 operation functools.partial(<built-in method fetchone of sqlite3.Cursor object at 0x11219b2c0>) completed
+DEBUG    aiosqlite:core.py:62 executing functools.partial(<built-in method close of sqlite3.Cursor object at 0x11219b2c0>)
+DEBUG    aiosqlite:core.py:67 operation functools.partial(<built-in method close of sqlite3.Cursor object at 0x11219b2c0>) completed
+DEBUG    aiosqlite:core.py:62 executing functools.partial(<built-in method commit of sqlite3.Connection object at 0x112196020>)
+DEBUG    aiosqlite:core.py:67 operation functools.partial(<built-in method commit of sqlite3.Connection object at 0x112196020>) completed
+DEBUG    aiosqlite:core.py:62 executing functools.partial(<built-in method close of sqlite3.Connection object at 0x112196020>)
+DEBUG    aiosqlite:core.py:67 operation functools.partial(<built-in method close of sqlite3.Connection object at 0x112196020>) completed
+DEBUG    aiosqlite:core.py:62 executing <function Connection.stop.<locals>.close_and_stop at 0x11218d010>
+DEBUG    aiosqlite:core.py:67 operation <function Connection.stop.<locals>.close_and_stop at 0x11218d010> completed
+DEBUG    asyncio:selector_events.py:64 Using selector: KqueueSelector
+WARNING  services.local_watch:local_watch.py:154 local_watch exception_type=ValueError
+____ test_false_decision_is_success_and_ignores_summary[summary6-platform] _____
+
+client = <starlette.testclient.TestClient object at 0x112072ad0>
+service = <module 'services.local_watch' from '/Users/yangjing/Desktop/ai-workspace/Fiona/backend/services/local_watch.py'>
+monkeypatch = <_pytest.monkeypatch.MonkeyPatch object at 0x11212d9d0>
+caplog = <_pytest.logging.LogCaptureFixture object at 0x1121549f0>
+model = 'platform', summary = {'任意': '内容'}
+
+    @pytest.mark.parametrize("model", ["platform", "claude"])
+    @pytest.mark.parametrize("summary", ["", "  \n ", "长" * 1000, None, 42, ["任意内容"], {"任意": "内容"}])
+    def test_false_decision_is_success_and_ignores_summary(client, service, monkeypatch, caplog, model, summary):
+        import database
+    
+        caplog.set_level(logging.DEBUG)
+        asyncio.run(database.get_or_create_user("r2-negative"))
+        rule = asyncio.run(database.create_watch_rule("r2-negative", ai_rule(model)))
+        model_stub(service, monkeypatch, model, {"alert": False, "summary": summary}, debug=True)
+        failure = []
+>       assert asyncio.run(service.judge_ai("r2-negative", rule["params"], ["R2_PRIVATE_OCR"], failure=failure)) == {"alert": False}
+E       AssertionError: assert None == {'alert': False}
+E        +  where None = <function run at 0x10b6c8ca0>(<coroutine object judge_ai at 0x112173cd0>)
+E        +    where <function run at 0x10b6c8ca0> = asyncio.run
+E        +    and   <coroutine object judge_ai at 0x112173cd0> = <function judge_ai at 0x111ee5850>('r2-negative', {'condition': '下载完成时提醒', 'model': 'platform'}, ['R2_PRIVATE_OCR'], failure=['ValueError'])
+E        +      where <function judge_ai at 0x111ee5850> = <module 'services.local_watch' from '/Users/yangjing/Desktop/ai-workspace/Fiona/backend/services/local_watch.py'>.judge_ai
+
+tests/test_local_watch_service_r2.py:93: AssertionError
+------------------------------ Captured log call -------------------------------
+DEBUG    asyncio:selector_events.py:64 Using selector: KqueueSelector
+DEBUG    aiosqlite:core.py:62 executing <function connect.<locals>.connector at 0x11218cf60>
+DEBUG    aiosqlite:core.py:67 operation <function connect.<locals>.connector at 0x11218cf60> completed
+DEBUG    aiosqlite:core.py:62 executing functools.partial(<built-in method execute of sqlite3.Connection object at 0x1121972e0>, 'INSERT OR IGNORE INTO users (username, session_version) VALUES (?, ?)', ('r2-negative', 292089650))
+DEBUG    aiosqlite:core.py:67 operation functools.partial(<built-in method execute of sqlite3.Connection object at 0x1121972e0>, 'INSERT OR IGNORE INTO users (username, session_version) VALUES (?, ?)', ('r2-negative', 292089650)) completed
+DEBUG    aiosqlite:core.py:62 executing functools.partial(<built-in method commit of sqlite3.Connection object at 0x1121972e0>)
+DEBUG    aiosqlite:core.py:67 operation functools.partial(<built-in method commit of sqlite3.Connection object at 0x1121972e0>) completed
+DEBUG    aiosqlite:core.py:62 executing functools.partial(<built-in method execute of sqlite3.Connection object at 0x1121972e0>, 'SELECT * FROM users WHERE username = ?', ('r2-negative',))
+DEBUG    aiosqlite:core.py:67 operation functools.partial(<built-in method execute of sqlite3.Connection object at 0x1121972e0>, 'SELECT * FROM users WHERE username = ?', ('r2-negative',)) completed
+DEBUG    aiosqlite:core.py:62 executing functools.partial(<built-in method fetchone of sqlite3.Cursor object at 0x11219b9c0>)
+DEBUG    aiosqlite:core.py:67 operation functools.partial(<built-in method fetchone of sqlite3.Cursor object at 0x11219b9c0>) completed
+DEBUG    aiosqlite:core.py:62 executing functools.partial(<built-in method close of sqlite3.Cursor object at 0x11219b9c0>)
+DEBUG    aiosqlite:core.py:67 operation functools.partial(<built-in method close of sqlite3.Cursor object at 0x11219b9c0>) completed
+DEBUG    aiosqlite:core.py:62 executing functools.partial(<built-in method close of sqlite3.Connection object at 0x1121972e0>)
+DEBUG    aiosqlite:core.py:67 operation functools.partial(<built-in method close of sqlite3.Connection object at 0x1121972e0>) completed
+DEBUG    aiosqlite:core.py:62 executing <function Connection.stop.<locals>.close_and_stop at 0x11218c3b0>
+DEBUG    aiosqlite:core.py:67 operation <function Connection.stop.<locals>.close_and_stop at 0x11218c3b0> completed
+DEBUG    asyncio:selector_events.py:64 Using selector: KqueueSelector
+DEBUG    aiosqlite:core.py:62 executing <function connect.<locals>.connector at 0x11218c250>
+DEBUG    aiosqlite:core.py:67 operation <function connect.<locals>.connector at 0x11218c250> completed
+DEBUG    aiosqlite:core.py:62 executing functools.partial(<built-in method execute of sqlite3.Connection object at 0x1121974c0>, 'BEGIN IMMEDIATE', [])
+DEBUG    aiosqlite:core.py:67 operation functools.partial(<built-in method execute of sqlite3.Connection object at 0x1121974c0>, 'BEGIN IMMEDIATE', []) completed
+DEBUG    aiosqlite:core.py:62 executing functools.partial(<built-in method execute of sqlite3.Connection object at 0x1121974c0>, 'SELECT COUNT(*) FROM users WHERE username IN (?)', ('r2-negative',))
+DEBUG    aiosqlite:core.py:67 operation functools.partial(<built-in method execute of sqlite3.Connection object at 0x1121974c0>, 'SELECT COUNT(*) FROM users WHERE username IN (?)', ('r2-negative',)) completed
+DEBUG    aiosqlite:core.py:62 executing functools.partial(<built-in method fetchone of sqlite3.Cursor object at 0x11219bec0>)
+DEBUG    aiosqlite:core.py:67 operation functools.partial(<built-in method fetchone of sqlite3.Cursor object at 0x11219bec0>) completed
+DEBUG    aiosqlite:core.py:62 executing functools.partial(<built-in method close of sqlite3.Cursor object at 0x11219bec0>)
+DEBUG    aiosqlite:core.py:67 operation functools.partial(<built-in method close of sqlite3.Cursor object at 0x11219bec0>) completed
+DEBUG    aiosqlite:core.py:62 executing functools.partial(<built-in method execute of sqlite3.Connection object at 0x1121974c0>, 'SELECT COUNT(*) FROM watch_rules WHERE username=?', ('r2-negative',))
+DEBUG    aiosqlite:core.py:67 operation functools.partial(<built-in method execute of sqlite3.Connection object at 0x1121974c0>, 'SELECT COUNT(*) FROM watch_rules WHERE username=?', ('r2-negative',)) completed
+DEBUG    aiosqlite:core.py:62 executing functools.partial(<built-in method fetchone of sqlite3.Cursor object at 0x11219be40>)
+DEBUG    aiosqlite:core.py:67 operation functools.partial(<built-in method fetchone of sqlite3.Cursor object at 0x11219be40>) completed
+DEBUG    aiosqlite:core.py:62 executing functools.partial(<built-in method close of sqlite3.Cursor object at 0x11219be40>)
+DEBUG    aiosqlite:core.py:67 operation functools.partial(<built-in method close of sqlite3.Cursor object at 0x11219be40>) completed
+DEBUG    aiosqlite:core.py:62 executing functools.partial(<built-in method execute of sqlite3.Connection object at 0x1121974c0>, 'INSERT INTO watch_rules(username,name,app_match,title_match,kind,params,interval_seconds,cooldown_seconds,enabled,conversation_id) VALUES(?,?,?,?,?,?,?,?,?,?)', ['r2-negative', 'R2 判断', 'Terminal', '', 'ai', '{"condition": "下载完成时提醒", "model": "platform"}', 3, 60, True, None])
+DEBUG    aiosqlite:core.py:67 operation functools.partial(<built-in method execute of sqlite3.Connection object at 0x1121974c0>, 'INSERT INTO watch_rules(username,name,app_match,title_match,kind,params,interval_seconds,cooldown_seconds,enabled,conversation_id) VALUES(?,?,?,?,?,?,?,?,?,?)', ['r2-negative', 'R2 判断', 'Terminal', '', 'ai', '{"condition": "下载完成时提醒", "model": "platform"}', 3, 60, True, None]) completed
+DEBUG    aiosqlite:core.py:62 executing functools.partial(<built-in method execute of sqlite3.Connection object at 0x1121974c0>, 'SELECT * FROM watch_rules WHERE id=?', (1,))
+DEBUG    aiosqlite:core.py:67 operation functools.partial(<built-in method execute of sqlite3.Connection object at 0x1121974c0>, 'SELECT * FROM watch_rules WHERE id=?', (1,)) completed
+DEBUG    aiosqlite:core.py:62 executing functools.partial(<built-in method fetchone of sqlite3.Cursor object at 0x11219a6c0>)
+DEBUG    aiosqlite:core.py:67 operation functools.partial(<built-in method fetchone of sqlite3.Cursor object at 0x11219a6c0>) completed
+DEBUG    aiosqlite:core.py:62 executing functools.partial(<built-in method close of sqlite3.Cursor object at 0x11219a6c0>)
+DEBUG    aiosqlite:core.py:67 operation functools.partial(<built-in method close of sqlite3.Cursor object at 0x11219a6c0>) completed
+DEBUG    aiosqlite:core.py:62 executing functools.partial(<built-in method commit of sqlite3.Connection object at 0x1121974c0>)
+DEBUG    aiosqlite:core.py:67 operation functools.partial(<built-in method commit of sqlite3.Connection object at 0x1121974c0>) completed
+DEBUG    aiosqlite:core.py:62 executing functools.partial(<built-in method close of sqlite3.Connection object at 0x1121974c0>)
+DEBUG    aiosqlite:core.py:67 operation functools.partial(<built-in method close of sqlite3.Connection object at 0x1121974c0>) completed
+DEBUG    aiosqlite:core.py:62 executing <function Connection.stop.<locals>.close_and_stop at 0x11218d850>
+DEBUG    aiosqlite:core.py:67 operation <function Connection.stop.<locals>.close_and_stop at 0x11218d850> completed
+DEBUG    asyncio:selector_events.py:64 Using selector: KqueueSelector
+WARNING  services.local_watch:local_watch.py:154 local_watch exception_type=ValueError
+_____ test_false_decision_is_success_and_ignores_summary[summary6-claude] ______
+
+client = <starlette.testclient.TestClient object at 0x112170270>
+service = <module 'services.local_watch' from '/Users/yangjing/Desktop/ai-workspace/Fiona/backend/services/local_watch.py'>
+monkeypatch = <_pytest.monkeypatch.MonkeyPatch object at 0x11204e410>
+caplog = <_pytest.logging.LogCaptureFixture object at 0x112155a90>
+model = 'claude', summary = {'任意': '内容'}
+
+    @pytest.mark.parametrize("model", ["platform", "claude"])
+    @pytest.mark.parametrize("summary", ["", "  \n ", "长" * 1000, None, 42, ["任意内容"], {"任意": "内容"}])
+    def test_false_decision_is_success_and_ignores_summary(client, service, monkeypatch, caplog, model, summary):
+        import database
+    
+        caplog.set_level(logging.DEBUG)
+        asyncio.run(database.get_or_create_user("r2-negative"))
+        rule = asyncio.run(database.create_watch_rule("r2-negative", ai_rule(model)))
+        model_stub(service, monkeypatch, model, {"alert": False, "summary": summary}, debug=True)
+        failure = []
+>       assert asyncio.run(service.judge_ai("r2-negative", rule["params"], ["R2_PRIVATE_OCR"], failure=failure)) == {"alert": False}
+E       AssertionError: assert None == {'alert': False}
+E        +  where None = <function run at 0x10b6c8ca0>(<coroutine object judge_ai at 0x1121cc150>)
+E        +    where <function run at 0x10b6c8ca0> = asyncio.run
+E        +    and   <coroutine object judge_ai at 0x1121cc150> = <function judge_ai at 0x111ee5850>('r2-negative', {'condition': '下载完成时提醒', 'model': 'claude'}, ['R2_PRIVATE_OCR'], failure=['ValueError'])
+E        +      where <function judge_ai at 0x111ee5850> = <module 'services.local_watch' from '/Users/yangjing/Desktop/ai-workspace/Fiona/backend/services/local_watch.py'>.judge_ai
+
+tests/test_local_watch_service_r2.py:93: AssertionError
+------------------------------ Captured log call -------------------------------
+DEBUG    asyncio:selector_events.py:64 Using selector: KqueueSelector
+DEBUG    aiosqlite:core.py:62 executing <function connect.<locals>.connector at 0x11218ddd0>
+DEBUG    aiosqlite:core.py:67 operation <function connect.<locals>.connector at 0x11218ddd0> completed
+DEBUG    aiosqlite:core.py:62 executing functools.partial(<built-in method execute of sqlite3.Connection object at 0x1121d4400>, 'INSERT OR IGNORE INTO users (username, session_version) VALUES (?, ?)', ('r2-negative', 315380780))
+DEBUG    aiosqlite:core.py:67 operation functools.partial(<built-in method execute of sqlite3.Connection object at 0x1121d4400>, 'INSERT OR IGNORE INTO users (username, session_version) VALUES (?, ?)', ('r2-negative', 315380780)) completed
+DEBUG    aiosqlite:core.py:62 executing functools.partial(<built-in method commit of sqlite3.Connection object at 0x1121d4400>)
+DEBUG    aiosqlite:core.py:67 operation functools.partial(<built-in method commit of sqlite3.Connection object at 0x1121d4400>) completed
+DEBUG    aiosqlite:core.py:62 executing functools.partial(<built-in method execute of sqlite3.Connection object at 0x1121d4400>, 'SELECT * FROM users WHERE username = ?', ('r2-negative',))
+DEBUG    aiosqlite:core.py:67 operation functools.partial(<built-in method execute of sqlite3.Connection object at 0x1121d4400>, 'SELECT * FROM users WHERE username = ?', ('r2-negative',)) completed
+DEBUG    aiosqlite:core.py:62 executing functools.partial(<built-in method fetchone of sqlite3.Cursor object at 0x1121b0340>)
+DEBUG    aiosqlite:core.py:67 operation functools.partial(<built-in method fetchone of sqlite3.Cursor object at 0x1121b0340>) completed
+DEBUG    aiosqlite:core.py:62 executing functools.partial(<built-in method close of sqlite3.Cursor object at 0x1121b0340>)
+DEBUG    aiosqlite:core.py:67 operation functools.partial(<built-in method close of sqlite3.Cursor object at 0x1121b0340>) completed
+DEBUG    aiosqlite:core.py:62 executing functools.partial(<built-in method close of sqlite3.Connection object at 0x1121d4400>)
+DEBUG    aiosqlite:core.py:67 operation functools.partial(<built-in method close of sqlite3.Connection object at 0x1121d4400>) completed
+DEBUG    aiosqlite:core.py:62 executing <function Connection.stop.<locals>.close_and_stop at 0x11218e140>
+DEBUG    aiosqlite:core.py:67 operation <function Connection.stop.<locals>.close_and_stop at 0x11218e140> completed
+DEBUG    asyncio:selector_events.py:64 Using selector: KqueueSelector
+DEBUG    aiosqlite:core.py:62 executing <function connect.<locals>.connector at 0x11218c7d0>
+DEBUG    aiosqlite:core.py:67 operation <function connect.<locals>.connector at 0x11218c7d0> completed
+DEBUG    aiosqlite:core.py:62 executing functools.partial(<built-in method execute of sqlite3.Connection object at 0x1121d45e0>, 'BEGIN IMMEDIATE', [])
+DEBUG    aiosqlite:core.py:67 operation functools.partial(<built-in method execute of sqlite3.Connection object at 0x1121d45e0>, 'BEGIN IMMEDIATE', []) completed
+DEBUG    aiosqlite:core.py:62 executing functools.partial(<built-in method execute of sqlite3.Connection object at 0x1121d45e0>, 'SELECT COUNT(*) FROM users WHERE username IN (?)', ('r2-negative',))
+DEBUG    aiosqlite:core.py:67 operation functools.partial(<built-in method execute of sqlite3.Connection object at 0x1121d45e0>, 'SELECT COUNT(*) FROM users WHERE username IN (?)', ('r2-negative',)) completed
+DEBUG    aiosqlite:core.py:62 executing functools.partial(<built-in method fetchone of sqlite3.Cursor object at 0x1121b04c0>)
+DEBUG    aiosqlite:core.py:67 operation functools.partial(<built-in method fetchone of sqlite3.Cursor object at 0x1121b04c0>) completed
+DEBUG    aiosqlite:core.py:62 executing functools.partial(<built-in method close of sqlite3.Cursor object at 0x1121b04c0>)
+DEBUG    aiosqlite:core.py:67 operation functools.partial(<built-in method close of sqlite3.Cursor object at 0x1121b04c0>) completed
+DEBUG    aiosqlite:core.py:62 executing functools.partial(<built-in method execute of sqlite3.Connection object at 0x1121d45e0>, 'SELECT COUNT(*) FROM watch_rules WHERE username=?', ('r2-negative',))
+DEBUG    aiosqlite:core.py:67 operation functools.partial(<built-in method execute of sqlite3.Connection object at 0x1121d45e0>, 'SELECT COUNT(*) FROM watch_rules WHERE username=?', ('r2-negative',)) completed
+DEBUG    aiosqlite:core.py:62 executing functools.partial(<built-in method fetchone of sqlite3.Cursor object at 0x1121b00c0>)
+DEBUG    aiosqlite:core.py:67 operation functools.partial(<built-in method fetchone of sqlite3.Cursor object at 0x1121b00c0>) completed
+DEBUG    aiosqlite:core.py:62 executing functools.partial(<built-in method close of sqlite3.Cursor object at 0x1121b00c0>)
+DEBUG    aiosqlite:core.py:67 operation functools.partial(<built-in method close of sqlite3.Cursor object at 0x1121b00c0>) completed
+DEBUG    aiosqlite:core.py:62 executing functools.partial(<built-in method execute of sqlite3.Connection object at 0x1121d45e0>, 'INSERT INTO watch_rules(username,name,app_match,title_match,kind,params,interval_seconds,cooldown_seconds,enabled,conversation_id) VALUES(?,?,?,?,?,?,?,?,?,?)', ['r2-negative', 'R2 判断', 'Terminal', '', 'ai', '{"condition": "下载完成时提醒", "model": "claude"}', 3, 60, True, None])
+DEBUG    aiosqlite:core.py:67 operation functools.partial(<built-in method execute of sqlite3.Connection object at 0x1121d45e0>, 'INSERT INTO watch_rules(username,name,app_match,title_match,kind,params,interval_seconds,cooldown_seconds,enabled,conversation_id) VALUES(?,?,?,?,?,?,?,?,?,?)', ['r2-negative', 'R2 判断', 'Terminal', '', 'ai', '{"condition": "下载完成时提醒", "model": "claude"}', 3, 60, True, None]) completed
+DEBUG    aiosqlite:core.py:62 executing functools.partial(<built-in method execute of sqlite3.Connection object at 0x1121d45e0>, 'SELECT * FROM watch_rules WHERE id=?', (1,))
+DEBUG    aiosqlite:core.py:67 operation functools.partial(<built-in method execute of sqlite3.Connection object at 0x1121d45e0>, 'SELECT * FROM watch_rules WHERE id=?', (1,)) completed
+DEBUG    aiosqlite:core.py:62 executing functools.partial(<built-in method fetchone of sqlite3.Cursor object at 0x1121b0140>)
+DEBUG    aiosqlite:core.py:67 operation functools.partial(<built-in method fetchone of sqlite3.Cursor object at 0x1121b0140>) completed
+DEBUG    aiosqlite:core.py:62 executing functools.partial(<built-in method close of sqlite3.Cursor object at 0x1121b0140>)
+DEBUG    aiosqlite:core.py:67 operation functools.partial(<built-in method close of sqlite3.Cursor object at 0x1121b0140>) completed
+DEBUG    aiosqlite:core.py:62 executing functools.partial(<built-in method commit of sqlite3.Connection object at 0x1121d45e0>)
+DEBUG    aiosqlite:core.py:67 operation functools.partial(<built-in method commit of sqlite3.Connection object at 0x1121d45e0>) completed
+DEBUG    aiosqlite:core.py:62 executing functools.partial(<built-in method close of sqlite3.Connection object at 0x1121d45e0>)
+DEBUG    aiosqlite:core.py:67 operation functools.partial(<built-in method close of sqlite3.Connection object at 0x1121d45e0>) completed
+DEBUG    aiosqlite:core.py:62 executing <function Connection.stop.<locals>.close_and_stop at 0x11218c460>
+DEBUG    aiosqlite:core.py:67 operation <function Connection.stop.<locals>.close_and_stop at 0x11218c460> completed
+DEBUG    asyncio:selector_events.py:64 Using selector: KqueueSelector
+WARNING  services.local_watch:local_watch.py:154 local_watch exception_type=ValueError
+_________________ test_false_decision_does_not_require_summary _________________
+
+service = <module 'services.local_watch' from '/Users/yangjing/Desktop/ai-workspace/Fiona/backend/services/local_watch.py'>
+
+    def test_false_decision_does_not_require_summary(service):
+>       assert service._parse_decision('{"alert":false}') == {"alert": False}
+               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+tests/test_local_watch_service_r2.py:108: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+text = '{"alert":false}'
+
+    def _parse_decision(text):
+        result = json.loads(text, parse_constant=_invalid_constant)
+        if not isinstance(result, dict) or type(result.get("alert")) is not bool or not isinstance(result.get("summary"), str):
+>           raise ValueError("Invalid watch decision")
+E           ValueError: Invalid watch decision
+
+services/local_watch.py:85: ValueError
+_ test_unicode_negative_signs_and_fullwidth_numbers_preserve_sign[5.2%-\u2212] _
+
+service = <module 'services.local_watch' from '/Users/yangjing/Desktop/ai-workspace/Fiona/backend/services/local_watch.py'>
+sign = '−', digits = '5.2%'
+
+    @pytest.mark.parametrize("sign", ["−", "－", "﹣", "‒", "–"])
+    @pytest.mark.parametrize("digits", ["5.2%", "５．２％"])
+    def test_unicode_negative_signs_and_fullwidth_numbers_preserve_sign(service, sign, digits):
+        line = "涨幅 " + sign + digits
+>       assert service.number_decision({"label": "涨幅", "op": ">=", "threshold": 3}, [line]) is None
+E       AssertionError: assert '涨幅 当前 5.2%，已 >= 3' is None
+E        +  where '涨幅 当前 5.2%，已 >= 3' = <function number_decision at 0x111ee5380>({'label': '涨幅', 'op': '>=', 'threshold': 3}, ['涨幅 −5.2%'])
+E        +    where <function number_decision at 0x111ee5380> = <module 'services.local_watch' from '/Users/yangjing/Desktop/ai-workspace/Fiona/backend/services/local_watch.py'>.number_decision
+
+tests/test_local_watch_service_r2.py:139: AssertionError
+_ test_unicode_negative_signs_and_fullwidth_numbers_preserve_sign[5.2%-\uff0d] _
+
+service = <module 'services.local_watch' from '/Users/yangjing/Desktop/ai-workspace/Fiona/backend/services/local_watch.py'>
+sign = '－', digits = '5.2%'
+
+    @pytest.mark.parametrize("sign", ["−", "－", "﹣", "‒", "–"])
+    @pytest.mark.parametrize("digits", ["5.2%", "５．２％"])
+    def test_unicode_negative_signs_and_fullwidth_numbers_preserve_sign(service, sign, digits):
+        line = "涨幅 " + sign + digits
+>       assert service.number_decision({"label": "涨幅", "op": ">=", "threshold": 3}, [line]) is None
+E       AssertionError: assert '涨幅 当前 5.2%，已 >= 3' is None
+E        +  where '涨幅 当前 5.2%，已 >= 3' = <function number_decision at 0x111ee5380>({'label': '涨幅', 'op': '>=', 'threshold': 3}, ['涨幅 －5.2%'])
+E        +    where <function number_decision at 0x111ee5380> = <module 'services.local_watch' from '/Users/yangjing/Desktop/ai-workspace/Fiona/backend/services/local_watch.py'>.number_decision
+
+tests/test_local_watch_service_r2.py:139: AssertionError
+_ test_unicode_negative_signs_and_fullwidth_numbers_preserve_sign[5.2%-\ufe63] _
+
+service = <module 'services.local_watch' from '/Users/yangjing/Desktop/ai-workspace/Fiona/backend/services/local_watch.py'>
+sign = '﹣', digits = '5.2%'
+
+    @pytest.mark.parametrize("sign", ["−", "－", "﹣", "‒", "–"])
+    @pytest.mark.parametrize("digits", ["5.2%", "５．２％"])
+    def test_unicode_negative_signs_and_fullwidth_numbers_preserve_sign(service, sign, digits):
+        line = "涨幅 " + sign + digits
+>       assert service.number_decision({"label": "涨幅", "op": ">=", "threshold": 3}, [line]) is None
+E       AssertionError: assert '涨幅 当前 5.2%，已 >= 3' is None
+E        +  where '涨幅 当前 5.2%，已 >= 3' = <function number_decision at 0x111ee5380>({'label': '涨幅', 'op': '>=', 'threshold': 3}, ['涨幅 ﹣5.2%'])
+E        +    where <function number_decision at 0x111ee5380> = <module 'services.local_watch' from '/Users/yangjing/Desktop/ai-workspace/Fiona/backend/services/local_watch.py'>.number_decision
+
+tests/test_local_watch_service_r2.py:139: AssertionError
+_ test_unicode_negative_signs_and_fullwidth_numbers_preserve_sign[5.2%-\u2012] _
+
+service = <module 'services.local_watch' from '/Users/yangjing/Desktop/ai-workspace/Fiona/backend/services/local_watch.py'>
+sign = '‒', digits = '5.2%'
+
+    @pytest.mark.parametrize("sign", ["−", "－", "﹣", "‒", "–"])
+    @pytest.mark.parametrize("digits", ["5.2%", "５．２％"])
+    def test_unicode_negative_signs_and_fullwidth_numbers_preserve_sign(service, sign, digits):
+        line = "涨幅 " + sign + digits
+>       assert service.number_decision({"label": "涨幅", "op": ">=", "threshold": 3}, [line]) is None
+E       AssertionError: assert '涨幅 当前 5.2%，已 >= 3' is None
+E        +  where '涨幅 当前 5.2%，已 >= 3' = <function number_decision at 0x111ee5380>({'label': '涨幅', 'op': '>=', 'threshold': 3}, ['涨幅 ‒5.2%'])
+E        +    where <function number_decision at 0x111ee5380> = <module 'services.local_watch' from '/Users/yangjing/Desktop/ai-workspace/Fiona/backend/services/local_watch.py'>.number_decision
+
+tests/test_local_watch_service_r2.py:139: AssertionError
+_ test_unicode_negative_signs_and_fullwidth_numbers_preserve_sign[5.2%-\u2013] _
+
+service = <module 'services.local_watch' from '/Users/yangjing/Desktop/ai-workspace/Fiona/backend/services/local_watch.py'>
+sign = '–', digits = '5.2%'
+
+    @pytest.mark.parametrize("sign", ["−", "－", "﹣", "‒", "–"])
+    @pytest.mark.parametrize("digits", ["5.2%", "５．２％"])
+    def test_unicode_negative_signs_and_fullwidth_numbers_preserve_sign(service, sign, digits):
+        line = "涨幅 " + sign + digits
+>       assert service.number_decision({"label": "涨幅", "op": ">=", "threshold": 3}, [line]) is None
+E       AssertionError: assert '涨幅 当前 5.2%，已 >= 3' is None
+E        +  where '涨幅 当前 5.2%，已 >= 3' = <function number_decision at 0x111ee5380>({'label': '涨幅', 'op': '>=', 'threshold': 3}, ['涨幅 –5.2%'])
+E        +    where <function number_decision at 0x111ee5380> = <module 'services.local_watch' from '/Users/yangjing/Desktop/ai-workspace/Fiona/backend/services/local_watch.py'>.number_decision
+
+tests/test_local_watch_service_r2.py:139: AssertionError
+_ test_unicode_negative_signs_and_fullwidth_numbers_preserve_sign[\uff15\uff0e\uff12\uff05-\u2212] _
+
+service = <module 'services.local_watch' from '/Users/yangjing/Desktop/ai-workspace/Fiona/backend/services/local_watch.py'>
+sign = '−', digits = '５．２％'
+
+    @pytest.mark.parametrize("sign", ["−", "－", "﹣", "‒", "–"])
+    @pytest.mark.parametrize("digits", ["5.2%", "５．２％"])
+    def test_unicode_negative_signs_and_fullwidth_numbers_preserve_sign(service, sign, digits):
+        line = "涨幅 " + sign + digits
+>       assert service.number_decision({"label": "涨幅", "op": ">=", "threshold": 3}, [line]) is None
+E       AssertionError: assert '涨幅 当前 5，已 >= 3' is None
+E        +  where '涨幅 当前 5，已 >= 3' = <function number_decision at 0x111ee5380>({'label': '涨幅', 'op': '>=', 'threshold': 3}, ['涨幅 −５．２％'])
+E        +    where <function number_decision at 0x111ee5380> = <module 'services.local_watch' from '/Users/yangjing/Desktop/ai-workspace/Fiona/backend/services/local_watch.py'>.number_decision
+
+tests/test_local_watch_service_r2.py:139: AssertionError
+_ test_unicode_negative_signs_and_fullwidth_numbers_preserve_sign[\uff15\uff0e\uff12\uff05-\uff0d] _
+
+service = <module 'services.local_watch' from '/Users/yangjing/Desktop/ai-workspace/Fiona/backend/services/local_watch.py'>
+sign = '－', digits = '５．２％'
+
+    @pytest.mark.parametrize("sign", ["−", "－", "﹣", "‒", "–"])
+    @pytest.mark.parametrize("digits", ["5.2%", "５．２％"])
+    def test_unicode_negative_signs_and_fullwidth_numbers_preserve_sign(service, sign, digits):
+        line = "涨幅 " + sign + digits
+>       assert service.number_decision({"label": "涨幅", "op": ">=", "threshold": 3}, [line]) is None
+E       AssertionError: assert '涨幅 当前 5，已 >= 3' is None
+E        +  where '涨幅 当前 5，已 >= 3' = <function number_decision at 0x111ee5380>({'label': '涨幅', 'op': '>=', 'threshold': 3}, ['涨幅 －５．２％'])
+E        +    where <function number_decision at 0x111ee5380> = <module 'services.local_watch' from '/Users/yangjing/Desktop/ai-workspace/Fiona/backend/services/local_watch.py'>.number_decision
+
+tests/test_local_watch_service_r2.py:139: AssertionError
+_ test_unicode_negative_signs_and_fullwidth_numbers_preserve_sign[\uff15\uff0e\uff12\uff05-\ufe63] _
+
+service = <module 'services.local_watch' from '/Users/yangjing/Desktop/ai-workspace/Fiona/backend/services/local_watch.py'>
+sign = '﹣', digits = '５．２％'
+
+    @pytest.mark.parametrize("sign", ["−", "－", "﹣", "‒", "–"])
+    @pytest.mark.parametrize("digits", ["5.2%", "５．２％"])
+    def test_unicode_negative_signs_and_fullwidth_numbers_preserve_sign(service, sign, digits):
+        line = "涨幅 " + sign + digits
+>       assert service.number_decision({"label": "涨幅", "op": ">=", "threshold": 3}, [line]) is None
+E       AssertionError: assert '涨幅 当前 5，已 >= 3' is None
+E        +  where '涨幅 当前 5，已 >= 3' = <function number_decision at 0x111ee5380>({'label': '涨幅', 'op': '>=', 'threshold': 3}, ['涨幅 ﹣５．２％'])
+E        +    where <function number_decision at 0x111ee5380> = <module 'services.local_watch' from '/Users/yangjing/Desktop/ai-workspace/Fiona/backend/services/local_watch.py'>.number_decision
+
+tests/test_local_watch_service_r2.py:139: AssertionError
+_ test_unicode_negative_signs_and_fullwidth_numbers_preserve_sign[\uff15\uff0e\uff12\uff05-\u2012] _
+
+service = <module 'services.local_watch' from '/Users/yangjing/Desktop/ai-workspace/Fiona/backend/services/local_watch.py'>
+sign = '‒', digits = '５．２％'
+
+    @pytest.mark.parametrize("sign", ["−", "－", "﹣", "‒", "–"])
+    @pytest.mark.parametrize("digits", ["5.2%", "５．２％"])
+    def test_unicode_negative_signs_and_fullwidth_numbers_preserve_sign(service, sign, digits):
+        line = "涨幅 " + sign + digits
+>       assert service.number_decision({"label": "涨幅", "op": ">=", "threshold": 3}, [line]) is None
+E       AssertionError: assert '涨幅 当前 5，已 >= 3' is None
+E        +  where '涨幅 当前 5，已 >= 3' = <function number_decision at 0x111ee5380>({'label': '涨幅', 'op': '>=', 'threshold': 3}, ['涨幅 ‒５．２％'])
+E        +    where <function number_decision at 0x111ee5380> = <module 'services.local_watch' from '/Users/yangjing/Desktop/ai-workspace/Fiona/backend/services/local_watch.py'>.number_decision
+
+tests/test_local_watch_service_r2.py:139: AssertionError
+_ test_unicode_negative_signs_and_fullwidth_numbers_preserve_sign[\uff15\uff0e\uff12\uff05-\u2013] _
+
+service = <module 'services.local_watch' from '/Users/yangjing/Desktop/ai-workspace/Fiona/backend/services/local_watch.py'>
+sign = '–', digits = '５．２％'
+
+    @pytest.mark.parametrize("sign", ["−", "－", "﹣", "‒", "–"])
+    @pytest.mark.parametrize("digits", ["5.2%", "５．２％"])
+    def test_unicode_negative_signs_and_fullwidth_numbers_preserve_sign(service, sign, digits):
+        line = "涨幅 " + sign + digits
+>       assert service.number_decision({"label": "涨幅", "op": ">=", "threshold": 3}, [line]) is None
+E       AssertionError: assert '涨幅 当前 5，已 >= 3' is None
+E        +  where '涨幅 当前 5，已 >= 3' = <function number_decision at 0x111ee5380>({'label': '涨幅', 'op': '>=', 'threshold': 3}, ['涨幅 –５．２％'])
+E        +    where <function number_decision at 0x111ee5380> = <module 'services.local_watch' from '/Users/yangjing/Desktop/ai-workspace/Fiona/backend/services/local_watch.py'>.number_decision
+
+tests/test_local_watch_service_r2.py:139: AssertionError
+_ test_thousands_groups_must_be_complete_without_swallowing_digits[\u2212.\uff15\uff05--0.5%] _
+
+service = <module 'services.local_watch' from '/Users/yangjing/Desktop/ai-workspace/Fiona/backend/services/local_watch.py'>
+raw = '−.５％', value = '-0.5%'
+
+    @pytest.mark.parametrize("raw,value", [
+        ("−.５％", "-0.5%"), ("＋５．２％", "5.2%"), ("１２３．４５", "123.45"),
+        ("１，２３４．５０％", "1234.5%"), ("1,234.50%", "1234.5%"), ("-1,234,567.89", "-1234567.89"),
+        ("1,2345", "1"), ("1,2345.67", "1"), ("1,23,456", "1"), ("1,234,56", "1"),
+        ("1,234,5678", "1"), ("1234,567", "1234"), ("-1,2345", "-1"), ("123,4567", "123"),
+        ("1,234, 后续", "1234"), ("1,2345 后续 9", "1"),
+    ])
+    def test_thousands_groups_must_be_complete_without_swallowing_digits(service, raw, value):
+        params = {"label": "价格", "op": ">=", "threshold": -2000000}
+>       assert service.number_decision(params, ["价格 " + raw]) == f"价格 当前 {value}，已 >= -2000000"
+E       AssertionError: assert '价格 当前 0.5，已 >= -2000000' == '价格 当前 -0.5%，已 >= -2000000'
+E         
+E         - 价格 当前 -0.5%，已 >= -2000000
+E         ?       -   -
+E         + 价格 当前 0.5，已 >= -2000000
+
+tests/test_local_watch_service_r2.py:156: AssertionError
+_ test_thousands_groups_must_be_complete_without_swallowing_digits[\uff0b\uff15\uff0e\uff12\uff05-5.2%] _
+
+service = <module 'services.local_watch' from '/Users/yangjing/Desktop/ai-workspace/Fiona/backend/services/local_watch.py'>
+raw = '＋５．２％', value = '5.2%'
+
+    @pytest.mark.parametrize("raw,value", [
+        ("−.５％", "-0.5%"), ("＋５．２％", "5.2%"), ("１２３．４５", "123.45"),
+        ("１，２３４．５０％", "1234.5%"), ("1,234.50%", "1234.5%"), ("-1,234,567.89", "-1234567.89"),
+        ("1,2345", "1"), ("1,2345.67", "1"), ("1,23,456", "1"), ("1,234,56", "1"),
+        ("1,234,5678", "1"), ("1234,567", "1234"), ("-1,2345", "-1"), ("123,4567", "123"),
+        ("1,234, 后续", "1234"), ("1,2345 后续 9", "1"),
+    ])
+    def test_thousands_groups_must_be_complete_without_swallowing_digits(service, raw, value):
+        params = {"label": "价格", "op": ">=", "threshold": -2000000}
+>       assert service.number_decision(params, ["价格 " + raw]) == f"价格 当前 {value}，已 >= -2000000"
+E       AssertionError: assert '价格 当前 5，已 >= -2000000' == '价格 当前 5.2%，已 >= -2000000'
+E         
+E         - 价格 当前 5.2%，已 >= -2000000
+E         ?        ---
+E         + 价格 当前 5，已 >= -2000000
+
+tests/test_local_watch_service_r2.py:156: AssertionError
+_ test_thousands_groups_must_be_complete_without_swallowing_digits[\uff11\uff12\uff13\uff0e\uff14\uff15-123.45] _
+
+service = <module 'services.local_watch' from '/Users/yangjing/Desktop/ai-workspace/Fiona/backend/services/local_watch.py'>
+raw = '１２３．４５', value = '123.45'
+
+    @pytest.mark.parametrize("raw,value", [
+        ("−.５％", "-0.5%"), ("＋５．２％", "5.2%"), ("１２３．４５", "123.45"),
+        ("１，２３４．５０％", "1234.5%"), ("1,234.50%", "1234.5%"), ("-1,234,567.89", "-1234567.89"),
+        ("1,2345", "1"), ("1,2345.67", "1"), ("1,23,456", "1"), ("1,234,56", "1"),
+        ("1,234,5678", "1"), ("1234,567", "1234"), ("-1,2345", "-1"), ("123,4567", "123"),
+        ("1,234, 后续", "1234"), ("1,2345 后续 9", "1"),
+    ])
+    def test_thousands_groups_must_be_complete_without_swallowing_digits(service, raw, value):
+        params = {"label": "价格", "op": ">=", "threshold": -2000000}
+>       assert service.number_decision(params, ["价格 " + raw]) == f"价格 当前 {value}，已 >= -2000000"
+E       AssertionError: assert '价格 当前 123，已 >= -2000000' == '价格 当前 123.45，已 >= -2000000'
+E         
+E         - 价格 当前 123.45，已 >= -2000000
+E         ?          ---
+E         + 价格 当前 123，已 >= -2000000
+
+tests/test_local_watch_service_r2.py:156: AssertionError
+_ test_thousands_groups_must_be_complete_without_swallowing_digits[\uff11\uff0c\uff12\uff13\uff14\uff0e\uff15\uff10\uff05-1234.5%] _
+
+service = <module 'services.local_watch' from '/Users/yangjing/Desktop/ai-workspace/Fiona/backend/services/local_watch.py'>
+raw = '１，２３４．５０％', value = '1234.5%'
+
+    @pytest.mark.parametrize("raw,value", [
+        ("−.５％", "-0.5%"), ("＋５．２％", "5.2%"), ("１２３．４５", "123.45"),
+        ("１，２３４．５０％", "1234.5%"), ("1,234.50%", "1234.5%"), ("-1,234,567.89", "-1234567.89"),
+        ("1,2345", "1"), ("1,2345.67", "1"), ("1,23,456", "1"), ("1,234,56", "1"),
+        ("1,234,5678", "1"), ("1234,567", "1234"), ("-1,2345", "-1"), ("123,4567", "123"),
+        ("1,234, 后续", "1234"), ("1,2345 后续 9", "1"),
+    ])
+    def test_thousands_groups_must_be_complete_without_swallowing_digits(service, raw, value):
+        params = {"label": "价格", "op": ">=", "threshold": -2000000}
+>       assert service.number_decision(params, ["价格 " + raw]) == f"价格 当前 {value}，已 >= -2000000"
+E       AssertionError: assert '价格 当前 1，已 >= -2000000' == '价格 当前 1234.5%，已 >= -2000000'
+E         
+E         - 价格 当前 1234.5%，已 >= -2000000
+E         ?        ------
+E         + 价格 当前 1，已 >= -2000000
+
+tests/test_local_watch_service_r2.py:156: AssertionError
+__ test_thousands_groups_must_be_complete_without_swallowing_digits[1,2345-1] __
+
+service = <module 'services.local_watch' from '/Users/yangjing/Desktop/ai-workspace/Fiona/backend/services/local_watch.py'>
+raw = '1,2345', value = '1'
+
+    @pytest.mark.parametrize("raw,value", [
+        ("−.５％", "-0.5%"), ("＋５．２％", "5.2%"), ("１２３．４５", "123.45"),
+        ("１，２３４．５０％", "1234.5%"), ("1,234.50%", "1234.5%"), ("-1,234,567.89", "-1234567.89"),
+        ("1,2345", "1"), ("1,2345.67", "1"), ("1,23,456", "1"), ("1,234,56", "1"),
+        ("1,234,5678", "1"), ("1234,567", "1234"), ("-1,2345", "-1"), ("123,4567", "123"),
+        ("1,234, 后续", "1234"), ("1,2345 后续 9", "1"),
+    ])
+    def test_thousands_groups_must_be_complete_without_swallowing_digits(service, raw, value):
+        params = {"label": "价格", "op": ">=", "threshold": -2000000}
+>       assert service.number_decision(params, ["价格 " + raw]) == f"价格 当前 {value}，已 >= -2000000"
+E       AssertionError: assert '价格 当前 1234，已 >= -2000000' == '价格 当前 1，已 >= -2000000'
+E         
+E         - 价格 当前 1，已 >= -2000000
+E         + 价格 当前 1234，已 >= -2000000
+E         ?        +++
+
+tests/test_local_watch_service_r2.py:156: AssertionError
+_ test_thousands_groups_must_be_complete_without_swallowing_digits[1,2345.67-1] _
+
+service = <module 'services.local_watch' from '/Users/yangjing/Desktop/ai-workspace/Fiona/backend/services/local_watch.py'>
+raw = '1,2345.67', value = '1'
+
+    @pytest.mark.parametrize("raw,value", [
+        ("−.５％", "-0.5%"), ("＋５．２％", "5.2%"), ("１２３．４５", "123.45"),
+        ("１，２３４．５０％", "1234.5%"), ("1,234.50%", "1234.5%"), ("-1,234,567.89", "-1234567.89"),
+        ("1,2345", "1"), ("1,2345.67", "1"), ("1,23,456", "1"), ("1,234,56", "1"),
+        ("1,234,5678", "1"), ("1234,567", "1234"), ("-1,2345", "-1"), ("123,4567", "123"),
+        ("1,234, 后续", "1234"), ("1,2345 后续 9", "1"),
+    ])
+    def test_thousands_groups_must_be_complete_without_swallowing_digits(service, raw, value):
+        params = {"label": "价格", "op": ">=", "threshold": -2000000}
+>       assert service.number_decision(params, ["价格 " + raw]) == f"价格 当前 {value}，已 >= -2000000"
+E       AssertionError: assert '价格 当前 1234，已 >= -2000000' == '价格 当前 1，已 >= -2000000'
+E         
+E         - 价格 当前 1，已 >= -2000000
+E         + 价格 当前 1234，已 >= -2000000
+E         ?        +++
+
+tests/test_local_watch_service_r2.py:156: AssertionError
+_ test_thousands_groups_must_be_complete_without_swallowing_digits[1,234,56-1] _
+
+service = <module 'services.local_watch' from '/Users/yangjing/Desktop/ai-workspace/Fiona/backend/services/local_watch.py'>
+raw = '1,234,56', value = '1'
+
+    @pytest.mark.parametrize("raw,value", [
+        ("−.５％", "-0.5%"), ("＋５．２％", "5.2%"), ("１２３．４５", "123.45"),
+        ("１，２３４．５０％", "1234.5%"), ("1,234.50%", "1234.5%"), ("-1,234,567.89", "-1234567.89"),
+        ("1,2345", "1"), ("1,2345.67", "1"), ("1,23,456", "1"), ("1,234,56", "1"),
+        ("1,234,5678", "1"), ("1234,567", "1234"), ("-1,2345", "-1"), ("123,4567", "123"),
+        ("1,234, 后续", "1234"), ("1,2345 后续 9", "1"),
+    ])
+    def test_thousands_groups_must_be_complete_without_swallowing_digits(service, raw, value):
+        params = {"label": "价格", "op": ">=", "threshold": -2000000}
+>       assert service.number_decision(params, ["价格 " + raw]) == f"价格 当前 {value}，已 >= -2000000"
+E       AssertionError: assert '价格 当前 1234，已 >= -2000000' == '价格 当前 1，已 >= -2000000'
+E         
+E         - 价格 当前 1，已 >= -2000000
+E         + 价格 当前 1234，已 >= -2000000
+E         ?        +++
+
+tests/test_local_watch_service_r2.py:156: AssertionError
+_ test_thousands_groups_must_be_complete_without_swallowing_digits[1,234,5678-1] _
+
+service = <module 'services.local_watch' from '/Users/yangjing/Desktop/ai-workspace/Fiona/backend/services/local_watch.py'>
+raw = '1,234,5678', value = '1'
+
+    @pytest.mark.parametrize("raw,value", [
+        ("−.５％", "-0.5%"), ("＋５．２％", "5.2%"), ("１２３．４５", "123.45"),
+        ("１，２３４．５０％", "1234.5%"), ("1,234.50%", "1234.5%"), ("-1,234,567.89", "-1234567.89"),
+        ("1,2345", "1"), ("1,2345.67", "1"), ("1,23,456", "1"), ("1,234,56", "1"),
+        ("1,234,5678", "1"), ("1234,567", "1234"), ("-1,2345", "-1"), ("123,4567", "123"),
+        ("1,234, 后续", "1234"), ("1,2345 后续 9", "1"),
+    ])
+    def test_thousands_groups_must_be_complete_without_swallowing_digits(service, raw, value):
+        params = {"label": "价格", "op": ">=", "threshold": -2000000}
+>       assert service.number_decision(params, ["价格 " + raw]) == f"价格 当前 {value}，已 >= -2000000"
+E       AssertionError: assert '价格 当前 1234567，已 >= -2000000' == '价格 当前 1，已 >= -2000000'
+E         
+E         - 价格 当前 1，已 >= -2000000
+E         + 价格 当前 1234567，已 >= -2000000
+E         ?        ++++++
+
+tests/test_local_watch_service_r2.py:156: AssertionError
+_ test_thousands_groups_must_be_complete_without_swallowing_digits[-1,2345--1] _
+
+service = <module 'services.local_watch' from '/Users/yangjing/Desktop/ai-workspace/Fiona/backend/services/local_watch.py'>
+raw = '-1,2345', value = '-1'
+
+    @pytest.mark.parametrize("raw,value", [
+        ("−.５％", "-0.5%"), ("＋５．２％", "5.2%"), ("１２３．４５", "123.45"),
+        ("１，２３４．５０％", "1234.5%"), ("1,234.50%", "1234.5%"), ("-1,234,567.89", "-1234567.89"),
+        ("1,2345", "1"), ("1,2345.67", "1"), ("1,23,456", "1"), ("1,234,56", "1"),
+        ("1,234,5678", "1"), ("1234,567", "1234"), ("-1,2345", "-1"), ("123,4567", "123"),
+        ("1,234, 后续", "1234"), ("1,2345 后续 9", "1"),
+    ])
+    def test_thousands_groups_must_be_complete_without_swallowing_digits(service, raw, value):
+        params = {"label": "价格", "op": ">=", "threshold": -2000000}
+>       assert service.number_decision(params, ["价格 " + raw]) == f"价格 当前 {value}，已 >= -2000000"
+E       AssertionError: assert '价格 当前 -1234，已 >= -2000000' == '价格 当前 -1，已 >= -2000000'
+E         
+E         - 价格 当前 -1，已 >= -2000000
+E         + 价格 当前 -1234，已 >= -2000000
+E         ?         +++
+
+tests/test_local_watch_service_r2.py:156: AssertionError
+_ test_thousands_groups_must_be_complete_without_swallowing_digits[123,4567-123] _
+
+service = <module 'services.local_watch' from '/Users/yangjing/Desktop/ai-workspace/Fiona/backend/services/local_watch.py'>
+raw = '123,4567', value = '123'
+
+    @pytest.mark.parametrize("raw,value", [
+        ("−.５％", "-0.5%"), ("＋５．２％", "5.2%"), ("１２３．４５", "123.45"),
+        ("１，２３４．５０％", "1234.5%"), ("1,234.50%", "1234.5%"), ("-1,234,567.89", "-1234567.89"),
+        ("1,2345", "1"), ("1,2345.67", "1"), ("1,23,456", "1"), ("1,234,56", "1"),
+        ("1,234,5678", "1"), ("1234,567", "1234"), ("-1,2345", "-1"), ("123,4567", "123"),
+        ("1,234, 后续", "1234"), ("1,2345 后续 9", "1"),
+    ])
+    def test_thousands_groups_must_be_complete_without_swallowing_digits(service, raw, value):
+        params = {"label": "价格", "op": ">=", "threshold": -2000000}
+>       assert service.number_decision(params, ["价格 " + raw]) == f"价格 当前 {value}，已 >= -2000000"
+E       AssertionError: assert '价格 当前 123456，已 >= -2000000' == '价格 当前 123，已 >= -2000000'
+E         
+E         - 价格 当前 123，已 >= -2000000
+E         + 价格 当前 123456，已 >= -2000000
+E         ?          +++
+
+tests/test_local_watch_service_r2.py:156: AssertionError
+_ test_thousands_groups_must_be_complete_without_swallowing_digits[1,2345 \u540e\u7eed 9-1] _
+
+service = <module 'services.local_watch' from '/Users/yangjing/Desktop/ai-workspace/Fiona/backend/services/local_watch.py'>
+raw = '1,2345 后续 9', value = '1'
+
+    @pytest.mark.parametrize("raw,value", [
+        ("−.５％", "-0.5%"), ("＋５．２％", "5.2%"), ("１２３．４５", "123.45"),
+        ("１，２３４．５０％", "1234.5%"), ("1,234.50%", "1234.5%"), ("-1,234,567.89", "-1234567.89"),
+        ("1,2345", "1"), ("1,2345.67", "1"), ("1,23,456", "1"), ("1,234,56", "1"),
+        ("1,234,5678", "1"), ("1234,567", "1234"), ("-1,2345", "-1"), ("123,4567", "123"),
+        ("1,234, 后续", "1234"), ("1,2345 后续 9", "1"),
+    ])
+    def test_thousands_groups_must_be_complete_without_swallowing_digits(service, raw, value):
+        params = {"label": "价格", "op": ">=", "threshold": -2000000}
+>       assert service.number_decision(params, ["价格 " + raw]) == f"价格 当前 {value}，已 >= -2000000"
+E       AssertionError: assert '价格 当前 1234，已 >= -2000000' == '价格 当前 1，已 >= -2000000'
+E         
+E         - 价格 当前 1，已 >= -2000000
+E         + 价格 当前 1234，已 >= -2000000
+E         ?        +++
+
+tests/test_local_watch_service_r2.py:156: AssertionError
+=============================== warnings summary ===============================
+tests/test_local_watch_service_r2.py: 14 warnings
+  /Users/yangjing/Desktop/ai-workspace/Fiona/backend/.venv/lib/python3.14/site-packages/slowapi/extension.py:720: DeprecationWarning: 'asyncio.iscoroutinefunction' is deprecated and slated for removal in Python 3.16; use inspect.iscoroutinefunction() instead
+    if asyncio.iscoroutinefunction(func):
+
+-- Docs: https://docs.pytest.org/en/stable/how-to/capture-warnings.html
+=========================== short test summary info ============================
+FAILED tests/test_local_watch_service_r2.py::test_false_decision_is_success_and_ignores_summary[-platform]
+FAILED tests/test_local_watch_service_r2.py::test_false_decision_is_success_and_ignores_summary[-claude]
+FAILED tests/test_local_watch_service_r2.py::test_false_decision_is_success_and_ignores_summary[  \n -platform]
+FAILED tests/test_local_watch_service_r2.py::test_false_decision_is_success_and_ignores_summary[  \n -claude]
+FAILED tests/test_local_watch_service_r2.py::test_false_decision_is_success_and_ignores_summary[\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f-platform]
+FAILED tests/test_local_watch_service_r2.py::test_false_decision_is_success_and_ignores_summary[\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f\u957f-claude]
+FAILED tests/test_local_watch_service_r2.py::test_false_decision_is_success_and_ignores_summary[None-platform]
+FAILED tests/test_local_watch_service_r2.py::test_false_decision_is_success_and_ignores_summary[None-claude]
+FAILED tests/test_local_watch_service_r2.py::test_false_decision_is_success_and_ignores_summary[42-platform]
+FAILED tests/test_local_watch_service_r2.py::test_false_decision_is_success_and_ignores_summary[42-claude]
+FAILED tests/test_local_watch_service_r2.py::test_false_decision_is_success_and_ignores_summary[summary5-platform]
+FAILED tests/test_local_watch_service_r2.py::test_false_decision_is_success_and_ignores_summary[summary5-claude]
+FAILED tests/test_local_watch_service_r2.py::test_false_decision_is_success_and_ignores_summary[summary6-platform]
+FAILED tests/test_local_watch_service_r2.py::test_false_decision_is_success_and_ignores_summary[summary6-claude]
+FAILED tests/test_local_watch_service_r2.py::test_false_decision_does_not_require_summary
+FAILED tests/test_local_watch_service_r2.py::test_unicode_negative_signs_and_fullwidth_numbers_preserve_sign[5.2%-\u2212]
+FAILED tests/test_local_watch_service_r2.py::test_unicode_negative_signs_and_fullwidth_numbers_preserve_sign[5.2%-\uff0d]
+FAILED tests/test_local_watch_service_r2.py::test_unicode_negative_signs_and_fullwidth_numbers_preserve_sign[5.2%-\ufe63]
+FAILED tests/test_local_watch_service_r2.py::test_unicode_negative_signs_and_fullwidth_numbers_preserve_sign[5.2%-\u2012]
+FAILED tests/test_local_watch_service_r2.py::test_unicode_negative_signs_and_fullwidth_numbers_preserve_sign[5.2%-\u2013]
+FAILED tests/test_local_watch_service_r2.py::test_unicode_negative_signs_and_fullwidth_numbers_preserve_sign[\uff15\uff0e\uff12\uff05-\u2212]
+FAILED tests/test_local_watch_service_r2.py::test_unicode_negative_signs_and_fullwidth_numbers_preserve_sign[\uff15\uff0e\uff12\uff05-\uff0d]
+FAILED tests/test_local_watch_service_r2.py::test_unicode_negative_signs_and_fullwidth_numbers_preserve_sign[\uff15\uff0e\uff12\uff05-\ufe63]
+FAILED tests/test_local_watch_service_r2.py::test_unicode_negative_signs_and_fullwidth_numbers_preserve_sign[\uff15\uff0e\uff12\uff05-\u2012]
+FAILED tests/test_local_watch_service_r2.py::test_unicode_negative_signs_and_fullwidth_numbers_preserve_sign[\uff15\uff0e\uff12\uff05-\u2013]
+FAILED tests/test_local_watch_service_r2.py::test_thousands_groups_must_be_complete_without_swallowing_digits[\u2212.\uff15\uff05--0.5%]
+FAILED tests/test_local_watch_service_r2.py::test_thousands_groups_must_be_complete_without_swallowing_digits[\uff0b\uff15\uff0e\uff12\uff05-5.2%]
+FAILED tests/test_local_watch_service_r2.py::test_thousands_groups_must_be_complete_without_swallowing_digits[\uff11\uff12\uff13\uff0e\uff14\uff15-123.45]
+FAILED tests/test_local_watch_service_r2.py::test_thousands_groups_must_be_complete_without_swallowing_digits[\uff11\uff0c\uff12\uff13\uff14\uff0e\uff15\uff10\uff05-1234.5%]
+FAILED tests/test_local_watch_service_r2.py::test_thousands_groups_must_be_complete_without_swallowing_digits[1,2345-1]
+FAILED tests/test_local_watch_service_r2.py::test_thousands_groups_must_be_complete_without_swallowing_digits[1,2345.67-1]
+FAILED tests/test_local_watch_service_r2.py::test_thousands_groups_must_be_complete_without_swallowing_digits[1,234,56-1]
+FAILED tests/test_local_watch_service_r2.py::test_thousands_groups_must_be_complete_without_swallowing_digits[1,234,5678-1]
+FAILED tests/test_local_watch_service_r2.py::test_thousands_groups_must_be_complete_without_swallowing_digits[-1,2345--1]
+FAILED tests/test_local_watch_service_r2.py::test_thousands_groups_must_be_complete_without_swallowing_digits[123,4567-123]
+FAILED tests/test_local_watch_service_r2.py::test_thousands_groups_must_be_complete_without_swallowing_digits[1,2345 \u540e\u7eed 9-1]
+36 failed, 22 passed, 14 warnings in 1.83s

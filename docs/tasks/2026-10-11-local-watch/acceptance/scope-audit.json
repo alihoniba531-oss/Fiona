@@ -1,0 +1,30 @@
+{
+  "baseline_commit": "129b32a",
+  "existing_test_files": 99,
+  "baseline_hash_mismatches": [],
+  "database_added": 199,
+  "database_deleted": 0,
+  "unexpected_changed_files": [],
+  "new_test_files": [
+    "backend/tests/test_local_watch_integration.py",
+    "backend/tests/test_local_watch_docs.py",
+    "backend/tests/test_local_watch_backend.py",
+    "backend/tests/test_local_watch_service.py",
+    "backend/tests/test_local_watch_frontend.py"
+  ],
+  "new_tests_contain_git_history_or_node_modules": false,
+  "watcher_source_files": [
+    "watcher-mac/.gitignore",
+    "watcher-mac/Package.swift",
+    "watcher-mac/README.md",
+    "watcher-mac/Sources/FionaWatcherCore/LineProcessing.swift",
+    "watcher-mac/Sources/FionaWatcherCore/OCR.swift",
+    "watcher-mac/Sources/FionaWatcherCore/Scheduling.swift",
+    "watcher-mac/Sources/FionaWatcherCore/Watcher.swift",
+    "watcher-mac/Sources/fiona-watcher/main.swift",
+    "watcher-mac/Tests/FionaWatcherCoreTests/test_local_watch_logic.swift",
+    "watcher-mac/Tests/FionaWatcherCoreTests/test_local_watch_ocr.swift",
+    "watcher-mac/Tests/FionaWatcherCoreTests/test_local_watch_scheduling.swift",
+    "watcher-mac/launchd/com.fiona.watcher.plist.example"
+  ]
+}

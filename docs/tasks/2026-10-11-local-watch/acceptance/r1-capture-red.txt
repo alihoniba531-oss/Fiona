@@ -1,0 +1,48 @@
+FFF                                                                      [100%]
+=================================== FAILURES ===================================
+_____ test_application_initialization_is_main_actor_isolated_and_once_only _____
+
+    def test_application_initialization_is_main_actor_isolated_and_once_only():
+        source = WATCHER.read_text(encoding="utf-8")
+>       assert "import AppKit" in source
+E       assert 'import AppKit' in 'import CoreGraphics\nimport Foundation\nimport ScreenCaptureKit\n\npublic enum WatcherError: Error {\n    case screen...nitizedApp)，新增行数=\\(count)，HTTP 状态=\\(status)\\n"\n        FileHandle.standardError.write(Data(line.utf8))\n    }\n}\n'
+
+tests/test_local_watch_swift_initialization.py:44: AssertionError
+_____________ test_run_initializes_before_starting_any_watch_tasks _____________
+
+    def test_run_initializes_before_starting_any_watch_tasks():
+        source = WATCHER.read_text(encoding="utf-8")
+        body = braced_body(source, "public func run() async throws")
+>       assert body.strip().startswith("await ScreenCaptureApplication.initialize()")
+E       AssertionError: assert False
+E        +  where False = <built-in method startswith of str object at 0x10ab55960>('await ScreenCaptureApplication.initialize()')
+E        +    where <built-in method startswith of str object at 0x10ab55960> = 'try await withThrowingTaskGroup(of: Void.self) { group in\n            group.addTask { try await self.heartbeatLoop()...All()\n            } catch {\n                group.cancelAll()\n                throw error\n            }\n        }'.startswith
+E        +      where 'try await withThrowingTaskGroup(of: Void.self) { group in\n            group.addTask { try await self.heartbeatLoop()...All()\n            } catch {\n                group.cancelAll()\n                throw error\n            }\n        }' = <built-in method strip of str object at 0x10a7aa230>()
+E        +        where <built-in method strip of str object at 0x10a7aa230> = '\n        try await withThrowingTaskGroup(of: Void.self) { group in\n            group.addTask { try await self.heart...n            } catch {\n                group.cancelAll()\n                throw error\n            }\n        }\n    '.strip
+
+tests/test_local_watch_swift_initialization.py:61: AssertionError
+____________ test_every_capture_entry_initializes_before_screenshot ____________
+
+    def test_every_capture_entry_initializes_before_screenshot():
+        capture_entries = []
+        for path in SOURCES.rglob("*.swift"):
+            source = path.read_text(encoding="utf-8")
+            for declaration in re.finditer(r"(?:public |private |static )*func\s+\w+\([^\n]*\)[^\n{]*\{", source):
+                body = braced_body(source, declaration.group())
+                if "SCScreenshotManager.captureImage(" not in body:
+                    continue
+                capture_entries.append((path.name, declaration.group()))
+>               assert body.strip().startswith("await ScreenCaptureApplication.initialize()"), path.name
+E               AssertionError: Watcher.swift
+E               assert False
+E                +  where False = <built-in method startswith of str object at 0x7b9b5e9c00>('await ScreenCaptureApplication.initialize()')
+E                +    where <built-in method startswith of str object at 0x7b9b5e9c00> = 'while !Task.isCancelled {\n            for id in states.keys.sorted() {\n                guard var state = states[id]...nName ?? ""))\n                }\n            }\n            try await Task.sleep(nanoseconds: 200_000_000)\n        }'.startswith
+E                +      where 'while !Task.isCancelled {\n            for id in states.keys.sorted() {\n                guard var state = states[id]...nName ?? ""))\n                }\n            }\n            try await Task.sleep(nanoseconds: 200_000_000)\n        }' = <built-in method strip of str object at 0x7b9b5e8e00>()
+E                +        where <built-in method strip of str object at 0x7b9b5e8e00> = '\n        while !Task.isCancelled {\n            for id in states.keys.sorted() {\n                guard var state = ...?? ""))\n                }\n            }\n            try await Task.sleep(nanoseconds: 200_000_000)\n        }\n    '.strip
+
+tests/test_local_watch_swift_initialization.py:74: AssertionError
+=========================== short test summary info ============================
+FAILED tests/test_local_watch_swift_initialization.py::test_application_initialization_is_main_actor_isolated_and_once_only
+FAILED tests/test_local_watch_swift_initialization.py::test_run_initializes_before_starting_any_watch_tasks
+FAILED tests/test_local_watch_swift_initialization.py::test_every_capture_entry_initializes_before_screenshot
+3 failed in 0.15s

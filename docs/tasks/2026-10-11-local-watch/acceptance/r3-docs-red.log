@@ -1,0 +1,88 @@
+FFFFFFF                                                                  [100%]
+=================================== FAILURES ===================================
+_______ test_capture_outage_and_lock_screen_security_guidance[README.md] _______
+
+filename = 'README.md'
+
+    @pytest.mark.parametrize("filename", DOCUMENTS)
+    def test_capture_outage_and_lock_screen_security_guidance(filename):
+        text = (ROOT / filename).read_text()
+>       assert "屏幕锁定或显示器休眠时 macOS 不允许截取窗口，期间无法监控" in text
+E       AssertionError: assert '屏幕锁定或显示器休眠时 macOS 不允许截取窗口，期间无法监控' in '# Fiona / Chloe\n\nFiona 正在演进为个人 AI 分身交流与 Skill 交易平台，当前用于作者自用和小范围内测。已实现独立分身、持久私有会话、名片和私有记忆，以及经双方授权的分身互聊。Skill 安装和交易仍在...已知局限：只支持 macOS（14 及以上）；窗口最小化后截不到；OCR 可能有错字；只能看到窗口当前显示的内容。Fiona 页面关闭时不会实时弹出，但提醒照样落库。浏览器通知需用户在设置中主动允许；监控只被动读取屏幕，不操作窗口。\n'
+
+tests/test_local_watch_capture_docs_r3.py:33: AssertionError
+_______ test_capture_outage_and_lock_screen_security_guidance[CLAUDE.md] _______
+
+filename = 'CLAUDE.md'
+
+    @pytest.mark.parametrize("filename", DOCUMENTS)
+    def test_capture_outage_and_lock_screen_security_guidance(filename):
+        text = (ROOT / filename).read_text()
+>       assert "屏幕锁定或显示器休眠时 macOS 不允许截取窗口，期间无法监控" in text
+E       AssertionError: assert '屏幕锁定或显示器休眠时 macOS 不允许截取窗口，期间无法监控' in '# Fiona / Chloe 开发上下文\n\n个人 AI 分身交流与 Skill 平台，当前第一阶段支持独立分身和持久私有会话，用于作者自用和受控小范围内测。分身互聊与 Skill 交易尚未实现。完整说明见 `README.md`...会实时弹出，但提醒照样落库。浏览器通知默认不弹，需用户主动允许。实现和验收细节见 `docs/tasks/2026-10-11-local-watch/03-report.md` 与 `watcher-mac/README.md`。\n'
+
+tests/test_local_watch_capture_docs_r3.py:33: AssertionError
+________ test_capture_outage_and_lock_screen_security_guidance[PLAN.md] ________
+
+filename = 'PLAN.md'
+
+    @pytest.mark.parametrize("filename", DOCUMENTS)
+    def test_capture_outage_and_lock_screen_security_guidance(filename):
+        text = (ROOT / filename).read_text()
+>       assert "屏幕锁定或显示器休眠时 macOS 不允许截取窗口，期间无法监控" in text
+E       AssertionError: assert '屏幕锁定或显示器休眠时 macOS 不允许截取窗口，期间无法监控' in '# Fiona / Chloe 当前状态与路线图\n\n最后同步：2026-10-11\n\n本文只记录当前实现、发布边界和下一步工作。最初的“天人合一私人助理”构想仍可通过 Git 历史查看，但其中的 Next.js 14、Duck...面关闭时不会实时弹出，但提醒照样落库。真机屏幕录制授权、最小化窗口、launchd 和浏览器通知仍须作者验证；本次自动验收实际结果见 `docs/tasks/2026-10-11-local-watch/03-report.md`。\n'
+
+tests/test_local_watch_capture_docs_r3.py:33: AssertionError
+_ test_capture_outage_and_lock_screen_security_guidance[docs/ARCHITECTURE.md] __
+
+filename = 'docs/ARCHITECTURE.md'
+
+    @pytest.mark.parametrize("filename", DOCUMENTS)
+    def test_capture_outage_and_lock_screen_security_guidance(filename):
+        text = (ROOT / filename).read_text()
+>       assert "屏幕锁定或显示器休眠时 macOS 不允许截取窗口，期间无法监控" in text
+E       AssertionError: assert '屏幕锁定或显示器休眠时 macOS 不允许截取窗口，期间无法监控' in '# Fiona 当前架构\n\n本文描述仓库在 2026-10-11 的实际代码结构。它是实现说明，不替代 [PLAN.md](../PLAN.md) 中的路线图和发布决策。\n\n## Claude 智能体模式\n\nClaude ...览器通知需设置页主动允许。已知局限：只支持 macOS；窗口最小化后截不到；OCR 可能有错字；只能看到窗口当前显示的内容。Fiona 页面关闭时不会实时弹出，但提醒照样落库。当前为单后端进程部署，窗口清单与每日内存额度重启后清零。\n'
+
+tests/test_local_watch_capture_docs_r3.py:33: AssertionError
+__ test_capture_outage_and_lock_screen_security_guidance[docs/DEPLOYMENT.md] ___
+
+filename = 'docs/DEPLOYMENT.md'
+
+    @pytest.mark.parametrize("filename", DOCUMENTS)
+    def test_capture_outage_and_lock_screen_security_guidance(filename):
+        text = (ROOT / filename).read_text()
+>       assert "屏幕锁定或显示器休眠时 macOS 不允许截取窗口，期间无法监控" in text
+E       AssertionError: assert '屏幕锁定或显示器休眠时 macOS 不允许截取窗口，期间无法监控' in '# Fiona 生产部署手册\n\n本文把仓库当前采用的“单机、单域名、Nginx + systemd”拓扑写成可执行的基线。当前约定的线上域名是 `madchloechat.online`，只读代码目录是 `/opt/fiona`，...关闭时不会实时弹出，但提醒照样落库。上线前作者核验屏幕录制授权、真实中文 OCR、窗口匹配/最小化、30 秒心跳与断网退避、令牌吊销 401、launchd、后台提醒落库及浏览器通知授权；真实厂商请求须用作者自己的服务环境单独验证。\n'
+
+tests/test_local_watch_capture_docs_r3.py:33: AssertionError
+_ test_capture_outage_and_lock_screen_security_guidance[backend/.env.example] __
+
+filename = 'backend/.env.example'
+
+    @pytest.mark.parametrize("filename", DOCUMENTS)
+    def test_capture_outage_and_lock_screen_security_guidance(filename):
+        text = (ROOT / filename).read_text()
+>       assert "屏幕锁定或显示器休眠时 macOS 不允许截取窗口，期间无法监控" in text
+E       AssertionError: assert '屏幕锁定或显示器休眠时 macOS 不允许截取窗口，期间无法监控' in '# ─────────────────────────────────────────────────────────────\n# 菲欧娜 / Chloe 后端环境变量模板\n#\n# 用法:  cp backend/.env.ex...有文件另 chmod 600，不放仓库/日志/命令行，泄露后吊销。\n# 已知局限：只支持 macOS；窗口最小化后截不到；OCR 可能有错字；\n# 只能看到窗口当前显示的内容；Fiona 页面关闭时不会实时弹出，但提醒照样落库。\n'
+
+tests/test_local_watch_capture_docs_r3.py:33: AssertionError
+_ test_capture_outage_and_lock_screen_security_guidance[watcher-mac/README.md] _
+
+filename = 'watcher-mac/README.md'
+
+    @pytest.mark.parametrize("filename", DOCUMENTS)
+    def test_capture_outage_and_lock_screen_security_guidance(filename):
+        text = (ROOT / filename).read_text()
+>       assert "屏幕锁定或显示器休眠时 macOS 不允许截取窗口，期间无法监控" in text
+E       AssertionError: assert '屏幕锁定或显示器休眠时 macOS 不允许截取窗口，期间无法监控' in '# Fiona 本机窗口监控（macOS）\n\n需要 macOS 14 或更新版本，以及提供 `Testing.framework` 的 Swift / Command Line Tools 工具链。只使用系统框架，不需要安装第三方...\n- Fiona 页面关闭时不会实时弹出，提醒照样落库；浏览器通知需要在设置页主动允许。\n- `launchd` 中的屏幕录制授权、未签名可执行程序的授权行为，以及真实微信、企业微信、钉钉窗口的效果，需要在真实 Mac 上验证。\n'
+
+tests/test_local_watch_capture_docs_r3.py:33: AssertionError
+=========================== short test summary info ============================
+FAILED tests/test_local_watch_capture_docs_r3.py::test_capture_outage_and_lock_screen_security_guidance[README.md]
+FAILED tests/test_local_watch_capture_docs_r3.py::test_capture_outage_and_lock_screen_security_guidance[CLAUDE.md]
+FAILED tests/test_local_watch_capture_docs_r3.py::test_capture_outage_and_lock_screen_security_guidance[PLAN.md]
+FAILED tests/test_local_watch_capture_docs_r3.py::test_capture_outage_and_lock_screen_security_guidance[docs/ARCHITECTURE.md]
+FAILED tests/test_local_watch_capture_docs_r3.py::test_capture_outage_and_lock_screen_security_guidance[docs/DEPLOYMENT.md]
+FAILED tests/test_local_watch_capture_docs_r3.py::test_capture_outage_and_lock_screen_security_guidance[backend/.env.example]
+FAILED tests/test_local_watch_capture_docs_r3.py::test_capture_outage_and_lock_screen_security_guidance[watcher-mac/README.md]
+7 failed in 0.16s

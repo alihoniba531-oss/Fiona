@@ -1,0 +1,36 @@
+{
+  "r1_changed_existing_files": [
+    "docs/tasks/2026-10-11-local-watch/03-report.md",
+    "watcher-mac/README.md",
+    "watcher-mac/Sources/FionaWatcherCore/Watcher.swift",
+    "watcher-mac/Tests/FionaWatcherCoreTests/test_local_watch_logic.swift",
+    "watcher-mac/Tests/FionaWatcherCoreTests/test_local_watch_ocr.swift",
+    "watcher-mac/Tests/FionaWatcherCoreTests/test_local_watch_scheduling.swift"
+  ],
+  "r1_new_test_files": [
+    "backend/tests/test_local_watch_swift_initialization.py",
+    "backend/tests/test_local_watch_swift_testing.py"
+  ],
+  "r1_allowed_existing_files": [
+    "docs/tasks/2026-10-11-local-watch/03-report.md",
+    "watcher-mac/README.md",
+    "watcher-mac/Sources/FionaWatcherCore/Watcher.swift",
+    "watcher-mac/Tests/FionaWatcherCoreTests/test_local_watch_logic.swift",
+    "watcher-mac/Tests/FionaWatcherCoreTests/test_local_watch_ocr.swift",
+    "watcher-mac/Tests/FionaWatcherCoreTests/test_local_watch_scheduling.swift"
+  ],
+  "unexpected_changed_files": [],
+  "generated_cache_files": [
+    "backend/.pytest_cache/v/cache/nodeids"
+  ],
+  "original_baseline_changed_files": [
+    "backend/database.py"
+  ],
+  "original_backend_test_count": 99,
+  "original_backend_tests_unchanged": true,
+  "pre_r1_local_watch_python_tests_unchanged": true,
+  "backend_production_unchanged_in_r1": true,
+  "database_additions": 199,
+  "database_deletions": 0,
+  "report_original_prefix_unchanged": true
+}

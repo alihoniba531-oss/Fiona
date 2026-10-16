@@ -1,0 +1,10 @@
+{
+  "cwd": "watcher-mac",
+  "command": [
+    "swift",
+    "build",
+    "-c",
+    "release"
+  ],
+  "environment_overrides": {}
+}

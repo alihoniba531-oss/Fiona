@@ -68,6 +68,7 @@ _DAILY_SETTINGS = {
     "weather": ("FIONA_DAILY_WEATHER", 30),
     "byok_chat": ("FIONA_DAILY_BYOK_CHATS", 200),
     "byok_test": ("FIONA_DAILY_BYOK_TESTS", 20),
+    "watch_judge": ("FIONA_DAILY_WATCH_JUDGE", 500),
 }
 _INVALID_DAILY_WARNED: set[str] = set()
 
@@ -101,6 +102,7 @@ def daily_cap_message(kind: str, amount: int | None = None) -> str:
         "weather": "今天查天气的次数已用完，明天再试",
         "byok_chat": "今天用自带模型聊天的次数已用完，明天再试，或在输入框下方改用平台",
         "byok_test": "今天测试自带模型连接的次数已用完，明天再试",
+        "watch_judge": "今天的本机监控 AI 判断次数已用完，明天再试。",
     }
     if kind == "official_exchange":
         amount = daily_cap(kind) if amount is None else amount
@@ -135,6 +137,15 @@ def check_daily_cap(kind: str, user: str) -> JSONResponse | None:
     if check_and_hit([(item, identifiers, 1)]) is not None:
         return daily_cap_response(kind, amount)
     return None
+
+
+def check_watch_daily_cap(user: str) -> bool:
+    """Consume a watch judgement slot even in local DEV_MODE; return exceeded."""
+    item = _DailyLimitItem(daily_cap("watch_judge"))
+    identifiers = ("daily", "watch_judge", user, database._today_shanghai())
+    # The storage strategy is reused, but watch quotas never inherit chat's
+    # development-mode or disabled-limiter bypass.
+    return not limiter.limiter.hit(item, *identifiers, cost=1)
 
 
 def check_chat_daily_cap(kind: str, user: str, *, hit: bool) -> str | None:

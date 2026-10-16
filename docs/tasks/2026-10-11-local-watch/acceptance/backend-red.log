@@ -1,0 +1,825 @@
+EEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEE [ 97%]
+EE                                                                       [100%]
+==================================== ERRORS ====================================
+____ ERROR at setup of test_devices_once_hashed_revoked_limit_and_isolation ____
+
+monkeypatch = <_pytest.monkeypatch.MonkeyPatch object at 0x10b5f9f30>
+
+    @pytest.fixture(autouse=True)
+    def isolated(monkeypatch):
+>       from services import local_watch
+E       ImportError: cannot import name 'local_watch' from 'services' (/Users/yangjing/Desktop/ai-workspace/Fiona/backend/services/__init__.py)
+
+backend/tests/test_local_watch_backend.py:25: ImportError
+____________ ERROR at setup of test_rules_crud_limit_and_isolation _____________
+
+monkeypatch = <_pytest.monkeypatch.MonkeyPatch object at 0x10b567d10>
+
+    @pytest.fixture(autouse=True)
+    def isolated(monkeypatch):
+>       from services import local_watch
+E       ImportError: cannot import name 'local_watch' from 'services' (/Users/yangjing/Desktop/ai-workspace/Fiona/backend/services/__init__.py)
+
+backend/tests/test_local_watch_backend.py:25: ImportError
+_______________ ERROR at setup of test_rule_validation[changes0] _______________
+
+monkeypatch = <_pytest.monkeypatch.MonkeyPatch object at 0x10b6f0af0>
+
+    @pytest.fixture(autouse=True)
+    def isolated(monkeypatch):
+>       from services import local_watch
+E       ImportError: cannot import name 'local_watch' from 'services' (/Users/yangjing/Desktop/ai-workspace/Fiona/backend/services/__init__.py)
+
+backend/tests/test_local_watch_backend.py:25: ImportError
+_______________ ERROR at setup of test_rule_validation[changes1] _______________
+
+monkeypatch = <_pytest.monkeypatch.MonkeyPatch object at 0x10b6f1150>
+
+    @pytest.fixture(autouse=True)
+    def isolated(monkeypatch):
+>       from services import local_watch
+E       ImportError: cannot import name 'local_watch' from 'services' (/Users/yangjing/Desktop/ai-workspace/Fiona/backend/services/__init__.py)
+
+backend/tests/test_local_watch_backend.py:25: ImportError
+_______________ ERROR at setup of test_rule_validation[changes2] _______________
+
+monkeypatch = <_pytest.monkeypatch.MonkeyPatch object at 0x10b722750>
+
+    @pytest.fixture(autouse=True)
+    def isolated(monkeypatch):
+>       from services import local_watch
+E       ImportError: cannot import name 'local_watch' from 'services' (/Users/yangjing/Desktop/ai-workspace/Fiona/backend/services/__init__.py)
+
+backend/tests/test_local_watch_backend.py:25: ImportError
+_______________ ERROR at setup of test_rule_validation[changes3] _______________
+
+monkeypatch = <_pytest.monkeypatch.MonkeyPatch object at 0x10b723950>
+
+    @pytest.fixture(autouse=True)
+    def isolated(monkeypatch):
+>       from services import local_watch
+E       ImportError: cannot import name 'local_watch' from 'services' (/Users/yangjing/Desktop/ai-workspace/Fiona/backend/services/__init__.py)
+
+backend/tests/test_local_watch_backend.py:25: ImportError
+_______________ ERROR at setup of test_rule_validation[changes4] _______________
+
+monkeypatch = <_pytest.monkeypatch.MonkeyPatch object at 0x10b731220>
+
+    @pytest.fixture(autouse=True)
+    def isolated(monkeypatch):
+>       from services import local_watch
+E       ImportError: cannot import name 'local_watch' from 'services' (/Users/yangjing/Desktop/ai-workspace/Fiona/backend/services/__init__.py)
+
+backend/tests/test_local_watch_backend.py:25: ImportError
+_______________ ERROR at setup of test_rule_validation[changes5] _______________
+
+monkeypatch = <_pytest.monkeypatch.MonkeyPatch object at 0x10b63fb60>
+
+    @pytest.fixture(autouse=True)
+    def isolated(monkeypatch):
+>       from services import local_watch
+E       ImportError: cannot import name 'local_watch' from 'services' (/Users/yangjing/Desktop/ai-workspace/Fiona/backend/services/__init__.py)
+
+backend/tests/test_local_watch_backend.py:25: ImportError
+_______________ ERROR at setup of test_rule_validation[changes6] _______________
+
+monkeypatch = <_pytest.monkeypatch.MonkeyPatch object at 0x10b6b3d90>
+
+    @pytest.fixture(autouse=True)
+    def isolated(monkeypatch):
+>       from services import local_watch
+E       ImportError: cannot import name 'local_watch' from 'services' (/Users/yangjing/Desktop/ai-workspace/Fiona/backend/services/__init__.py)
+
+backend/tests/test_local_watch_backend.py:25: ImportError
+_______________ ERROR at setup of test_rule_validation[changes7] _______________
+
+monkeypatch = <_pytest.monkeypatch.MonkeyPatch object at 0x10b6b3850>
+
+    @pytest.fixture(autouse=True)
+    def isolated(monkeypatch):
+>       from services import local_watch
+E       ImportError: cannot import name 'local_watch' from 'services' (/Users/yangjing/Desktop/ai-workspace/Fiona/backend/services/__init__.py)
+
+backend/tests/test_local_watch_backend.py:25: ImportError
+_______________ ERROR at setup of test_rule_validation[changes8] _______________
+
+monkeypatch = <_pytest.monkeypatch.MonkeyPatch object at 0x10b72bba0>
+
+    @pytest.fixture(autouse=True)
+    def isolated(monkeypatch):
+>       from services import local_watch
+E       ImportError: cannot import name 'local_watch' from 'services' (/Users/yangjing/Desktop/ai-workspace/Fiona/backend/services/__init__.py)
+
+backend/tests/test_local_watch_backend.py:25: ImportError
+_______________ ERROR at setup of test_rule_validation[changes9] _______________
+
+monkeypatch = <_pytest.monkeypatch.MonkeyPatch object at 0x10b617d10>
+
+    @pytest.fixture(autouse=True)
+    def isolated(monkeypatch):
+>       from services import local_watch
+E       ImportError: cannot import name 'local_watch' from 'services' (/Users/yangjing/Desktop/ai-workspace/Fiona/backend/services/__init__.py)
+
+backend/tests/test_local_watch_backend.py:25: ImportError
+______________ ERROR at setup of test_rule_validation[changes10] _______________
+
+monkeypatch = <_pytest.monkeypatch.MonkeyPatch object at 0x10b617f50>
+
+    @pytest.fixture(autouse=True)
+    def isolated(monkeypatch):
+>       from services import local_watch
+E       ImportError: cannot import name 'local_watch' from 'services' (/Users/yangjing/Desktop/ai-workspace/Fiona/backend/services/__init__.py)
+
+backend/tests/test_local_watch_backend.py:25: ImportError
+______________ ERROR at setup of test_rule_validation[changes11] _______________
+
+monkeypatch = <_pytest.monkeypatch.MonkeyPatch object at 0x10be80100>
+
+    @pytest.fixture(autouse=True)
+    def isolated(monkeypatch):
+>       from services import local_watch
+E       ImportError: cannot import name 'local_watch' from 'services' (/Users/yangjing/Desktop/ai-workspace/Fiona/backend/services/__init__.py)
+
+backend/tests/test_local_watch_backend.py:25: ImportError
+______________ ERROR at setup of test_rule_validation[changes12] _______________
+
+monkeypatch = <_pytest.monkeypatch.MonkeyPatch object at 0x10be80470>
+
+    @pytest.fixture(autouse=True)
+    def isolated(monkeypatch):
+>       from services import local_watch
+E       ImportError: cannot import name 'local_watch' from 'services' (/Users/yangjing/Desktop/ai-workspace/Fiona/backend/services/__init__.py)
+
+backend/tests/test_local_watch_backend.py:25: ImportError
+______________ ERROR at setup of test_rule_validation[changes13] _______________
+
+monkeypatch = <_pytest.monkeypatch.MonkeyPatch object at 0x10b6ed950>
+
+    @pytest.fixture(autouse=True)
+    def isolated(monkeypatch):
+>       from services import local_watch
+E       ImportError: cannot import name 'local_watch' from 'services' (/Users/yangjing/Desktop/ai-workspace/Fiona/backend/services/__init__.py)
+
+backend/tests/test_local_watch_backend.py:25: ImportError
+______________ ERROR at setup of test_rule_validation[changes14] _______________
+
+monkeypatch = <_pytest.monkeypatch.MonkeyPatch object at 0x10b6edbd0>
+
+    @pytest.fixture(autouse=True)
+    def isolated(monkeypatch):
+>       from services import local_watch
+E       ImportError: cannot import name 'local_watch' from 'services' (/Users/yangjing/Desktop/ai-workspace/Fiona/backend/services/__init__.py)
+
+backend/tests/test_local_watch_backend.py:25: ImportError
+______________ ERROR at setup of test_rule_validation[changes15] _______________
+
+monkeypatch = <_pytest.monkeypatch.MonkeyPatch object at 0x10b71d400>
+
+    @pytest.fixture(autouse=True)
+    def isolated(monkeypatch):
+>       from services import local_watch
+E       ImportError: cannot import name 'local_watch' from 'services' (/Users/yangjing/Desktop/ai-workspace/Fiona/backend/services/__init__.py)
+
+backend/tests/test_local_watch_backend.py:25: ImportError
+______________ ERROR at setup of test_rule_validation[changes16] _______________
+
+monkeypatch = <_pytest.monkeypatch.MonkeyPatch object at 0x10b79c8d0>
+
+    @pytest.fixture(autouse=True)
+    def isolated(monkeypatch):
+>       from services import local_watch
+E       ImportError: cannot import name 'local_watch' from 'services' (/Users/yangjing/Desktop/ai-workspace/Fiona/backend/services/__init__.py)
+
+backend/tests/test_local_watch_backend.py:25: ImportError
+______________ ERROR at setup of test_rule_validation[changes17] _______________
+
+monkeypatch = <_pytest.monkeypatch.MonkeyPatch object at 0x10b79e450>
+
+    @pytest.fixture(autouse=True)
+    def isolated(monkeypatch):
+>       from services import local_watch
+E       ImportError: cannot import name 'local_watch' from 'services' (/Users/yangjing/Desktop/ai-workspace/Fiona/backend/services/__init__.py)
+
+backend/tests/test_local_watch_backend.py:25: ImportError
+______________ ERROR at setup of test_rule_validation[changes18] _______________
+
+monkeypatch = <_pytest.monkeypatch.MonkeyPatch object at 0x10b6c6190>
+
+    @pytest.fixture(autouse=True)
+    def isolated(monkeypatch):
+>       from services import local_watch
+E       ImportError: cannot import name 'local_watch' from 'services' (/Users/yangjing/Desktop/ai-workspace/Fiona/backend/services/__init__.py)
+
+backend/tests/test_local_watch_backend.py:25: ImportError
+______________ ERROR at setup of test_rule_validation[changes19] _______________
+
+monkeypatch = <_pytest.monkeypatch.MonkeyPatch object at 0x10b6c6f20>
+
+    @pytest.fixture(autouse=True)
+    def isolated(monkeypatch):
+>       from services import local_watch
+E       ImportError: cannot import name 'local_watch' from 'services' (/Users/yangjing/Desktop/ai-workspace/Fiona/backend/services/__init__.py)
+
+backend/tests/test_local_watch_backend.py:25: ImportError
+______________ ERROR at setup of test_rule_validation[changes20] _______________
+
+monkeypatch = <_pytest.monkeypatch.MonkeyPatch object at 0x10b6c6f90>
+
+    @pytest.fixture(autouse=True)
+    def isolated(monkeypatch):
+>       from services import local_watch
+E       ImportError: cannot import name 'local_watch' from 'services' (/Users/yangjing/Desktop/ai-workspace/Fiona/backend/services/__init__.py)
+
+backend/tests/test_local_watch_backend.py:25: ImportError
+______________ ERROR at setup of test_rule_validation[changes21] _______________
+
+monkeypatch = <_pytest.monkeypatch.MonkeyPatch object at 0x10b6c49f0>
+
+    @pytest.fixture(autouse=True)
+    def isolated(monkeypatch):
+>       from services import local_watch
+E       ImportError: cannot import name 'local_watch' from 'services' (/Users/yangjing/Desktop/ai-workspace/Fiona/backend/services/__init__.py)
+
+backend/tests/test_local_watch_backend.py:25: ImportError
+______________ ERROR at setup of test_rule_validation[changes22] _______________
+
+monkeypatch = <_pytest.monkeypatch.MonkeyPatch object at 0x10b6c4830>
+
+    @pytest.fixture(autouse=True)
+    def isolated(monkeypatch):
+>       from services import local_watch
+E       ImportError: cannot import name 'local_watch' from 'services' (/Users/yangjing/Desktop/ai-workspace/Fiona/backend/services/__init__.py)
+
+backend/tests/test_local_watch_backend.py:25: ImportError
+______________ ERROR at setup of test_rule_validation[changes23] _______________
+
+monkeypatch = <_pytest.monkeypatch.MonkeyPatch object at 0x10b6c6eb0>
+
+    @pytest.fixture(autouse=True)
+    def isolated(monkeypatch):
+>       from services import local_watch
+E       ImportError: cannot import name 'local_watch' from 'services' (/Users/yangjing/Desktop/ai-workspace/Fiona/backend/services/__init__.py)
+
+backend/tests/test_local_watch_backend.py:25: ImportError
+______________ ERROR at setup of test_rule_validation[changes24] _______________
+
+monkeypatch = <_pytest.monkeypatch.MonkeyPatch object at 0x10b6c5160>
+
+    @pytest.fixture(autouse=True)
+    def isolated(monkeypatch):
+>       from services import local_watch
+E       ImportError: cannot import name 'local_watch' from 'services' (/Users/yangjing/Desktop/ai-workspace/Fiona/backend/services/__init__.py)
+
+backend/tests/test_local_watch_backend.py:25: ImportError
+______________ ERROR at setup of test_rule_validation[changes25] _______________
+
+monkeypatch = <_pytest.monkeypatch.MonkeyPatch object at 0x10b6c6cf0>
+
+    @pytest.fixture(autouse=True)
+    def isolated(monkeypatch):
+>       from services import local_watch
+E       ImportError: cannot import name 'local_watch' from 'services' (/Users/yangjing/Desktop/ai-workspace/Fiona/backend/services/__init__.py)
+
+backend/tests/test_local_watch_backend.py:25: ImportError
+______________ ERROR at setup of test_rule_validation[changes26] _______________
+
+monkeypatch = <_pytest.monkeypatch.MonkeyPatch object at 0x10bf00de0>
+
+    @pytest.fixture(autouse=True)
+    def isolated(monkeypatch):
+>       from services import local_watch
+E       ImportError: cannot import name 'local_watch' from 'services' (/Users/yangjing/Desktop/ai-workspace/Fiona/backend/services/__init__.py)
+
+backend/tests/test_local_watch_backend.py:25: ImportError
+______________ ERROR at setup of test_rule_validation[changes27] _______________
+
+monkeypatch = <_pytest.monkeypatch.MonkeyPatch object at 0x10bf00830>
+
+    @pytest.fixture(autouse=True)
+    def isolated(monkeypatch):
+>       from services import local_watch
+E       ImportError: cannot import name 'local_watch' from 'services' (/Users/yangjing/Desktop/ai-workspace/Fiona/backend/services/__init__.py)
+
+backend/tests/test_local_watch_backend.py:25: ImportError
+______________ ERROR at setup of test_rule_validation[changes28] _______________
+
+monkeypatch = <_pytest.monkeypatch.MonkeyPatch object at 0x10bf00bb0>
+
+    @pytest.fixture(autouse=True)
+    def isolated(monkeypatch):
+>       from services import local_watch
+E       ImportError: cannot import name 'local_watch' from 'services' (/Users/yangjing/Desktop/ai-workspace/Fiona/backend/services/__init__.py)
+
+backend/tests/test_local_watch_backend.py:25: ImportError
+__ ERROR at setup of test_valid_boundaries_patch_validation[keyword-params0] ___
+
+monkeypatch = <_pytest.monkeypatch.MonkeyPatch object at 0x10b68f930>
+
+    @pytest.fixture(autouse=True)
+    def isolated(monkeypatch):
+>       from services import local_watch
+E       ImportError: cannot import name 'local_watch' from 'services' (/Users/yangjing/Desktop/ai-workspace/Fiona/backend/services/__init__.py)
+
+backend/tests/test_local_watch_backend.py:25: ImportError
+___ ERROR at setup of test_valid_boundaries_patch_validation[number-params1] ___
+
+monkeypatch = <_pytest.monkeypatch.MonkeyPatch object at 0x10b6c4ad0>
+
+    @pytest.fixture(autouse=True)
+    def isolated(monkeypatch):
+>       from services import local_watch
+E       ImportError: cannot import name 'local_watch' from 'services' (/Users/yangjing/Desktop/ai-workspace/Fiona/backend/services/__init__.py)
+
+backend/tests/test_local_watch_backend.py:25: ImportError
+_____ ERROR at setup of test_valid_boundaries_patch_validation[ai-params2] _____
+
+monkeypatch = <_pytest.monkeypatch.MonkeyPatch object at 0x10b6c6eb0>
+
+    @pytest.fixture(autouse=True)
+    def isolated(monkeypatch):
+>       from services import local_watch
+E       ImportError: cannot import name 'local_watch' from 'services' (/Users/yangjing/Desktop/ai-workspace/Fiona/backend/services/__init__.py)
+
+backend/tests/test_local_watch_backend.py:25: ImportError
+______ ERROR at setup of test_heartbeat_fields_isolation_expiration_limit ______
+
+monkeypatch = <_pytest.monkeypatch.MonkeyPatch object at 0x10b6c7460>
+
+    @pytest.fixture(autouse=True)
+    def isolated(monkeypatch):
+>       from services import local_watch
+E       ImportError: cannot import name 'local_watch' from 'services' (/Users/yangjing/Desktop/ai-workspace/Fiona/backend/services/__init__.py)
+
+backend/tests/test_local_watch_backend.py:25: ImportError
+___ ERROR at setup of test_observations_ownership_size_timestamp_device_rate ___
+
+monkeypatch = <_pytest.monkeypatch.MonkeyPatch object at 0x10b6c6190>
+
+    @pytest.fixture(autouse=True)
+    def isolated(monkeypatch):
+>       from services import local_watch
+E       ImportError: cannot import name 'local_watch' from 'services' (/Users/yangjing/Desktop/ai-workspace/Fiona/backend/services/__init__.py)
+
+backend/tests/test_local_watch_backend.py:25: ImportError
+_ ERROR at setup of test_alert_body_storage_fallback_billing_and_debug_privacy _
+
+monkeypatch = <_pytest.monkeypatch.MonkeyPatch object at 0x10bf004b0>
+
+    @pytest.fixture(autouse=True)
+    def isolated(monkeypatch):
+>       from services import local_watch
+E       ImportError: cannot import name 'local_watch' from 'services' (/Users/yangjing/Desktop/ai-workspace/Fiona/backend/services/__init__.py)
+
+backend/tests/test_local_watch_backend.py:25: ImportError
+__________ ERROR at setup of test_alerts_after_limit_fields_isolation __________
+
+monkeypatch = <_pytest.monkeypatch.MonkeyPatch object at 0x10bf00fa0>
+
+    @pytest.fixture(autouse=True)
+    def isolated(monkeypatch):
+>       from services import local_watch
+E       ImportError: cannot import name 'local_watch' from 'services' (/Users/yangjing/Desktop/ai-workspace/Fiona/backend/services/__init__.py)
+
+backend/tests/test_local_watch_backend.py:25: ImportError
+_______ ERROR at setup of test_switch_404_all_endpoints_unauthenticated ________
+
+monkeypatch = <_pytest.monkeypatch.MonkeyPatch object at 0x10bf01010>
+
+    @pytest.fixture(autouse=True)
+    def isolated(monkeypatch):
+>       from services import local_watch
+E       ImportError: cannot import name 'local_watch' from 'services' (/Users/yangjing/Desktop/ai-workspace/Fiona/backend/services/__init__.py)
+
+backend/tests/test_local_watch_backend.py:25: ImportError
+_____ ERROR at setup of test_old_database_additive_startup_preserves_data ______
+
+monkeypatch = <_pytest.monkeypatch.MonkeyPatch object at 0x10bf000c0>
+
+    @pytest.fixture(autouse=True)
+    def isolated(monkeypatch):
+>       from services import local_watch
+E       ImportError: cannot import name 'local_watch' from 'services' (/Users/yangjing/Desktop/ai-workspace/Fiona/backend/services/__init__.py)
+
+backend/tests/test_local_watch_backend.py:25: ImportError
+_ ERROR at setup of test_account_deletion_cleans_watch_tables_preserves_other __
+
+monkeypatch = <_pytest.monkeypatch.MonkeyPatch object at 0x10bf00130>
+
+    @pytest.fixture(autouse=True)
+    def isolated(monkeypatch):
+>       from services import local_watch
+E       ImportError: cannot import name 'local_watch' from 'services' (/Users/yangjing/Desktop/ai-workspace/Fiona/backend/services/__init__.py)
+
+backend/tests/test_local_watch_backend.py:25: ImportError
+_ ERROR at setup of test_keyword_first_hit_case_insensitive[keywords0-lines0-\u547d\u4e2d\u300eBoss\u300f\uff1aBOSS ping] _
+
+monkeypatch = <_pytest.monkeypatch.MonkeyPatch object at 0x10bf00a60>
+
+    @pytest.fixture
+    def service(monkeypatch):
+>       from services import local_watch
+E       ImportError: cannot import name 'local_watch' from 'services' (/Users/yangjing/Desktop/ai-workspace/Fiona/backend/services/__init__.py)
+
+backend/tests/test_local_watch_service.py:22: ImportError
+_ ERROR at setup of test_keyword_first_hit_case_insensitive[keywords1-lines1-\u547d\u4e2d\u300e\u5f00\u4f1a\u300f\uff1a\u4eca\u665a\u5f00\u4f1a] _
+
+monkeypatch = <_pytest.monkeypatch.MonkeyPatch object at 0x10bf009f0>
+
+    @pytest.fixture
+    def service(monkeypatch):
+>       from services import local_watch
+E       ImportError: cannot import name 'local_watch' from 'services' (/Users/yangjing/Desktop/ai-workspace/Fiona/backend/services/__init__.py)
+
+backend/tests/test_local_watch_service.py:22: ImportError
+_ ERROR at setup of test_keyword_first_hit_case_insensitive[keywords2-lines2-None] _
+
+monkeypatch = <_pytest.monkeypatch.MonkeyPatch object at 0x10b6c6190>
+
+    @pytest.fixture
+    def service(monkeypatch):
+>       from services import local_watch
+E       ImportError: cannot import name 'local_watch' from 'services' (/Users/yangjing/Desktop/ai-workspace/Fiona/backend/services/__init__.py)
+
+backend/tests/test_local_watch_service.py:22: ImportError
+_ ERROR at setup of test_keyword_first_hit_case_insensitive[keywords3-lines3-\u547d\u4e2d\u300eaa\u300f\uff1aaa\u6587\u6587\u6587\u6587\u6587\u6587\u6587\u6587\u6587\u6587\u6587\u6587\u6587\u6587\u6587\u6587\u6587\u6587\u6587\u6587\u6587\u6587\u6587\u6587\u6587\u6587\u6587\u6587\u6587\u6587\u6587\u6587\u6587\u6587\u6587\u6587\u6587\u6587\u6587\u6587\u6587\u6587\u6587\u6587\u6587\u6587\u6587\u6587\u6587\u6587\u6587\u6587\u6587\u6587\u6587\u6587\u6587\u6587\u6587\u6587\u6587\u6587\u6587\u6587\u6587\u6587\u6587\u6587\u6587\u6587\u6587\u6587\u6587\u6587\u6587\u6587\u6587\u6587] _
+
+monkeypatch = <_pytest.monkeypatch.MonkeyPatch object at 0x10b6c4600>
+
+    @pytest.fixture
+    def service(monkeypatch):
+>       from services import local_watch
+E       ImportError: cannot import name 'local_watch' from 'services' (/Users/yangjing/Desktop/ai-workspace/Fiona/backend/services/__init__.py)
+
+backend/tests/test_local_watch_service.py:22: ImportError
+_ ERROR at setup of test_number_formats_and_comparisons[\u4ef7\u683c -1.5-<--1-True--1.5] _
+
+monkeypatch = <_pytest.monkeypatch.MonkeyPatch object at 0x10b6c4360>
+
+    @pytest.fixture
+    def service(monkeypatch):
+>       from services import local_watch
+E       ImportError: cannot import name 'local_watch' from 'services' (/Users/yangjing/Desktop/ai-workspace/Fiona/backend/services/__init__.py)
+
+backend/tests/test_local_watch_service.py:22: ImportError
+_ ERROR at setup of test_number_formats_and_comparisons[\u4ef7\u683c 1,234.56->-1200-True-1234.56] _
+
+monkeypatch = <_pytest.monkeypatch.MonkeyPatch object at 0x10b6c6eb0>
+
+    @pytest.fixture
+    def service(monkeypatch):
+>       from services import local_watch
+E       ImportError: cannot import name 'local_watch' from 'services' (/Users/yangjing/Desktop/ai-workspace/Fiona/backend/services/__init__.py)
+
+backend/tests/test_local_watch_service.py:22: ImportError
+_ ERROR at setup of test_number_formats_and_comparisons[\u6536\u76ca 10.5%->=-10.5-True-10.5%] _
+
+monkeypatch = <_pytest.monkeypatch.MonkeyPatch object at 0x10bf00670>
+
+    @pytest.fixture
+    def service(monkeypatch):
+>       from services import local_watch
+E       ImportError: cannot import name 'local_watch' from 'services' (/Users/yangjing/Desktop/ai-workspace/Fiona/backend/services/__init__.py)
+
+backend/tests/test_local_watch_service.py:22: ImportError
+_ ERROR at setup of test_number_formats_and_comparisons[\u4ef7\u683c 5-<=-5-True-5] _
+
+monkeypatch = <_pytest.monkeypatch.MonkeyPatch object at 0x10bf00e50>
+
+    @pytest.fixture
+    def service(monkeypatch):
+>       from services import local_watch
+E       ImportError: cannot import name 'local_watch' from 'services' (/Users/yangjing/Desktop/ai-workspace/Fiona/backend/services/__init__.py)
+
+backend/tests/test_local_watch_service.py:22: ImportError
+_ ERROR at setup of test_number_formats_and_comparisons[\u4ef7\u683c 5->-5-False-5] _
+
+monkeypatch = <_pytest.monkeypatch.MonkeyPatch object at 0x10bf006e0>
+
+    @pytest.fixture
+    def service(monkeypatch):
+>       from services import local_watch
+E       ImportError: cannot import name 'local_watch' from 'services' (/Users/yangjing/Desktop/ai-workspace/Fiona/backend/services/__init__.py)
+
+backend/tests/test_local_watch_service.py:22: ImportError
+_ ERROR at setup of test_number_formats_and_comparisons[\u4ef7\u683c -5->=-0-False--5] _
+
+monkeypatch = <_pytest.monkeypatch.MonkeyPatch object at 0x10bf00a60>
+
+    @pytest.fixture
+    def service(monkeypatch):
+>       from services import local_watch
+E       ImportError: cannot import name 'local_watch' from 'services' (/Users/yangjing/Desktop/ai-workspace/Fiona/backend/services/__init__.py)
+
+backend/tests/test_local_watch_service.py:22: ImportError
+_ ERROR at setup of test_number_formats_and_comparisons[\u4ef7\u683c 5-<-5-False-5] _
+
+monkeypatch = <_pytest.monkeypatch.MonkeyPatch object at 0x10bf01010>
+
+    @pytest.fixture
+    def service(monkeypatch):
+>       from services import local_watch
+E       ImportError: cannot import name 'local_watch' from 'services' (/Users/yangjing/Desktop/ai-workspace/Fiona/backend/services/__init__.py)
+
+backend/tests/test_local_watch_service.py:22: ImportError
+_ ERROR at setup of test_number_formats_and_comparisons[\u4ef7\u683c 5-<=-4-False-5] _
+
+monkeypatch = <_pytest.monkeypatch.MonkeyPatch object at 0x10bf01630>
+
+    @pytest.fixture
+    def service(monkeypatch):
+>       from services import local_watch
+E       ImportError: cannot import name 'local_watch' from 'services' (/Users/yangjing/Desktop/ai-workspace/Fiona/backend/services/__init__.py)
+
+backend/tests/test_local_watch_service.py:22: ImportError
+_ ERROR at setup of test_number_formats_and_comparisons[\u4ef7\u683c\u6682\u65e0->-1-False-] _
+
+monkeypatch = <_pytest.monkeypatch.MonkeyPatch object at 0x10bf017f0>
+
+    @pytest.fixture
+    def service(monkeypatch):
+>       from services import local_watch
+E       ImportError: cannot import name 'local_watch' from 'services' (/Users/yangjing/Desktop/ai-workspace/Fiona/backend/services/__init__.py)
+
+backend/tests/test_local_watch_service.py:22: ImportError
+_ ERROR at setup of test_number_formats_and_comparisons[\u522b\u7684 999->-1-False-] _
+
+monkeypatch = <_pytest.monkeypatch.MonkeyPatch object at 0x10bf01940>
+
+    @pytest.fixture
+    def service(monkeypatch):
+>       from services import local_watch
+E       ImportError: cannot import name 'local_watch' from 'services' (/Users/yangjing/Desktop/ai-workspace/Fiona/backend/services/__init__.py)
+
+backend/tests/test_local_watch_service.py:22: ImportError
+_ ERROR at setup of test_number_formats_and_comparisons[42 \u4ef7\u683c .5-<-1-True-0.5] _
+
+monkeypatch = <_pytest.monkeypatch.MonkeyPatch object at 0x10b6c5940>
+
+    @pytest.fixture
+    def service(monkeypatch):
+>       from services import local_watch
+E       ImportError: cannot import name 'local_watch' from 'services' (/Users/yangjing/Desktop/ai-workspace/Fiona/backend/services/__init__.py)
+
+backend/tests/test_local_watch_service.py:22: ImportError
+_ ERROR at setup of test_number_formats_and_comparisons[\u4ef7\u683c -1,200.25 \u540e\u67659-<--1000-True--1200.25] _
+
+monkeypatch = <_pytest.monkeypatch.MonkeyPatch object at 0x10b6c4c20>
+
+    @pytest.fixture
+    def service(monkeypatch):
+>       from services import local_watch
+E       ImportError: cannot import name 'local_watch' from 'services' (/Users/yangjing/Desktop/ai-workspace/Fiona/backend/services/__init__.py)
+
+backend/tests/test_local_watch_service.py:22: ImportError
+__________ ERROR at setup of test_platform_exact_parameters_and_input __________
+
+monkeypatch = <_pytest.monkeypatch.MonkeyPatch object at 0x10b6c6190>
+
+    @pytest.fixture
+    def service(monkeypatch):
+>       from services import local_watch
+E       ImportError: cannot import name 'local_watch' from 'services' (/Users/yangjing/Desktop/ai-workspace/Fiona/backend/services/__init__.py)
+
+backend/tests/test_local_watch_service.py:22: ImportError
+_______ ERROR at setup of test_invalid_ai_output_fails_closed[not json] ________
+
+monkeypatch = <_pytest.monkeypatch.MonkeyPatch object at 0x10b68fc40>
+
+    @pytest.fixture
+    def service(monkeypatch):
+>       from services import local_watch
+E       ImportError: cannot import name 'local_watch' from 'services' (/Users/yangjing/Desktop/ai-workspace/Fiona/backend/services/__init__.py)
+
+backend/tests/test_local_watch_service.py:22: ImportError
+__________ ERROR at setup of test_invalid_ai_output_fails_closed[[]] ___________
+
+monkeypatch = <_pytest.monkeypatch.MonkeyPatch object at 0x10bf01780>
+
+    @pytest.fixture
+    def service(monkeypatch):
+>       from services import local_watch
+E       ImportError: cannot import name 'local_watch' from 'services' (/Users/yangjing/Desktop/ai-workspace/Fiona/backend/services/__init__.py)
+
+backend/tests/test_local_watch_service.py:22: ImportError
+_ ERROR at setup of test_invalid_ai_output_fails_closed[{"alert":1,"summary":"ok"}] _
+
+monkeypatch = <_pytest.monkeypatch.MonkeyPatch object at 0x10bf004b0>
+
+    @pytest.fixture
+    def service(monkeypatch):
+>       from services import local_watch
+E       ImportError: cannot import name 'local_watch' from 'services' (/Users/yangjing/Desktop/ai-workspace/Fiona/backend/services/__init__.py)
+
+backend/tests/test_local_watch_service.py:22: ImportError
+_ ERROR at setup of test_invalid_ai_output_fails_closed[{"alert":"true","summary":"ok"}] _
+
+monkeypatch = <_pytest.monkeypatch.MonkeyPatch object at 0x10bf01a20>
+
+    @pytest.fixture
+    def service(monkeypatch):
+>       from services import local_watch
+E       ImportError: cannot import name 'local_watch' from 'services' (/Users/yangjing/Desktop/ai-workspace/Fiona/backend/services/__init__.py)
+
+backend/tests/test_local_watch_service.py:22: ImportError
+_ ERROR at setup of test_invalid_ai_output_fails_closed[{"alert":true,"summary":""}] _
+
+monkeypatch = <_pytest.monkeypatch.MonkeyPatch object at 0x10bf01630>
+
+    @pytest.fixture
+    def service(monkeypatch):
+>       from services import local_watch
+E       ImportError: cannot import name 'local_watch' from 'services' (/Users/yangjing/Desktop/ai-workspace/Fiona/backend/services/__init__.py)
+
+backend/tests/test_local_watch_service.py:22: ImportError
+_ ERROR at setup of test_invalid_ai_output_fails_closed[{"alert":true,"summary":"  "}] _
+
+monkeypatch = <_pytest.monkeypatch.MonkeyPatch object at 0x10bf006e0>
+
+    @pytest.fixture
+    def service(monkeypatch):
+>       from services import local_watch
+E       ImportError: cannot import name 'local_watch' from 'services' (/Users/yangjing/Desktop/ai-workspace/Fiona/backend/services/__init__.py)
+
+backend/tests/test_local_watch_service.py:22: ImportError
+_ ERROR at setup of test_invalid_ai_output_fails_closed[{"alert":true,"summary":99}] _
+
+monkeypatch = <_pytest.monkeypatch.MonkeyPatch object at 0x10bf01cc0>
+
+    @pytest.fixture
+    def service(monkeypatch):
+>       from services import local_watch
+E       ImportError: cannot import name 'local_watch' from 'services' (/Users/yangjing/Desktop/ai-workspace/Fiona/backend/services/__init__.py)
+
+backend/tests/test_local_watch_service.py:22: ImportError
+_ ERROR at setup of test_invalid_ai_output_fails_closed[{"alert": true, "summary": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"}] _
+
+monkeypatch = <_pytest.monkeypatch.MonkeyPatch object at 0x10bf01e80>
+
+    @pytest.fixture
+    def service(monkeypatch):
+>       from services import local_watch
+E       ImportError: cannot import name 'local_watch' from 'services' (/Users/yangjing/Desktop/ai-workspace/Fiona/backend/services/__init__.py)
+
+backend/tests/test_local_watch_service.py:22: ImportError
+_ ERROR at setup of test_invalid_ai_output_fails_closed[{"alert":true,"summary":"ok","x":NaN}] _
+
+monkeypatch = <_pytest.monkeypatch.MonkeyPatch object at 0x10bf01fd0>
+
+    @pytest.fixture
+    def service(monkeypatch):
+>       from services import local_watch
+E       ImportError: cannot import name 'local_watch' from 'services' (/Users/yangjing/Desktop/ai-workspace/Fiona/backend/services/__init__.py)
+
+backend/tests/test_local_watch_service.py:22: ImportError
+_____ ERROR at setup of test_ai_exception_outer_timeout_and_debug_privacy ______
+
+monkeypatch = <_pytest.monkeypatch.MonkeyPatch object at 0x10b6c67b0>
+
+    @pytest.fixture
+    def service(monkeypatch):
+>       from services import local_watch
+E       ImportError: cannot import name 'local_watch' from 'services' (/Users/yangjing/Desktop/ai-workspace/Fiona/backend/services/__init__.py)
+
+backend/tests/test_local_watch_service.py:22: ImportError
+_______ ERROR at setup of test_claude_unavailable_never_falls_back[None] _______
+
+monkeypatch = <_pytest.monkeypatch.MonkeyPatch object at 0x10b6c6190>
+
+    @pytest.fixture
+    def service(monkeypatch):
+>       from services import local_watch
+E       ImportError: cannot import name 'local_watch' from 'services' (/Users/yangjing/Desktop/ai-workspace/Fiona/backend/services/__init__.py)
+
+backend/tests/test_local_watch_service.py:22: ImportError
+_____ ERROR at setup of test_claude_unavailable_never_falls_back[config1] ______
+
+monkeypatch = <_pytest.monkeypatch.MonkeyPatch object at 0x10b6c5940>
+
+    @pytest.fixture
+    def service(monkeypatch):
+>       from services import local_watch
+E       ImportError: cannot import name 'local_watch' from 'services' (/Users/yangjing/Desktop/ai-workspace/Fiona/backend/services/__init__.py)
+
+backend/tests/test_local_watch_service.py:22: ImportError
+_____ ERROR at setup of test_claude_unavailable_never_falls_back[config2] ______
+
+monkeypatch = <_pytest.monkeypatch.MonkeyPatch object at 0x10b68fc40>
+
+    @pytest.fixture
+    def service(monkeypatch):
+>       from services import local_watch
+E       ImportError: cannot import name 'local_watch' from 'services' (/Users/yangjing/Desktop/ai-workspace/Fiona/backend/services/__init__.py)
+
+backend/tests/test_local_watch_service.py:22: ImportError
+_____ ERROR at setup of test_claude_unavailable_never_falls_back[config3] ______
+
+monkeypatch = <_pytest.monkeypatch.MonkeyPatch object at 0x10bf00670>
+
+    @pytest.fixture
+    def service(monkeypatch):
+>       from services import local_watch
+E       ImportError: cannot import name 'local_watch' from 'services' (/Users/yangjing/Desktop/ai-workspace/Fiona/backend/services/__init__.py)
+
+backend/tests/test_local_watch_service.py:22: ImportError
+______ ERROR at setup of test_claude_byok_model_nonstream_schema_no_tools ______
+
+monkeypatch = <_pytest.monkeypatch.MonkeyPatch object at 0x10bf01f60>
+
+    @pytest.fixture
+    def service(monkeypatch):
+>       from services import local_watch
+E       ImportError: cannot import name 'local_watch' from 'services' (/Users/yangjing/Desktop/ai-workspace/Fiona/backend/services/__init__.py)
+
+backend/tests/test_local_watch_service.py:22: ImportError
+________ ERROR at setup of test_cooldown_and_daily_quota_even_dev_mode _________
+
+monkeypatch = <_pytest.monkeypatch.MonkeyPatch object at 0x10bf017f0>
+
+    @pytest.fixture
+    def service(monkeypatch):
+>       from services import local_watch
+E       ImportError: cannot import name 'local_watch' from 'services' (/Users/yangjing/Desktop/ai-workspace/Fiona/backend/services/__init__.py)
+
+backend/tests/test_local_watch_service.py:22: ImportError
+=============================== warnings summary ===============================
+backend/tests/test_local_watch_service.py: 14 warnings
+  /Users/yangjing/Desktop/ai-workspace/Fiona/backend/.venv/lib/python3.14/site-packages/slowapi/extension.py:720: DeprecationWarning: 'asyncio.iscoroutinefunction' is deprecated and slated for removal in Python 3.16; use inspect.iscoroutinefunction() instead
+    if asyncio.iscoroutinefunction(func):
+
+-- Docs: https://docs.pytest.org/en/stable/how-to/capture-warnings.html
+=========================== short test summary info ============================
+ERROR backend/tests/test_local_watch_backend.py::test_devices_once_hashed_revoked_limit_and_isolation
+ERROR backend/tests/test_local_watch_backend.py::test_rules_crud_limit_and_isolation
+ERROR backend/tests/test_local_watch_backend.py::test_rule_validation[changes0]
+ERROR backend/tests/test_local_watch_backend.py::test_rule_validation[changes1]
+ERROR backend/tests/test_local_watch_backend.py::test_rule_validation[changes2]
+ERROR backend/tests/test_local_watch_backend.py::test_rule_validation[changes3]
+ERROR backend/tests/test_local_watch_backend.py::test_rule_validation[changes4]
+ERROR backend/tests/test_local_watch_backend.py::test_rule_validation[changes5]
+ERROR backend/tests/test_local_watch_backend.py::test_rule_validation[changes6]
+ERROR backend/tests/test_local_watch_backend.py::test_rule_validation[changes7]
+ERROR backend/tests/test_local_watch_backend.py::test_rule_validation[changes8]
+ERROR backend/tests/test_local_watch_backend.py::test_rule_validation[changes9]
+ERROR backend/tests/test_local_watch_backend.py::test_rule_validation[changes10]
+ERROR backend/tests/test_local_watch_backend.py::test_rule_validation[changes11]
+ERROR backend/tests/test_local_watch_backend.py::test_rule_validation[changes12]
+ERROR backend/tests/test_local_watch_backend.py::test_rule_validation[changes13]
+ERROR backend/tests/test_local_watch_backend.py::test_rule_validation[changes14]
+ERROR backend/tests/test_local_watch_backend.py::test_rule_validation[changes15]
+ERROR backend/tests/test_local_watch_backend.py::test_rule_validation[changes16]
+ERROR backend/tests/test_local_watch_backend.py::test_rule_validation[changes17]
+ERROR backend/tests/test_local_watch_backend.py::test_rule_validation[changes18]
+ERROR backend/tests/test_local_watch_backend.py::test_rule_validation[changes19]
+ERROR backend/tests/test_local_watch_backend.py::test_rule_validation[changes20]
+ERROR backend/tests/test_local_watch_backend.py::test_rule_validation[changes21]
+ERROR backend/tests/test_local_watch_backend.py::test_rule_validation[changes22]
+ERROR backend/tests/test_local_watch_backend.py::test_rule_validation[changes23]
+ERROR backend/tests/test_local_watch_backend.py::test_rule_validation[changes24]
+ERROR backend/tests/test_local_watch_backend.py::test_rule_validation[changes25]
+ERROR backend/tests/test_local_watch_backend.py::test_rule_validation[changes26]
+ERROR backend/tests/test_local_watch_backend.py::test_rule_validation[changes27]
+ERROR backend/tests/test_local_watch_backend.py::test_rule_validation[changes28]
+ERROR backend/tests/test_local_watch_backend.py::test_valid_boundaries_patch_validation[keyword-params0]
+ERROR backend/tests/test_local_watch_backend.py::test_valid_boundaries_patch_validation[number-params1]
+ERROR backend/tests/test_local_watch_backend.py::test_valid_boundaries_patch_validation[ai-params2]
+ERROR backend/tests/test_local_watch_backend.py::test_heartbeat_fields_isolation_expiration_limit
+ERROR backend/tests/test_local_watch_backend.py::test_observations_ownership_size_timestamp_device_rate
+ERROR backend/tests/test_local_watch_backend.py::test_alert_body_storage_fallback_billing_and_debug_privacy
+ERROR backend/tests/test_local_watch_backend.py::test_alerts_after_limit_fields_isolation
+ERROR backend/tests/test_local_watch_backend.py::test_switch_404_all_endpoints_unauthenticated
+ERROR backend/tests/test_local_watch_backend.py::test_old_database_additive_startup_preserves_data
+ERROR backend/tests/test_local_watch_backend.py::test_account_deletion_cleans_watch_tables_preserves_other
+ERROR backend/tests/test_local_watch_service.py::test_keyword_first_hit_case_insensitive[keywords0-lines0-\u547d\u4e2d\u300eBoss\u300f\uff1aBOSS ping]
+ERROR backend/tests/test_local_watch_service.py::test_keyword_first_hit_case_insensitive[keywords1-lines1-\u547d\u4e2d\u300e\u5f00\u4f1a\u300f\uff1a\u4eca\u665a\u5f00\u4f1a]
+ERROR backend/tests/test_local_watch_service.py::test_keyword_first_hit_case_insensitive[keywords2-lines2-None]
+ERROR backend/tests/test_local_watch_service.py::test_keyword_first_hit_case_insensitive[keywords3-lines3-\u547d\u4e2d\u300eaa\u300f\uff1aaa\u6587\u6587\u6587\u6587\u6587\u6587\u6587\u6587\u6587\u6587\u6587\u6587\u6587\u6587\u6587\u6587\u6587\u6587\u6587\u6587\u6587\u6587\u6587\u6587\u6587\u6587\u6587\u6587\u6587\u6587\u6587\u6587\u6587\u6587\u6587\u6587\u6587\u6587\u6587\u6587\u6587\u6587\u6587\u6587\u6587\u6587\u6587\u6587\u6587\u6587\u6587\u6587\u6587\u6587\u6587\u6587\u6587\u6587\u6587\u6587\u6587\u6587\u6587\u6587\u6587\u6587\u6587\u6587\u6587\u6587\u6587\u6587\u6587\u6587\u6587\u6587\u6587\u6587]
+ERROR backend/tests/test_local_watch_service.py::test_number_formats_and_comparisons[\u4ef7\u683c -1.5-<--1-True--1.5]
+ERROR backend/tests/test_local_watch_service.py::test_number_formats_and_comparisons[\u4ef7\u683c 1,234.56->-1200-True-1234.56]
+ERROR backend/tests/test_local_watch_service.py::test_number_formats_and_comparisons[\u6536\u76ca 10.5%->=-10.5-True-10.5%]
+ERROR backend/tests/test_local_watch_service.py::test_number_formats_and_comparisons[\u4ef7\u683c 5-<=-5-True-5]
+ERROR backend/tests/test_local_watch_service.py::test_number_formats_and_comparisons[\u4ef7\u683c 5->-5-False-5]
+ERROR backend/tests/test_local_watch_service.py::test_number_formats_and_comparisons[\u4ef7\u683c -5->=-0-False--5]
+ERROR backend/tests/test_local_watch_service.py::test_number_formats_and_comparisons[\u4ef7\u683c 5-<-5-False-5]
+ERROR backend/tests/test_local_watch_service.py::test_number_formats_and_comparisons[\u4ef7\u683c 5-<=-4-False-5]
+ERROR backend/tests/test_local_watch_service.py::test_number_formats_and_comparisons[\u4ef7\u683c\u6682\u65e0->-1-False-]
+ERROR backend/tests/test_local_watch_service.py::test_number_formats_and_comparisons[\u522b\u7684 999->-1-False-]
+ERROR backend/tests/test_local_watch_service.py::test_number_formats_and_comparisons[42 \u4ef7\u683c .5-<-1-True-0.5]
+ERROR backend/tests/test_local_watch_service.py::test_number_formats_and_comparisons[\u4ef7\u683c -1,200.25 \u540e\u67659-<--1000-True--1200.25]
+ERROR backend/tests/test_local_watch_service.py::test_platform_exact_parameters_and_input
+ERROR backend/tests/test_local_watch_service.py::test_invalid_ai_output_fails_closed[not json]
+ERROR backend/tests/test_local_watch_service.py::test_invalid_ai_output_fails_closed[[]]
+ERROR backend/tests/test_local_watch_service.py::test_invalid_ai_output_fails_closed[{"alert":1,"summary":"ok"}]
+ERROR backend/tests/test_local_watch_service.py::test_invalid_ai_output_fails_closed[{"alert":"true","summary":"ok"}]
+ERROR backend/tests/test_local_watch_service.py::test_invalid_ai_output_fails_closed[{"alert":true,"summary":""}]
+ERROR backend/tests/test_local_watch_service.py::test_invalid_ai_output_fails_closed[{"alert":true,"summary":"  "}]
+ERROR backend/tests/test_local_watch_service.py::test_invalid_ai_output_fails_closed[{"alert":true,"summary":99}]
+ERROR backend/tests/test_local_watch_service.py::test_invalid_ai_output_fails_closed[{"alert": true, "summary": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"}]
+ERROR backend/tests/test_local_watch_service.py::test_invalid_ai_output_fails_closed[{"alert":true,"summary":"ok","x":NaN}]
+ERROR backend/tests/test_local_watch_service.py::test_ai_exception_outer_timeout_and_debug_privacy
+ERROR backend/tests/test_local_watch_service.py::test_claude_unavailable_never_falls_back[None]
+ERROR backend/tests/test_local_watch_service.py::test_claude_unavailable_never_falls_back[config1]
+ERROR backend/tests/test_local_watch_service.py::test_claude_unavailable_never_falls_back[config2]
+ERROR backend/tests/test_local_watch_service.py::test_claude_unavailable_never_falls_back[config3]
+ERROR backend/tests/test_local_watch_service.py::test_claude_byok_model_nonstream_schema_no_tools
+ERROR backend/tests/test_local_watch_service.py::test_cooldown_and_daily_quota_even_dev_mode
+14 warnings, 74 errors in 1.51s

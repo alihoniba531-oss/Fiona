@@ -1,0 +1,9 @@
+{
+  "cwd": "frontend",
+  "command": [
+    "npx",
+    "tsc",
+    "--noEmit"
+  ],
+  "existing_environment": "backend/.venv; npm offline"
+}

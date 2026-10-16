@@ -1,0 +1,10 @@
+{
+  "cwd": "backend",
+  "command": [
+    "python",
+    "-m",
+    "pip",
+    "check"
+  ],
+  "existing_environment": "backend/.venv; npm offline"
+}

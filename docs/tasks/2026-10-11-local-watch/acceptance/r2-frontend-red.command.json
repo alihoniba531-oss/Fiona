@@ -1,0 +1,13 @@
+{
+  "cwd": ".",
+  "command": [
+    "backend/.venv/bin/python",
+    "-m",
+    "pytest",
+    "-q",
+    "backend/tests/test_local_watch_frontend_r2.py"
+  ],
+  "environment_overrides": {},
+  "stdout_stderr": "docs/tasks/2026-10-11-local-watch/acceptance/r2-frontend-red.txt",
+  "exit_code": 1
+}

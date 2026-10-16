@@ -1,0 +1,189 @@
+{
+  "schema_version": 1,
+  "placeholders": {
+    "{repo}": "仓库根目录；所有 cwd 均相对该目录。",
+    "{temp_root}": "可写临时目录；历史执行使用操作系统临时目录下 fiona-watch-final 子目录。"
+  },
+  "commands": [
+    {
+      "name": "swift-build-release-default",
+      "cwd": "watcher-mac",
+      "argv": [
+        "swift",
+        "build",
+        "-c",
+        "release"
+      ],
+      "environment_overrides": {},
+      "exit_code": 1,
+      "stdout_stderr_file": "docs/tasks/2026-10-11-local-watch/acceptance/swift-build-release-default.log",
+      "exit_code_file": "docs/tasks/2026-10-11-local-watch/acceptance/swift-build-release-default.exit"
+    },
+    {
+      "name": "swift-test-default",
+      "cwd": "watcher-mac",
+      "argv": [
+        "swift",
+        "test"
+      ],
+      "environment_overrides": {},
+      "exit_code": 1,
+      "stdout_stderr_file": "docs/tasks/2026-10-11-local-watch/acceptance/swift-test-default.log",
+      "exit_code_file": "docs/tasks/2026-10-11-local-watch/acceptance/swift-test-default.exit"
+    },
+    {
+      "name": "swift-build-release-workspace-cache",
+      "cwd": "watcher-mac",
+      "argv": [
+        "swift",
+        "build",
+        "-c",
+        "release",
+        "--disable-sandbox",
+        "--cache-path",
+        ".build/swiftpm-cache"
+      ],
+      "environment_overrides": {
+        "CLANG_MODULE_CACHE_PATH": "{repo}/watcher-mac/.build/module-cache",
+        "SWIFTPM_MODULECACHE_OVERRIDE": "{repo}/watcher-mac/.build/module-cache"
+      },
+      "exit_code": 1,
+      "stdout_stderr_file": "docs/tasks/2026-10-11-local-watch/acceptance/swift-build-release-workspace-cache.log",
+      "exit_code_file": "docs/tasks/2026-10-11-local-watch/acceptance/swift-build-release-workspace-cache.exit"
+    },
+    {
+      "name": "swift-test-workspace-cache",
+      "cwd": "watcher-mac",
+      "argv": [
+        "swift",
+        "test",
+        "--disable-sandbox",
+        "--cache-path",
+        ".build/swiftpm-cache"
+      ],
+      "environment_overrides": {
+        "CLANG_MODULE_CACHE_PATH": "{repo}/watcher-mac/.build/module-cache",
+        "SWIFTPM_MODULECACHE_OVERRIDE": "{repo}/watcher-mac/.build/module-cache"
+      },
+      "exit_code": 1,
+      "stdout_stderr_file": "docs/tasks/2026-10-11-local-watch/acceptance/swift-test-workspace-cache.log",
+      "exit_code_file": "docs/tasks/2026-10-11-local-watch/acceptance/swift-test-workspace-cache.exit"
+    },
+    {
+      "name": "swift-build-release-native",
+      "cwd": "watcher-mac",
+      "argv": [
+        "swift",
+        "build",
+        "-c",
+        "release",
+        "--disable-sandbox",
+        "--cache-path",
+        ".build/swiftpm-cache",
+        "--build-system",
+        "native",
+        "-debug-info-format",
+        "none"
+      ],
+      "environment_overrides": {
+        "CLANG_MODULE_CACHE_PATH": "{repo}/watcher-mac/.build/module-cache",
+        "SWIFTPM_MODULECACHE_OVERRIDE": "{repo}/watcher-mac/.build/module-cache"
+      },
+      "exit_code": 0,
+      "stdout_stderr_file": "docs/tasks/2026-10-11-local-watch/acceptance/swift-build-release-native.log",
+      "exit_code_file": "docs/tasks/2026-10-11-local-watch/acceptance/swift-build-release-native.exit"
+    },
+    {
+      "name": "swift-portable-final-compile",
+      "cwd": ".",
+      "argv": [
+        "swiftc",
+        "-gnone",
+        "-module-cache-path",
+        "{repo}/watcher-mac/.build/module-cache",
+        "{repo}/watcher-mac/Sources/FionaWatcherCore/LineProcessing.swift",
+        "{repo}/watcher-mac/Sources/FionaWatcherCore/OCR.swift",
+        "{repo}/watcher-mac/Sources/FionaWatcherCore/Scheduling.swift",
+        "{repo}/watcher-mac/Sources/FionaWatcherCore/Watcher.swift",
+        "{temp_root}/fiona-watch-final/main.swift",
+        "-o",
+        "{temp_root}/fiona-watch-final/check"
+      ],
+      "environment_overrides": {},
+      "exit_code": 0,
+      "notes": "临时 main.swift 使用下述 portable_harness_recipe；编译诊断合并保存在两个 portable-final 日志中。"
+    },
+    {
+      "name": "swift-portable-final-logic",
+      "cwd": ".",
+      "argv": [
+        "{temp_root}/fiona-watch-final/check"
+      ],
+      "environment_overrides": {},
+      "exit_code": 0,
+      "notes": "执行同一 XCTest 方法的 8 项纯逻辑断言，使用无 XCTest 的临时断言适配器；这不是 swift test 成功证明。",
+      "stdout_stderr_file": "docs/tasks/2026-10-11-local-watch/acceptance/swift-portable-final-logic.log",
+      "exit_code_file": "docs/tasks/2026-10-11-local-watch/acceptance/swift-portable-final-logic.exit"
+    },
+    {
+      "name": "swift-portable-final-ocr",
+      "cwd": ".",
+      "argv": [
+        "{temp_root}/fiona-watch-final/check",
+        "--ocr"
+      ],
+      "environment_overrides": {},
+      "exit_code": 1,
+      "notes": "先执行 8 项逻辑，然后绘制 1200×340 中文/英文图，保存临时 RGBA，再调用 Vision；当前环境抛 Foundation._GenericObjCError。",
+      "stdout_stderr_file": "docs/tasks/2026-10-11-local-watch/acceptance/swift-portable-final-ocr.log",
+      "exit_code_file": "docs/tasks/2026-10-11-local-watch/acceptance/swift-portable-final-ocr.exit"
+    },
+    {
+      "name": "swift-cli-ocr-generated-png",
+      "cwd": ".",
+      "argv": [
+        "{repo}/watcher-mac/.build/release/fiona-watcher",
+        "ocr",
+        "{temp_root}/fiona-watch-final/ocr.png"
+      ],
+      "environment_overrides": {},
+      "exit_code": 1,
+      "notes": "PNG 由上一项 CoreGraphics RGBA 用 Python 标准库 zlib/struct 编码生成；尺寸 1200×340，两个文字半区黑像素 5248/7032。",
+      "stdout_stderr_file": "docs/tasks/2026-10-11-local-watch/acceptance/swift-cli-ocr-generated-png.log",
+      "exit_code_file": "docs/tasks/2026-10-11-local-watch/acceptance/swift-cli-ocr-generated-png.exit"
+    }
+  ],
+  "portable_harness_recipe": {
+    "source_files": [
+      "watcher-mac/Tests/FionaWatcherCoreTests/test_local_watch_logic.swift",
+      "watcher-mac/Tests/FionaWatcherCoreTests/test_local_watch_scheduling.swift",
+      "watcher-mac/Tests/FionaWatcherCoreTests/test_local_watch_ocr.swift"
+    ],
+    "transformations": [
+      "拼接三个源文件，删除 import XCTest 和 @testable import FionaWatcherCore 两行；生产模块源文件由 swiftc 一并编译。",
+      "添加临时 XCTestCase 空基类和 XCTAssertEqual/XCTAssertTrue/XCTAssertLessThan/XCTFail/XCTUnwrap 断言适配器。",
+      "按 pure_logic_calls 顺序执行；只有传入 --ocr 时再执行 LocalWatchOCRTests().testRecognizesChineseAndEnglishDrawnByCoreGraphics()。",
+      "在 OCR 方法 makeImage 后，把 image.dataProvider.data 写入 {temp_root}/fiona-watch-final/ocr.rgba，并打印图片尺寸、行跨度和黑色像素字节数；绘制内容保持原测试中文/英文。",
+      "将临时 harness 写入 {temp_root}/fiona-watch-final/main.swift；OCR 失败时仅打印异常类型并退出 1，不输出识别文字。"
+    ],
+    "pure_logic_calls": [
+      "LocalWatchNormalizationTests().testTrimsAndCollapsesWhitespaceAndDropsNoise()",
+      "LocalWatchNormalizationTests().testMixedNumericContentRemainsAndUnicodeWhitespaceCollapses()",
+      "LocalWatchSnapshotTests().testFirstSnapshotIsBaselineAndRecentThreeSuppressRepeatedLines()",
+      "LocalWatchSnapshotTests().testDuplicateLinesOnlyReportOnceAndEmptyFirstSnapshotIsBaseline()",
+      "LocalWatchSnapshotTests().testObservationBoundsPreserveOrder()",
+      "try LocalWatchSchedulingTests().testRetryDoesNotBlockReadyObservationForAnotherRule()",
+      "try LocalWatchSchedulingTests().testPendingQueueRetainsEveryBatchAndFailedPayload()",
+      "LocalWatchSchedulingTests().testExponentialBackoffNeverExceedsSixtySeconds()"
+    ],
+    "png_recipe": {
+      "tools": "Python 3 标准库 pathlib、struct、zlib；没有安装包、没有网络调用。",
+      "input": "{temp_root}/fiona-watch-final/ocr.rgba",
+      "output": "{temp_root}/fiona-watch-final/ocr.png",
+      "width": 1200,
+      "height": 340,
+      "bytes_per_row": 4800,
+      "encoding": "PNG RGBA 8-bit (IHDR color type 6), 每行前置 filter byte 0，再 zlib.compress，按 CRC32 写 IHDR/IDAT/IEND。"
+    }
+  }
+}

@@ -1,0 +1,5 @@
+{
+  "command": "python -m pytest -q tests/test_local_watch_swift_testing.py",
+  "cwd": "backend",
+  "exit_code": 1
+}

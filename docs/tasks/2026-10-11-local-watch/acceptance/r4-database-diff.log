@@ -1,0 +1,271 @@
+diff --git a/backend/database.py b/backend/database.py
+index 0643853..89dc5ca 100644
+--- a/backend/database.py
++++ b/backend/database.py
+@@ -308,6 +308,11 @@ async def init_db():
+         await _safe_migrate(db, "ALTER TABLE invite_codes ADD COLUMN last_used_at TIMESTAMP DEFAULT NULL")
+         from byok.store import USER_MODEL_CONFIGS_DDL
+         await db.execute(USER_MODEL_CONFIGS_DDL)
++        for watch_table_ddl in LOCAL_WATCH_TABLES_DDL:
++            await db.execute(watch_table_ddl)
++        await db.execute("CREATE INDEX IF NOT EXISTS idx_watch_rules_username ON watch_rules(username)")
++        await db.execute("CREATE INDEX IF NOT EXISTS idx_watch_alerts_username_id ON watch_alerts(username, id)")
++        await db.execute("CREATE INDEX IF NOT EXISTS idx_watch_alerts_rule_id_id ON watch_alerts(rule_id, id)")
+         await _safe_migrate(db, "ALTER TABLE user_model_configs ADD COLUMN effort TEXT NOT NULL DEFAULT 'low'")
+         await db.execute("""
+             CREATE TABLE IF NOT EXISTS retired_usernames (
+@@ -883,6 +888,8 @@ async def delete_account_data(username: str) -> dict:
+             (username,),
+         )
+         await db.execute("DELETE FROM user_model_configs WHERE username = ?", (username,))
++        for watch_table in ("watch_devices", "watch_rules", "watch_alerts"):
++            await db.execute(f"DELETE FROM {watch_table} WHERE username = ?", (username,))
+         await db.execute("DELETE FROM users WHERE username = ?", (username,))
+ 
+         # UUID 文件理论上不会共享；仍在事务内复核引用，避免误删异常旧数据。
+@@ -1692,3 +1699,245 @@ async def get_all_messages(username: str) -> list[dict]:
+         ) as cursor:
+             rows = await cursor.fetchall()
+     return [message_with_image_references(r) for r in rows]
++
++
++# Local-watch additions: old tables and existing persistence semantics stay intact.
++LOCAL_WATCH_TABLES_DDL = (
++    """CREATE TABLE IF NOT EXISTS watch_devices (
++        id INTEGER PRIMARY KEY AUTOINCREMENT, username TEXT NOT NULL,
++        token_hash TEXT NOT NULL UNIQUE, name TEXT,
++        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
++        last_seen_at TIMESTAMP, revoked INTEGER DEFAULT 0
++    )""",
++    """CREATE TABLE IF NOT EXISTS watch_rules (
++        id INTEGER PRIMARY KEY AUTOINCREMENT, username TEXT NOT NULL,
++        name TEXT NOT NULL, app_match TEXT, title_match TEXT,
++        kind TEXT NOT NULL, params TEXT NOT NULL,
++        interval_seconds INTEGER DEFAULT 3, cooldown_seconds INTEGER DEFAULT 60,
++        enabled INTEGER DEFAULT 1, conversation_id TEXT,
++        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
++        updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
++    )""",
++    """CREATE TABLE IF NOT EXISTS watch_alerts (
++        id INTEGER PRIMARY KEY AUTOINCREMENT, username TEXT NOT NULL,
++        rule_id INTEGER NOT NULL, created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
++        summary TEXT NOT NULL CHECK(length(summary) <= 200),
++        message_id INTEGER, conversation_id TEXT
++    )""",
++)
++
++
++class WatchPrivateText(str):
++    """SQLite accepts str subclasses; worker DEBUG parameter repr stays redacted."""
++    def __repr__(self):
++        return "<local-watch private text>"
++
++
++def _watch_rule(row):
++    result = dict(row)
++    result["params"] = _json.loads(result["params"])
++    result["enabled"] = bool(result["enabled"])
++    return result
++
++
++async def create_watch_device(username: str, token_hash: str, name: str) -> dict:
++    async with aiosqlite.connect(DB_PATH, timeout=SQLITE_BUSY_TIMEOUT) as db:
++        db.row_factory = aiosqlite.Row
++        await db.execute("BEGIN IMMEDIATE")
++        if not await _users_exist(db, username):
++            raise ValueError("用户不存在")
++        async with db.execute("SELECT COUNT(*) FROM watch_devices WHERE username=? AND revoked=0", (username,)) as cursor:
++            if (await cursor.fetchone())[0] >= 3:
++                raise ValueError("最多配置 3 台有效设备")
++        cursor = await db.execute("INSERT INTO watch_devices(username,token_hash,name) VALUES(?,?,?)", (username, token_hash, name))
++        async with db.execute("SELECT id,name,created_at,last_seen_at,revoked FROM watch_devices WHERE id=?", (cursor.lastrowid,)) as selected:
++            result = dict(await selected.fetchone())
++        await db.commit()
++        return result
++
++
++async def list_watch_devices(username: str) -> list[dict]:
++    async with aiosqlite.connect(DB_PATH, timeout=SQLITE_BUSY_TIMEOUT) as db:
++        db.row_factory = aiosqlite.Row
++        async with db.execute("SELECT id,name,created_at,last_seen_at,revoked FROM watch_devices WHERE username=? ORDER BY id", (username,)) as cursor:
++            return [dict(row) for row in await cursor.fetchall()]
++
++
++async def revoke_watch_device(username: str, device_id: int) -> bool:
++    async with aiosqlite.connect(DB_PATH, timeout=SQLITE_BUSY_TIMEOUT) as db:
++        cursor = await db.execute("UPDATE watch_devices SET revoked=1 WHERE id=? AND username=?", (device_id, username))
++        await db.commit()
++        return cursor.rowcount > 0
++
++
++async def authenticate_watch_device(token_hash: str) -> dict | None:
++    async with aiosqlite.connect(DB_PATH, timeout=SQLITE_BUSY_TIMEOUT) as db:
++        db.row_factory = aiosqlite.Row
++        await db.execute("BEGIN IMMEDIATE")
++        async with db.execute("SELECT d.id,d.username FROM watch_devices d JOIN users u ON u.username=d.username WHERE d.token_hash=? AND d.revoked=0", (token_hash,)) as cursor:
++            row = await cursor.fetchone()
++        if row is None:
++            return None
++        await db.execute("UPDATE watch_devices SET last_seen_at=CURRENT_TIMESTAMP WHERE id=?", (row["id"],))
++        await db.commit()
++        return dict(row)
++
++
++async def list_watch_rules(username: str, *, enabled_only=False) -> list[dict]:
++    async with aiosqlite.connect(DB_PATH, timeout=SQLITE_BUSY_TIMEOUT) as db:
++        db.row_factory = aiosqlite.Row
++        sql = "SELECT * FROM watch_rules WHERE username=?" + (" AND enabled=1" if enabled_only else "") + " ORDER BY id"
++        async with db.execute(sql, (username,)) as cursor:
++            return [_watch_rule(row) for row in await cursor.fetchall()]
++
++
++async def get_watch_rule(username: str, rule_id: int) -> dict | None:
++    async with aiosqlite.connect(DB_PATH, timeout=SQLITE_BUSY_TIMEOUT) as db:
++        db.row_factory = aiosqlite.Row
++        async with db.execute("SELECT * FROM watch_rules WHERE username=? AND id=?", (username, rule_id)) as cursor:
++            row = await cursor.fetchone()
++        return _watch_rule(row) if row else None
++
++
++async def create_watch_rule(username: str, values: dict) -> dict:
++    fields = ("name", "app_match", "title_match", "kind", "params", "interval_seconds", "cooldown_seconds", "enabled", "conversation_id")
++    params = [(_json.dumps(values[key], ensure_ascii=False) if key == "params" else values[key]) for key in fields]
++    async with aiosqlite.connect(DB_PATH, timeout=SQLITE_BUSY_TIMEOUT) as db:
++        db.row_factory = aiosqlite.Row
++        await db.execute("BEGIN IMMEDIATE")
++        if not await _users_exist(db, username):
++            raise ValueError("用户不存在")
++        async with db.execute("SELECT COUNT(*) FROM watch_rules WHERE username=?", (username,)) as cursor:
++            if (await cursor.fetchone())[0] >= 20:
++                raise ValueError("最多配置 20 条规则")
++        cursor = await db.execute("INSERT INTO watch_rules(username," + ",".join(fields) + ") VALUES(" + ",".join("?" for _ in range(10)) + ")", [username, *params])
++        async with db.execute("SELECT * FROM watch_rules WHERE id=?", (cursor.lastrowid,)) as selected:
++            result = _watch_rule(await selected.fetchone())
++        await db.commit()
++        return result
++
++
++async def update_watch_rule(username: str, rule_id: int, values: dict) -> dict | None:
++    fields = ("name", "app_match", "title_match", "kind", "params", "interval_seconds", "cooldown_seconds", "enabled", "conversation_id")
++    params = [(_json.dumps(values[key], ensure_ascii=False) if key == "params" else values[key]) for key in fields]
++    async with aiosqlite.connect(DB_PATH, timeout=SQLITE_BUSY_TIMEOUT) as db:
++        db.row_factory = aiosqlite.Row
++        await db.execute("BEGIN IMMEDIATE")
++        cursor = await db.execute("UPDATE watch_rules SET " + ",".join(key + "=?" for key in fields) + ",updated_at=CURRENT_TIMESTAMP WHERE username=? AND id=?", [*params, username, rule_id])
++        if cursor.rowcount == 0:
++            return None
++        async with db.execute("SELECT * FROM watch_rules WHERE id=? AND username=?", (rule_id, username)) as selected:
++            result = _watch_rule(await selected.fetchone())
++        await db.commit()
++        return result
++
++
++async def delete_watch_rule(username: str, rule_id: int) -> bool:
++    async with aiosqlite.connect(DB_PATH, timeout=SQLITE_BUSY_TIMEOUT) as db:
++        cursor = await db.execute("DELETE FROM watch_rules WHERE username=? AND id=?", (username, rule_id))
++        await db.commit()
++        return cursor.rowcount > 0
++
++
++async def latest_watch_alert_time(username: str, rule_id: int) -> str | None:
++    async with aiosqlite.connect(DB_PATH, timeout=SQLITE_BUSY_TIMEOUT) as db:
++        async with db.execute("SELECT created_at FROM watch_alerts WHERE username=? AND rule_id=? ORDER BY id DESC LIMIT 1", (username, rule_id)) as cursor:
++            row = await cursor.fetchone()
++        return row[0] if row else None
++
++
++async def save_watch_alert(username: str, rule: dict, summary: str, content: str) -> dict | None:
++    """Use ordinary assistant persistence, then resolve its exact text/owner/target.
++
++    The service serializes watch writes per account. Never infer message ownership
++    from the last id globally: unrelated conversations can write concurrently.
++    """
++    from agent_store import resolve_chat_conversation, ResourceNotFound
++    target = rule.get("conversation_id") or None
++    try:
++        context = await resolve_chat_conversation(username, target)
++    except ResourceNotFound:
++        try:
++            context = await resolve_chat_conversation(username)
++        except ResourceNotFound:
++            return None
++    target = context["conversation"]["id"]
++    async with aiosqlite.connect(DB_PATH, timeout=SQLITE_BUSY_TIMEOUT) as db:
++        async with db.execute("SELECT COALESCE(MAX(id),0) FROM messages WHERE username=?", (username,)) as cursor:
++            before_id = (await cursor.fetchone())[0]
++    private_content = WatchPrivateText(content)
++    if not await save_message(username, "assistant", private_content, conversation_id=target):
++        # A deletion can race the initial resolution; retry the default once.
++        if not await save_message(username, "assistant", private_content, conversation_id=None):
++            return None
++        context = await resolve_chat_conversation(username)
++        target = context["conversation"]["id"]
++    async with aiosqlite.connect(DB_PATH, timeout=SQLITE_BUSY_TIMEOUT) as db:
++        db.row_factory = aiosqlite.Row
++        await db.execute("BEGIN IMMEDIATE")
++        async with db.execute("SELECT id,conversation_id FROM messages WHERE username=? AND role='assistant' AND conversation_id=? AND content=? AND id>? ORDER BY id LIMIT 1", (username, target, private_content, before_id)) as cursor:
++            message = await cursor.fetchone()
++        if message is None or not await _users_exist(db, username):
++            return None
++        cursor = await db.execute("INSERT INTO watch_alerts(username,rule_id,summary,message_id,conversation_id) VALUES(?,?,?,?,?)", (username, rule["id"], WatchPrivateText(summary[:200]), message["id"], message["conversation_id"]))
++        async with db.execute("SELECT id,created_at,message_id,conversation_id FROM watch_alerts WHERE id=?", (cursor.lastrowid,)) as selected:
++            result = dict(await selected.fetchone())
++        await db.commit()
++        return result
++
++
++async def list_watch_alerts(username: str, after: int = 0) -> list[dict]:
++    async with aiosqlite.connect(DB_PATH, timeout=SQLITE_BUSY_TIMEOUT) as db:
++        db.row_factory = aiosqlite.Row
++        async with db.execute("""SELECT a.id,COALESCE(r.name,'已删除规则') AS rule_name,
++                a.summary,a.created_at,a.conversation_id,a.message_id
++            FROM watch_alerts a LEFT JOIN watch_rules r ON r.id=a.rule_id AND r.username=a.username
++            WHERE a.username=? AND a.id>? ORDER BY a.id LIMIT 50""", (username, after)) as cursor:
++            return [dict(row) for row in await cursor.fetchall()]
++
++
++async def authenticate_watch_device_throttled(token_hash: str) -> dict | None:
++    """Reject unknown tokens using only a read; touch valid devices once a minute.
++
++    The guarded UPDATE also checks the database timestamp, revocation and owner
++    existence. Concurrent readers of a stale timestamp cannot refresh it twice.
++    """
++    stale = """(last_seen_at IS NULL OR strftime('%s', last_seen_at) IS NULL
++        OR CAST(strftime('%s', 'now') AS INTEGER)
++             - CAST(strftime('%s', last_seen_at) AS INTEGER) >= 60)"""
++    async with aiosqlite.connect(DB_PATH, timeout=SQLITE_BUSY_TIMEOUT) as db:
++        db.row_factory = aiosqlite.Row
++        async with db.execute("""SELECT d.id,d.username,""" + stale + """ AS needs_touch
++            FROM watch_devices d JOIN users u ON u.username=d.username
++            WHERE d.token_hash=? AND d.revoked=0""", (token_hash,)) as cursor:
++            device = await cursor.fetchone()
++        if device is None:
++            return None
++        if device["needs_touch"]:
++            await db.execute("""UPDATE watch_devices SET last_seen_at=CURRENT_TIMESTAMP
++                WHERE id=? AND username=? AND token_hash=? AND revoked=0
++                AND EXISTS(SELECT 1 FROM users WHERE username=watch_devices.username)
++                AND """ + stale, (device["id"], device["username"], token_hash))
++            await db.commit()
++            # A revoke/delete may win between the read and conditional write.
++            async with db.execute("""SELECT d.id,d.username FROM watch_devices d
++                JOIN users u ON u.username=d.username
++                WHERE d.token_hash=? AND d.revoked=0""", (token_hash,)) as cursor:
++                current = await cursor.fetchone()
++            return dict(current) if current is not None else None
++        return {"id": device["id"], "username": device["username"]}
++
++
++async def list_watch_alerts_with_content(username: str, after: int = 0) -> list[dict]:
++    """Return the stored assistant body, without rebuilding labels from rules."""
++    async with aiosqlite.connect(DB_PATH, timeout=SQLITE_BUSY_TIMEOUT) as db:
++        db.row_factory = aiosqlite.Row
++        async with db.execute("""SELECT a.id,COALESCE(r.name,'已删除规则') AS rule_name,
++                a.summary,a.created_at,a.conversation_id,a.message_id,
++                COALESCE(m.content,'') AS content
++            FROM watch_alerts a
++            LEFT JOIN watch_rules r ON r.id=a.rule_id AND r.username=a.username
++            LEFT JOIN messages m ON m.id=a.message_id AND m.username=a.username
++                AND m.conversation_id=a.conversation_id AND m.role='assistant'
++            WHERE a.username=? AND a.id>? ORDER BY a.id LIMIT 50""", (username, after)) as cursor:
++            return [dict(row) for row in await cursor.fetchall()]

@@ -1,0 +1,54 @@
+{
+  "changed_existing_files": [
+    "backend/routers/local_watch.py",
+    "backend/tests/test_local_watch_backend_r2.py",
+    "backend/tests/test_local_watch_capture_backend_r3.py",
+    "backend/tests/test_local_watch_capture_frontend_r3.py",
+    "docs/tasks/2026-10-11-local-watch/03-report.md",
+    "frontend/components/LocalWatchSection.tsx",
+    "frontend/lib/localWatch.ts",
+    "watcher-mac/CaptureStatusTests/test_local_watch_capture_status.swift",
+    "watcher-mac/Sources/FionaWatcherCore/CaptureStatus.swift"
+  ],
+  "new_test_files": [
+    "backend/tests/test_local_watch_capture_backend_r4.py",
+    "backend/tests/test_local_watch_capture_frontend_r4.py",
+    "backend/tests/test_local_watch_swift_recovery_r4.py",
+    "watcher-mac/CaptureStatusTests/test_local_watch_capture_recovery_r4.swift"
+  ],
+  "unexpected_changed_files": [],
+  "generated_cache_excluded": [
+    "frontend/tsconfig.tsbuildinfo"
+  ],
+  "original_task_test_files_unchanged": 99,
+  "original_swift_test_sources_unchanged": [
+    "watcher-mac/Tests/FionaWatcherCoreTests/test_local_watch_logic.swift",
+    "watcher-mac/Tests/FionaWatcherCoreTests/test_local_watch_ocr.swift",
+    "watcher-mac/Tests/FionaWatcherCoreTests/test_local_watch_scheduling.swift"
+  ],
+  "r4_start_test_files": 119,
+  "r4_start_test_files_unchanged": 115,
+  "r4_start_python_swift_test_sources": 117,
+  "authorized_task_test_updates": [
+    "backend/tests/test_local_watch_backend_r2.py",
+    "backend/tests/test_local_watch_capture_backend_r3.py",
+    "backend/tests/test_local_watch_capture_frontend_r3.py",
+    "watcher-mac/CaptureStatusTests/test_local_watch_capture_status.swift"
+  ],
+  "test_adjustment_diff": "r4-tests-adjustments.diff",
+  "protected_files_unchanged": 57,
+  "database_r4_diff": {
+    "added": 0,
+    "deleted": 0
+  },
+  "database_original_task_diff": {
+    "added": 249,
+    "deleted": 0
+  },
+  "author_capture_message_source_unchanged": true,
+  "author_full_error_domain_test_preserved": true,
+  "author_watcher_readme_bytes_unchanged": true,
+  "previous_report_bytes_preserved": 55700,
+  "report_append_only": true,
+  "watcher_build_cache_exists_after_acceptance": false
+}

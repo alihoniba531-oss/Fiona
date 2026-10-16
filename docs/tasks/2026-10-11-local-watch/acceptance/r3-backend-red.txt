@@ -1,0 +1,1067 @@
+FFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFF......F.F                    [100%]
+=================================== FAILURES ===================================
+____________ test_every_rule_has_capture_even_before_any_heartbeat _____________
+
+client = <starlette.testclient.TestClient object at 0x111bf8590>
+
+    def test_every_rule_has_capture_even_before_any_heartbeat(client):
+        first, second = rule(client), rule(client, enabled=False)
+>       assert captures(client) == {first["id"]: STOPPED, second["id"]: STOPPED}
+               ^^^^^^^^^^^^^^^^
+
+tests/test_local_watch_capture_backend_r3.py:87: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+client = <starlette.testclient.TestClient object at 0x111bf8590>
+username = 'smoke_tester'
+
+    def captures(client, username="smoke_tester"):
+        response = client.get("/local-watch/rules", headers={"X-Dev-User": username})
+        assert response.status_code == 200
+        assert response.headers["cache-control"] == "private, no-store"
+>       return {value["id"]: value["capture"] for value in response.json()}
+                             ^^^^^^^^^^^^^^^^
+E       KeyError: 'capture'
+
+tests/test_local_watch_capture_backend_r3.py:82: KeyError
+_ test_saved_capture_chinese_mapping_and_since_are_returned_without_raw_errors[True-None-\u76d1\u63a7\u4e2d] _
+
+client = <starlette.testclient.TestClient object at 0x111a97250>, ok = True
+error = None, message = '监控中'
+
+    @pytest.mark.parametrize("ok,error,message", [
+        (True, None, "监控中"),
+        (False, "SCStreamErrorDomain/-3811", CAPTURE_ERROR),
+        (False, "SCStreamErrorDomain/-3801", CAPTURE_ERROR),
+        (False, "SCStreamErrorDomain/99", CAPTURE_ERROR),
+        (False, "ScreenCaptureKitErrorDomain/-1", CAPTURE_ERROR),
+        (False, "ScreenCaptureKit/-7", CAPTURE_ERROR),
+        (False, "SCErrorDomain/-3", CAPTURE_ERROR),
+        (False, "window_not_found", NO_WINDOW),
+        (False, "PrivateSecretErrorDomain/-901", OTHER_ERROR),
+        (False, "NSOSStatusErrorDomain/-50", OTHER_ERROR),
+        (False, None, OTHER_ERROR),
+        (False, "do not reveal this arbitrary uploaded text", OTHER_ERROR),
+    ])
+    def test_saved_capture_chinese_mapping_and_since_are_returned_without_raw_errors(client, ok, error, message):
+        item, watched = device(client), rule(client)
+        response = heartbeat(client, item, [status(watched["id"], ok, error)])
+>       assert response.status_code == 200, response.text
+E       AssertionError: {"detail":"请求参数不正确"}
+E       assert 422 == 200
+E        +  where 422 = <Response [422 Unprocessable Content]>.status_code
+
+tests/test_local_watch_capture_backend_r3.py:107: AssertionError
+_ test_saved_capture_chinese_mapping_and_since_are_returned_without_raw_errors[False-SCStreamErrorDomain/-3811-\u622a\u56fe\u5931\u8d25\uff1a\u5c4f\u5e55\u53ef\u80fd\u5df2\u9501\u5b9a\u6216\u663e\u793a\u5668\u5df2\u4f11\u7720\uff0c\u4e5f\u53ef\u80fd\u7f3a\u5c11\u5c4f\u5e55\u5f55\u5236\u6743\u9650] _
+
+client = <starlette.testclient.TestClient object at 0x111a96c10>, ok = False
+error = 'SCStreamErrorDomain/-3811', message = '截图失败：屏幕可能已锁定或显示器已休眠，也可能缺少屏幕录制权限'
+
+    @pytest.mark.parametrize("ok,error,message", [
+        (True, None, "监控中"),
+        (False, "SCStreamErrorDomain/-3811", CAPTURE_ERROR),
+        (False, "SCStreamErrorDomain/-3801", CAPTURE_ERROR),
+        (False, "SCStreamErrorDomain/99", CAPTURE_ERROR),
+        (False, "ScreenCaptureKitErrorDomain/-1", CAPTURE_ERROR),
+        (False, "ScreenCaptureKit/-7", CAPTURE_ERROR),
+        (False, "SCErrorDomain/-3", CAPTURE_ERROR),
+        (False, "window_not_found", NO_WINDOW),
+        (False, "PrivateSecretErrorDomain/-901", OTHER_ERROR),
+        (False, "NSOSStatusErrorDomain/-50", OTHER_ERROR),
+        (False, None, OTHER_ERROR),
+        (False, "do not reveal this arbitrary uploaded text", OTHER_ERROR),
+    ])
+    def test_saved_capture_chinese_mapping_and_since_are_returned_without_raw_errors(client, ok, error, message):
+        item, watched = device(client), rule(client)
+        response = heartbeat(client, item, [status(watched["id"], ok, error)])
+>       assert response.status_code == 200, response.text
+E       AssertionError: {"detail":"请求参数不正确"}
+E       assert 422 == 200
+E        +  where 422 = <Response [422 Unprocessable Content]>.status_code
+
+tests/test_local_watch_capture_backend_r3.py:107: AssertionError
+_ test_saved_capture_chinese_mapping_and_since_are_returned_without_raw_errors[False-SCStreamErrorDomain/-3801-\u622a\u56fe\u5931\u8d25\uff1a\u5c4f\u5e55\u53ef\u80fd\u5df2\u9501\u5b9a\u6216\u663e\u793a\u5668\u5df2\u4f11\u7720\uff0c\u4e5f\u53ef\u80fd\u7f3a\u5c11\u5c4f\u5e55\u5f55\u5236\u6743\u9650] _
+
+client = <starlette.testclient.TestClient object at 0x111c11940>, ok = False
+error = 'SCStreamErrorDomain/-3801', message = '截图失败：屏幕可能已锁定或显示器已休眠，也可能缺少屏幕录制权限'
+
+    @pytest.mark.parametrize("ok,error,message", [
+        (True, None, "监控中"),
+        (False, "SCStreamErrorDomain/-3811", CAPTURE_ERROR),
+        (False, "SCStreamErrorDomain/-3801", CAPTURE_ERROR),
+        (False, "SCStreamErrorDomain/99", CAPTURE_ERROR),
+        (False, "ScreenCaptureKitErrorDomain/-1", CAPTURE_ERROR),
+        (False, "ScreenCaptureKit/-7", CAPTURE_ERROR),
+        (False, "SCErrorDomain/-3", CAPTURE_ERROR),
+        (False, "window_not_found", NO_WINDOW),
+        (False, "PrivateSecretErrorDomain/-901", OTHER_ERROR),
+        (False, "NSOSStatusErrorDomain/-50", OTHER_ERROR),
+        (False, None, OTHER_ERROR),
+        (False, "do not reveal this arbitrary uploaded text", OTHER_ERROR),
+    ])
+    def test_saved_capture_chinese_mapping_and_since_are_returned_without_raw_errors(client, ok, error, message):
+        item, watched = device(client), rule(client)
+        response = heartbeat(client, item, [status(watched["id"], ok, error)])
+>       assert response.status_code == 200, response.text
+E       AssertionError: {"detail":"请求参数不正确"}
+E       assert 422 == 200
+E        +  where 422 = <Response [422 Unprocessable Content]>.status_code
+
+tests/test_local_watch_capture_backend_r3.py:107: AssertionError
+_ test_saved_capture_chinese_mapping_and_since_are_returned_without_raw_errors[False-SCStreamErrorDomain/99-\u622a\u56fe\u5931\u8d25\uff1a\u5c4f\u5e55\u53ef\u80fd\u5df2\u9501\u5b9a\u6216\u663e\u793a\u5668\u5df2\u4f11\u7720\uff0c\u4e5f\u53ef\u80fd\u7f3a\u5c11\u5c4f\u5e55\u5f55\u5236\u6743\u9650] _
+
+client = <starlette.testclient.TestClient object at 0x111c12190>, ok = False
+error = 'SCStreamErrorDomain/99', message = '截图失败：屏幕可能已锁定或显示器已休眠，也可能缺少屏幕录制权限'
+
+    @pytest.mark.parametrize("ok,error,message", [
+        (True, None, "监控中"),
+        (False, "SCStreamErrorDomain/-3811", CAPTURE_ERROR),
+        (False, "SCStreamErrorDomain/-3801", CAPTURE_ERROR),
+        (False, "SCStreamErrorDomain/99", CAPTURE_ERROR),
+        (False, "ScreenCaptureKitErrorDomain/-1", CAPTURE_ERROR),
+        (False, "ScreenCaptureKit/-7", CAPTURE_ERROR),
+        (False, "SCErrorDomain/-3", CAPTURE_ERROR),
+        (False, "window_not_found", NO_WINDOW),
+        (False, "PrivateSecretErrorDomain/-901", OTHER_ERROR),
+        (False, "NSOSStatusErrorDomain/-50", OTHER_ERROR),
+        (False, None, OTHER_ERROR),
+        (False, "do not reveal this arbitrary uploaded text", OTHER_ERROR),
+    ])
+    def test_saved_capture_chinese_mapping_and_since_are_returned_without_raw_errors(client, ok, error, message):
+        item, watched = device(client), rule(client)
+        response = heartbeat(client, item, [status(watched["id"], ok, error)])
+>       assert response.status_code == 200, response.text
+E       AssertionError: {"detail":"请求参数不正确"}
+E       assert 422 == 200
+E        +  where 422 = <Response [422 Unprocessable Content]>.status_code
+
+tests/test_local_watch_capture_backend_r3.py:107: AssertionError
+_ test_saved_capture_chinese_mapping_and_since_are_returned_without_raw_errors[False-ScreenCaptureKitErrorDomain/-1-\u622a\u56fe\u5931\u8d25\uff1a\u5c4f\u5e55\u53ef\u80fd\u5df2\u9501\u5b9a\u6216\u663e\u793a\u5668\u5df2\u4f11\u7720\uff0c\u4e5f\u53ef\u80fd\u7f3a\u5c11\u5c4f\u5e55\u5f55\u5236\u6743\u9650] _
+
+client = <starlette.testclient.TestClient object at 0x111a6b890>, ok = False
+error = 'ScreenCaptureKitErrorDomain/-1'
+message = '截图失败：屏幕可能已锁定或显示器已休眠，也可能缺少屏幕录制权限'
+
+    @pytest.mark.parametrize("ok,error,message", [
+        (True, None, "监控中"),
+        (False, "SCStreamErrorDomain/-3811", CAPTURE_ERROR),
+        (False, "SCStreamErrorDomain/-3801", CAPTURE_ERROR),
+        (False, "SCStreamErrorDomain/99", CAPTURE_ERROR),
+        (False, "ScreenCaptureKitErrorDomain/-1", CAPTURE_ERROR),
+        (False, "ScreenCaptureKit/-7", CAPTURE_ERROR),
+        (False, "SCErrorDomain/-3", CAPTURE_ERROR),
+        (False, "window_not_found", NO_WINDOW),
+        (False, "PrivateSecretErrorDomain/-901", OTHER_ERROR),
+        (False, "NSOSStatusErrorDomain/-50", OTHER_ERROR),
+        (False, None, OTHER_ERROR),
+        (False, "do not reveal this arbitrary uploaded text", OTHER_ERROR),
+    ])
+    def test_saved_capture_chinese_mapping_and_since_are_returned_without_raw_errors(client, ok, error, message):
+        item, watched = device(client), rule(client)
+        response = heartbeat(client, item, [status(watched["id"], ok, error)])
+>       assert response.status_code == 200, response.text
+E       AssertionError: {"detail":"请求参数不正确"}
+E       assert 422 == 200
+E        +  where 422 = <Response [422 Unprocessable Content]>.status_code
+
+tests/test_local_watch_capture_backend_r3.py:107: AssertionError
+_ test_saved_capture_chinese_mapping_and_since_are_returned_without_raw_errors[False-ScreenCaptureKit/-7-\u622a\u56fe\u5931\u8d25\uff1a\u5c4f\u5e55\u53ef\u80fd\u5df2\u9501\u5b9a\u6216\u663e\u793a\u5668\u5df2\u4f11\u7720\uff0c\u4e5f\u53ef\u80fd\u7f3a\u5c11\u5c4f\u5e55\u5f55\u5236\u6743\u9650] _
+
+client = <starlette.testclient.TestClient object at 0x111d2e690>, ok = False
+error = 'ScreenCaptureKit/-7', message = '截图失败：屏幕可能已锁定或显示器已休眠，也可能缺少屏幕录制权限'
+
+    @pytest.mark.parametrize("ok,error,message", [
+        (True, None, "监控中"),
+        (False, "SCStreamErrorDomain/-3811", CAPTURE_ERROR),
+        (False, "SCStreamErrorDomain/-3801", CAPTURE_ERROR),
+        (False, "SCStreamErrorDomain/99", CAPTURE_ERROR),
+        (False, "ScreenCaptureKitErrorDomain/-1", CAPTURE_ERROR),
+        (False, "ScreenCaptureKit/-7", CAPTURE_ERROR),
+        (False, "SCErrorDomain/-3", CAPTURE_ERROR),
+        (False, "window_not_found", NO_WINDOW),
+        (False, "PrivateSecretErrorDomain/-901", OTHER_ERROR),
+        (False, "NSOSStatusErrorDomain/-50", OTHER_ERROR),
+        (False, None, OTHER_ERROR),
+        (False, "do not reveal this arbitrary uploaded text", OTHER_ERROR),
+    ])
+    def test_saved_capture_chinese_mapping_and_since_are_returned_without_raw_errors(client, ok, error, message):
+        item, watched = device(client), rule(client)
+        response = heartbeat(client, item, [status(watched["id"], ok, error)])
+>       assert response.status_code == 200, response.text
+E       AssertionError: {"detail":"请求参数不正确"}
+E       assert 422 == 200
+E        +  where 422 = <Response [422 Unprocessable Content]>.status_code
+
+tests/test_local_watch_capture_backend_r3.py:107: AssertionError
+_ test_saved_capture_chinese_mapping_and_since_are_returned_without_raw_errors[False-SCErrorDomain/-3-\u622a\u56fe\u5931\u8d25\uff1a\u5c4f\u5e55\u53ef\u80fd\u5df2\u9501\u5b9a\u6216\u663e\u793a\u5668\u5df2\u4f11\u7720\uff0c\u4e5f\u53ef\u80fd\u7f3a\u5c11\u5c4f\u5e55\u5f55\u5236\u6743\u9650] _
+
+client = <starlette.testclient.TestClient object at 0x111d2e140>, ok = False
+error = 'SCErrorDomain/-3', message = '截图失败：屏幕可能已锁定或显示器已休眠，也可能缺少屏幕录制权限'
+
+    @pytest.mark.parametrize("ok,error,message", [
+        (True, None, "监控中"),
+        (False, "SCStreamErrorDomain/-3811", CAPTURE_ERROR),
+        (False, "SCStreamErrorDomain/-3801", CAPTURE_ERROR),
+        (False, "SCStreamErrorDomain/99", CAPTURE_ERROR),
+        (False, "ScreenCaptureKitErrorDomain/-1", CAPTURE_ERROR),
+        (False, "ScreenCaptureKit/-7", CAPTURE_ERROR),
+        (False, "SCErrorDomain/-3", CAPTURE_ERROR),
+        (False, "window_not_found", NO_WINDOW),
+        (False, "PrivateSecretErrorDomain/-901", OTHER_ERROR),
+        (False, "NSOSStatusErrorDomain/-50", OTHER_ERROR),
+        (False, None, OTHER_ERROR),
+        (False, "do not reveal this arbitrary uploaded text", OTHER_ERROR),
+    ])
+    def test_saved_capture_chinese_mapping_and_since_are_returned_without_raw_errors(client, ok, error, message):
+        item, watched = device(client), rule(client)
+        response = heartbeat(client, item, [status(watched["id"], ok, error)])
+>       assert response.status_code == 200, response.text
+E       AssertionError: {"detail":"请求参数不正确"}
+E       assert 422 == 200
+E        +  where 422 = <Response [422 Unprocessable Content]>.status_code
+
+tests/test_local_watch_capture_backend_r3.py:107: AssertionError
+_ test_saved_capture_chinese_mapping_and_since_are_returned_without_raw_errors[False-window_not_found-\u6ca1\u6709\u627e\u5230\u5339\u914d\u7684\u7a97\u53e3\uff08\u7a97\u53e3\u53ef\u80fd\u5df2\u5173\u95ed\u6216\u6700\u5c0f\u5316\uff09] _
+
+client = <starlette.testclient.TestClient object at 0x111d2de10>, ok = False
+error = 'window_not_found', message = '没有找到匹配的窗口（窗口可能已关闭或最小化）'
+
+    @pytest.mark.parametrize("ok,error,message", [
+        (True, None, "监控中"),
+        (False, "SCStreamErrorDomain/-3811", CAPTURE_ERROR),
+        (False, "SCStreamErrorDomain/-3801", CAPTURE_ERROR),
+        (False, "SCStreamErrorDomain/99", CAPTURE_ERROR),
+        (False, "ScreenCaptureKitErrorDomain/-1", CAPTURE_ERROR),
+        (False, "ScreenCaptureKit/-7", CAPTURE_ERROR),
+        (False, "SCErrorDomain/-3", CAPTURE_ERROR),
+        (False, "window_not_found", NO_WINDOW),
+        (False, "PrivateSecretErrorDomain/-901", OTHER_ERROR),
+        (False, "NSOSStatusErrorDomain/-50", OTHER_ERROR),
+        (False, None, OTHER_ERROR),
+        (False, "do not reveal this arbitrary uploaded text", OTHER_ERROR),
+    ])
+    def test_saved_capture_chinese_mapping_and_since_are_returned_without_raw_errors(client, ok, error, message):
+        item, watched = device(client), rule(client)
+        response = heartbeat(client, item, [status(watched["id"], ok, error)])
+>       assert response.status_code == 200, response.text
+E       AssertionError: {"detail":"请求参数不正确"}
+E       assert 422 == 200
+E        +  where 422 = <Response [422 Unprocessable Content]>.status_code
+
+tests/test_local_watch_capture_backend_r3.py:107: AssertionError
+_ test_saved_capture_chinese_mapping_and_since_are_returned_without_raw_errors[False-PrivateSecretErrorDomain/-901-\u622a\u56fe\u5931\u8d25\uff0c\u8bf7\u67e5\u770b\u76d1\u63a7\u7a0b\u5e8f\u65e5\u5fd7] _
+
+client = <starlette.testclient.TestClient object at 0x111d2f680>, ok = False
+error = 'PrivateSecretErrorDomain/-901', message = '截图失败，请查看监控程序日志'
+
+    @pytest.mark.parametrize("ok,error,message", [
+        (True, None, "监控中"),
+        (False, "SCStreamErrorDomain/-3811", CAPTURE_ERROR),
+        (False, "SCStreamErrorDomain/-3801", CAPTURE_ERROR),
+        (False, "SCStreamErrorDomain/99", CAPTURE_ERROR),
+        (False, "ScreenCaptureKitErrorDomain/-1", CAPTURE_ERROR),
+        (False, "ScreenCaptureKit/-7", CAPTURE_ERROR),
+        (False, "SCErrorDomain/-3", CAPTURE_ERROR),
+        (False, "window_not_found", NO_WINDOW),
+        (False, "PrivateSecretErrorDomain/-901", OTHER_ERROR),
+        (False, "NSOSStatusErrorDomain/-50", OTHER_ERROR),
+        (False, None, OTHER_ERROR),
+        (False, "do not reveal this arbitrary uploaded text", OTHER_ERROR),
+    ])
+    def test_saved_capture_chinese_mapping_and_since_are_returned_without_raw_errors(client, ok, error, message):
+        item, watched = device(client), rule(client)
+        response = heartbeat(client, item, [status(watched["id"], ok, error)])
+>       assert response.status_code == 200, response.text
+E       AssertionError: {"detail":"请求参数不正确"}
+E       assert 422 == 200
+E        +  where 422 = <Response [422 Unprocessable Content]>.status_code
+
+tests/test_local_watch_capture_backend_r3.py:107: AssertionError
+_ test_saved_capture_chinese_mapping_and_since_are_returned_without_raw_errors[False-NSOSStatusErrorDomain/-50-\u622a\u56fe\u5931\u8d25\uff0c\u8bf7\u67e5\u770b\u76d1\u63a7\u7a0b\u5e8f\u65e5\u5fd7] _
+
+client = <starlette.testclient.TestClient object at 0x111d48490>, ok = False
+error = 'NSOSStatusErrorDomain/-50', message = '截图失败，请查看监控程序日志'
+
+    @pytest.mark.parametrize("ok,error,message", [
+        (True, None, "监控中"),
+        (False, "SCStreamErrorDomain/-3811", CAPTURE_ERROR),
+        (False, "SCStreamErrorDomain/-3801", CAPTURE_ERROR),
+        (False, "SCStreamErrorDomain/99", CAPTURE_ERROR),
+        (False, "ScreenCaptureKitErrorDomain/-1", CAPTURE_ERROR),
+        (False, "ScreenCaptureKit/-7", CAPTURE_ERROR),
+        (False, "SCErrorDomain/-3", CAPTURE_ERROR),
+        (False, "window_not_found", NO_WINDOW),
+        (False, "PrivateSecretErrorDomain/-901", OTHER_ERROR),
+        (False, "NSOSStatusErrorDomain/-50", OTHER_ERROR),
+        (False, None, OTHER_ERROR),
+        (False, "do not reveal this arbitrary uploaded text", OTHER_ERROR),
+    ])
+    def test_saved_capture_chinese_mapping_and_since_are_returned_without_raw_errors(client, ok, error, message):
+        item, watched = device(client), rule(client)
+        response = heartbeat(client, item, [status(watched["id"], ok, error)])
+>       assert response.status_code == 200, response.text
+E       AssertionError: {"detail":"请求参数不正确"}
+E       assert 422 == 200
+E        +  where 422 = <Response [422 Unprocessable Content]>.status_code
+
+tests/test_local_watch_capture_backend_r3.py:107: AssertionError
+_ test_saved_capture_chinese_mapping_and_since_are_returned_without_raw_errors[False-None-\u622a\u56fe\u5931\u8d25\uff0c\u8bf7\u67e5\u770b\u76d1\u63a7\u7a0b\u5e8f\u65e5\u5fd7] _
+
+client = <starlette.testclient.TestClient object at 0x111d48d10>, ok = False
+error = None, message = '截图失败，请查看监控程序日志'
+
+    @pytest.mark.parametrize("ok,error,message", [
+        (True, None, "监控中"),
+        (False, "SCStreamErrorDomain/-3811", CAPTURE_ERROR),
+        (False, "SCStreamErrorDomain/-3801", CAPTURE_ERROR),
+        (False, "SCStreamErrorDomain/99", CAPTURE_ERROR),
+        (False, "ScreenCaptureKitErrorDomain/-1", CAPTURE_ERROR),
+        (False, "ScreenCaptureKit/-7", CAPTURE_ERROR),
+        (False, "SCErrorDomain/-3", CAPTURE_ERROR),
+        (False, "window_not_found", NO_WINDOW),
+        (False, "PrivateSecretErrorDomain/-901", OTHER_ERROR),
+        (False, "NSOSStatusErrorDomain/-50", OTHER_ERROR),
+        (False, None, OTHER_ERROR),
+        (False, "do not reveal this arbitrary uploaded text", OTHER_ERROR),
+    ])
+    def test_saved_capture_chinese_mapping_and_since_are_returned_without_raw_errors(client, ok, error, message):
+        item, watched = device(client), rule(client)
+        response = heartbeat(client, item, [status(watched["id"], ok, error)])
+>       assert response.status_code == 200, response.text
+E       AssertionError: {"detail":"请求参数不正确"}
+E       assert 422 == 200
+E        +  where 422 = <Response [422 Unprocessable Content]>.status_code
+
+tests/test_local_watch_capture_backend_r3.py:107: AssertionError
+_ test_saved_capture_chinese_mapping_and_since_are_returned_without_raw_errors[False-do not reveal this arbitrary uploaded text-\u622a\u56fe\u5931\u8d25\uff0c\u8bf7\u67e5\u770b\u76d1\u63a7\u7a0b\u5e8f\u65e5\u5fd7] _
+
+client = <starlette.testclient.TestClient object at 0x111d49480>, ok = False
+error = 'do not reveal this arbitrary uploaded text', message = '截图失败，请查看监控程序日志'
+
+    @pytest.mark.parametrize("ok,error,message", [
+        (True, None, "监控中"),
+        (False, "SCStreamErrorDomain/-3811", CAPTURE_ERROR),
+        (False, "SCStreamErrorDomain/-3801", CAPTURE_ERROR),
+        (False, "SCStreamErrorDomain/99", CAPTURE_ERROR),
+        (False, "ScreenCaptureKitErrorDomain/-1", CAPTURE_ERROR),
+        (False, "ScreenCaptureKit/-7", CAPTURE_ERROR),
+        (False, "SCErrorDomain/-3", CAPTURE_ERROR),
+        (False, "window_not_found", NO_WINDOW),
+        (False, "PrivateSecretErrorDomain/-901", OTHER_ERROR),
+        (False, "NSOSStatusErrorDomain/-50", OTHER_ERROR),
+        (False, None, OTHER_ERROR),
+        (False, "do not reveal this arbitrary uploaded text", OTHER_ERROR),
+    ])
+    def test_saved_capture_chinese_mapping_and_since_are_returned_without_raw_errors(client, ok, error, message):
+        item, watched = device(client), rule(client)
+        response = heartbeat(client, item, [status(watched["id"], ok, error)])
+>       assert response.status_code == 200, response.text
+E       AssertionError: {"detail":"请求参数不正确"}
+E       assert 422 == 200
+E        +  where 422 = <Response [422 Unprocessable Content]>.status_code
+
+tests/test_local_watch_capture_backend_r3.py:107: AssertionError
+_ test_capture_ttl_is_three_hundred_server_seconds_not_device_since[2000-01-01T00:00:00Z] _
+
+client = <starlette.testclient.TestClient object at 0x111d2ef10>
+monkeypatch = <_pytest.monkeypatch.MonkeyPatch object at 0x111d036a0>
+since = '2000-01-01T00:00:00Z'
+
+    @pytest.mark.parametrize("since", ["2000-01-01T00:00:00Z", "9999-12-31T23:59:59Z"])
+    def test_capture_ttl_is_three_hundred_server_seconds_not_device_since(client, monkeypatch, since):
+        from routers import local_watch as router
+        clock = [100.0]
+        monkeypatch.setattr(router.time, "monotonic", lambda: clock[0])
+        item, watched = device(client), rule(client)
+>       assert heartbeat(client, item, [status(watched["id"], since=since)]).status_code == 200
+E       AssertionError: assert 422 == 200
+E        +  where 422 = <Response [422 Unprocessable Content]>.status_code
+E        +    where <Response [422 Unprocessable Content]> = heartbeat(<starlette.testclient.TestClient object at 0x111d2ef10>, {'id': 1, 'name': 'R3 Mac', 'created_at': '2026-10-11 16:38:43', 'last_seen_at': None, ...}, [{'rule_id': 1, 'ok': True, 'error': None, 'since': '2000-01-01T00:00:00Z'}])
+
+tests/test_local_watch_capture_backend_r3.py:123: AssertionError
+_ test_capture_ttl_is_three_hundred_server_seconds_not_device_since[9999-12-31T23:59:59Z] _
+
+client = <starlette.testclient.TestClient object at 0x111d2fdf0>
+monkeypatch = <_pytest.monkeypatch.MonkeyPatch object at 0x111d01b20>
+since = '9999-12-31T23:59:59Z'
+
+    @pytest.mark.parametrize("since", ["2000-01-01T00:00:00Z", "9999-12-31T23:59:59Z"])
+    def test_capture_ttl_is_three_hundred_server_seconds_not_device_since(client, monkeypatch, since):
+        from routers import local_watch as router
+        clock = [100.0]
+        monkeypatch.setattr(router.time, "monotonic", lambda: clock[0])
+        item, watched = device(client), rule(client)
+>       assert heartbeat(client, item, [status(watched["id"], since=since)]).status_code == 200
+E       AssertionError: assert 422 == 200
+E        +  where 422 = <Response [422 Unprocessable Content]>.status_code
+E        +    where <Response [422 Unprocessable Content]> = heartbeat(<starlette.testclient.TestClient object at 0x111d2fdf0>, {'id': 1, 'name': 'R3 Mac', 'created_at': '2026-10-11 16:38:43', 'last_seen_at': None, ...}, [{'rule_id': 1, 'ok': True, 'error': None, 'since': '9999-12-31T23:59:59Z'}])
+
+tests/test_local_watch_capture_backend_r3.py:123: AssertionError
+__ test_unchanged_state_since_is_preserved_while_heartbeat_renews_server_ttl ___
+
+client = <starlette.testclient.TestClient object at 0x111d2cd10>
+monkeypatch = <_pytest.monkeypatch.MonkeyPatch object at 0x111d16030>
+
+    def test_unchanged_state_since_is_preserved_while_heartbeat_renews_server_ttl(client, monkeypatch):
+        from routers import local_watch as router
+        clock = [100.0]
+        monkeypatch.setattr(router.time, "monotonic", lambda: clock[0])
+        item, watched = device(client), rule(client)
+>       assert heartbeat(client, item, [status(watched["id"], False, "window_not_found")]).status_code == 200
+E       AssertionError: assert 422 == 200
+E        +  where 422 = <Response [422 Unprocessable Content]>.status_code
+E        +    where <Response [422 Unprocessable Content]> = heartbeat(<starlette.testclient.TestClient object at 0x111d2cd10>, {'id': 1, 'name': 'R3 Mac', 'created_at': '2026-10-11 16:38:43', 'last_seen_at': None, ...}, [{'rule_id': 1, 'ok': False, 'error': 'window_not_found', 'since': '2026-10-11T12:00:00Z'}])
+
+tests/test_local_watch_capture_backend_r3.py:135: AssertionError
+_ test_old_heartbeat_without_capture_status_remains_compatible_and_clears_old_device_state _
+
+client = <starlette.testclient.TestClient object at 0x111d2cf30>
+
+    def test_old_heartbeat_without_capture_status_remains_compatible_and_clears_old_device_state(client):
+        item, watched = device(client), rule(client)
+>       assert heartbeat(client, item, [status(watched["id"])]).status_code == 200
+E       AssertionError: assert 422 == 200
+E        +  where 422 = <Response [422 Unprocessable Content]>.status_code
+E        +    where <Response [422 Unprocessable Content]> = heartbeat(<starlette.testclient.TestClient object at 0x111d2cf30>, {'id': 1, 'name': 'R3 Mac', 'created_at': '2026-10-11 16:38:43', 'last_seen_at': None, ...}, [{'rule_id': 1, 'ok': True, 'error': None, 'since': '2026-10-11T12:00:00Z'}])
+
+tests/test_local_watch_capture_backend_r3.py:146: AssertionError
+_____ test_capture_isolation_between_users_and_foreign_status_is_discarded _____
+
+client = <starlette.testclient.TestClient object at 0x111d2c380>
+
+    def test_capture_isolation_between_users_and_foreign_status_is_discarded(client):
+        mine, foreign = device(client), device(client, "other_r3")
+        mine_rule, foreign_rule = rule(client), rule(client, "other_r3")
+        response = heartbeat(client, mine, [status(mine_rule["id"]), status(foreign_rule["id"], False, "window_not_found")])
+>       assert response.status_code == 200
+E       assert 422 == 200
+E        +  where 422 = <Response [422 Unprocessable Content]>.status_code
+
+tests/test_local_watch_capture_backend_r3.py:157: AssertionError
+_ test_stale_deleted_disabled_or_missing_rule_status_does_not_break_rule_sync __
+
+client = <starlette.testclient.TestClient object at 0x111d2e580>
+dev_headers = {'X-Dev-User': 'smoke_tester'}
+
+    def test_stale_deleted_disabled_or_missing_rule_status_does_not_break_rule_sync(client, dev_headers):
+        item, deleted, disabled, active = device(client), rule(client), rule(client, enabled=False), rule(client)
+        assert client.delete(f"/local-watch/rules/{deleted['id']}", headers=dev_headers).status_code == 204
+        response = heartbeat(client, item, [status(deleted["id"]), status(disabled["id"]), status(999999), status(active["id"])])
+>       assert response.status_code == 200, response.text
+E       AssertionError: {"detail":"请求参数不正确"}
+E       assert 422 == 200
+E        +  where 422 = <Response [422 Unprocessable Content]>.status_code
+
+tests/test_local_watch_capture_backend_r3.py:169: AssertionError
+_ test_per_device_snapshots_latest_active_device_wins_and_revocation_restores_older_device _
+
+client = <starlette.testclient.TestClient object at 0x111d2e250>
+dev_headers = {'X-Dev-User': 'smoke_tester'}
+monkeypatch = <_pytest.monkeypatch.MonkeyPatch object at 0x111c21750>
+
+    def test_per_device_snapshots_latest_active_device_wins_and_revocation_restores_older_device(client, dev_headers, monkeypatch):
+        from routers import local_watch as router
+        clock = [100.0]
+        monkeypatch.setattr(router.time, "monotonic", lambda: clock[0])
+        older, newer, watched = device(client), device(client), rule(client)
+>       assert heartbeat(client, older, [status(watched["id"])]).status_code == 200
+E       AssertionError: assert 422 == 200
+E        +  where 422 = <Response [422 Unprocessable Content]>.status_code
+E        +    where <Response [422 Unprocessable Content]> = heartbeat(<starlette.testclient.TestClient object at 0x111d2e250>, {'id': 1, 'name': 'R3 Mac', 'created_at': '2026-10-11 16:38:43', 'last_seen_at': None, ...}, [{'rule_id': 1, 'ok': True, 'error': None, 'since': '2026-10-11T12:00:00Z'}])
+
+tests/test_local_watch_capture_backend_r3.py:179: AssertionError
+_______ test_one_device_empty_snapshot_never_clears_other_device_capture _______
+
+client = <starlette.testclient.TestClient object at 0x111d2ebe0>
+
+    def test_one_device_empty_snapshot_never_clears_other_device_capture(client):
+        first, second, watched = device(client), device(client), rule(client)
+>       assert heartbeat(client, first, [status(watched["id"])]).status_code == 200
+E       AssertionError: assert 422 == 200
+E        +  where 422 = <Response [422 Unprocessable Content]>.status_code
+E        +    where <Response [422 Unprocessable Content]> = heartbeat(<starlette.testclient.TestClient object at 0x111d2ebe0>, {'id': 1, 'name': 'R3 Mac', 'created_at': '2026-10-11 16:38:43', 'last_seen_at': None, ...}, [{'rule_id': 1, 'ok': True, 'error': None, 'since': '2026-10-11T12:00:00Z'}])
+
+tests/test_local_watch_capture_backend_r3.py:192: AssertionError
+__ test_directly_revoked_device_and_deleted_user_cannot_retain_active_status ___
+
+client = <starlette.testclient.TestClient object at 0x111d2caf0>
+dev_headers = {'X-Dev-User': 'smoke_tester'}
+
+    def test_directly_revoked_device_and_deleted_user_cannot_retain_active_status(client, dev_headers):
+        import database
+        item, watched = device(client), rule(client)
+>       assert heartbeat(client, item, [status(watched["id"])]).status_code == 200
+E       AssertionError: assert 422 == 200
+E        +  where 422 = <Response [422 Unprocessable Content]>.status_code
+E        +    where <Response [422 Unprocessable Content]> = heartbeat(<starlette.testclient.TestClient object at 0x111d2caf0>, {'id': 1, 'name': 'R3 Mac', 'created_at': '2026-10-11 16:38:43', 'last_seen_at': None, ...}, [{'rule_id': 1, 'ok': True, 'error': None, 'since': '2026-10-11T12:00:00Z'}])
+
+tests/test_local_watch_capture_backend_r3.py:202: AssertionError
+_ test_capture_cache_is_scoped_to_database_even_when_user_device_and_rule_ids_match _
+
+client = <starlette.testclient.TestClient object at 0x111d2ee00>
+monkeypatch = <_pytest.monkeypatch.MonkeyPatch object at 0x111d19400>
+tmp_path = PosixPath('/private/var/folders/8q/xrv13jp544l_3cc6cggv04r00000gn/T/pytest-of-yangjing/pytest-143/test_capture_cache_is_scoped_t0')
+
+    def test_capture_cache_is_scoped_to_database_even_when_user_device_and_rule_ids_match(client, monkeypatch, tmp_path):
+        import database
+        item, watched = device(client), rule(client)
+>       assert heartbeat(client, item, [status(watched["id"])]).status_code == 200
+E       AssertionError: assert 422 == 200
+E        +  where 422 = <Response [422 Unprocessable Content]>.status_code
+E        +    where <Response [422 Unprocessable Content]> = heartbeat(<starlette.testclient.TestClient object at 0x111d2ee00>, {'id': 1, 'name': 'R3 Mac', 'created_at': '2026-10-11 16:38:43', 'last_seen_at': None, ...}, [{'rule_id': 1, 'ok': True, 'error': None, 'since': '2026-10-11T12:00:00Z'}])
+
+tests/test_local_watch_capture_backend_r3.py:217: AssertionError
+_ test_capture_entry_type_and_bounds_are_strict_and_rejection_is_atomic[change0] _
+
+client = <starlette.testclient.TestClient object at 0x111d2d150>
+change = {'rule_id': True}
+
+    @pytest.mark.parametrize("change", [
+        {"rule_id": True}, {"rule_id": 0}, {"rule_id": 2**63}, {"rule_id": "1"},
+        {"ok": 1}, {"ok": "true"}, {"ok": None},
+        {"error": "NSOSStatusErrorDomain/-50"}, {"error": 42}, {"error": "x" * 201},
+        {"since": None}, {"since": ""}, {"since": "not-date"}, {"since": "2026-10-11"},
+        {"since": "2026-10-11T12:00:00"}, {"since": "2026-02-30T12:00:00Z"},
+        {"extra": "private payload"},
+    ])
+    def test_capture_entry_type_and_bounds_are_strict_and_rejection_is_atomic(client, change):
+        item, watched = device(client), rule(client)
+        first = heartbeat(client, item, [status(watched["id"])], windows=[{"app_name": "original", "title": "original"}])
+>       assert first.status_code == 200
+E       assert 422 == 200
+E        +  where 422 = <Response [422 Unprocessable Content]>.status_code
+
+tests/test_local_watch_capture_backend_r3.py:238: AssertionError
+_ test_capture_entry_type_and_bounds_are_strict_and_rejection_is_atomic[change1] _
+
+client = <starlette.testclient.TestClient object at 0x111d48af0>
+change = {'rule_id': 0}
+
+    @pytest.mark.parametrize("change", [
+        {"rule_id": True}, {"rule_id": 0}, {"rule_id": 2**63}, {"rule_id": "1"},
+        {"ok": 1}, {"ok": "true"}, {"ok": None},
+        {"error": "NSOSStatusErrorDomain/-50"}, {"error": 42}, {"error": "x" * 201},
+        {"since": None}, {"since": ""}, {"since": "not-date"}, {"since": "2026-10-11"},
+        {"since": "2026-10-11T12:00:00"}, {"since": "2026-02-30T12:00:00Z"},
+        {"extra": "private payload"},
+    ])
+    def test_capture_entry_type_and_bounds_are_strict_and_rejection_is_atomic(client, change):
+        item, watched = device(client), rule(client)
+        first = heartbeat(client, item, [status(watched["id"])], windows=[{"app_name": "original", "title": "original"}])
+>       assert first.status_code == 200
+E       assert 422 == 200
+E        +  where 422 = <Response [422 Unprocessable Content]>.status_code
+
+tests/test_local_watch_capture_backend_r3.py:238: AssertionError
+_ test_capture_entry_type_and_bounds_are_strict_and_rejection_is_atomic[change2] _
+
+client = <starlette.testclient.TestClient object at 0x111d2f350>
+change = {'rule_id': 9223372036854775808}
+
+    @pytest.mark.parametrize("change", [
+        {"rule_id": True}, {"rule_id": 0}, {"rule_id": 2**63}, {"rule_id": "1"},
+        {"ok": 1}, {"ok": "true"}, {"ok": None},
+        {"error": "NSOSStatusErrorDomain/-50"}, {"error": 42}, {"error": "x" * 201},
+        {"since": None}, {"since": ""}, {"since": "not-date"}, {"since": "2026-10-11"},
+        {"since": "2026-10-11T12:00:00"}, {"since": "2026-02-30T12:00:00Z"},
+        {"extra": "private payload"},
+    ])
+    def test_capture_entry_type_and_bounds_are_strict_and_rejection_is_atomic(client, change):
+        item, watched = device(client), rule(client)
+        first = heartbeat(client, item, [status(watched["id"])], windows=[{"app_name": "original", "title": "original"}])
+>       assert first.status_code == 200
+E       assert 422 == 200
+E        +  where 422 = <Response [422 Unprocessable Content]>.status_code
+
+tests/test_local_watch_capture_backend_r3.py:238: AssertionError
+_ test_capture_entry_type_and_bounds_are_strict_and_rejection_is_atomic[change3] _
+
+client = <starlette.testclient.TestClient object at 0x111d2cc00>
+change = {'rule_id': '1'}
+
+    @pytest.mark.parametrize("change", [
+        {"rule_id": True}, {"rule_id": 0}, {"rule_id": 2**63}, {"rule_id": "1"},
+        {"ok": 1}, {"ok": "true"}, {"ok": None},
+        {"error": "NSOSStatusErrorDomain/-50"}, {"error": 42}, {"error": "x" * 201},
+        {"since": None}, {"since": ""}, {"since": "not-date"}, {"since": "2026-10-11"},
+        {"since": "2026-10-11T12:00:00"}, {"since": "2026-02-30T12:00:00Z"},
+        {"extra": "private payload"},
+    ])
+    def test_capture_entry_type_and_bounds_are_strict_and_rejection_is_atomic(client, change):
+        item, watched = device(client), rule(client)
+        first = heartbeat(client, item, [status(watched["id"])], windows=[{"app_name": "original", "title": "original"}])
+>       assert first.status_code == 200
+E       assert 422 == 200
+E        +  where 422 = <Response [422 Unprocessable Content]>.status_code
+
+tests/test_local_watch_capture_backend_r3.py:238: AssertionError
+_ test_capture_entry_type_and_bounds_are_strict_and_rejection_is_atomic[change4] _
+
+client = <starlette.testclient.TestClient object at 0x111d2e030>
+change = {'ok': 1}
+
+    @pytest.mark.parametrize("change", [
+        {"rule_id": True}, {"rule_id": 0}, {"rule_id": 2**63}, {"rule_id": "1"},
+        {"ok": 1}, {"ok": "true"}, {"ok": None},
+        {"error": "NSOSStatusErrorDomain/-50"}, {"error": 42}, {"error": "x" * 201},
+        {"since": None}, {"since": ""}, {"since": "not-date"}, {"since": "2026-10-11"},
+        {"since": "2026-10-11T12:00:00"}, {"since": "2026-02-30T12:00:00Z"},
+        {"extra": "private payload"},
+    ])
+    def test_capture_entry_type_and_bounds_are_strict_and_rejection_is_atomic(client, change):
+        item, watched = device(client), rule(client)
+        first = heartbeat(client, item, [status(watched["id"])], windows=[{"app_name": "original", "title": "original"}])
+>       assert first.status_code == 200
+E       assert 422 == 200
+E        +  where 422 = <Response [422 Unprocessable Content]>.status_code
+
+tests/test_local_watch_capture_backend_r3.py:238: AssertionError
+_ test_capture_entry_type_and_bounds_are_strict_and_rejection_is_atomic[change5] _
+
+client = <starlette.testclient.TestClient object at 0x111d2cd10>
+change = {'ok': 'true'}
+
+    @pytest.mark.parametrize("change", [
+        {"rule_id": True}, {"rule_id": 0}, {"rule_id": 2**63}, {"rule_id": "1"},
+        {"ok": 1}, {"ok": "true"}, {"ok": None},
+        {"error": "NSOSStatusErrorDomain/-50"}, {"error": 42}, {"error": "x" * 201},
+        {"since": None}, {"since": ""}, {"since": "not-date"}, {"since": "2026-10-11"},
+        {"since": "2026-10-11T12:00:00"}, {"since": "2026-02-30T12:00:00Z"},
+        {"extra": "private payload"},
+    ])
+    def test_capture_entry_type_and_bounds_are_strict_and_rejection_is_atomic(client, change):
+        item, watched = device(client), rule(client)
+        first = heartbeat(client, item, [status(watched["id"])], windows=[{"app_name": "original", "title": "original"}])
+>       assert first.status_code == 200
+E       assert 422 == 200
+E        +  where 422 = <Response [422 Unprocessable Content]>.status_code
+
+tests/test_local_watch_capture_backend_r3.py:238: AssertionError
+_ test_capture_entry_type_and_bounds_are_strict_and_rejection_is_atomic[change6] _
+
+client = <starlette.testclient.TestClient object at 0x111d2ef10>
+change = {'ok': None}
+
+    @pytest.mark.parametrize("change", [
+        {"rule_id": True}, {"rule_id": 0}, {"rule_id": 2**63}, {"rule_id": "1"},
+        {"ok": 1}, {"ok": "true"}, {"ok": None},
+        {"error": "NSOSStatusErrorDomain/-50"}, {"error": 42}, {"error": "x" * 201},
+        {"since": None}, {"since": ""}, {"since": "not-date"}, {"since": "2026-10-11"},
+        {"since": "2026-10-11T12:00:00"}, {"since": "2026-02-30T12:00:00Z"},
+        {"extra": "private payload"},
+    ])
+    def test_capture_entry_type_and_bounds_are_strict_and_rejection_is_atomic(client, change):
+        item, watched = device(client), rule(client)
+        first = heartbeat(client, item, [status(watched["id"])], windows=[{"app_name": "original", "title": "original"}])
+>       assert first.status_code == 200
+E       assert 422 == 200
+E        +  where 422 = <Response [422 Unprocessable Content]>.status_code
+
+tests/test_local_watch_capture_backend_r3.py:238: AssertionError
+_ test_capture_entry_type_and_bounds_are_strict_and_rejection_is_atomic[change7] _
+
+client = <starlette.testclient.TestClient object at 0x111d2de10>
+change = {'error': 'NSOSStatusErrorDomain/-50'}
+
+    @pytest.mark.parametrize("change", [
+        {"rule_id": True}, {"rule_id": 0}, {"rule_id": 2**63}, {"rule_id": "1"},
+        {"ok": 1}, {"ok": "true"}, {"ok": None},
+        {"error": "NSOSStatusErrorDomain/-50"}, {"error": 42}, {"error": "x" * 201},
+        {"since": None}, {"since": ""}, {"since": "not-date"}, {"since": "2026-10-11"},
+        {"since": "2026-10-11T12:00:00"}, {"since": "2026-02-30T12:00:00Z"},
+        {"extra": "private payload"},
+    ])
+    def test_capture_entry_type_and_bounds_are_strict_and_rejection_is_atomic(client, change):
+        item, watched = device(client), rule(client)
+        first = heartbeat(client, item, [status(watched["id"])], windows=[{"app_name": "original", "title": "original"}])
+>       assert first.status_code == 200
+E       assert 422 == 200
+E        +  where 422 = <Response [422 Unprocessable Content]>.status_code
+
+tests/test_local_watch_capture_backend_r3.py:238: AssertionError
+_ test_capture_entry_type_and_bounds_are_strict_and_rejection_is_atomic[change8] _
+
+client = <starlette.testclient.TestClient object at 0x111d2e8b0>
+change = {'error': 42}
+
+    @pytest.mark.parametrize("change", [
+        {"rule_id": True}, {"rule_id": 0}, {"rule_id": 2**63}, {"rule_id": "1"},
+        {"ok": 1}, {"ok": "true"}, {"ok": None},
+        {"error": "NSOSStatusErrorDomain/-50"}, {"error": 42}, {"error": "x" * 201},
+        {"since": None}, {"since": ""}, {"since": "not-date"}, {"since": "2026-10-11"},
+        {"since": "2026-10-11T12:00:00"}, {"since": "2026-02-30T12:00:00Z"},
+        {"extra": "private payload"},
+    ])
+    def test_capture_entry_type_and_bounds_are_strict_and_rejection_is_atomic(client, change):
+        item, watched = device(client), rule(client)
+        first = heartbeat(client, item, [status(watched["id"])], windows=[{"app_name": "original", "title": "original"}])
+>       assert first.status_code == 200
+E       assert 422 == 200
+E        +  where 422 = <Response [422 Unprocessable Content]>.status_code
+
+tests/test_local_watch_capture_backend_r3.py:238: AssertionError
+_ test_capture_entry_type_and_bounds_are_strict_and_rejection_is_atomic[change9] _
+
+client = <starlette.testclient.TestClient object at 0x111d2f460>
+change = {'error': 'xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx'}
+
+    @pytest.mark.parametrize("change", [
+        {"rule_id": True}, {"rule_id": 0}, {"rule_id": 2**63}, {"rule_id": "1"},
+        {"ok": 1}, {"ok": "true"}, {"ok": None},
+        {"error": "NSOSStatusErrorDomain/-50"}, {"error": 42}, {"error": "x" * 201},
+        {"since": None}, {"since": ""}, {"since": "not-date"}, {"since": "2026-10-11"},
+        {"since": "2026-10-11T12:00:00"}, {"since": "2026-02-30T12:00:00Z"},
+        {"extra": "private payload"},
+    ])
+    def test_capture_entry_type_and_bounds_are_strict_and_rejection_is_atomic(client, change):
+        item, watched = device(client), rule(client)
+        first = heartbeat(client, item, [status(watched["id"])], windows=[{"app_name": "original", "title": "original"}])
+>       assert first.status_code == 200
+E       assert 422 == 200
+E        +  where 422 = <Response [422 Unprocessable Content]>.status_code
+
+tests/test_local_watch_capture_backend_r3.py:238: AssertionError
+_ test_capture_entry_type_and_bounds_are_strict_and_rejection_is_atomic[change10] _
+
+client = <starlette.testclient.TestClient object at 0x111d2e690>
+change = {'since': None}
+
+    @pytest.mark.parametrize("change", [
+        {"rule_id": True}, {"rule_id": 0}, {"rule_id": 2**63}, {"rule_id": "1"},
+        {"ok": 1}, {"ok": "true"}, {"ok": None},
+        {"error": "NSOSStatusErrorDomain/-50"}, {"error": 42}, {"error": "x" * 201},
+        {"since": None}, {"since": ""}, {"since": "not-date"}, {"since": "2026-10-11"},
+        {"since": "2026-10-11T12:00:00"}, {"since": "2026-02-30T12:00:00Z"},
+        {"extra": "private payload"},
+    ])
+    def test_capture_entry_type_and_bounds_are_strict_and_rejection_is_atomic(client, change):
+        item, watched = device(client), rule(client)
+        first = heartbeat(client, item, [status(watched["id"])], windows=[{"app_name": "original", "title": "original"}])
+>       assert first.status_code == 200
+E       assert 422 == 200
+E        +  where 422 = <Response [422 Unprocessable Content]>.status_code
+
+tests/test_local_watch_capture_backend_r3.py:238: AssertionError
+_ test_capture_entry_type_and_bounds_are_strict_and_rejection_is_atomic[change11] _
+
+client = <starlette.testclient.TestClient object at 0x111d2ead0>
+change = {'since': ''}
+
+    @pytest.mark.parametrize("change", [
+        {"rule_id": True}, {"rule_id": 0}, {"rule_id": 2**63}, {"rule_id": "1"},
+        {"ok": 1}, {"ok": "true"}, {"ok": None},
+        {"error": "NSOSStatusErrorDomain/-50"}, {"error": 42}, {"error": "x" * 201},
+        {"since": None}, {"since": ""}, {"since": "not-date"}, {"since": "2026-10-11"},
+        {"since": "2026-10-11T12:00:00"}, {"since": "2026-02-30T12:00:00Z"},
+        {"extra": "private payload"},
+    ])
+    def test_capture_entry_type_and_bounds_are_strict_and_rejection_is_atomic(client, change):
+        item, watched = device(client), rule(client)
+        first = heartbeat(client, item, [status(watched["id"])], windows=[{"app_name": "original", "title": "original"}])
+>       assert first.status_code == 200
+E       assert 422 == 200
+E        +  where 422 = <Response [422 Unprocessable Content]>.status_code
+
+tests/test_local_watch_capture_backend_r3.py:238: AssertionError
+_ test_capture_entry_type_and_bounds_are_strict_and_rejection_is_atomic[change12] _
+
+client = <starlette.testclient.TestClient object at 0x111d2df20>
+change = {'since': 'not-date'}
+
+    @pytest.mark.parametrize("change", [
+        {"rule_id": True}, {"rule_id": 0}, {"rule_id": 2**63}, {"rule_id": "1"},
+        {"ok": 1}, {"ok": "true"}, {"ok": None},
+        {"error": "NSOSStatusErrorDomain/-50"}, {"error": 42}, {"error": "x" * 201},
+        {"since": None}, {"since": ""}, {"since": "not-date"}, {"since": "2026-10-11"},
+        {"since": "2026-10-11T12:00:00"}, {"since": "2026-02-30T12:00:00Z"},
+        {"extra": "private payload"},
+    ])
+    def test_capture_entry_type_and_bounds_are_strict_and_rejection_is_atomic(client, change):
+        item, watched = device(client), rule(client)
+        first = heartbeat(client, item, [status(watched["id"])], windows=[{"app_name": "original", "title": "original"}])
+>       assert first.status_code == 200
+E       assert 422 == 200
+E        +  where 422 = <Response [422 Unprocessable Content]>.status_code
+
+tests/test_local_watch_capture_backend_r3.py:238: AssertionError
+_ test_capture_entry_type_and_bounds_are_strict_and_rejection_is_atomic[change13] _
+
+client = <starlette.testclient.TestClient object at 0x111d2c8d0>
+change = {'since': '2026-10-11'}
+
+    @pytest.mark.parametrize("change", [
+        {"rule_id": True}, {"rule_id": 0}, {"rule_id": 2**63}, {"rule_id": "1"},
+        {"ok": 1}, {"ok": "true"}, {"ok": None},
+        {"error": "NSOSStatusErrorDomain/-50"}, {"error": 42}, {"error": "x" * 201},
+        {"since": None}, {"since": ""}, {"since": "not-date"}, {"since": "2026-10-11"},
+        {"since": "2026-10-11T12:00:00"}, {"since": "2026-02-30T12:00:00Z"},
+        {"extra": "private payload"},
+    ])
+    def test_capture_entry_type_and_bounds_are_strict_and_rejection_is_atomic(client, change):
+        item, watched = device(client), rule(client)
+        first = heartbeat(client, item, [status(watched["id"])], windows=[{"app_name": "original", "title": "original"}])
+>       assert first.status_code == 200
+E       assert 422 == 200
+E        +  where 422 = <Response [422 Unprocessable Content]>.status_code
+
+tests/test_local_watch_capture_backend_r3.py:238: AssertionError
+_ test_capture_entry_type_and_bounds_are_strict_and_rejection_is_atomic[change14] _
+
+client = <starlette.testclient.TestClient object at 0x111d2dae0>
+change = {'since': '2026-10-11T12:00:00'}
+
+    @pytest.mark.parametrize("change", [
+        {"rule_id": True}, {"rule_id": 0}, {"rule_id": 2**63}, {"rule_id": "1"},
+        {"ok": 1}, {"ok": "true"}, {"ok": None},
+        {"error": "NSOSStatusErrorDomain/-50"}, {"error": 42}, {"error": "x" * 201},
+        {"since": None}, {"since": ""}, {"since": "not-date"}, {"since": "2026-10-11"},
+        {"since": "2026-10-11T12:00:00"}, {"since": "2026-02-30T12:00:00Z"},
+        {"extra": "private payload"},
+    ])
+    def test_capture_entry_type_and_bounds_are_strict_and_rejection_is_atomic(client, change):
+        item, watched = device(client), rule(client)
+        first = heartbeat(client, item, [status(watched["id"])], windows=[{"app_name": "original", "title": "original"}])
+>       assert first.status_code == 200
+E       assert 422 == 200
+E        +  where 422 = <Response [422 Unprocessable Content]>.status_code
+
+tests/test_local_watch_capture_backend_r3.py:238: AssertionError
+_ test_capture_entry_type_and_bounds_are_strict_and_rejection_is_atomic[change15] _
+
+client = <starlette.testclient.TestClient object at 0x111d2f570>
+change = {'since': '2026-02-30T12:00:00Z'}
+
+    @pytest.mark.parametrize("change", [
+        {"rule_id": True}, {"rule_id": 0}, {"rule_id": 2**63}, {"rule_id": "1"},
+        {"ok": 1}, {"ok": "true"}, {"ok": None},
+        {"error": "NSOSStatusErrorDomain/-50"}, {"error": 42}, {"error": "x" * 201},
+        {"since": None}, {"since": ""}, {"since": "not-date"}, {"since": "2026-10-11"},
+        {"since": "2026-10-11T12:00:00"}, {"since": "2026-02-30T12:00:00Z"},
+        {"extra": "private payload"},
+    ])
+    def test_capture_entry_type_and_bounds_are_strict_and_rejection_is_atomic(client, change):
+        item, watched = device(client), rule(client)
+        first = heartbeat(client, item, [status(watched["id"])], windows=[{"app_name": "original", "title": "original"}])
+>       assert first.status_code == 200
+E       assert 422 == 200
+E        +  where 422 = <Response [422 Unprocessable Content]>.status_code
+
+tests/test_local_watch_capture_backend_r3.py:238: AssertionError
+_ test_capture_entry_type_and_bounds_are_strict_and_rejection_is_atomic[change16] _
+
+client = <starlette.testclient.TestClient object at 0x111d2e140>
+change = {'extra': 'private payload'}
+
+    @pytest.mark.parametrize("change", [
+        {"rule_id": True}, {"rule_id": 0}, {"rule_id": 2**63}, {"rule_id": "1"},
+        {"ok": 1}, {"ok": "true"}, {"ok": None},
+        {"error": "NSOSStatusErrorDomain/-50"}, {"error": 42}, {"error": "x" * 201},
+        {"since": None}, {"since": ""}, {"since": "not-date"}, {"since": "2026-10-11"},
+        {"since": "2026-10-11T12:00:00"}, {"since": "2026-02-30T12:00:00Z"},
+        {"extra": "private payload"},
+    ])
+    def test_capture_entry_type_and_bounds_are_strict_and_rejection_is_atomic(client, change):
+        item, watched = device(client), rule(client)
+        first = heartbeat(client, item, [status(watched["id"])], windows=[{"app_name": "original", "title": "original"}])
+>       assert first.status_code == 200
+E       assert 422 == 200
+E        +  where 422 = <Response [422 Unprocessable Content]>.status_code
+
+tests/test_local_watch_capture_backend_r3.py:238: AssertionError
+____________ test_capture_entries_require_all_four_fields[rule_id] _____________
+
+client = <starlette.testclient.TestClient object at 0x111d2d150>
+missing = 'rule_id'
+
+    @pytest.mark.parametrize("missing", ["rule_id", "ok", "error", "since"])
+    def test_capture_entries_require_all_four_fields(client, missing):
+        item, watched = device(client), rule(client)
+        value = status(watched["id"])
+        del value[missing]
+        assert heartbeat(client, item, [value]).status_code == 422
+>       assert captures(client)[watched["id"]] == STOPPED
+               ^^^^^^^^^^^^^^^^
+
+tests/test_local_watch_capture_backend_r3.py:255: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+client = <starlette.testclient.TestClient object at 0x111d2d150>
+username = 'smoke_tester'
+
+    def captures(client, username="smoke_tester"):
+        response = client.get("/local-watch/rules", headers={"X-Dev-User": username})
+        assert response.status_code == 200
+        assert response.headers["cache-control"] == "private, no-store"
+>       return {value["id"]: value["capture"] for value in response.json()}
+                             ^^^^^^^^^^^^^^^^
+E       KeyError: 'capture'
+
+tests/test_local_watch_capture_backend_r3.py:82: KeyError
+_______________ test_capture_entries_require_all_four_fields[ok] _______________
+
+client = <starlette.testclient.TestClient object at 0x111d2ee00>, missing = 'ok'
+
+    @pytest.mark.parametrize("missing", ["rule_id", "ok", "error", "since"])
+    def test_capture_entries_require_all_four_fields(client, missing):
+        item, watched = device(client), rule(client)
+        value = status(watched["id"])
+        del value[missing]
+        assert heartbeat(client, item, [value]).status_code == 422
+>       assert captures(client)[watched["id"]] == STOPPED
+               ^^^^^^^^^^^^^^^^
+
+tests/test_local_watch_capture_backend_r3.py:255: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+client = <starlette.testclient.TestClient object at 0x111d2ee00>
+username = 'smoke_tester'
+
+    def captures(client, username="smoke_tester"):
+        response = client.get("/local-watch/rules", headers={"X-Dev-User": username})
+        assert response.status_code == 200
+        assert response.headers["cache-control"] == "private, no-store"
+>       return {value["id"]: value["capture"] for value in response.json()}
+                             ^^^^^^^^^^^^^^^^
+E       KeyError: 'capture'
+
+tests/test_local_watch_capture_backend_r3.py:82: KeyError
+_____________ test_capture_entries_require_all_four_fields[error] ______________
+
+client = <starlette.testclient.TestClient object at 0x111d2d040>
+missing = 'error'
+
+    @pytest.mark.parametrize("missing", ["rule_id", "ok", "error", "since"])
+    def test_capture_entries_require_all_four_fields(client, missing):
+        item, watched = device(client), rule(client)
+        value = status(watched["id"])
+        del value[missing]
+        assert heartbeat(client, item, [value]).status_code == 422
+>       assert captures(client)[watched["id"]] == STOPPED
+               ^^^^^^^^^^^^^^^^
+
+tests/test_local_watch_capture_backend_r3.py:255: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+client = <starlette.testclient.TestClient object at 0x111d2d040>
+username = 'smoke_tester'
+
+    def captures(client, username="smoke_tester"):
+        response = client.get("/local-watch/rules", headers={"X-Dev-User": username})
+        assert response.status_code == 200
+        assert response.headers["cache-control"] == "private, no-store"
+>       return {value["id"]: value["capture"] for value in response.json()}
+                             ^^^^^^^^^^^^^^^^
+E       KeyError: 'capture'
+
+tests/test_local_watch_capture_backend_r3.py:82: KeyError
+_____________ test_capture_entries_require_all_four_fields[since] ______________
+
+client = <starlette.testclient.TestClient object at 0x111d2d480>
+missing = 'since'
+
+    @pytest.mark.parametrize("missing", ["rule_id", "ok", "error", "since"])
+    def test_capture_entries_require_all_four_fields(client, missing):
+        item, watched = device(client), rule(client)
+        value = status(watched["id"])
+        del value[missing]
+        assert heartbeat(client, item, [value]).status_code == 422
+>       assert captures(client)[watched["id"]] == STOPPED
+               ^^^^^^^^^^^^^^^^
+
+tests/test_local_watch_capture_backend_r3.py:255: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+client = <starlette.testclient.TestClient object at 0x111d2d480>
+username = 'smoke_tester'
+
+    def captures(client, username="smoke_tester"):
+        response = client.get("/local-watch/rules", headers={"X-Dev-User": username})
+        assert response.status_code == 200
+        assert response.headers["cache-control"] == "private, no-store"
+>       return {value["id"]: value["capture"] for value in response.json()}
+                             ^^^^^^^^^^^^^^^^
+E       KeyError: 'capture'
+
+tests/test_local_watch_capture_backend_r3.py:82: KeyError
+__ test_duplicate_rule_status_is_rejected_but_all_twenty_rules_are_supported ___
+
+client = <starlette.testclient.TestClient object at 0x111d2f240>
+
+    def test_duplicate_rule_status_is_rejected_but_all_twenty_rules_are_supported(client):
+        item = device(client)
+        watched = [rule(client, name=str(index)) for index in range(20)]
+        assert heartbeat(client, item, [status(watched[0]["id"])] * 2).status_code == 422
+        response = heartbeat(client, item, [status(value["id"]) for value in watched])
+>       assert response.status_code == 200, response.text
+E       AssertionError: {"detail":"请求参数不正确"}
+E       assert 422 == 200
+E        +  where 422 = <Response [422 Unprocessable Content]>.status_code
+
+tests/test_local_watch_capture_backend_r3.py:269: AssertionError
+______ test_capture_status_never_persists_raw_error_or_since_to_database _______
+
+client = <starlette.testclient.TestClient object at 0x111d2e7a0>
+
+    def test_capture_status_never_persists_raw_error_or_since_to_database(client):
+        import database
+        item, watched = device(client), rule(client)
+>       assert heartbeat(client, item, [status(watched["id"], False, "PrivateSecretErrorDomain/-901")]).status_code == 200
+E       AssertionError: assert 422 == 200
+E        +  where 422 = <Response [422 Unprocessable Content]>.status_code
+E        +    where <Response [422 Unprocessable Content]> = heartbeat(<starlette.testclient.TestClient object at 0x111d2e7a0>, {'id': 1, 'name': 'R3 Mac', 'created_at': '2026-10-11 16:38:44', 'last_seen_at': None, ...}, [{'rule_id': 1, 'ok': False, 'error': 'PrivateSecretErrorDomain/-901', 'since': '2026-10-11T12:00:00Z'}])
+
+tests/test_local_watch_capture_backend_r3.py:295: AssertionError
+=============================== warnings summary ===============================
+tests/test_local_watch_capture_backend_r3.py: 14 warnings
+  /Users/yangjing/Desktop/ai-workspace/Fiona/backend/.venv/lib/python3.14/site-packages/slowapi/extension.py:720: DeprecationWarning: 'asyncio.iscoroutinefunction' is deprecated and slated for removal in Python 3.16; use inspect.iscoroutinefunction() instead
+    if asyncio.iscoroutinefunction(func):
+
+-- Docs: https://docs.pytest.org/en/stable/how-to/capture-warnings.html
+=========================== short test summary info ============================
+FAILED tests/test_local_watch_capture_backend_r3.py::test_every_rule_has_capture_even_before_any_heartbeat
+FAILED tests/test_local_watch_capture_backend_r3.py::test_saved_capture_chinese_mapping_and_since_are_returned_without_raw_errors[True-None-\u76d1\u63a7\u4e2d]
+FAILED tests/test_local_watch_capture_backend_r3.py::test_saved_capture_chinese_mapping_and_since_are_returned_without_raw_errors[False-SCStreamErrorDomain/-3811-\u622a\u56fe\u5931\u8d25\uff1a\u5c4f\u5e55\u53ef\u80fd\u5df2\u9501\u5b9a\u6216\u663e\u793a\u5668\u5df2\u4f11\u7720\uff0c\u4e5f\u53ef\u80fd\u7f3a\u5c11\u5c4f\u5e55\u5f55\u5236\u6743\u9650]
+FAILED tests/test_local_watch_capture_backend_r3.py::test_saved_capture_chinese_mapping_and_since_are_returned_without_raw_errors[False-SCStreamErrorDomain/-3801-\u622a\u56fe\u5931\u8d25\uff1a\u5c4f\u5e55\u53ef\u80fd\u5df2\u9501\u5b9a\u6216\u663e\u793a\u5668\u5df2\u4f11\u7720\uff0c\u4e5f\u53ef\u80fd\u7f3a\u5c11\u5c4f\u5e55\u5f55\u5236\u6743\u9650]
+FAILED tests/test_local_watch_capture_backend_r3.py::test_saved_capture_chinese_mapping_and_since_are_returned_without_raw_errors[False-SCStreamErrorDomain/99-\u622a\u56fe\u5931\u8d25\uff1a\u5c4f\u5e55\u53ef\u80fd\u5df2\u9501\u5b9a\u6216\u663e\u793a\u5668\u5df2\u4f11\u7720\uff0c\u4e5f\u53ef\u80fd\u7f3a\u5c11\u5c4f\u5e55\u5f55\u5236\u6743\u9650]
+FAILED tests/test_local_watch_capture_backend_r3.py::test_saved_capture_chinese_mapping_and_since_are_returned_without_raw_errors[False-ScreenCaptureKitErrorDomain/-1-\u622a\u56fe\u5931\u8d25\uff1a\u5c4f\u5e55\u53ef\u80fd\u5df2\u9501\u5b9a\u6216\u663e\u793a\u5668\u5df2\u4f11\u7720\uff0c\u4e5f\u53ef\u80fd\u7f3a\u5c11\u5c4f\u5e55\u5f55\u5236\u6743\u9650]
+FAILED tests/test_local_watch_capture_backend_r3.py::test_saved_capture_chinese_mapping_and_since_are_returned_without_raw_errors[False-ScreenCaptureKit/-7-\u622a\u56fe\u5931\u8d25\uff1a\u5c4f\u5e55\u53ef\u80fd\u5df2\u9501\u5b9a\u6216\u663e\u793a\u5668\u5df2\u4f11\u7720\uff0c\u4e5f\u53ef\u80fd\u7f3a\u5c11\u5c4f\u5e55\u5f55\u5236\u6743\u9650]
+FAILED tests/test_local_watch_capture_backend_r3.py::test_saved_capture_chinese_mapping_and_since_are_returned_without_raw_errors[False-SCErrorDomain/-3-\u622a\u56fe\u5931\u8d25\uff1a\u5c4f\u5e55\u53ef\u80fd\u5df2\u9501\u5b9a\u6216\u663e\u793a\u5668\u5df2\u4f11\u7720\uff0c\u4e5f\u53ef\u80fd\u7f3a\u5c11\u5c4f\u5e55\u5f55\u5236\u6743\u9650]
+FAILED tests/test_local_watch_capture_backend_r3.py::test_saved_capture_chinese_mapping_and_since_are_returned_without_raw_errors[False-window_not_found-\u6ca1\u6709\u627e\u5230\u5339\u914d\u7684\u7a97\u53e3\uff08\u7a97\u53e3\u53ef\u80fd\u5df2\u5173\u95ed\u6216\u6700\u5c0f\u5316\uff09]
+FAILED tests/test_local_watch_capture_backend_r3.py::test_saved_capture_chinese_mapping_and_since_are_returned_without_raw_errors[False-PrivateSecretErrorDomain/-901-\u622a\u56fe\u5931\u8d25\uff0c\u8bf7\u67e5\u770b\u76d1\u63a7\u7a0b\u5e8f\u65e5\u5fd7]
+FAILED tests/test_local_watch_capture_backend_r3.py::test_saved_capture_chinese_mapping_and_since_are_returned_without_raw_errors[False-NSOSStatusErrorDomain/-50-\u622a\u56fe\u5931\u8d25\uff0c\u8bf7\u67e5\u770b\u76d1\u63a7\u7a0b\u5e8f\u65e5\u5fd7]
+FAILED tests/test_local_watch_capture_backend_r3.py::test_saved_capture_chinese_mapping_and_since_are_returned_without_raw_errors[False-None-\u622a\u56fe\u5931\u8d25\uff0c\u8bf7\u67e5\u770b\u76d1\u63a7\u7a0b\u5e8f\u65e5\u5fd7]
+FAILED tests/test_local_watch_capture_backend_r3.py::test_saved_capture_chinese_mapping_and_since_are_returned_without_raw_errors[False-do not reveal this arbitrary uploaded text-\u622a\u56fe\u5931\u8d25\uff0c\u8bf7\u67e5\u770b\u76d1\u63a7\u7a0b\u5e8f\u65e5\u5fd7]
+FAILED tests/test_local_watch_capture_backend_r3.py::test_capture_ttl_is_three_hundred_server_seconds_not_device_since[2000-01-01T00:00:00Z]
+FAILED tests/test_local_watch_capture_backend_r3.py::test_capture_ttl_is_three_hundred_server_seconds_not_device_since[9999-12-31T23:59:59Z]
+FAILED tests/test_local_watch_capture_backend_r3.py::test_unchanged_state_since_is_preserved_while_heartbeat_renews_server_ttl
+FAILED tests/test_local_watch_capture_backend_r3.py::test_old_heartbeat_without_capture_status_remains_compatible_and_clears_old_device_state
+FAILED tests/test_local_watch_capture_backend_r3.py::test_capture_isolation_between_users_and_foreign_status_is_discarded
+FAILED tests/test_local_watch_capture_backend_r3.py::test_stale_deleted_disabled_or_missing_rule_status_does_not_break_rule_sync
+FAILED tests/test_local_watch_capture_backend_r3.py::test_per_device_snapshots_latest_active_device_wins_and_revocation_restores_older_device
+FAILED tests/test_local_watch_capture_backend_r3.py::test_one_device_empty_snapshot_never_clears_other_device_capture
+FAILED tests/test_local_watch_capture_backend_r3.py::test_directly_revoked_device_and_deleted_user_cannot_retain_active_status
+FAILED tests/test_local_watch_capture_backend_r3.py::test_capture_cache_is_scoped_to_database_even_when_user_device_and_rule_ids_match
+FAILED tests/test_local_watch_capture_backend_r3.py::test_capture_entry_type_and_bounds_are_strict_and_rejection_is_atomic[change0]
+FAILED tests/test_local_watch_capture_backend_r3.py::test_capture_entry_type_and_bounds_are_strict_and_rejection_is_atomic[change1]
+FAILED tests/test_local_watch_capture_backend_r3.py::test_capture_entry_type_and_bounds_are_strict_and_rejection_is_atomic[change2]
+FAILED tests/test_local_watch_capture_backend_r3.py::test_capture_entry_type_and_bounds_are_strict_and_rejection_is_atomic[change3]
+FAILED tests/test_local_watch_capture_backend_r3.py::test_capture_entry_type_and_bounds_are_strict_and_rejection_is_atomic[change4]
+FAILED tests/test_local_watch_capture_backend_r3.py::test_capture_entry_type_and_bounds_are_strict_and_rejection_is_atomic[change5]
+FAILED tests/test_local_watch_capture_backend_r3.py::test_capture_entry_type_and_bounds_are_strict_and_rejection_is_atomic[change6]
+FAILED tests/test_local_watch_capture_backend_r3.py::test_capture_entry_type_and_bounds_are_strict_and_rejection_is_atomic[change7]
+FAILED tests/test_local_watch_capture_backend_r3.py::test_capture_entry_type_and_bounds_are_strict_and_rejection_is_atomic[change8]
+FAILED tests/test_local_watch_capture_backend_r3.py::test_capture_entry_type_and_bounds_are_strict_and_rejection_is_atomic[change9]
+FAILED tests/test_local_watch_capture_backend_r3.py::test_capture_entry_type_and_bounds_are_strict_and_rejection_is_atomic[change10]
+FAILED tests/test_local_watch_capture_backend_r3.py::test_capture_entry_type_and_bounds_are_strict_and_rejection_is_atomic[change11]
+FAILED tests/test_local_watch_capture_backend_r3.py::test_capture_entry_type_and_bounds_are_strict_and_rejection_is_atomic[change12]
+FAILED tests/test_local_watch_capture_backend_r3.py::test_capture_entry_type_and_bounds_are_strict_and_rejection_is_atomic[change13]
+FAILED tests/test_local_watch_capture_backend_r3.py::test_capture_entry_type_and_bounds_are_strict_and_rejection_is_atomic[change14]
+FAILED tests/test_local_watch_capture_backend_r3.py::test_capture_entry_type_and_bounds_are_strict_and_rejection_is_atomic[change15]
+FAILED tests/test_local_watch_capture_backend_r3.py::test_capture_entry_type_and_bounds_are_strict_and_rejection_is_atomic[change16]
+FAILED tests/test_local_watch_capture_backend_r3.py::test_capture_entries_require_all_four_fields[rule_id]
+FAILED tests/test_local_watch_capture_backend_r3.py::test_capture_entries_require_all_four_fields[ok]
+FAILED tests/test_local_watch_capture_backend_r3.py::test_capture_entries_require_all_four_fields[error]
+FAILED tests/test_local_watch_capture_backend_r3.py::test_capture_entries_require_all_four_fields[since]
+FAILED tests/test_local_watch_capture_backend_r3.py::test_duplicate_rule_status_is_rejected_but_all_twenty_rules_are_supported
+FAILED tests/test_local_watch_capture_backend_r3.py::test_capture_status_never_persists_raw_error_or_since_to_database
+46 failed, 7 passed, 14 warnings in 2.81s

@@ -26,6 +26,7 @@ import { generatedImagePath, referenceImagePath, referencePreviewUrl, isLocalRef
 import { readLocalReferenceImage, MAX_REFERENCE_FILE_BYTES, REFERENCE_FILE_TYPES } from "@/lib/localReferenceImages";
 import { useAccountRequest } from "@/lib/useAccountIdentity";
 import { CHAT_MODEL_REV_KEY, CLAUDE_EFFORTS, CHAT_MODEL_EFFORT_LABELS, CHAT_MODEL_EFFORT_TITLES, chatModelErrorMessage, getChatModel, setChatModelEnabled, setChatModelOptions, publishChatModelRevision, parseReplyModel, type ChatModelEffort, type ChatModelSettings } from "@/lib/chatModel";
+import { createLocalWatchPoller, appendLocalWatchMessages, localWatchNotificationsEnabled, type LocalWatchAlert } from "@/lib/localWatch";
 
 import { API_BASE as API, WS_BASE } from "@/lib/config";
 
@@ -530,6 +531,7 @@ export default function ChatPage() {
   }, [showHistory]);
   const [username, setUsername] = useState("");
   const [hydrated, setHydrated] = useState(false);
+  const [localWatchInbox, setLocalWatchInbox] = useState<{ owner: string; alerts: LocalWatchAlert[] }>({ owner: "", alerts: [] });
   const {
     agent, conversations, current: currentConversation, messages, setMessages,
     loading: conversationLoading, error: conversationError, reload: reloadConversations,
@@ -1533,6 +1535,68 @@ export default function ChatPage() {
   };
 
   const conversationLocked = isLoading || recording || inlineRecording || handsFree;
+  const pendingLocalWatchAlerts = localWatchInbox.owner === username ? localWatchInbox.alerts : [];
+  const localWatchNotices = pendingLocalWatchAlerts.filter((alert, index, alerts) =>
+    alerts.findIndex(item => item.conversation_id === alert.conversation_id) === index);
+
+  useEffect(() => {
+    if (!hydrated || !username) return;
+    let mounted = true;
+    const poller = createLocalWatchPoller({
+      isVisible: () => mounted && readStoredUsername() === username && document.visibilityState === "visible",
+      fetchPage: async (after, signal) => {
+        const response = await apiFetch(`${API}/local-watch/alerts?after=${after}`, { signal, cache: "no-store" });
+        return { status: response.status, alerts: response.ok ? await response.json() as LocalWatchAlert[] : [] };
+      },
+      onAlerts: alerts => {
+        if (!mounted || readStoredUsername() !== username) return;
+        // Keep alerts while a reply or a conversation load is in progress.
+        // Their cursor can advance without losing delivery to the current list.
+        setLocalWatchInbox(previous => {
+          const existing = previous.owner === username ? previous.alerts : [];
+          return { owner: username, alerts: [...existing, ...alerts.filter(alert => !existing.some(item => item.id === alert.id))] };
+        });
+        void refreshList();
+        if (localWatchNotificationsEnabled(username) && "Notification" in window && Notification.permission === "granted") {
+          for (const alert of alerts) {
+            try {
+              const notification = new Notification("Fiona · 本机提醒", { body: alert.summary, tag: `fiona-local-watch-${alert.id}` });
+              notification.onclick = () => { window.focus(); notification.close(); };
+            } catch { /* The saved chat alert remains available if notifications are unsupported. */ }
+          }
+        }
+      },
+    });
+    const onVisibility = () => {
+      if (document.visibilityState === "visible") void poller.tick();
+      else poller.pause();
+    };
+    void poller.tick();
+    const timer = window.setInterval(() => void poller.tick(), 10_000);
+    document.addEventListener("visibilitychange", onVisibility);
+    return () => {
+      mounted = false;
+      poller.dispose();
+      window.clearInterval(timer);
+      document.removeEventListener("visibilitychange", onVisibility);
+    };
+  }, [hydrated, username, refreshList]);
+
+  useEffect(() => {
+    const conversationId = currentConversation?.id;
+    if (!conversationId || conversationLocked || conversationLoading || localWatchInbox.owner !== username) return;
+    const alerts = localWatchInbox.alerts.filter(alert => alert.conversation_id === conversationId);
+    if (!alerts.length) return;
+    const selectionVersion = getSelectionVersion();
+    let cancelled = false;
+    void Promise.resolve().then(() => {
+      if (cancelled || chatAbortRef.current || readStoredUsername() !== username || selectionVersion !== getSelectionVersion()) return;
+      setMessages(previous => appendLocalWatchMessages(previous, alerts, conversationId, false));
+      setLocalWatchInbox(previous => previous.owner === username
+        ? { ...previous, alerts: previous.alerts.filter(alert => !alerts.some(item => item.id === alert.id)) } : previous);
+    });
+    return () => { cancelled = true; };
+  }, [localWatchInbox, currentConversation?.id, conversationLocked, conversationLoading, username, getSelectionVersion, setMessages]);
   const selectedReferenceImages = referenceImages?.owner === username && referenceImages.conversationId === currentConversation?.id
     ? referenceImages.images : [];
   const selectedReferenceImagePaths = selectedReferenceImages.map(image => image.source.image_path ?? `local:${image.id}`);
@@ -2334,6 +2398,20 @@ export default function ChatPage() {
               style={{ "--composer-height": `${composerHeight}px` } as React.CSSProperties}>
               <ChatScrollArea ref={chatScrollRef} resetKey={`${username}:${currentConversation?.id ?? "loading"}`}>
                 <div className="mx-auto flex w-full max-w-[760px] flex-col gap-7">
+                  {localWatchNotices.length > 0 && <div role="status" className="flex flex-wrap gap-2">
+                    {localWatchNotices.map(alert => <button key={alert.conversation_id} type="button"
+                      className="chip min-h-10 max-w-full whitespace-normal text-left text-xs disabled:opacity-50"
+                      disabled={conversationLocked || conversationLoading}
+                      onClick={() => {
+                        if (chatAbortRef.current || conversationLocked || conversationLoading) return;
+                        if (alert.conversation_id === currentConversation?.id) {
+                          setMessages(previous => appendLocalWatchMessages(previous, pendingLocalWatchAlerts, alert.conversation_id, false));
+                          setLocalWatchInbox(previous => ({ ...previous, alerts: previous.alerts.filter(item => item.conversation_id !== alert.conversation_id) }));
+                          return;
+                        }
+                        void handleSelectConversation(alert.conversation_id);
+                      }}>有新的本机提醒 · {conversations.find(item => item.id === alert.conversation_id)?.title || alert.rule_name}</button>)}
+                  </div>}
                   {hasMoreMessages && <p className="text-xs text-muted-foreground text-center">当前显示最近 500 条消息；更早记录可在历史页查看。</p>}
                   {messages.length === 0 && (
                     <p className="text-xs text-muted-foreground text-center pt-8" role="status">{conversationLoading ? "正在加载对话…" : conversationError ? "对话加载失败，请在上方重试。" : currentConversation ? `和 ${agent?.display_name || "你的分身"} 开始新的交流。` : "点击上方“新对话”，开始和自己的分身交流。"}</p>

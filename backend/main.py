@@ -38,6 +38,7 @@ import database
 from database import get_pending_upload_cleanup, init_db, mark_upload_cleanup_done
 from rate_limit import limiter
 from routers import agent_exchanges, agents, auth, cards, chat, chat_model, conversations, hot, image_models, match, me, peer, plaza, voice
+from routers import local_watch
 from utils import media
 from utils.background_tasks import create_background_task, shutdown_background_tasks
 from utils.request_limits import MAX_REQUEST_BODY_BYTES, RequestBodyLimitMiddleware
@@ -167,6 +168,7 @@ app.include_router(me.router)
 app.include_router(agents.router)
 app.include_router(conversations.router)
 app.include_router(agent_exchanges.router)
+app.include_router(local_watch.router)
 
 app.add_middleware(
     CORSMiddleware,
@@ -212,6 +214,10 @@ async def _can_view_generated_image(username: str, image_path: str) -> bool:
 @app.middleware("http")
 async def require_auth(request: Request, call_next):
     path = request.url.path
+    if path.rstrip("/") in {"/local-watch/heartbeat", "/local-watch/observations"}:
+        # Device tokens are scoped and authenticated by the local-watch router;
+        # they are never accepted as account JWTs for user-side endpoints.
+        return await call_next(request)
     # Match StaticFiles' path normalization when identifying private/hidden uploads.
     upload_path = posixpath.normpath("/" + path.lstrip("/"))
     hidden_upload = upload_path.startswith("/uploads/") and any(
@@ -275,6 +281,18 @@ async def require_auth(request: Request, call_next):
                 "attachment; filename*=UTF-8''" + quote(posixpath.basename(upload_path), safe="")
             )
     return response
+
+
+@app.middleware("http")
+async def private_local_watch(request: Request, call_next):
+    if request.url.path == "/local-watch" or request.url.path.startswith("/local-watch/"):
+        headers = {"Cache-Control": "private, no-store"}
+        if os.getenv("FIONA_LOCAL_WATCH", "1") == "0":
+            return JSONResponse({"detail": "Not Found"}, status_code=404, headers=headers)
+        response = await call_next(request)
+        response.headers["Cache-Control"] = headers["Cache-Control"]
+        return response
+    return await call_next(request)
 
 @app.get("/")
 async def root():

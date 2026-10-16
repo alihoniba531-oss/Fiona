@@ -1,0 +1,39 @@
+{
+  "changed_existing_files": [
+    "backend/database.py",
+    "backend/routers/local_watch.py",
+    "backend/services/local_watch.py",
+    "backend/tests/test_local_watch_backend.py",
+    "backend/tests/test_local_watch_frontend.py",
+    "docs/tasks/2026-10-11-local-watch/03-report.md",
+    "frontend/components/LocalWatchSection.tsx",
+    "frontend/lib/localWatch.ts"
+  ],
+  "new_test_files": [
+    "backend/tests/test_local_watch_backend_r2.py",
+    "backend/tests/test_local_watch_frontend_r2.py",
+    "backend/tests/test_local_watch_service_r2.py"
+  ],
+  "unexpected_changed_files": [],
+  "original_test_files_unchanged": 99,
+  "r2_start_non_contract_test_files_unchanged": 106,
+  "contract_test_changes": {
+    "backend": "one response field whitelist assertion adds content; before snapshot hash verified",
+    "frontend": "two fixtures add content, one expected content changes; reverse edits match before hash"
+  },
+  "database_r2_diff": {
+    "added": 50,
+    "deleted": 0,
+    "existing_lines_preserved": true
+  },
+  "database_original_task_diff": {
+    "added": 249,
+    "deleted": 0
+  },
+  "original_baseline_changed_files": [
+    "backend/database.py"
+  ],
+  "watcher_files_unchanged": 12,
+  "previous_report_bytes_preserved": 27413,
+  "report_append_only": true
+}

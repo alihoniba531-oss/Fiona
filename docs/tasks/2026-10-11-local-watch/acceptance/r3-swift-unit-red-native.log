@@ -1,0 +1,56 @@
+warning: /Users/yangjing/Library/org.swift.swiftpm/configuration is not accessible or not writable, disabling user-level cache features.
+warning: /Users/yangjing/Library/org.swift.swiftpm/security is not accessible or not writable, disabling user-level cache features.
+Building for debugging...
+[0/13] /Users/yangjing/Desktop/ai-workspace/Fiona/watcher-mac/.build/arm64-apple-macosx/debug/FionaWatcherPackageTests.derived/runner.swift
+[0/13] Write sources
+[0/13] Write fiona-watcher-entitlement.plist
+[5/13] Write sources
+[7/13] Write swift-version--1AB21518FC5DEDBE.txt
+[9/18] Compiling FionaWatcherCore OCR.swift
+[10/18] Compiling FionaWatcherCore Watcher.swift
+[11/18] Emitting module FionaWatcherCore
+[12/18] Compiling FionaWatcherCore LineProcessing.swift
+[13/18] Compiling FionaWatcherCore Scheduling.swift
+error: emit-module command failed with exit code 1 (use -v to see invocation)
+[14/26] Emitting module FionaWatcherCaptureStatusTests
+/Users/yangjing/Desktop/ai-workspace/Fiona/watcher-mac/CaptureStatusTests/test_local_watch_capture_status.swift:2:8: error: no such module 'Testing'
+  1 | import Foundation
+  2 | import Testing
+    |        `- error: no such module 'Testing'
+  3 | @testable import FionaWatcherCore
+  4 | 
+[15/26] Compiling FionaWatcherCaptureStatusTests test_local_watch_capture_status.swift
+/Users/yangjing/Desktop/ai-workspace/Fiona/watcher-mac/CaptureStatusTests/test_local_watch_capture_status.swift:2:8: error: no such module 'Testing'
+  1 | import Foundation
+  2 | import Testing
+    |        `- error: no such module 'Testing'
+  3 | @testable import FionaWatcherCore
+  4 | 
+error: emit-module command failed with exit code 1 (use -v to see invocation)
+[16/26] Emitting module FionaWatcherCoreTests
+/Users/yangjing/Desktop/ai-workspace/Fiona/watcher-mac/Tests/FionaWatcherCoreTests/test_local_watch_logic.swift:1:8: error: no such module 'Testing'
+ 1 | import Testing
+   |        `- error: no such module 'Testing'
+ 2 | @testable import FionaWatcherCore
+ 3 | 
+[17/26] Compiling FionaWatcherCoreTests test_local_watch_logic.swift
+/Users/yangjing/Desktop/ai-workspace/Fiona/watcher-mac/Tests/FionaWatcherCoreTests/test_local_watch_logic.swift:1:8: error: no such module 'Testing'
+ 1 | import Testing
+   |        `- error: no such module 'Testing'
+ 2 | @testable import FionaWatcherCore
+ 3 | 
+[18/26] Compiling FionaWatcherCoreTests test_local_watch_scheduling.swift
+/Users/yangjing/Desktop/ai-workspace/Fiona/watcher-mac/Tests/FionaWatcherCoreTests/test_local_watch_logic.swift:1:8: error: no such module 'Testing'
+ 1 | import Testing
+   |        `- error: no such module 'Testing'
+ 2 | @testable import FionaWatcherCore
+ 3 | 
+[19/26] Compiling FionaWatcherCoreTests test_local_watch_ocr.swift
+/Users/yangjing/Desktop/ai-workspace/Fiona/watcher-mac/Tests/FionaWatcherCoreTests/test_local_watch_logic.swift:1:8: error: no such module 'Testing'
+ 1 | import Testing
+   |        `- error: no such module 'Testing'
+ 2 | @testable import FionaWatcherCore
+ 3 | 
+[20/26] Emitting module fiona_watcher
+warning: '--build-system native' has been deprecated and will be removed in a future release; please report an issue at https://github.com/swiftlang/swift-package-manager/issues if you are unable to adopt the default build system.
+error: fatalError

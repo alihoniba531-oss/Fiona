@@ -1,0 +1,293 @@
+FFFFFFF..FFF                                                             [100%]
+=================================== FAILURES ===================================
+____ test_rule_response_has_capture_metadata_but_writable_draft_excludes_it ____
+
+    def test_rule_response_has_capture_metadata_but_writable_draft_excludes_it():
+        source = LOGIC.read_text(encoding="utf-8")
+>       capture = source.split("export interface LocalWatchCapture {", 1)[1].split("}", 1)[0]
+                  ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+E       IndexError: list index out of range
+
+tests/test_local_watch_capture_frontend_r3.py:59: IndexError
+_ test_status_text_displays_backend_message_and_supports_old_rule_responses[capture0-\u76d1\u63a7\u4e2d] _
+
+capture = {'ok': True, 'message': '后端正常状态', 'since': '2026-10-11T12:00:00Z'}
+expected = '监控中'
+
+    @pytest.mark.parametrize("capture,expected", [
+        ({"ok": True, "message": "后端正常状态", "since": "2026-10-11T12:00:00Z"}, "监控中"),
+        ({"ok": False, "message": "截图失败：屏幕可能已锁定或显示器已休眠，也可能缺少屏幕录制权限"},
+         "截图失败：屏幕可能已锁定或显示器已休眠，也可能缺少屏幕录制权限"),
+        ({"ok": False, "message": "没有找到匹配的窗口（窗口可能已关闭或最小化）"},
+         "没有找到匹配的窗口（窗口可能已关闭或最小化）"),
+        ({"ok": False, "message": "截图失败，请查看监控程序日志"}, "截图失败，请查看监控程序日志"),
+        ({"ok": False, "message": "监控程序未在运行"}, "监控程序未在运行"),
+        (None, "监控程序未在运行"),
+    ])
+    def test_status_text_displays_backend_message_and_supports_old_rule_responses(capture, expected):
+        rule = {"id": 7}
+        if capture is not None:
+            rule["capture"] = capture
+>       actual = run_node("const rule=" + json.dumps(rule, ensure_ascii=False) + ";\n"
+                          "process.stdout.write(JSON.stringify(localWatchCaptureMessage(rule)));",
+                          [("localWatchCaptureMessage", "rule")])
+
+tests/test_local_watch_capture_frontend_r3.py:82: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+tests/test_local_watch_capture_frontend_r3.py:49: in run_node
+    runner = "\n".join(
+tests/test_local_watch_capture_frontend_r3.py:50: in <genexpr>
+    "function " + name + "(" + arguments + ") {" + function_body(name) + "}"
+                                                   ^^^^^^^^^^^^^^^^^^^
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+name = 'localWatchCaptureMessage'
+
+    def function_body(name):
+        source = LOGIC.read_text(encoding="utf-8")
+>       start = source.index("export function " + name)
+                ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+E       ValueError: substring not found
+
+tests/test_local_watch_capture_frontend_r3.py:35: ValueError
+_ test_status_text_displays_backend_message_and_supports_old_rule_responses[capture1-\u622a\u56fe\u5931\u8d25\uff1a\u5c4f\u5e55\u53ef\u80fd\u5df2\u9501\u5b9a\u6216\u663e\u793a\u5668\u5df2\u4f11\u7720\uff0c\u4e5f\u53ef\u80fd\u7f3a\u5c11\u5c4f\u5e55\u5f55\u5236\u6743\u9650] _
+
+capture = {'ok': False, 'message': '截图失败：屏幕可能已锁定或显示器已休眠，也可能缺少屏幕录制权限'}
+expected = '截图失败：屏幕可能已锁定或显示器已休眠，也可能缺少屏幕录制权限'
+
+    @pytest.mark.parametrize("capture,expected", [
+        ({"ok": True, "message": "后端正常状态", "since": "2026-10-11T12:00:00Z"}, "监控中"),
+        ({"ok": False, "message": "截图失败：屏幕可能已锁定或显示器已休眠，也可能缺少屏幕录制权限"},
+         "截图失败：屏幕可能已锁定或显示器已休眠，也可能缺少屏幕录制权限"),
+        ({"ok": False, "message": "没有找到匹配的窗口（窗口可能已关闭或最小化）"},
+         "没有找到匹配的窗口（窗口可能已关闭或最小化）"),
+        ({"ok": False, "message": "截图失败，请查看监控程序日志"}, "截图失败，请查看监控程序日志"),
+        ({"ok": False, "message": "监控程序未在运行"}, "监控程序未在运行"),
+        (None, "监控程序未在运行"),
+    ])
+    def test_status_text_displays_backend_message_and_supports_old_rule_responses(capture, expected):
+        rule = {"id": 7}
+        if capture is not None:
+            rule["capture"] = capture
+>       actual = run_node("const rule=" + json.dumps(rule, ensure_ascii=False) + ";\n"
+                          "process.stdout.write(JSON.stringify(localWatchCaptureMessage(rule)));",
+                          [("localWatchCaptureMessage", "rule")])
+
+tests/test_local_watch_capture_frontend_r3.py:82: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+tests/test_local_watch_capture_frontend_r3.py:49: in run_node
+    runner = "\n".join(
+tests/test_local_watch_capture_frontend_r3.py:50: in <genexpr>
+    "function " + name + "(" + arguments + ") {" + function_body(name) + "}"
+                                                   ^^^^^^^^^^^^^^^^^^^
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+name = 'localWatchCaptureMessage'
+
+    def function_body(name):
+        source = LOGIC.read_text(encoding="utf-8")
+>       start = source.index("export function " + name)
+                ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+E       ValueError: substring not found
+
+tests/test_local_watch_capture_frontend_r3.py:35: ValueError
+_ test_status_text_displays_backend_message_and_supports_old_rule_responses[capture2-\u6ca1\u6709\u627e\u5230\u5339\u914d\u7684\u7a97\u53e3\uff08\u7a97\u53e3\u53ef\u80fd\u5df2\u5173\u95ed\u6216\u6700\u5c0f\u5316\uff09] _
+
+capture = {'ok': False, 'message': '没有找到匹配的窗口（窗口可能已关闭或最小化）'}
+expected = '没有找到匹配的窗口（窗口可能已关闭或最小化）'
+
+    @pytest.mark.parametrize("capture,expected", [
+        ({"ok": True, "message": "后端正常状态", "since": "2026-10-11T12:00:00Z"}, "监控中"),
+        ({"ok": False, "message": "截图失败：屏幕可能已锁定或显示器已休眠，也可能缺少屏幕录制权限"},
+         "截图失败：屏幕可能已锁定或显示器已休眠，也可能缺少屏幕录制权限"),
+        ({"ok": False, "message": "没有找到匹配的窗口（窗口可能已关闭或最小化）"},
+         "没有找到匹配的窗口（窗口可能已关闭或最小化）"),
+        ({"ok": False, "message": "截图失败，请查看监控程序日志"}, "截图失败，请查看监控程序日志"),
+        ({"ok": False, "message": "监控程序未在运行"}, "监控程序未在运行"),
+        (None, "监控程序未在运行"),
+    ])
+    def test_status_text_displays_backend_message_and_supports_old_rule_responses(capture, expected):
+        rule = {"id": 7}
+        if capture is not None:
+            rule["capture"] = capture
+>       actual = run_node("const rule=" + json.dumps(rule, ensure_ascii=False) + ";\n"
+                          "process.stdout.write(JSON.stringify(localWatchCaptureMessage(rule)));",
+                          [("localWatchCaptureMessage", "rule")])
+
+tests/test_local_watch_capture_frontend_r3.py:82: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+tests/test_local_watch_capture_frontend_r3.py:49: in run_node
+    runner = "\n".join(
+tests/test_local_watch_capture_frontend_r3.py:50: in <genexpr>
+    "function " + name + "(" + arguments + ") {" + function_body(name) + "}"
+                                                   ^^^^^^^^^^^^^^^^^^^
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+name = 'localWatchCaptureMessage'
+
+    def function_body(name):
+        source = LOGIC.read_text(encoding="utf-8")
+>       start = source.index("export function " + name)
+                ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+E       ValueError: substring not found
+
+tests/test_local_watch_capture_frontend_r3.py:35: ValueError
+_ test_status_text_displays_backend_message_and_supports_old_rule_responses[capture3-\u622a\u56fe\u5931\u8d25\uff0c\u8bf7\u67e5\u770b\u76d1\u63a7\u7a0b\u5e8f\u65e5\u5fd7] _
+
+capture = {'ok': False, 'message': '截图失败，请查看监控程序日志'}
+expected = '截图失败，请查看监控程序日志'
+
+    @pytest.mark.parametrize("capture,expected", [
+        ({"ok": True, "message": "后端正常状态", "since": "2026-10-11T12:00:00Z"}, "监控中"),
+        ({"ok": False, "message": "截图失败：屏幕可能已锁定或显示器已休眠，也可能缺少屏幕录制权限"},
+         "截图失败：屏幕可能已锁定或显示器已休眠，也可能缺少屏幕录制权限"),
+        ({"ok": False, "message": "没有找到匹配的窗口（窗口可能已关闭或最小化）"},
+         "没有找到匹配的窗口（窗口可能已关闭或最小化）"),
+        ({"ok": False, "message": "截图失败，请查看监控程序日志"}, "截图失败，请查看监控程序日志"),
+        ({"ok": False, "message": "监控程序未在运行"}, "监控程序未在运行"),
+        (None, "监控程序未在运行"),
+    ])
+    def test_status_text_displays_backend_message_and_supports_old_rule_responses(capture, expected):
+        rule = {"id": 7}
+        if capture is not None:
+            rule["capture"] = capture
+>       actual = run_node("const rule=" + json.dumps(rule, ensure_ascii=False) + ";\n"
+                          "process.stdout.write(JSON.stringify(localWatchCaptureMessage(rule)));",
+                          [("localWatchCaptureMessage", "rule")])
+
+tests/test_local_watch_capture_frontend_r3.py:82: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+tests/test_local_watch_capture_frontend_r3.py:49: in run_node
+    runner = "\n".join(
+tests/test_local_watch_capture_frontend_r3.py:50: in <genexpr>
+    "function " + name + "(" + arguments + ") {" + function_body(name) + "}"
+                                                   ^^^^^^^^^^^^^^^^^^^
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+name = 'localWatchCaptureMessage'
+
+    def function_body(name):
+        source = LOGIC.read_text(encoding="utf-8")
+>       start = source.index("export function " + name)
+                ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+E       ValueError: substring not found
+
+tests/test_local_watch_capture_frontend_r3.py:35: ValueError
+_ test_status_text_displays_backend_message_and_supports_old_rule_responses[capture4-\u76d1\u63a7\u7a0b\u5e8f\u672a\u5728\u8fd0\u884c] _
+
+capture = {'ok': False, 'message': '监控程序未在运行'}, expected = '监控程序未在运行'
+
+    @pytest.mark.parametrize("capture,expected", [
+        ({"ok": True, "message": "后端正常状态", "since": "2026-10-11T12:00:00Z"}, "监控中"),
+        ({"ok": False, "message": "截图失败：屏幕可能已锁定或显示器已休眠，也可能缺少屏幕录制权限"},
+         "截图失败：屏幕可能已锁定或显示器已休眠，也可能缺少屏幕录制权限"),
+        ({"ok": False, "message": "没有找到匹配的窗口（窗口可能已关闭或最小化）"},
+         "没有找到匹配的窗口（窗口可能已关闭或最小化）"),
+        ({"ok": False, "message": "截图失败，请查看监控程序日志"}, "截图失败，请查看监控程序日志"),
+        ({"ok": False, "message": "监控程序未在运行"}, "监控程序未在运行"),
+        (None, "监控程序未在运行"),
+    ])
+    def test_status_text_displays_backend_message_and_supports_old_rule_responses(capture, expected):
+        rule = {"id": 7}
+        if capture is not None:
+            rule["capture"] = capture
+>       actual = run_node("const rule=" + json.dumps(rule, ensure_ascii=False) + ";\n"
+                          "process.stdout.write(JSON.stringify(localWatchCaptureMessage(rule)));",
+                          [("localWatchCaptureMessage", "rule")])
+
+tests/test_local_watch_capture_frontend_r3.py:82: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+tests/test_local_watch_capture_frontend_r3.py:49: in run_node
+    runner = "\n".join(
+tests/test_local_watch_capture_frontend_r3.py:50: in <genexpr>
+    "function " + name + "(" + arguments + ") {" + function_body(name) + "}"
+                                                   ^^^^^^^^^^^^^^^^^^^
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+name = 'localWatchCaptureMessage'
+
+    def function_body(name):
+        source = LOGIC.read_text(encoding="utf-8")
+>       start = source.index("export function " + name)
+                ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+E       ValueError: substring not found
+
+tests/test_local_watch_capture_frontend_r3.py:35: ValueError
+_ test_status_text_displays_backend_message_and_supports_old_rule_responses[None-\u76d1\u63a7\u7a0b\u5e8f\u672a\u5728\u8fd0\u884c] _
+
+capture = None, expected = '监控程序未在运行'
+
+    @pytest.mark.parametrize("capture,expected", [
+        ({"ok": True, "message": "后端正常状态", "since": "2026-10-11T12:00:00Z"}, "监控中"),
+        ({"ok": False, "message": "截图失败：屏幕可能已锁定或显示器已休眠，也可能缺少屏幕录制权限"},
+         "截图失败：屏幕可能已锁定或显示器已休眠，也可能缺少屏幕录制权限"),
+        ({"ok": False, "message": "没有找到匹配的窗口（窗口可能已关闭或最小化）"},
+         "没有找到匹配的窗口（窗口可能已关闭或最小化）"),
+        ({"ok": False, "message": "截图失败，请查看监控程序日志"}, "截图失败，请查看监控程序日志"),
+        ({"ok": False, "message": "监控程序未在运行"}, "监控程序未在运行"),
+        (None, "监控程序未在运行"),
+    ])
+    def test_status_text_displays_backend_message_and_supports_old_rule_responses(capture, expected):
+        rule = {"id": 7}
+        if capture is not None:
+            rule["capture"] = capture
+>       actual = run_node("const rule=" + json.dumps(rule, ensure_ascii=False) + ";\n"
+                          "process.stdout.write(JSON.stringify(localWatchCaptureMessage(rule)));",
+                          [("localWatchCaptureMessage", "rule")])
+
+tests/test_local_watch_capture_frontend_r3.py:82: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+tests/test_local_watch_capture_frontend_r3.py:49: in run_node
+    runner = "\n".join(
+tests/test_local_watch_capture_frontend_r3.py:50: in <genexpr>
+    "function " + name + "(" + arguments + ") {" + function_body(name) + "}"
+                                                   ^^^^^^^^^^^^^^^^^^^
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+name = 'localWatchCaptureMessage'
+
+    def function_body(name):
+        source = LOGIC.read_text(encoding="utf-8")
+>       start = source.index("export function " + name)
+                ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+E       ValueError: substring not found
+
+tests/test_local_watch_capture_frontend_r3.py:35: ValueError
+________ test_each_rule_renders_readable_status_and_highlights_failures ________
+
+    def test_each_rule_renders_readable_status_and_highlights_failures():
+        source = SETTINGS.read_text(encoding="utf-8")
+        row = source.split("{rules.map(rule =>", 1)[1].split("</li>)}</ul>", 1)[0]
+>       assert "{localWatchCaptureMessage(rule)}" in row
+E       assert '{localWatchCaptureMessage(rule)}' in ' <li key={rule.id} className="space-y-2 rounded-[8px] border border-[color:var(--rule2)] p-3">\n          <p classNam...rules/${rule.id}`, { method: "DELETE", signal }); }, "规则已删除");\n            }}>删除</button>\n          </div>\n        '
+
+tests/test_local_watch_capture_frontend_r3.py:114: AssertionError
+____ test_settings_explains_locked_screen_limitation_and_security_tradeoff _____
+
+    def test_settings_explains_locked_screen_limitation_and_security_tradeoff():
+        source = SETTINGS.read_text(encoding="utf-8")
+        description = source.split("本机监控</h2>", 1)[1].split("{loading &&", 1)[0]
+>       assert LIMITATION in description
+E       assert '屏幕锁定或显示器休眠时 macOS 不允许截取窗口，期间无法监控' in '\n    <div className="min-w-0 space-y-5">\n      <p className={noteClass}>在自己的 Mac 上监控指定程序窗口，符合规则时由分身在聊天里提醒你。只支持 macOS 14 及以上；不会点击、操作或自动回复其他程序。</p>\n      '
+
+tests/test_local_watch_capture_frontend_r3.py:125: AssertionError
+__ test_visible_status_refresh_is_periodic_and_cleaned_up_for_account_changes __
+
+    def test_visible_status_refresh_is_periodic_and_cleaned_up_for_account_changes():
+        source = SETTINGS.read_text(encoding="utf-8")
+>       assert "window.setInterval(onVisible, 10_000)" in source
+E       assert 'window.setInterval(onVisible, 10_000)' in '"use client";\n\nimport { useCallback, useEffect, useState } from "react";\nimport { apiFetch } from "@/lib/auth";\ni...a 用于判断，不落日志。AI 判断规则会把新出现的文字发给阿里云千问（选 Claude 时发给 Anthropic）。只会保存提醒摘要。</p>\n      </div>\n    </div>\n  </section>;\n}\n'
+
+tests/test_local_watch_capture_frontend_r3.py:133: AssertionError
+=========================== short test summary info ============================
+FAILED tests/test_local_watch_capture_frontend_r3.py::test_rule_response_has_capture_metadata_but_writable_draft_excludes_it
+FAILED tests/test_local_watch_capture_frontend_r3.py::test_status_text_displays_backend_message_and_supports_old_rule_responses[capture0-\u76d1\u63a7\u4e2d]
+FAILED tests/test_local_watch_capture_frontend_r3.py::test_status_text_displays_backend_message_and_supports_old_rule_responses[capture1-\u622a\u56fe\u5931\u8d25\uff1a\u5c4f\u5e55\u53ef\u80fd\u5df2\u9501\u5b9a\u6216\u663e\u793a\u5668\u5df2\u4f11\u7720\uff0c\u4e5f\u53ef\u80fd\u7f3a\u5c11\u5c4f\u5e55\u5f55\u5236\u6743\u9650]
+FAILED tests/test_local_watch_capture_frontend_r3.py::test_status_text_displays_backend_message_and_supports_old_rule_responses[capture2-\u6ca1\u6709\u627e\u5230\u5339\u914d\u7684\u7a97\u53e3\uff08\u7a97\u53e3\u53ef\u80fd\u5df2\u5173\u95ed\u6216\u6700\u5c0f\u5316\uff09]
+FAILED tests/test_local_watch_capture_frontend_r3.py::test_status_text_displays_backend_message_and_supports_old_rule_responses[capture3-\u622a\u56fe\u5931\u8d25\uff0c\u8bf7\u67e5\u770b\u76d1\u63a7\u7a0b\u5e8f\u65e5\u5fd7]
+FAILED tests/test_local_watch_capture_frontend_r3.py::test_status_text_displays_backend_message_and_supports_old_rule_responses[capture4-\u76d1\u63a7\u7a0b\u5e8f\u672a\u5728\u8fd0\u884c]
+FAILED tests/test_local_watch_capture_frontend_r3.py::test_status_text_displays_backend_message_and_supports_old_rule_responses[None-\u76d1\u63a7\u7a0b\u5e8f\u672a\u5728\u8fd0\u884c]
+FAILED tests/test_local_watch_capture_frontend_r3.py::test_each_rule_renders_readable_status_and_highlights_failures
+FAILED tests/test_local_watch_capture_frontend_r3.py::test_settings_explains_locked_screen_limitation_and_security_tradeoff
+FAILED tests/test_local_watch_capture_frontend_r3.py::test_visible_status_refresh_is_periodic_and_cleaned_up_for_account_changes
+10 failed, 2 passed in 0.24s

@@ -1,0 +1,9 @@
+{
+  "cwd": ".",
+  "command": [
+    "git",
+    "diff",
+    "--check"
+  ],
+  "existing_environment": "backend/.venv; npm offline"
+}

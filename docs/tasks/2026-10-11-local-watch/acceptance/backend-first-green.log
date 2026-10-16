@@ -1,0 +1,29 @@
+....................................F................................... [ 97%]
+..                                                                       [100%]
+=================================== FAILURES ===================================
+__________ test_alert_body_storage_fallback_billing_and_debug_privacy __________
+
+client = <starlette.testclient.TestClient object at 0x10fe3b240>
+monkeypatch = <_pytest.monkeypatch.MonkeyPatch object at 0x10fecff50>
+caplog = <_pytest.logging.LogCaptureFixture object at 0x10fdd3cb0>
+
+    def test_alert_body_storage_fallback_billing_and_debug_privacy(client, monkeypatch, caplog):
+        import database
+        import agent_store
+        from services import chat_service
+        async def forbidden(*args, **kwargs): raise AssertionError("unexpected chat side effect")
+        monkeypatch.setattr(chat_service, "extract_and_update", forbidden)
+        monkeypatch.setattr(chat_service, "detect_matches_and_save", forbidden)
+>       monkeypatch.setattr(database, "deduct_strawberries", forbidden)
+E       AttributeError: <module 'database' from '/Users/yangjing/Desktop/ai-workspace/Fiona/backend/database.py'> has no attribute 'deduct_strawberries'
+
+backend/tests/test_local_watch_backend.py:163: AttributeError
+=============================== warnings summary ===============================
+backend/tests/test_local_watch_backend.py: 14 warnings
+  /Users/yangjing/Desktop/ai-workspace/Fiona/backend/.venv/lib/python3.14/site-packages/slowapi/extension.py:720: DeprecationWarning: 'asyncio.iscoroutinefunction' is deprecated and slated for removal in Python 3.16; use inspect.iscoroutinefunction() instead
+    if asyncio.iscoroutinefunction(func):
+
+-- Docs: https://docs.pytest.org/en/stable/how-to/capture-warnings.html
+=========================== short test summary info ============================
+FAILED backend/tests/test_local_watch_backend.py::test_alert_body_storage_fallback_billing_and_debug_privacy
+1 failed, 73 passed, 14 warnings in 2.55s

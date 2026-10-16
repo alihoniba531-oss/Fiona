@@ -1,0 +1,89 @@
+warning: /Users/yangjing/Library/org.swift.swiftpm/configuration is not accessible or not writable, disabling user-level cache features.
+warning: /Users/yangjing/Library/org.swift.swiftpm/security is not accessible or not writable, disabling user-level cache features.
+Building for debugging...
+[0/13] /Users/yangjing/Desktop/ai-workspace/Fiona/watcher-mac/.build/arm64-apple-macosx/debug/FionaWatcherPackageTests.derived/runner.swift
+[1/13] Write sources
+[3/13] Write fiona-watcher-entitlement.plist
+[5/13] Write sources
+[7/13] Write swift-version--1AB21518FC5DEDBE.txt
+[9/19] Compiling FionaWatcherCore Watcher.swift
+[10/19] Compiling FionaWatcherCore Scheduling.swift
+[11/19] Compiling FionaWatcherCore CaptureStatus.swift
+[12/19] Compiling FionaWatcherCore OCR.swift
+[13/19] Emitting module FionaWatcherCore
+[14/19] Compiling FionaWatcherCore LineProcessing.swift
+[15/27] Emitting module fiona_watcher
+[16/27] Compiling fiona_watcher main.swift
+[16/27] Write Objects.LinkFileList
+[17/27] Linking fiona-watcher
+[18/27] Applying fiona-watcher
+[20/27] Compiling FionaWatcherCoreTests test_local_watch_logic.swift
+[21/27] Emitting module FionaWatcherCoreTests
+[22/27] Compiling FionaWatcherCoreTests test_local_watch_scheduling.swift
+[23/27] Compiling FionaWatcherCoreTests test_local_watch_ocr.swift
+/Users/yangjing/Desktop/ai-workspace/Fiona/watcher-mac/Tests/FionaWatcherCoreTests/test_local_watch_ocr.swift:78:22: warning: '#require(_:_:)' will always fail here; use 'Bool(false)' to silence this warning (from macro 'require')
+76 |             }
+77 |         }
+78 |         try #require(false, "System font lacks a required glyph")
+   |                      `- warning: '#require(_:_:)' will always fail here; use 'Bool(false)' to silence this warning (from macro 'require')
+79 |         return 0
+80 |     }
+[24/27] Compiling FionaWatcherCaptureStatusTests test_local_watch_capture_status.swift
+[25/27] Emitting module FionaWatcherCaptureStatusTests
+[26/29] Emitting module FionaWatcherPackageTests
+[27/29] Compiling FionaWatcherPackageTests runner.swift
+[27/29] Write Objects.LinkFileList
+[28/29] Linking FionaWatcherPackageTests
+Build complete! (33.60s)
+warning: '--build-system native' has been deprecated and will be removed in a future release; please report an issue at https://github.com/swiftlang/swift-package-manager/issues if you are unable to adopt the default build system.
+◇ Test run started.
+↳ Testing Library Version: 2084
+↳ Target Platform: arm64e-apple-macos14.0
+◇ Suite LocalWatchNormalizationTests started.
+◇ Suite LocalWatchSchedulingTests started.
+◇ Suite LocalWatchSnapshotTests started.
+◇ Suite LocalWatchOCRTests started.
+◇ Suite LocalWatchCaptureStatusTests started.
+◇ Test testTrimsAndCollapsesWhitespaceAndDropsNoise() started.
+◇ Test testMixedNumericContentRemainsAndUnicodeWhitespaceCollapses() started.
+◇ Test testObservationBoundsPreserveOrder() started.
+◇ Test testDuplicateLinesOnlyReportOnceAndEmptyFirstSnapshotIsBaseline() started.
+◇ Test testExponentialBackoffNeverExceedsSixtySeconds() started.
+◇ Test testRecognizesChineseAndEnglishDrawnByCoreGraphics() started.
+◇ Test testPendingQueueRetainsEveryBatchAndFailedPayload() started.
+◇ Test testRetryDoesNotBlockReadyObservationForAnotherRule() started.
+◇ Test testFirstSnapshotIsBaselineAndRecentThreeSuppressRepeatedLines() started.
+◇ Test testLogsNeverIncludeNSErrorDescriptionsOrWindowText() started.
+◇ Test testHeartbeatContainsEveryRuleAndExplicitNullWithISO8601() started.
+◇ Test testChangingErrorsDoesNotBypassThePerErrorThrottle() started.
+◇ Test testResettingRuleMatchingDoesNotBypassThePerErrorThrottle() started.
+◇ Test testMissingWindowsRemainStableAndDeletedRulesAreRemoved() started.
+◇ Test testRecoveryIsLoggedExactlyOnceWithoutResettingTheThrottle() started.
+◇ Test testSinceChangesOnlyWhenCaptureStateChanges() started.
+✔ Test testDuplicateLinesOnlyReportOnceAndEmptyFirstSnapshotIsBaseline() passed after 0.001 seconds.
+✔ Test testExponentialBackoffNeverExceedsSixtySeconds() passed after 0.001 seconds.
+◇ Test testSameErrorIsThrottledForSixtySecondsPerRule() started.
+✔ Test testFirstSnapshotIsBaselineAndRecentThreeSuppressRepeatedLines() passed after 0.001 seconds.
+✔ Test testObservationBoundsPreserveOrder() passed after 0.001 seconds.
+✔ Test testRetryDoesNotBlockReadyObservationForAnotherRule() passed after 0.001 seconds.
+✔ Suite LocalWatchSnapshotTests passed after 0.001 seconds.
+✔ Test testPendingQueueRetainsEveryBatchAndFailedPayload() passed after 0.001 seconds.
+✔ Suite LocalWatchSchedulingTests passed after 0.001 seconds.
+✔ Test testMixedNumericContentRemainsAndUnicodeWhitespaceCollapses() passed after 0.001 seconds.
+✔ Test testTrimsAndCollapsesWhitespaceAndDropsNoise() passed after 0.001 seconds.
+✔ Suite LocalWatchNormalizationTests passed after 0.001 seconds.
+✔ Test testLogsNeverIncludeNSErrorDescriptionsOrWindowText() passed after 0.001 seconds.
+✔ Test testSameErrorIsThrottledForSixtySecondsPerRule() passed after 0.002 seconds.
+✔ Test testResettingRuleMatchingDoesNotBypassThePerErrorThrottle() passed after 0.002 seconds.
+✔ Test testChangingErrorsDoesNotBypassThePerErrorThrottle() passed after 0.002 seconds.
+✔ Test testRecoveryIsLoggedExactlyOnceWithoutResettingTheThrottle() passed after 0.002 seconds.
+✔ Test testMissingWindowsRemainStableAndDeletedRulesAreRemoved() passed after 0.003 seconds.
+✔ Test testSinceChangesOnlyWhenCaptureStateChanges() passed after 0.003 seconds.
+✔ Test testHeartbeatContainsEveryRuleAndExplicitNullWithISO8601() passed after 0.003 seconds.
+✔ Suite LocalWatchCaptureStatusTests passed after 0.003 seconds.
+✘ Test testRecognizesChineseAndEnglishDrawnByCoreGraphics() recorded an issue at test_local_watch_ocr.swift:7:6: Caught error: .nilError
+✘ Test testRecognizesChineseAndEnglishDrawnByCoreGraphics() failed after 0.054 seconds with 1 issue.
+✘ Suite LocalWatchOCRTests failed after 0.054 seconds with 1 issue.
+✘ Test run with 17 tests in 5 suites failed after 0.054 seconds with 1 issue.
+Note: Some test targets reported failures:
+  - FionaWatcherPackageTests (Swift Testing)

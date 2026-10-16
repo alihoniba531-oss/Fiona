@@ -1,0 +1,76 @@
+FF.                                                                      [100%]
+=================================== FAILURES ===================================
+______ test_ai_inflight_rule_or_account_change_discards_decision[disable] ______
+
+client = <starlette.testclient.TestClient object at 0x10f3cb230>
+service = <module 'services.local_watch' from '/Users/yangjing/Desktop/ai-workspace/Fiona/backend/services/local_watch.py'>
+monkeypatch = <_pytest.monkeypatch.MonkeyPatch object at 0x108c32c40>
+mutation = 'disable'
+
+    @pytest.mark.parametrize("mutation", ["disable", "delete", "account"])
+    def test_ai_inflight_rule_or_account_change_discards_decision(client, service, monkeypatch, mutation):
+        import database
+        asyncio.run(database.get_or_create_user("watch_user"))
+        body = {"name": "完成", "app_match": "Browser", "title_match": "", "kind": "ai", "params": {"condition": "完成提醒"}, "interval_seconds": 3, "cooldown_seconds": 60, "enabled": True, "conversation_id": None}
+        item = asyncio.run(database.create_watch_rule("watch_user", body))
+        async def pending(username, params, lines, **kwargs):
+            if mutation == "disable":
+                await database.update_watch_rule(username, item["id"], {**body, "enabled": False})
+            elif mutation == "delete":
+                await database.delete_watch_rule(username, item["id"])
+            else:
+                await database.delete_account_data(username)
+            return {"alert": True, "summary": "旧判断不能送达"}
+        monkeypatch.setattr(service, "judge_ai", pending)
+>       assert asyncio.run(service.process_observation("watch_user", item, ["done"])) == {"alert": False}
+E       AssertionError: assert {'alert': True, 'alert_id': 1} == {'alert': False}
+E         
+E         Differing items:
+E         {'alert': True} != {'alert': False}
+E         Left contains 1 more item:
+E         {'alert_id': 1}
+E         Use -v to get more diff
+
+backend/tests/test_local_watch_service.py:192: AssertionError
+______ test_ai_inflight_rule_or_account_change_discards_decision[delete] _______
+
+client = <starlette.testclient.TestClient object at 0x10f2f2350>
+service = <module 'services.local_watch' from '/Users/yangjing/Desktop/ai-workspace/Fiona/backend/services/local_watch.py'>
+monkeypatch = <_pytest.monkeypatch.MonkeyPatch object at 0x10f2ba8d0>
+mutation = 'delete'
+
+    @pytest.mark.parametrize("mutation", ["disable", "delete", "account"])
+    def test_ai_inflight_rule_or_account_change_discards_decision(client, service, monkeypatch, mutation):
+        import database
+        asyncio.run(database.get_or_create_user("watch_user"))
+        body = {"name": "完成", "app_match": "Browser", "title_match": "", "kind": "ai", "params": {"condition": "完成提醒"}, "interval_seconds": 3, "cooldown_seconds": 60, "enabled": True, "conversation_id": None}
+        item = asyncio.run(database.create_watch_rule("watch_user", body))
+        async def pending(username, params, lines, **kwargs):
+            if mutation == "disable":
+                await database.update_watch_rule(username, item["id"], {**body, "enabled": False})
+            elif mutation == "delete":
+                await database.delete_watch_rule(username, item["id"])
+            else:
+                await database.delete_account_data(username)
+            return {"alert": True, "summary": "旧判断不能送达"}
+        monkeypatch.setattr(service, "judge_ai", pending)
+>       assert asyncio.run(service.process_observation("watch_user", item, ["done"])) == {"alert": False}
+E       AssertionError: assert {'alert': True, 'alert_id': 1} == {'alert': False}
+E         
+E         Differing items:
+E         {'alert': True} != {'alert': False}
+E         Left contains 1 more item:
+E         {'alert_id': 1}
+E         Use -v to get more diff
+
+backend/tests/test_local_watch_service.py:192: AssertionError
+=============================== warnings summary ===============================
+backend/tests/test_local_watch_service.py: 14 warnings
+  /Users/yangjing/Desktop/ai-workspace/Fiona/backend/.venv/lib/python3.14/site-packages/slowapi/extension.py:720: DeprecationWarning: 'asyncio.iscoroutinefunction' is deprecated and slated for removal in Python 3.16; use inspect.iscoroutinefunction() instead
+    if asyncio.iscoroutinefunction(func):
+
+-- Docs: https://docs.pytest.org/en/stable/how-to/capture-warnings.html
+=========================== short test summary info ============================
+FAILED backend/tests/test_local_watch_service.py::test_ai_inflight_rule_or_account_change_discards_decision[disable]
+FAILED backend/tests/test_local_watch_service.py::test_ai_inflight_rule_or_account_change_discards_decision[delete]
+2 failed, 1 passed, 37 deselected, 14 warnings in 1.18s

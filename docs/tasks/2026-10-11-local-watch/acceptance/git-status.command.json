@@ -1,0 +1,9 @@
+{
+  "cwd": ".",
+  "command": [
+    "git",
+    "status",
+    "--porcelain"
+  ],
+  "existing_environment": "backend/.venv; npm offline"
+}

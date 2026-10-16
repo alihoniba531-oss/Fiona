@@ -1,0 +1,13 @@
+{
+  "cwd": "backend",
+  "command": [
+    ".venv/bin/python",
+    "-m",
+    "pytest",
+    "-q",
+    "tests/test_local_watch_swift_capture_r3.py",
+    "tests/test_local_watch_swift_initialization.py",
+    "tests/test_local_watch_swift_testing.py"
+  ],
+  "environment_overrides": {}
+}

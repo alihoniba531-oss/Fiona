@@ -1,0 +1,11 @@
+warning: /Users/yangjing/Library/org.swift.swiftpm/configuration is not accessible or not writable, disabling user-level cache features.
+warning: /Users/yangjing/Library/org.swift.swiftpm/security is not accessible or not writable, disabling user-level cache features.
+Building for production...
+[0/5] Write sources
+[2/5] Write swift-version--1AB21518FC5DEDBE.txt
+[4/6] Compiling FionaWatcherCore CaptureStatus.swift
+[5/7] Compiling fiona_watcher main.swift
+[5/7] Write Objects.LinkFileList
+[6/7] Linking fiona-watcher
+Build complete! (31.40s)
+warning: '--build-system native' has been deprecated and will be removed in a future release; please report an issue at https://github.com/swiftlang/swift-package-manager/issues if you are unable to adopt the default build system.

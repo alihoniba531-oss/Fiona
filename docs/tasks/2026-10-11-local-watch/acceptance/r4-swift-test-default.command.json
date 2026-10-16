@@ -1,0 +1,10 @@
+{
+  "cwd": "watcher-mac",
+  "command": [
+    "swift",
+    "test"
+  ],
+  "environment_overrides": {},
+  "cleanup_before": true,
+  "cleanup_after": true
+}

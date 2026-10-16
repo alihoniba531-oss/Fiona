@@ -1,0 +1,63 @@
+--- before/backend/database.py
++++ after/backend/database.py
+@@ -310,6 +310,9 @@
+         await db.execute(USER_MODEL_CONFIGS_DDL)
+         for watch_table_ddl in LOCAL_WATCH_TABLES_DDL:
+             await db.execute(watch_table_ddl)
++        await db.execute("CREATE INDEX IF NOT EXISTS idx_watch_rules_username ON watch_rules(username)")
++        await db.execute("CREATE INDEX IF NOT EXISTS idx_watch_alerts_username_id ON watch_alerts(username, id)")
++        await db.execute("CREATE INDEX IF NOT EXISTS idx_watch_alerts_rule_id_id ON watch_alerts(rule_id, id)")
+         await _safe_migrate(db, "ALTER TABLE user_model_configs ADD COLUMN effort TEXT NOT NULL DEFAULT 'low'")
+         await db.execute("""
+             CREATE TABLE IF NOT EXISTS retired_usernames (
+@@ -1891,3 +1894,50 @@
+             FROM watch_alerts a LEFT JOIN watch_rules r ON r.id=a.rule_id AND r.username=a.username
+             WHERE a.username=? AND a.id>? ORDER BY a.id LIMIT 50""", (username, after)) as cursor:
+             return [dict(row) for row in await cursor.fetchall()]
++
++
++async def authenticate_watch_device_throttled(token_hash: str) -> dict | None:
++    """Reject unknown tokens using only a read; touch valid devices once a minute.
++
++    The guarded UPDATE also checks the database timestamp, revocation and owner
++    existence. Concurrent readers of a stale timestamp cannot refresh it twice.
++    """
++    stale = """(last_seen_at IS NULL OR strftime('%s', last_seen_at) IS NULL
++        OR CAST(strftime('%s', 'now') AS INTEGER)
++             - CAST(strftime('%s', last_seen_at) AS INTEGER) >= 60)"""
++    async with aiosqlite.connect(DB_PATH, timeout=SQLITE_BUSY_TIMEOUT) as db:
++        db.row_factory = aiosqlite.Row
++        async with db.execute("""SELECT d.id,d.username,""" + stale + """ AS needs_touch
++            FROM watch_devices d JOIN users u ON u.username=d.username
++            WHERE d.token_hash=? AND d.revoked=0""", (token_hash,)) as cursor:
++            device = await cursor.fetchone()
++        if device is None:
++            return None
++        if device["needs_touch"]:
++            await db.execute("""UPDATE watch_devices SET last_seen_at=CURRENT_TIMESTAMP
++                WHERE id=? AND username=? AND token_hash=? AND revoked=0
++                AND EXISTS(SELECT 1 FROM users WHERE username=watch_devices.username)
++                AND """ + stale, (device["id"], device["username"], token_hash))
++            await db.commit()
++            # A revoke/delete may win between the read and conditional write.
++            async with db.execute("""SELECT d.id,d.username FROM watch_devices d
++                JOIN users u ON u.username=d.username
++                WHERE d.token_hash=? AND d.revoked=0""", (token_hash,)) as cursor:
++                current = await cursor.fetchone()
++            return dict(current) if current is not None else None
++        return {"id": device["id"], "username": device["username"]}
++
++
++async def list_watch_alerts_with_content(username: str, after: int = 0) -> list[dict]:
++    """Return the stored assistant body, without rebuilding labels from rules."""
++    async with aiosqlite.connect(DB_PATH, timeout=SQLITE_BUSY_TIMEOUT) as db:
++        db.row_factory = aiosqlite.Row
++        async with db.execute("""SELECT a.id,COALESCE(r.name,'已删除规则') AS rule_name,
++                a.summary,a.created_at,a.conversation_id,a.message_id,
++                COALESCE(m.content,'') AS content
++            FROM watch_alerts a
++            LEFT JOIN watch_rules r ON r.id=a.rule_id AND r.username=a.username
++            LEFT JOIN messages m ON m.id=a.message_id AND m.username=a.username
++                AND m.conversation_id=a.conversation_id AND m.role='assistant'
++            WHERE a.username=? AND a.id>? ORDER BY a.id LIMIT 50""", (username, after)) as cursor:
++            return [dict(row) for row in await cursor.fetchall()]

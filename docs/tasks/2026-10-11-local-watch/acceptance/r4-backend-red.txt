@@ -1,0 +1,973 @@
+FFFFFFFF.FF.FFFFFFFFFFFFFFFFFFFFF............FFF.F                       [100%]
+=================================== FAILURES ===================================
+__ test_disabled_rule_is_neutral_before_heartbeat_and_overrides_saved_success __
+
+client = <starlette.testclient.TestClient object at 0x1118dc1a0>
+dev_headers = {'X-Dev-User': 'smoke_tester'}
+
+    def test_disabled_rule_is_neutral_before_heartbeat_and_overrides_saved_success(client, dev_headers):
+        item, watched, disabled = device(client), rule(client), rule(client, enabled=False)
+>       assert captures(client)[disabled["id"]] == DISABLED
+E       AssertionError: assert {'ok': False,...': '监控程序未在运行'} == {'ok': False,...ssage': '已停用'}
+E         
+E         Omitting 1 identical items, use -vv to show
+E         Differing items:
+E         {'message': '监控程序未在运行'} != {'message': '已停用'}
+E         Right contains 1 more item:
+E         {'neutral': True}
+E         Use -v to get more diff
+
+tests/test_local_watch_capture_backend_r4.py:58: AssertionError
+___ test_initial_state_is_neutral_and_retains_state_since_without_raw_errors ___
+
+client = <starlette.testclient.TestClient object at 0x11177b110>
+
+    def test_initial_state_is_neutral_and_retains_state_since_without_raw_errors(client):
+        item, watched = device(client), rule(client)
+        assert heartbeat(client, item, [status(watched["id"], False, None)]).status_code == 200
+>       assert captures(client)[watched["id"]] == {**WAITING, "since": SINCE}
+E       AssertionError: assert {'ok': False,...11T12:00:00Z'} == {'ok': False,...11T12:00:00Z'}
+E         
+E         Omitting 2 identical items, use -vv to show
+E         Differing items:
+E         {'message': '截图失败，请查看监控程序日志'} != {'message': '等待首次截图'}
+E         Right contains 1 more item:
+E         {'neutral': True}
+E         Use -v to get more diff
+
+tests/test_local_watch_capture_backend_r4.py:68: AssertionError
+_______ test_recent_heartbeat_without_valid_rule_state_is_neutral[None] ________
+
+client = <starlette.testclient.TestClient object at 0x11177aad0>
+snapshot = None
+
+    @pytest.mark.parametrize("snapshot", [None, [], [{}]])
+    def test_recent_heartbeat_without_valid_rule_state_is_neutral(client, snapshot):
+        item, watched = device(client), rule(client)
+        payload = {"windows": []}
+        if snapshot is not None:
+            payload["capture_status"] = snapshot
+        response = client.post("/local-watch/heartbeat", headers={"Authorization": "Bearer " + item["token"]}, json=payload)
+        assert response.status_code == 200, response.text
+        assert response.json()["rules"][0]["id"] == watched["id"]
+>       assert captures(client)[watched["id"]] == WAITING
+E       AssertionError: assert {'ok': False,...': '监控程序未在运行'} == {'ok': False,...ge': '等待首次截图'}
+E         
+E         Omitting 1 identical items, use -vv to show
+E         Differing items:
+E         {'message': '监控程序未在运行'} != {'message': '等待首次截图'}
+E         Right contains 1 more item:
+E         {'neutral': True}
+E         Use -v to get more diff
+
+tests/test_local_watch_capture_backend_r4.py:80: AssertionError
+_____ test_recent_heartbeat_without_valid_rule_state_is_neutral[snapshot1] _____
+
+client = <starlette.testclient.TestClient object at 0x1118ed220>, snapshot = []
+
+    @pytest.mark.parametrize("snapshot", [None, [], [{}]])
+    def test_recent_heartbeat_without_valid_rule_state_is_neutral(client, snapshot):
+        item, watched = device(client), rule(client)
+        payload = {"windows": []}
+        if snapshot is not None:
+            payload["capture_status"] = snapshot
+        response = client.post("/local-watch/heartbeat", headers={"Authorization": "Bearer " + item["token"]}, json=payload)
+        assert response.status_code == 200, response.text
+        assert response.json()["rules"][0]["id"] == watched["id"]
+>       assert captures(client)[watched["id"]] == WAITING
+E       AssertionError: assert {'ok': False,...': '监控程序未在运行'} == {'ok': False,...ge': '等待首次截图'}
+E         
+E         Omitting 1 identical items, use -vv to show
+E         Differing items:
+E         {'message': '监控程序未在运行'} != {'message': '等待首次截图'}
+E         Right contains 1 more item:
+E         {'neutral': True}
+E         Use -v to get more diff
+
+tests/test_local_watch_capture_backend_r4.py:80: AssertionError
+_____ test_recent_heartbeat_without_valid_rule_state_is_neutral[snapshot2] _____
+
+client = <starlette.testclient.TestClient object at 0x1118ec050>
+snapshot = [{}]
+
+    @pytest.mark.parametrize("snapshot", [None, [], [{}]])
+    def test_recent_heartbeat_without_valid_rule_state_is_neutral(client, snapshot):
+        item, watched = device(client), rule(client)
+        payload = {"windows": []}
+        if snapshot is not None:
+            payload["capture_status"] = snapshot
+        response = client.post("/local-watch/heartbeat", headers={"Authorization": "Bearer " + item["token"]}, json=payload)
+>       assert response.status_code == 200, response.text
+E       AssertionError: {"detail":"请求参数不正确"}
+E       assert 422 == 200
+E        +  where 422 = <Response [422 Unprocessable Content]>.status_code
+
+tests/test_local_watch_capture_backend_r4.py:78: AssertionError
+________ test_heartbeat_for_one_rule_leaves_other_enabled_rule_neutral _________
+
+client = <starlette.testclient.TestClient object at 0x11175b410>
+
+    def test_heartbeat_for_one_rule_leaves_other_enabled_rule_neutral(client):
+        item, watched, pending = device(client), rule(client), rule(client)
+        assert heartbeat(client, item, [status(watched["id"])]).status_code == 200
+        assert captures(client)[watched["id"]] == {"ok": True, "message": "监控中", "since": SINCE}
+>       assert captures(client)[pending["id"]] == WAITING
+E       AssertionError: assert {'ok': False,...': '监控程序未在运行'} == {'ok': False,...ge': '等待首次截图'}
+E         
+E         Omitting 1 identical items, use -vv to show
+E         Differing items:
+E         {'message': '监控程序未在运行'} != {'message': '等待首次截图'}
+E         Right contains 1 more item:
+E         {'neutral': True}
+E         Use -v to get more diff
+
+tests/test_local_watch_capture_backend_r4.py:87: AssertionError
+___ test_recent_heartbeat_expires_at_three_hundred_server_seconds[snapshot0] ___
+
+client = <starlette.testclient.TestClient object at 0x111a31d00>
+monkeypatch = <_pytest.monkeypatch.MonkeyPatch object at 0x10b0ce120>
+snapshot = []
+
+    @pytest.mark.parametrize("snapshot", [[], [status(1, False, None, "9999-12-31T23:59:59Z")]])
+    def test_recent_heartbeat_expires_at_three_hundred_server_seconds(client, monkeypatch, snapshot):
+        from routers import local_watch as router
+        clock = [100.0]
+        monkeypatch.setattr(router.time, "monotonic", lambda: clock[0])
+        item, watched = device(client), rule(client)
+        assert watched["id"] == 1
+        assert heartbeat(client, item, snapshot).status_code == 200
+        clock[0] = 399.999
+>       assert captures(client)[watched["id"]]["message"] == WAITING["message"]
+E       AssertionError: assert '监控程序未在运行' == '等待首次截图'
+E         
+E         - 等待首次截图
+E         + 监控程序未在运行
+
+tests/test_local_watch_capture_backend_r4.py:99: AssertionError
+___ test_recent_heartbeat_expires_at_three_hundred_server_seconds[snapshot1] ___
+
+client = <starlette.testclient.TestClient object at 0x111a317b0>
+monkeypatch = <_pytest.monkeypatch.MonkeyPatch object at 0x1118fd040>
+snapshot = [{'rule_id': 1, 'ok': False, 'error': None, 'since': '9999-12-31T23:59:59Z'}]
+
+    @pytest.mark.parametrize("snapshot", [[], [status(1, False, None, "9999-12-31T23:59:59Z")]])
+    def test_recent_heartbeat_expires_at_three_hundred_server_seconds(client, monkeypatch, snapshot):
+        from routers import local_watch as router
+        clock = [100.0]
+        monkeypatch.setattr(router.time, "monotonic", lambda: clock[0])
+        item, watched = device(client), rule(client)
+        assert watched["id"] == 1
+        assert heartbeat(client, item, snapshot).status_code == 200
+        clock[0] = 399.999
+>       assert captures(client)[watched["id"]]["message"] == WAITING["message"]
+E       AssertionError: assert '截图失败，请查看监控程序日志' == '等待首次截图'
+E         
+E         - 等待首次截图
+E         + 截图失败，请查看监控程序日志
+
+tests/test_local_watch_capture_backend_r4.py:99: AssertionError
+______________ test_recent_heartbeat_is_per_user_and_per_database ______________
+
+client = <starlette.testclient.TestClient object at 0x111a32f10>
+monkeypatch = <_pytest.monkeypatch.MonkeyPatch object at 0x111a2c4b0>
+tmp_path = PosixPath('/private/var/folders/8q/xrv13jp544l_3cc6cggv04r00000gn/T/pytest-of-yangjing/pytest-159/test_recent_heartbeat_is_per_u0')
+
+    def test_recent_heartbeat_is_per_user_and_per_database(client, monkeypatch, tmp_path):
+        import database
+        mine, mine_rule, foreign_rule = device(client), rule(client), rule(client, "other_r4")
+        assert heartbeat(client, mine, []).status_code == 200
+>       assert captures(client)[mine_rule["id"]] == WAITING
+E       AssertionError: assert {'ok': False,...': '监控程序未在运行'} == {'ok': False,...ge': '等待首次截图'}
+E         
+E         Omitting 1 identical items, use -vv to show
+E         Differing items:
+E         {'message': '监控程序未在运行'} != {'message': '等待首次截图'}
+E         Right contains 1 more item:
+E         {'neutral': True}
+E         Use -v to get more diff
+
+tests/test_local_watch_capture_backend_r4.py:120: AssertionError
+_ test_recent_heartbeat_tracks_devices_independently_and_revocation_invalidates_only_one _
+
+client = <starlette.testclient.TestClient object at 0x111a33020>
+dev_headers = {'X-Dev-User': 'smoke_tester'}
+monkeypatch = <_pytest.monkeypatch.MonkeyPatch object at 0x1119ca1a0>
+
+    def test_recent_heartbeat_tracks_devices_independently_and_revocation_invalidates_only_one(client, dev_headers, monkeypatch):
+        from routers import local_watch as router
+        clock = [100.0]
+        monkeypatch.setattr(router.time, "monotonic", lambda: clock[0])
+        older, newer, watched = device(client), device(client), rule(client)
+        assert heartbeat(client, older, []).status_code == 200
+        clock[0] = 101.0
+        assert heartbeat(client, newer, []).status_code == 200
+        assert client.delete(f"/local-watch/devices/{newer['id']}", headers=dev_headers).status_code == 204
+>       assert captures(client)[watched["id"]] == WAITING
+E       AssertionError: assert {'ok': False,...': '监控程序未在运行'} == {'ok': False,...ge': '等待首次截图'}
+E         
+E         Omitting 1 identical items, use -vv to show
+E         Differing items:
+E         {'message': '监控程序未在运行'} != {'message': '等待首次截图'}
+E         Right contains 1 more item:
+E         {'neutral': True}
+E         Use -v to get more diff
+
+tests/test_local_watch_capture_backend_r4.py:140: AssertionError
+______ test_deleted_user_caches_are_discarded_even_if_device_rows_remain _______
+
+client = <starlette.testclient.TestClient object at 0x111a33df0>
+
+    def test_deleted_user_caches_are_discarded_even_if_device_rows_remain(client):
+        import database
+        from routers import local_watch as router
+        item, watched = device(client), rule(client)
+        assert heartbeat(client, item, [status(watched["id"])]).status_code == 200
+        with sqlite3.connect(database.DB_PATH) as connection:
+            connection.execute("DELETE FROM users WHERE username='smoke_tester'")
+>       assert asyncio.run(router.rule_capture_states("smoke_tester")) == {}
+E       AssertionError: assert {1: {'ok': Tr...1T12:00:00Z'}} == {}
+E         
+E         Left contains 1 more item:
+E         {1: {'message': '监控中', 'ok': True, 'since': '2026-10-11T12:00:00Z'}}
+E         Use -v to get more diff
+
+tests/test_local_watch_capture_backend_r4.py:168: AssertionError
+_ test_malformed_entry_is_discarded_without_losing_valid_entry_or_windows[None] _
+
+client = <starlette.testclient.TestClient object at 0x111a33bd0>
+invalid_entry = None
+
+    @pytest.mark.parametrize("invalid_entry", [
+        None, [], {}, {"rule_id": True, "ok": True, "error": None, "since": SINCE},
+        {"rule_id": 0, "ok": True, "error": None, "since": SINCE},
+        {"rule_id": 2**63, "ok": True, "error": None, "since": SINCE},
+        {"rule_id": "1", "ok": True, "error": None, "since": SINCE},
+        {"rule_id": 1, "ok": 1, "error": None, "since": SINCE},
+        {"rule_id": 1, "ok": True, "error": "invalid-success", "since": SINCE},
+        {"rule_id": 1, "ok": False, "error": 5, "since": SINCE},
+        {"rule_id": 1, "ok": False, "error": "", "since": SINCE},
+        {"rule_id": 1, "ok": False, "error": "x" * 201, "since": SINCE},
+        {"rule_id": 1, "ok": True, "error": None, "since": None},
+        {"rule_id": 1, "ok": True, "error": None, "since": ""},
+        {"rule_id": 1, "ok": True, "error": None, "since": "not-date"},
+        {"rule_id": 1, "ok": True, "error": None, "since": "2026-10-11"},
+        {"rule_id": 1, "ok": True, "error": None, "since": "2026-10-11T12:00:00"},
+        {"rule_id": 1, "ok": True, "error": None, "since": "2026-02-30T12:00:00Z"},
+        {"rule_id": 1, "ok": True, "error": None, "since": SINCE, "extra": "private payload"},
+    ])
+    def test_malformed_entry_is_discarded_without_losing_valid_entry_or_windows(client, invalid_entry):
+        item, watched = device(client), rule(client)
+        response = heartbeat(client, item, [invalid_entry, status(watched["id"])], windows=[{"app_name": "valid app", "title": "valid title"}])
+>       assert response.status_code == 200, response.text
+E       AssertionError: {"detail":"请求参数不正确"}
+E       assert 422 == 200
+E        +  where 422 = <Response [422 Unprocessable Content]>.status_code
+
+tests/test_local_watch_capture_backend_r4.py:194: AssertionError
+_ test_malformed_entry_is_discarded_without_losing_valid_entry_or_windows[invalid_entry1] _
+
+client = <starlette.testclient.TestClient object at 0x111a316a0>
+invalid_entry = []
+
+    @pytest.mark.parametrize("invalid_entry", [
+        None, [], {}, {"rule_id": True, "ok": True, "error": None, "since": SINCE},
+        {"rule_id": 0, "ok": True, "error": None, "since": SINCE},
+        {"rule_id": 2**63, "ok": True, "error": None, "since": SINCE},
+        {"rule_id": "1", "ok": True, "error": None, "since": SINCE},
+        {"rule_id": 1, "ok": 1, "error": None, "since": SINCE},
+        {"rule_id": 1, "ok": True, "error": "invalid-success", "since": SINCE},
+        {"rule_id": 1, "ok": False, "error": 5, "since": SINCE},
+        {"rule_id": 1, "ok": False, "error": "", "since": SINCE},
+        {"rule_id": 1, "ok": False, "error": "x" * 201, "since": SINCE},
+        {"rule_id": 1, "ok": True, "error": None, "since": None},
+        {"rule_id": 1, "ok": True, "error": None, "since": ""},
+        {"rule_id": 1, "ok": True, "error": None, "since": "not-date"},
+        {"rule_id": 1, "ok": True, "error": None, "since": "2026-10-11"},
+        {"rule_id": 1, "ok": True, "error": None, "since": "2026-10-11T12:00:00"},
+        {"rule_id": 1, "ok": True, "error": None, "since": "2026-02-30T12:00:00Z"},
+        {"rule_id": 1, "ok": True, "error": None, "since": SINCE, "extra": "private payload"},
+    ])
+    def test_malformed_entry_is_discarded_without_losing_valid_entry_or_windows(client, invalid_entry):
+        item, watched = device(client), rule(client)
+        response = heartbeat(client, item, [invalid_entry, status(watched["id"])], windows=[{"app_name": "valid app", "title": "valid title"}])
+>       assert response.status_code == 200, response.text
+E       AssertionError: {"detail":"请求参数不正确"}
+E       assert 422 == 200
+E        +  where 422 = <Response [422 Unprocessable Content]>.status_code
+
+tests/test_local_watch_capture_backend_r4.py:194: AssertionError
+_ test_malformed_entry_is_discarded_without_losing_valid_entry_or_windows[invalid_entry2] _
+
+client = <starlette.testclient.TestClient object at 0x111a32be0>
+invalid_entry = {}
+
+    @pytest.mark.parametrize("invalid_entry", [
+        None, [], {}, {"rule_id": True, "ok": True, "error": None, "since": SINCE},
+        {"rule_id": 0, "ok": True, "error": None, "since": SINCE},
+        {"rule_id": 2**63, "ok": True, "error": None, "since": SINCE},
+        {"rule_id": "1", "ok": True, "error": None, "since": SINCE},
+        {"rule_id": 1, "ok": 1, "error": None, "since": SINCE},
+        {"rule_id": 1, "ok": True, "error": "invalid-success", "since": SINCE},
+        {"rule_id": 1, "ok": False, "error": 5, "since": SINCE},
+        {"rule_id": 1, "ok": False, "error": "", "since": SINCE},
+        {"rule_id": 1, "ok": False, "error": "x" * 201, "since": SINCE},
+        {"rule_id": 1, "ok": True, "error": None, "since": None},
+        {"rule_id": 1, "ok": True, "error": None, "since": ""},
+        {"rule_id": 1, "ok": True, "error": None, "since": "not-date"},
+        {"rule_id": 1, "ok": True, "error": None, "since": "2026-10-11"},
+        {"rule_id": 1, "ok": True, "error": None, "since": "2026-10-11T12:00:00"},
+        {"rule_id": 1, "ok": True, "error": None, "since": "2026-02-30T12:00:00Z"},
+        {"rule_id": 1, "ok": True, "error": None, "since": SINCE, "extra": "private payload"},
+    ])
+    def test_malformed_entry_is_discarded_without_losing_valid_entry_or_windows(client, invalid_entry):
+        item, watched = device(client), rule(client)
+        response = heartbeat(client, item, [invalid_entry, status(watched["id"])], windows=[{"app_name": "valid app", "title": "valid title"}])
+>       assert response.status_code == 200, response.text
+E       AssertionError: {"detail":"请求参数不正确"}
+E       assert 422 == 200
+E        +  where 422 = <Response [422 Unprocessable Content]>.status_code
+
+tests/test_local_watch_capture_backend_r4.py:194: AssertionError
+_ test_malformed_entry_is_discarded_without_losing_valid_entry_or_windows[invalid_entry3] _
+
+client = <starlette.testclient.TestClient object at 0x111a33130>
+invalid_entry = {'rule_id': True, 'ok': True, 'error': None, 'since': '2026-10-11T12:00:00Z'}
+
+    @pytest.mark.parametrize("invalid_entry", [
+        None, [], {}, {"rule_id": True, "ok": True, "error": None, "since": SINCE},
+        {"rule_id": 0, "ok": True, "error": None, "since": SINCE},
+        {"rule_id": 2**63, "ok": True, "error": None, "since": SINCE},
+        {"rule_id": "1", "ok": True, "error": None, "since": SINCE},
+        {"rule_id": 1, "ok": 1, "error": None, "since": SINCE},
+        {"rule_id": 1, "ok": True, "error": "invalid-success", "since": SINCE},
+        {"rule_id": 1, "ok": False, "error": 5, "since": SINCE},
+        {"rule_id": 1, "ok": False, "error": "", "since": SINCE},
+        {"rule_id": 1, "ok": False, "error": "x" * 201, "since": SINCE},
+        {"rule_id": 1, "ok": True, "error": None, "since": None},
+        {"rule_id": 1, "ok": True, "error": None, "since": ""},
+        {"rule_id": 1, "ok": True, "error": None, "since": "not-date"},
+        {"rule_id": 1, "ok": True, "error": None, "since": "2026-10-11"},
+        {"rule_id": 1, "ok": True, "error": None, "since": "2026-10-11T12:00:00"},
+        {"rule_id": 1, "ok": True, "error": None, "since": "2026-02-30T12:00:00Z"},
+        {"rule_id": 1, "ok": True, "error": None, "since": SINCE, "extra": "private payload"},
+    ])
+    def test_malformed_entry_is_discarded_without_losing_valid_entry_or_windows(client, invalid_entry):
+        item, watched = device(client), rule(client)
+        response = heartbeat(client, item, [invalid_entry, status(watched["id"])], windows=[{"app_name": "valid app", "title": "valid title"}])
+>       assert response.status_code == 200, response.text
+E       AssertionError: {"detail":"请求参数不正确"}
+E       assert 422 == 200
+E        +  where 422 = <Response [422 Unprocessable Content]>.status_code
+
+tests/test_local_watch_capture_backend_r4.py:194: AssertionError
+_ test_malformed_entry_is_discarded_without_losing_valid_entry_or_windows[invalid_entry4] _
+
+client = <starlette.testclient.TestClient object at 0x111a33ac0>
+invalid_entry = {'rule_id': 0, 'ok': True, 'error': None, 'since': '2026-10-11T12:00:00Z'}
+
+    @pytest.mark.parametrize("invalid_entry", [
+        None, [], {}, {"rule_id": True, "ok": True, "error": None, "since": SINCE},
+        {"rule_id": 0, "ok": True, "error": None, "since": SINCE},
+        {"rule_id": 2**63, "ok": True, "error": None, "since": SINCE},
+        {"rule_id": "1", "ok": True, "error": None, "since": SINCE},
+        {"rule_id": 1, "ok": 1, "error": None, "since": SINCE},
+        {"rule_id": 1, "ok": True, "error": "invalid-success", "since": SINCE},
+        {"rule_id": 1, "ok": False, "error": 5, "since": SINCE},
+        {"rule_id": 1, "ok": False, "error": "", "since": SINCE},
+        {"rule_id": 1, "ok": False, "error": "x" * 201, "since": SINCE},
+        {"rule_id": 1, "ok": True, "error": None, "since": None},
+        {"rule_id": 1, "ok": True, "error": None, "since": ""},
+        {"rule_id": 1, "ok": True, "error": None, "since": "not-date"},
+        {"rule_id": 1, "ok": True, "error": None, "since": "2026-10-11"},
+        {"rule_id": 1, "ok": True, "error": None, "since": "2026-10-11T12:00:00"},
+        {"rule_id": 1, "ok": True, "error": None, "since": "2026-02-30T12:00:00Z"},
+        {"rule_id": 1, "ok": True, "error": None, "since": SINCE, "extra": "private payload"},
+    ])
+    def test_malformed_entry_is_discarded_without_losing_valid_entry_or_windows(client, invalid_entry):
+        item, watched = device(client), rule(client)
+        response = heartbeat(client, item, [invalid_entry, status(watched["id"])], windows=[{"app_name": "valid app", "title": "valid title"}])
+>       assert response.status_code == 200, response.text
+E       AssertionError: {"detail":"请求参数不正确"}
+E       assert 422 == 200
+E        +  where 422 = <Response [422 Unprocessable Content]>.status_code
+
+tests/test_local_watch_capture_backend_r4.py:194: AssertionError
+_ test_malformed_entry_is_discarded_without_losing_valid_entry_or_windows[invalid_entry5] _
+
+client = <starlette.testclient.TestClient object at 0x1118abce0>
+invalid_entry = {'rule_id': 9223372036854775808, 'ok': True, 'error': None, 'since': '2026-10-11T12:00:00Z'}
+
+    @pytest.mark.parametrize("invalid_entry", [
+        None, [], {}, {"rule_id": True, "ok": True, "error": None, "since": SINCE},
+        {"rule_id": 0, "ok": True, "error": None, "since": SINCE},
+        {"rule_id": 2**63, "ok": True, "error": None, "since": SINCE},
+        {"rule_id": "1", "ok": True, "error": None, "since": SINCE},
+        {"rule_id": 1, "ok": 1, "error": None, "since": SINCE},
+        {"rule_id": 1, "ok": True, "error": "invalid-success", "since": SINCE},
+        {"rule_id": 1, "ok": False, "error": 5, "since": SINCE},
+        {"rule_id": 1, "ok": False, "error": "", "since": SINCE},
+        {"rule_id": 1, "ok": False, "error": "x" * 201, "since": SINCE},
+        {"rule_id": 1, "ok": True, "error": None, "since": None},
+        {"rule_id": 1, "ok": True, "error": None, "since": ""},
+        {"rule_id": 1, "ok": True, "error": None, "since": "not-date"},
+        {"rule_id": 1, "ok": True, "error": None, "since": "2026-10-11"},
+        {"rule_id": 1, "ok": True, "error": None, "since": "2026-10-11T12:00:00"},
+        {"rule_id": 1, "ok": True, "error": None, "since": "2026-02-30T12:00:00Z"},
+        {"rule_id": 1, "ok": True, "error": None, "since": SINCE, "extra": "private payload"},
+    ])
+    def test_malformed_entry_is_discarded_without_losing_valid_entry_or_windows(client, invalid_entry):
+        item, watched = device(client), rule(client)
+        response = heartbeat(client, item, [invalid_entry, status(watched["id"])], windows=[{"app_name": "valid app", "title": "valid title"}])
+>       assert response.status_code == 200, response.text
+E       AssertionError: {"detail":"请求参数不正确"}
+E       assert 422 == 200
+E        +  where 422 = <Response [422 Unprocessable Content]>.status_code
+
+tests/test_local_watch_capture_backend_r4.py:194: AssertionError
+_ test_malformed_entry_is_discarded_without_losing_valid_entry_or_windows[invalid_entry6] _
+
+client = <starlette.testclient.TestClient object at 0x111a32360>
+invalid_entry = {'rule_id': '1', 'ok': True, 'error': None, 'since': '2026-10-11T12:00:00Z'}
+
+    @pytest.mark.parametrize("invalid_entry", [
+        None, [], {}, {"rule_id": True, "ok": True, "error": None, "since": SINCE},
+        {"rule_id": 0, "ok": True, "error": None, "since": SINCE},
+        {"rule_id": 2**63, "ok": True, "error": None, "since": SINCE},
+        {"rule_id": "1", "ok": True, "error": None, "since": SINCE},
+        {"rule_id": 1, "ok": 1, "error": None, "since": SINCE},
+        {"rule_id": 1, "ok": True, "error": "invalid-success", "since": SINCE},
+        {"rule_id": 1, "ok": False, "error": 5, "since": SINCE},
+        {"rule_id": 1, "ok": False, "error": "", "since": SINCE},
+        {"rule_id": 1, "ok": False, "error": "x" * 201, "since": SINCE},
+        {"rule_id": 1, "ok": True, "error": None, "since": None},
+        {"rule_id": 1, "ok": True, "error": None, "since": ""},
+        {"rule_id": 1, "ok": True, "error": None, "since": "not-date"},
+        {"rule_id": 1, "ok": True, "error": None, "since": "2026-10-11"},
+        {"rule_id": 1, "ok": True, "error": None, "since": "2026-10-11T12:00:00"},
+        {"rule_id": 1, "ok": True, "error": None, "since": "2026-02-30T12:00:00Z"},
+        {"rule_id": 1, "ok": True, "error": None, "since": SINCE, "extra": "private payload"},
+    ])
+    def test_malformed_entry_is_discarded_without_losing_valid_entry_or_windows(client, invalid_entry):
+        item, watched = device(client), rule(client)
+        response = heartbeat(client, item, [invalid_entry, status(watched["id"])], windows=[{"app_name": "valid app", "title": "valid title"}])
+>       assert response.status_code == 200, response.text
+E       AssertionError: {"detail":"请求参数不正确"}
+E       assert 422 == 200
+E        +  where 422 = <Response [422 Unprocessable Content]>.status_code
+
+tests/test_local_watch_capture_backend_r4.py:194: AssertionError
+_ test_malformed_entry_is_discarded_without_losing_valid_entry_or_windows[invalid_entry7] _
+
+client = <starlette.testclient.TestClient object at 0x111a33bd0>
+invalid_entry = {'rule_id': 1, 'ok': 1, 'error': None, 'since': '2026-10-11T12:00:00Z'}
+
+    @pytest.mark.parametrize("invalid_entry", [
+        None, [], {}, {"rule_id": True, "ok": True, "error": None, "since": SINCE},
+        {"rule_id": 0, "ok": True, "error": None, "since": SINCE},
+        {"rule_id": 2**63, "ok": True, "error": None, "since": SINCE},
+        {"rule_id": "1", "ok": True, "error": None, "since": SINCE},
+        {"rule_id": 1, "ok": 1, "error": None, "since": SINCE},
+        {"rule_id": 1, "ok": True, "error": "invalid-success", "since": SINCE},
+        {"rule_id": 1, "ok": False, "error": 5, "since": SINCE},
+        {"rule_id": 1, "ok": False, "error": "", "since": SINCE},
+        {"rule_id": 1, "ok": False, "error": "x" * 201, "since": SINCE},
+        {"rule_id": 1, "ok": True, "error": None, "since": None},
+        {"rule_id": 1, "ok": True, "error": None, "since": ""},
+        {"rule_id": 1, "ok": True, "error": None, "since": "not-date"},
+        {"rule_id": 1, "ok": True, "error": None, "since": "2026-10-11"},
+        {"rule_id": 1, "ok": True, "error": None, "since": "2026-10-11T12:00:00"},
+        {"rule_id": 1, "ok": True, "error": None, "since": "2026-02-30T12:00:00Z"},
+        {"rule_id": 1, "ok": True, "error": None, "since": SINCE, "extra": "private payload"},
+    ])
+    def test_malformed_entry_is_discarded_without_losing_valid_entry_or_windows(client, invalid_entry):
+        item, watched = device(client), rule(client)
+        response = heartbeat(client, item, [invalid_entry, status(watched["id"])], windows=[{"app_name": "valid app", "title": "valid title"}])
+>       assert response.status_code == 200, response.text
+E       AssertionError: {"detail":"请求参数不正确"}
+E       assert 422 == 200
+E        +  where 422 = <Response [422 Unprocessable Content]>.status_code
+
+tests/test_local_watch_capture_backend_r4.py:194: AssertionError
+_ test_malformed_entry_is_discarded_without_losing_valid_entry_or_windows[invalid_entry8] _
+
+client = <starlette.testclient.TestClient object at 0x111a33df0>
+invalid_entry = {'rule_id': 1, 'ok': True, 'error': 'invalid-success', 'since': '2026-10-11T12:00:00Z'}
+
+    @pytest.mark.parametrize("invalid_entry", [
+        None, [], {}, {"rule_id": True, "ok": True, "error": None, "since": SINCE},
+        {"rule_id": 0, "ok": True, "error": None, "since": SINCE},
+        {"rule_id": 2**63, "ok": True, "error": None, "since": SINCE},
+        {"rule_id": "1", "ok": True, "error": None, "since": SINCE},
+        {"rule_id": 1, "ok": 1, "error": None, "since": SINCE},
+        {"rule_id": 1, "ok": True, "error": "invalid-success", "since": SINCE},
+        {"rule_id": 1, "ok": False, "error": 5, "since": SINCE},
+        {"rule_id": 1, "ok": False, "error": "", "since": SINCE},
+        {"rule_id": 1, "ok": False, "error": "x" * 201, "since": SINCE},
+        {"rule_id": 1, "ok": True, "error": None, "since": None},
+        {"rule_id": 1, "ok": True, "error": None, "since": ""},
+        {"rule_id": 1, "ok": True, "error": None, "since": "not-date"},
+        {"rule_id": 1, "ok": True, "error": None, "since": "2026-10-11"},
+        {"rule_id": 1, "ok": True, "error": None, "since": "2026-10-11T12:00:00"},
+        {"rule_id": 1, "ok": True, "error": None, "since": "2026-02-30T12:00:00Z"},
+        {"rule_id": 1, "ok": True, "error": None, "since": SINCE, "extra": "private payload"},
+    ])
+    def test_malformed_entry_is_discarded_without_losing_valid_entry_or_windows(client, invalid_entry):
+        item, watched = device(client), rule(client)
+        response = heartbeat(client, item, [invalid_entry, status(watched["id"])], windows=[{"app_name": "valid app", "title": "valid title"}])
+>       assert response.status_code == 200, response.text
+E       AssertionError: {"detail":"请求参数不正确"}
+E       assert 422 == 200
+E        +  where 422 = <Response [422 Unprocessable Content]>.status_code
+
+tests/test_local_watch_capture_backend_r4.py:194: AssertionError
+_ test_malformed_entry_is_discarded_without_losing_valid_entry_or_windows[invalid_entry9] _
+
+client = <starlette.testclient.TestClient object at 0x111a317b0>
+invalid_entry = {'rule_id': 1, 'ok': False, 'error': 5, 'since': '2026-10-11T12:00:00Z'}
+
+    @pytest.mark.parametrize("invalid_entry", [
+        None, [], {}, {"rule_id": True, "ok": True, "error": None, "since": SINCE},
+        {"rule_id": 0, "ok": True, "error": None, "since": SINCE},
+        {"rule_id": 2**63, "ok": True, "error": None, "since": SINCE},
+        {"rule_id": "1", "ok": True, "error": None, "since": SINCE},
+        {"rule_id": 1, "ok": 1, "error": None, "since": SINCE},
+        {"rule_id": 1, "ok": True, "error": "invalid-success", "since": SINCE},
+        {"rule_id": 1, "ok": False, "error": 5, "since": SINCE},
+        {"rule_id": 1, "ok": False, "error": "", "since": SINCE},
+        {"rule_id": 1, "ok": False, "error": "x" * 201, "since": SINCE},
+        {"rule_id": 1, "ok": True, "error": None, "since": None},
+        {"rule_id": 1, "ok": True, "error": None, "since": ""},
+        {"rule_id": 1, "ok": True, "error": None, "since": "not-date"},
+        {"rule_id": 1, "ok": True, "error": None, "since": "2026-10-11"},
+        {"rule_id": 1, "ok": True, "error": None, "since": "2026-10-11T12:00:00"},
+        {"rule_id": 1, "ok": True, "error": None, "since": "2026-02-30T12:00:00Z"},
+        {"rule_id": 1, "ok": True, "error": None, "since": SINCE, "extra": "private payload"},
+    ])
+    def test_malformed_entry_is_discarded_without_losing_valid_entry_or_windows(client, invalid_entry):
+        item, watched = device(client), rule(client)
+        response = heartbeat(client, item, [invalid_entry, status(watched["id"])], windows=[{"app_name": "valid app", "title": "valid title"}])
+>       assert response.status_code == 200, response.text
+E       AssertionError: {"detail":"请求参数不正确"}
+E       assert 422 == 200
+E        +  where 422 = <Response [422 Unprocessable Content]>.status_code
+
+tests/test_local_watch_capture_backend_r4.py:194: AssertionError
+_ test_malformed_entry_is_discarded_without_losing_valid_entry_or_windows[invalid_entry10] _
+
+client = <starlette.testclient.TestClient object at 0x111a32250>
+invalid_entry = {'rule_id': 1, 'ok': False, 'error': '', 'since': '2026-10-11T12:00:00Z'}
+
+    @pytest.mark.parametrize("invalid_entry", [
+        None, [], {}, {"rule_id": True, "ok": True, "error": None, "since": SINCE},
+        {"rule_id": 0, "ok": True, "error": None, "since": SINCE},
+        {"rule_id": 2**63, "ok": True, "error": None, "since": SINCE},
+        {"rule_id": "1", "ok": True, "error": None, "since": SINCE},
+        {"rule_id": 1, "ok": 1, "error": None, "since": SINCE},
+        {"rule_id": 1, "ok": True, "error": "invalid-success", "since": SINCE},
+        {"rule_id": 1, "ok": False, "error": 5, "since": SINCE},
+        {"rule_id": 1, "ok": False, "error": "", "since": SINCE},
+        {"rule_id": 1, "ok": False, "error": "x" * 201, "since": SINCE},
+        {"rule_id": 1, "ok": True, "error": None, "since": None},
+        {"rule_id": 1, "ok": True, "error": None, "since": ""},
+        {"rule_id": 1, "ok": True, "error": None, "since": "not-date"},
+        {"rule_id": 1, "ok": True, "error": None, "since": "2026-10-11"},
+        {"rule_id": 1, "ok": True, "error": None, "since": "2026-10-11T12:00:00"},
+        {"rule_id": 1, "ok": True, "error": None, "since": "2026-02-30T12:00:00Z"},
+        {"rule_id": 1, "ok": True, "error": None, "since": SINCE, "extra": "private payload"},
+    ])
+    def test_malformed_entry_is_discarded_without_losing_valid_entry_or_windows(client, invalid_entry):
+        item, watched = device(client), rule(client)
+        response = heartbeat(client, item, [invalid_entry, status(watched["id"])], windows=[{"app_name": "valid app", "title": "valid title"}])
+>       assert response.status_code == 200, response.text
+E       AssertionError: {"detail":"请求参数不正确"}
+E       assert 422 == 200
+E        +  where 422 = <Response [422 Unprocessable Content]>.status_code
+
+tests/test_local_watch_capture_backend_r4.py:194: AssertionError
+_ test_malformed_entry_is_discarded_without_losing_valid_entry_or_windows[invalid_entry11] _
+
+client = <starlette.testclient.TestClient object at 0x111a31040>
+invalid_entry = {'rule_id': 1, 'ok': False, 'error': 'xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx...xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx', 'since': '2026-10-11T12:00:00Z'}
+
+    @pytest.mark.parametrize("invalid_entry", [
+        None, [], {}, {"rule_id": True, "ok": True, "error": None, "since": SINCE},
+        {"rule_id": 0, "ok": True, "error": None, "since": SINCE},
+        {"rule_id": 2**63, "ok": True, "error": None, "since": SINCE},
+        {"rule_id": "1", "ok": True, "error": None, "since": SINCE},
+        {"rule_id": 1, "ok": 1, "error": None, "since": SINCE},
+        {"rule_id": 1, "ok": True, "error": "invalid-success", "since": SINCE},
+        {"rule_id": 1, "ok": False, "error": 5, "since": SINCE},
+        {"rule_id": 1, "ok": False, "error": "", "since": SINCE},
+        {"rule_id": 1, "ok": False, "error": "x" * 201, "since": SINCE},
+        {"rule_id": 1, "ok": True, "error": None, "since": None},
+        {"rule_id": 1, "ok": True, "error": None, "since": ""},
+        {"rule_id": 1, "ok": True, "error": None, "since": "not-date"},
+        {"rule_id": 1, "ok": True, "error": None, "since": "2026-10-11"},
+        {"rule_id": 1, "ok": True, "error": None, "since": "2026-10-11T12:00:00"},
+        {"rule_id": 1, "ok": True, "error": None, "since": "2026-02-30T12:00:00Z"},
+        {"rule_id": 1, "ok": True, "error": None, "since": SINCE, "extra": "private payload"},
+    ])
+    def test_malformed_entry_is_discarded_without_losing_valid_entry_or_windows(client, invalid_entry):
+        item, watched = device(client), rule(client)
+        response = heartbeat(client, item, [invalid_entry, status(watched["id"])], windows=[{"app_name": "valid app", "title": "valid title"}])
+>       assert response.status_code == 200, response.text
+E       AssertionError: {"detail":"请求参数不正确"}
+E       assert 422 == 200
+E        +  where 422 = <Response [422 Unprocessable Content]>.status_code
+
+tests/test_local_watch_capture_backend_r4.py:194: AssertionError
+_ test_malformed_entry_is_discarded_without_losing_valid_entry_or_windows[invalid_entry12] _
+
+client = <starlette.testclient.TestClient object at 0x111a306b0>
+invalid_entry = {'rule_id': 1, 'ok': True, 'error': None, 'since': None}
+
+    @pytest.mark.parametrize("invalid_entry", [
+        None, [], {}, {"rule_id": True, "ok": True, "error": None, "since": SINCE},
+        {"rule_id": 0, "ok": True, "error": None, "since": SINCE},
+        {"rule_id": 2**63, "ok": True, "error": None, "since": SINCE},
+        {"rule_id": "1", "ok": True, "error": None, "since": SINCE},
+        {"rule_id": 1, "ok": 1, "error": None, "since": SINCE},
+        {"rule_id": 1, "ok": True, "error": "invalid-success", "since": SINCE},
+        {"rule_id": 1, "ok": False, "error": 5, "since": SINCE},
+        {"rule_id": 1, "ok": False, "error": "", "since": SINCE},
+        {"rule_id": 1, "ok": False, "error": "x" * 201, "since": SINCE},
+        {"rule_id": 1, "ok": True, "error": None, "since": None},
+        {"rule_id": 1, "ok": True, "error": None, "since": ""},
+        {"rule_id": 1, "ok": True, "error": None, "since": "not-date"},
+        {"rule_id": 1, "ok": True, "error": None, "since": "2026-10-11"},
+        {"rule_id": 1, "ok": True, "error": None, "since": "2026-10-11T12:00:00"},
+        {"rule_id": 1, "ok": True, "error": None, "since": "2026-02-30T12:00:00Z"},
+        {"rule_id": 1, "ok": True, "error": None, "since": SINCE, "extra": "private payload"},
+    ])
+    def test_malformed_entry_is_discarded_without_losing_valid_entry_or_windows(client, invalid_entry):
+        item, watched = device(client), rule(client)
+        response = heartbeat(client, item, [invalid_entry, status(watched["id"])], windows=[{"app_name": "valid app", "title": "valid title"}])
+>       assert response.status_code == 200, response.text
+E       AssertionError: {"detail":"请求参数不正确"}
+E       assert 422 == 200
+E        +  where 422 = <Response [422 Unprocessable Content]>.status_code
+
+tests/test_local_watch_capture_backend_r4.py:194: AssertionError
+_ test_malformed_entry_is_discarded_without_losing_valid_entry_or_windows[invalid_entry13] _
+
+client = <starlette.testclient.TestClient object at 0x111a308d0>
+invalid_entry = {'rule_id': 1, 'ok': True, 'error': None, 'since': ''}
+
+    @pytest.mark.parametrize("invalid_entry", [
+        None, [], {}, {"rule_id": True, "ok": True, "error": None, "since": SINCE},
+        {"rule_id": 0, "ok": True, "error": None, "since": SINCE},
+        {"rule_id": 2**63, "ok": True, "error": None, "since": SINCE},
+        {"rule_id": "1", "ok": True, "error": None, "since": SINCE},
+        {"rule_id": 1, "ok": 1, "error": None, "since": SINCE},
+        {"rule_id": 1, "ok": True, "error": "invalid-success", "since": SINCE},
+        {"rule_id": 1, "ok": False, "error": 5, "since": SINCE},
+        {"rule_id": 1, "ok": False, "error": "", "since": SINCE},
+        {"rule_id": 1, "ok": False, "error": "x" * 201, "since": SINCE},
+        {"rule_id": 1, "ok": True, "error": None, "since": None},
+        {"rule_id": 1, "ok": True, "error": None, "since": ""},
+        {"rule_id": 1, "ok": True, "error": None, "since": "not-date"},
+        {"rule_id": 1, "ok": True, "error": None, "since": "2026-10-11"},
+        {"rule_id": 1, "ok": True, "error": None, "since": "2026-10-11T12:00:00"},
+        {"rule_id": 1, "ok": True, "error": None, "since": "2026-02-30T12:00:00Z"},
+        {"rule_id": 1, "ok": True, "error": None, "since": SINCE, "extra": "private payload"},
+    ])
+    def test_malformed_entry_is_discarded_without_losing_valid_entry_or_windows(client, invalid_entry):
+        item, watched = device(client), rule(client)
+        response = heartbeat(client, item, [invalid_entry, status(watched["id"])], windows=[{"app_name": "valid app", "title": "valid title"}])
+>       assert response.status_code == 200, response.text
+E       AssertionError: {"detail":"请求参数不正确"}
+E       assert 422 == 200
+E        +  where 422 = <Response [422 Unprocessable Content]>.status_code
+
+tests/test_local_watch_capture_backend_r4.py:194: AssertionError
+_ test_malformed_entry_is_discarded_without_losing_valid_entry_or_windows[invalid_entry14] _
+
+client = <starlette.testclient.TestClient object at 0x111a30160>
+invalid_entry = {'rule_id': 1, 'ok': True, 'error': None, 'since': 'not-date'}
+
+    @pytest.mark.parametrize("invalid_entry", [
+        None, [], {}, {"rule_id": True, "ok": True, "error": None, "since": SINCE},
+        {"rule_id": 0, "ok": True, "error": None, "since": SINCE},
+        {"rule_id": 2**63, "ok": True, "error": None, "since": SINCE},
+        {"rule_id": "1", "ok": True, "error": None, "since": SINCE},
+        {"rule_id": 1, "ok": 1, "error": None, "since": SINCE},
+        {"rule_id": 1, "ok": True, "error": "invalid-success", "since": SINCE},
+        {"rule_id": 1, "ok": False, "error": 5, "since": SINCE},
+        {"rule_id": 1, "ok": False, "error": "", "since": SINCE},
+        {"rule_id": 1, "ok": False, "error": "x" * 201, "since": SINCE},
+        {"rule_id": 1, "ok": True, "error": None, "since": None},
+        {"rule_id": 1, "ok": True, "error": None, "since": ""},
+        {"rule_id": 1, "ok": True, "error": None, "since": "not-date"},
+        {"rule_id": 1, "ok": True, "error": None, "since": "2026-10-11"},
+        {"rule_id": 1, "ok": True, "error": None, "since": "2026-10-11T12:00:00"},
+        {"rule_id": 1, "ok": True, "error": None, "since": "2026-02-30T12:00:00Z"},
+        {"rule_id": 1, "ok": True, "error": None, "since": SINCE, "extra": "private payload"},
+    ])
+    def test_malformed_entry_is_discarded_without_losing_valid_entry_or_windows(client, invalid_entry):
+        item, watched = device(client), rule(client)
+        response = heartbeat(client, item, [invalid_entry, status(watched["id"])], windows=[{"app_name": "valid app", "title": "valid title"}])
+>       assert response.status_code == 200, response.text
+E       AssertionError: {"detail":"请求参数不正确"}
+E       assert 422 == 200
+E        +  where 422 = <Response [422 Unprocessable Content]>.status_code
+
+tests/test_local_watch_capture_backend_r4.py:194: AssertionError
+_ test_malformed_entry_is_discarded_without_losing_valid_entry_or_windows[invalid_entry15] _
+
+client = <starlette.testclient.TestClient object at 0x111a32580>
+invalid_entry = {'rule_id': 1, 'ok': True, 'error': None, 'since': '2026-10-11'}
+
+    @pytest.mark.parametrize("invalid_entry", [
+        None, [], {}, {"rule_id": True, "ok": True, "error": None, "since": SINCE},
+        {"rule_id": 0, "ok": True, "error": None, "since": SINCE},
+        {"rule_id": 2**63, "ok": True, "error": None, "since": SINCE},
+        {"rule_id": "1", "ok": True, "error": None, "since": SINCE},
+        {"rule_id": 1, "ok": 1, "error": None, "since": SINCE},
+        {"rule_id": 1, "ok": True, "error": "invalid-success", "since": SINCE},
+        {"rule_id": 1, "ok": False, "error": 5, "since": SINCE},
+        {"rule_id": 1, "ok": False, "error": "", "since": SINCE},
+        {"rule_id": 1, "ok": False, "error": "x" * 201, "since": SINCE},
+        {"rule_id": 1, "ok": True, "error": None, "since": None},
+        {"rule_id": 1, "ok": True, "error": None, "since": ""},
+        {"rule_id": 1, "ok": True, "error": None, "since": "not-date"},
+        {"rule_id": 1, "ok": True, "error": None, "since": "2026-10-11"},
+        {"rule_id": 1, "ok": True, "error": None, "since": "2026-10-11T12:00:00"},
+        {"rule_id": 1, "ok": True, "error": None, "since": "2026-02-30T12:00:00Z"},
+        {"rule_id": 1, "ok": True, "error": None, "since": SINCE, "extra": "private payload"},
+    ])
+    def test_malformed_entry_is_discarded_without_losing_valid_entry_or_windows(client, invalid_entry):
+        item, watched = device(client), rule(client)
+        response = heartbeat(client, item, [invalid_entry, status(watched["id"])], windows=[{"app_name": "valid app", "title": "valid title"}])
+>       assert response.status_code == 200, response.text
+E       AssertionError: {"detail":"请求参数不正确"}
+E       assert 422 == 200
+E        +  where 422 = <Response [422 Unprocessable Content]>.status_code
+
+tests/test_local_watch_capture_backend_r4.py:194: AssertionError
+_ test_malformed_entry_is_discarded_without_losing_valid_entry_or_windows[invalid_entry16] _
+
+client = <starlette.testclient.TestClient object at 0x111a33240>
+invalid_entry = {'rule_id': 1, 'ok': True, 'error': None, 'since': '2026-10-11T12:00:00'}
+
+    @pytest.mark.parametrize("invalid_entry", [
+        None, [], {}, {"rule_id": True, "ok": True, "error": None, "since": SINCE},
+        {"rule_id": 0, "ok": True, "error": None, "since": SINCE},
+        {"rule_id": 2**63, "ok": True, "error": None, "since": SINCE},
+        {"rule_id": "1", "ok": True, "error": None, "since": SINCE},
+        {"rule_id": 1, "ok": 1, "error": None, "since": SINCE},
+        {"rule_id": 1, "ok": True, "error": "invalid-success", "since": SINCE},
+        {"rule_id": 1, "ok": False, "error": 5, "since": SINCE},
+        {"rule_id": 1, "ok": False, "error": "", "since": SINCE},
+        {"rule_id": 1, "ok": False, "error": "x" * 201, "since": SINCE},
+        {"rule_id": 1, "ok": True, "error": None, "since": None},
+        {"rule_id": 1, "ok": True, "error": None, "since": ""},
+        {"rule_id": 1, "ok": True, "error": None, "since": "not-date"},
+        {"rule_id": 1, "ok": True, "error": None, "since": "2026-10-11"},
+        {"rule_id": 1, "ok": True, "error": None, "since": "2026-10-11T12:00:00"},
+        {"rule_id": 1, "ok": True, "error": None, "since": "2026-02-30T12:00:00Z"},
+        {"rule_id": 1, "ok": True, "error": None, "since": SINCE, "extra": "private payload"},
+    ])
+    def test_malformed_entry_is_discarded_without_losing_valid_entry_or_windows(client, invalid_entry):
+        item, watched = device(client), rule(client)
+        response = heartbeat(client, item, [invalid_entry, status(watched["id"])], windows=[{"app_name": "valid app", "title": "valid title"}])
+>       assert response.status_code == 200, response.text
+E       AssertionError: {"detail":"请求参数不正确"}
+E       assert 422 == 200
+E        +  where 422 = <Response [422 Unprocessable Content]>.status_code
+
+tests/test_local_watch_capture_backend_r4.py:194: AssertionError
+_ test_malformed_entry_is_discarded_without_losing_valid_entry_or_windows[invalid_entry17] _
+
+client = <starlette.testclient.TestClient object at 0x111a33790>
+invalid_entry = {'rule_id': 1, 'ok': True, 'error': None, 'since': '2026-02-30T12:00:00Z'}
+
+    @pytest.mark.parametrize("invalid_entry", [
+        None, [], {}, {"rule_id": True, "ok": True, "error": None, "since": SINCE},
+        {"rule_id": 0, "ok": True, "error": None, "since": SINCE},
+        {"rule_id": 2**63, "ok": True, "error": None, "since": SINCE},
+        {"rule_id": "1", "ok": True, "error": None, "since": SINCE},
+        {"rule_id": 1, "ok": 1, "error": None, "since": SINCE},
+        {"rule_id": 1, "ok": True, "error": "invalid-success", "since": SINCE},
+        {"rule_id": 1, "ok": False, "error": 5, "since": SINCE},
+        {"rule_id": 1, "ok": False, "error": "", "since": SINCE},
+        {"rule_id": 1, "ok": False, "error": "x" * 201, "since": SINCE},
+        {"rule_id": 1, "ok": True, "error": None, "since": None},
+        {"rule_id": 1, "ok": True, "error": None, "since": ""},
+        {"rule_id": 1, "ok": True, "error": None, "since": "not-date"},
+        {"rule_id": 1, "ok": True, "error": None, "since": "2026-10-11"},
+        {"rule_id": 1, "ok": True, "error": None, "since": "2026-10-11T12:00:00"},
+        {"rule_id": 1, "ok": True, "error": None, "since": "2026-02-30T12:00:00Z"},
+        {"rule_id": 1, "ok": True, "error": None, "since": SINCE, "extra": "private payload"},
+    ])
+    def test_malformed_entry_is_discarded_without_losing_valid_entry_or_windows(client, invalid_entry):
+        item, watched = device(client), rule(client)
+        response = heartbeat(client, item, [invalid_entry, status(watched["id"])], windows=[{"app_name": "valid app", "title": "valid title"}])
+>       assert response.status_code == 200, response.text
+E       AssertionError: {"detail":"请求参数不正确"}
+E       assert 422 == 200
+E        +  where 422 = <Response [422 Unprocessable Content]>.status_code
+
+tests/test_local_watch_capture_backend_r4.py:194: AssertionError
+_ test_malformed_entry_is_discarded_without_losing_valid_entry_or_windows[invalid_entry18] _
+
+client = <starlette.testclient.TestClient object at 0x111a31e10>
+invalid_entry = {'rule_id': 1, 'ok': True, 'error': None, 'since': '2026-10-11T12:00:00Z', ...}
+
+    @pytest.mark.parametrize("invalid_entry", [
+        None, [], {}, {"rule_id": True, "ok": True, "error": None, "since": SINCE},
+        {"rule_id": 0, "ok": True, "error": None, "since": SINCE},
+        {"rule_id": 2**63, "ok": True, "error": None, "since": SINCE},
+        {"rule_id": "1", "ok": True, "error": None, "since": SINCE},
+        {"rule_id": 1, "ok": 1, "error": None, "since": SINCE},
+        {"rule_id": 1, "ok": True, "error": "invalid-success", "since": SINCE},
+        {"rule_id": 1, "ok": False, "error": 5, "since": SINCE},
+        {"rule_id": 1, "ok": False, "error": "", "since": SINCE},
+        {"rule_id": 1, "ok": False, "error": "x" * 201, "since": SINCE},
+        {"rule_id": 1, "ok": True, "error": None, "since": None},
+        {"rule_id": 1, "ok": True, "error": None, "since": ""},
+        {"rule_id": 1, "ok": True, "error": None, "since": "not-date"},
+        {"rule_id": 1, "ok": True, "error": None, "since": "2026-10-11"},
+        {"rule_id": 1, "ok": True, "error": None, "since": "2026-10-11T12:00:00"},
+        {"rule_id": 1, "ok": True, "error": None, "since": "2026-02-30T12:00:00Z"},
+        {"rule_id": 1, "ok": True, "error": None, "since": SINCE, "extra": "private payload"},
+    ])
+    def test_malformed_entry_is_discarded_without_losing_valid_entry_or_windows(client, invalid_entry):
+        item, watched = device(client), rule(client)
+        response = heartbeat(client, item, [invalid_entry, status(watched["id"])], windows=[{"app_name": "valid app", "title": "valid title"}])
+>       assert response.status_code == 200, response.text
+E       AssertionError: {"detail":"请求参数不正确"}
+E       assert 422 == 200
+E        +  where 422 = <Response [422 Unprocessable Content]>.status_code
+
+tests/test_local_watch_capture_backend_r4.py:194: AssertionError
+___ test_duplicate_rule_status_keeps_first_valid_entry_and_other_rules_sync ____
+
+client = <starlette.testclient.TestClient object at 0x111a309e0>
+
+    def test_duplicate_rule_status_keeps_first_valid_entry_and_other_rules_sync(client):
+        item, watched, other = device(client), rule(client), rule(client)
+        response = heartbeat(client, item, [status(watched["id"]), status(watched["id"], False, "window_not_found"), status(other["id"], False, None)])
+>       assert response.status_code == 200, response.text
+E       AssertionError: {"detail":"请求参数不正确"}
+E       assert 422 == 200
+E        +  where 422 = <Response [422 Unprocessable Content]>.status_code
+
+tests/test_local_watch_capture_backend_r4.py:204: AssertionError
+__ test_discarded_entries_still_consume_heartbeat_limit_before_body_or_rules ___
+
+client = <starlette.testclient.TestClient object at 0x111a305a0>
+monkeypatch = <_pytest.monkeypatch.MonkeyPatch object at 0x1119f71c0>
+
+    def test_discarded_entries_still_consume_heartbeat_limit_before_body_or_rules(client, monkeypatch):
+        from routers import local_watch as router
+        from starlette.requests import Request
+        item = device(client)
+        for _ in range(10):
+>           assert heartbeat(client, item, [{}]).status_code == 200
+E           AssertionError: assert 422 == 200
+E            +  where 422 = <Response [422 Unprocessable Content]>.status_code
+E            +    where <Response [422 Unprocessable Content]> = heartbeat(<starlette.testclient.TestClient object at 0x111a305a0>, {'id': 1, 'name': 'R3 Mac', 'created_at': '2026-10-11 17:06:22', 'last_seen_at': None, ...}, [{}])
+
+tests/test_local_watch_capture_backend_r4.py:238: AssertionError
+_______ test_trusted_proxy_counts_two_real_sources_separately[X-Real-IP] _______
+
+client = <starlette.testclient.TestClient object at 0x111a31480>
+header = 'X-Real-IP'
+
+    @pytest.mark.parametrize("header", ["X-Real-IP", "X-Forwarded-For"])
+    def test_trusted_proxy_counts_two_real_sources_separately(client, header):
+        def fail(source):
+            forwarded = source if header == "X-Real-IP" else "192.0.2.250, " + source
+            return client.post("/local-watch/heartbeat", headers={"Authorization": "Bearer forged", header: forwarded}, json={"windows": []})
+    
+        for _ in range(30):
+>           assert fail("198.51.100.10").status_code == 401
+E           AssertionError: assert 429 == 401
+E            +  where 429 = <Response [429 Too Many Requests]>.status_code
+E            +    where <Response [429 Too Many Requests]> = <function test_trusted_proxy_counts_two_real_sources_separately.<locals>.fail at 0x111b328d0>('198.51.100.10')
+
+tests/test_local_watch_capture_backend_r4.py:258: AssertionError
+____ test_trusted_proxy_counts_two_real_sources_separately[X-Forwarded-For] ____
+
+client = <starlette.testclient.TestClient object at 0x111a31ae0>
+header = 'X-Forwarded-For'
+
+    @pytest.mark.parametrize("header", ["X-Real-IP", "X-Forwarded-For"])
+    def test_trusted_proxy_counts_two_real_sources_separately(client, header):
+        def fail(source):
+            forwarded = source if header == "X-Real-IP" else "192.0.2.250, " + source
+            return client.post("/local-watch/heartbeat", headers={"Authorization": "Bearer forged", header: forwarded}, json={"windows": []})
+    
+        for _ in range(30):
+>           assert fail("198.51.100.10").status_code == 401
+E           AssertionError: assert 429 == 401
+E            +  where 429 = <Response [429 Too Many Requests]>.status_code
+E            +    where <Response [429 Too Many Requests]> = <function test_trusted_proxy_counts_two_real_sources_separately.<locals>.fail at 0x111a9d4e0>('198.51.100.10')
+
+tests/test_local_watch_capture_backend_r4.py:258: AssertionError
+________ test_authentication_failed_uses_existing_shared_real_ip_helper ________
+
+client = <starlette.testclient.TestClient object at 0x111a30e20>
+monkeypatch = <_pytest.monkeypatch.MonkeyPatch object at 0x111abc1a0>
+
+    def test_authentication_failed_uses_existing_shared_real_ip_helper(client, monkeypatch):
+        import rate_limit
+        calls = []
+    
+        def real_ip(request):
+            calls.append(request.headers.get("x-real-ip"))
+            return "198.51.100.77"
+    
+        monkeypatch.setattr(rate_limit, "_client_ip", real_ip)
+        response = client.post("/local-watch/heartbeat", headers={"Authorization": "Bearer forged", "X-Real-IP": "198.51.100.77"}, json={"windows": []})
+        assert response.status_code == 401
+>       assert calls == ["198.51.100.77"]
+E       AssertionError: assert [] == ['198.51.100.77']
+E         
+E         Right contains one more item: '198.51.100.77'
+E         Use -v to get more diff
+
+tests/test_local_watch_capture_backend_r4.py:288: AssertionError
+=============================== warnings summary ===============================
+tests/test_local_watch_capture_backend_r4.py: 14 warnings
+  /Users/yangjing/Desktop/ai-workspace/Fiona/backend/.venv/lib/python3.14/site-packages/slowapi/extension.py:720: DeprecationWarning: 'asyncio.iscoroutinefunction' is deprecated and slated for removal in Python 3.16; use inspect.iscoroutinefunction() instead
+    if asyncio.iscoroutinefunction(func):
+
+-- Docs: https://docs.pytest.org/en/stable/how-to/capture-warnings.html
+=========================== short test summary info ============================
+FAILED tests/test_local_watch_capture_backend_r4.py::test_disabled_rule_is_neutral_before_heartbeat_and_overrides_saved_success
+FAILED tests/test_local_watch_capture_backend_r4.py::test_initial_state_is_neutral_and_retains_state_since_without_raw_errors
+FAILED tests/test_local_watch_capture_backend_r4.py::test_recent_heartbeat_without_valid_rule_state_is_neutral[None]
+FAILED tests/test_local_watch_capture_backend_r4.py::test_recent_heartbeat_without_valid_rule_state_is_neutral[snapshot1]
+FAILED tests/test_local_watch_capture_backend_r4.py::test_recent_heartbeat_without_valid_rule_state_is_neutral[snapshot2]
+FAILED tests/test_local_watch_capture_backend_r4.py::test_heartbeat_for_one_rule_leaves_other_enabled_rule_neutral
+FAILED tests/test_local_watch_capture_backend_r4.py::test_recent_heartbeat_expires_at_three_hundred_server_seconds[snapshot0]
+FAILED tests/test_local_watch_capture_backend_r4.py::test_recent_heartbeat_expires_at_three_hundred_server_seconds[snapshot1]
+FAILED tests/test_local_watch_capture_backend_r4.py::test_recent_heartbeat_is_per_user_and_per_database
+FAILED tests/test_local_watch_capture_backend_r4.py::test_recent_heartbeat_tracks_devices_independently_and_revocation_invalidates_only_one
+FAILED tests/test_local_watch_capture_backend_r4.py::test_deleted_user_caches_are_discarded_even_if_device_rows_remain
+FAILED tests/test_local_watch_capture_backend_r4.py::test_malformed_entry_is_discarded_without_losing_valid_entry_or_windows[None]
+FAILED tests/test_local_watch_capture_backend_r4.py::test_malformed_entry_is_discarded_without_losing_valid_entry_or_windows[invalid_entry1]
+FAILED tests/test_local_watch_capture_backend_r4.py::test_malformed_entry_is_discarded_without_losing_valid_entry_or_windows[invalid_entry2]
+FAILED tests/test_local_watch_capture_backend_r4.py::test_malformed_entry_is_discarded_without_losing_valid_entry_or_windows[invalid_entry3]
+FAILED tests/test_local_watch_capture_backend_r4.py::test_malformed_entry_is_discarded_without_losing_valid_entry_or_windows[invalid_entry4]
+FAILED tests/test_local_watch_capture_backend_r4.py::test_malformed_entry_is_discarded_without_losing_valid_entry_or_windows[invalid_entry5]
+FAILED tests/test_local_watch_capture_backend_r4.py::test_malformed_entry_is_discarded_without_losing_valid_entry_or_windows[invalid_entry6]
+FAILED tests/test_local_watch_capture_backend_r4.py::test_malformed_entry_is_discarded_without_losing_valid_entry_or_windows[invalid_entry7]
+FAILED tests/test_local_watch_capture_backend_r4.py::test_malformed_entry_is_discarded_without_losing_valid_entry_or_windows[invalid_entry8]
+FAILED tests/test_local_watch_capture_backend_r4.py::test_malformed_entry_is_discarded_without_losing_valid_entry_or_windows[invalid_entry9]
+FAILED tests/test_local_watch_capture_backend_r4.py::test_malformed_entry_is_discarded_without_losing_valid_entry_or_windows[invalid_entry10]
+FAILED tests/test_local_watch_capture_backend_r4.py::test_malformed_entry_is_discarded_without_losing_valid_entry_or_windows[invalid_entry11]
+FAILED tests/test_local_watch_capture_backend_r4.py::test_malformed_entry_is_discarded_without_losing_valid_entry_or_windows[invalid_entry12]
+FAILED tests/test_local_watch_capture_backend_r4.py::test_malformed_entry_is_discarded_without_losing_valid_entry_or_windows[invalid_entry13]
+FAILED tests/test_local_watch_capture_backend_r4.py::test_malformed_entry_is_discarded_without_losing_valid_entry_or_windows[invalid_entry14]
+FAILED tests/test_local_watch_capture_backend_r4.py::test_malformed_entry_is_discarded_without_losing_valid_entry_or_windows[invalid_entry15]
+FAILED tests/test_local_watch_capture_backend_r4.py::test_malformed_entry_is_discarded_without_losing_valid_entry_or_windows[invalid_entry16]
+FAILED tests/test_local_watch_capture_backend_r4.py::test_malformed_entry_is_discarded_without_losing_valid_entry_or_windows[invalid_entry17]
+FAILED tests/test_local_watch_capture_backend_r4.py::test_malformed_entry_is_discarded_without_losing_valid_entry_or_windows[invalid_entry18]
+FAILED tests/test_local_watch_capture_backend_r4.py::test_duplicate_rule_status_keeps_first_valid_entry_and_other_rules_sync
+FAILED tests/test_local_watch_capture_backend_r4.py::test_discarded_entries_still_consume_heartbeat_limit_before_body_or_rules
+FAILED tests/test_local_watch_capture_backend_r4.py::test_trusted_proxy_counts_two_real_sources_separately[X-Real-IP]
+FAILED tests/test_local_watch_capture_backend_r4.py::test_trusted_proxy_counts_two_real_sources_separately[X-Forwarded-For]
+FAILED tests/test_local_watch_capture_backend_r4.py::test_authentication_failed_uses_existing_shared_real_ip_helper
+35 failed, 15 passed, 14 warnings in 2.70s

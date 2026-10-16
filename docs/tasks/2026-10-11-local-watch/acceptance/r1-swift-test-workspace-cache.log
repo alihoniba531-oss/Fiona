@@ -1,0 +1,97 @@
+warning: /Users/yangjing/Library/org.swift.swiftpm/configuration is not accessible or not writable, disabling user-level cache features.
+warning: /Users/yangjing/Library/org.swift.swiftpm/security is not accessible or not writable, disabling user-level cache features.
+Building for debugging...
+[Planning deferred tasks]
+[2 / 23] FionaWatcherCore
+[14 / 158]
+[24 / 158]
+[27 / 158]
+[35 / 158]
+[39 / 158]
+[45 / 158]
+[50 / 158]
+[51 / 158]
+[65 / 158]
+[72 / 158]
+[78 / 158]
+[79 / 158]
+[80 / 158]
+[87 / 158]
+[89 / 158]
+[95 / 158]
+[96 / 158]
+[98 / 158]
+[99 / 158]
+[101 / 158]
+[113 / 158]
+[118 / 158]
+[125 / 158]
+[128 / 158]
+[129 / 158]
+[130 / 158]
+[131 / 158]
+[132 / 158]
+[137 / 158] FionaWatcherCore
+[142 / 160] FionaWatcherCore
+[142 / 160] fiona-watcher-product
+[145 / 162] fiona-watcher-product
+[146 / 162] FionaWatcherCore
+/Users/yangjing/Desktop/ai-workspace/Fiona/watcher-mac/Package.swift: FionaWatcherCore: ld: warning: search path '/Library/Developer/CommandLineTools/Developer/Library/Frameworks' not found
+/Users/yangjing/Desktop/ai-workspace/Fiona/watcher-mac/Package.swift: fiona-watcher-product: ld: warning: search path '/Library/Developer/CommandLineTools/Developer/usr/lib' not found
+/Users/yangjing/Desktop/ai-workspace/Fiona/watcher-mac/Package.swift: fiona-watcher-product: ld: warning: search path '/Library/Developer/CommandLineTools/Developer/Library/Frameworks' not found
+[151 / 163] fiona-watcher-product
+[154 / 172]
+[161 / 172] FionaWatcherCoreTests-product
+error: SwiftCompile normal arm64 /Users/yangjing/Desktop/ai-workspace/Fiona/watcher-mac/Tests/FionaWatcherCoreTests/test_local_watch_scheduling.swift failed with a nonzero exit code. Command line:     cd /Users/yangjing/Desktop/ai-workspace/Fiona
+    builtin-SwiftPerFileCompile test_local_watch_scheduling.swift
+macro expansion #require:2:6: error: cannot use mutating member on immutable value: '$0' is immutable
+`- /Users/yangjing/Desktop/ai-workspace/Fiona/watcher-mac/Tests/FionaWatcherCoreTests/test_local_watch_scheduling.swift:12:60: note: expanded code originates here
+10 |         queue.enqueue(PendingObservation(ruleID: 1, lines: ["第一条"], capturedAt: now, appName: "应用甲"))
+11 |         queue.enqueue(PendingObservation(ruleID: 2, lines: ["第二条"], capturedAt: now, appName: "应用乙"))
+12 |         let failed = try #require(queue.takeReady(at: now))
+   |                          `- note: in expansion of macro 'require' here
+   +--- macro expansion #require ---------------------------------------
+   |1 | Testing.__checkFunctionCall(queue.self,calling: {
+   |2 |   $0.takeReady(at: $1)
+   |  |      `- error: cannot use mutating member on immutable value: '$0' is immutable
+   |3 | },now,expression: .__fromFunctionCall(.__fromSyntaxNode("queue"),"takeReady",("at",.__fromSyntaxNode("now"))),comments: [],isRequired: true,sourceLocation: Testing.SourceLocation.__here()).__required()
+   +--------------------------------------------------------------------
+13 |         #expect(failed.ruleID == 1)
+14 |         queue.retry(failed, at: now)
+
+/Users/yangjing/Desktop/ai-workspace/Fiona/watcher-mac/Tests/FionaWatcherCoreTests/test_local_watch_scheduling.swift:12:22: warning: no calls to throwing functions occur within 'try' expression [#UnnecessaryEffectMarker]
+10 |         queue.enqueue(PendingObservation(ruleID: 1, lines: ["第一条"], capturedAt: now, appName: "应用甲"))
+11 |         queue.enqueue(PendingObservation(ruleID: 2, lines: ["第二条"], capturedAt: now, appName: "应用乙"))
+12 |         let failed = try #require(queue.takeReady(at: now))
+   |                      `- warning: no calls to throwing functions occur within 'try' expression [#UnnecessaryEffectMarker]
+13 |         #expect(failed.ruleID == 1)
+14 |         queue.retry(failed, at: now)
+
+macro expansion #require:2:6: error: cannot use mutating member on immutable value: '$0' is immutable
+`- /Users/yangjing/Desktop/ai-workspace/Fiona/watcher-mac/Tests/FionaWatcherCoreTests/test_local_watch_scheduling.swift:28:60: note: expanded code originates here
+26 |         }
+27 |         #expect(queue.count(for: 1) == 20)
+28 |         let failed = try #require(queue.takeReady(at: now))
+   |                          `- note: in expansion of macro 'require' here
+   +--- macro expansion #require ---------------------------------------
+   |1 | Testing.__checkFunctionCall(queue.self,calling: {
+   |2 |   $0.takeReady(at: $1)
+   |  |      `- error: cannot use mutating member on immutable value: '$0' is immutable
+   |3 | },now,expression: .__fromFunctionCall(.__fromSyntaxNode("queue"),"takeReady",("at",.__fromSyntaxNode("now"))),comments: [],isRequired: true,sourceLocation: Testing.SourceLocation.__here()).__required()
+   +--------------------------------------------------------------------
+29 |         queue.retry(failed, at: now)
+30 |         #expect(queue.count(for: 1) == 20)
+
+/Users/yangjing/Desktop/ai-workspace/Fiona/watcher-mac/Tests/FionaWatcherCoreTests/test_local_watch_scheduling.swift:28:22: warning: no calls to throwing functions occur within 'try' expression [#UnnecessaryEffectMarker]
+26 |         }
+27 |         #expect(queue.count(for: 1) == 20)
+28 |         let failed = try #require(queue.takeReady(at: now))
+   |                      `- warning: no calls to throwing functions occur within 'try' expression [#UnnecessaryEffectMarker]
+29 |         queue.retry(failed, at: now)
+30 |         #expect(queue.count(for: 1) == 20)
+
+[#UnnecessaryEffectMarker]: <https://docs.swift.org/compiler/documentation/diagnostics/unnecessary-effect-marker>
+Failed frontend command:
+/Library/Developer/CommandLineTools/usr/bin/swift-frontend -frontend -c /Users/yangjing/Desktop/ai-workspace/Fiona/watcher-mac/.build/out/Intermediates.noindex/FionaWatcher.build/Debug/FionaWatcherCoreTests-p.build/DerivedSources/test_entry_point.swift /Users/yangjing/Desktop/ai-workspace/Fiona/watcher-mac/Tests/FionaWatcherCoreTests/test_local_watch_logic.swift /Users/yangjing/Desktop/ai-workspace/Fiona/watcher-mac/Tests/FionaWatcherCoreTests/test_local_watch_ocr.swift -primary-file /Users/yangjing/Desktop/ai-workspace/Fiona/watcher-mac/Tests/FionaWatcherCoreTests/test_local_watch_scheduling.swift -emit-dependencies-path /Users/yangjing/Desktop/ai-workspace/Fiona/watcher-mac/.build/out/Intermediates.noindex/FionaWatcher.build/Debug/FionaWatcherCoreTests-p.build/Objects-normal/arm64/test_local_watch_scheduling.d -emit-const-values-path /Users/yangjing/Desktop/ai-workspace/Fiona/watcher-mac/.build/out/Intermediates.noindex/FionaWatcher.build/Debug/FionaWatcherCoreTests-p.build/Objects-normal/arm64/test_local_watch_scheduling.swiftconstvalues -emit-reference-dependencies-path /Users/yangjing/Desktop/ai-workspace/Fiona/watcher-mac/.build/out/Intermediates.noindex/FionaWatcher.build/Debug/FionaWatcherCoreTests-p.build/Objects-normal/arm64/test_local_watch_scheduling.swiftdeps -serialize-diagnostics-path /Users/yangjing/Desktop/ai-workspace/Fiona/watcher-mac/.build/out/Intermediates.noindex/FionaWatcher.build/Debug/FionaWatcherCoreTests-p.build/Objects-normal/arm64/test_local_watch_scheduling.dia -target arm64-apple-macos14.0 -module-can-import-version Testing 2084 0 -disable-cross-import-overlay-search -swift-module-cross-import Testing /Library/Developer/CommandLineTools/Library/Developer/Frameworks/Testing.framework/Modules/Testing.swiftcrossimport/AppKit.swiftoverlay -swift-module-cross-import Testing /Library/Developer/CommandLineTools/Library/Developer/Frameworks/Testing.framework/Modules/Testing.swiftcrossimport/CoreGraphics.swiftoverlay -swift-module-cross-import Testing /Library/Developer/CommandLineTools/Library/Developer/Frameworks/Testing.framework/Modules/Testing.swiftcrossimport/CoreImage.swiftoverlay -swift-module-cross-import Testing /Library/Developer/CommandLineTools/Library/Developer/Frameworks/Testing.framework/Modules/Testing.swiftcrossimport/CoreTransferable.swiftoverlay -swift-module-cross-import Testing /Library/Developer/CommandLineTools/Library/Developer/Frameworks/Testing.framework/Modules/Testing.swiftcrossimport/Foundation.swiftoverlay -load-resolved-plugin /Library/Developer/CommandLineTools/usr/lib/swift/host/plugins/libObservationMacros.dylib\#\#ObservationMacros -load-resolved-plugin /Library/Developer/CommandLineTools/usr/lib/swift/host/plugins/libSwiftMacros.dylib\#\#SwiftMacros -load-resolved-plugin /Library/Developer/CommandLineTools/usr/lib/swift/host/plugins/testing/libTestingMacros.dylib\#\#TestingMacros -disable-implicit-swift-modules -Xcc -fno-implicit-modules -Xcc -fno-implicit-module-maps -explicit-swift-module-map-file /Users/yangjing/Desktop/ai-workspace/Fiona/watcher-mac/.build/out/Intermediates.noindex/FionaWatcher.build/Debug/FionaWatcherCoreTests-p.build/Objects-normal/arm64/FionaWatcherCoreTests-dependencies-1.json -Xllvm -aarch64-use-tbi -enable-objc-interop -stack-check -sdk /Library/Developer/CommandLineTools/SDKs/MacOSX27.0.sdk -I /Users/yangjing/Desktop/ai-workspace/Fiona/watcher-mac/.build/out/Products/Debug -Isystem /Library/Developer/CommandLineTools/Developer/usr/lib -F /Users/yangjing/Desktop/ai-workspace/Fiona/watcher-mac/.build/out/Products/Debug/PackageFrameworks -F /Users/yangjing/Desktop/ai-workspace/Fiona/watcher-mac/.build/out/Products/Debug -F /Library/Developer/CommandLineTools/Library/Developer/Frameworks -F /Library/Developer/CommandLineTools/Developer/Library/Frameworks -module-cache-path /Users/yangjing/Desktop/ai-workspace/Fiona/watcher-mac/.build/out/Intermediates.noindex/SwiftExplicitPrecompiledModules -no-color-diagnostics -Xcc -fno-color-diagnostics -enable-testing -g -debug-info-format\=dwarf -dwarf-version\=4 -swift-version 5 -Onone -D SWIFT_PACKAGE -D DEBUG -D Xcode -serialize-debugging-options -enable-experimental-feature DebugDescriptionMacro -empty-abi-descriptor -validate-clang-modules-once -clang-build-session-file /Users/yangjing/Desktop/ai-workspace/Fiona/watcher-mac/.build/out/ModuleCache.noindex/Session.modulevalidation -disable-sandbox -Xcc -working-directory -Xcc /Users/yangjing/Desktop/ai-workspace/Fiona -enable-anonymous-context-mangled-names -file-compilation-dir /Users/yangjing/Desktop/ai-workspace/Fiona -Xcc -D_LIBCPP_HARDENING_MODE\=_LIBCPP_HARDENING_MODE_DEBUG -Xcc -ivfsstatcache -Xcc /Users/yangjing/Desktop/ai-workspace/Fiona/watcher-mac/.build/out/SDKStatCaches.noindex/macosx27.0-26A425-1aa54e4a50e311dbd51de5aafe7eca3dffd68ff603bdaacc80b00cb8898de72d.sdkstatcache -Xcc -fmodules-prune-interval\=86400 -Xcc -fmodules-prune-after\=345600 -Xcc -I/Users/yangjing/Desktop/ai-workspace/Fiona/watcher-mac/.build/out/Products/Debug/include -Xcc -I/Users/yangjing/Desktop/ai-workspace/Fiona/watcher-mac/.build/out/Intermediates.noindex/FionaWatcher.build/Debug/FionaWatcherCoreTests-p.build/DerivedSources-normal/arm64 -Xcc -I/Users/yangjing/Desktop/ai-workspace/Fiona/watcher-mac/.build/out/Intermediates.noindex/FionaWatcher.build/Debug/FionaWatcherCoreTests-p.build/DerivedSources/arm64 -Xcc -I/Users/yangjing/Desktop/ai-workspace/Fiona/watcher-mac/.build/out/Intermediates.noindex/FionaWatcher.build/Debug/FionaWatcherCoreTests-p.build/DerivedSources -Xcc -DSWIFT_PACKAGE -Xcc -DDEBUG\=1 -no-auto-bridging-header-chaining -module-name FionaWatcherCoreTests -package-name watcher_mac -const-gather-protocols-file /Users/yangjing/Desktop/ai-workspace/Fiona/watcher-mac/.build/out/Intermediates.noindex/FionaWatcher.build/Debug/FionaWatcherCoreTests-p.build/Objects-normal/arm64/FionaWatcherCoreTests_const_extract_protocols.json -disable-clang-spi -clang-target arm64-apple-macos27.0 -target-sdk-version 27.0 -target-sdk-name macosx27.0 -in-process-plugin-server-path /Library/Developer/CommandLineTools/usr/lib/swift/host/libSwiftInProcPluginServer.dylib -parse-as-library -o /Users/yangjing/Desktop/ai-workspace/Fiona/watcher-mac/.build/out/Intermediates.noindex/FionaWatcher.build/Debug/FionaWatcherCoreTests-p.build/Objects-normal/arm64/test_local_watch_scheduling.o -debug-module-path /Users/yangjing/Desktop/ai-workspace/Fiona/watcher-mac/.build/out/Intermediates.noindex/FionaWatcher.build/Debug/FionaWatcherCoreTests-p.build/Objects-normal/arm64/FionaWatcherCoreTests.swiftmodule -index-unit-output-path /FionaWatcher.build/Debug/FionaWatcherCoreTests-p.build/Objects-normal/arm64/test_local_watch_scheduling.o -index-store-path /Users/yangjing/Desktop/ai-workspace/Fiona/watcher-mac/.build/out -index-system-modules
+error: Build failed
+error: fatalError

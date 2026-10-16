@@ -1,0 +1,252 @@
+FFFFFFF                                                                  [100%]
+=================================== FAILURES ===================================
+___ test_first_load_records_latest_id_across_pages_without_replaying_history ___
+
+    def test_first_load_records_latest_id_across_pages_without_replaying_history():
+>       actual = run_logic("""
+          const calls=[], delivered=[];
+          const poller=createLocalWatchPoller({isVisible:()=>true,
+            fetchPage:async after=>{calls.push(after);return {status:200,alerts:
+              after===0 ? Array.from({length:50},(_,i)=>({id:i+1})) : after===50 ? [{id:51},{id:52}] : [{id:53}]};},
+            onAlerts:alerts=>delivered.push(alerts.map(a=>a.id))});
+          await poller.tick(); const baseline=delivered.slice(); await poller.tick();
+          process.stdout.write(JSON.stringify({calls,baseline,delivered}));
+        """)
+
+backend/tests/test_local_watch_frontend.py:62: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+backend/tests/test_local_watch_frontend.py:48: in run_logic
+    poller = function_body("createLocalWatchPoller").replace(
+             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+backend/tests/test_local_watch_frontend.py:34: in function_body
+    source = LOGIC.read_text(encoding="utf-8")
+             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+/opt/homebrew/Cellar/python@3.14/3.14.6/Frameworks/Python.framework/Versions/3.14/lib/python3.14/pathlib/__init__.py:787: in read_text
+    with self.open(mode='r', encoding=encoding, errors=errors, newline=newline) as f:
+         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+self = PosixPath('/Users/yangjing/Desktop/ai-workspace/Fiona/frontend/lib/localWatch.ts')
+mode = 'r', buffering = -1, encoding = 'utf-8', errors = None, newline = None
+
+    def open(self, mode='r', buffering=-1, encoding=None,
+             errors=None, newline=None):
+        """
+        Open the file pointed to by this path and return a file object, as
+        the built-in open() function does.
+        """
+        if "b" not in mode:
+            encoding = io.text_encoding(encoding)
+>       return io.open(self, mode, buffering, encoding, errors, newline)
+               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+E       FileNotFoundError: [Errno 2] No such file or directory: '/Users/yangjing/Desktop/ai-workspace/Fiona/frontend/lib/localWatch.ts'
+
+/opt/homebrew/Cellar/python@3.14/3.14.6/Frameworks/Python.framework/Versions/3.14/lib/python3.14/pathlib/__init__.py:771: FileNotFoundError
+__________ test_hidden_page_pauses_and_404_permanently_stops_polling ___________
+
+    def test_hidden_page_pauses_and_404_permanently_stops_polling():
+>       actual = run_logic("""
+          let visible=false, calls=0;
+          const poller=createLocalWatchPoller({isVisible:()=>visible,
+            fetchPage:async()=>{calls++;return {status:404,alerts:[]};},onAlerts:()=>{throw Error('unexpected');}});
+          await poller.tick(); const hidden=calls; visible=true; await poller.tick(); await poller.tick();
+          process.stdout.write(JSON.stringify({hidden,calls}));
+        """)
+
+backend/tests/test_local_watch_frontend.py:75: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+backend/tests/test_local_watch_frontend.py:48: in run_logic
+    poller = function_body("createLocalWatchPoller").replace(
+             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+backend/tests/test_local_watch_frontend.py:34: in function_body
+    source = LOGIC.read_text(encoding="utf-8")
+             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+/opt/homebrew/Cellar/python@3.14/3.14.6/Frameworks/Python.framework/Versions/3.14/lib/python3.14/pathlib/__init__.py:787: in read_text
+    with self.open(mode='r', encoding=encoding, errors=errors, newline=newline) as f:
+         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+self = PosixPath('/Users/yangjing/Desktop/ai-workspace/Fiona/frontend/lib/localWatch.ts')
+mode = 'r', buffering = -1, encoding = 'utf-8', errors = None, newline = None
+
+    def open(self, mode='r', buffering=-1, encoding=None,
+             errors=None, newline=None):
+        """
+        Open the file pointed to by this path and return a file object, as
+        the built-in open() function does.
+        """
+        if "b" not in mode:
+            encoding = io.text_encoding(encoding)
+>       return io.open(self, mode, buffering, encoding, errors, newline)
+               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+E       FileNotFoundError: [Errno 2] No such file or directory: '/Users/yangjing/Desktop/ai-workspace/Fiona/frontend/lib/localWatch.ts'
+
+/opt/homebrew/Cellar/python@3.14/3.14.6/Frameworks/Python.framework/Versions/3.14/lib/python3.14/pathlib/__init__.py:771: FileNotFoundError
+___ test_in_flight_requests_do_not_overlap_and_disposed_response_is_ignored ____
+
+    def test_in_flight_requests_do_not_overlap_and_disposed_response_is_ignored():
+>       actual = run_logic("""
+          let calls=0, resolve, delivered=0;
+          const poller=createLocalWatchPoller({isVisible:()=>true,
+            fetchPage:()=>{calls++;return new Promise(r=>resolve=r);},onAlerts:()=>{delivered++;}});
+          const first=poller.tick(); await poller.tick(); poller.dispose(); resolve({status:200,alerts:[{id:9}]});
+          await first; await poller.tick(); process.stdout.write(JSON.stringify({calls,delivered}));
+        """)
+
+backend/tests/test_local_watch_frontend.py:86: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+backend/tests/test_local_watch_frontend.py:48: in run_logic
+    poller = function_body("createLocalWatchPoller").replace(
+             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+backend/tests/test_local_watch_frontend.py:34: in function_body
+    source = LOGIC.read_text(encoding="utf-8")
+             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+/opt/homebrew/Cellar/python@3.14/3.14.6/Frameworks/Python.framework/Versions/3.14/lib/python3.14/pathlib/__init__.py:787: in read_text
+    with self.open(mode='r', encoding=encoding, errors=errors, newline=newline) as f:
+         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+self = PosixPath('/Users/yangjing/Desktop/ai-workspace/Fiona/frontend/lib/localWatch.ts')
+mode = 'r', buffering = -1, encoding = 'utf-8', errors = None, newline = None
+
+    def open(self, mode='r', buffering=-1, encoding=None,
+             errors=None, newline=None):
+        """
+        Open the file pointed to by this path and return a file object, as
+        the built-in open() function does.
+        """
+        if "b" not in mode:
+            encoding = io.text_encoding(encoding)
+>       return io.open(self, mode, buffering, encoding, errors, newline)
+               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+E       FileNotFoundError: [Errno 2] No such file or directory: '/Users/yangjing/Desktop/ai-workspace/Fiona/frontend/lib/localWatch.ts'
+
+/opt/homebrew/Cellar/python@3.14/3.14.6/Frameworks/Python.framework/Versions/3.14/lib/python3.14/pathlib/__init__.py:771: FileNotFoundError
+______ test_failed_baseline_is_retried_without_delivering_partial_history ______
+
+    def test_failed_baseline_is_retried_without_delivering_partial_history():
+>       actual = run_logic("""
+          let failed=false; const calls=[], delivered=[];
+          const poller=createLocalWatchPoller({isVisible:()=>true,fetchPage:async after=>{
+            calls.push(after);if(after===50&&!failed){failed=true;throw Error('offline');}
+            return {status:200,alerts:after===0?Array.from({length:50},(_,i)=>({id:i+1})):[]};},onAlerts:a=>delivered.push(a)});
+          await poller.tick();await poller.tick();process.stdout.write(JSON.stringify({calls,delivered}));
+        """)
+
+backend/tests/test_local_watch_frontend.py:97: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+backend/tests/test_local_watch_frontend.py:48: in run_logic
+    poller = function_body("createLocalWatchPoller").replace(
+             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+backend/tests/test_local_watch_frontend.py:34: in function_body
+    source = LOGIC.read_text(encoding="utf-8")
+             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+/opt/homebrew/Cellar/python@3.14/3.14.6/Frameworks/Python.framework/Versions/3.14/lib/python3.14/pathlib/__init__.py:787: in read_text
+    with self.open(mode='r', encoding=encoding, errors=errors, newline=newline) as f:
+         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+self = PosixPath('/Users/yangjing/Desktop/ai-workspace/Fiona/frontend/lib/localWatch.ts')
+mode = 'r', buffering = -1, encoding = 'utf-8', errors = None, newline = None
+
+    def open(self, mode='r', buffering=-1, encoding=None,
+             errors=None, newline=None):
+        """
+        Open the file pointed to by this path and return a file object, as
+        the built-in open() function does.
+        """
+        if "b" not in mode:
+            encoding = io.text_encoding(encoding)
+>       return io.open(self, mode, buffering, encoding, errors, newline)
+               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+E       FileNotFoundError: [Errno 2] No such file or directory: '/Users/yangjing/Desktop/ai-workspace/Fiona/frontend/lib/localWatch.ts'
+
+/opt/homebrew/Cellar/python@3.14/3.14.6/Frameworks/Python.framework/Versions/3.14/lib/python3.14/pathlib/__init__.py:771: FileNotFoundError
+____ test_current_conversation_alert_inserted_once_and_busy_reply_kept_safe ____
+
+    def test_current_conversation_alert_inserted_once_and_busy_reply_kept_safe():
+>       actual = run_logic("""
+          const existing=[{id:'db-2',dbId:2,role:'assistant',content:'existing'}];
+          const alerts=[{id:3,message_id:3,conversation_id:'current',rule_name:'下载',summary:'下载完成',created_at:'2026-10-11 12:00:00'},
+            {id:4,message_id:4,conversation_id:'other',rule_name:'股价',summary:'价格上涨',created_at:'2026-10-11 12:00:00'}];
+          const inserted=appendLocalWatchMessages(existing,alerts,'current',false);
+          const repeated=appendLocalWatchMessages(inserted,alerts,'current',false);
+          const busy=appendLocalWatchMessages(existing,alerts,'current',true);
+          process.stdout.write(JSON.stringify({inserted,repeated,busy}));
+        """)
+
+backend/tests/test_local_watch_frontend.py:108: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+backend/tests/test_local_watch_frontend.py:48: in run_logic
+    poller = function_body("createLocalWatchPoller").replace(
+             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+backend/tests/test_local_watch_frontend.py:34: in function_body
+    source = LOGIC.read_text(encoding="utf-8")
+             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+/opt/homebrew/Cellar/python@3.14/3.14.6/Frameworks/Python.framework/Versions/3.14/lib/python3.14/pathlib/__init__.py:787: in read_text
+    with self.open(mode='r', encoding=encoding, errors=errors, newline=newline) as f:
+         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+self = PosixPath('/Users/yangjing/Desktop/ai-workspace/Fiona/frontend/lib/localWatch.ts')
+mode = 'r', buffering = -1, encoding = 'utf-8', errors = None, newline = None
+
+    def open(self, mode='r', buffering=-1, encoding=None,
+             errors=None, newline=None):
+        """
+        Open the file pointed to by this path and return a file object, as
+        the built-in open() function does.
+        """
+        if "b" not in mode:
+            encoding = io.text_encoding(encoding)
+>       return io.open(self, mode, buffering, encoding, errors, newline)
+               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+E       FileNotFoundError: [Errno 2] No such file or directory: '/Users/yangjing/Desktop/ai-workspace/Fiona/frontend/lib/localWatch.ts'
+
+/opt/homebrew/Cellar/python@3.14/3.14.6/Frameworks/Python.framework/Versions/3.14/lib/python3.14/pathlib/__init__.py:771: FileNotFoundError
+________ test_settings_privacy_and_notification_opt_in_and_claude_gate _________
+
+    def test_settings_privacy_and_notification_opt_in_and_claude_gate():
+>       source = SETTINGS.read_text(encoding="utf-8")
+                 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+backend/tests/test_local_watch_frontend.py:126: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+/opt/homebrew/Cellar/python@3.14/3.14.6/Frameworks/Python.framework/Versions/3.14/lib/python3.14/pathlib/__init__.py:787: in read_text
+    with self.open(mode='r', encoding=encoding, errors=errors, newline=newline) as f:
+         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+self = PosixPath('/Users/yangjing/Desktop/ai-workspace/Fiona/frontend/components/LocalWatchSection.tsx')
+mode = 'r', buffering = -1, encoding = 'utf-8', errors = None, newline = None
+
+    def open(self, mode='r', buffering=-1, encoding=None,
+             errors=None, newline=None):
+        """
+        Open the file pointed to by this path and return a file object, as
+        the built-in open() function does.
+        """
+        if "b" not in mode:
+            encoding = io.text_encoding(encoding)
+>       return io.open(self, mode, buffering, encoding, errors, newline)
+               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+E       FileNotFoundError: [Errno 2] No such file or directory: '/Users/yangjing/Desktop/ai-workspace/Fiona/frontend/components/LocalWatchSection.tsx'
+
+/opt/homebrew/Cellar/python@3.14/3.14.6/Frameworks/Python.framework/Versions/3.14/lib/python3.14/pathlib/__init__.py:771: FileNotFoundError
+_ test_chat_polling_visibility_interval_account_scope_and_cross_conversation_notice _
+
+    def test_chat_polling_visibility_interval_account_scope_and_cross_conversation_notice():
+        source = PAGE.read_text(encoding="utf-8")
+>       assert "createLocalWatchPoller" in source and "10_000" in source
+E       assert ('createLocalWatchPoller' in '\ufeff"use client";\n\nimport { useState, useRef, useEffect, useCallback } from "react";\nimport Glaze from "@/compon...nset-bottom))]"\n          onClick={closeDrawer}\n          aria-hidden\n        />\n      )}\n\n    </div>\n  );\n}\n')
+
+backend/tests/test_local_watch_frontend.py:139: AssertionError
+=========================== short test summary info ============================
+FAILED backend/tests/test_local_watch_frontend.py::test_first_load_records_latest_id_across_pages_without_replaying_history
+FAILED backend/tests/test_local_watch_frontend.py::test_hidden_page_pauses_and_404_permanently_stops_polling
+FAILED backend/tests/test_local_watch_frontend.py::test_in_flight_requests_do_not_overlap_and_disposed_response_is_ignored
+FAILED backend/tests/test_local_watch_frontend.py::test_failed_baseline_is_retried_without_delivering_partial_history
+FAILED backend/tests/test_local_watch_frontend.py::test_current_conversation_alert_inserted_once_and_busy_reply_kept_safe
+FAILED backend/tests/test_local_watch_frontend.py::test_settings_privacy_and_notification_opt_in_and_claude_gate
+FAILED backend/tests/test_local_watch_frontend.py::test_chat_polling_visibility_interval_account_scope_and_cross_conversation_notice
+7 failed in 0.22s

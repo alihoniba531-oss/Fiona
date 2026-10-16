@@ -1,0 +1,153 @@
+--- before/backend/tests/test_local_watch_backend_r2.py
++++ after/backend/tests/test_local_watch_backend_r2.py
+@@ -34,7 +34,7 @@
+     from services import local_watch as service
+ 
+     monkeypatch.setenv("FIONA_LOCAL_WATCH", "1")
+-    for name in ("_windows", "_observation_rates", "_heartbeat_rates", "_authentication_failure_rates"):
++    for name in ("_windows", "_capture_states", "_recent_heartbeats", "_observation_rates", "_heartbeat_rates", "_authentication_failure_rates"):
+         getattr(router, name, {}).clear()
+     service._rule_locks.clear()
+ 
+@@ -185,6 +185,8 @@
+ def test_all_authentication_failures_count_by_real_client_ip_before_body_or_rule_validation(client, monkeypatch, path):
+     from routers import local_watch as router
+     from starlette.requests import Request
++    # A non-trusted peer cannot evade its real-IP counter by forging XFF.
++    monkeypatch.setattr(client._transport, "client", ("198.51.100.40", 50000))
+     failures = [{}, {"Authorization": "Basic invalid"}, bearer(""), bearer("invented"), bearer("x" * 300)]
+     for index in range(30):
+         headers = {**failures[index % len(failures)], "X-Forwarded-For": f"192.0.2.{index}"}
+--- before/backend/tests/test_local_watch_capture_backend_r3.py
++++ after/backend/tests/test_local_watch_capture_backend_r3.py
+@@ -33,7 +33,7 @@
+     from services import local_watch as service
+ 
+     monkeypatch.setenv("FIONA_LOCAL_WATCH", "1")
+-    for name in ("_windows", "_capture_states", "_observation_rates", "_heartbeat_rates", "_authentication_failure_rates"):
++    for name in ("_windows", "_capture_states", "_recent_heartbeats", "_observation_rates", "_heartbeat_rates", "_authentication_failure_rates"):
+         getattr(router, name, {}).clear()
+     service._rule_locks.clear()
+ 
+@@ -46,6 +46,8 @@
+ 
+ SINCE = "2026-10-11T12:00:00Z"
+ STOPPED = {"ok": False, "message": "监控程序未在运行"}
++WAITING = {"ok": False, "neutral": True, "message": "等待首次截图"}
++DISABLED = {"ok": False, "neutral": True, "message": "已停用"}
+ CAPTURE_ERROR = "截图失败：屏幕可能已锁定或显示器已休眠，也可能缺少屏幕录制权限"
+ NO_WINDOW = "没有找到匹配的窗口（窗口可能已关闭或最小化）"
+ OTHER_ERROR = "截图失败，请查看监控程序日志"
+@@ -84,7 +86,7 @@
+ 
+ def test_every_rule_has_capture_even_before_any_heartbeat(client):
+     first, second = rule(client), rule(client, enabled=False)
+-    assert captures(client) == {first["id"]: STOPPED, second["id"]: STOPPED}
++    assert captures(client) == {first["id"]: STOPPED, second["id"]: DISABLED}
+ 
+ 
+ @pytest.mark.parametrize("ok,error,message", [
+@@ -99,7 +101,7 @@
+     (False, "window_not_found", NO_WINDOW),
+     (False, "PrivateSecretErrorDomain/-901", OTHER_ERROR),
+     (False, "NSOSStatusErrorDomain/-50", OTHER_ERROR),
+-    (False, None, OTHER_ERROR),
++    (False, None, "等待首次截图"),
+     (False, "do not reveal this arbitrary uploaded text", OTHER_ERROR),
+ ])
+ def test_saved_capture_chinese_mapping_and_since_are_returned_without_raw_errors(client, ok, error, message):
+@@ -109,7 +111,10 @@
+     assert response.headers["cache-control"] == "private, no-store"
+     assert response.json() == {"rules": [{key: watched[key] for key in ("id", "app_match", "title_match", "interval_seconds")}]}
+     actual = captures(client)[watched["id"]]
+-    assert actual == {"ok": ok, "message": message, "since": SINCE}
++    expected = {"ok": ok, "message": message, "since": SINCE}
++    if not ok and error is None:
++        expected["neutral"] = True
++    assert actual == expected
+     assert "error" not in actual
+     if error is not None:
+         assert error not in str(actual)
+@@ -148,7 +153,7 @@
+     response = client.post("/local-watch/heartbeat", headers={"Authorization": "Bearer " + item["token"]}, json={"windows": []})
+     assert response.status_code == 200
+     assert response.json()["rules"][0]["id"] == watched["id"]
+-    assert captures(client)[watched["id"]] == STOPPED
++    assert captures(client)[watched["id"]] == WAITING
+ 
+ 
+ def test_capture_isolation_between_users_and_foreign_status_is_discarded(client):
+@@ -169,7 +174,7 @@
+     response = heartbeat(client, item, [status(deleted["id"]), status(disabled["id"]), status(999999), status(active["id"])])
+     assert response.status_code == 200, response.text
+     assert [value["id"] for value in response.json()["rules"]] == [active["id"]]
+-    assert captures(client) == {disabled["id"]: STOPPED, active["id"]: {"ok": True, "message": "监控中", "since": SINCE}}
++    assert captures(client) == {disabled["id"]: DISABLED, active["id"]: {"ok": True, "message": "监控中", "since": SINCE}}
+ 
+ 
+ def test_per_device_snapshots_latest_active_device_wins_and_revocation_restores_older_device(client, dev_headers, monkeypatch):
+@@ -194,7 +199,7 @@
+     assert heartbeat(client, second, []).status_code == 200
+     assert captures(client)[watched["id"]]["ok"] is True
+     assert heartbeat(client, first, []).status_code == 200
+-    assert captures(client)[watched["id"]] == STOPPED
++    assert captures(client)[watched["id"]] == WAITING
+ 
+ 
+ def test_directly_revoked_device_and_deleted_user_cannot_retain_active_status(client, dev_headers):
+@@ -233,39 +238,39 @@
+     {"since": "2026-10-11T12:00:00"}, {"since": "2026-02-30T12:00:00Z"},
+     {"extra": "private payload"},
+ ])
+-def test_capture_entry_type_and_bounds_are_strict_and_rejection_is_atomic(client, change):
++def test_invalid_capture_entry_is_discarded_while_valid_heartbeat_updates_windows(client, change):
+     item, watched = device(client), rule(client)
+     first = heartbeat(client, item, [status(watched["id"])], windows=[{"app_name": "original", "title": "original"}])
+     assert first.status_code == 200
+     value = status(watched["id"])
+     value.update(change)
+     response = heartbeat(client, item, [value], windows=[{"app_name": "replacement"}])
+-    assert response.status_code == 422
++    assert response.status_code == 200
+     assert response.headers["cache-control"] == "private, no-store"
+-    assert captures(client)[watched["id"]] == {"ok": True, "message": "监控中", "since": SINCE}
++    assert captures(client)[watched["id"]] == WAITING
+     windows = client.get("/local-watch/windows", headers={"X-Dev-User": "smoke_tester"}).json()
+-    assert windows[0]["app_name"] == "original"
++    assert windows[0]["app_name"] == "replacement"
+ 
+ 
+ @pytest.mark.parametrize("missing", ["rule_id", "ok", "error", "since"])
+-def test_capture_entries_require_all_four_fields(client, missing):
++def test_capture_entries_missing_required_fields_are_discarded(client, missing):
+     item, watched = device(client), rule(client)
+     value = status(watched["id"])
+     del value[missing]
+-    assert heartbeat(client, item, [value]).status_code == 422
+-    assert captures(client)[watched["id"]] == STOPPED
+-
+-
+-@pytest.mark.parametrize("captures_value", [None, {}, "bad", [None], [[]], [{}] * 21])
+-def test_capture_status_list_and_twenty_rule_limit(client, captures_value):
++    assert heartbeat(client, item, [value]).status_code == 200
++    assert captures(client)[watched["id"]] == WAITING
++
++
++@pytest.mark.parametrize("captures_value,expected", [(None, 422), ({}, 422), ("bad", 422), ([None], 200), ([[]], 200), ([{}] * 21, 422)])
++def test_capture_status_list_and_twenty_rule_limit(client, captures_value, expected):
+     item = device(client)
+-    assert heartbeat(client, item, captures_value).status_code == 422
+-
+-
+-def test_duplicate_rule_status_is_rejected_but_all_twenty_rules_are_supported(client):
++    assert heartbeat(client, item, captures_value).status_code == expected
++
++
++def test_duplicate_rule_status_is_discarded_and_all_twenty_rules_are_supported(client):
+     item = device(client)
+     watched = [rule(client, name=str(index)) for index in range(20)]
+-    assert heartbeat(client, item, [status(watched[0]["id"])] * 2).status_code == 422
++    assert heartbeat(client, item, [status(watched[0]["id"])] * 2).status_code == 200
+     response = heartbeat(client, item, [status(value["id"]) for value in watched])
+     assert response.status_code == 200, response.text
+     assert len(captures(client)) == 20

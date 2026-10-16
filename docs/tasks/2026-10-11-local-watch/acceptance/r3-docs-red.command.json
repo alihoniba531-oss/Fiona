@@ -1,0 +1,13 @@
+{
+  "cwd": "backend",
+  "command": [
+    "python",
+    "-m",
+    "pytest",
+    "-q",
+    "tests/test_local_watch_capture_docs_r3.py"
+  ],
+  "environment_overrides": {
+    "PATH": "{repo}/backend/.venv/bin:{existing_PATH}"
+  }
+}

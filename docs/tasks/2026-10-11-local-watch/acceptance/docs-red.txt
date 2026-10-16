@@ -1,0 +1,142 @@
+FFFFFFF                                                                  [100%]
+=================================== FAILURES ===================================
+_ test_documents_explain_data_flow_controls_token_privacy_and_limits[README.md] _
+
+filename = 'README.md'
+
+    @pytest.mark.parametrize("filename", DOCUMENTS)
+    def test_documents_explain_data_flow_controls_token_privacy_and_limits(filename):
+        text = (ROOT / filename).read_text()
+        for phrase in (
+            "本机监控", "本机 OCR", "只上报新增行", "判断", "写进聊天",
+            "FIONA_LOCAL_WATCH", "FIONA_DAILY_WATCH_JUDGE", "500", "令牌",
+            "只显示一次", "哈希", "600", "吊销", "不落日志", "提醒摘要",
+            "阿里云千问", "Anthropic", "只支持 macOS", "窗口最小化后截不到",
+            "OCR 可能有错字", "只能看到窗口当前显示的内容",
+            "Fiona 页面关闭时不会实时弹出，但提醒照样落库",
+        ):
+>           assert phrase in text, f"{filename}: missing {phrase}"
+E           AssertionError: README.md: missing 本机监控
+E           assert '本机监控' in '# Fiona / Chloe\n\nFiona 正在演进为个人 AI 分身交流与 Skill 交易平台，当前用于作者自用和小范围内测。已实现独立分身、持久私有会话、名片和私有记忆，以及经双方授权的分身互聊。Skill 安装和交易仍在...sue 中披露未修复漏洞、API Key、个人数据或数据库内容。安全问题请按 [安全政策](./.github/SECURITY.md) 通过 GitHub Private Vulnerability Reporting 私密提交。\n'
+
+tests/test_local_watch_docs.py:41: AssertionError
+_ test_documents_explain_data_flow_controls_token_privacy_and_limits[CLAUDE.md] _
+
+filename = 'CLAUDE.md'
+
+    @pytest.mark.parametrize("filename", DOCUMENTS)
+    def test_documents_explain_data_flow_controls_token_privacy_and_limits(filename):
+        text = (ROOT / filename).read_text()
+        for phrase in (
+            "本机监控", "本机 OCR", "只上报新增行", "判断", "写进聊天",
+            "FIONA_LOCAL_WATCH", "FIONA_DAILY_WATCH_JUDGE", "500", "令牌",
+            "只显示一次", "哈希", "600", "吊销", "不落日志", "提醒摘要",
+            "阿里云千问", "Anthropic", "只支持 macOS", "窗口最小化后截不到",
+            "OCR 可能有错字", "只能看到窗口当前显示的内容",
+            "Fiona 页面关闭时不会实时弹出，但提醒照样落库",
+        ):
+>           assert phrase in text, f"{filename}: missing {phrase}"
+E           AssertionError: CLAUDE.md: missing 本机监控
+E           assert '本机监控' in '# Fiona / Chloe 开发上下文\n\n个人 AI 分身交流与 Skill 平台，当前第一阶段支持独立分身和持久私有会话，用于作者自用和受控小范围内测。分身互聊与 Skill 交易尚未实现。完整说明见 `README.md`...上传文件、备份或 `fiona.config.json`。\n- 代码改变模型、路由、端口、环境变量、数据位置或部署方式时，同步更新 README、架构/部署文档和 PLAN。\n- 只有作者明确要求时才提交 Git commit。\n'
+
+tests/test_local_watch_docs.py:41: AssertionError
+_ test_documents_explain_data_flow_controls_token_privacy_and_limits[PLAN.md] __
+
+filename = 'PLAN.md'
+
+    @pytest.mark.parametrize("filename", DOCUMENTS)
+    def test_documents_explain_data_flow_controls_token_privacy_and_limits(filename):
+        text = (ROOT / filename).read_text()
+        for phrase in (
+            "本机监控", "本机 OCR", "只上报新增行", "判断", "写进聊天",
+            "FIONA_LOCAL_WATCH", "FIONA_DAILY_WATCH_JUDGE", "500", "令牌",
+            "只显示一次", "哈希", "600", "吊销", "不落日志", "提醒摘要",
+            "阿里云千问", "Anthropic", "只支持 macOS", "窗口最小化后截不到",
+            "OCR 可能有错字", "只能看到窗口当前显示的内容",
+            "Fiona 页面关闭时不会实时弹出，但提醒照样落库",
+        ):
+>           assert phrase in text, f"{filename}: missing {phrase}"
+E           AssertionError: PLAN.md: missing 本机监控
+E           assert '本机监控' in '# Fiona / Chloe 当前状态与路线图\n\n最后同步：2026-10-10\n\n本文只记录当前实现、发布边界和下一步工作。最初的“天人合一私人助理”构想仍可通过 Git 历史查看，但其中的 Next.js 14、Duck...评估\n\n- 在完成隐私、安全、内容治理和运营能力后，再决定是否开放注册。\n- 根据真实用户量和 SQLite 指标决定是否迁移 PostgreSQL，而不是预先承诺无缝扩容。\n- 桌面安装包增加签名、更新机制和发布验证流程。\n'
+
+tests/test_local_watch_docs.py:41: AssertionError
+_ test_documents_explain_data_flow_controls_token_privacy_and_limits[docs/ARCHITECTURE.md] _
+
+filename = 'docs/ARCHITECTURE.md'
+
+    @pytest.mark.parametrize("filename", DOCUMENTS)
+    def test_documents_explain_data_flow_controls_token_privacy_and_limits(filename):
+        text = (ROOT / filename).read_text()
+        for phrase in (
+            "本机监控", "本机 OCR", "只上报新增行", "判断", "写进聊天",
+            "FIONA_LOCAL_WATCH", "FIONA_DAILY_WATCH_JUDGE", "500", "令牌",
+            "只显示一次", "哈希", "600", "吊销", "不落日志", "提醒摘要",
+            "阿里云千问", "Anthropic", "只支持 macOS", "窗口最小化后截不到",
+            "OCR 可能有错字", "只能看到窗口当前显示的内容",
+            "Fiona 页面关闭时不会实时弹出，但提醒照样落库",
+        ):
+>           assert phrase in text, f"{filename}: missing {phrase}"
+E           AssertionError: docs/ARCHITECTURE.md: missing 本机监控
+E           assert '本机监控' in '# Fiona 当前架构\n\n本文描述仓库在 2026-10-10 的实际代码结构。它是实现说明，不替代 [PLAN.md](../PLAN.md) 中的路线图和发布决策。\n\n## Claude 智能体模式\n\nClaude ...量门禁工作流；Windows 桌面工作流会运行 Rust 单测再打包。新工作流仍需在 GitHub 首次运行中确认 runner 环境。\n\n当上述实现发生变化时，应在同一个变更中更新本文、根 README 和 PLAN 的状态。\n'
+
+tests/test_local_watch_docs.py:41: AssertionError
+_ test_documents_explain_data_flow_controls_token_privacy_and_limits[docs/DEPLOYMENT.md] _
+
+filename = 'docs/DEPLOYMENT.md'
+
+    @pytest.mark.parametrize("filename", DOCUMENTS)
+    def test_documents_explain_data_flow_controls_token_privacy_and_limits(filename):
+        text = (ROOT / filename).read_text()
+        for phrase in (
+            "本机监控", "本机 OCR", "只上报新增行", "判断", "写进聊天",
+            "FIONA_LOCAL_WATCH", "FIONA_DAILY_WATCH_JUDGE", "500", "令牌",
+            "只显示一次", "哈希", "600", "吊销", "不落日志", "提醒摘要",
+            "阿里云千问", "Anthropic", "只支持 macOS", "窗口最小化后截不到",
+            "OCR 可能有错字", "只能看到窗口当前显示的内容",
+            "Fiona 页面关闭时不会实时弹出，但提醒照样落库",
+        ):
+>           assert phrase in text, f"{filename}: missing {phrase}"
+E           AssertionError: docs/DEPLOYMENT.md: missing 本机监控
+E           assert '本机监控' in '# Fiona 生产部署手册\n\n本文把仓库当前采用的“单机、单域名、Nginx + systemd”拓扑写成可执行的基线。当前约定的线上域名是 `madchloechat.online`，只读代码目录是 `/opt/fiona`，...lity 白名单。\n- **待作者确认**：在 DashScope、DeepSeek 后台删除本项目使用的旧 API Key。\n\n重新上线时，按本文“首次安装”一节重新部署，并用新的 `JWT_SECRET` 和新的模型密钥。\n'
+
+tests/test_local_watch_docs.py:41: AssertionError
+_ test_documents_explain_data_flow_controls_token_privacy_and_limits[backend/.env.example] _
+
+filename = 'backend/.env.example'
+
+    @pytest.mark.parametrize("filename", DOCUMENTS)
+    def test_documents_explain_data_flow_controls_token_privacy_and_limits(filename):
+        text = (ROOT / filename).read_text()
+        for phrase in (
+            "本机监控", "本机 OCR", "只上报新增行", "判断", "写进聊天",
+            "FIONA_LOCAL_WATCH", "FIONA_DAILY_WATCH_JUDGE", "500", "令牌",
+            "只显示一次", "哈希", "600", "吊销", "不落日志", "提醒摘要",
+            "阿里云千问", "Anthropic", "只支持 macOS", "窗口最小化后截不到",
+            "OCR 可能有错字", "只能看到窗口当前显示的内容",
+            "Fiona 页面关闭时不会实时弹出，但提醒照样落库",
+        ):
+>           assert phrase in text, f"{filename}: missing {phrase}"
+E           AssertionError: backend/.env.example: missing 本机监控
+E           assert '本机监控' in '# ─────────────────────────────────────────────────────────────\n# 菲欧娜 / Chloe 后端环境变量模板\n#\n# 用法:  cp backend/.env.ex...NTITY_TOKEN_FILE,\n# ANTHROPIC_CUSTOM_HEADERS。\n# 预设厂商（含 Claude）遵循服务器的 HTTP(S)_PROXY / NO_PROXY 出站代理设置；自定义地址不使用环境代理。\n'
+
+tests/test_local_watch_docs.py:41: AssertionError
+____________________ test_env_declares_local_watch_defaults ____________________
+
+    def test_env_declares_local_watch_defaults():
+        text = (ROOT / "backend/.env.example").read_text()
+>       assert re.search(r"^FIONA_LOCAL_WATCH=1$", text, re.M)
+E       AssertionError: assert None
+E        +  where None = <function search at 0x105653320>('^FIONA_LOCAL_WATCH=1$', '# ─────────────────────────────────────────────────────────────\n# 菲欧娜 / Chloe 后端环境变量模板\n#\n# 用法:  cp backend/.env.ex...NTITY_TOKEN_FILE,\n# ANTHROPIC_CUSTOM_HEADERS。\n# 预设厂商（含 Claude）遵循服务器的 HTTP(S)_PROXY / NO_PROXY 出站代理设置；自定义地址不使用环境代理。\n', re.MULTILINE)
+E        +    where <function search at 0x105653320> = re.search
+E        +    and   re.MULTILINE = re.M
+
+tests/test_local_watch_docs.py:47: AssertionError
+=========================== short test summary info ============================
+FAILED tests/test_local_watch_docs.py::test_documents_explain_data_flow_controls_token_privacy_and_limits[README.md]
+FAILED tests/test_local_watch_docs.py::test_documents_explain_data_flow_controls_token_privacy_and_limits[CLAUDE.md]
+FAILED tests/test_local_watch_docs.py::test_documents_explain_data_flow_controls_token_privacy_and_limits[PLAN.md]
+FAILED tests/test_local_watch_docs.py::test_documents_explain_data_flow_controls_token_privacy_and_limits[docs/ARCHITECTURE.md]
+FAILED tests/test_local_watch_docs.py::test_documents_explain_data_flow_controls_token_privacy_and_limits[docs/DEPLOYMENT.md]
+FAILED tests/test_local_watch_docs.py::test_documents_explain_data_flow_controls_token_privacy_and_limits[backend/.env.example]
+FAILED tests/test_local_watch_docs.py::test_env_declares_local_watch_defaults
+7 failed in 0.16s

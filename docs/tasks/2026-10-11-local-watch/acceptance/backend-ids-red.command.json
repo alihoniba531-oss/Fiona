@@ -1,0 +1,5 @@
+{
+  "command": "PYTHONPATH=backend backend/.venv/bin/python -m pytest -q backend/tests/test_local_watch_backend.py -k ids_outside_sqlite",
+  "cwd": ".",
+  "exit_code": 1
+}

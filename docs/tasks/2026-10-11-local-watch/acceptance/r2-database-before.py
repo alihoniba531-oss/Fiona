@@ -1,0 +1,1893 @@
+import aiosqlite
+import os
+import re
+import secrets
+from datetime import datetime, timedelta, timezone
+from pathlib import Path
+from zoneinfo import ZoneInfo
+
+DB_PATH = str(Path(os.getenv("FIONA_DB_PATH") or Path(__file__).resolve().parent / "fiona.db").expanduser().resolve())
+SQLITE_BUSY_TIMEOUT = 5.0
+STRAWBERRY_COST_PER_REPLY = 10
+_INVALID_REFILL_WARNED = False
+
+
+def strawberry_daily_refill() -> int:
+    """Return the configured daily floor, treating invalid settings as disabled."""
+    global _INVALID_REFILL_WARNED
+    raw = os.getenv("STRAWBERRY_DAILY_REFILL", "0")
+    try:
+        if not re.fullmatch(r"[0-9]+", raw):
+            raise ValueError("not a nonnegative integer")
+        amount = int(raw)
+        if amount > 2**63 - 1:
+            raise OverflowError("outside SQLite integer range")
+        return amount
+    except (ValueError, OverflowError):
+        pass
+    if not _INVALID_REFILL_WARNED:
+        print("[strawberry] STRAWBERRY_DAILY_REFILL 无效，已关闭每日补给")
+        _INVALID_REFILL_WARNED = True
+    return 0
+
+
+def _today_shanghai() -> str:
+    try:
+        tz = ZoneInfo("Asia/Shanghai")
+    except Exception:
+        tz = timezone(timedelta(hours=8))
+    return datetime.now(tz).date().isoformat()
+
+
+def strawberry_insufficient_message() -> str:
+    """Keep route prechecks and unreserved BYOK guards on the same wording."""
+    refill = strawberry_daily_refill()
+    return (
+        f"今天的草莓用完了，明天会自动补到 {refill} 颗；急用请联系管理员补充 🍓"
+        if refill else "草莓不足，内测期间请联系管理员补充 🍓"
+    )
+
+import json as _json
+
+
+# 图片摘要（复用 VL 本轮回复文本）入库长度上限。
+IMAGE_SUMMARY_MAX_CHARS = 120
+
+# 聊天槽位状态表：pending 追问 + mode 模式，带过期时间、跨进程持久化。
+# 在 init_db() 建表；槽位的读写连接不重复执行 DDL。
+CHAT_SLOT_STATE_DDL = """
+    CREATE TABLE IF NOT EXISTS chat_slot_state (
+        state_key       TEXT NOT NULL,
+        kind            TEXT NOT NULL,
+        owner_username  TEXT NOT NULL,
+        payload_json    TEXT NOT NULL,
+        expires_at      TIMESTAMP,
+        updated_at      TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+        PRIMARY KEY (state_key, kind)
+    )
+"""
+
+
+async def _safe_migrate(db, sql: str):
+    """跑一句"老库迁移"DDL（ALTER TABLE / CREATE INDEX 等）。
+    "列已存在 / 索引已存在"是这类语句的预期错（库已迁过），静默吞；
+    其他错误打 console 日志，便于发现真问题。"""
+    try:
+        await db.execute(sql)
+    except Exception as e:
+        msg = str(e).lower()
+        if "duplicate column" in msg or "already exists" in msg:
+            return  # 已迁过，正常
+        print(f"[init_db] migrate failed type={type(e).__name__}")
+
+
+async def _users_exist(db, *usernames: str) -> bool:
+    unique = tuple(dict.fromkeys(name for name in usernames if name))
+    if not unique:
+        return False
+    placeholders = ",".join("?" for _ in unique)
+    async with db.execute(
+        f"SELECT COUNT(*) FROM users WHERE username IN ({placeholders})",
+        unique,
+    ) as cursor:
+        count = (await cursor.fetchone())[0]
+    return count == len(unique)
+
+
+async def _peer_room_is_accepted(db, room_id: str, sender: str) -> bool:
+    """在当前事务中确认 sender 属于房间，且这对用户的最新决定仍是双方接受。"""
+    parts = room_id.split("__")
+    if len(parts) != 2 or sender not in parts or parts[0] == parts[1]:
+        return False
+    peer = parts[1] if parts[0] == sender else parts[0]
+    if "__".join(sorted((sender, peer))) != room_id:
+        return False
+    if not await _users_exist(db, sender, peer):
+        return False
+    async with db.execute(
+        """SELECT response_a, response_b FROM matches
+           WHERE (user_a = ? AND user_b = ?) OR (user_a = ? AND user_b = ?)
+           ORDER BY recommended_at DESC, id DESC LIMIT 1""",
+        (sender, peer, peer, sender),
+    ) as cursor:
+        row = await cursor.fetchone()
+    return bool(row and row[0] == "accept" and row[1] == "accept")
+
+
+async def init_db():
+    async with aiosqlite.connect(DB_PATH, timeout=SQLITE_BUSY_TIMEOUT) as db:
+        await db.execute("PRAGMA journal_mode=WAL")
+        await db.execute("""
+            CREATE TABLE IF NOT EXISTS users (
+                id INTEGER PRIMARY KEY AUTOINCREMENT,
+                username TEXT UNIQUE NOT NULL,
+                created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+                profile_json TEXT DEFAULT '{}'
+            )
+        """)
+        await db.execute("""
+            CREATE TABLE IF NOT EXISTS messages (
+                id INTEGER PRIMARY KEY AUTOINCREMENT,
+                username TEXT NOT NULL,
+                role TEXT NOT NULL,
+                content TEXT NOT NULL,
+                image_path TEXT DEFAULT NULL,
+                created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+            )
+        """)
+        # 兼容老库：如果列不存在则添加
+        await _safe_migrate(db, "ALTER TABLE messages ADD COLUMN image_path TEXT DEFAULT NULL")
+        await _safe_migrate(db, "ALTER TABLE messages ADD COLUMN reference_image_paths TEXT DEFAULT NULL")
+        # 图片内容进入长期文字记录：VL 看完图的那句回复同时作为该条 user 消息的摘要，
+        # 下一轮起注入上下文，避免"发图=对话砍两段"。
+        await _safe_migrate(db, "ALTER TABLE messages ADD COLUMN image_summary TEXT DEFAULT NULL")
+        # 用户性别 + 匹配偏好（老库迁移）
+        await _safe_migrate(db, "ALTER TABLE users ADD COLUMN gender TEXT DEFAULT NULL")
+        await _safe_migrate(db, "ALTER TABLE users ADD COLUMN match_pref TEXT DEFAULT 'both'")
+        # JWT 会话版本：退出/删号时递增即可立即撤销此前签发的全部 token。
+        await _safe_migrate(db, "ALTER TABLE users ADD COLUMN session_version INTEGER NOT NULL DEFAULT 0")
+        await db.execute("""
+            CREATE TABLE IF NOT EXISTS matches (
+                id INTEGER PRIMARY KEY AUTOINCREMENT,
+                user_a TEXT NOT NULL,
+                user_b TEXT NOT NULL,
+                recommended_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+                response_a TEXT DEFAULT NULL,
+                response_b TEXT DEFAULT NULL
+            )
+        """)
+        await db.execute("""
+            CREATE TABLE IF NOT EXISTS peer_messages (
+                id INTEGER PRIMARY KEY AUTOINCREMENT,
+                room_id TEXT NOT NULL,
+                sender TEXT NOT NULL,
+                content TEXT NOT NULL,
+                created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+            )
+        """)
+        await db.execute("""
+            CREATE TABLE IF NOT EXISTS pending_matches (
+                id INTEGER PRIMARY KEY AUTOINCREMENT,
+                username TEXT NOT NULL,
+                peer_username TEXT NOT NULL,
+                interest_topic TEXT,
+                reason TEXT,
+                type TEXT,
+                tags_json TEXT,
+                triggered_by_message_id INTEGER,
+                match_layer TEXT DEFAULT 'layer1',
+                seen INTEGER DEFAULT 0,
+                created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+            )
+        """)
+        # 老库迁移：pending_matches 加 match_layer 列（区分 Layer 1 对话级 / Layer 2 画像级）
+        await _safe_migrate(db, "ALTER TABLE pending_matches ADD COLUMN match_layer TEXT DEFAULT 'layer1'")
+        # 老库迁移：matches 表加 greeting 列
+        await _safe_migrate(db, "ALTER TABLE matches ADD COLUMN greeting_a TEXT DEFAULT NULL")
+        await _safe_migrate(db, "ALTER TABLE matches ADD COLUMN greeting_b TEXT DEFAULT NULL")
+        # ── plaza：匿名广场帖子 ──
+        await db.execute("""
+            CREATE TABLE IF NOT EXISTS posts (
+                id          INTEGER PRIMARY KEY AUTOINCREMENT,
+                anon_id     TEXT NOT NULL,
+                media_path  TEXT NOT NULL,
+                media_type  TEXT DEFAULT 'image',
+                caption     TEXT DEFAULT '',
+                tags_json   TEXT DEFAULT '[]',
+                likes       INTEGER DEFAULT 0,
+                created_at  TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+            )
+        """)
+        await _safe_migrate(db, "ALTER TABLE posts ADD COLUMN tags_json TEXT DEFAULT '[]'")
+        # anon_id 只用于对外展示；真实 owner 只在库内用于完整账户删除。
+        await _safe_migrate(db, "ALTER TABLE posts ADD COLUMN owner_username TEXT DEFAULT NULL")
+        # ── post_likes：谁赞过哪条帖子（点赞去重）──
+        # (post_id, username) 唯一,同一登录用户对同一帖只能赞一次,防无限刷赞。
+        await db.execute("""
+            CREATE TABLE IF NOT EXISTS post_likes (
+                post_id     INTEGER NOT NULL,
+                username    TEXT NOT NULL,
+                created_at  TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+                PRIMARY KEY (post_id, username)
+            )
+        """)
+        # ── user_tag_prefs：用户标签喜好权重（全局） ──
+        await db.execute("""
+            CREATE TABLE IF NOT EXISTS user_tag_prefs (
+                username    TEXT NOT NULL,
+                tag         TEXT NOT NULL,
+                score       REAL DEFAULT 0,
+                PRIMARY KEY (username, tag)
+            )
+        """)
+        # ── user_time_tag_prefs：用户各时段标签权重 ──
+        # time_slot: 凌晨/清晨/上午/中午/下午/晚上/深夜
+        await db.execute("""
+            CREATE TABLE IF NOT EXISTS user_time_tag_prefs (
+                username    TEXT NOT NULL,
+                time_slot   TEXT NOT NULL,
+                tag         TEXT NOT NULL,
+                score       REAL DEFAULT 0,
+                PRIMARY KEY (username, time_slot, tag)
+            )
+        """)
+        await db.execute("CREATE INDEX IF NOT EXISTS idx_posts_created ON posts(created_at DESC)")
+        await db.execute("CREATE INDEX IF NOT EXISTS idx_posts_owner ON posts(owner_username)")
+        await db.execute("CREATE INDEX IF NOT EXISTS idx_messages_user ON messages(username, created_at)")
+        await db.execute("CREATE INDEX IF NOT EXISTS idx_matches_ab ON matches(user_a, user_b)")
+        await db.execute("CREATE INDEX IF NOT EXISTS idx_peer_room ON peer_messages(room_id, created_at)")
+        await db.execute("CREATE INDEX IF NOT EXISTS idx_pending_user ON pending_matches(username, seen, created_at)")
+        # ── user_states：底色探针持久化（一人一行 upsert）──
+        await db.execute("""
+            CREATE TABLE IF NOT EXISTS user_states (
+                username            TEXT PRIMARY KEY,
+                connection_mode     TEXT DEFAULT 'exploring',
+                emotional_intensity INTEGER DEFAULT 0,
+                openness_level      TEXT DEFAULT 'medium',
+                interest_anchor     TEXT DEFAULT 'light_connection',
+                updated_at          TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+            )
+        """)
+        for _col, _def in [
+            ("connection_mode",     "TEXT DEFAULT 'exploring'"),
+            ("emotional_intensity", "INTEGER DEFAULT 0"),
+            ("openness_level",      "TEXT DEFAULT 'medium'"),
+            ("interest_anchor",     "TEXT DEFAULT 'light_connection'"),
+            ("updated_at",          "TIMESTAMP DEFAULT CURRENT_TIMESTAMP"),
+        ]:
+            await _safe_migrate(db, f"ALTER TABLE user_states ADD COLUMN {_col} {_def}")
+        # ── 手机号 + 草莓余额（老库迁移）──
+        for _col, _def in [
+            ("phone",              "TEXT DEFAULT NULL"),
+            ("strawberry_balance", "INTEGER DEFAULT 200"),
+        ]:
+            await _safe_migrate(db, f"ALTER TABLE users ADD COLUMN {_col} {_def}")
+        await _safe_migrate(db, "ALTER TABLE users ADD COLUMN strawberry_refill_date TEXT DEFAULT NULL")
+        await _safe_migrate(db, "CREATE UNIQUE INDEX IF NOT EXISTS idx_users_phone ON users(phone) WHERE phone IS NOT NULL")
+        # ── OTP 验证码表 ──
+        await db.execute("""
+            CREATE TABLE IF NOT EXISTS otp_codes (
+                phone      TEXT NOT NULL,
+                code       TEXT NOT NULL,
+                expires_at TIMESTAMP NOT NULL,
+                created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+                PRIMARY KEY (phone)
+            )
+        """)
+        # ── 使用埋点：events ──
+        # 原始事件流，不预聚合。analyze.py 按维度汇总。
+        # event_type: 'chat' / 'tool_call' / 'mode_switch' / 'match_card'
+        # payload: JSON 字符串，存事件细节（如 intent / mode / model / match_type 等）
+        await db.execute("""
+            CREATE TABLE IF NOT EXISTS events (
+                id          INTEGER PRIMARY KEY AUTOINCREMENT,
+                ts          TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+                username    TEXT,
+                event_type  TEXT NOT NULL,
+                name        TEXT,
+                payload     TEXT,
+                duration_ms INTEGER,
+                success     INTEGER DEFAULT 1
+            )
+        """)
+        await _safe_migrate(db, "CREATE INDEX IF NOT EXISTS idx_events_ts ON events(ts)")
+        await _safe_migrate(db, "CREATE INDEX IF NOT EXISTS idx_events_user_type ON events(username, event_type)")
+        # ── 内测邀请码 ──
+        # 每个码预绑定一个用户名；兑换即登录该号，无需短信。redeemed_at 记首次使用。
+        await db.execute("""
+            CREATE TABLE IF NOT EXISTS invite_codes (
+                code        TEXT PRIMARY KEY,
+                username    TEXT NOT NULL,
+                note        TEXT DEFAULT NULL,
+                created_at  TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+                redeemed_at TIMESTAMP DEFAULT NULL
+            )
+        """)
+        await _safe_migrate(db, "ALTER TABLE invite_codes ADD COLUMN revoked_at TIMESTAMP DEFAULT NULL")
+        await _safe_migrate(db, "ALTER TABLE invite_codes ADD COLUMN use_count INTEGER NOT NULL DEFAULT 0")
+        await _safe_migrate(db, "ALTER TABLE invite_codes ADD COLUMN last_used_at TIMESTAMP DEFAULT NULL")
+        from byok.store import USER_MODEL_CONFIGS_DDL
+        await db.execute(USER_MODEL_CONFIGS_DDL)
+        for watch_table_ddl in LOCAL_WATCH_TABLES_DDL:
+            await db.execute(watch_table_ddl)
+        await _safe_migrate(db, "ALTER TABLE user_model_configs ADD COLUMN effort TEXT NOT NULL DEFAULT 'low'")
+        await db.execute("""
+            CREATE TABLE IF NOT EXISTS retired_usernames (
+                username   TEXT PRIMARY KEY,
+                retired_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+            )
+        """)
+        await db.execute("""
+            CREATE TABLE IF NOT EXISTS upload_cleanup_queue (
+                path       TEXT PRIMARY KEY,
+                created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+            )
+        """)
+        # ── 聊天槽位状态：pending 追问 / mode 模式 ──
+        # owner_username 单独成列，"清空某用户全部槽位"才能写成等值匹配；
+        # 绝不用 LIKE/GLOB 前缀匹配 state_key——用户名含 % _ * ? 会误删他人数据。
+        await db.execute(CHAT_SLOT_STATE_DDL)
+
+        # 能确定归属的旧广场帖回填 owner_username；无法匹配的历史行保持 NULL，
+        # 删除账户时还会再次按当前 HMAC + 旧 MD5 别名兜底查找。
+        try:
+            import hashlib
+            from utils.pseudonym import anonymous_id
+            async with db.execute("SELECT username FROM users") as cursor:
+                existing_users = await cursor.fetchall()
+            for (existing_username,) in existing_users:
+                aliases = (
+                    anonymous_id(existing_username, "plaza-author", length=12),
+                    hashlib.md5(("fiona_plaza_" + existing_username).encode()).hexdigest()[:8],
+                )
+                await db.execute(
+                    """UPDATE posts SET owner_username = ?
+                       WHERE owner_username IS NULL AND anon_id IN (?, ?)""",
+                    (existing_username, *aliases),
+                )
+        except Exception as exc:
+            print(f"[init_db] post owner backfill failed type={type(exc).__name__}")
+        await db.commit()
+        # New identity/conversation migrations are versioned and atomic. A failure
+        # must stop startup rather than exposing a partially migrated database.
+        from agent_store import migrate_avatar_schema
+        await migrate_avatar_schema(db)
+        from exchange_store import migrate_exchanges_schema
+        await migrate_exchanges_schema(db)
+        from exchange_store import migrate_official_exchanges_schema
+        await migrate_official_exchanges_schema(db)
+        from exchange_store import migrate_extended_official_exchanges_schema
+        await migrate_extended_official_exchanges_schema(db)
+        from exchange_store import migrate_workflow_exchanges_schema
+        await migrate_workflow_exchanges_schema(db)
+
+async def get_or_create_user(username: str) -> dict:
+    async with aiosqlite.connect(DB_PATH, timeout=SQLITE_BUSY_TIMEOUT) as db:
+        db.row_factory = aiosqlite.Row
+        await db.execute(
+            "INSERT OR IGNORE INTO users (username, session_version) VALUES (?, ?)",
+            (username, secrets.randbelow(2**31 - 1) + 1),
+        )
+        await db.commit()
+        async with db.execute("SELECT * FROM users WHERE username = ?", (username,)) as cursor:
+            row = await cursor.fetchone()
+        return dict(row)
+
+def decode_image_references(value) -> list[str]:
+    """API readers expose ordered arrays, while old messages retain their single image."""
+    try:
+        paths = _json.loads(value) if isinstance(value, str) else value
+    except (TypeError, ValueError):
+        return []
+    return paths if isinstance(paths, list) and all(isinstance(path, str) for path in paths) else []
+
+
+def message_upload_paths(image_path, references) -> list[str]:
+    return list(dict.fromkeys(([image_path] if image_path else []) + decode_image_references(references)))
+
+
+def message_with_image_references(row) -> dict:
+    message = dict(row)
+    message["reference_image_paths"] = decode_image_references(message.get("reference_image_paths"))
+    return message
+
+
+async def message_references_image(db, image_path: str, *, username: str | None = None, conversation_id: str | None = None) -> bool:
+    conditions = ["""(image_path = ? OR EXISTS (
+        SELECT 1 FROM json_each(COALESCE(messages.reference_image_paths, '[]')) AS ref WHERE ref.value = ?
+    ))"""]
+    parameters = [image_path, image_path]
+    if username is not None:
+        conditions.append("username = ?")
+        parameters.append(username)
+    if conversation_id is not None:
+        conditions.append("conversation_id = ?")
+        parameters.append(conversation_id)
+    async with db.execute(
+        "SELECT 1 FROM messages WHERE " + " AND ".join(conditions) + " LIMIT 1", parameters,
+    ) as cursor:
+        return await cursor.fetchone() is not None
+
+
+async def _queue_unreferenced_uploads(db, paths: list[str]) -> list[str]:
+    """把当前事务删除后已无消息/帖子引用的上传路径加入持久化清理队列。"""
+    unreferenced: list[str] = []
+    for path in dict.fromkeys(path for path in paths if path):
+        if await message_references_image(db, path):
+            continue
+        async with db.execute(
+            "SELECT EXISTS(SELECT 1 FROM posts WHERE media_path = ?)", (path,),
+        ) as cursor:
+            referenced = (await cursor.fetchone())[0]
+        if referenced:
+            continue
+        unreferenced.append(path)
+        await db.execute(
+            "INSERT OR IGNORE INTO upload_cleanup_queue (path) VALUES (?)",
+            (path,),
+        )
+    return unreferenced
+
+
+async def delete_message_for_user(message_id: int, username: str) -> dict:
+    """原子校验消息归属、删除记录，并登记不再被引用的附件。"""
+    async with aiosqlite.connect(DB_PATH, timeout=SQLITE_BUSY_TIMEOUT) as db:
+        await db.execute("BEGIN IMMEDIATE")
+        async with db.execute(
+            "SELECT username, image_path, reference_image_paths FROM messages WHERE id = ?", (message_id,)
+        ) as cursor:
+            row = await cursor.fetchone()
+        if row is None:
+            await db.rollback()
+            return {"status": "not_found", "upload_paths": []}
+        if row[0] != username:
+            await db.rollback()
+            return {"status": "forbidden", "upload_paths": []}
+        await db.execute(
+            "DELETE FROM messages WHERE id = ? AND username = ?",
+            (message_id, username),
+        )
+        upload_paths = await _queue_unreferenced_uploads(db, message_upload_paths(row[1], row[2]))
+        await db.commit()
+        return {"status": "deleted", "upload_paths": upload_paths}
+
+
+async def clear_message_history(username: str) -> list[str]:
+    """原子清空用户消息，并登记清空后已无引用的附件。"""
+    async with aiosqlite.connect(DB_PATH, timeout=SQLITE_BUSY_TIMEOUT) as db:
+        await db.execute("BEGIN IMMEDIATE")
+        async with db.execute(
+            "SELECT image_path, reference_image_paths FROM messages WHERE username = ?",
+            (username,),
+        ) as cursor:
+            paths = [path for row in await cursor.fetchall() for path in message_upload_paths(row[0], row[1])]
+        await db.execute("DELETE FROM messages WHERE username = ?", (username,))
+        upload_paths = await _queue_unreferenced_uploads(db, paths)
+        await db.commit()
+        return upload_paths
+
+
+async def get_pending_match_owner(match_id: int) -> str | None:
+    async with aiosqlite.connect(DB_PATH, timeout=SQLITE_BUSY_TIMEOUT) as db:
+        async with db.execute(
+            "SELECT username FROM pending_matches WHERE id = ?", (match_id,)
+        ) as cursor:
+            row = await cursor.fetchone()
+    return row[0] if row else None
+
+async def save_message(
+    username: str,
+    role: str,
+    content: str,
+    image_path: str | None = None,
+    conversation_id: str | None = None,
+    *,
+    require_image_reference: bool = False,
+    reference_image_paths: list[str] | None = None,
+    new_reference_image_paths: list[str] | None = None,
+):
+    from agent_store import ResourceNotFound, _ensure_default_conversation, _owned_conversation
+
+    async with aiosqlite.connect(DB_PATH, timeout=SQLITE_BUSY_TIMEOUT) as db:
+        await db.execute("BEGIN IMMEDIATE")
+        try:
+            if conversation_id is None:
+                context = await _ensure_default_conversation(db, username)
+                conversation = context["conversation"]
+            else:
+                conversation = await _owned_conversation(db, username, conversation_id)
+        except ResourceNotFound:
+            await db.rollback()
+            return False
+        references = reference_image_paths
+        if require_image_reference or references is not None or new_reference_image_paths is not None:
+            # Checking and retaining the reference share one write transaction.
+            # A concurrent deletion cannot remove ownership between these steps,
+            # or queue an image that the new editing request still references.
+            references = references if references is not None else ([image_path] if image_path else [])
+            if (role != "user" or not isinstance(references, list) or not 1 <= len(references) <= 3
+                or any(not isinstance(path, str) or not re.fullmatch(r"/uploads/(?:generated|reference)_[0-9a-f]{32}\.png", path) for path in references)
+                or len(set(references)) != len(references)):
+                await db.rollback()
+                raise ResourceNotFound("Reference image not found")
+            # Only the upload normalizer may supply freshly created paths here.
+            # This parameter is internal and never deserialized from a request.
+            fresh = new_reference_image_paths or []
+            if (not isinstance(fresh, list)
+                or any(not isinstance(path, str) or not re.fullmatch(r"/uploads/reference_[0-9a-f]{32}\.png", path) for path in fresh)
+                or len(set(fresh)) != len(fresh) or not set(fresh).issubset(references)):
+                await db.rollback()
+                raise ResourceNotFound("Reference image not found")
+            for path in references:
+                if path not in fresh and not await message_references_image(db, path, username=username, conversation_id=conversation["id"]):
+                    await db.rollback()
+                    raise ResourceNotFound("Reference image not found")
+            image_path = references[0]
+        await db.execute(
+            """INSERT INTO messages (username, role, content, image_path, conversation_id, agent_id, reference_image_paths)
+               VALUES (?, ?, ?, ?, ?, ?, ?)""",
+            (username, role, content, image_path, conversation["id"], conversation["agent_id"], _json.dumps(references) if references else None),
+        )
+        await db.execute(
+            "UPDATE conversations SET updated_at = CURRENT_TIMESTAMP WHERE id = ?",
+            (conversation["id"],),
+        )
+        if role == "user":
+            title = (content.strip().splitlines() or ["新的交流"])[0][:40]
+            if image_path and content.strip() in {"", "[发了一张图片]"}:
+                title = "图片交流"
+            await db.execute(
+                """UPDATE conversations SET title = ?, auto_title = 0
+                   WHERE id = ? AND is_default = 0 AND auto_title = 1
+                   AND (SELECT COUNT(*) FROM messages WHERE conversation_id = ? AND role = 'user') = 1""",
+                (title, conversation["id"], conversation["id"]),
+            )
+        await db.commit()
+        return True
+
+async def get_messages(username: str, limit: int = 100, conversation_id: str | None = None) -> list[dict]:
+    """With an ID, read only that owned conversation; None retains legacy account scope."""
+    async with aiosqlite.connect(DB_PATH, timeout=SQLITE_BUSY_TIMEOUT) as db:
+        await db.execute("BEGIN")
+        if conversation_id is not None:
+            from agent_store import _owned_conversation
+            await _owned_conversation(db, username, conversation_id)
+        db.row_factory = aiosqlite.Row
+        condition = " AND conversation_id = ?" if conversation_id is not None else ""
+        parameters = (username, conversation_id, limit) if conversation_id is not None else (username, limit)
+        async with db.execute(
+            f"""SELECT role, content, image_path, reference_image_paths, image_summary, created_at FROM messages WHERE username = ?
+                {condition} ORDER BY created_at DESC, id DESC LIMIT ?""",
+            parameters,
+        ) as cursor:
+            rows = await cursor.fetchall()
+    return [message_with_image_references(r) for r in reversed(rows)]
+
+async def set_message_image_summary(
+    username: str, conversation_id: str | None, image_path: str, summary: str
+) -> bool:
+    """把 VL 看图产生的那句话挂回当初那条 user 消息，作为图片的文字摘要。
+
+    按 username + image_path 定位（conversation_id 非 None 时再加一条），只更新 role='user' 的行。
+    上传路径形如 /uploads/<uuid4 hex 32 位>.<ext>，全局唯一，可直接当定位键。
+    命中并更新返回 True，未命中返回 False；异常一律吞掉——
+    摘要写入失败绝不能影响已经成功返回给用户的回复。
+    """
+    if not image_path:
+        return False
+    truncated = (summary or "")[:IMAGE_SUMMARY_MAX_CHARS]
+    condition = " AND conversation_id = ?" if conversation_id is not None else ""
+    parameters = (
+        (truncated, username, image_path, conversation_id)
+        if conversation_id is not None
+        else (truncated, username, image_path)
+    )
+    try:
+        async with aiosqlite.connect(DB_PATH, timeout=SQLITE_BUSY_TIMEOUT) as db:
+            cursor = await db.execute(
+                f"""UPDATE messages SET image_summary = ?
+                    WHERE username = ? AND image_path = ?{condition} AND role = 'user'""",
+                parameters,
+            )
+            await db.commit()
+            return cursor.rowcount > 0
+    except Exception as e:
+        print(f"[database] image summary write failed type={type(e).__name__}")
+        return False
+
+async def count_messages(username: str, conversation_id: str | None = None) -> int:
+    """该用户的消息总数，用于成长阶段路由（区别于注入上下文的截断窗口）"""
+    async with aiosqlite.connect(DB_PATH, timeout=SQLITE_BUSY_TIMEOUT) as db:
+        await db.execute("BEGIN")
+        if conversation_id is not None:
+            from agent_store import _owned_conversation
+            await _owned_conversation(db, username, conversation_id)
+        condition = " AND conversation_id = ?" if conversation_id is not None else ""
+        parameters = (username, conversation_id) if conversation_id is not None else (username,)
+        async with db.execute(
+            f"SELECT COUNT(*) FROM messages WHERE username = ?{condition}", parameters,
+        ) as cursor:
+            row = await cursor.fetchone()
+    return row[0] if row else 0
+
+async def create_invite(code: str, username: str, note: str | None = None) -> bool:
+    """登记一个邀请码→用户名。已存在则不覆盖，返回是否新建。"""
+    async with aiosqlite.connect(DB_PATH, timeout=SQLITE_BUSY_TIMEOUT) as db:
+        cur = await db.execute(
+            "INSERT OR IGNORE INTO invite_codes (code, username, note) VALUES (?, ?, ?)",
+            (code, username, note),
+        )
+        await db.commit()
+    return cur.rowcount > 0
+
+
+async def create_tester_invites(count: int) -> list[tuple[str, str]]:
+    """Allocate tester names and codes under one writer lock."""
+    if not 1 <= count <= 200:
+        raise ValueError("count must be 1..200")
+    alphabet = "ABCDEFGHJKMNPQRSTUVWXYZ23456789"
+    created: list[tuple[str, str]] = []
+    async with aiosqlite.connect(DB_PATH, timeout=SQLITE_BUSY_TIMEOUT) as db:
+        await db.execute("BEGIN IMMEDIATE")
+        async with db.execute(
+            "SELECT username FROM users WHERE username LIKE 'tester%' "
+            "UNION SELECT username FROM invite_codes WHERE username LIKE 'tester%' "
+            "UNION SELECT username FROM retired_usernames WHERE username LIKE 'tester%'"
+        ) as cursor:
+            names = await cursor.fetchall()
+        number = max(
+            (int(match.group(1)) for (name,) in names if (match := re.fullmatch(r"tester([0-9]+)", name))),
+            default=0,
+        ) + 1
+        while len(created) < count:
+            username = f"tester{number:02d}"
+            async with db.execute(
+                "SELECT 1 FROM users WHERE username = ? "
+                "UNION SELECT 1 FROM invite_codes WHERE username = ? "
+                "UNION SELECT 1 FROM retired_usernames WHERE username = ? LIMIT 1",
+                (username, username, username),
+            ) as cursor:
+                exists = await cursor.fetchone()
+            if exists:
+                number += 1
+                continue
+            while True:
+                code = "".join(secrets.choice(alphabet) for _ in range(8))
+                try:
+                    await db.execute(
+                        "INSERT INTO invite_codes (code, username, note) VALUES (?, ?, ?)",
+                        (code, username, f"内测 #{number}"),
+                    )
+                    break
+                except aiosqlite.IntegrityError:
+                    continue
+            created.append((code, username))
+            number += 1
+        await db.commit()
+    return created
+
+async def redeem_invite(code: str) -> str | None:
+    """原子兑换一个未撤销的邀请码；记录首次/最近使用时间和使用次数。"""
+    async with aiosqlite.connect(DB_PATH, timeout=SQLITE_BUSY_TIMEOUT) as db:
+        db.row_factory = aiosqlite.Row
+        await db.execute("BEGIN IMMEDIATE")
+        async with db.execute(
+            """UPDATE invite_codes
+               SET redeemed_at = COALESCE(redeemed_at, CURRENT_TIMESTAMP),
+                   last_used_at = CURRENT_TIMESTAMP,
+                   use_count = use_count + 1
+               WHERE code = ? AND revoked_at IS NULL
+               RETURNING username""",
+            (code,),
+        ) as cursor:
+            row = await cursor.fetchone()
+        await db.commit()
+        return row["username"] if row else None
+
+
+async def revoke_invite(code: str) -> bool:
+    """撤销邀请码并使其绑定账号的现有会话失效。"""
+    async with aiosqlite.connect(DB_PATH, timeout=SQLITE_BUSY_TIMEOUT) as db:
+        db.row_factory = aiosqlite.Row
+        await db.execute("BEGIN IMMEDIATE")
+        async with db.execute(
+            """UPDATE invite_codes SET revoked_at = CURRENT_TIMESTAMP
+               WHERE code = ? AND revoked_at IS NULL
+               RETURNING username""",
+            (code,),
+        ) as cursor:
+            row = await cursor.fetchone()
+        if row:
+            await db.execute(
+                "UPDATE users SET session_version = session_version + 1 WHERE username = ?",
+                (row["username"],),
+            )
+        await db.commit()
+        return row is not None
+
+
+async def rotate_invite(old_code: str, new_code: str) -> bool:
+    """把邀请码原子轮换为新码，保留绑定用户名和备注。"""
+    async with aiosqlite.connect(DB_PATH, timeout=SQLITE_BUSY_TIMEOUT) as db:
+        db.row_factory = aiosqlite.Row
+        await db.execute("BEGIN IMMEDIATE")
+        async with db.execute(
+            """SELECT username, note FROM invite_codes
+               WHERE code = ? AND revoked_at IS NULL""",
+            (old_code,),
+        ) as cursor:
+            row = await cursor.fetchone()
+        if not row:
+            await db.rollback()
+            return False
+        try:
+            await db.execute(
+                "INSERT INTO invite_codes (code, username, note) VALUES (?, ?, ?)",
+                (new_code, row["username"], row["note"]),
+            )
+        except aiosqlite.IntegrityError:
+            await db.rollback()
+            return False
+        await db.execute(
+            "UPDATE invite_codes SET revoked_at = CURRENT_TIMESTAMP WHERE code = ?",
+            (old_code,),
+        )
+        await db.execute(
+            "UPDATE users SET session_version = session_version + 1 WHERE username = ?",
+            (row["username"],),
+        )
+        await db.commit()
+        return True
+
+async def list_invites() -> list[dict]:
+    """列出邀请码状态，供本机管理脚本使用。"""
+    async with aiosqlite.connect(DB_PATH, timeout=SQLITE_BUSY_TIMEOUT) as db:
+        db.row_factory = aiosqlite.Row
+        async with db.execute(
+            """SELECT code, username, note, redeemed_at, revoked_at,
+                      use_count, last_used_at
+               FROM invite_codes ORDER BY created_at"""
+        ) as cursor:
+            rows = await cursor.fetchall()
+    return [dict(r) for r in rows]
+
+
+async def get_session_version(username: str) -> int | None:
+    async with aiosqlite.connect(DB_PATH, timeout=SQLITE_BUSY_TIMEOUT) as db:
+        async with db.execute(
+            "SELECT session_version FROM users WHERE username = ?",
+            (username,),
+        ) as cursor:
+            row = await cursor.fetchone()
+    return int(row[0]) if row else None
+
+
+async def is_session_valid(username: str, session_version: int) -> bool:
+    current = await get_session_version(username)
+    return current is not None and current == session_version
+
+
+async def revoke_user_sessions(username: str) -> bool:
+    """撤销用户此前签发的全部 JWT。"""
+    async with aiosqlite.connect(DB_PATH, timeout=SQLITE_BUSY_TIMEOUT) as db:
+        cursor = await db.execute(
+            "UPDATE users SET session_version = session_version + 1 WHERE username = ?",
+            (username,),
+        )
+        await db.commit()
+        return cursor.rowcount > 0
+
+
+async def delete_account_data(username: str) -> dict:
+    """在单个事务中删除账号及所有可关联数据库记录。
+
+    返回删除后已无数据库引用的上传路径，由路由在事务提交后清理文件。
+    """
+    import hashlib
+    from utils.pseudonym import anonymous_id
+
+    aliases = (
+        anonymous_id(username, "plaza-author", length=12),
+        hashlib.md5(("fiona_plaza_" + username).encode()).hexdigest()[:8],
+    )
+
+    async with aiosqlite.connect(DB_PATH, timeout=SQLITE_BUSY_TIMEOUT) as db:
+        db.row_factory = aiosqlite.Row
+        await db.execute("BEGIN IMMEDIATE")
+
+        async with db.execute(
+            "SELECT phone FROM users WHERE username = ?",
+            (username,),
+        ) as cursor:
+            user_row = await cursor.fetchone()
+        if user_row is None:
+            await db.rollback()
+            return {"deleted": False, "upload_paths": []}
+
+        async with db.execute(
+            "SELECT image_path, reference_image_paths FROM messages WHERE username = ?",
+            (username,),
+        ) as cursor:
+            upload_paths = [path for row in await cursor.fetchall() for path in message_upload_paths(row[0], row[1])]
+
+        async with db.execute(
+            """SELECT id, media_path FROM posts
+               WHERE owner_username = ? OR anon_id IN (?, ?)""",
+            (username, *aliases),
+        ) as cursor:
+            owned_posts = await cursor.fetchall()
+        post_ids = [int(row["id"]) for row in owned_posts]
+        upload_paths.extend(row["media_path"] for row in owned_posts if row["media_path"])
+
+        async with db.execute(
+            "SELECT user_a, user_b FROM matches WHERE user_a = ? OR user_b = ?",
+            (username, username),
+        ) as cursor:
+            pairs = await cursor.fetchall()
+        room_ids = {"__".join(sorted((row["user_a"], row["user_b"]))) for row in pairs}
+
+        async with db.execute(
+            "SELECT DISTINCT post_id FROM post_likes WHERE username = ?",
+            (username,),
+        ) as cursor:
+            liked_post_ids = [int(row[0]) for row in await cursor.fetchall()]
+
+        if post_ids:
+            placeholders = ",".join("?" for _ in post_ids)
+            await db.execute(
+                f"DELETE FROM post_likes WHERE post_id IN ({placeholders})",
+                post_ids,
+            )
+            await db.execute(
+                f"DELETE FROM posts WHERE id IN ({placeholders})",
+                post_ids,
+            )
+        await db.execute("DELETE FROM post_likes WHERE username = ?", (username,))
+        if liked_post_ids:
+            placeholders = ",".join("?" for _ in liked_post_ids)
+            await db.execute(
+                f"""UPDATE posts
+                    SET likes = (SELECT COUNT(*) FROM post_likes WHERE post_id = posts.id)
+                    WHERE id IN ({placeholders})""",
+                liked_post_ids,
+            )
+
+        if room_ids:
+            placeholders = ",".join("?" for _ in room_ids)
+            await db.execute(
+                f"DELETE FROM peer_messages WHERE room_id IN ({placeholders})",
+                list(room_ids),
+            )
+        await db.execute("DELETE FROM peer_messages WHERE sender = ?", (username,))
+        await db.execute(
+            "DELETE FROM pending_matches WHERE username = ? OR peer_username = ?",
+            (username, username),
+        )
+        await db.execute(
+            "DELETE FROM matches WHERE user_a = ? OR user_b = ?",
+            (username, username),
+        )
+        await db.execute("DELETE FROM messages WHERE username = ?", (username,))
+        await db.execute("DELETE FROM conversations WHERE owner_username = ?", (username,))
+        from exchange_store import delete_exchanges_for_user
+        await delete_exchanges_for_user(db, username)
+        await db.execute("DELETE FROM agents WHERE owner_username = ?", (username,))
+        await db.execute("DELETE FROM user_tag_prefs WHERE username = ?", (username,))
+        await db.execute("DELETE FROM user_time_tag_prefs WHERE username = ?", (username,))
+        await db.execute("DELETE FROM user_states WHERE username = ?", (username,))
+        await db.execute("DELETE FROM chat_slot_state WHERE owner_username = ?", (username,))
+        await db.execute("DELETE FROM events WHERE username = ?", (username,))
+        await db.execute("DELETE FROM invite_codes WHERE username = ?", (username,))
+        if user_row["phone"]:
+            await db.execute("DELETE FROM otp_codes WHERE phone = ?", (user_row["phone"],))
+        await db.execute(
+            "INSERT OR IGNORE INTO retired_usernames (username) VALUES (?)",
+            (username,),
+        )
+        await db.execute("DELETE FROM user_model_configs WHERE username = ?", (username,))
+        for watch_table in ("watch_devices", "watch_rules", "watch_alerts"):
+            await db.execute(f"DELETE FROM {watch_table} WHERE username = ?", (username,))
+        await db.execute("DELETE FROM users WHERE username = ?", (username,))
+
+        # UUID 文件理论上不会共享；仍在事务内复核引用，避免误删异常旧数据。
+        unreferenced_paths = await _queue_unreferenced_uploads(db, upload_paths)
+
+        await db.commit()
+        return {"deleted": True, "upload_paths": unreferenced_paths}
+
+
+async def get_pending_upload_cleanup() -> list[str]:
+    async with aiosqlite.connect(DB_PATH, timeout=SQLITE_BUSY_TIMEOUT) as db:
+        async with db.execute(
+            "SELECT path FROM upload_cleanup_queue ORDER BY created_at"
+        ) as cursor:
+            rows = await cursor.fetchall()
+    return [row[0] for row in rows]
+
+
+async def mark_upload_cleanup_done(paths: list[str]) -> None:
+    if not paths:
+        return
+    async with aiosqlite.connect(DB_PATH, timeout=SQLITE_BUSY_TIMEOUT) as db:
+        await db.executemany(
+            "DELETE FROM upload_cleanup_queue WHERE path = ?",
+            [(path,) for path in paths],
+        )
+        await db.commit()
+
+async def get_profile(username: str) -> dict:
+    async with aiosqlite.connect(DB_PATH, timeout=SQLITE_BUSY_TIMEOUT) as db:
+        db.row_factory = aiosqlite.Row
+        async with db.execute("SELECT profile_json FROM users WHERE username = ?", (username,)) as cursor:
+            row = await cursor.fetchone()
+    if not row:
+        return {}
+    try:
+        return _json.loads(row["profile_json"] or "{}")
+    except Exception:
+        return {}
+
+async def update_profile(username: str, profile: dict) -> bool:
+    """Update the legacy social profile. New private chats use agent_store.update_memory."""
+    async with aiosqlite.connect(DB_PATH, timeout=SQLITE_BUSY_TIMEOUT) as db:
+        cursor = await db.execute(
+            "UPDATE users SET profile_json = ? WHERE username = ?",
+            (_json.dumps(profile, ensure_ascii=False), username),
+        )
+        await db.commit()
+        return cursor.rowcount > 0
+
+async def get_all_profiles() -> list[dict]:
+    """返回所有用户的 username + profile_json + gender，用于匹配"""
+    async with aiosqlite.connect(DB_PATH, timeout=SQLITE_BUSY_TIMEOUT) as db:
+        db.row_factory = aiosqlite.Row
+        async with db.execute("SELECT username, profile_json, gender FROM users") as cursor:
+            rows = await cursor.fetchall()
+    result = []
+    for row in rows:
+        try:
+            profile = _json.loads(row["profile_json"] or "{}")
+        except Exception:
+            profile = {}
+        if profile:
+            result.append({
+                "username": row["username"],
+                "profile": profile,
+                "gender": row["gender"],
+            })
+    return result
+
+
+async def get_user_settings(username: str) -> dict:
+    """获取用户性别 + 匹配偏好"""
+    async with aiosqlite.connect(DB_PATH, timeout=SQLITE_BUSY_TIMEOUT) as db:
+        db.row_factory = aiosqlite.Row
+        async with db.execute(
+            "SELECT gender, match_pref FROM users WHERE username = ?", (username,)
+        ) as cursor:
+            row = await cursor.fetchone()
+    if not row:
+        return {"gender": None, "match_pref": "both"}
+    return {
+        "gender": row["gender"],
+        "match_pref": row["match_pref"] or "both",
+    }
+
+
+async def update_user_settings(username: str, gender, match_pref: str):
+    """更新用户性别 + 匹配偏好"""
+    if gender not in ("male", "female", None):
+        gender = None
+    if match_pref not in ("male", "female", "both"):
+        match_pref = "both"
+    async with aiosqlite.connect(DB_PATH, timeout=SQLITE_BUSY_TIMEOUT) as db:
+        await db.execute(
+            "UPDATE users SET gender = ?, match_pref = ? WHERE username = ?",
+            (gender, match_pref, username)
+        )
+        await db.commit()
+
+async def was_recently_matched(user_a: str, user_b: str, days: int = 30) -> bool:
+    """检查两人在 days 天内是否已经推荐过"""
+    async with aiosqlite.connect(DB_PATH, timeout=SQLITE_BUSY_TIMEOUT) as db:
+        async with db.execute(
+            """SELECT id FROM matches
+               WHERE ((user_a=? AND user_b=?) OR (user_a=? AND user_b=?))
+               AND recommended_at > datetime('now', ?)""",
+            (user_a, user_b, user_b, user_a, f"-{days} days")
+        ) as cursor:
+            row = await cursor.fetchone()
+    return row is not None
+
+async def save_match(user_a: str, user_b: str):
+    async with aiosqlite.connect(DB_PATH, timeout=SQLITE_BUSY_TIMEOUT) as db:
+        await db.execute("BEGIN IMMEDIATE")
+        if user_a == user_b or not await _users_exist(db, user_a, user_b):
+            await db.rollback()
+            return False
+        async with db.execute(
+            """SELECT 1 FROM matches
+               WHERE ((user_a = ? AND user_b = ?) OR (user_a = ? AND user_b = ?))
+                 AND recommended_at > datetime('now', '-30 days')
+               LIMIT 1""",
+            (user_a, user_b, user_b, user_a),
+        ) as cursor:
+            if await cursor.fetchone() is not None:
+                await db.rollback()
+                return False
+        await db.execute(
+            "INSERT INTO matches (user_a, user_b) VALUES (?, ?)", (user_a, user_b)
+        )
+        await db.commit()
+        return True
+
+async def update_match_response(me: str, peer: str, response: str):
+    """记录 me 对 (me ↔ peer) 这对匹配的态度。response = 'accept' / 'reject'。
+    根据 matches 行实际 user_a/user_b 的顺序更新对应列；不存在时拒绝，
+    防止任意用户绕过推荐流程制造连接关系。"""
+    async with aiosqlite.connect(DB_PATH, timeout=SQLITE_BUSY_TIMEOUT) as db:
+        await db.execute("BEGIN IMMEDIATE")
+        if not await _users_exist(db, me, peer):
+            await db.rollback()
+            return False
+        async with db.execute(
+            "SELECT id, user_a FROM matches WHERE (user_a=? AND user_b=?) OR (user_a=? AND user_b=?) ORDER BY recommended_at DESC LIMIT 1",
+            (me, peer, peer, me)
+        ) as cursor:
+            row = await cursor.fetchone()
+
+        if row:
+            match_id, actual_user_a = row
+            col = "response_a" if actual_user_a == me else "response_b"
+            await db.execute(f"UPDATE matches SET {col}=? WHERE id=?", (response, match_id))
+        else:
+            await db.rollback()
+            return False
+        await db.commit()
+        return True
+
+async def save_peer_message(room_id: str, sender: str, content: str):
+    async with aiosqlite.connect(DB_PATH, timeout=SQLITE_BUSY_TIMEOUT) as db:
+        await db.execute("BEGIN IMMEDIATE")
+        if not await _peer_room_is_accepted(db, room_id, sender):
+            await db.rollback()
+            return False
+        await db.execute(
+            "INSERT INTO peer_messages (room_id, sender, content) VALUES (?, ?, ?)",
+            (room_id, sender, content)
+        )
+        await db.commit()
+        return True
+
+async def get_peer_messages(room_id: str, limit: int = 100) -> list[dict]:
+    async with aiosqlite.connect(DB_PATH, timeout=SQLITE_BUSY_TIMEOUT) as db:
+        db.row_factory = aiosqlite.Row
+        async with db.execute(
+            "SELECT id, sender, content, created_at FROM peer_messages WHERE room_id=? ORDER BY created_at DESC LIMIT ?",
+            (room_id, limit)
+        ) as cursor:
+            rows = await cursor.fetchall()
+    return [dict(r) for r in reversed(rows)]
+
+async def save_pending_match(
+    username: str,
+    peer_username: str,
+    interest_topic: str,
+    reason: str,
+    match_type: str,
+    tags: list,
+    triggered_by_message_id: int | None = None,
+    match_layer: str = "layer1",
+):
+    """保存对话内匹配命中（待前端拉取并弹卡）。
+    match_layer: 'layer1' = 对话级（A 触发，给 A/B 双方各推一张）；
+                 'layer2' = 画像级（用户每次画像更新后批量算）。
+    用于 _has_recent_layer2_match 判断 24h 冷却时区分两类，
+    避免 B 端收到的 layer1 卡误判为 layer2 占位，让 B 自己的 layer2 跑不起来。"""
+    async with aiosqlite.connect(DB_PATH, timeout=SQLITE_BUSY_TIMEOUT) as db:
+        await db.execute("BEGIN IMMEDIATE")
+        if not await _users_exist(db, username, peer_username):
+            await db.rollback()
+            return False
+        async with db.execute(
+            """SELECT 1 FROM pending_matches
+               WHERE username = ? AND peer_username = ? AND match_layer = ?
+                 AND created_at > datetime('now', '-2 hours')
+               LIMIT 1""",
+            (username, peer_username, match_layer),
+        ) as cursor:
+            if await cursor.fetchone() is not None:
+                await db.rollback()
+                return False
+        await db.execute(
+            """INSERT INTO pending_matches
+               (username, peer_username, interest_topic, reason, type, tags_json, triggered_by_message_id, match_layer)
+               VALUES (?, ?, ?, ?, ?, ?, ?, ?)""",
+            (username, peer_username, interest_topic, reason, match_type,
+             _json.dumps(tags, ensure_ascii=False), triggered_by_message_id, match_layer)
+        )
+        await db.commit()
+        return True
+
+
+async def get_pending_matches_for_user(username: str, limit: int = 5) -> list[dict]:
+    """拉未看过的匹配，按新到老。附带对方的招呼内容（若已接受并留招呼）。"""
+    async with aiosqlite.connect(DB_PATH, timeout=SQLITE_BUSY_TIMEOUT) as db:
+        db.row_factory = aiosqlite.Row
+        # 只拉 2 小时内的卡片，超时的视为自动过期不再展示
+        async with db.execute(
+            """SELECT id, peer_username, interest_topic, reason, type, tags_json, created_at
+               FROM pending_matches
+               WHERE username = ? AND seen = 0
+               AND created_at > datetime('now', '-2 hours')
+               ORDER BY created_at DESC LIMIT ?""",
+            (username, limit)
+        ) as cursor:
+            rows = await cursor.fetchall()
+
+    result = []
+    for r in rows:
+        d = dict(r)
+        try:
+            d["tags"] = _json.loads(d.pop("tags_json") or "[]")
+        except Exception:
+            d["tags"] = []
+
+        # 查对方是否已接受并留了招呼
+        peer = d["peer_username"]
+        d["peer_greeting"] = None
+        async with aiosqlite.connect(DB_PATH, timeout=SQLITE_BUSY_TIMEOUT) as db:
+            db.row_factory = aiosqlite.Row
+            async with db.execute(
+                """SELECT user_a, greeting_a, greeting_b FROM matches
+                   WHERE (user_a=? AND user_b=?) OR (user_a=? AND user_b=?)
+                   ORDER BY recommended_at DESC LIMIT 1""",
+                (username, peer, peer, username)
+            ) as cursor:
+                m = await cursor.fetchone()
+            if m:
+                m = dict(m)
+                # 对方是 user_a 还是 user_b？
+                if m["user_a"] == peer:
+                    d["peer_greeting"] = m["greeting_a"]  # 对方是 a，取 greeting_a
+                else:
+                    d["peer_greeting"] = m["greeting_b"]  # 对方是 b，取 greeting_b
+
+        result.append(d)
+    return result
+
+
+async def save_greeting(me: str, peer: str, text: str):
+    """保存 me 给 peer 的打招呼内容，写入最新一条 matches 行对应方向的列。
+    matches 行不存在时拒绝，避免通过问候文本隐式创建任意关系。"""
+    async with aiosqlite.connect(DB_PATH, timeout=SQLITE_BUSY_TIMEOUT) as db:
+        await db.execute("BEGIN IMMEDIATE")
+        if not await _users_exist(db, me, peer):
+            await db.rollback()
+            return False
+        async with db.execute(
+            "SELECT id, user_a FROM matches WHERE (user_a=? AND user_b=?) OR (user_a=? AND user_b=?) ORDER BY recommended_at DESC LIMIT 1",
+            (me, peer, peer, me)
+        ) as cursor:
+            row = await cursor.fetchone()
+        if row:
+            match_id, actual_user_a = row
+            col = "greeting_a" if actual_user_a == me else "greeting_b"
+            await db.execute(f"UPDATE matches SET {col}=? WHERE id=?", (text, match_id))
+        else:
+            await db.rollback()
+            return False
+        await db.commit()
+        return True
+
+
+async def upsert_user_state(
+    username: str,
+    connection_mode: str,
+    emotional_intensity: int,
+    openness_level: str,
+    interest_anchor: str,
+):
+    """底色探针结果持久化（一人一行 upsert）"""
+    async with aiosqlite.connect(DB_PATH, timeout=SQLITE_BUSY_TIMEOUT) as db:
+        await db.execute("BEGIN IMMEDIATE")
+        if not await _users_exist(db, username):
+            await db.rollback()
+            return False
+        await db.execute(
+            """INSERT INTO user_states
+               (username, connection_mode, emotional_intensity, openness_level, interest_anchor, updated_at)
+               VALUES (?, ?, ?, ?, ?, CURRENT_TIMESTAMP)
+               ON CONFLICT(username) DO UPDATE SET
+                 connection_mode     = excluded.connection_mode,
+                 emotional_intensity = excluded.emotional_intensity,
+                 openness_level      = excluded.openness_level,
+                 interest_anchor     = excluded.interest_anchor,
+                 updated_at          = CURRENT_TIMESTAMP""",
+            (username, connection_mode, emotional_intensity, openness_level, interest_anchor)
+        )
+        await db.commit()
+        return True
+
+
+async def get_user_state(username: str) -> dict | None:
+    """读取用户当前底色，不存在返回 None"""
+    async with aiosqlite.connect(DB_PATH, timeout=SQLITE_BUSY_TIMEOUT) as db:
+        db.row_factory = aiosqlite.Row
+        async with db.execute(
+            "SELECT * FROM user_states WHERE username = ?", (username,)
+        ) as cursor:
+            row = await cursor.fetchone()
+    return dict(row) if row else None
+
+
+async def mark_pending_match_seen(match_id: int):
+    async with aiosqlite.connect(DB_PATH, timeout=SQLITE_BUSY_TIMEOUT) as db:
+        await db.execute(
+            "UPDATE pending_matches SET seen = 1 WHERE id = ?", (match_id,)
+        )
+        await db.commit()
+
+
+async def get_recent_user_messages(username: str, limit: int = 5) -> list[dict]:
+    """取该 user 最近 N 条 user 角色的消息（用于跨用户搜索）"""
+    async with aiosqlite.connect(DB_PATH, timeout=SQLITE_BUSY_TIMEOUT) as db:
+        db.row_factory = aiosqlite.Row
+        async with db.execute(
+            """SELECT content, created_at FROM messages
+               WHERE username = ? AND role = 'user'
+               ORDER BY created_at DESC LIMIT ?""",
+            (username, limit)
+        ) as cursor:
+            rows = await cursor.fetchall()
+    return [dict(r) for r in rows]
+
+
+async def get_accepted_matches(username: str) -> list[str]:
+    """返回接受了和 username 匹配的对方用户名列表"""
+    async with aiosqlite.connect(DB_PATH, timeout=SQLITE_BUSY_TIMEOUT) as db:
+        db.row_factory = aiosqlite.Row
+        async with db.execute(
+            """SELECT user_a, user_b, response_a, response_b FROM matches
+               WHERE (user_a=? OR user_b=?)
+               ORDER BY recommended_at DESC""",
+            (username, username)
+        ) as cursor:
+            rows = await cursor.fetchall()
+    result = []
+    seen = set()
+    for row in rows:
+        r = dict(row)
+        if r["user_a"] == username:
+            other = r["user_b"]
+            accepted = r["response_a"] == "accept" and r["response_b"] == "accept"
+        else:
+            other = r["user_a"]
+            accepted = r["response_a"] == "accept" and r["response_b"] == "accept"
+        if other in seen:
+            continue
+        seen.add(other)
+        if accepted:
+            result.append(other)
+    return result
+
+async def save_post(
+    anon_id: str,
+    media_path: str,
+    media_type: str,
+    caption: str,
+    tags: list,
+    owner_username: str,
+) -> int | None:
+    """保存广场帖子，返回新帖 id"""
+    async with aiosqlite.connect(DB_PATH, timeout=SQLITE_BUSY_TIMEOUT) as db:
+        await db.execute("BEGIN IMMEDIATE")
+        if not await _users_exist(db, owner_username):
+            await db.rollback()
+            return None
+        cursor = await db.execute(
+            """INSERT INTO posts
+               (anon_id, media_path, media_type, caption, tags_json, owner_username)
+               VALUES (?,?,?,?,?,?)""",
+            (
+                anon_id,
+                media_path,
+                media_type,
+                caption,
+                _json.dumps(tags, ensure_ascii=False),
+                owner_username,
+            )
+        )
+        await db.commit()
+        return cursor.lastrowid
+
+
+async def get_posts(
+    limit: int = 30,
+    offset: int = 0,
+    sort: str = "latest",
+    tag: str = "",
+) -> list[dict]:
+    """按排序、标签和真实分页参数拉广场帖子列表。"""
+    order_by = "likes DESC, created_at DESC" if sort == "hot" else "created_at DESC"
+    where = ""
+    params: list = []
+    if tag:
+        where = """WHERE EXISTS (
+            SELECT 1
+            FROM json_each(CASE WHEN json_valid(posts.tags_json) THEN posts.tags_json ELSE '[]' END) AS tag_item
+            WHERE tag_item.value = ?
+        )"""
+        params.append(tag)
+    params.extend((limit, offset))
+    async with aiosqlite.connect(DB_PATH, timeout=SQLITE_BUSY_TIMEOUT) as db:
+        db.row_factory = aiosqlite.Row
+        async with db.execute(
+            f"""SELECT id, anon_id, media_path, media_type, caption, tags_json, likes, created_at
+                FROM posts
+                {where}
+                ORDER BY {order_by}
+                LIMIT ? OFFSET ?""",
+            params,
+        ) as cursor:
+            rows = await cursor.fetchall()
+    result = []
+    for r in rows:
+        d = dict(r)
+        try:
+            d["tags"] = _json.loads(d.pop("tags_json") or "[]")
+        except Exception:
+            d["tags"] = []
+        result.append(d)
+    return result
+
+
+async def get_recommended_posts(
+    username: str,
+    time_slot: str,
+    limit: int = 30,
+    offset: int = 0,
+    tag: str = "",
+) -> list[dict]:
+    """按用户全局/当前时段标签偏好在全表排序后，再做真实分页。"""
+    where = ""
+    params: list = [username, username, time_slot]
+    if tag:
+        where = """WHERE EXISTS (
+            SELECT 1
+            FROM json_each(CASE WHEN json_valid(posts.tags_json) THEN posts.tags_json ELSE '[]' END) AS filter_tag
+            WHERE filter_tag.value = ?
+        )"""
+        params.append(tag)
+    params.extend((limit, offset))
+    async with aiosqlite.connect(DB_PATH, timeout=SQLITE_BUSY_TIMEOUT) as db:
+        db.row_factory = aiosqlite.Row
+        async with db.execute(
+            f"""SELECT id, anon_id, media_path, media_type, caption, tags_json, likes, created_at,
+                       COALESCE((
+                           SELECT SUM(
+                               COALESCE(global_pref.score, 0)
+                               + COALESCE(time_pref.score, 0) * 1.5
+                           )
+                           FROM json_each(
+                               CASE WHEN json_valid(posts.tags_json) THEN posts.tags_json ELSE '[]' END
+                           ) AS tag_item
+                           LEFT JOIN user_tag_prefs AS global_pref
+                             ON global_pref.username = ? AND global_pref.tag = tag_item.value
+                           LEFT JOIN user_time_tag_prefs AS time_pref
+                             ON time_pref.username = ? AND time_pref.time_slot = ?
+                            AND time_pref.tag = tag_item.value
+                       ), 0) AS preference_score
+                FROM posts
+                {where}
+                ORDER BY preference_score DESC, created_at DESC
+                LIMIT ? OFFSET ?""",
+            params,
+        ) as cursor:
+            rows = await cursor.fetchall()
+    result = []
+    for r in rows:
+        d = dict(r)
+        d.pop("preference_score", None)
+        try:
+            d["tags"] = _json.loads(d.pop("tags_json") or "[]")
+        except Exception:
+            d["tags"] = []
+        result.append(d)
+    return result
+
+
+async def get_post(post_id: int) -> dict | None:
+    """按 id 直查一条广场帖子。"""
+    async with aiosqlite.connect(DB_PATH, timeout=SQLITE_BUSY_TIMEOUT) as db:
+        db.row_factory = aiosqlite.Row
+        async with db.execute(
+            """SELECT id, anon_id, media_path, media_type, caption, tags_json, likes, created_at
+               FROM posts WHERE id = ?""",
+            (post_id,),
+        ) as cursor:
+            row = await cursor.fetchone()
+    if not row:
+        return None
+    post = dict(row)
+    try:
+        post["tags"] = _json.loads(post.pop("tags_json") or "[]")
+    except Exception:
+        post["tags"] = []
+    return post
+
+
+async def like_post(post_id: int, username: str) -> tuple[int, bool]:
+    """给帖子点赞（按登录用户去重），返回（最新 likes 数，本次是否新点赞）。
+    先 INSERT OR IGNORE 进 post_likes;只有确实是新插入(rowcount>0)才给 posts.likes +1，
+    所以同一用户重复点赞幂等、不再加数。"""
+    async with aiosqlite.connect(DB_PATH, timeout=SQLITE_BUSY_TIMEOUT) as db:
+        await db.execute("BEGIN IMMEDIATE")
+        if not await _users_exist(db, username):
+            await db.rollback()
+            return 0, False
+        async with db.execute(
+            "SELECT 1 FROM posts WHERE id = ?", (post_id,)
+        ) as cursor:
+            if await cursor.fetchone() is None:
+                await db.rollback()
+                return 0, False
+        cur = await db.execute(
+            "INSERT OR IGNORE INTO post_likes (post_id, username) VALUES (?, ?)",
+            (post_id, username),
+        )
+        inserted = cur.rowcount > 0
+        if inserted:  # 本次确实是新点赞
+            await db.execute("UPDATE posts SET likes = likes + 1 WHERE id = ?", (post_id,))
+        await db.commit()
+        async with db.execute("SELECT likes FROM posts WHERE id = ?", (post_id,)) as c:
+            row = await c.fetchone()
+    return (row[0] if row else 0), inserted
+
+
+def get_time_slot() -> str:
+    """
+    返回当前时段标识，格式：{星期类型}-{时段}
+    星期类型：工作日 / 周末
+    时段：凌晨 / 清晨 / 上午 / 中午 / 下午 / 晚上 / 深夜
+    示例：'工作日-深夜'  '周末-下午'
+    """
+    from datetime import datetime
+    now = datetime.now()
+    h = now.hour
+    day_type = "周末" if now.weekday() >= 5 else "工作日"
+    if 0 <= h < 5:   period = "凌晨"
+    elif 5 <= h < 8:   period = "清晨"
+    elif 8 <= h < 12:  period = "上午"
+    elif 12 <= h < 14: period = "中午"
+    elif 14 <= h < 18: period = "下午"
+    elif 18 <= h < 22: period = "晚上"
+    else:              period = "深夜"
+    return f"{day_type}-{period}"
+
+
+async def update_time_tag_prefs(username: str, tags: list, time_slot: str = "", delta: float = 1.0):
+    """更新用户在指定时段的标签权重；time_slot 为空则用当前时段"""
+    if not username or not tags:
+        return
+    slot = time_slot or get_time_slot()
+    async with aiosqlite.connect(DB_PATH, timeout=SQLITE_BUSY_TIMEOUT) as db:
+        await db.execute("BEGIN IMMEDIATE")
+        if not await _users_exist(db, username):
+            await db.rollback()
+            return
+        for tag in tags:
+            await db.execute(
+                """INSERT INTO user_time_tag_prefs (username, time_slot, tag, score) VALUES (?,?,?,?)
+                   ON CONFLICT(username, time_slot, tag) DO UPDATE SET score = score + ?""",
+                (username, slot, tag, delta, delta)
+            )
+        await db.commit()
+
+
+async def get_time_tag_prefs(username: str, time_slot: str = "") -> dict[str, float]:
+    """返回用户在指定时段的标签权重 {tag: score}；time_slot 为空则用当前时段"""
+    if not username:
+        return {}
+    slot = time_slot or get_time_slot()
+    async with aiosqlite.connect(DB_PATH, timeout=SQLITE_BUSY_TIMEOUT) as db:
+        db.row_factory = aiosqlite.Row
+        async with db.execute(
+            "SELECT tag, score FROM user_time_tag_prefs WHERE username=? AND time_slot=?",
+            (username, slot)
+        ) as cursor:
+            rows = await cursor.fetchall()
+    return {r["tag"]: r["score"] for r in rows}
+
+
+async def get_all_time_tag_prefs(username: str) -> dict[str, dict[str, float]]:
+    """返回用户所有时段的标签权重 {time_slot: {tag: score}}（用于前端展示）"""
+    if not username:
+        return {}
+    async with aiosqlite.connect(DB_PATH, timeout=SQLITE_BUSY_TIMEOUT) as db:
+        db.row_factory = aiosqlite.Row
+        async with db.execute(
+            "SELECT time_slot, tag, score FROM user_time_tag_prefs WHERE username=? ORDER BY time_slot, score DESC",
+            (username,)
+        ) as cursor:
+            rows = await cursor.fetchall()
+    result: dict = {}
+    for r in rows:
+        result.setdefault(r["time_slot"], {})[r["tag"]] = r["score"]
+    return result
+
+
+async def update_tag_prefs(username: str, tags: list, delta: float = 1.0):
+    """用户点赞/互动后，更新全局标签权重 + 当前时段权重"""
+    if not username or not tags:
+        return
+    async with aiosqlite.connect(DB_PATH, timeout=SQLITE_BUSY_TIMEOUT) as db:
+        await db.execute("BEGIN IMMEDIATE")
+        if not await _users_exist(db, username):
+            await db.rollback()
+            return
+        for tag in tags:
+            await db.execute(
+                """INSERT INTO user_tag_prefs (username, tag, score) VALUES (?,?,?)
+                   ON CONFLICT(username, tag) DO UPDATE SET score = score + ?""",
+                (username, tag, delta, delta)
+            )
+        await db.commit()
+    # 同步更新时段权重
+    await update_time_tag_prefs(username, tags, delta=delta)
+
+
+async def save_otp(phone: str, code: str, ttl_seconds: int = 300):
+    """保存/覆盖 OTP，ttl_seconds 内有效"""
+    from datetime import timedelta
+    expires = datetime.now() + timedelta(seconds=ttl_seconds)
+    async with aiosqlite.connect(DB_PATH, timeout=SQLITE_BUSY_TIMEOUT) as db:
+        await db.execute(
+            """INSERT INTO otp_codes (phone, code, expires_at)
+               VALUES (?, ?, ?)
+               ON CONFLICT(phone) DO UPDATE SET code=excluded.code, expires_at=excluded.expires_at, created_at=CURRENT_TIMESTAMP""",
+            (phone, code, expires.strftime("%Y-%m-%d %H:%M:%S"))
+        )
+        await db.commit()
+
+
+async def check_and_consume_otp(phone: str, code: str) -> bool:
+    """验证 OTP 并删除（一次性）。正确且未过期返回 True。"""
+    async with aiosqlite.connect(DB_PATH, timeout=SQLITE_BUSY_TIMEOUT) as db:
+        async with db.execute(
+            "SELECT code, expires_at FROM otp_codes WHERE phone = ?", (phone,)
+        ) as cursor:
+            row = await cursor.fetchone()
+        if not row:
+            return False
+        db_code, expires_at_str = row
+        try:
+            expires_at = datetime.strptime(expires_at_str.split(".")[0], "%Y-%m-%d %H:%M:%S")
+        except Exception:
+            return False
+        if datetime.now() > expires_at:
+            await db.execute("DELETE FROM otp_codes WHERE phone = ?", (phone,))
+            await db.commit()
+            return False
+        if db_code != code:
+            return False
+        await db.execute("DELETE FROM otp_codes WHERE phone = ?", (phone,))
+        await db.commit()
+        return True
+
+
+async def get_or_create_user_by_phone(phone: str) -> dict:
+    """用手机号查找或创建用户，返回用户行"""
+    async with aiosqlite.connect(DB_PATH, timeout=SQLITE_BUSY_TIMEOUT) as db:
+        db.row_factory = aiosqlite.Row
+        # username 与 phone 都有唯一约束；INSERT OR IGNORE 让并发首登幂等。
+        await db.execute(
+            """INSERT OR IGNORE INTO users (username, phone, strawberry_balance, session_version)
+               VALUES (?, ?, 200, ?)""",
+            (phone, phone, secrets.randbelow(2**31 - 1) + 1),
+        )
+        await db.commit()
+        async with db.execute("SELECT * FROM users WHERE phone = ?", (phone,)) as cursor:
+            row = await cursor.fetchone()
+        if row is None:
+            # 兼容旧数据：username 已占用该手机号、但 phone 尚未回填时，
+            # INSERT OR IGNORE 会因 username 唯一约束被吞掉，按 username 兜底返回。
+            async with db.execute("SELECT * FROM users WHERE username = ?", (phone,)) as cursor:
+                row = await cursor.fetchone()
+        return dict(row)
+
+
+async def _apply_daily_refill(db, username: str, amount: int) -> None:
+    if amount <= 0:
+        return
+    today = _today_shanghai()
+    await db.execute(
+        """UPDATE users
+           SET strawberry_balance = MAX(strawberry_balance, ?),
+               strawberry_refill_date = ?
+           WHERE username = ? AND strawberry_refill_date IS NOT ?""",
+        (amount, today, username, today),
+    )
+
+
+async def get_strawberry_balance(username: str) -> int:
+    async with aiosqlite.connect(DB_PATH, timeout=SQLITE_BUSY_TIMEOUT) as db:
+        refill = strawberry_daily_refill()
+        if refill:
+            await db.execute("BEGIN IMMEDIATE")
+            await _apply_daily_refill(db, username, refill)
+        async with db.execute(
+            "SELECT strawberry_balance FROM users WHERE username = ?", (username,)
+        ) as cursor:
+            row = await cursor.fetchone()
+        if refill:
+            await db.commit()
+    return row[0] if row else 0
+
+
+async def reserve_strawberries(username: str, amount: int) -> int | None:
+    """Refill if due, then atomically reserve only when funds cover the full price."""
+    if amount <= 0:
+        raise ValueError("amount must be positive")
+    async with aiosqlite.connect(DB_PATH, timeout=SQLITE_BUSY_TIMEOUT) as db:
+        await db.execute("BEGIN IMMEDIATE")
+        await _apply_daily_refill(db, username, strawberry_daily_refill())
+        async with db.execute(
+            """UPDATE users SET strawberry_balance = strawberry_balance - ?
+               WHERE username = ? AND strawberry_balance >= ?
+               RETURNING strawberry_balance""",
+            (amount, username, amount),
+        ) as cursor:
+            row = await cursor.fetchone()
+        await db.commit()
+    return int(row[0]) if row else None
+
+
+async def refund_strawberries(username: str, amount: int) -> int:
+    """Restore a reservation; deleted accounts remain deleted."""
+    if amount <= 0:
+        raise ValueError("amount must be positive")
+    async with aiosqlite.connect(DB_PATH, timeout=SQLITE_BUSY_TIMEOUT) as db:
+        async with db.execute(
+            """UPDATE users SET strawberry_balance = strawberry_balance + ?
+               WHERE username = ? RETURNING strawberry_balance""",
+            (amount, username),
+        ) as cursor:
+            row = await cursor.fetchone()
+        await db.commit()
+    return int(row[0]) if row else 0
+
+
+async def add_strawberry(username: str, amount: int) -> int:
+    """充草莓，返回充后余额"""
+    async with aiosqlite.connect(DB_PATH, timeout=SQLITE_BUSY_TIMEOUT) as db:
+        await db.execute(
+            "UPDATE users SET strawberry_balance = strawberry_balance + ? WHERE username = ?",
+            (amount, username)
+        )
+        await db.commit()
+        async with db.execute(
+            "SELECT strawberry_balance FROM users WHERE username = ?", (username,)
+        ) as cursor:
+            row = await cursor.fetchone()
+    return row[0] if row else 0
+
+
+async def get_tag_prefs(username: str) -> dict[str, float]:
+    """返回用户的标签权重字典 {tag: score}"""
+    if not username:
+        return {}
+    async with aiosqlite.connect(DB_PATH, timeout=SQLITE_BUSY_TIMEOUT) as db:
+        db.row_factory = aiosqlite.Row
+        async with db.execute(
+            "SELECT tag, score FROM user_tag_prefs WHERE username = ?", (username,)
+        ) as cursor:
+            rows = await cursor.fetchall()
+    return {r["tag"]: r["score"] for r in rows}
+
+
+async def get_all_messages(username: str) -> list[dict]:
+    """取全部历史消息（用于聊天记录展示）"""
+    async with aiosqlite.connect(DB_PATH, timeout=SQLITE_BUSY_TIMEOUT) as db:
+        db.row_factory = aiosqlite.Row
+        async with db.execute(
+            "SELECT id, role, content, image_path, reference_image_paths, created_at FROM messages WHERE username = ? ORDER BY created_at ASC",
+            (username,)
+        ) as cursor:
+            rows = await cursor.fetchall()
+    return [message_with_image_references(r) for r in rows]
+
+
+# Local-watch additions: old tables and existing persistence semantics stay intact.
+LOCAL_WATCH_TABLES_DDL = (
+    """CREATE TABLE IF NOT EXISTS watch_devices (
+        id INTEGER PRIMARY KEY AUTOINCREMENT, username TEXT NOT NULL,
+        token_hash TEXT NOT NULL UNIQUE, name TEXT,
+        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+        last_seen_at TIMESTAMP, revoked INTEGER DEFAULT 0
+    )""",
+    """CREATE TABLE IF NOT EXISTS watch_rules (
+        id INTEGER PRIMARY KEY AUTOINCREMENT, username TEXT NOT NULL,
+        name TEXT NOT NULL, app_match TEXT, title_match TEXT,
+        kind TEXT NOT NULL, params TEXT NOT NULL,
+        interval_seconds INTEGER DEFAULT 3, cooldown_seconds INTEGER DEFAULT 60,
+        enabled INTEGER DEFAULT 1, conversation_id TEXT,
+        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+        updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+    )""",
+    """CREATE TABLE IF NOT EXISTS watch_alerts (
+        id INTEGER PRIMARY KEY AUTOINCREMENT, username TEXT NOT NULL,
+        rule_id INTEGER NOT NULL, created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+        summary TEXT NOT NULL CHECK(length(summary) <= 200),
+        message_id INTEGER, conversation_id TEXT
+    )""",
+)
+
+
+class WatchPrivateText(str):
+    """SQLite accepts str subclasses; worker DEBUG parameter repr stays redacted."""
+    def __repr__(self):
+        return "<local-watch private text>"
+
+
+def _watch_rule(row):
+    result = dict(row)
+    result["params"] = _json.loads(result["params"])
+    result["enabled"] = bool(result["enabled"])
+    return result
+
+
+async def create_watch_device(username: str, token_hash: str, name: str) -> dict:
+    async with aiosqlite.connect(DB_PATH, timeout=SQLITE_BUSY_TIMEOUT) as db:
+        db.row_factory = aiosqlite.Row
+        await db.execute("BEGIN IMMEDIATE")
+        if not await _users_exist(db, username):
+            raise ValueError("用户不存在")
+        async with db.execute("SELECT COUNT(*) FROM watch_devices WHERE username=? AND revoked=0", (username,)) as cursor:
+            if (await cursor.fetchone())[0] >= 3:
+                raise ValueError("最多配置 3 台有效设备")
+        cursor = await db.execute("INSERT INTO watch_devices(username,token_hash,name) VALUES(?,?,?)", (username, token_hash, name))
+        async with db.execute("SELECT id,name,created_at,last_seen_at,revoked FROM watch_devices WHERE id=?", (cursor.lastrowid,)) as selected:
+            result = dict(await selected.fetchone())
+        await db.commit()
+        return result
+
+
+async def list_watch_devices(username: str) -> list[dict]:
+    async with aiosqlite.connect(DB_PATH, timeout=SQLITE_BUSY_TIMEOUT) as db:
+        db.row_factory = aiosqlite.Row
+        async with db.execute("SELECT id,name,created_at,last_seen_at,revoked FROM watch_devices WHERE username=? ORDER BY id", (username,)) as cursor:
+            return [dict(row) for row in await cursor.fetchall()]
+
+
+async def revoke_watch_device(username: str, device_id: int) -> bool:
+    async with aiosqlite.connect(DB_PATH, timeout=SQLITE_BUSY_TIMEOUT) as db:
+        cursor = await db.execute("UPDATE watch_devices SET revoked=1 WHERE id=? AND username=?", (device_id, username))
+        await db.commit()
+        return cursor.rowcount > 0
+
+
+async def authenticate_watch_device(token_hash: str) -> dict | None:
+    async with aiosqlite.connect(DB_PATH, timeout=SQLITE_BUSY_TIMEOUT) as db:
+        db.row_factory = aiosqlite.Row
+        await db.execute("BEGIN IMMEDIATE")
+        async with db.execute("SELECT d.id,d.username FROM watch_devices d JOIN users u ON u.username=d.username WHERE d.token_hash=? AND d.revoked=0", (token_hash,)) as cursor:
+            row = await cursor.fetchone()
+        if row is None:
+            return None
+        await db.execute("UPDATE watch_devices SET last_seen_at=CURRENT_TIMESTAMP WHERE id=?", (row["id"],))
+        await db.commit()
+        return dict(row)
+
+
+async def list_watch_rules(username: str, *, enabled_only=False) -> list[dict]:
+    async with aiosqlite.connect(DB_PATH, timeout=SQLITE_BUSY_TIMEOUT) as db:
+        db.row_factory = aiosqlite.Row
+        sql = "SELECT * FROM watch_rules WHERE username=?" + (" AND enabled=1" if enabled_only else "") + " ORDER BY id"
+        async with db.execute(sql, (username,)) as cursor:
+            return [_watch_rule(row) for row in await cursor.fetchall()]
+
+
+async def get_watch_rule(username: str, rule_id: int) -> dict | None:
+    async with aiosqlite.connect(DB_PATH, timeout=SQLITE_BUSY_TIMEOUT) as db:
+        db.row_factory = aiosqlite.Row
+        async with db.execute("SELECT * FROM watch_rules WHERE username=? AND id=?", (username, rule_id)) as cursor:
+            row = await cursor.fetchone()
+        return _watch_rule(row) if row else None
+
+
+async def create_watch_rule(username: str, values: dict) -> dict:
+    fields = ("name", "app_match", "title_match", "kind", "params", "interval_seconds", "cooldown_seconds", "enabled", "conversation_id")
+    params = [(_json.dumps(values[key], ensure_ascii=False) if key == "params" else values[key]) for key in fields]
+    async with aiosqlite.connect(DB_PATH, timeout=SQLITE_BUSY_TIMEOUT) as db:
+        db.row_factory = aiosqlite.Row
+        await db.execute("BEGIN IMMEDIATE")
+        if not await _users_exist(db, username):
+            raise ValueError("用户不存在")
+        async with db.execute("SELECT COUNT(*) FROM watch_rules WHERE username=?", (username,)) as cursor:
+            if (await cursor.fetchone())[0] >= 20:
+                raise ValueError("最多配置 20 条规则")
+        cursor = await db.execute("INSERT INTO watch_rules(username," + ",".join(fields) + ") VALUES(" + ",".join("?" for _ in range(10)) + ")", [username, *params])
+        async with db.execute("SELECT * FROM watch_rules WHERE id=?", (cursor.lastrowid,)) as selected:
+            result = _watch_rule(await selected.fetchone())
+        await db.commit()
+        return result
+
+
+async def update_watch_rule(username: str, rule_id: int, values: dict) -> dict | None:
+    fields = ("name", "app_match", "title_match", "kind", "params", "interval_seconds", "cooldown_seconds", "enabled", "conversation_id")
+    params = [(_json.dumps(values[key], ensure_ascii=False) if key == "params" else values[key]) for key in fields]
+    async with aiosqlite.connect(DB_PATH, timeout=SQLITE_BUSY_TIMEOUT) as db:
+        db.row_factory = aiosqlite.Row
+        await db.execute("BEGIN IMMEDIATE")
+        cursor = await db.execute("UPDATE watch_rules SET " + ",".join(key + "=?" for key in fields) + ",updated_at=CURRENT_TIMESTAMP WHERE username=? AND id=?", [*params, username, rule_id])
+        if cursor.rowcount == 0:
+            return None
+        async with db.execute("SELECT * FROM watch_rules WHERE id=? AND username=?", (rule_id, username)) as selected:
+            result = _watch_rule(await selected.fetchone())
+        await db.commit()
+        return result
+
+
+async def delete_watch_rule(username: str, rule_id: int) -> bool:
+    async with aiosqlite.connect(DB_PATH, timeout=SQLITE_BUSY_TIMEOUT) as db:
+        cursor = await db.execute("DELETE FROM watch_rules WHERE username=? AND id=?", (username, rule_id))
+        await db.commit()
+        return cursor.rowcount > 0
+
+
+async def latest_watch_alert_time(username: str, rule_id: int) -> str | None:
+    async with aiosqlite.connect(DB_PATH, timeout=SQLITE_BUSY_TIMEOUT) as db:
+        async with db.execute("SELECT created_at FROM watch_alerts WHERE username=? AND rule_id=? ORDER BY id DESC LIMIT 1", (username, rule_id)) as cursor:
+            row = await cursor.fetchone()
+        return row[0] if row else None
+
+
+async def save_watch_alert(username: str, rule: dict, summary: str, content: str) -> dict | None:
+    """Use ordinary assistant persistence, then resolve its exact text/owner/target.
+
+    The service serializes watch writes per account. Never infer message ownership
+    from the last id globally: unrelated conversations can write concurrently.
+    """
+    from agent_store import resolve_chat_conversation, ResourceNotFound
+    target = rule.get("conversation_id") or None
+    try:
+        context = await resolve_chat_conversation(username, target)
+    except ResourceNotFound:
+        try:
+            context = await resolve_chat_conversation(username)
+        except ResourceNotFound:
+            return None
+    target = context["conversation"]["id"]
+    async with aiosqlite.connect(DB_PATH, timeout=SQLITE_BUSY_TIMEOUT) as db:
+        async with db.execute("SELECT COALESCE(MAX(id),0) FROM messages WHERE username=?", (username,)) as cursor:
+            before_id = (await cursor.fetchone())[0]
+    private_content = WatchPrivateText(content)
+    if not await save_message(username, "assistant", private_content, conversation_id=target):
+        # A deletion can race the initial resolution; retry the default once.
+        if not await save_message(username, "assistant", private_content, conversation_id=None):
+            return None
+        context = await resolve_chat_conversation(username)
+        target = context["conversation"]["id"]
+    async with aiosqlite.connect(DB_PATH, timeout=SQLITE_BUSY_TIMEOUT) as db:
+        db.row_factory = aiosqlite.Row
+        await db.execute("BEGIN IMMEDIATE")
+        async with db.execute("SELECT id,conversation_id FROM messages WHERE username=? AND role='assistant' AND conversation_id=? AND content=? AND id>? ORDER BY id LIMIT 1", (username, target, private_content, before_id)) as cursor:
+            message = await cursor.fetchone()
+        if message is None or not await _users_exist(db, username):
+            return None
+        cursor = await db.execute("INSERT INTO watch_alerts(username,rule_id,summary,message_id,conversation_id) VALUES(?,?,?,?,?)", (username, rule["id"], WatchPrivateText(summary[:200]), message["id"], message["conversation_id"]))
+        async with db.execute("SELECT id,created_at,message_id,conversation_id FROM watch_alerts WHERE id=?", (cursor.lastrowid,)) as selected:
+            result = dict(await selected.fetchone())
+        await db.commit()
+        return result
+
+
+async def list_watch_alerts(username: str, after: int = 0) -> list[dict]:
+    async with aiosqlite.connect(DB_PATH, timeout=SQLITE_BUSY_TIMEOUT) as db:
+        db.row_factory = aiosqlite.Row
+        async with db.execute("""SELECT a.id,COALESCE(r.name,'已删除规则') AS rule_name,
+                a.summary,a.created_at,a.conversation_id,a.message_id
+            FROM watch_alerts a LEFT JOIN watch_rules r ON r.id=a.rule_id AND r.username=a.username
+            WHERE a.username=? AND a.id>? ORDER BY a.id LIMIT 50""", (username, after)) as cursor:
+            return [dict(row) for row in await cursor.fetchall()]

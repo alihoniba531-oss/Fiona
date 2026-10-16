@@ -1,0 +1,8 @@
+{
+  "cwd": ".",
+  "command": [
+    "python3",
+    "docs/tasks/2026-10-11-local-watch/acceptance/r3-scope-audit.py"
+  ],
+  "environment_overrides": {}
+}

@@ -1,0 +1,10 @@
+{
+  "cwd": "backend",
+  "argv": [
+    "./.venv/bin/python",
+    "-m",
+    "pytest",
+    "tests/test_local_watch_swift_initialization.py",
+    "-q"
+  ]
+}

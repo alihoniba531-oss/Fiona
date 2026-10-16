@@ -1,0 +1,61 @@
+FFFFF                                                                    [100%]
+=================================== FAILURES ===================================
+___________ test_each_actual_heartbeat_serializes_the_status_tracker ___________
+
+    def test_each_actual_heartbeat_serializes_the_status_tracker():
+        source = WATCHER.read_text()
+        heartbeat = body(source, "private func heartbeatLoop()")
+>       assert "capture_status: captureStatus.reports()" in heartbeat
+E       AssertionError: assert 'capture_status: captureStatus.reports()' in '\n        while !Task.isCancelled {\n            let nextHeartbeat = Date().addingTimeInterval(30)\n            windo...inceNow)\n            if wait > 0 { try await Task.sleep(nanoseconds: UInt64(wait * 1_000_000_000)) }\n        }\n    '
+
+tests/test_local_watch_swift_capture_r3.py:41: AssertionError
+__ test_actual_screenshot_failure_and_success_update_status_before_hash_skip ___
+
+    def test_actual_screenshot_failure_and_success_update_status_before_hash_skip():
+        source = WATCHER.read_text()
+        capture = body(source, "private func captureLoop()")
+        screenshot = capture.index("SCScreenshotManager.captureImage(")
+>       failed = capture.index("captureStatus.failed(", screenshot)
+                 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+E       ValueError: substring not found
+
+tests/test_local_watch_swift_capture_r3.py:50: ValueError
+_ test_inventory_failure_keeps_heartbeats_and_is_not_replaced_by_window_missing _
+
+    def test_inventory_failure_keeps_heartbeats_and_is_not_replaced_by_window_missing():
+        source = WATCHER.read_text()
+        heartbeat = body(source, "private func heartbeatLoop()")
+        capture = body(source, "private func captureLoop()")
+>       assert "inventoryFailure = error" in heartbeat
+E       AssertionError: assert 'inventoryFailure = error' in '\n        while !Task.isCancelled {\n            let nextHeartbeat = Date().addingTimeInterval(30)\n            windo...inceNow)\n            if wait > 0 { try await Task.sleep(nanoseconds: UInt64(wait * 1_000_000_000)) }\n        }\n    '
+
+tests/test_local_watch_swift_capture_r3.py:62: AssertionError
+_ test_new_unit_tests_use_clt_and_are_outside_the_immutable_old_test_inventory _
+
+    def test_new_unit_tests_use_clt_and_are_outside_the_immutable_old_test_inventory():
+        tests = ROOT / "watcher-mac/CaptureStatusTests/test_local_watch_capture_status.swift"
+        source = tests.read_text()
+        assert "import Testing" in source and "import XCTest" not in source
+        assert source.count("@Test") >= 7
+        assert "NSError(domain:" in source and "addingTimeInterval(60)" in source
+        package = (ROOT / "watcher-mac/Package.swift").read_text()
+>       assert 'name: "FionaWatcherCaptureStatusTests"' in package
+E       assert 'name: "FionaWatcherCaptureStatusTests"' in '// swift-tools-version: 5.9\nimport PackageDescription\n\nlet package = Package(\n    name: "FionaWatcher",\n    plat...onaWatcherCore"]),\n        .testTarget(name: "FionaWatcherCoreTests", dependencies: ["FionaWatcherCore"])\n    ]\n)\n'
+
+tests/test_local_watch_swift_capture_r3.py:78: AssertionError
+_____ test_capture_log_sink_is_private_to_metadata_and_raw_error_identity ______
+
+    def test_capture_log_sink_is_private_to_metadata_and_raw_error_identity():
+>       assert STATUS.exists()
+E       AssertionError: assert False
+E        +  where False = exists()
+E        +    where exists = PosixPath('/Users/yangjing/Desktop/ai-workspace/Fiona/watcher-mac/Sources/FionaWatcherCore/CaptureStatus.swift').exists
+
+tests/test_local_watch_swift_capture_r3.py:84: AssertionError
+=========================== short test summary info ============================
+FAILED tests/test_local_watch_swift_capture_r3.py::test_each_actual_heartbeat_serializes_the_status_tracker
+FAILED tests/test_local_watch_swift_capture_r3.py::test_actual_screenshot_failure_and_success_update_status_before_hash_skip
+FAILED tests/test_local_watch_swift_capture_r3.py::test_inventory_failure_keeps_heartbeats_and_is_not_replaced_by_window_missing
+FAILED tests/test_local_watch_swift_capture_r3.py::test_new_unit_tests_use_clt_and_are_outside_the_immutable_old_test_inventory
+FAILED tests/test_local_watch_swift_capture_r3.py::test_capture_log_sink_is_private_to_metadata_and_raw_error_identity
+5 failed in 0.14s

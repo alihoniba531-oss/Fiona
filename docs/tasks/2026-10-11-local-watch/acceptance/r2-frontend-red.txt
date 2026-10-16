@@ -1,0 +1,275 @@
+FFFFFFFFF.                                                               [100%]
+=================================== FAILURES ===================================
+_ test_inserted_message_uses_exact_stored_content_after_rule_rename_or_delete[\u521a\u6539\u7684\u65b0\u540d\u5b57] _
+
+current_rule_name = '刚改的新名字'
+
+    @pytest.mark.parametrize("current_rule_name", ["刚改的新名字", "已删除规则"])
+    def test_inserted_message_uses_exact_stored_content_after_rule_rename_or_delete(current_rule_name):
+        content = "【本机提醒 · 微信】张三：今晚开会\n请准时（规则：盯老板）"
+        alert = {
+            "id": 7, "message_id": 42, "conversation_id": "current",
+            "rule_name": current_rule_name, "summary": "已改变的摘要",
+            "content": content, "created_at": "2026-10-11 12:00:00",
+        }
+        actual = run_node("const alert=" + json.dumps(alert, ensure_ascii=False) + ";\n"
+                          "process.stdout.write(JSON.stringify(localWatchMessage(alert)));")
+>       assert actual["content"] == content
+E       AssertionError: assert '【本机提醒 · 刚改的新...摘要（规则：刚改的新名字）' == '【本机提醒 · 微信】张...\n请准时（规则：盯老板）'
+E         
+E         + 【本机提醒 · 刚改的新名字】已改变的摘要（规则：刚改的新名字）
+E         - 【本机提醒 · 微信】张三：今晚开会
+E         - 请准时（规则：盯老板）
+
+backend/tests/test_local_watch_frontend_r2.py:71: AssertionError
+_ test_inserted_message_uses_exact_stored_content_after_rule_rename_or_delete[\u5df2\u5220\u9664\u89c4\u5219] _
+
+current_rule_name = '已删除规则'
+
+    @pytest.mark.parametrize("current_rule_name", ["刚改的新名字", "已删除规则"])
+    def test_inserted_message_uses_exact_stored_content_after_rule_rename_or_delete(current_rule_name):
+        content = "【本机提醒 · 微信】张三：今晚开会\n请准时（规则：盯老板）"
+        alert = {
+            "id": 7, "message_id": 42, "conversation_id": "current",
+            "rule_name": current_rule_name, "summary": "已改变的摘要",
+            "content": content, "created_at": "2026-10-11 12:00:00",
+        }
+        actual = run_node("const alert=" + json.dumps(alert, ensure_ascii=False) + ";\n"
+                          "process.stdout.write(JSON.stringify(localWatchMessage(alert)));")
+>       assert actual["content"] == content
+E       AssertionError: assert '【本机提醒 · 已删除规...的摘要（规则：已删除规则）' == '【本机提醒 · 微信】张...\n请准时（规则：盯老板）'
+E         
+E         + 【本机提醒 · 已删除规则】已改变的摘要（规则：已删除规则）
+E         - 【本机提醒 · 微信】张三：今晚开会
+E         - 请准时（规则：盯老板）
+
+backend/tests/test_local_watch_frontend_r2.py:71: AssertionError
+___ test_current_chat_retains_exact_content_deduplication_and_busy_buffering ___
+
+    def test_current_chat_retains_exact_content_deduplication_and_busy_buffering():
+        content = "【本机提醒 · Safari】下载完成（规则：下载）"
+        alert = {"id": 7, "message_id": 42, "conversation_id": "current", "rule_name": "后来改名",
+                 "summary": "忽略这个旧字段", "content": content, "created_at": "2026-10-11T12:00:00Z"}
+        script = "const alert=" + json.dumps(alert, ensure_ascii=False) + ";\n" + """
+            const original=[{id:'db-2',dbId:2,content:'已有消息',role:'assistant'}];
+            const busy=appendLocalWatchMessages(original,[alert],'current',true);
+            const resumed=appendLocalWatchMessages(busy,[alert],'current',false);
+            const duplicate=appendLocalWatchMessages(resumed,[alert],'current',false);
+            const other=appendLocalWatchMessages(original,[alert],'other',false);
+            process.stdout.write(JSON.stringify({busy,resumed,duplicate,other}));
+        """
+        actual = run_node(script)
+        assert len(actual["busy"]) == len(actual["other"]) == 1
+        assert len(actual["resumed"]) == len(actual["duplicate"]) == 2
+>       assert actual["resumed"][1]["content"] == actual["duplicate"][1]["content"] == content
+E       AssertionError: assert '【本机提醒 · 后来改名...个旧字段（规则：后来改名）' == '【本机提醒 · Safari】下载完成（规则：下载）'
+E         
+E         - 【本机提醒 · Safari】下载完成（规则：下载）
+E         + 【本机提醒 · 后来改名】忽略这个旧字段（规则：后来改名）
+
+backend/tests/test_local_watch_frontend_r2.py:91: AssertionError
+____ test_alert_contract_requires_content_and_has_no_reconstructed_fallback ____
+
+    def test_alert_contract_requires_content_and_has_no_reconstructed_fallback():
+        source = LOGIC.read_text(encoding="utf-8")
+        interface = source.split("export interface LocalWatchAlert {", 1)[1].split("}", 1)[0]
+>       assert re.search(r"\bcontent\s*:\s*string\b", interface)
+E       AssertionError: assert None
+E        +  where None = <function search at 0x100ccf320>('\\bcontent\\s*:\\s*string\\b', '\n  id: number; rule_name: string; summary: string; created_at: string;\n  conversation_id: string; message_id: number;\n')
+E        +    where <function search at 0x100ccf320> = re.search
+
+backend/tests/test_local_watch_frontend_r2.py:97: AssertionError
+_ test_window_click_prefills_both_matches_at_most_60_unicode_characters[\u5e94\u5e94\u5e94\u5e94\u5e94\u5e94\u5e94\u5e94\u5e94\u5e94\u5e94\u5e94\u5e94\u5e94\u5e94\u5e94\u5e94\u5e94\u5e94\u5e94\u5e94\u5e94\u5e94\u5e94\u5e94\u5e94\u5e94\u5e94\u5e94\u5e94\u5e94\u5e94\u5e94\u5e94\u5e94\u5e94\u5e94\u5e94\u5e94\u5e94\u5e94\u5e94\u5e94\u5e94\u5e94\u5e94\u5e94\u5e94\u5e94\u5e94\u5e94\u5e94\u5e94\u5e94\u5e94\u5e94\u5e94\u5e94\u5e94\u5e94\u5e94-\u9898\u9898\u9898\u9898\u9898\u9898\u9898\u9898\u9898\u9898\u9898\u9898\u9898\u9898\u9898\u9898\u9898\u9898\u9898\u9898\u9898\u9898\u9898\u9898\u9898\u9898\u9898\u9898\u9898\u9898\u9898\u9898\u9898\u9898\u9898\u9898\u9898\u9898\u9898\u9898\u9898\u9898\u9898\u9898\u9898\u9898\u9898\u9898\u9898\u9898\u9898\u9898\u9898\u9898\u9898\u9898\u9898\u9898\u9898\u9898\u9898\u9898\u9898\u9898\u9898\u9898\u9898\u9898\u9898\u9898\u9898\u9898\u9898\u9898\u9898\u9898\u9898\u9898\u9898\u9898] _
+
+app_name = '应应应应应应应应应应应应应应应应应应应应应应应应应应应应应应应应应应应应应应应应应应应应应应应应应应应应应应应应应应应应应'
+title = '题题题题题题题题题题题题题题题题题题题题题题题题题题题题题题题题题题题题题题题题题题题题题题题题题题题题题题题题题题题题题题题题题题题题题题题题题题题题题题题题'
+
+    @pytest.mark.parametrize("app_name,title", [
+        ("应" * 61, "题" * 80),
+        ("😀" * 80, "🚀" * 80),
+        ("微信😀" * 30, "群聊🚀" * 30),
+        ("A" * 60, "B" * 60),
+        ("微信", "工作群"),
+        ("微信", ""),
+    ])
+    def test_window_click_prefills_both_matches_at_most_60_unicode_characters(app_name, title):
+        source = SETTINGS.read_text(encoding="utf-8")
+        # Execute the real JSX window-click draft expression, without React, Next,
+        # TypeScript compilation or node_modules. This also tests the wired handler.
+        start = source.index("editRule(); setDraft(") + len("editRule(); setDraft(")
+        depth = 1
+        end = start
+        while depth:
+            depth += (source[end] == "(") - (source[end] == ")")
+            end += 1
+        expression = source[start:end - 1]
+        window = {"app_name": app_name, "title": title, "bundle_id": "org.example.app"}
+        script = "const window=" + json.dumps(window, ensure_ascii=False) + ";\n"
+        script += "const emptyRule=()=>localWatchDraft(); const draft=" + expression + ";\n"
+        script += "process.stdout.write(JSON.stringify({draft,payload:localWatchRulePayload(draft)}));"
+        actual = run_node(script)
+>       assert actual["draft"]["app_match"] == app_name[:60]
+E       AssertionError: assert '应应应应应应应应应应应应...应应应应应应应应应应应应应' == '应应应应应应应应应应应应...应应应应应应应应应应应应应'
+E         
+E         Skipping 49 identical leading characters in diff, use -v to show
+E         - 应应应应应应应应应应应
+E         + 应应应应应应应应应应应应
+E         ?            +
+
+backend/tests/test_local_watch_frontend_r2.py:127: AssertionError
+_ test_window_click_prefills_both_matches_at_most_60_unicode_characters[\U0001f600\U0001f600\U0001f600\U0001f600\U0001f600\U0001f600\U0001f600\U0001f600\U0001f600\U0001f600\U0001f600\U0001f600\U0001f600\U0001f600\U0001f600\U0001f600\U0001f600\U0001f600\U0001f600\U0001f600\U0001f600\U0001f600\U0001f600\U0001f600\U0001f600\U0001f600\U0001f600\U0001f600\U0001f600\U0001f600\U0001f600\U0001f600\U0001f600\U0001f600\U0001f600\U0001f600\U0001f600\U0001f600\U0001f600\U0001f600\U0001f600\U0001f600\U0001f600\U0001f600\U0001f600\U0001f600\U0001f600\U0001f600\U0001f600\U0001f600\U0001f600\U0001f600\U0001f600\U0001f600\U0001f600\U0001f600\U0001f600\U0001f600\U0001f600\U0001f600\U0001f600\U0001f600\U0001f600\U0001f600\U0001f600\U0001f600\U0001f600\U0001f600\U0001f600\U0001f600\U0001f600\U0001f600\U0001f600\U0001f600\U0001f600\U0001f600\U0001f600\U0001f600\U0001f600\U0001f600-\U0001f680\U0001f680\U0001f680\U0001f680\U0001f680\U0001f680\U0001f680\U0001f680\U0001f680\U0001f680\U0001f680\U0001f680\U0001f680\U0001f680\U0001f680\U0001f680\U0001f680\U0001f680\U0001f680\U0001f680\U0001f680\U0001f680\U0001f680\U0001f680\U0001f680\U0001f680\U0001f680\U0001f680\U0001f680\U0001f680\U0001f680\U0001f680\U0001f680\U0001f680\U0001f680\U0001f680\U0001f680\U0001f680\U0001f680\U0001f680\U0001f680\U0001f680\U0001f680\U0001f680\U0001f680\U0001f680\U0001f680\U0001f680\U0001f680\U0001f680\U0001f680\U0001f680\U0001f680\U0001f680\U0001f680\U0001f680\U0001f680\U0001f680\U0001f680\U0001f680\U0001f680\U0001f680\U0001f680\U0001f680\U0001f680\U0001f680\U0001f680\U0001f680\U0001f680\U0001f680\U0001f680\U0001f680\U0001f680\U0001f680\U0001f680\U0001f680\U0001f680\U0001f680\U0001f680\U0001f680] _
+
+app_name = '😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀'
+title = '🚀🚀🚀🚀🚀🚀🚀🚀🚀🚀🚀🚀🚀🚀🚀🚀🚀🚀🚀🚀🚀🚀🚀🚀🚀🚀🚀🚀🚀🚀🚀🚀🚀🚀🚀🚀🚀🚀🚀🚀🚀🚀🚀🚀🚀🚀🚀🚀🚀🚀🚀🚀🚀🚀🚀🚀🚀🚀🚀🚀🚀🚀🚀🚀🚀🚀🚀🚀🚀🚀🚀🚀🚀🚀🚀🚀🚀🚀🚀🚀'
+
+    @pytest.mark.parametrize("app_name,title", [
+        ("应" * 61, "题" * 80),
+        ("😀" * 80, "🚀" * 80),
+        ("微信😀" * 30, "群聊🚀" * 30),
+        ("A" * 60, "B" * 60),
+        ("微信", "工作群"),
+        ("微信", ""),
+    ])
+    def test_window_click_prefills_both_matches_at_most_60_unicode_characters(app_name, title):
+        source = SETTINGS.read_text(encoding="utf-8")
+        # Execute the real JSX window-click draft expression, without React, Next,
+        # TypeScript compilation or node_modules. This also tests the wired handler.
+        start = source.index("editRule(); setDraft(") + len("editRule(); setDraft(")
+        depth = 1
+        end = start
+        while depth:
+            depth += (source[end] == "(") - (source[end] == ")")
+            end += 1
+        expression = source[start:end - 1]
+        window = {"app_name": app_name, "title": title, "bundle_id": "org.example.app"}
+        script = "const window=" + json.dumps(window, ensure_ascii=False) + ";\n"
+        script += "const emptyRule=()=>localWatchDraft(); const draft=" + expression + ";\n"
+        script += "process.stdout.write(JSON.stringify({draft,payload:localWatchRulePayload(draft)}));"
+        actual = run_node(script)
+>       assert actual["draft"]["app_match"] == app_name[:60]
+E       AssertionError: assert '😀😀😀😀😀😀😀😀😀😀😀😀...😀😀😀😀😀😀😀😀😀😀😀😀😀' == '😀😀😀😀😀😀😀😀😀😀😀😀...😀😀😀😀😀😀😀😀😀😀😀😀😀'
+E         
+E         Skipping 49 identical leading characters in diff, use -v to show
+E         - 😀😀😀😀😀😀😀😀😀😀😀
+E         + 😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀
+
+backend/tests/test_local_watch_frontend_r2.py:127: AssertionError
+_ test_window_click_prefills_both_matches_at_most_60_unicode_characters[\u5fae\u4fe1\U0001f600\u5fae\u4fe1\U0001f600\u5fae\u4fe1\U0001f600\u5fae\u4fe1\U0001f600\u5fae\u4fe1\U0001f600\u5fae\u4fe1\U0001f600\u5fae\u4fe1\U0001f600\u5fae\u4fe1\U0001f600\u5fae\u4fe1\U0001f600\u5fae\u4fe1\U0001f600\u5fae\u4fe1\U0001f600\u5fae\u4fe1\U0001f600\u5fae\u4fe1\U0001f600\u5fae\u4fe1\U0001f600\u5fae\u4fe1\U0001f600\u5fae\u4fe1\U0001f600\u5fae\u4fe1\U0001f600\u5fae\u4fe1\U0001f600\u5fae\u4fe1\U0001f600\u5fae\u4fe1\U0001f600\u5fae\u4fe1\U0001f600\u5fae\u4fe1\U0001f600\u5fae\u4fe1\U0001f600\u5fae\u4fe1\U0001f600\u5fae\u4fe1\U0001f600\u5fae\u4fe1\U0001f600\u5fae\u4fe1\U0001f600\u5fae\u4fe1\U0001f600\u5fae\u4fe1\U0001f600\u5fae\u4fe1\U0001f600-\u7fa4\u804a\U0001f680\u7fa4\u804a\U0001f680\u7fa4\u804a\U0001f680\u7fa4\u804a\U0001f680\u7fa4\u804a\U0001f680\u7fa4\u804a\U0001f680\u7fa4\u804a\U0001f680\u7fa4\u804a\U0001f680\u7fa4\u804a\U0001f680\u7fa4\u804a\U0001f680\u7fa4\u804a\U0001f680\u7fa4\u804a\U0001f680\u7fa4\u804a\U0001f680\u7fa4\u804a\U0001f680\u7fa4\u804a\U0001f680\u7fa4\u804a\U0001f680\u7fa4\u804a\U0001f680\u7fa4\u804a\U0001f680\u7fa4\u804a\U0001f680\u7fa4\u804a\U0001f680\u7fa4\u804a\U0001f680\u7fa4\u804a\U0001f680\u7fa4\u804a\U0001f680\u7fa4\u804a\U0001f680\u7fa4\u804a\U0001f680\u7fa4\u804a\U0001f680\u7fa4\u804a\U0001f680\u7fa4\u804a\U0001f680\u7fa4\u804a\U0001f680\u7fa4\u804a\U0001f680] _
+
+app_name = '微信😀微信😀微信😀微信😀微信😀微信😀微信😀微信😀微信😀微信😀微信😀微信😀微信😀微信😀微信😀微信😀微信😀微信😀微信😀微信😀微信😀微信😀微信😀微信😀微信😀微信😀微信😀微信😀微信😀微信😀'
+title = '群聊🚀群聊🚀群聊🚀群聊🚀群聊🚀群聊🚀群聊🚀群聊🚀群聊🚀群聊🚀群聊🚀群聊🚀群聊🚀群聊🚀群聊🚀群聊🚀群聊🚀群聊🚀群聊🚀群聊🚀群聊🚀群聊🚀群聊🚀群聊🚀群聊🚀群聊🚀群聊🚀群聊🚀群聊🚀群聊🚀'
+
+    @pytest.mark.parametrize("app_name,title", [
+        ("应" * 61, "题" * 80),
+        ("😀" * 80, "🚀" * 80),
+        ("微信😀" * 30, "群聊🚀" * 30),
+        ("A" * 60, "B" * 60),
+        ("微信", "工作群"),
+        ("微信", ""),
+    ])
+    def test_window_click_prefills_both_matches_at_most_60_unicode_characters(app_name, title):
+        source = SETTINGS.read_text(encoding="utf-8")
+        # Execute the real JSX window-click draft expression, without React, Next,
+        # TypeScript compilation or node_modules. This also tests the wired handler.
+        start = source.index("editRule(); setDraft(") + len("editRule(); setDraft(")
+        depth = 1
+        end = start
+        while depth:
+            depth += (source[end] == "(") - (source[end] == ")")
+            end += 1
+        expression = source[start:end - 1]
+        window = {"app_name": app_name, "title": title, "bundle_id": "org.example.app"}
+        script = "const window=" + json.dumps(window, ensure_ascii=False) + ";\n"
+        script += "const emptyRule=()=>localWatchDraft(); const draft=" + expression + ";\n"
+        script += "process.stdout.write(JSON.stringify({draft,payload:localWatchRulePayload(draft)}));"
+        actual = run_node(script)
+>       assert actual["draft"]["app_match"] == app_name[:60]
+E       AssertionError: assert '微信😀微信😀微信😀微信😀...😀微信😀微信😀微信😀微信😀' == '微信😀微信😀微信😀微信😀...😀微信😀微信😀微信😀微信😀'
+E         
+E         Skipping 49 identical leading characters in diff, use -v to show
+E         - 信😀微信😀微信😀微信😀
+E         + 信😀微信😀微信😀微信😀微信😀微信😀微信😀微信😀微信😀微信😀微信😀微信😀微信😀微信😀
+
+backend/tests/test_local_watch_frontend_r2.py:127: AssertionError
+_ test_window_click_prefills_both_matches_at_most_60_unicode_characters[AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA-BBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBB] _
+
+app_name = 'AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA'
+title = 'BBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBB'
+
+    @pytest.mark.parametrize("app_name,title", [
+        ("应" * 61, "题" * 80),
+        ("😀" * 80, "🚀" * 80),
+        ("微信😀" * 30, "群聊🚀" * 30),
+        ("A" * 60, "B" * 60),
+        ("微信", "工作群"),
+        ("微信", ""),
+    ])
+    def test_window_click_prefills_both_matches_at_most_60_unicode_characters(app_name, title):
+        source = SETTINGS.read_text(encoding="utf-8")
+        # Execute the real JSX window-click draft expression, without React, Next,
+        # TypeScript compilation or node_modules. This also tests the wired handler.
+        start = source.index("editRule(); setDraft(") + len("editRule(); setDraft(")
+        depth = 1
+        end = start
+        while depth:
+            depth += (source[end] == "(") - (source[end] == ")")
+            end += 1
+        expression = source[start:end - 1]
+        window = {"app_name": app_name, "title": title, "bundle_id": "org.example.app"}
+        script = "const window=" + json.dumps(window, ensure_ascii=False) + ";\n"
+        script += "const emptyRule=()=>localWatchDraft(); const draft=" + expression + ";\n"
+        script += "process.stdout.write(JSON.stringify({draft,payload:localWatchRulePayload(draft)}));"
+        actual = run_node(script)
+        assert actual["draft"]["app_match"] == app_name[:60]
+>       assert actual["draft"]["title_match"] == title[:60]
+E       AssertionError: assert '' == 'BBBBBBBBBBBB...BBBBBBBBBBBBB'
+E         
+E         - BBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBB
+
+backend/tests/test_local_watch_frontend_r2.py:128: AssertionError
+_ test_window_click_prefills_both_matches_at_most_60_unicode_characters[\u5fae\u4fe1-\u5de5\u4f5c\u7fa4] _
+
+app_name = '微信', title = '工作群'
+
+    @pytest.mark.parametrize("app_name,title", [
+        ("应" * 61, "题" * 80),
+        ("😀" * 80, "🚀" * 80),
+        ("微信😀" * 30, "群聊🚀" * 30),
+        ("A" * 60, "B" * 60),
+        ("微信", "工作群"),
+        ("微信", ""),
+    ])
+    def test_window_click_prefills_both_matches_at_most_60_unicode_characters(app_name, title):
+        source = SETTINGS.read_text(encoding="utf-8")
+        # Execute the real JSX window-click draft expression, without React, Next,
+        # TypeScript compilation or node_modules. This also tests the wired handler.
+        start = source.index("editRule(); setDraft(") + len("editRule(); setDraft(")
+        depth = 1
+        end = start
+        while depth:
+            depth += (source[end] == "(") - (source[end] == ")")
+            end += 1
+        expression = source[start:end - 1]
+        window = {"app_name": app_name, "title": title, "bundle_id": "org.example.app"}
+        script = "const window=" + json.dumps(window, ensure_ascii=False) + ";\n"
+        script += "const emptyRule=()=>localWatchDraft(); const draft=" + expression + ";\n"
+        script += "process.stdout.write(JSON.stringify({draft,payload:localWatchRulePayload(draft)}));"
+        actual = run_node(script)
+        assert actual["draft"]["app_match"] == app_name[:60]
+>       assert actual["draft"]["title_match"] == title[:60]
+E       AssertionError: assert '' == '工作群'
+E         
+E         - 工作群
+
+backend/tests/test_local_watch_frontend_r2.py:128: AssertionError
+=========================== short test summary info ============================
+FAILED backend/tests/test_local_watch_frontend_r2.py::test_inserted_message_uses_exact_stored_content_after_rule_rename_or_delete[\u521a\u6539\u7684\u65b0\u540d\u5b57]
+FAILED backend/tests/test_local_watch_frontend_r2.py::test_inserted_message_uses_exact_stored_content_after_rule_rename_or_delete[\u5df2\u5220\u9664\u89c4\u5219]
+FAILED backend/tests/test_local_watch_frontend_r2.py::test_current_chat_retains_exact_content_deduplication_and_busy_buffering
+FAILED backend/tests/test_local_watch_frontend_r2.py::test_alert_contract_requires_content_and_has_no_reconstructed_fallback
+FAILED backend/tests/test_local_watch_frontend_r2.py::test_window_click_prefills_both_matches_at_most_60_unicode_characters[\u5e94\u5e94\u5e94\u5e94\u5e94\u5e94\u5e94\u5e94\u5e94\u5e94\u5e94\u5e94\u5e94\u5e94\u5e94\u5e94\u5e94\u5e94\u5e94\u5e94\u5e94\u5e94\u5e94\u5e94\u5e94\u5e94\u5e94\u5e94\u5e94\u5e94\u5e94\u5e94\u5e94\u5e94\u5e94\u5e94\u5e94\u5e94\u5e94\u5e94\u5e94\u5e94\u5e94\u5e94\u5e94\u5e94\u5e94\u5e94\u5e94\u5e94\u5e94\u5e94\u5e94\u5e94\u5e94\u5e94\u5e94\u5e94\u5e94\u5e94\u5e94-\u9898\u9898\u9898\u9898\u9898\u9898\u9898\u9898\u9898\u9898\u9898\u9898\u9898\u9898\u9898\u9898\u9898\u9898\u9898\u9898\u9898\u9898\u9898\u9898\u9898\u9898\u9898\u9898\u9898\u9898\u9898\u9898\u9898\u9898\u9898\u9898\u9898\u9898\u9898\u9898\u9898\u9898\u9898\u9898\u9898\u9898\u9898\u9898\u9898\u9898\u9898\u9898\u9898\u9898\u9898\u9898\u9898\u9898\u9898\u9898\u9898\u9898\u9898\u9898\u9898\u9898\u9898\u9898\u9898\u9898\u9898\u9898\u9898\u9898\u9898\u9898\u9898\u9898\u9898\u9898]
+FAILED backend/tests/test_local_watch_frontend_r2.py::test_window_click_prefills_both_matches_at_most_60_unicode_characters[\U0001f600\U0001f600\U0001f600\U0001f600\U0001f600\U0001f600\U0001f600\U0001f600\U0001f600\U0001f600\U0001f600\U0001f600\U0001f600\U0001f600\U0001f600\U0001f600\U0001f600\U0001f600\U0001f600\U0001f600\U0001f600\U0001f600\U0001f600\U0001f600\U0001f600\U0001f600\U0001f600\U0001f600\U0001f600\U0001f600\U0001f600\U0001f600\U0001f600\U0001f600\U0001f600\U0001f600\U0001f600\U0001f600\U0001f600\U0001f600\U0001f600\U0001f600\U0001f600\U0001f600\U0001f600\U0001f600\U0001f600\U0001f600\U0001f600\U0001f600\U0001f600\U0001f600\U0001f600\U0001f600\U0001f600\U0001f600\U0001f600\U0001f600\U0001f600\U0001f600\U0001f600\U0001f600\U0001f600\U0001f600\U0001f600\U0001f600\U0001f600\U0001f600\U0001f600\U0001f600\U0001f600\U0001f600\U0001f600\U0001f600\U0001f600\U0001f600\U0001f600\U0001f600\U0001f600\U0001f600-\U0001f680\U0001f680\U0001f680\U0001f680\U0001f680\U0001f680\U0001f680\U0001f680\U0001f680\U0001f680\U0001f680\U0001f680\U0001f680\U0001f680\U0001f680\U0001f680\U0001f680\U0001f680\U0001f680\U0001f680\U0001f680\U0001f680\U0001f680\U0001f680\U0001f680\U0001f680\U0001f680\U0001f680\U0001f680\U0001f680\U0001f680\U0001f680\U0001f680\U0001f680\U0001f680\U0001f680\U0001f680\U0001f680\U0001f680\U0001f680\U0001f680\U0001f680\U0001f680\U0001f680\U0001f680\U0001f680\U0001f680\U0001f680\U0001f680\U0001f680\U0001f680\U0001f680\U0001f680\U0001f680\U0001f680\U0001f680\U0001f680\U0001f680\U0001f680\U0001f680\U0001f680\U0001f680\U0001f680\U0001f680\U0001f680\U0001f680\U0001f680\U0001f680\U0001f680\U0001f680\U0001f680\U0001f680\U0001f680\U0001f680\U0001f680\U0001f680\U0001f680\U0001f680\U0001f680\U0001f680]
+FAILED backend/tests/test_local_watch_frontend_r2.py::test_window_click_prefills_both_matches_at_most_60_unicode_characters[\u5fae\u4fe1\U0001f600\u5fae\u4fe1\U0001f600\u5fae\u4fe1\U0001f600\u5fae\u4fe1\U0001f600\u5fae\u4fe1\U0001f600\u5fae\u4fe1\U0001f600\u5fae\u4fe1\U0001f600\u5fae\u4fe1\U0001f600\u5fae\u4fe1\U0001f600\u5fae\u4fe1\U0001f600\u5fae\u4fe1\U0001f600\u5fae\u4fe1\U0001f600\u5fae\u4fe1\U0001f600\u5fae\u4fe1\U0001f600\u5fae\u4fe1\U0001f600\u5fae\u4fe1\U0001f600\u5fae\u4fe1\U0001f600\u5fae\u4fe1\U0001f600\u5fae\u4fe1\U0001f600\u5fae\u4fe1\U0001f600\u5fae\u4fe1\U0001f600\u5fae\u4fe1\U0001f600\u5fae\u4fe1\U0001f600\u5fae\u4fe1\U0001f600\u5fae\u4fe1\U0001f600\u5fae\u4fe1\U0001f600\u5fae\u4fe1\U0001f600\u5fae\u4fe1\U0001f600\u5fae\u4fe1\U0001f600\u5fae\u4fe1\U0001f600-\u7fa4\u804a\U0001f680\u7fa4\u804a\U0001f680\u7fa4\u804a\U0001f680\u7fa4\u804a\U0001f680\u7fa4\u804a\U0001f680\u7fa4\u804a\U0001f680\u7fa4\u804a\U0001f680\u7fa4\u804a\U0001f680\u7fa4\u804a\U0001f680\u7fa4\u804a\U0001f680\u7fa4\u804a\U0001f680\u7fa4\u804a\U0001f680\u7fa4\u804a\U0001f680\u7fa4\u804a\U0001f680\u7fa4\u804a\U0001f680\u7fa4\u804a\U0001f680\u7fa4\u804a\U0001f680\u7fa4\u804a\U0001f680\u7fa4\u804a\U0001f680\u7fa4\u804a\U0001f680\u7fa4\u804a\U0001f680\u7fa4\u804a\U0001f680\u7fa4\u804a\U0001f680\u7fa4\u804a\U0001f680\u7fa4\u804a\U0001f680\u7fa4\u804a\U0001f680\u7fa4\u804a\U0001f680\u7fa4\u804a\U0001f680\u7fa4\u804a\U0001f680\u7fa4\u804a\U0001f680]
+FAILED backend/tests/test_local_watch_frontend_r2.py::test_window_click_prefills_both_matches_at_most_60_unicode_characters[AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA-BBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBB]
+FAILED backend/tests/test_local_watch_frontend_r2.py::test_window_click_prefills_both_matches_at_most_60_unicode_characters[\u5fae\u4fe1-\u5de5\u4f5c\u7fa4]
+9 failed, 1 passed in 0.44s

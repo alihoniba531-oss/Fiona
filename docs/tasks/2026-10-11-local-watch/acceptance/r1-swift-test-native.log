@@ -1,0 +1,41 @@
+warning: /Users/yangjing/Library/org.swift.swiftpm/configuration is not accessible or not writable, disabling user-level cache features.
+warning: /Users/yangjing/Library/org.swift.swiftpm/security is not accessible or not writable, disabling user-level cache features.
+Building for debugging...
+[0/12] Write sources
+[2/12] /Users/yangjing/Desktop/ai-workspace/Fiona/watcher-mac/.build/arm64-apple-macosx/debug/FionaWatcherPackageTests.derived/runner.swift
+[2/12] Write fiona-watcher-entitlement.plist
+[4/12] Write sources
+[6/12] Write swift-version--1AB21518FC5DEDBE.txt
+[8/17] Compiling FionaWatcherCore Scheduling.swift
+[9/17] Compiling FionaWatcherCore Watcher.swift
+[10/17] Emitting module FionaWatcherCore
+[11/17] Compiling FionaWatcherCore OCR.swift
+[12/17] Compiling FionaWatcherCore LineProcessing.swift
+error: emit-module command failed with exit code 1 (use -v to see invocation)
+[13/23] Emitting module FionaWatcherCoreTests
+/Users/yangjing/Desktop/ai-workspace/Fiona/watcher-mac/Tests/FionaWatcherCoreTests/test_local_watch_logic.swift:1:8: error: no such module 'Testing'
+ 1 | import Testing
+   |        `- error: no such module 'Testing'
+ 2 | @testable import FionaWatcherCore
+ 3 | 
+[14/23] Compiling FionaWatcherCoreTests test_local_watch_logic.swift
+/Users/yangjing/Desktop/ai-workspace/Fiona/watcher-mac/Tests/FionaWatcherCoreTests/test_local_watch_logic.swift:1:8: error: no such module 'Testing'
+ 1 | import Testing
+   |        `- error: no such module 'Testing'
+ 2 | @testable import FionaWatcherCore
+ 3 | 
+[15/23] Compiling FionaWatcherCoreTests test_local_watch_ocr.swift
+/Users/yangjing/Desktop/ai-workspace/Fiona/watcher-mac/Tests/FionaWatcherCoreTests/test_local_watch_logic.swift:1:8: error: no such module 'Testing'
+ 1 | import Testing
+   |        `- error: no such module 'Testing'
+ 2 | @testable import FionaWatcherCore
+ 3 | 
+[16/23] Compiling FionaWatcherCoreTests test_local_watch_scheduling.swift
+/Users/yangjing/Desktop/ai-workspace/Fiona/watcher-mac/Tests/FionaWatcherCoreTests/test_local_watch_logic.swift:1:8: error: no such module 'Testing'
+ 1 | import Testing
+   |        `- error: no such module 'Testing'
+ 2 | @testable import FionaWatcherCore
+ 3 | 
+[17/23] Emitting module fiona_watcher
+warning: '--build-system native' has been deprecated and will be removed in a future release; please report an issue at https://github.com/swiftlang/swift-package-manager/issues if you are unable to adopt the default build system.
+error: fatalError

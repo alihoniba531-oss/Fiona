@@ -1,0 +1,10 @@
+/private/tmp/fiona-watch-check/OCR-CPU.swift:11:17: warning: 'usesCPUOnly' was deprecated in macOS 14.0 [#DeprecatedDeclaration]
+ 9 |         request.recognitionLanguages = ["zh-Hans", "en-US"]
+10 |         request.usesLanguageCorrection = true
+11 |         request.usesCPUOnly = true
+   |                 `- warning: 'usesCPUOnly' was deprecated in macOS 14.0 [#DeprecatedDeclaration]
+12 |         try VNImageRequestHandler(cgImage: image).perform([request])
+13 |         let observations = (request.results ?? []).sorted { $0.boundingBox.maxY > $1.boundingBox.maxY }
+
+[#DeprecatedDeclaration]: <https://docs.swift.org/compiler/documentation/diagnostics/deprecated-declaration>
+Swift/ErrorType.swift:254: Fatal error: Error raised at top level: Foundation._GenericObjCError.nilError

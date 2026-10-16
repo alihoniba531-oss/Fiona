@@ -1,0 +1,27 @@
+ M CLAUDE.md
+ M PLAN.md
+ M README.md
+ M backend/.env.example
+ M backend/database.py
+ M backend/main.py
+ M backend/rate_limit.py
+ M docs/ARCHITECTURE.md
+ M docs/DEPLOYMENT.md
+ M frontend/app/page.tsx
+ M frontend/app/settings/page.tsx
+?? backend/routers/local_watch.py
+?? backend/services/local_watch.py
+?? backend/tests/test_local_watch_backend.py
+?? backend/tests/test_local_watch_backend_r2.py
+?? backend/tests/test_local_watch_docs.py
+?? backend/tests/test_local_watch_frontend.py
+?? backend/tests/test_local_watch_frontend_r2.py
+?? backend/tests/test_local_watch_integration.py
+?? backend/tests/test_local_watch_service.py
+?? backend/tests/test_local_watch_service_r2.py
+?? backend/tests/test_local_watch_swift_initialization.py
+?? backend/tests/test_local_watch_swift_testing.py
+?? docs/tasks/2026-10-11-local-watch/
+?? frontend/components/LocalWatchSection.tsx
+?? frontend/lib/localWatch.ts
+?? watcher-mac/

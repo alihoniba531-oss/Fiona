@@ -1,0 +1,21 @@
+{
+  "cwd": "watcher-mac",
+  "command": [
+    "swift",
+    "build",
+    "-c",
+    "release",
+    "--disable-sandbox",
+    "--cache-path",
+    ".build/swiftpm-cache",
+    "--build-system",
+    "native",
+    "-debug-info-format",
+    "none"
+  ],
+  "environment_overrides": {
+    "CLANG_MODULE_CACHE_PATH": "{repo}/watcher-mac/.build/module-cache",
+    "SWIFTPM_MODULECACHE_OVERRIDE": "{repo}/watcher-mac/.build/module-cache"
+  },
+  "cleanup_before": true
+}

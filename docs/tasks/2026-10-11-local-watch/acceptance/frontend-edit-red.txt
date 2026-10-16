@@ -1,0 +1,59 @@
+FF.........                                                              [100%]
+=================================== FAILURES ===================================
+___ test_editing_get_response_strips_metadata_from_runtime_draft_and_request ___
+
+    def test_editing_get_response_strips_metadata_from_runtime_draft_and_request():
+>       actual = run_rule_payload("""
+          const response={id:12,username:'alice',created_at:'today',updated_at:'today',name:' 工作 ',
+            app_match:' WeChat ',title_match:' 群聊 ',kind:'keyword',params:{keywords:['@我']},
+            interval_seconds:3,cooldown_seconds:60,enabled:true,conversation_id:'current'};
+          const draft=localWatchDraft(response);const payload=localWatchRulePayload({...draft,id:12,username:'alice'});
+          process.stdout.write(JSON.stringify({draft,payload}));
+        """)
+
+backend/tests/test_local_watch_frontend.py:74: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+backend/tests/test_local_watch_frontend.py:66: in run_rule_payload
+    runner = "function localWatchRulePayload(draft) {" + function_body("localWatchRulePayload") + "}\n"
+                                                         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+name = 'localWatchRulePayload'
+
+    def function_body(name):
+        source = LOGIC.read_text(encoding="utf-8")
+>       start = source.index("export function " + name)
+                ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+E       ValueError: substring not found
+
+backend/tests/test_local_watch_frontend.py:35: ValueError
+_____ test_switching_rule_types_sends_only_selected_types_parameter_fields _____
+
+    def test_switching_rule_types_sends_only_selected_types_parameter_fields():
+>       actual = run_rule_payload("""
+          const draft=localWatchDraft();const mixed={keywords:['@我'],label:'价格',op:'>=',threshold:100,
+            condition:'下载完成或出现报错时提醒我',model:'claude',extra:'metadata'};
+          const payloads=['keyword','number','ai'].map(kind=>localWatchRulePayload({...draft,kind,params:mixed}));
+          process.stdout.write(JSON.stringify(payloads));
+        """)
+
+backend/tests/test_local_watch_frontend.py:88: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+backend/tests/test_local_watch_frontend.py:66: in run_rule_payload
+    runner = "function localWatchRulePayload(draft) {" + function_body("localWatchRulePayload") + "}\n"
+                                                         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+name = 'localWatchRulePayload'
+
+    def function_body(name):
+        source = LOGIC.read_text(encoding="utf-8")
+>       start = source.index("export function " + name)
+                ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+E       ValueError: substring not found
+
+backend/tests/test_local_watch_frontend.py:35: ValueError
+=========================== short test summary info ============================
+FAILED backend/tests/test_local_watch_frontend.py::test_editing_get_response_strips_metadata_from_runtime_draft_and_request
+FAILED backend/tests/test_local_watch_frontend.py::test_switching_rule_types_sends_only_selected_types_parameter_fields
+2 failed, 9 passed in 0.42s

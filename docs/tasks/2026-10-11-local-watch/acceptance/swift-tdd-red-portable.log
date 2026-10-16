@@ -1,0 +1,141 @@
+/private/tmp/fiona-watch-check/main.swift:12:24: error: cannot find 'LineNormalizer' in scope
+ 10 | final class LocalWatchNormalizationTests: XCTestCase {
+ 11 |     func testTrimsAndCollapsesWhitespaceAndDropsNoise() {
+ 12 |         XCTAssertEqual(LineNormalizer.normalize([
+    |                        `- error: cannot find 'LineNormalizer' in scope
+ 13 |             "  张三：今晚开会  ", "Download\t  complete", "A", "1234", "-1,234.50%",
+ 14 |             "12:30", "12:30:05", "昨天", "星期一", "周日", "！！…", "___",
+
+/private/tmp/fiona-watch-check/main.swift:20:24: error: cannot find 'LineNormalizer' in scope
+ 18 | 
+ 19 |     func testMixedNumericContentRemainsAndUnicodeWhitespaceCollapses() {
+ 20 |         XCTAssertEqual(LineNormalizer.normalize(["价格\u{3000}  -12.5%", "版本 2", "OK"]),
+    |                        `- error: cannot find 'LineNormalizer' in scope
+ 21 |                        ["价格 -12.5%", "版本 2", "OK"])
+ 22 |     }
+
+/private/tmp/fiona-watch-check/main.swift:27:23: error: cannot find 'SnapshotHistory' in scope
+ 25 | final class LocalWatchSnapshotTests: XCTestCase {
+ 26 |     func testFirstSnapshotIsBaselineAndRecentThreeSuppressRepeatedLines() {
+ 27 |         var history = SnapshotHistory()
+    |                       `- error: cannot find 'SnapshotHistory' in scope
+ 28 |         XCTAssertEqual(history.observe(["甲消息", "旧行"]), [])
+ 29 |         XCTAssertEqual(history.observe(["乙消息"]), ["乙消息"])
+
+/private/tmp/fiona-watch-check/main.swift:28:9: error: type 'Any' cannot conform to 'Equatable' [#ProtocolTypeNonConformance]
+ 26 |     func testFirstSnapshotIsBaselineAndRecentThreeSuppressRepeatedLines() {
+ 27 |         var history = SnapshotHistory()
+ 28 |         XCTAssertEqual(history.observe(["甲消息", "旧行"]), [])
+    |         |- error: type 'Any' cannot conform to 'Equatable' [#ProtocolTypeNonConformance]
+    |         |- note: only concrete types such as structs, enums and classes can conform to protocols
+    |         `- note: requirement from conditional conformance of '[Any]' to 'Equatable'
+ 29 |         XCTAssertEqual(history.observe(["乙消息"]), ["乙消息"])
+ 30 |         XCTAssertEqual(history.observe(["丙消息"]), ["丙消息"])
+
+/private/tmp/fiona-watch-check/main.swift:36:23: error: cannot find 'SnapshotHistory' in scope
+ 34 | 
+ 35 |     func testDuplicateLinesOnlyReportOnceAndEmptyFirstSnapshotIsBaseline() {
+ 36 |         var history = SnapshotHistory()
+    |                       `- error: cannot find 'SnapshotHistory' in scope
+ 37 |         XCTAssertEqual(history.observe([]), [])
+ 38 |         XCTAssertEqual(history.observe(["新消息", "新消息", "其他消息"]), ["新消息", "其他消息"])
+
+/private/tmp/fiona-watch-check/main.swift:37:9: error: type 'Any' cannot conform to 'Equatable' [#ProtocolTypeNonConformance]
+ 35 |     func testDuplicateLinesOnlyReportOnceAndEmptyFirstSnapshotIsBaseline() {
+ 36 |         var history = SnapshotHistory()
+ 37 |         XCTAssertEqual(history.observe([]), [])
+    |         |- error: type 'Any' cannot conform to 'Equatable' [#ProtocolTypeNonConformance]
+    |         |- note: only concrete types such as structs, enums and classes can conform to protocols
+    |         `- note: requirement from conditional conformance of '[Any]' to 'Equatable'
+ 38 |         XCTAssertEqual(history.observe(["新消息", "新消息", "其他消息"]), ["新消息", "其他消息"])
+ 39 |         XCTAssertEqual(history.observe(["新消息"]), [])
+
+/private/tmp/fiona-watch-check/main.swift:39:9: error: type 'Any' cannot conform to 'Equatable' [#ProtocolTypeNonConformance]
+ 37 |         XCTAssertEqual(history.observe([]), [])
+ 38 |         XCTAssertEqual(history.observe(["新消息", "新消息", "其他消息"]), ["新消息", "其他消息"])
+ 39 |         XCTAssertEqual(history.observe(["新消息"]), [])
+    |         |- error: type 'Any' cannot conform to 'Equatable' [#ProtocolTypeNonConformance]
+    |         |- note: only concrete types such as structs, enums and classes can conform to protocols
+    |         `- note: requirement from conditional conformance of '[Any]' to 'Equatable'
+ 40 |     }
+ 41 | 
+
+/private/tmp/fiona-watch-check/main.swift:43:24: error: cannot find 'ObservationLimits' in scope
+ 41 | 
+ 42 |     func testObservationBoundsPreserveOrder() {
+ 43 |         XCTAssertEqual(ObservationLimits.lines(Array(repeating: "消息", count: 55)).count, 50)
+    |                        `- error: cannot find 'ObservationLimits' in scope
+ 44 |         let bounded = ObservationLimits.lines([String(repeating: "甲", count: 3995), "中文中文中文"])
+ 45 |         XCTAssertEqual(bounded.map(\.count).reduce(0, +), 4000)
+
+/private/tmp/fiona-watch-check/main.swift:44:23: error: cannot find 'ObservationLimits' in scope
+ 42 |     func testObservationBoundsPreserveOrder() {
+ 43 |         XCTAssertEqual(ObservationLimits.lines(Array(repeating: "消息", count: 55)).count, 50)
+ 44 |         let bounded = ObservationLimits.lines([String(repeating: "甲", count: 3995), "中文中文中文"])
+    |                       `- error: cannot find 'ObservationLimits' in scope
+ 45 |         XCTAssertEqual(bounded.map(\.count).reduce(0, +), 4000)
+ 46 |         XCTAssertEqual(bounded.last, "中文中文中")
+
+/private/tmp/fiona-watch-check/main.swift:45:36: error: cannot infer key path type from context; consider explicitly specifying a root type
+ 43 |         XCTAssertEqual(ObservationLimits.lines(Array(repeating: "消息", count: 55)).count, 50)
+ 44 |         let bounded = ObservationLimits.lines([String(repeating: "甲", count: 3995), "中文中文中文"])
+ 45 |         XCTAssertEqual(bounded.map(\.count).reduce(0, +), 4000)
+    |                                    `- error: cannot infer key path type from context; consider explicitly specifying a root type
+ 46 |         XCTAssertEqual(bounded.last, "中文中文中")
+ 47 |     }
+
+/private/tmp/fiona-watch-check/main.swift:65:25: error: cannot find 'OCRRecognizer' in scope
+ 63 |         try draw("Download complete", fontName: "Helvetica", y: 85, in: context)
+ 64 |         let image = try XCTUnwrap(context.makeImage())
+ 65 |         let lines = try OCRRecognizer.lines(in: image)
+    |                         `- error: cannot find 'OCRRecognizer' in scope
+ 66 |         XCTAssertTrue(lines.contains(where: { $0.contains("张三：今晚开会") }))
+ 67 |         XCTAssertTrue(lines.contains(where: { $0.contains("Download complete") }))
+
+/private/tmp/fiona-watch-check/main.swift:68:32: error: generic parameter 'T' could not be inferred
+  5 | func XCTAssertLessThan<T: Comparable>(_ left: T, _ right: T) { precondition(left < right) }
+  6 | func XCTFail(_ message: String) { fatalError(message) }
+  7 | func XCTUnwrap<T>(_ value: T?) throws -> T { guard let value else { throw NSError(domain: "PortableTest", code: 1) }; return value }
+    |      `- note: in call to function 'XCTUnwrap'
+  8 | 
+  9 | 
+    :
+ 66 |         XCTAssertTrue(lines.contains(where: { $0.contains("张三：今晚开会") }))
+ 67 |         XCTAssertTrue(lines.contains(where: { $0.contains("Download complete") }))
+ 68 |         let chineseIndex = try XCTUnwrap(lines.firstIndex(where: { $0.contains("张三") }))
+    |                                `- error: generic parameter 'T' could not be inferred
+ 69 |         let englishIndex = try XCTUnwrap(lines.firstIndex(where: { $0.contains("Download") }))
+ 70 |         XCTAssertLessThan(chineseIndex, englishIndex)
+
+/private/tmp/fiona-watch-check/main.swift:69:32: error: generic parameter 'T' could not be inferred
+  5 | func XCTAssertLessThan<T: Comparable>(_ left: T, _ right: T) { precondition(left < right) }
+  6 | func XCTFail(_ message: String) { fatalError(message) }
+  7 | func XCTUnwrap<T>(_ value: T?) throws -> T { guard let value else { throw NSError(domain: "PortableTest", code: 1) }; return value }
+    |      `- note: in call to function 'XCTUnwrap'
+  8 | 
+  9 | 
+    :
+ 67 |         XCTAssertTrue(lines.contains(where: { $0.contains("Download complete") }))
+ 68 |         let chineseIndex = try XCTUnwrap(lines.firstIndex(where: { $0.contains("张三") }))
+ 69 |         let englishIndex = try XCTUnwrap(lines.firstIndex(where: { $0.contains("Download") }))
+    |                                `- error: generic parameter 'T' could not be inferred
+ 70 |         XCTAssertLessThan(chineseIndex, englishIndex)
+ 71 |     }
+
+/private/tmp/fiona-watch-check/main.swift:77:39: error: value of type 'CGFont' has no member 'copyTable'
+ 75 |     private func draw(_ text: String, fontName: String, y: CGFloat, in context: CGContext) throws {
+ 76 |         let font = try XCTUnwrap(CGFont(fontName as CFString))
+ 77 |         let cmap = try XCTUnwrap(font.copyTable(for: 0x636D6170)) as Data
+    |                                       `- error: value of type 'CGFont' has no member 'copyTable'
+ 78 |         let glyphs = try text.unicodeScalars.map { try glyph(for: $0.value, cmap: cmap) }
+ 79 |         var advances = [Int32](repeating: 0, count: glyphs.count)
+
+/private/tmp/fiona-watch-check/main.swift:80:44: error: missing argument label 'glyphs:' in call
+ 78 |         let glyphs = try text.unicodeScalars.map { try glyph(for: $0.value, cmap: cmap) }
+ 79 |         var advances = [Int32](repeating: 0, count: glyphs.count)
+ 80 |         XCTAssertTrue(font.getGlyphAdvances(glyphs, count: glyphs.count, advances: &advances))
+    |                                            `- error: missing argument label 'glyphs:' in call
+ 81 |         let size: CGFloat = 62
+ 82 |         var x: CGFloat = 45
+
+[#ProtocolTypeNonConformance]: <https://docs.swift.org/compiler/documentation/diagnostics/protocol-type-non-conformance>
