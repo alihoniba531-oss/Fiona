@@ -168,7 +168,7 @@ async def catalog(username):
         byok = await ByokBridge(username).describe()
     except ValueError:
         byok = None
-    return {'agents': [{'id': key, 'name': card['name'], 'category': card['category'], 'required': key in ('editor','writer','archivist'), 'description': ROLE_DESCRIPTIONS[key]} for key,card in AGENTS.items() if key in ('editor','writer','archivist','reviewer',*ADVISORS)], 'models': [{'id': name, 'price': get_prices()[name]} for name in PLATFORM_MODELS], 'byok': byok, 'allowed_models': {role:list(JSON_MODELS if role!='writer' else WRITER_MODELS) for role in ('editor','writer','archivist','reviewer')}, 'notice': '主编可选千问或豆包；使用自带 Claude 担任主编的效果经过实测'}
+    return {'agents': [{'id': key, 'name': card['name'], 'category': card['category'], 'required': key in ('editor','writer','archivist'), 'description': ROLE_DESCRIPTIONS[key]} for key,card in AGENTS.items() if key in ('editor','writer','archivist','reviewer',*ADVISORS)], 'models': [{'id': name, 'price': get_prices()[name]} for name in PLATFORM_MODELS], 'byok': byok, 'allowed_models': {role:list(JSON_MODELS if role!='writer' else WRITER_MODELS) for role in ('editor','writer','archivist','reviewer')}, 'notice': '主编可选千问或豆包。想用 Claude：先在「设置 → 聊天模型」配好并启用自带 Claude，这里会多出「我的模型」，不扣草莓'}
 
 
 async def create(username, data):

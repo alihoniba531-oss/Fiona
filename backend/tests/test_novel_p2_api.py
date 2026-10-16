@@ -249,3 +249,14 @@ def test_list_and_detail_add_only_authorized_metadata_and_track_same_length_edit
     updated_chapter = client.get(f'/novels/{BOOK}/chapters/1', headers=HEADERS).json()
     assert updated_chapter['body'] == edited_body
     assert type(updated_chapter['edited_by_user']) is int and updated_chapter['edited_by_user'] == 1
+
+
+def test_catalog_notice_tells_how_to_pick_claude_as_editor(complete_book):
+    client, _, _ = complete_book
+    catalog = client.get('/novels/catalog', headers=HEADERS)
+    assert catalog.status_code == 200, catalog.text
+    notice = catalog.json()['notice']
+    assert '自带 Claude' in notice
+    assert '设置 → 聊天模型' in notice and '启用' in notice
+    assert '我的模型' in notice and '不扣草莓' in notice
+    assert '经过实测' not in notice
