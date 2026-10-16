@@ -1,0 +1,1211 @@
+{
+  "probe": "cosyvoice",
+  "label": "zh-line",
+  "timestamp": "2026-10-16T13:10:10.145297+00:00",
+  "parameters": {
+    "command": "cosyvoice",
+    "label": "zh-line",
+    "yes_spend": "0.02",
+    "text": "你还给的是官府。不是我。雷声炸开，风灯被吹灭。",
+    "voice": "longxiaoxia_v2",
+    "model": "cosyvoice-v2"
+  },
+  "quote": {
+    "min_cny": 0.01,
+    "max_cny": 0.019200000000000002,
+    "characters": 23,
+    "note": "按字数估算，单价待核实；参考区间 0.01–0.50 元，以账单为准"
+  },
+  "timestamp_support": "不支持：当前 SDK 未提供逐词或逐字时间戳参数",
+  "requested_audio": {
+    "format": "wav",
+    "sample_rate": 48000,
+    "channels": 1,
+    "bits_per_sample": 16
+  },
+  "request": {
+    "transport": "dashscope-websocket",
+    "body": {
+      "model": "cosyvoice-v2",
+      "voice": "longxiaoxia_v2",
+      "text": "你还给的是官府。不是我。雷声炸开，风灯被吹灭。",
+      "format": "wav",
+      "sample_rate": 48000
+    }
+  },
+  "fingerprint": "2dea6f23119d670c",
+  "latency_s": 2.983175,
+  "response": {
+    "header": {
+      "task_id": "650d6efd153c4c22a092c8f8bfff15a6",
+      "event": "task-finished",
+      "attributes": {}
+    },
+    "payload": {
+      "output": {}
+    }
+  },
+  "events": [
+    {
+      "header": {
+        "task_id": "650d6efd153c4c22a092c8f8bfff15a6",
+        "event": "result-generated",
+        "attributes": {}
+      },
+      "payload": {
+        "output": {
+          "sentence": {
+            "index": 0,
+            "words": []
+          },
+          "type": "sentence-begin",
+          "original_text": "你还给的是官府。不是我。雷声炸开，风灯被吹灭。"
+        }
+      }
+    },
+    {
+      "header": {
+        "task_id": "650d6efd153c4c22a092c8f8bfff15a6",
+        "event": "result-generated",
+        "attributes": {}
+      },
+      "payload": {
+        "output": {
+          "sentence": {
+            "index": 0,
+            "words": []
+          },
+          "type": "sentence-synthesis"
+        }
+      }
+    },
+    {
+      "header": {
+        "task_id": "650d6efd153c4c22a092c8f8bfff15a6",
+        "event": "result-generated",
+        "attributes": {}
+      },
+      "payload": {
+        "output": {
+          "sentence": {
+            "index": 0,
+            "words": []
+          },
+          "type": "sentence-synthesis"
+        }
+      }
+    },
+    {
+      "header": {
+        "task_id": "650d6efd153c4c22a092c8f8bfff15a6",
+        "event": "result-generated",
+        "attributes": {}
+      },
+      "payload": {
+        "output": {
+          "sentence": {
+            "index": 0,
+            "words": []
+          },
+          "type": "sentence-synthesis"
+        }
+      }
+    },
+    {
+      "header": {
+        "task_id": "650d6efd153c4c22a092c8f8bfff15a6",
+        "event": "result-generated",
+        "attributes": {}
+      },
+      "payload": {
+        "output": {
+          "sentence": {
+            "index": 0,
+            "words": []
+          },
+          "type": "sentence-synthesis"
+        }
+      }
+    },
+    {
+      "header": {
+        "task_id": "650d6efd153c4c22a092c8f8bfff15a6",
+        "event": "result-generated",
+        "attributes": {}
+      },
+      "payload": {
+        "output": {
+          "sentence": {
+            "index": 0,
+            "words": []
+          },
+          "type": "sentence-synthesis"
+        }
+      }
+    },
+    {
+      "header": {
+        "task_id": "650d6efd153c4c22a092c8f8bfff15a6",
+        "event": "result-generated",
+        "attributes": {}
+      },
+      "payload": {
+        "output": {
+          "sentence": {
+            "index": 0,
+            "words": []
+          },
+          "type": "sentence-synthesis"
+        }
+      }
+    },
+    {
+      "header": {
+        "task_id": "650d6efd153c4c22a092c8f8bfff15a6",
+        "event": "result-generated",
+        "attributes": {}
+      },
+      "payload": {
+        "output": {
+          "sentence": {
+            "index": 0,
+            "words": []
+          },
+          "type": "sentence-synthesis"
+        }
+      }
+    },
+    {
+      "header": {
+        "task_id": "650d6efd153c4c22a092c8f8bfff15a6",
+        "event": "result-generated",
+        "attributes": {}
+      },
+      "payload": {
+        "output": {
+          "sentence": {
+            "index": 0,
+            "words": []
+          },
+          "type": "sentence-synthesis"
+        }
+      }
+    },
+    {
+      "header": {
+        "task_id": "650d6efd153c4c22a092c8f8bfff15a6",
+        "event": "result-generated",
+        "attributes": {}
+      },
+      "payload": {
+        "output": {
+          "sentence": {
+            "index": 0,
+            "words": []
+          },
+          "type": "sentence-synthesis"
+        }
+      }
+    },
+    {
+      "header": {
+        "task_id": "650d6efd153c4c22a092c8f8bfff15a6",
+        "event": "result-generated",
+        "attributes": {}
+      },
+      "payload": {
+        "output": {
+          "sentence": {
+            "index": 0,
+            "words": []
+          },
+          "type": "sentence-synthesis"
+        }
+      }
+    },
+    {
+      "header": {
+        "task_id": "650d6efd153c4c22a092c8f8bfff15a6",
+        "event": "result-generated",
+        "attributes": {}
+      },
+      "payload": {
+        "output": {
+          "sentence": {
+            "index": 0,
+            "words": []
+          },
+          "type": "sentence-synthesis"
+        }
+      }
+    },
+    {
+      "header": {
+        "task_id": "650d6efd153c4c22a092c8f8bfff15a6",
+        "event": "result-generated",
+        "attributes": {}
+      },
+      "payload": {
+        "output": {
+          "sentence": {
+            "index": 0,
+            "words": []
+          },
+          "type": "sentence-synthesis"
+        }
+      }
+    },
+    {
+      "header": {
+        "task_id": "650d6efd153c4c22a092c8f8bfff15a6",
+        "event": "result-generated",
+        "attributes": {}
+      },
+      "payload": {
+        "output": {
+          "sentence": {
+            "index": 0,
+            "words": []
+          },
+          "type": "sentence-synthesis"
+        }
+      }
+    },
+    {
+      "header": {
+        "task_id": "650d6efd153c4c22a092c8f8bfff15a6",
+        "event": "result-generated",
+        "attributes": {}
+      },
+      "payload": {
+        "output": {
+          "sentence": {
+            "index": 0,
+            "words": []
+          },
+          "type": "sentence-synthesis"
+        }
+      }
+    },
+    {
+      "header": {
+        "task_id": "650d6efd153c4c22a092c8f8bfff15a6",
+        "event": "result-generated",
+        "attributes": {}
+      },
+      "payload": {
+        "output": {
+          "sentence": {
+            "index": 0,
+            "words": []
+          },
+          "type": "sentence-synthesis"
+        }
+      }
+    },
+    {
+      "header": {
+        "task_id": "650d6efd153c4c22a092c8f8bfff15a6",
+        "event": "result-generated",
+        "attributes": {}
+      },
+      "payload": {
+        "output": {
+          "sentence": {
+            "index": 0,
+            "words": []
+          },
+          "type": "sentence-synthesis"
+        }
+      }
+    },
+    {
+      "header": {
+        "task_id": "650d6efd153c4c22a092c8f8bfff15a6",
+        "event": "result-generated",
+        "attributes": {}
+      },
+      "payload": {
+        "output": {
+          "sentence": {
+            "index": 0,
+            "words": []
+          },
+          "type": "sentence-synthesis"
+        }
+      }
+    },
+    {
+      "header": {
+        "task_id": "650d6efd153c4c22a092c8f8bfff15a6",
+        "event": "result-generated",
+        "attributes": {}
+      },
+      "payload": {
+        "output": {
+          "sentence": {
+            "index": 0,
+            "words": []
+          },
+          "type": "sentence-synthesis"
+        }
+      }
+    },
+    {
+      "header": {
+        "task_id": "650d6efd153c4c22a092c8f8bfff15a6",
+        "event": "result-generated",
+        "attributes": {}
+      },
+      "payload": {
+        "output": {
+          "sentence": {
+            "index": 0,
+            "words": []
+          },
+          "type": "sentence-synthesis"
+        }
+      }
+    },
+    {
+      "header": {
+        "task_id": "650d6efd153c4c22a092c8f8bfff15a6",
+        "event": "result-generated",
+        "attributes": {}
+      },
+      "payload": {
+        "output": {
+          "sentence": {
+            "index": 0,
+            "words": []
+          },
+          "type": "sentence-synthesis"
+        }
+      }
+    },
+    {
+      "header": {
+        "task_id": "650d6efd153c4c22a092c8f8bfff15a6",
+        "event": "result-generated",
+        "attributes": {}
+      },
+      "payload": {
+        "output": {
+          "sentence": {
+            "index": 0,
+            "words": []
+          },
+          "type": "sentence-synthesis"
+        }
+      }
+    },
+    {
+      "header": {
+        "task_id": "650d6efd153c4c22a092c8f8bfff15a6",
+        "event": "result-generated",
+        "attributes": {}
+      },
+      "payload": {
+        "output": {
+          "sentence": {
+            "index": 0,
+            "words": []
+          },
+          "type": "sentence-synthesis"
+        }
+      }
+    },
+    {
+      "header": {
+        "task_id": "650d6efd153c4c22a092c8f8bfff15a6",
+        "event": "result-generated",
+        "attributes": {}
+      },
+      "payload": {
+        "output": {
+          "sentence": {
+            "index": 0,
+            "words": []
+          },
+          "type": "sentence-synthesis"
+        }
+      }
+    },
+    {
+      "header": {
+        "task_id": "650d6efd153c4c22a092c8f8bfff15a6",
+        "event": "result-generated",
+        "attributes": {}
+      },
+      "payload": {
+        "output": {
+          "sentence": {
+            "index": 0,
+            "words": []
+          },
+          "type": "sentence-synthesis"
+        }
+      }
+    },
+    {
+      "header": {
+        "task_id": "650d6efd153c4c22a092c8f8bfff15a6",
+        "event": "result-generated",
+        "attributes": {}
+      },
+      "payload": {
+        "output": {
+          "sentence": {
+            "index": 0,
+            "words": []
+          },
+          "type": "sentence-synthesis"
+        }
+      }
+    },
+    {
+      "header": {
+        "task_id": "650d6efd153c4c22a092c8f8bfff15a6",
+        "event": "result-generated",
+        "attributes": {}
+      },
+      "payload": {
+        "output": {
+          "sentence": {
+            "index": 0,
+            "words": []
+          },
+          "type": "sentence-synthesis"
+        }
+      }
+    },
+    {
+      "header": {
+        "task_id": "650d6efd153c4c22a092c8f8bfff15a6",
+        "event": "result-generated",
+        "attributes": {}
+      },
+      "payload": {
+        "output": {
+          "sentence": {
+            "index": 0,
+            "words": []
+          },
+          "type": "sentence-synthesis"
+        }
+      }
+    },
+    {
+      "header": {
+        "task_id": "650d6efd153c4c22a092c8f8bfff15a6",
+        "event": "result-generated",
+        "attributes": {}
+      },
+      "payload": {
+        "output": {
+          "sentence": {
+            "index": 0,
+            "words": []
+          },
+          "type": "sentence-synthesis"
+        }
+      }
+    },
+    {
+      "header": {
+        "task_id": "650d6efd153c4c22a092c8f8bfff15a6",
+        "event": "result-generated",
+        "attributes": {}
+      },
+      "payload": {
+        "output": {
+          "sentence": {
+            "index": 0,
+            "words": []
+          },
+          "type": "sentence-synthesis"
+        }
+      }
+    },
+    {
+      "header": {
+        "task_id": "650d6efd153c4c22a092c8f8bfff15a6",
+        "event": "result-generated",
+        "attributes": {}
+      },
+      "payload": {
+        "output": {
+          "sentence": {
+            "index": 0,
+            "words": []
+          },
+          "type": "sentence-synthesis"
+        }
+      }
+    },
+    {
+      "header": {
+        "task_id": "650d6efd153c4c22a092c8f8bfff15a6",
+        "event": "result-generated",
+        "attributes": {}
+      },
+      "payload": {
+        "output": {
+          "sentence": {
+            "index": 0,
+            "words": []
+          },
+          "type": "sentence-synthesis"
+        }
+      }
+    },
+    {
+      "header": {
+        "task_id": "650d6efd153c4c22a092c8f8bfff15a6",
+        "event": "result-generated",
+        "attributes": {}
+      },
+      "payload": {
+        "output": {
+          "sentence": {
+            "index": 0,
+            "words": []
+          },
+          "type": "sentence-synthesis"
+        }
+      }
+    },
+    {
+      "header": {
+        "task_id": "650d6efd153c4c22a092c8f8bfff15a6",
+        "event": "result-generated",
+        "attributes": {}
+      },
+      "payload": {
+        "output": {
+          "sentence": {
+            "index": 0,
+            "words": []
+          },
+          "type": "sentence-synthesis"
+        }
+      }
+    },
+    {
+      "header": {
+        "task_id": "650d6efd153c4c22a092c8f8bfff15a6",
+        "event": "result-generated",
+        "attributes": {}
+      },
+      "payload": {
+        "output": {
+          "sentence": {
+            "index": 0,
+            "words": []
+          },
+          "type": "sentence-synthesis"
+        }
+      }
+    },
+    {
+      "header": {
+        "task_id": "650d6efd153c4c22a092c8f8bfff15a6",
+        "event": "result-generated",
+        "attributes": {}
+      },
+      "payload": {
+        "output": {
+          "sentence": {
+            "index": 0,
+            "words": []
+          },
+          "type": "sentence-synthesis"
+        }
+      }
+    },
+    {
+      "header": {
+        "task_id": "650d6efd153c4c22a092c8f8bfff15a6",
+        "event": "result-generated",
+        "attributes": {}
+      },
+      "payload": {
+        "output": {
+          "sentence": {
+            "index": 0,
+            "words": []
+          },
+          "type": "sentence-synthesis"
+        }
+      }
+    },
+    {
+      "header": {
+        "task_id": "650d6efd153c4c22a092c8f8bfff15a6",
+        "event": "result-generated",
+        "attributes": {}
+      },
+      "payload": {
+        "output": {
+          "sentence": {
+            "index": 0,
+            "words": []
+          },
+          "type": "sentence-synthesis"
+        }
+      }
+    },
+    {
+      "header": {
+        "task_id": "650d6efd153c4c22a092c8f8bfff15a6",
+        "event": "result-generated",
+        "attributes": {}
+      },
+      "payload": {
+        "output": {
+          "sentence": {
+            "index": 0,
+            "words": []
+          },
+          "type": "sentence-synthesis"
+        }
+      }
+    },
+    {
+      "header": {
+        "task_id": "650d6efd153c4c22a092c8f8bfff15a6",
+        "event": "result-generated",
+        "attributes": {}
+      },
+      "payload": {
+        "output": {
+          "sentence": {
+            "index": 0,
+            "words": []
+          },
+          "type": "sentence-synthesis"
+        }
+      }
+    },
+    {
+      "header": {
+        "task_id": "650d6efd153c4c22a092c8f8bfff15a6",
+        "event": "result-generated",
+        "attributes": {}
+      },
+      "payload": {
+        "output": {
+          "sentence": {
+            "index": 0,
+            "words": []
+          },
+          "type": "sentence-synthesis"
+        }
+      }
+    },
+    {
+      "header": {
+        "task_id": "650d6efd153c4c22a092c8f8bfff15a6",
+        "event": "result-generated",
+        "attributes": {}
+      },
+      "payload": {
+        "output": {
+          "sentence": {
+            "index": 0,
+            "words": []
+          },
+          "type": "sentence-synthesis"
+        }
+      }
+    },
+    {
+      "header": {
+        "task_id": "650d6efd153c4c22a092c8f8bfff15a6",
+        "event": "result-generated",
+        "attributes": {}
+      },
+      "payload": {
+        "output": {
+          "sentence": {
+            "index": 0,
+            "words": []
+          },
+          "type": "sentence-synthesis"
+        }
+      }
+    },
+    {
+      "header": {
+        "task_id": "650d6efd153c4c22a092c8f8bfff15a6",
+        "event": "result-generated",
+        "attributes": {}
+      },
+      "payload": {
+        "output": {
+          "sentence": {
+            "index": 0,
+            "words": []
+          },
+          "type": "sentence-synthesis"
+        }
+      }
+    },
+    {
+      "header": {
+        "task_id": "650d6efd153c4c22a092c8f8bfff15a6",
+        "event": "result-generated",
+        "attributes": {}
+      },
+      "payload": {
+        "output": {
+          "sentence": {
+            "index": 0,
+            "words": []
+          },
+          "type": "sentence-synthesis"
+        }
+      }
+    },
+    {
+      "header": {
+        "task_id": "650d6efd153c4c22a092c8f8bfff15a6",
+        "event": "result-generated",
+        "attributes": {}
+      },
+      "payload": {
+        "output": {
+          "sentence": {
+            "index": 0,
+            "words": []
+          },
+          "type": "sentence-synthesis"
+        }
+      }
+    },
+    {
+      "header": {
+        "task_id": "650d6efd153c4c22a092c8f8bfff15a6",
+        "event": "result-generated",
+        "attributes": {}
+      },
+      "payload": {
+        "output": {
+          "sentence": {
+            "index": 0,
+            "words": []
+          },
+          "type": "sentence-synthesis"
+        }
+      }
+    },
+    {
+      "header": {
+        "task_id": "650d6efd153c4c22a092c8f8bfff15a6",
+        "event": "result-generated",
+        "attributes": {}
+      },
+      "payload": {
+        "output": {
+          "sentence": {
+            "index": 0,
+            "words": []
+          },
+          "type": "sentence-synthesis"
+        }
+      }
+    },
+    {
+      "header": {
+        "task_id": "650d6efd153c4c22a092c8f8bfff15a6",
+        "event": "result-generated",
+        "attributes": {}
+      },
+      "payload": {
+        "output": {
+          "sentence": {
+            "index": 0,
+            "words": []
+          },
+          "type": "sentence-synthesis"
+        }
+      }
+    },
+    {
+      "header": {
+        "task_id": "650d6efd153c4c22a092c8f8bfff15a6",
+        "event": "result-generated",
+        "attributes": {}
+      },
+      "payload": {
+        "output": {
+          "sentence": {
+            "index": 0,
+            "words": []
+          },
+          "type": "sentence-synthesis"
+        }
+      }
+    },
+    {
+      "header": {
+        "task_id": "650d6efd153c4c22a092c8f8bfff15a6",
+        "event": "result-generated",
+        "attributes": {}
+      },
+      "payload": {
+        "output": {
+          "sentence": {
+            "index": 0,
+            "words": []
+          },
+          "type": "sentence-synthesis"
+        }
+      }
+    },
+    {
+      "header": {
+        "task_id": "650d6efd153c4c22a092c8f8bfff15a6",
+        "event": "result-generated",
+        "attributes": {}
+      },
+      "payload": {
+        "output": {
+          "sentence": {
+            "index": 0,
+            "words": []
+          },
+          "type": "sentence-synthesis"
+        }
+      }
+    },
+    {
+      "header": {
+        "task_id": "650d6efd153c4c22a092c8f8bfff15a6",
+        "event": "result-generated",
+        "attributes": {}
+      },
+      "payload": {
+        "output": {
+          "sentence": {
+            "index": 0,
+            "words": []
+          },
+          "type": "sentence-synthesis"
+        }
+      }
+    },
+    {
+      "header": {
+        "task_id": "650d6efd153c4c22a092c8f8bfff15a6",
+        "event": "result-generated",
+        "attributes": {}
+      },
+      "payload": {
+        "output": {
+          "sentence": {
+            "index": 0,
+            "words": []
+          },
+          "type": "sentence-synthesis"
+        }
+      }
+    },
+    {
+      "header": {
+        "task_id": "650d6efd153c4c22a092c8f8bfff15a6",
+        "event": "result-generated",
+        "attributes": {}
+      },
+      "payload": {
+        "output": {
+          "sentence": {
+            "index": 0,
+            "words": []
+          },
+          "type": "sentence-synthesis"
+        }
+      }
+    },
+    {
+      "header": {
+        "task_id": "650d6efd153c4c22a092c8f8bfff15a6",
+        "event": "result-generated",
+        "attributes": {}
+      },
+      "payload": {
+        "output": {
+          "sentence": {
+            "index": 0,
+            "words": []
+          },
+          "type": "sentence-synthesis"
+        }
+      }
+    },
+    {
+      "header": {
+        "task_id": "650d6efd153c4c22a092c8f8bfff15a6",
+        "event": "result-generated",
+        "attributes": {}
+      },
+      "payload": {
+        "output": {
+          "sentence": {
+            "index": 0,
+            "words": []
+          },
+          "type": "sentence-synthesis"
+        }
+      }
+    },
+    {
+      "header": {
+        "task_id": "650d6efd153c4c22a092c8f8bfff15a6",
+        "event": "result-generated",
+        "attributes": {}
+      },
+      "payload": {
+        "output": {
+          "sentence": {
+            "index": 0,
+            "words": []
+          },
+          "type": "sentence-synthesis"
+        }
+      }
+    },
+    {
+      "header": {
+        "task_id": "650d6efd153c4c22a092c8f8bfff15a6",
+        "event": "result-generated",
+        "attributes": {}
+      },
+      "payload": {
+        "output": {
+          "sentence": {
+            "index": 0,
+            "words": []
+          },
+          "type": "sentence-synthesis"
+        }
+      }
+    },
+    {
+      "header": {
+        "task_id": "650d6efd153c4c22a092c8f8bfff15a6",
+        "event": "result-generated",
+        "attributes": {}
+      },
+      "payload": {
+        "output": {
+          "sentence": {
+            "index": 0,
+            "words": []
+          },
+          "type": "sentence-synthesis"
+        }
+      }
+    },
+    {
+      "header": {
+        "task_id": "650d6efd153c4c22a092c8f8bfff15a6",
+        "event": "result-generated",
+        "attributes": {}
+      },
+      "payload": {
+        "output": {
+          "sentence": {
+            "index": 0,
+            "words": []
+          },
+          "type": "sentence-synthesis"
+        }
+      }
+    },
+    {
+      "header": {
+        "task_id": "650d6efd153c4c22a092c8f8bfff15a6",
+        "event": "result-generated",
+        "attributes": {}
+      },
+      "payload": {
+        "output": {
+          "sentence": {
+            "index": 0,
+            "words": []
+          },
+          "type": "sentence-end",
+          "original_text": "你还给的是官府。不是我。雷声炸开，风灯被吹灭。"
+        },
+        "usage": {
+          "characters": 42
+        }
+      }
+    }
+  ],
+  "timestamps": [
+    {
+      "index": 0,
+      "words": []
+    },
+    {
+      "index": 0,
+      "words": []
+    },
+    {
+      "index": 0,
+      "words": []
+    },
+    {
+      "index": 0,
+      "words": []
+    },
+    {
+      "index": 0,
+      "words": []
+    },
+    {
+      "index": 0,
+      "words": []
+    },
+    {
+      "index": 0,
+      "words": []
+    },
+    {
+      "index": 0,
+      "words": []
+    },
+    {
+      "index": 0,
+      "words": []
+    },
+    {
+      "index": 0,
+      "words": []
+    },
+    {
+      "index": 0,
+      "words": []
+    },
+    {
+      "index": 0,
+      "words": []
+    },
+    {
+      "index": 0,
+      "words": []
+    },
+    {
+      "index": 0,
+      "words": []
+    },
+    {
+      "index": 0,
+      "words": []
+    },
+    {
+      "index": 0,
+      "words": []
+    },
+    {
+      "index": 0,
+      "words": []
+    },
+    {
+      "index": 0,
+      "words": []
+    },
+    {
+      "index": 0,
+      "words": []
+    },
+    {
+      "index": 0,
+      "words": []
+    }
+  ],
+  "has_timestamps": true,
+  "media_path": "~/Desktop/ai-workspace/.worktrees/fiona-studio/backend/studio_data/_probe/media/c20e1f9415f9475ebf6c366e9b61f31f.wav",
+  "media_bytes": 438764,
+  "ffprobe": {
+    "available": true,
+    "width": null,
+    "height": null,
+    "frame_rate": null,
+    "fps": null,
+    "nb_frames": null,
+    "nb_read_frames": null,
+    "duration": "4.570000",
+    "has_audio": true,
+    "sample_rate": "48000",
+    "channels": 1,
+    "bits_per_sample": 16,
+    "format_name": "wav",
+    "raw": {
+      "streams": [
+        {
+          "index": 0,
+          "codec_name": "pcm_s16le",
+          "codec_long_name": "PCM signed 16-bit little-endian",
+          "codec_type": "audio",
+          "codec_tag_string": "[1][0][0][0]",
+          "codec_tag": "0x0001",
+          "sample_fmt": "s16",
+          "sample_rate": "48000",
+          "channels": 1,
+          "bits_per_sample": 16,
+          "initial_padding": 0,
+          "r_frame_rate": "0/0",
+          "avg_frame_rate": "0/0",
+          "time_base": "1/48000",
+          "duration_ts": 219360,
+          "duration": "4.570000",
+          "bit_rate": "768000",
+          "nb_read_frames": "54",
+          "disposition": {
+            "default": 0,
+            "dub": 0,
+            "original": 0,
+            "comment": 0,
+            "lyrics": 0,
+            "karaoke": 0,
+            "forced": 0,
+            "hearing_impaired": 0,
+            "visual_impaired": 0,
+            "clean_effects": 0,
+            "attached_pic": 0,
+            "timed_thumbnails": 0,
+            "non_diegetic": 0,
+            "captions": 0,
+            "descriptions": 0,
+            "metadata": 0,
+            "dependent": 0,
+            "still_image": 0,
+            "multilayer": 0
+          }
+        }
+      ],
+      "format": {
+        "filename": "~/Desktop/ai-workspace/.worktrees/fiona-studio/backend/studio_data/_probe/media/c20e1f9415f9475ebf6c366e9b61f31f.wav",
+        "nb_streams": 1,
+        "nb_programs": 0,
+        "nb_stream_groups": 0,
+        "format_name": "wav",
+        "format_long_name": "WAV / WAVE (Waveform Audio)",
+        "duration": "4.570000",
+        "size": "438764",
+        "bit_rate": "768077",
+        "probe_score": 99
+      }
+    }
+  },
+  "usage": null,
+  "actual_cost_cny": null,
+  "billing_note": "返回字段原样保留，未提供可核实单价时不伪造实付金额",
+  "status": "succeeded",
+  "exit_code": 0,
+  "elapsed_s": 3.157742,
+  "fixture_path": "~/Desktop/ai-workspace/.worktrees/fiona-studio/backend/tests/fixtures/studio/cosyvoice-20261016-131013.json"
+}

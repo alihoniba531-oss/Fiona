@@ -1,0 +1,172 @@
+{
+  "probe": "seedream",
+  "label": "refs-4",
+  "timestamp": "2026-10-16T13:09:49.436071+00:00",
+  "parameters": {
+    "command": "seedream",
+    "label": "refs-4",
+    "yes_spend": "0.60",
+    "prompt": "统一成同一套工业产品摄影风格的金属零件展示台，干净布光",
+    "size": "2560x1440",
+    "ref": [
+      "~/Desktop/视频生成/Preloq短视频/关键帧/P01/S07.png",
+      "~/Desktop/视频生成/Preloq短视频/关键帧/P01/S11.png",
+      "~/Desktop/视频生成/Preloq短视频/关键帧/P01/S04.png",
+      "~/Desktop/侠客行/exec-44abbd30-1b69-43c0-aa50-c9cfe46d2169.png"
+    ],
+    "model": "doubao-seedream-5-0-flash-260915"
+  },
+  "quote": {
+    "min_cny": 0.12,
+    "max_cny": 0.6,
+    "note": "按规格每张 0.12–0.60 元估算，本次生成一张；以账单为准。"
+  },
+  "provider": "seedream",
+  "model": "doubao-seedream-5-0-flash-260915",
+  "prompt": "统一成同一套工业产品摄影风格的金属零件展示台，干净布光",
+  "reference_image_count": 4,
+  "reference_notes": [
+    "默认采用 image_generation.py 中 Seedream 的 Flash 模型；config.ts 的 Seedream Pro 默认值不适用于本子命令。"
+  ],
+  "request": {
+    "method": "POST",
+    "url": "https://ark.cn-beijing.volces.com/api/v3/images/generations",
+    "headers": {
+      "Content-Type": "application/json",
+      "Authorization": "REDACTED"
+    },
+    "body": {
+      "model": "doubao-seedream-5-0-flash-260915",
+      "prompt": "统一成同一套工业产品摄影风格的金属零件展示台，干净布光",
+      "size": "2560x1440",
+      "response_format": "b64_json",
+      "output_format": "png",
+      "watermark": false,
+      "image": [
+        "<base64 len=2878362 sha256=e30d65854c50>",
+        "<base64 len=2879422 sha256=d392d1c6bbb6>",
+        "<base64 len=2632502 sha256=746b1bba1a5b>",
+        "<base64 len=3266502 sha256=7d809c481ae4>"
+      ]
+    }
+  },
+  "request_bytes": 11657035,
+  "fingerprint": "3748ce044b927c85",
+  "latency_s": 20.35322,
+  "response": {
+    "model": "doubao-seedream-5-0-flash-260915",
+    "created": 1792156209,
+    "data": [
+      {
+        "b64_json": "<base64 len=7617364 sha256=661baac2efe5>",
+        "size": "2560x1440",
+        "output_format": "png"
+      }
+    ],
+    "usage": {
+      "input_images": 4,
+      "generated_images": 1,
+      "output_tokens": 14400,
+      "total_tokens": 14400
+    }
+  },
+  "usage": {
+    "input_images": 4,
+    "generated_images": 1,
+    "output_tokens": 14400,
+    "total_tokens": 14400
+  },
+  "billing_fields": {
+    "usage": {
+      "input_images": 4,
+      "generated_images": 1,
+      "output_tokens": 14400,
+      "total_tokens": 14400
+    }
+  },
+  "image_dimensions": {
+    "width": 2560,
+    "height": 1440
+  },
+  "returned_image_count": 1,
+  "media_path": "~/Desktop/ai-workspace/.worktrees/fiona-studio/backend/studio_data/_probe/media/cdc8521761b64a8fabf915d0267c23e5.png",
+  "media_bytes": 5713023,
+  "ffprobe": {
+    "available": true,
+    "width": 2560,
+    "height": 1440,
+    "frame_rate": "25/1",
+    "fps": 25.0,
+    "nb_frames": null,
+    "nb_read_frames": "1",
+    "duration": null,
+    "has_audio": false,
+    "sample_rate": null,
+    "channels": null,
+    "bits_per_sample": null,
+    "format_name": "png_pipe",
+    "raw": {
+      "streams": [
+        {
+          "index": 0,
+          "codec_name": "png",
+          "codec_long_name": "PNG (Portable Network Graphics) image",
+          "codec_type": "video",
+          "codec_tag_string": "[0][0][0][0]",
+          "codec_tag": "0x0000",
+          "width": 2560,
+          "height": 1440,
+          "coded_width": 2560,
+          "coded_height": 1440,
+          "has_b_frames": 0,
+          "pix_fmt": "rgb24",
+          "level": -99,
+          "color_range": "pc",
+          "color_space": "gbr",
+          "color_transfer": "bt470m",
+          "color_primaries": "bt709",
+          "refs": 1,
+          "r_frame_rate": "25/1",
+          "avg_frame_rate": "25/1",
+          "time_base": "1/25",
+          "nb_read_frames": "1",
+          "disposition": {
+            "default": 0,
+            "dub": 0,
+            "original": 0,
+            "comment": 0,
+            "lyrics": 0,
+            "karaoke": 0,
+            "forced": 0,
+            "hearing_impaired": 0,
+            "visual_impaired": 0,
+            "clean_effects": 0,
+            "attached_pic": 0,
+            "timed_thumbnails": 0,
+            "non_diegetic": 0,
+            "captions": 0,
+            "descriptions": 0,
+            "metadata": 0,
+            "dependent": 0,
+            "still_image": 0,
+            "multilayer": 0
+          }
+        }
+      ],
+      "format": {
+        "filename": "~/Desktop/ai-workspace/.worktrees/fiona-studio/backend/studio_data/_probe/media/cdc8521761b64a8fabf915d0267c23e5.png",
+        "nb_streams": 1,
+        "nb_programs": 0,
+        "nb_stream_groups": 0,
+        "format_name": "png_pipe",
+        "format_long_name": "piped png sequence",
+        "size": "5713023",
+        "probe_score": 99
+      }
+    }
+  },
+  "status": "succeeded",
+  "exit_code": 0,
+  "elapsed_s": 20.505684,
+  "fixture_path": "~/Desktop/ai-workspace/.worktrees/fiona-studio/backend/tests/fixtures/studio/seedream-20261016-131010.json"
+}

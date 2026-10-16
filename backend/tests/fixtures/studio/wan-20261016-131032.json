@@ -1,0 +1,329 @@
+{
+  "probe": "wan",
+  "label": "vertical-adaptive",
+  "timestamp": "2026-10-16T13:09:10.028543+00:00",
+  "parameters": {
+    "command": "wan",
+    "label": "vertical-adaptive",
+    "yes_spend": "1.50",
+    "image": "~/Desktop/视频生成/Preloq短视频/关键帧/P01/S07.png",
+    "prompt": "固定机位，画面主体与结构保持不变，只有光线在金属表面缓慢流动，背景轻微景深变化",
+    "model": "wan3.0-video",
+    "resolution": "480P",
+    "duration": 5,
+    "ratio": "adaptive",
+    "audio": true
+  },
+  "quote": {
+    "min_cny": 1.05,
+    "max_cny": 1.5,
+    "note": "按 video-catalog.ts 原价的七折到原价估算，prime 同价；以百炼账单为准。"
+  },
+  "provider": "wan",
+  "model": "wan3.0-video",
+  "prompt": "固定机位，画面主体与结构保持不变，只有光线在金属表面缓慢流动，背景轻微景深变化",
+  "resolution": "480P",
+  "first_frame_dimensions": {
+    "width": 941,
+    "height": 1672
+  },
+  "reference_notes": [
+    "首帧使用 input.media[{type:first_frame,url:data URI}]；prompt_extend 按规格显式关闭。"
+  ],
+  "request": {
+    "method": "POST",
+    "url": "https://REDACTED.cn-beijing.maas.aliyuncs.com/api/v1/services/aigc/video-generation/video-synthesis",
+    "headers": {
+      "Content-Type": "application/json",
+      "Authorization": "REDACTED",
+      "X-DashScope-Async": "enable"
+    },
+    "body": {
+      "model": "wan3.0-video",
+      "input": {
+        "prompt": "固定机位，画面主体与结构保持不变，只有光线在金属表面缓慢流动，背景轻微景深变化",
+        "media": [
+          {
+            "type": "first_frame",
+            "url": "<base64 len=2878362 sha256=e30d65854c50>"
+          }
+        ]
+      },
+      "parameters": {
+        "resolution": "480P",
+        "ratio": "adaptive",
+        "duration": 5,
+        "audio": true,
+        "prompt_extend": false,
+        "watermark": false
+      }
+    }
+  },
+  "request_bytes": 2878687,
+  "fingerprint": "d0731453e29f9faf",
+  "latency_s": 0.727075,
+  "response": {
+    "request_id": "4462add3-ef42-9797-ab1e-25ffbf4b88e7",
+    "output": {
+      "task_id": "dfa2fb36-d170-4929-9e98-6cfc89b6d8a9",
+      "task_status": "SUCCEEDED",
+      "submit_time": "2026-10-16 21:09:10.740",
+      "scheduled_time": "2026-10-16 21:09:10.776",
+      "end_time": "2026-10-16 21:10:27.351",
+      "video_url": "<base64 len=244 sha256=0f8134a3230d>",
+      "orig_prompt": "固定机位，画面主体与结构保持不变，只有光线在金属表面缓慢流动，背景轻微景深变化"
+    },
+    "usage": {
+      "video_count": 1,
+      "duration": 5.0,
+      "SR": 480,
+      "output_video_duration": 5.0,
+      "input_video_duration": 0.0,
+      "fps": 30,
+      "ratio": "941:1672"
+    }
+  },
+  "submission_response": {
+    "output": {
+      "task_id": "dfa2fb36-d170-4929-9e98-6cfc89b6d8a9",
+      "task_status": "PENDING"
+    },
+    "request_id": "b9fe21ba-0f41-98de-aea8-b101e2279d8b"
+  },
+  "usage": {
+    "video_count": 1,
+    "duration": 5.0,
+    "SR": 480,
+    "output_video_duration": 5.0,
+    "input_video_duration": 0.0,
+    "fps": 30,
+    "ratio": "941:1672"
+  },
+  "billing_fields": {
+    "usage": {
+      "video_count": 1,
+      "duration": 5.0,
+      "SR": 480,
+      "output_video_duration": 5.0,
+      "input_video_duration": 0.0,
+      "fps": 30,
+      "ratio": "941:1672"
+    }
+  },
+  "task_id": "dfa2fb36-d170-4929-9e98-6cfc89b6d8a9",
+  "poll_history": [
+    {
+      "timestamp": "2026-10-16T13:09:10.774672+00:00",
+      "status": "PENDING"
+    },
+    {
+      "timestamp": "2026-10-16T13:09:10.925061+00:00",
+      "status": "RUNNING"
+    },
+    {
+      "timestamp": "2026-10-16T13:09:21.068027+00:00",
+      "status": "RUNNING"
+    },
+    {
+      "timestamp": "2026-10-16T13:09:31.229641+00:00",
+      "status": "RUNNING"
+    },
+    {
+      "timestamp": "2026-10-16T13:09:41.381028+00:00",
+      "status": "RUNNING"
+    },
+    {
+      "timestamp": "2026-10-16T13:09:51.543174+00:00",
+      "status": "RUNNING"
+    },
+    {
+      "timestamp": "2026-10-16T13:10:01.699334+00:00",
+      "status": "RUNNING"
+    },
+    {
+      "timestamp": "2026-10-16T13:10:11.853872+00:00",
+      "status": "RUNNING"
+    },
+    {
+      "timestamp": "2026-10-16T13:10:22.026303+00:00",
+      "status": "RUNNING"
+    },
+    {
+      "timestamp": "2026-10-16T13:10:32.188314+00:00",
+      "status": "SUCCEEDED"
+    }
+  ],
+  "actual_cost_cny": 1.5,
+  "actual_cost_note": "按上游 usage.duration 与 SR 的原价折算，最终以账单为准。",
+  "video_url": "<base64 len=244 sha256=0f8134a3230d>",
+  "result_hosts": [
+    "dashscope-a717.oss-accelerate.aliyuncs.com"
+  ],
+  "media_path": "~/Desktop/ai-workspace/.worktrees/fiona-studio/backend/studio_data/_probe/media/9eabadf9a4174cd0aad05dcb985c2e7e.mp4",
+  "media_bytes": 3167023,
+  "ffprobe": {
+    "available": true,
+    "width": 480,
+    "height": 852,
+    "frame_rate": "30/1",
+    "fps": 30.0,
+    "nb_frames": "150",
+    "nb_read_frames": "150",
+    "duration": "5.038005",
+    "has_audio": true,
+    "sample_rate": "44100",
+    "channels": 2,
+    "bits_per_sample": 0,
+    "format_name": "mov,mp4,m4a,3gp,3g2,mj2",
+    "raw": {
+      "streams": [
+        {
+          "index": 0,
+          "codec_name": "h264",
+          "codec_long_name": "H.264 / AVC / MPEG-4 AVC / MPEG-4 part 10",
+          "profile": "High",
+          "codec_type": "video",
+          "codec_tag_string": "avc1",
+          "codec_tag": "0x31637661",
+          "mime_codec_string": "avc1.64001f",
+          "width": 480,
+          "height": 852,
+          "coded_width": 480,
+          "coded_height": 864,
+          "has_b_frames": 2,
+          "pix_fmt": "yuv420p",
+          "level": 31,
+          "chroma_location": "left",
+          "field_order": "progressive",
+          "refs": 4,
+          "is_avc": "true",
+          "nal_length_size": "4",
+          "id": "0x1",
+          "r_frame_rate": "30/1",
+          "avg_frame_rate": "30/1",
+          "time_base": "1/15360",
+          "start_pts": 0,
+          "start_time": "0.000000",
+          "duration_ts": 76800,
+          "duration": "5.000000",
+          "bit_rate": "4924868",
+          "bits_per_raw_sample": "8",
+          "nb_frames": "150",
+          "nb_read_frames": "150",
+          "extradata_size": 46,
+          "disposition": {
+            "default": 1,
+            "dub": 0,
+            "original": 0,
+            "comment": 0,
+            "lyrics": 0,
+            "karaoke": 0,
+            "forced": 0,
+            "hearing_impaired": 0,
+            "visual_impaired": 0,
+            "clean_effects": 0,
+            "attached_pic": 0,
+            "timed_thumbnails": 0,
+            "non_diegetic": 0,
+            "captions": 0,
+            "descriptions": 0,
+            "metadata": 0,
+            "dependent": 0,
+            "still_image": 0,
+            "multilayer": 0
+          },
+          "tags": {
+            "language": "und",
+            "handler_name": "VideoHandler",
+            "encoder": "Lavc60.31.102 libx264"
+          }
+        },
+        {
+          "index": 1,
+          "codec_name": "aac",
+          "codec_long_name": "AAC (Advanced Audio Coding)",
+          "profile": "LC",
+          "codec_type": "audio",
+          "codec_tag_string": "mp4a",
+          "codec_tag": "0x6134706d",
+          "mime_codec_string": "mp4a.40.2",
+          "sample_fmt": "fltp",
+          "sample_rate": "44100",
+          "channels": 2,
+          "channel_layout": "stereo",
+          "bits_per_sample": 0,
+          "initial_padding": 0,
+          "id": "0x2",
+          "r_frame_rate": "0/0",
+          "avg_frame_rate": "0/0",
+          "time_base": "1/44100",
+          "start_pts": 0,
+          "start_time": "0.000000",
+          "duration_ts": 222176,
+          "duration": "5.038005",
+          "bit_rate": "128071",
+          "nb_frames": "218",
+          "nb_read_frames": "217",
+          "extradata_size": 5,
+          "disposition": {
+            "default": 1,
+            "dub": 0,
+            "original": 0,
+            "comment": 0,
+            "lyrics": 0,
+            "karaoke": 0,
+            "forced": 0,
+            "hearing_impaired": 0,
+            "visual_impaired": 0,
+            "clean_effects": 0,
+            "attached_pic": 0,
+            "timed_thumbnails": 0,
+            "non_diegetic": 0,
+            "captions": 0,
+            "descriptions": 0,
+            "metadata": 0,
+            "dependent": 0,
+            "still_image": 0,
+            "multilayer": 0
+          },
+          "tags": {
+            "language": "und",
+            "handler_name": "SoundHandler"
+          }
+        }
+      ],
+      "format": {
+        "filename": "~/Desktop/ai-workspace/.worktrees/fiona-studio/backend/studio_data/_probe/media/9eabadf9a4174cd0aad05dcb985c2e7e.mp4",
+        "nb_streams": 2,
+        "nb_programs": 0,
+        "nb_stream_groups": 0,
+        "format_name": "mov,mp4,m4a,3gp,3g2,mj2",
+        "format_long_name": "QuickTime / MOV",
+        "start_time": "0.000000",
+        "duration": "5.038005",
+        "size": "3167023",
+        "bit_rate": "5029011",
+        "probe_score": 100,
+        "tags": {
+          "minor_version": "512",
+          "major_brand": "isom",
+          "compatible_brands": "isomiso2avc1mp41",
+          "decoder": "Lavf15.0",
+          "AIGC": "{\"Label\":\"1\",\"ContentProducer\":\"001191330106MA2CFLDG4R10001\",\"ProduceID\":\"R-36L7NtFwSSmemGz8ibbYqQ\",\"ReservedCode1\":\"K-LBkc9peJ0GoxPECtYBct7vfZZgZvwy4FZrhe/DJovt3rGFEyBJ4z5WZYsl9yWMbLJV1dtqBLv4b0NqZTev+zPrl/45fN3XEWsPXB4Zk5SGrqRw5GOK1iuv2bPNauD9tTTb1B9Ll7iKhOpcMyZOQHrrD2PvCpHbg79a3ItXe4ZcqO3FqiGQKNBqKhtg781udCxjPn9yiVh9KsGALv9ZivDxcaEp+fjj+kLWDV+iJRVqsWtTzWR7irUZ2zvR6wyQgj394vN/o2VisbS590dRHfKSgYbqjX6tBc0zUjK/nFHWw=\",\"ContentPropagator\":\"001191330106MA2CFLDG4R10001\",\"PropagateID\":\"R-36L7NtFwSSmemGz8ibbYqQ\",\"ReservedCode2\":\"K-LBkc9peJ0GoxPECtYBct7vfZZgZvwy4FZrhe/DJovt3rGFEyBJ4z5WZYsl9yWMbLJV1dtqBLv4b0NqZTev+zPrl/45fN3XEWsPXB4Zk5SGrqRw5GOK1iuv2bPNauD9tTTb1B9Ll7iKhOpcMyZOQHrrD2PvCpHbg79a3ItXe4ZcqO3FqiGQKNBqKhtg781udCxjPn9yiVh9KsGALv9ZivDxcaEp+fjj+kLWDV+iJRVqsWtTzWR7irUZ2zvR6wyQgj394vN/o2VisbS590dRHfKSgYbqjX6tBc0zUjK/nFHWw=\"}",
+          "encoder": "Lavf60.16.100"
+        }
+      }
+    }
+  },
+  "aspect_ratio_comparison": {
+    "input_ratio": 0.562799043062201,
+    "output_ratio": 0.5633802816901409,
+    "match": true,
+    "relative_tolerance": 0.01,
+    "note": "考虑视频像素取整，以相对误差不超过 1% 判断宽高比是否一致。"
+  },
+  "status": "succeeded",
+  "exit_code": 0,
+  "elapsed_s": 82.784707,
+  "fixture_path": "~/Desktop/ai-workspace/.worktrees/fiona-studio/backend/tests/fixtures/studio/wan-20261016-131032.json"
+}

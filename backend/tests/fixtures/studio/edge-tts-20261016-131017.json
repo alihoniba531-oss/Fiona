@@ -1,0 +1,189 @@
+{
+  "probe": "edge-tts",
+  "label": "en-line",
+  "timestamp": "2026-10-16T13:10:13.416735+00:00",
+  "parameters": {
+    "command": "edge-tts",
+    "label": "en-line",
+    "text": "Let's build great work together, through the struggle. For everyone who carries a dream.",
+    "voice": "en-US-AndrewNeural"
+  },
+  "edge_tts_version": "7.3.1",
+  "word_boundaries": [
+    {
+      "type": "WordBoundary",
+      "offset": 1000000,
+      "duration": 1750000,
+      "text": "Let's"
+    },
+    {
+      "type": "WordBoundary",
+      "offset": 2875000,
+      "duration": 3000000,
+      "text": "build"
+    },
+    {
+      "type": "WordBoundary",
+      "offset": 6000000,
+      "duration": 3750000,
+      "text": "great"
+    },
+    {
+      "type": "WordBoundary",
+      "offset": 9875000,
+      "duration": 2375000,
+      "text": "work"
+    },
+    {
+      "type": "WordBoundary",
+      "offset": 12375000,
+      "duration": 5000000,
+      "text": "together"
+    },
+    {
+      "type": "WordBoundary",
+      "offset": 20375000,
+      "duration": 1625000,
+      "text": "through"
+    },
+    {
+      "type": "WordBoundary",
+      "offset": 22125000,
+      "duration": 875000,
+      "text": "the"
+    },
+    {
+      "type": "WordBoundary",
+      "offset": 23125000,
+      "duration": 4750000,
+      "text": "struggle"
+    },
+    {
+      "type": "WordBoundary",
+      "offset": 32500000,
+      "duration": 1500000,
+      "text": "For"
+    },
+    {
+      "type": "WordBoundary",
+      "offset": 34125000,
+      "duration": 4000000,
+      "text": "everyone"
+    },
+    {
+      "type": "WordBoundary",
+      "offset": 38250000,
+      "duration": 1250000,
+      "text": "who"
+    },
+    {
+      "type": "WordBoundary",
+      "offset": 39625000,
+      "duration": 3625000,
+      "text": "carries"
+    },
+    {
+      "type": "WordBoundary",
+      "offset": 43375000,
+      "duration": 375000,
+      "text": "a"
+    },
+    {
+      "type": "WordBoundary",
+      "offset": 43875000,
+      "duration": 3750000,
+      "text": "dream"
+    }
+  ],
+  "http_403": false,
+  "request": {
+    "body": {
+      "text": "Let's build great work together, through the struggle. For everyone who carries a dream.",
+      "voice": "en-US-AndrewNeural"
+    }
+  },
+  "media_path": "~/Desktop/ai-workspace/.worktrees/fiona-studio/backend/studio_data/_probe/media/af2753541a894c52b675fcdfe64698b8.mp3",
+  "media_bytes": 30816,
+  "ffprobe": {
+    "available": true,
+    "width": null,
+    "height": null,
+    "frame_rate": null,
+    "fps": null,
+    "nb_frames": null,
+    "nb_read_frames": null,
+    "duration": "5.136000",
+    "has_audio": true,
+    "sample_rate": "24000",
+    "channels": 1,
+    "bits_per_sample": 0,
+    "format_name": "mp3",
+    "raw": {
+      "streams": [
+        {
+          "index": 0,
+          "codec_name": "mp3",
+          "codec_long_name": "MP3 (MPEG audio layer 3)",
+          "codec_type": "audio",
+          "codec_tag_string": "[0][0][0][0]",
+          "codec_tag": "0x0000",
+          "mime_codec_string": "mp4a.40.34",
+          "sample_fmt": "fltp",
+          "sample_rate": "24000",
+          "channels": 1,
+          "channel_layout": "mono",
+          "bits_per_sample": 0,
+          "initial_padding": 0,
+          "r_frame_rate": "0/0",
+          "avg_frame_rate": "0/0",
+          "time_base": "1/14112000",
+          "start_pts": 0,
+          "start_time": "0.000000",
+          "duration_ts": 72479232,
+          "duration": "5.136000",
+          "bit_rate": "48000",
+          "nb_read_frames": "214",
+          "disposition": {
+            "default": 0,
+            "dub": 0,
+            "original": 0,
+            "comment": 0,
+            "lyrics": 0,
+            "karaoke": 0,
+            "forced": 0,
+            "hearing_impaired": 0,
+            "visual_impaired": 0,
+            "clean_effects": 0,
+            "attached_pic": 0,
+            "timed_thumbnails": 0,
+            "non_diegetic": 0,
+            "captions": 0,
+            "descriptions": 0,
+            "metadata": 0,
+            "dependent": 0,
+            "still_image": 0,
+            "multilayer": 0
+          }
+        }
+      ],
+      "format": {
+        "filename": "~/Desktop/ai-workspace/.worktrees/fiona-studio/backend/studio_data/_probe/media/af2753541a894c52b675fcdfe64698b8.mp3",
+        "nb_streams": 1,
+        "nb_programs": 0,
+        "nb_stream_groups": 0,
+        "format_name": "mp3",
+        "format_long_name": "MP2/3 (MPEG audio layer 2/3)",
+        "start_time": "0.000000",
+        "duration": "5.136000",
+        "size": "30816",
+        "bit_rate": "48000",
+        "probe_score": 51
+      }
+    }
+  },
+  "status": "succeeded",
+  "actual_cost_cny": 0,
+  "exit_code": 0,
+  "elapsed_s": 4.141298,
+  "fixture_path": "~/Desktop/ai-workspace/.worktrees/fiona-studio/backend/tests/fixtures/studio/edge-tts-20261016-131017.json"
+}

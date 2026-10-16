@@ -62,3 +62,4 @@ desktop.ini
 
 # ===== 工具本地状态(Claude Code worktree 等,不入库)=====
 .claude/
+backend/studio_data/
