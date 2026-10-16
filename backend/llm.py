@@ -78,6 +78,14 @@ QWEN_CLIENT    = make_dashscope_client()
 QWEN_MODEL      = "qwen3.8-flash"
 QWEN_EXTRA_BODY = {"enable_thinking": False}
 
+# 聊天看图（chat_service.stream_image）。2026-10-16 由 qwen-vl-max 切换：该模型已不在
+# 账号可用模型列表，调用返回 404。默认值有意写成字面量、不引用 MAIN_MODEL——
+# 主力模型将来若换成纯文本模型，看图不能跟着坏。可用 FIONA_CHAT_VISION_MODEL 覆盖。
+CHAT_VISION_MODEL_ENV     = "FIONA_CHAT_VISION_MODEL"
+CHAT_VISION_MODEL_DEFAULT = "qwen3.8-omni-flash"
+# omni-flash 默认开思考，会吃掉看图回复的 400 token 额度；看图请求一律关掉。
+CHAT_VISION_EXTRA_BODY    = {"enable_thinking": False}
+
 
 
 def _create_stream_with_fallback(use_qwen: bool, messages: list, **kwargs):

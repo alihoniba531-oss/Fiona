@@ -37,7 +37,7 @@ from database import (STRAWBERRY_COST_PER_REPLY, count_messages, get_messages,
                       strawberry_insufficient_message)
 from extractor import extract_and_update
 from intent_router import ask_missing, clear_pending, explicit_image_intent, fill_param, get_pending, image_aspect_ratio, image_edit_requires_reference, image_generation_discussion, recognize_intent, set_pending
-from llm import QWEN_CLIENT, _create_stream_with_fallback, client
+from llm import CHAT_VISION_EXTRA_BODY, CHAT_VISION_MODEL_DEFAULT, CHAT_VISION_MODEL_ENV, QWEN_CLIENT, _create_stream_with_fallback, client
 from mode_switcher import apply_mode_prompt, detect_mode, get_user_mode
 from model_router import choose_model, token_budget
 from persona import BASE_SAFETY_RULES, build_system_prompt
@@ -76,6 +76,7 @@ _BYOK_POOL_LOCK = threading.Lock()
 TOOL_DEFAULT_IMAGE_MODEL = "seedream-5.0-flash"
 _IMAGE_MODEL_LABELS = {"seedream-5.0-flash": "Seedream 5.0 Flash", "qwen-image-3.0": "Qwen Image 3.0"}
 _IMAGE_TOOL_ENV_WARNED = False
+_CHAT_VISION_ENV_WARNED = False
 _CLAUDE_AGENT_ENV_WARNED = False
 _IMAGE_HEARTBEAT_SECONDS = 10
 IMAGE_PENDING_CANCEL_PATTERN = r"^(?:算了|取消|不用了|不画了|不要了|停止|别画了)[吧了。！!\s]*$"
@@ -243,6 +244,22 @@ def _wants_byok(ctx: "ChatContext", state: "ChatState") -> bool:
     return not state.crisis and bool(
         ctx.byok_error is not None or (ctx.byok_config and ctx.byok_config.get("enabled"))
     )
+
+
+def _chat_vision_model() -> str:
+    global _CHAT_VISION_ENV_WARNED
+    value = os.getenv(CHAT_VISION_MODEL_ENV)
+    if value is None:
+        return CHAT_VISION_MODEL_DEFAULT
+    value = value.strip()
+    if not value:
+        return CHAT_VISION_MODEL_DEFAULT
+    if re.fullmatch(r"[A-Za-z0-9][A-Za-z0-9._-]{0,63}", value):
+        return value
+    if not _CHAT_VISION_ENV_WARNED:
+        logging.getLogger(__name__).warning(f"{CHAT_VISION_MODEL_ENV} 非法值，按默认 {CHAT_VISION_MODEL_DEFAULT} 处理")
+        _CHAT_VISION_ENV_WARNED = True
+    return CHAT_VISION_MODEL_DEFAULT
 
 
 def _image_tool_enabled(ctx: "ChatContext", state: "ChatState") -> bool:
@@ -1164,7 +1181,7 @@ async def stream_mirror(ctx: ChatContext, state: ChatState, *, preserve_pending:
 
 
 async def stream_image(ctx: ChatContext, state: ChatState):
-    """有图片：用 qwen-vl-max 看图，跳过意图识别。"""
+    """有图片：用看图模型（FIONA_CHAT_VISION_MODEL，默认 qwen3.8-omni-flash）看图，跳过意图识别。"""
     if ctx.byok_unreserved:
         async for event in _unreserved_error(ctx, state):
             yield event
@@ -1202,14 +1219,16 @@ async def stream_image(ctx: ChatContext, state: ChatState):
     if _has_trailing_system(ctx):
         vl_messages.append(ctx.messages[-1])
 
+    vision_model = _chat_vision_model()
     try:
         stream = await asyncio.to_thread(
             QWEN_CLIENT.chat.completions.create,
-            model="qwen-vl-max",
+            model=vision_model,
             messages=vl_messages,
             max_tokens=400,
             temperature=0.9,
             stream=True,
+            extra_body=dict(CHAT_VISION_EXTRA_BODY),
         )
         async with aclosing(_iter_sync_stream(stream)) as chunks:
             async for chunk in chunks:
@@ -1219,7 +1238,7 @@ async def stream_image(ctx: ChatContext, state: ChatState):
                     yield _sse({"text": text})
     except Exception as e:
         state.trace["error"] = type(e).__name__
-        print(f"[chat] qwen-vl-max error type={type(e).__name__}", flush=True)
+        print(f"[chat] vision model={vision_model} error type={type(e).__name__}", flush=True)
         if _needs_crisis_resource(state):
             yield _crisis_resource_event(state)
             await _save_response(ctx, state)

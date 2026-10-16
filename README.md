@@ -93,6 +93,7 @@ OpenAI 兼容模型客户端默认 60 秒超时、最多重试 1 次，可用 `D
 热点分类使用 `qwen3.8-flash`，请求固定 8 秒超时、不重试。危机复核使用独立异步客户端、不重试，
 `FIONA_CRISIS_MODEL_ENABLED` 默认开启，仅 `0` 关闭；`FIONA_CRISIS_MODEL_TIMEOUT_SECONDS`
 默认 `2.0` 秒，合法范围 `0.5–10`，无效值回落到默认值。
+用户发图时的看图模型默认 `qwen3.8-omni-flash`（与主力对话同一模型），可用 `FIONA_CHAT_VISION_MODEL` 改为账号已开通的其他视觉模型；每次调用时读取，空值用默认，非法值回落默认并只告警一次，请求固定关闭思考模式。
 
 天气需先在百炼控制台开通 Amap Maps，复用 `DASHSCOPE_API_KEY`；目前限时免费，结束后按量计费，单价以控制台为准。`FIONA_AMAP_ENABLED` 默认 `1`，只有字面 `0` 关闭；`FIONA_AMAP_TIMEOUT_SECONDS` 默认总预算 `8` 秒，合法范围 `1–30` 秒，空串、非数字、非有限值或越界值回落到 `8`。这些天气配置在调用时读取。
 
@@ -342,7 +343,7 @@ WO3a「①拆解」可试读最多 20000 字素材，选择通读结论、风格
 
 导演接口为 `GET /studio/brain/providers`、`PATCH /studio/projects/{pid}`、`POST /studio/projects/{pid}/brain/quote`、`POST /studio/projects/{pid}/brain/trial` 和 `GET /studio/projects/{pid}/brain/groups/{group_id}`。`providers=all` 采用严格策略：任一家不可用或任何预算检查失败，整体返回 409，不建任务、不发模型请求。报价不调用模型；正式提交在事务内重查累计额度。千问和 DeepSeek 计入工作室人民币日上限；Claude 按作者计入上海自然月美元上限，默认 $40。未知 Claude 型号必须设置 `FIONA_STUDIO_PRICE_<MODEL>`，格式见 `.env.example`。默认价格仍待核实，应以实际账单为准。
 
-工作室看图由 Claude 直接处理，或交给 `FIONA_STUDIO_VISION_MODEL` 指定的千问视觉模型，默认 `qwen3-vl-plus`；DeepSeek 不接收图片。配置每次调用时读取，允许空值，空值使用默认模型且不告警；非空值须匹配 `^[a-z0-9][a-z0-9.\-]{1,63}$`，非法值回落默认并只告警一次。提供方接口的 `vision_via`、结果警告和手动评测报告会标出实际视觉模型。`qwen3-vl-plus` 暂按每百万 token 输入 ¥1、输出 ¥10 计价（待核实），可通过 `FIONA_STUDIO_PRICE_QWEN3_VL_PLUS={"input":1,"output":10,"cache_read":1}` 覆盖；旧 `qwen-vl-max` 价格保留供旧任务结算。自定义视觉模型须先配置单价，否则看图调用返回 409 且不发请求。此项仅配置工作室，聊天看图保持原有行为。
+工作室看图由 Claude 直接处理，或交给 `FIONA_STUDIO_VISION_MODEL` 指定的千问视觉模型，默认 `qwen3-vl-plus`；DeepSeek 不接收图片。配置每次调用时读取，允许空值，空值使用默认模型且不告警；非空值须匹配 `^[a-z0-9][a-z0-9.\-]{1,63}$`，非法值回落默认并只告警一次。提供方接口的 `vision_via`、结果警告和手动评测报告会标出实际视觉模型。`qwen3-vl-plus` 暂按每百万 token 输入 ¥1、输出 ¥10 计价（待核实），可通过 `FIONA_STUDIO_PRICE_QWEN3_VL_PLUS={"input":1,"output":10,"cache_read":1}` 覆盖；旧 `qwen-vl-max` 价格保留供旧任务结算。自定义视觉模型须先配置单价，否则看图调用返回 409 且不发请求。此项仅配置工作室；聊天看图由 `FIONA_CHAT_VISION_MODEL` 单独配置（默认 `qwen3.8-omni-flash`）。
 
 每次模型调用独立记账；SDK `max_retries=0`，超时、断连、5xx 和无法解析的响应保留额度为 uncertain，只有完整 4xx/429 释放。已收到的模型正文不符合 JSON/硬约束时，允许单独计费、单独预留的一次修正；第二次不合格终止为 invalid_output。同步导演任务没有上游任务号，只能核实未扣费后释放。原文及模型产物保存在作者任务记录中以支持后台执行，日志不记录原文、提示词或输出。
 

@@ -212,7 +212,7 @@ Fiona 的目标已确认调整为“每个用户拥有自己的 AI 分身，分�
 - FastAPI SSE 流式聊天。
 - Chloe Persona、熟悉度阶段、镜像模式和意图路由。
 - 平台默认 `qwen3.8-omni-flash` 主力模型和 `qwen3.8-flash` 轻量槽位；每用户可仅替换普通/镜子聊天回复为 BYOK。
-- `qwen-vl-max` 图片理解。
+- 用户图片理解：默认 `qwen3.8-omni-flash`，可用 `FIONA_CHAT_VISION_MODEL` 改（2026-10-16 起；原 `qwen-vl-max` 已不在账号可用模型列表）。
 - 消息历史、用户画像、状态探测和后台提取。
 - 草莓原子预扣、按交付结算、可选每日补给及进程内用量估算。
 

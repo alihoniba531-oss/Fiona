@@ -193,9 +193,8 @@ Claude 思考强度可选低 / 中 / 高，默认低；聊天底栏和设置页�
 当前平台模型配置以 `backend/llm.py` 和各适配器源码为准：
 
 - `deepseek-v4-pro`：本地已配置的官方搭档发言及单人体验总结；由 `exchange_models.py` 独立配置。
-- `qwen3.8-omni-flash`：主力对话、匹配和复杂判断。
+- `qwen3.8-omni-flash`：主力对话、匹配和复杂判断；也是用户图片理解（看图）的默认模型。看图模型由 `FIONA_CHAT_VISION_MODEL` 单独配置，每次调用时读取，空值用默认，非法值回落默认并只告警一次；看图请求固定关闭思考模式。
 - `qwen3.8-flash`：轻量对话槽位，失败时回退主力模型；热点分类使用此模型，请求固定 8 秒超时、不重试；也用于独立的危机复核，危机复核不回退、不重试。
-- `qwen-vl-max`：用户图片理解。
 - `qwen-image-3.0`：面板与旧路由默认文生图及参考图编辑模型，工具可点名或降级使用，每次一张；`QWEN_IMAGE_MODEL` 可调整。
 - `seedream-5.0-flash`：聊天工具默认生图模型，面板可选生图及参考图编辑模型，经火山方舟调用；`ARK_API_KEY` 仅服务端读取，`SEEDREAM_IMAGE_MODEL` 默认 `doubao-seedream-5-0-flash-260915`，需先开通。
 - `qwen-plus`：搜索、旅行规划、热点展开和卡片详情，均使用 DashScope 原生接口并强制开启联网搜索。
