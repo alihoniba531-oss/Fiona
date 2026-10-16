@@ -186,11 +186,16 @@ async def write_chapter(router, config, compass, bible, meeting, *, chapter, arm
             "body": body, "beat_sheet": beat_sheet,
             "bible": build_review_bible(compass, bible, chapter, beat_sheet["characters"]),
             "review_round": revision}
+        adaptation_blocking = bool(config.get("drama_adaptation"))
+        if adaptation_blocking:
+            review_payload["adaptation_blocking"] = True
+            review_payload["adaptation_limits"] = config["adaptation"]
         if revision >= 1:
             review_payload["previous_blocking_issues"] = deepcopy(blocking_issues)
         review = await call(
             "reviewer", "review", f"05-review-reviewer-r{revision}.json",
-            review_payload, lambda data: validate_review(data, body))
+            review_payload, lambda data: validate_review(
+                data, body, adaptation_blocking=adaptation_blocking))
         reviews.append(review)
         if not review["issues"] and review["dropped_issues"] and "review_degraded" not in flags:
             flags.append("review_degraded")
@@ -211,7 +216,8 @@ async def write_chapter(router, config, compass, bible, meeting, *, chapter, arm
         {"body": body, "beat_sheet": beat_sheet,
          "bible": (build_review_bible(compass, bible, chapter, beat_sheet["characters"])
                    if config.get("enable_context_compression") else bible)},
-        lambda data: validate_archive(data, bible))
+        lambda data: validate_archive(
+            data, bible, require_new_appearance=config.get("experiment") == "P1"))
     next_bible = await apply_archived_chapter(
         router, config, compass, bible, archive, chapter=chapter, title=title,
         beat_sheet=beat_sheet, arm=arm)

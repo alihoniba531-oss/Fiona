@@ -109,15 +109,18 @@ REVIEW_SCHEMA = """只返回 JSON：{"issues":[{"category":"continuity|character
 按顺序核对：锁定的人物外形和设定 → 人物当前位置和伤病 → 时间线与伏笔 → 细纲是否完成。
 problem 里要引用圣经原文，说明与正文 evidence 的具体冲突；通过圣经中的 compass.seed_idea 核对用户的原始思路。
 风格偏好不能阻断；style 和 adaptation 一律 blocking=false。不要输出通过结论，代码根据有效阻断问题决定是否通过。
+唯一例外：payload 含 adaptation_blocking=true 时，adaptation 类中以下可客观核对的硬约束判 blocking=true——本章场景数超过 adaptation_limits.max_scenes_per_chapter，或本章出场的主要人物超过 adaptation_limits.max_main_characters；其余 adaptation 问题仍为 false。
 区分锁定事实、当前状态与实际发生的时间线，不能因为建议不同而判矛盾。
 只有以下三类问题可以判为阻断（blocking=true）：
 1. 读者会明显察觉的前后矛盾，例如人物在两处同时出现，或已经死去的人又出现。
 2. 与锁定设定直接冲突，例如外形或身份被写成另一个样子。
 3. 漏掉细纲中 foreshadowing_plant、foreshadowing_resolve 所要求的伏笔，或者漏掉细纲的核心节拍。
+除上述三类外，只允许按前述 payload 触发的唯一例外将 adaptation 的场景数或主要人物数硬约束判为阻断。
 同义表述、数字的中文写法与阿拉伯数字写法、措辞的详略差异，都不算矛盾。
 对 knows 等动态状态，只有正文明确写出某人知道了他不可能知道的事，才算矛盾；不能把 knows 当作排除其他合理知识来源的完整清单。
 拿不准时一律 blocking=false。每轮最多 3 条阻断问题，按严重程度排序。
-收到 previous_blocking_issues 表示复审：先逐条判断上一轮的阻断问题是否已经解决；新发现的问题只有属于上述三类中的严重情况，才可以判为阻断，否则 blocking=false。""" + "\n" + JSON_STRING_QUOTE_RULE
+收到 previous_blocking_issues 表示复审：先逐条判断上一轮的阻断问题是否已经解决；新发现的问题只有属于上述三类中的严重情况，才可以判为阻断，否则 blocking=false。
+或符合前述唯一例外（payload 含 adaptation_blocking=true 时的硬约束）。""" + "\n" + JSON_STRING_QUOTE_RULE
 
 ARCHIVE_SCHEMA = """只返回 JSON：
 {"summary":"本章摘要","character_state_changes":[{"id":"C1","field":"location|condition|knows|relationships","value":"新值"}],"timeline_add":["本章实际发生的事件"],
@@ -128,6 +131,7 @@ ARCHIVE_SCHEMA = """只返回 JSON：
 location、condition 的 value 为字符串；knows 的 value 是追加的一条字符串或字符串列表，写成「谁知道了什么」的形式；relationships 的 value 是 {对象人物ID:关系} 字典。
 timeline_add 每条以「第n章：」开头，n 使用当前 chapter，随后写实际发生的事件。
 人物 ID 必须存在；回收只能引用存在且 open 的伏笔。新增人物最多 2 个且只能 supporting，不生成新人物或新伏笔 ID。
+new_characters 每人必须写外形，不少于 20 字，写清发型、体型、衣着或显著特征，便于改编时出角色卡。
 不要改写 locked 设定。正文与细纲偏离时填 deviated=true 并说明；与 locked 冲突时逐条记录 locked_conflicts，没有则为空数组。""" + "\n" + JSON_STRING_QUOTE_RULE
 
 ARC_SUMMARY_SCHEMA = """task=arc_summary 时只返回 JSON：{"summary":"卷摘要"}。

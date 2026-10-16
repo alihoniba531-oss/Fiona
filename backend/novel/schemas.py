@@ -171,14 +171,16 @@ def _ids(items) -> set[str]:
     return {item["id"] for item in items if isinstance(item, dict) and isinstance(item.get("id"), str)}
 
 
-def _character(c: _Check, value: Any, path: str, *, initial=False, new=False):
+def _character(c: _Check, value: Any, path: str, *, initial=False, new=False,
+               require_new_appearance=False):
     fields = ["name", "role", "age", "appearance", "personality", "motivation"]
     if initial:
         fields.append("initial_state")
     item = c.obj(value, path, fields)
     for field in ("name", "age", "personality", "motivation"):
         c.text(item.get(field), f"{path}.{field}", minimum=1 if field == "name" else 0)
-    c.text(item.get("appearance"), f"{path}.appearance", minimum=20 if initial else 0)
+    c.text(item.get("appearance"), f"{path}.appearance",
+           minimum=20 if initial or (new and require_new_appearance) else 0)
     c.enum(item.get("role"), f"{path}.role", ("supporting",) if new else ("main", "supporting"))
     if initial:
         state = c.obj(item.get("initial_state"), f"{path}.initial_state", ("location", "condition", "knows"))
@@ -424,7 +426,7 @@ def validate_decision(data: Any, *, compass: dict, bible: dict, chapter: int,
     return c.finish(data)
 
 
-def validate_review(data: Any, body: str) -> dict:
+def validate_review(data: Any, body: str, *, adaptation_blocking=False) -> dict:
     original = data
     data = _normalized_copy(data)
     c = _Check()
@@ -460,14 +462,15 @@ def validate_review(data: Any, body: str) -> dict:
             normalized["drop_reason"] = "证据少于 6 字或不是正文的逐字摘录"
             dropped.append(normalized)
             continue
-        if item.get("category") in ("style", "adaptation"):
+        if (item.get("category") == "style"
+                or (item.get("category") == "adaptation" and not adaptation_blocking)):
             normalized["blocking"] = False
         kept.append(normalized)
     return {"issues": kept, "dropped_issues": dropped,
             "passed": not any(item["blocking"] for item in kept)}
 
 
-def validate_archive(data: Any, bible: dict) -> dict:
+def validate_archive(data: Any, bible: dict, *, require_new_appearance=False) -> dict:
     data = _normalized_copy(data)
     c = _Check()
     root = c.obj(data, "archive", ("summary", "character_state_changes", "timeline_add", "foreshadowing_planted", "foreshadowing_resolved", "used_beats_add", "new_characters", "deviation_from_beat_sheet", "locked_conflicts"))
@@ -508,7 +511,8 @@ def validate_archive(data: Any, bible: dict) -> dict:
     if len(resolved_ids) != len(set(key for key in resolved_ids if isinstance(key, str))):
         c.fail("archive.foreshadowing_resolved", "同一伏笔不得重复回收")
     for i, character in enumerate(c.array(root.get("new_characters"), "archive.new_characters", 0, 2)):
-        _character(c, character, f"archive.new_characters[{i}]", new=True)
+        _character(c, character, f"archive.new_characters[{i}]", new=True,
+                   require_new_appearance=require_new_appearance)
     deviation = c.obj(root.get("deviation_from_beat_sheet"), "archive.deviation_from_beat_sheet", ("deviated", "note"))
     c.boolean(deviation.get("deviated"), "archive.deviation_from_beat_sheet.deviated")
     c.text(deviation.get("note"), "archive.deviation_from_beat_sheet.note")

@@ -111,6 +111,12 @@ async def note(request: Request,novel_id: str,body: service.Note,user: str = Dep
     return await service.note(user,novel_id,body)
 
 
+@router.patch('/{novel_id}/characters/{character_id}')
+@limiter.limit('20/minute')
+async def update_character(request: Request,novel_id: str,character_id: str,body: service.CharacterEdit,user: str = Depends(workshop_user)):
+    return await service.update_character(user,novel_id,character_id,body)
+
+
 @router.put('/{novel_id}/chapters/{number}')
 @limiter.limit('20/minute')
 async def edit_chapter(request: Request,novel_id: str,body: service.Manuscript,number: int = Path(ge=1,le=300),user: str = Depends(workshop_user)):
