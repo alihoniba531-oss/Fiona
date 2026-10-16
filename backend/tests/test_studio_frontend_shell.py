@@ -3,6 +3,8 @@ from pathlib import Path
 import json
 import subprocess
 
+import pytest
+
 from test_novel_p2_r1 import DRIVER
 
 ROOT = Path(__file__).resolve().parents[2]
@@ -14,12 +16,25 @@ STUDIO_DRIVER = DRIVER.replace("if(url==='/api/novels')", """if(url==='/api/stud
 
 
 def probe(script):
+    if not (ROOT / "frontend" / "node_modules" / "typescript").exists():
+        pytest.skip("frontend dependencies unavailable: typescript")
     result = subprocess.run(
         ["node", "-e", STUDIO_DRIVER + "\n(async()=>{\n" + script + "\n})().catch(e=>{process.stderr.write(e.stack);process.exitCode=1;});", str(ROOT)],
         cwd=ROOT, capture_output=True, text=True, check=False, timeout=30,
     )
     assert result.returncode == 0, result.stderr
     return json.loads(result.stdout or "null")
+
+
+def test_probe_skips_when_frontend_dependencies_are_missing(monkeypatch, tmp_path):
+    monkeypatch.setitem(globals(), "ROOT", tmp_path)
+
+    def unexpected_render(*args, **kwargs):
+        pytest.fail("rendering must not run without frontend dependencies")
+
+    monkeypatch.setattr(subprocess, "run", unexpected_render)
+    with pytest.raises(pytest.skip.Exception, match="frontend dependencies unavailable: typescript"):
+        probe("process.stdout.write('true');")
 
 
 SETUP = r"""
