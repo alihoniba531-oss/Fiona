@@ -1,0 +1,30 @@
+{
+  "experiment": "A",
+  "panel_mode": "critique",
+  "seed_idea": "一个在殡仪馆做遗容化妆的年轻女人，某天推进来的遗体，是一张和她一模一样的脸——可她从小被告知自己是独生女。随后她发现，死者身上的旧伤疤，和她母亲多年来闭口不提的那场火灾，对得上。基调：家庭悬疑加情感，克制细腻，每章揭开一层家族秘密。",
+  "target": {
+    "min_chapters": 50,
+    "max_chapters": 70,
+    "chapter_words": 2000
+  },
+  "adaptation": {
+    "max_main_characters": 6,
+    "max_scenes_per_chapter": 3
+  },
+  "critique_rounds": 1,
+  "agents": {
+    "editor": "anthropic:claude-sonnet-5-5",
+    "plot_architect": "dashscope:qwen3.8-max",
+    "character_advocate": "ark:doubao-seed-2-1-pro-260915",
+    "twist_designer": "anthropic:claude-haiku-5-5",
+    "writer": "deepseek:deepseek-flash",
+    "reviewer": "dashscope:qwen3.8-max",
+    "archivist": "dashscope:qwen3.8-max"
+  },
+  "arms": {
+    "solo": ["editor"],
+    "panel": ["plot_architect", "character_advocate", "twist_designer", "editor"]
+  },
+  "chapters_per_arm": 5,
+  "user_notes": {}
+}

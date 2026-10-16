@@ -1,0 +1,27 @@
+{
+  "experiment": "B",
+  "seed_idea": "一个专门替人删除网络痕迹的年轻女技术员，接到一单高价委托：删掉一名三年前坠楼身亡的女主播在网上的全部痕迹。清理时她发现，这名主播生前最后一条没发出去的视频里，出现了她自己。基调：都市悬疑加情感，节奏快，每章都有新发现。",
+  "target": {
+    "min_chapters": 8,
+    "max_chapters": 12,
+    "chapter_words": 1500
+  },
+  "adaptation": {
+    "max_main_characters": 6,
+    "max_scenes_per_chapter": 3
+  },
+  "critique_rounds": 1,
+  "agents": {
+    "editor": "anthropic:claude-sonnet-5-5",
+    "plot_architect": "dashscope:qwen3.8-max",
+    "character_advocate": "deepseek:deepseek-flash",
+    "twist_designer": "anthropic:claude-haiku-5-5",
+    "writer": "deepseek:deepseek-flash",
+    "reviewer": "dashscope:qwen3.8-max",
+    "archivist": "dashscope:qwen3.8-max",
+    "pacing_advisor": "dashscope:qwen3.8-max"
+  },
+  "user_notes": {
+    "4": "我希望委托人的真实身份在全书过半前被读者猜到一部分，但主角还不知道。"
+  }
+}
