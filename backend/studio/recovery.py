@@ -10,7 +10,16 @@ async def recover_studio_jobs() -> None:
             if await cursor.fetchone() is None:
                 return
     now = store.utcnow()
+    from . import notices
+    await notices.initialize_notice_cutoff()
     for job in await store.list_jobs_by_status(("submitting", "submitted", "running", "succeeded")):
+        if job.get("kind") == "brain":
+            if job["status"] in {"submitting", "running"}:
+                await store.cas_job(job["id"], job["status"], {
+                    "status": "uncertain", "error_code": "restart_during_submission",
+                    "error_message": "服务重启时请求可能已发出；" + UNCERTAIN_MESSAGE,
+                }, run_token=job.get("run_token"))
+            continue
         if job["status"] == "submitting":
             updates = {
                 "status": "uncertain", "error_code": "restart_during_submission",

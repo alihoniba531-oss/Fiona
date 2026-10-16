@@ -311,9 +311,10 @@ async def init_db():
         from novel.store_db import NOVEL_TABLES_DDL
         for novel_table_ddl in NOVEL_TABLES_DDL:
             await db.execute(novel_table_ddl)
-        from studio.store import STUDIO_TABLES_DDL
+        from studio.store import STUDIO_TABLES_DDL, migrate_schema as migrate_studio_schema
         for studio_table_ddl in STUDIO_TABLES_DDL:
             await db.execute(studio_table_ddl)
+        await migrate_studio_schema(db)
         for watch_table_ddl in LOCAL_WATCH_TABLES_DDL:
             await db.execute(watch_table_ddl)
         await db.execute("CREATE INDEX IF NOT EXISTS idx_watch_rules_username ON watch_rules(username)")
@@ -909,6 +910,8 @@ async def delete_account_data(username: str) -> dict:
         async with db.execute("SELECT id FROM studio_projects WHERE owner = ?", (username,)) as cursor:
             studio_paths = [f"studio:{row['id']}" for row in await cursor.fetchall()]
         await db.execute("DELETE FROM studio_notices WHERE username = ?", (username,))
+        await db.execute("DELETE FROM studio_notice_pending WHERE username = ?", (username,))
+        await db.execute("DELETE FROM studio_notice_historical WHERE job_id IN (SELECT id FROM studio_jobs WHERE owner=?)", (username,))
         for studio_table in ("studio_jobs", "studio_quotes", "studio_assets", "studio_projects"):
             await db.execute(f"DELETE FROM {studio_table} WHERE owner = ?", (username,))
         await db.executemany(
@@ -1973,6 +1976,8 @@ async def list_watch_alerts_with_content(username: str, after: int = 0) -> list[
             return [dict(row) for row in await cursor.fetchall()]
 
 
+# Compatibility snapshot for existing observers. Durable studio_notice_pending rows
+# are authoritative; clearing this dictionary (including a restart) is harmless.
 _pending_studio_messages: dict[tuple[str, str, str], dict] = {}
 
 
@@ -1985,53 +1990,77 @@ async def _studio_notice_message(db, username: str, pending: dict):
 
 
 async def save_studio_notice(username: str, job: dict, summary: str, content: str) -> dict | None:
-    """沿用普通 assistant 消息持久化，并在写锁内精确回查 owner/会话/正文。
+    """Persist the exact message boundary before ordinary assistant persistence.
 
-    工作室通知服务按账号串行调用；唯一 job_id 是数据库的最终去重约束。
-    保留本次精确回查边界，notice 写入失败后下一个 tick 复用已保存的消息。
+    A failed notice INSERT/commit, or a process restart after save_message, reuses
+    the same durable boundary and message. The pending row is removed only in the
+    transaction that commits the unique notice, so no in-memory recovery window
+    remains. Notification writers serialize per account in studio.notices.
     """
     from agent_store import resolve_chat_conversation, ResourceNotFound
     pending_key = (str(DB_PATH), username, job["id"])
-    async with aiosqlite.connect(DB_PATH, timeout=SQLITE_BUSY_TIMEOUT) as db:
-        db.row_factory = aiosqlite.Row
-        async with db.execute("SELECT * FROM studio_notices WHERE username=? AND job_id=?", (username, job["id"])) as cursor:
-            existing = await cursor.fetchone()
-        if existing is not None:
-            _pending_studio_messages.pop(pending_key, None)
-            return dict(existing)
     try:
         context = await resolve_chat_conversation(username)
     except ResourceNotFound:
         _pending_studio_messages.pop(pending_key, None)
         return None
     target = context["conversation"]["id"]
-    pending = _pending_studio_messages.get(pending_key)
     async with aiosqlite.connect(DB_PATH, timeout=SQLITE_BUSY_TIMEOUT) as db:
         db.row_factory = aiosqlite.Row
-        if pending is None or pending["target"] != target:
+        await db.execute("BEGIN IMMEDIATE")
+        async with db.execute("SELECT * FROM studio_notices WHERE username=? AND job_id=?", (username, job["id"])) as cursor:
+            existing = await cursor.fetchone()
+        if existing is not None:
+            _pending_studio_messages.pop(pending_key, None)
+            return dict(existing)
+        async with db.execute("""SELECT j.id FROM studio_jobs j
+            JOIN studio_projects p ON p.id=j.project_id AND p.owner=j.owner AND p.archived=0
+            JOIN users u ON u.username=j.owner
+            WHERE j.id=? AND j.project_id=? AND j.owner=?
+                AND NOT EXISTS(SELECT 1 FROM studio_notice_historical h WHERE h.job_id=j.id)""", (job["id"], job["project_id"], username)) as cursor:
+            if await cursor.fetchone() is None:
+                return None
+        async with db.execute("SELECT * FROM studio_notice_pending WHERE username=? AND job_id=?", (username, job["id"])) as cursor:
+            pending = await cursor.fetchone()
+        if pending is None:
             async with db.execute("SELECT COALESCE(MAX(id),0) FROM messages WHERE username=?", (username,)) as cursor:
                 before_id = (await cursor.fetchone())[0]
-            pending = {"before_id": before_id, "target": target,
-                       "content": WatchPrivateText(content), "summary": WatchPrivateText(summary[:200])}
-            _pending_studio_messages[pending_key] = pending
+            await db.execute("""INSERT INTO studio_notice_pending
+                (username,project_id,job_id,target,before_id,content,summary) VALUES(?,?,?,?,?,?,?)""",
+                             (username, job["project_id"], job["id"], target, before_id,
+                              WatchPrivateText(content), WatchPrivateText(summary[:200])))
+            async with db.execute("SELECT * FROM studio_notice_pending WHERE job_id=?", (job["id"],)) as cursor:
+                pending = await cursor.fetchone()
+        pending = dict(pending)
+        pending["content"] = WatchPrivateText(pending["content"])
+        pending["summary"] = WatchPrivateText(pending["summary"])
+        await db.commit()
+        _pending_studio_messages[pending_key] = pending
         message = await _studio_notice_message(db, username, pending)
     if message is None:
-        if not await save_message(username, "assistant", pending["content"], conversation_id=target):
-            if not await save_message(username, "assistant", pending["content"], conversation_id=None):
-                return None
+        if not await save_message(username, "assistant", pending["content"], conversation_id=pending["target"]):
             try:
                 context = await resolve_chat_conversation(username)
             except ResourceNotFound:
                 return None
             pending["target"] = context["conversation"]["id"]
+            # Persist the fallback target before a message can be committed there.
+            async with aiosqlite.connect(DB_PATH, timeout=SQLITE_BUSY_TIMEOUT) as db:
+                await db.execute("UPDATE studio_notice_pending SET target=? WHERE job_id=? AND username=?",
+                                 (pending["target"], job["id"], username))
+                await db.commit()
+            if not await save_message(username, "assistant", pending["content"], conversation_id=pending["target"]):
+                return None
     async with aiosqlite.connect(DB_PATH, timeout=SQLITE_BUSY_TIMEOUT) as db:
         db.row_factory = aiosqlite.Row
         await db.execute("BEGIN IMMEDIATE")
         message = await _studio_notice_message(db, username, pending)
         if message is None or not await _users_exist(db, username):
             return None
-        async with db.execute("SELECT id FROM studio_jobs WHERE id=? AND project_id=? AND owner=?",
-                              (job["id"], job["project_id"], username)) as cursor:
+        async with db.execute("""SELECT j.id FROM studio_jobs j
+            JOIN studio_projects p ON p.id=j.project_id AND p.owner=j.owner AND p.archived=0
+            WHERE j.id=? AND j.project_id=? AND j.owner=?
+                AND NOT EXISTS(SELECT 1 FROM studio_notice_historical h WHERE h.job_id=j.id)""", (job["id"], job["project_id"], username)) as cursor:
             if await cursor.fetchone() is None:
                 return None
         await db.execute("""INSERT OR IGNORE INTO studio_notices
@@ -2040,6 +2069,7 @@ async def save_studio_notice(username: str, job: dict, summary: str, content: st
                           message["id"], message["conversation_id"]))
         async with db.execute("SELECT * FROM studio_notices WHERE username=? AND job_id=?", (username, job["id"])) as selected:
             result = dict(await selected.fetchone())
+        await db.execute("DELETE FROM studio_notice_pending WHERE job_id=? AND username=?", (job["id"], username))
         await db.commit()
         _pending_studio_messages.pop(pending_key, None)
         return result

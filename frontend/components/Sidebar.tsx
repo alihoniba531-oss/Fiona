@@ -35,6 +35,7 @@ export default function Sidebar({
   novelActive,
   onStudioClick,
   studioActive,
+  studioAccessAllowed,
   onBalanceChange,
 }: {
   onHistoryClick?: () => void;
@@ -51,6 +52,7 @@ export default function Sidebar({
   novelActive?: boolean;
   onStudioClick?: () => void;
   studioActive?: boolean;
+  studioAccessAllowed?: boolean;
   onBalanceChange?: (balance: number | null) => void;
 }) {
   const pathname = usePathname();
@@ -62,6 +64,7 @@ export default function Sidebar({
   const onBalanceChangeRef = useRef(onBalanceChange);
 
   useEffect(() => {
+    if (studioAccessAllowed !== undefined) return;
     const request = beginRequest();
     if (!request) return;
     void checkStudioAccess(request.signal).then(allowed => {
@@ -69,7 +72,7 @@ export default function Sidebar({
     }).catch(() => {
       if (request.isCurrent()) setStudioAccess({ owner: username, allowed: false });
     });
-  }, [username, beginRequest]);
+  }, [username, beginRequest, studioAccessAllowed]);
 
   useEffect(() => {
     onBalanceChangeRef.current = onBalanceChange;
@@ -104,7 +107,8 @@ export default function Sidebar({
   }, []);
 
   const shared = !!onChatClick;
-  const desktopNavItems = studioAccess.owner === username && studioAccess.allowed
+  const studioAllowed = studioAccessAllowed ?? (studioAccess.owner === username && studioAccess.allowed);
+  const desktopNavItems = studioAllowed
     ? [...navItems, { href: "/studio", label: "工作室" }] : navItems;
   const items = desktopNavItems.map(({href,label}) => {
     const drawerActive=(href === "/agents/me" && agentActive) || (href === "/agents" && exchangeActive) || (href === "/plaza" && plazaActive) || (href === "/settings" && settingsActive) || (href === "/novels" && novelActive) || (href === "/studio" && studioActive);

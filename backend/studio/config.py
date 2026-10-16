@@ -9,6 +9,7 @@ import re
 
 
 DEFAULT_DIRECTORY = Path(__file__).resolve().parents[1] / "studio_data"
+DEFAULT_VISION_MODEL = "qwen3-vl-plus"
 DEFAULT_VIDEO_HOSTS = (
     "*.oss-accelerate.aliyuncs.com",
     "*.oss-cn-beijing.aliyuncs.com",
@@ -83,6 +84,9 @@ class Settings:
     max_inflight_seedance: int
     video_hosts: tuple[str, ...]
     poll_timeout_min: float
+    brain_monthly_usd: float
+    brain_default: str
+    vision_model: str
 
     def inflight_limit(self, provider: str) -> int:
         if provider == "wan":
@@ -104,4 +108,25 @@ def get_settings() -> Settings:
         max_inflight_seedance=_inflight("FIONA_STUDIO_MAX_INFLIGHT_SEEDANCE"),
         video_hosts=_video_hosts(),
         poll_timeout_min=_positive("FIONA_STUDIO_POLL_TIMEOUT_MIN", 30),
+        brain_monthly_usd=_positive("FIONA_STUDIO_BRAIN_MONTHLY_USD", 40),
+        brain_default=_brain_default(),
+        vision_model=_vision_model(),
     )
+
+
+def _brain_default() -> str:
+    value = os.getenv("FIONA_STUDIO_BRAIN_DEFAULT", "claude")
+    if value in {"claude", "qwen", "deepseek"}:
+        return value
+    _warn("FIONA_STUDIO_BRAIN_DEFAULT")
+    return "claude"
+
+
+def _vision_model() -> str:
+    value = os.getenv("FIONA_STUDIO_VISION_MODEL", DEFAULT_VISION_MODEL)
+    if value == "":
+        return DEFAULT_VISION_MODEL
+    if re.fullmatch(r"[a-z0-9][a-z0-9.\-]{1,63}", value):
+        return value
+    _warn("FIONA_STUDIO_VISION_MODEL")
+    return DEFAULT_VISION_MODEL

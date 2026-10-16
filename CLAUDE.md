@@ -160,7 +160,7 @@ P2.1 建书可选 `drama_adaptation`（默认 false，建书后不可修改）�
 
 平台模型使用 DASHSCOPE_API_KEY、DEEPSEEK_API_KEY、ARK_API_KEY；Claude 只经 BYOK。思路、圣经、正文与留言会发给阿里云百炼、DeepSeek、火山方舟或用户自带厂商（包括 Anthropic）。Key 仅调用时从 byok.store 取用，不写小说库、日志或响应；步骤只存请求摘要，不存提示词。测试必须离线、不得读仓库外输入或依赖 git 历史；本机监控原有内容不得修改或移动。
 
-## 短片工作室 WO1–WO2
+## 短片工作室 WO1–WO3a
 
 `backend/studio/` 与 `routers/studio.py` 提供作者私用的首帧视频接口；`/studio`、`/studio/[id]` 提供项目列表与单镜试拍前端。全部 `/studio/*`（含文件）要求开关非字面 `0`、精确命中 `FIONA_STUDIO_OWNERS` 与 Bearer/Cookie JWT；不满足一律 404、`private, no-store`。中间件记录 `auth_method=jwt/dev`，其他路由鉴权保持原行为。
 
@@ -169,6 +169,14 @@ P2.1 建书可选 `drama_adaptation`（默认 false，建书后不可修改）�
 文件默认 `backend/studio_data/`，生产 `FIONA_STUDIO_DIR=/var/lib/fiona/studio`，因为 systemd `ProtectSystem=strict` 只允许写 `/var/lib/fiona`。文件不挂静态目录，按素材归属和真实路径校验后用 FileResponse 支持 Range。仅下载白名单 host，不跟重定向、不转发凭据，限 300MB；ffprobe 按时长校验。万相按原图提交，Seedance 只在提交内存中等比缩图。所有测试用模拟传输，业务不得 import WO0 探针。
 
 
-WO2：桌面侧栏仅在 `/studio/access` 返回 200 后运行时追加「工作室」，静态六项和手机底栏保持不变；主页同样 gate 后才挂载 `/studio?embed=1` 抽屉。五阶段默认镜头页可上传首帧、报价确认、播放及处理 uncertain，其余显示后续开放。前端复用小说状态组件、Glaze 和原生 dialog，`lib/studio.ts` 只消费解析后的 items/params/usage/meta。任务在途时每 5 秒刷新任务与额度，页面隐藏或操作中暂停，账号切换取消请求。
+WO2：桌面侧栏仅在 `/studio/access` 返回 200 后运行时追加「工作室」，静态六项和手机底栏保持不变；主页同样 gate 后才挂载 `/studio?embed=1` 抽屉。五阶段默认镜头页可上传首帧、报价确认、播放及处理 uncertain，拆解页提供 WO3a 剧本试读预览，其他三个阶段显示后续开放。前端复用小说状态组件、Glaze 和原生 dialog，`lib/studio.ts` 只消费解析后的 items/params/usage/meta。任务在途时每 5 秒刷新任务与额度，页面隐藏或操作中暂停，账号切换取消请求。
 
 项目详情、素材列表和 `/studio/notices?after=` 都经过工作室 gate 与 owner 隔离；素材列表不含 rel_path。调度器到 downloaded/failed/rejected/filtered/expired/uncertain 时单任务最多写一条 `studio_notices`，通过普通 `save_message` 落入默认聊天会话；写失败只记录固定错误码，下 tick 补写，不影响结算。主页每 10 秒可见轮询，首次建立完整基线、404 永久停止；当前会话空闲时按 dbId 去重插入，其余会话显示切换 chip，共用本机提醒通知开关。
+
+WO3a：`studio.brain` 统一 Claude BYOK/千问/DeepSeek 适配，`brain_tasks` 和 prompts 定义四类任务，完整 schema 本地严格校验。`brain_jobs` 在 BEGIN IMMEDIATE 中预检/预留，create_background_task 执行，每提供方最多3个；queued重启后恢复，running重启转uncertain。首次模型请求不重试，只有 JSON/硬约束不合格可明确修正一次，分别建 job 与计费。千问/DeepSeek沿用全工作室人民币日额度，Claude按作者上海自然月美元额度，默认40，DEV_MODE不豁免。看图时非Claude统一交给 `FIONA_STUDIO_VISION_MODEL` 指定的千问视觉模型，默认 `qwen3-vl-plus`；DeepSeek永不接收图片。原文是不可信数据，日志仅写ID/状态/错误码。
+
+工作室视觉模型每次调用时读取配置；允许空值，空值使用默认 `qwen3-vl-plus` 且不告警。非空值须匹配 `^[a-z0-9][a-z0-9.\-]{1,63}$`，非法值回落 `qwen3-vl-plus` 且只告警一次。`/studio/brain/providers` 的 `vision_via` 与「看图由千问视觉（实际模型）完成」警告均注明实际模型，手动评测报告同样记录。`qwen3-vl-plus` 默认输入/输出价为每百万 token ¥1/¥10（待核实），可用 `FIONA_STUDIO_PRICE_QWEN3_VL_PLUS` 覆盖；旧 `qwen-vl-max` 价目保留以兼容旧job。自定义视觉模型没有配置单价时返回409，不发模型请求。此配置只作用于工作室，聊天看图沿用现有配置。
+
+新增补列由 `studio.store.migrate_schema` 执行。旧jobs.provider/status的CHECK原样保留：brain行原provider列使用兼容占位wan，新增brain_provider是权威提供方，所有数据库读取统一对外转为真实provider；invalid_output保存在既有failed状态加错误码并在读取时还原。视频调度查询明确kind=i2v。不得重建或删除老表以改变约束。
+
+试读报价接口不调用模型，价格上界包含最多一次修正；`providers=all` 任一家不可用就整体409。同步导演任务uncertain只能释放，不能关联上游ID。月上限与价格覆盖见backend/.env.example；未知Claude价格拒绝调用。主页access只请求一次并传Sidebar，成功后才启动notices轮询。提醒首次调度启动时间持久化，历史终态不补发；持久pending边界保证消息写入后进程重启不会产生重复聊天消息，归档项目不补写提醒。

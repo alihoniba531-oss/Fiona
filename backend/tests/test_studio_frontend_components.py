@@ -83,8 +83,20 @@ function composer(props={}){const outer=mount(load('components/studio/ClipCompos
 
 
 def probe(script):
-    if not shutil.which("node") or not (ROOT / "frontend/node_modules/typescript").exists():
-        pytest.skip("Offline frontend probes require the installed Node.js dependencies")
+    dependencies = {
+        "typescript": "typescript/lib/typescript.js",
+        "react": "react/index.js",
+        "react/jsx-runtime": "react/jsx-runtime.js",
+        "react-dom/server": "react-dom/server.js",
+    }
+    missing = [
+        name for name, entry in dependencies.items()
+        if not (ROOT / "frontend" / "node_modules" / entry).is_file()
+    ]
+    if missing:
+        pytest.skip("frontend dependencies unavailable: " + ", ".join(missing))
+    if not shutil.which("node"):
+        pytest.skip("node is unavailable")
     result = subprocess.run(
         ["node", "-e", DRIVER + "\n(async()=>{\n" + script + "\n})().catch(error=>{process.stderr.write(error.stack);process.exitCode=1;});", str(ROOT)],
         cwd=ROOT, capture_output=True, text=True, check=False, timeout=30,

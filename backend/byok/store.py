@@ -2,6 +2,9 @@
 from __future__ import annotations
 
 import asyncio
+import hmac
+import os
+import re
 import unicodedata
 import aiosqlite
 import database
@@ -37,11 +40,16 @@ async def _read_row(username: str) -> dict | None:
     return dict(row) if row else None
 
 
-def _public(row: dict) -> dict:
+def _public_fields(row: dict) -> dict:
     result = {field: row[field] for field in _PUBLIC_FIELDS}
     result["enabled"] = bool(result["enabled"])
     if not isinstance(result["effort"], str) or result["effort"] not in CLAUDE_EFFORTS:
         result["effort"] = DEFAULT_EFFORT
+    return result
+
+
+def _public(row: dict) -> dict:
+    result = _public_fields(row)
     try:
         decrypt_key(row["key_ciphertext"], row["key_id"], row["username"], row["provider"], row["base_url"])
         result["status"] = "ok"
@@ -53,6 +61,50 @@ def _public(row: dict) -> dict:
 async def get_public_config(username: str) -> dict | None:
     row = await _read_row(username)
     return _public(row) if row else None
+
+
+async def get_public_status(username: str) -> dict | None:
+    """Read availability metadata without loading or decrypting the API key.
+
+    This checks the ciphertext envelope and configured key-id rotation only;
+    authentication of the ciphertext still happens on a real internal read.
+    Existing get_public_config/_public retain their verifying semantics.
+    """
+    from . import crypto
+    columns = ",".join(_PUBLIC_FIELDS)
+    async with aiosqlite.connect(database.DB_PATH, timeout=database.SQLITE_BUSY_TIMEOUT) as db:
+        db.row_factory = aiosqlite.Row
+        async with db.execute(f"""SELECT {columns},key_id,
+                length(key_ciphertext) AS ciphertext_bytes,
+                typeof(key_ciphertext) AS ciphertext_storage,
+                hex(substr(key_ciphertext,1,1)) AS ciphertext_version
+            FROM user_model_configs WHERE username=?""", (username,)) as cursor:
+            row = await cursor.fetchone()
+    if row is None:
+        return None
+    row = dict(row)
+    result = _public_fields(row)
+    result["status"] = "needs_reentry"
+    identifier = row["key_id"]
+    if (not isinstance(identifier, str) or not re.fullmatch(r"[0-9a-f]{16}", identifier)
+            or row["ciphertext_storage"] != "blob" or row["ciphertext_version"] != "01"
+            or (row["ciphertext_bytes"] or 0) < 30):
+        return result
+    if not crypto.availability()[0]:
+        return result
+    try:
+        keys = [crypto.current_secret()]
+        for raw in os.getenv("FIONA_BYOK_SECRET_PREVIOUS", "").split(","):
+            if raw.strip():
+                try:
+                    keys.append(crypto._decode_secret(raw.strip()))
+                except ByokUnavailableError:
+                    continue
+        if any(hmac.compare_digest(crypto.key_id(key), identifier) for key in keys):
+            result["status"] = "ok"
+    except ByokUnavailableError:
+        pass
+    return result
 
 
 async def get_internal_config(username: str) -> dict | None:

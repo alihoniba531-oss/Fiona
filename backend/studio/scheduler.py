@@ -104,6 +104,8 @@ class StudioScheduler:
                 return
             # 上一轮通知失败或启动恢复到 uncertain 的任务，先补写聊天提醒。
             await notices.retry_pending_notices()
+            from . import brain_jobs
+            await brain_jobs.dispatch_queued()
             now = self._time()
             jobs = await store.list_due_jobs(now)
             await self._dispatch(self._poll, jobs, now, settings.poll_timeout_min, wait=wait)
@@ -282,6 +284,11 @@ async def scheduler_tick(*, transport=None, download_transport=None, now=None) -
 async def run_scheduler(*, transport=None, download_transport=None) -> None:
     scheduler = StudioScheduler(transport=transport, download_transport=download_transport)
     try:
+        try:
+            await notices.initialize_notice_cutoff()
+        except Exception:
+            # 启动探针/暂未建表时也保持调度循环可取消；真实 tick 会继续补初始化。
+            logger.warning("studio code=notice_initialization_error")
         while True:
             started = asyncio.get_running_loop().time()
             try:

@@ -101,6 +101,7 @@ def test_calltime_gate_and_bearer_cookie_dev(studio_client, monkeypatch):
     response = client.get("/studio/access", headers=headers)
     assert response.status_code == 200
     assert response.json()["caps"] == {"daily_cny": 300.0, "max_quote_cny": 100.0,
+                                       "brain_monthly_usd": 40.0, "brain_month_used_usd": 0.0,
                                        "inflight": {"wan": 3, "seedance": 3}}
     assert response.json()["today"] == {"committed_cny": 0, "remaining_cny": 300}
     assert response.headers["cache-control"] == "private, no-store"

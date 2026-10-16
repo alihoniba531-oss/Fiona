@@ -48,7 +48,8 @@ export default function QuoteDialog({ quote, busy = false, onConfirm, onClose }:
       {quote.items.map((item, index) => <div key={item.id ?? index} className="ceramic-card flex min-w-0 flex-wrap gap-2 p-3"><span className="chip">{studioModelLabel(item.params.model ?? item.params.provider)}</span><span className="chip">{item.params.resolution.toUpperCase()}</span><span className="chip">{item.params.duration === -1 ? `${item.params.duration_min_s}–${item.params.duration_max_s}` : item.params.duration} 秒</span><span className="chip">音频{item.params.audio ? "开" : "关"}</span></div>)}
       <p>预估区间 <span className="readout">¥{quote.total_min_cny.toFixed(2)}–¥{quote.total_max_cny.toFixed(2)}</span></p>
       <p>今日剩余额度 <span className="readout">¥{quote.today.remaining_cny.toFixed(2)}</span></p>
-      <p role="status" aria-live="polite">{expired ? "报价已过期，请重新报价" : <>报价剩余有效时间 <span className="readout">{Math.floor(remaining / 60)}:{String(remaining % 60).padStart(2, "0")}</span></>}</p>
+      {!expired && <p>报价剩余有效时间 <span className="readout">{Math.floor(remaining / 60)}:{String(remaining % 60).padStart(2, "0")}</span></p>}
+      <p role="status" aria-live="polite">{expired ? "报价已过期，请重新报价" : ""}</p>
       {error && <ErrorNotice message={error} />}
     </div>
     <div className="mt-6 flex min-w-0 flex-wrap justify-end gap-3"><button type="button" className="btn btn-quiet min-h-10" disabled={disabled} onClick={onClose}>取消</button><button type="button" className="btn btn-primary min-h-10 max-w-full whitespace-normal" disabled={disabled || expired} onClick={() => void confirm()}>{expired ? "报价已过期，请重新报价" : confirming ? "确认中…" : `确认生成（最多 ¥${quote.total_max_cny.toFixed(2)}）`}</button></div>

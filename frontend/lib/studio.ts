@@ -4,9 +4,10 @@ import { API_BASE } from "@/lib/config";
 import type { Message } from "@/components/ChatBubble";
 
 export type StudioJobStatus = "queued" | "submitting" | "submitted" | "running" | "succeeded" | "downloaded" | "rejected" | "uncertain" | "failed" | "filtered" | "expired" | "cancelled" | "released";
-export interface StudioProject { id: string; owner: string; title: string; aspect: "16:9" | "9:16"; created_at: string; updated_at: string }
+export type BrainProviderId = "claude" | "qwen" | "deepseek";
+export interface StudioProject { id: string; owner: string; title: string; aspect: "16:9" | "9:16"; brain_provider: BrainProviderId; created_at: string; updated_at: string }
 export interface StudioToday { committed_cny: number; remaining_cny: number }
-export interface StudioAccess { enabled: boolean; caps: { daily_cny: number; max_quote_cny: number; inflight: { wan: number; seedance: number } }; today: StudioToday }
+export interface StudioAccess { enabled: boolean; caps: { daily_cny: number; max_quote_cny: number; brain_monthly_usd: number; brain_month_used_usd: number; inflight: { wan: number; seedance: number } }; today: StudioToday }
 export interface StudioClipParams {
   first_frame_asset_id: string; prompt: string; provider: "wan" | "seedance"; model?: string;
   resolution: string; duration: number; audio: boolean; duration_min_s?: number; duration_max_s?: number;
@@ -48,6 +49,7 @@ export async function checkStudioAccess(signal?: AbortSignal): Promise<boolean> 
 export const listStudioProjects = (signal?: AbortSignal) => apiJson<StudioProject[]>(`${root}/projects`, { signal, cache: "no-store" });
 export const createStudioProject = (input: Pick<StudioProject, "title" | "aspect">, signal?: AbortSignal) => apiJson<StudioProject>(`${root}/projects`, json(input, signal));
 export const getStudioProject = (id: string, signal?: AbortSignal) => apiJson<StudioProject>(projectPath(id), { signal, cache: "no-store" });
+export const patchStudioProject = (id: string, brainProvider: BrainProviderId, signal?: AbortSignal) => apiJson<StudioProject>(projectPath(id), { ...json({ brain_provider: brainProvider }, signal), method: "PATCH" });
 export const listStudioAssets = (id: string, signal?: AbortSignal) => apiJson<StudioAsset[]>(`${projectPath(id)}/assets`, { signal, cache: "no-store" });
 export const listStudioJobs = (id: string, signal?: AbortSignal) => apiJson<StudioJob[]>(`${projectPath(id)}/jobs`, { signal, cache: "no-store" });
 export const getStudioJob = (id: string, signal?: AbortSignal) => apiJson<StudioJob>(jobPath(id), { signal, cache: "no-store" });
@@ -95,6 +97,28 @@ export function formatStudioDate(value: string): string {
   return Number.isNaN(date.getTime()) ? value : date.toLocaleString("zh-CN", { hour12: false });
 }
 export const hasStudioInflightJobs = (jobs: Pick<StudioJob, "status">[]) => jobs.some(job => ["queued", "submitting", "submitted", "running", "succeeded"].includes(job.status));
+
+export type BrainTask = "read_through" | "style_proposals" | "bible_extract";
+export interface BrainProvider { id: BrainProviderId; label: string; available: boolean; reason?: string; model?: string; vision_via?: string }
+export interface BrainTrialInput { text: string; tasks: BrainTask[]; providers: "current" | "all" }
+export interface BrainCost { currency: "CNY" | "USD"; amount: number | null }
+export interface BrainJob {
+  id: string; provider: BrainProviderId; task: BrainTask; model: string;
+  status: "queued" | "running" | "succeeded" | "uncertain" | "rejected" | "failed" | "invalid_output" | "released";
+  output: Record<string, unknown> | null; warnings: string[]; usage: Record<string, unknown> | null;
+  cost: BrainCost | null; latency_s: number | null; repaired?: boolean; stop_reason?: string | null;
+  reserved_amount?: number | string;
+  attempt?: number; parent_job_id?: string | null; error_code: string | null; error_message: string | null;
+}
+export interface BrainGroup { group_id: string; jobs: BrainJob[]; totals?: { CNY: number; USD: number } }
+export interface BrainQuote { totals: { CNY: number; USD: number }; items: { provider: BrainProviderId; task: BrainTask; model: string; currency: "CNY" | "USD"; amount: number }[] }
+export const getBrainProviders = (signal?: AbortSignal) => apiJson<BrainProvider[]>(`${root}/brain/providers`, { signal, cache: "no-store" });
+export const quoteBrainTrial = (id: string, input: BrainTrialInput, signal?: AbortSignal) => apiJson<BrainQuote>(`${projectPath(id)}/brain/quote`, json(input, signal));
+export const startBrainTrial = (id: string, input: BrainTrialInput, signal?: AbortSignal) => apiJson<BrainGroup>(`${projectPath(id)}/brain/trial`, json(input, signal));
+export const getBrainGroup = (id: string, groupId: string, signal?: AbortSignal) => apiJson<BrainGroup>(`${projectPath(id)}/brain/groups/${encodeURIComponent(groupId)}`, { signal, cache: "no-store" });
+export const hasBrainInflightJobs = (jobs: BrainJob[]) => jobs.some(job => job.status === "queued" || job.status === "running");
+export const brainTaskLabel = (task: BrainTask) => ({ read_through: "通读结论", style_proposals: "风格提案", bible_extract: "人物、场景、道具表" })[task] ?? task;
+export const brainStatusLabel = (status: BrainJob["status"]) => ({ queued: "排队中", running: "试读中", succeeded: "已完成", uncertain: "结果不确定", rejected: "被拒绝（未扣费）", failed: "失败", invalid_output: "输出不合格", released: "已释放（确认未扣费）" })[status] ?? status;
 
 export interface StudioNoticePollOptions {
   isVisible: () => boolean;

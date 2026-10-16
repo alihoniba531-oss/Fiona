@@ -75,3 +75,33 @@ async def settle_job(job_id: str, expected_status, status: str, *, usage=None, r
         updates["usage_json"] = usage
     updates["status"] = status
     return await store.cas_job(job_id, expected_status, updates, run_token=run_token)
+
+
+def shanghai_month(now=None) -> str:
+    return shanghai_day(now)[:7]
+
+
+async def brain_month_used(owner: str, *, now=None, db=None) -> Decimal:
+    if db is None:
+        from .store import connection
+        async with connection() as current:
+            return await brain_month_used(owner, now=now, db=current)
+    async with db.execute("""SELECT status,reserved_amount,actual_amount FROM studio_jobs
+        WHERE kind='brain' AND owner=? AND currency='USD' AND confirmed_month=?""",
+                          (owner, shanghai_month(now))) as cursor:
+        rows = await cursor.fetchall()
+    amount = Decimal(0)
+    for row in rows:
+        if row["status"] in ZERO_STATUSES:
+            continue
+        value = row["actual_amount"] if row["actual_amount"] is not None else row["reserved_amount"]
+        amount += pricing.money(value or 0)
+    return pricing.money(amount)
+
+
+async def check_brain_budget(db, owner: str, totals: dict, *, now=None) -> None:
+    await check_reservation(db, totals.get("CNY", 0), now=now)
+    remaining = max(Decimal(0), pricing.money(get_settings().brain_monthly_usd)
+                    - await brain_month_used(owner, now=now, db=db))
+    if pricing.money(totals.get("USD", 0)) > remaining:
+        raise HTTPException(409, f"Claude 本月额度不足，剩余额度 ${remaining:.2f}")

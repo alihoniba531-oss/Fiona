@@ -328,7 +328,7 @@ Markdown 导出按原顺序保留所有有正文的章节，在 stale 章节标�
 
 ## 短片工作室
 
-`studio.store.STUDIO_TABLES_DDL` 由 `database.init_db()` 统一执行，只新增 `studio_projects/assets/quotes/jobs/notices` 与索引，不改既有表、不新增迁移版本。金额以八位十进制保存和计算。确认报价在 `BEGIN IMMEDIATE` 内核对有效期、确认状态和全工作室当日占用，锁价并创建 queued 任务；指纹由参数与 quote_item_id 计算，在途状态有部分唯一索引。报价有效期不影响已确认任务。
+`studio.store.STUDIO_TABLES_DDL` 由 `database.init_db()` 统一执行，新增 `studio_projects/assets/quotes/jobs/notices` 与索引；WO3a 通过 `migrate_schema` 为老表只补列，不重建或删除既有表。金额以八位十进制保存和计算。确认报价在 `BEGIN IMMEDIATE` 内核对有效期、确认状态和全工作室当日占用，锁价并创建 queued 任务；指纹由参数与 quote_item_id 计算，在途状态有部分唯一索引。报价有效期不影响已确认任务。
 
 进程启动在小说恢复之后执行工作室恢复，再启动受统一后台任务管理的 2 秒调度循环。抢占以 queued 状态与 run_token 作 CAS；两家厂商分别限制在途数。付费 POST 只有一次，完整 4xx/429 为 rejected，其余无法确定结果的提交为 uncertain 并保留预留。submitting 重启转 uncertain，submitted/running 恢复只读轮询，succeeded 恢复下载。所有状态转换检查条件更新的受影响行数。
 
@@ -385,10 +385,26 @@ Markdown 导出按原顺序保留所有有正文的章节，在 stale 章节标�
 
 ### WO2 前端与聊天提醒
 
-App Router `/studio` 和 `/studio/[id]` 使用客户端组件加 Suspense，动态页经 useParams 读取 id。`components/studio/StudioShelf` 负责项目列表、新建原生 dialog 与今日额度；`StudioWorkbench` 默认第四阶段，其他阶段保留真实空态。`ClipComposer` 上传前校验 PNG/JPEG/WebP 与 20MB 限制，首帧经认证 blob/objectURL 预览并在卸载时释放。`QuoteDialog` 显示报价区间与到期倒计时，确认锁防重复提交。`ShotWall/ShotCard` 展示 13 状态、结算/预留、成片 Range 播放与人工核对操作；重新报价仅回填。所有网络走 `lib/studio.ts` 的 apiFetch/apiJson，使用解析后的字段和账号作用域取消请求。在途 queued/submitting/submitted/running/succeeded 使用 5 秒 timeout 链刷新列表与额度，隐藏暂停，操作中跳过，操作完成强制刷新；终态停表。
+App Router `/studio` 和 `/studio/[id]` 使用客户端组件加 Suspense，动态页经 useParams 读取 id。`components/studio/StudioShelf` 负责项目列表、新建原生 dialog 与今日额度；`StudioWorkbench` 默认第四阶段；第一阶段提供剧本试读预览，其余三阶段保留真实空态。`ClipComposer` 上传前校验 PNG/JPEG/WebP 与 20MB 限制，首帧经认证 blob/objectURL 预览并在卸载时释放。`QuoteDialog` 显示报价区间与到期倒计时，确认锁防重复提交。`ShotWall/ShotCard` 展示 13 状态、结算/预留、成片 Range 播放与人工核对操作；重新报价仅回填。所有网络走 `lib/studio.ts` 的 apiFetch/apiJson，使用解析后的字段和账号作用域取消请求。在途 queued/submitting/submitted/running/succeeded 使用 5 秒 timeout 链刷新列表与额度，隐藏暂停，操作中跳过，操作完成强制刷新；终态停表。
 
 Sidebar 的静态六项保持不变，仅桌面在 access=200 后追加第七项。主页 studio-drawer 的 iframe 也在门禁通过后才挂载，aria-hidden/inert、遮罩关闭和同源/source 消息校验沿用小说抽屉。嵌入内链保留 embed=1，StudioShell 省去侧栏/背景并用 Esc 发 fiona-studio-close；原生对话框或编辑输入时尊重现有小说关闭守卫。手机底栏继续六项，工作室可直接访问。
 
 后端增加 owner 隔离的项目详情、素材列表（过滤 rel_path）与 notices 游标接口，统一 private,no-store。`studio.notices` 在六种通知终态独立写提醒；`studio_notices.job_id` 唯一，summary 最多 200 字。`database.save_studio_notice` 解析默认会话，调用普通 save_message 保存 assistant 正文，再在 BEGIN IMMEDIATE 内精确回查 message_id、核验用户/任务存在并登记提醒。通知失败仅固定错误码日志，不回滚状态/结算，下 tick 重试；同正文任务按账号串行避免关联到同一消息，消息已保存而提醒登记失败时补写复用精确消息边界。正文不拼接上游异常、URL、任务编号或密钥。删号同事务清理 notices。
 
 主页独立的工作室提醒 poller 复用本机监控语义：10 秒可见 tick、首次完整分页仅建基线、错误保留游标、404 永久停表、账号切换销毁请求。当前会话非回复/加载时按 dbId 去重追加标准 assistant 消息，其他会话显示项目名 chip 并切换会话；系统通知共用本机提醒开关，原本机提醒行为保持不变。离线测试分别见新增 test_studio_frontend_components/navigation/shell.py 和 test_studio_wo2_backend.py。
+
+### WO3a 导演与剧本试读
+
+`brain.py` 的提供方类各只发一次SDK请求，无SDK重试；Claude按任务使用 `min(600,max(300,ceil(3600*max_tokens/128000)+60))` 秒超时，千问/DeepSeek为120秒。Claude使用BYOK内部配置、不传thinking、system末块ephemeral缓存，Sonnet/Opus5.5沿用beta fallbacks。千问和DeepSeek走官方兼容端点；图片仅交Claude或 `FIONA_STUDIO_VISION_MODEL` 指定的千问视觉模型，默认 `qwen3-vl-plus`，DeepSeek不接收图片。`brain_schema.py` 只遍历schema位置转换Claude不支持约束，业务字段名保留，移除约束写进description；完整schema用于本地硬校验，软约束仅产生warnings。
+
+`FIONA_STUDIO_VISION_MODEL` 每次调用时读取，允许空值，空值使用默认 `qwen3-vl-plus` 且不告警。非空值须匹配 `^[a-z0-9][a-z0-9.\-]{1,63}$`，非法值回落 `qwen3-vl-plus` 并只告警一次。千问适配层的视觉模型校验、DeepSeek看图转交、提供方接口的 `vision_via` 与评测脚本共用此配置；结果警告为「看图由千问视觉（实际模型）完成」，评测报告记录实际模型。`pricing.py` 为 `qwen3-vl-plus` 暂设每百万token输入¥1、输出¥10（待核实），允许 `FIONA_STUDIO_PRICE_QWEN3_VL_PLUS` 覆盖；`qwen-vl-max` 价目保留以结算旧job。未配置价格的自定义视觉模型在请求前返回409。该配置不影响工作室以外的聊天看图。
+
+`brain_jobs.py` 通过统一后台任务管理器派发，每家同时最多3次，余下保留queued。`brain.py:run_brain` 委托此模块提供事务预留、实际usage结算、至多一次独立修正与BrainResult。每次计费请求一行job，同次试读共享group_id。为只追加迁移且保留旧CHECK，brain使用新增brain_provider作为权威提供方，旧provider列保留wan占位；读取层统一返回真实provider。invalid_output在旧status列保存为failed并携带invalid_output错误码，读取时还原。所有视频调度与提醒查询显式kind=i2v，导演succeeded不会进入视频下载器。USD另外使用reserved_amount/actual_amount；人民币同时维护reserved_cny/actual_cny，与视频共用日额度。Claude按owner和上海自然月累计美元额度，包含已结算和uncertain/预留中的占用。
+
+trial预检遍历每个提供方×任务并汇总两种货币；报价与提交均检查累计额度，提交事务原子建全组任务。`providers=all`采用任一家不可用整体409策略。报价仅估算，不创建SDK或调用模型；确认后重查预算。读到完整模型正文但JSON/硬约束不合格可单独预留、建第二个job修正；其余不确定传输错误不重试。月额度、未知Claude价格、未配置Key等拒绝均在付费请求前完成。同步导演任务重启running→uncertain，只允许人工确认未扣费后release。
+
+前端BrainTrial用原生dialog确认分币种最高费用，3秒轮询仅在queued/running且页面可见、无操作时继续；按provider分列显示可读卡片和表格、模型、费用、耗时与warning。顶栏chips持久化默认provider，失败可PATCH切换但不自动重跑；人物needs_author明确标为待作者补充。工作室页签hook提供方向键和roving tabindex；不修改小说工作台。视频报价live区域仅播报过期，长tag局部换行，释放错误只出现一次，轮询不重复取项目详情。主页access结果与Sidebar共享，只有200才启动提醒poller。
+
+提醒重试扫描以首次调度/恢复启动的持久cutoff收窄，使用终态时间表达式部分索引并过滤归档项目。save_studio_notice在普通save_message前持久化待写边界，重启后复用该边界内的精确消息，避免消息已保存但提醒INSERT失败时重复聊天消息；删号同事务清理pending。手动评测脚本直接调用提供方类，不经过数据库；先报价并要求足额--yes-spend，输出按三家并排的Markdown报告。所有新测试使用离线mock，不做真实Key验收。
+
+WO3a R1：模型输出被max_tokens/length截断时按实际usage结算为invalid_output/max_tokens，不再修正；完整拒答、内容审核和带usage的空输出记failed并结算。缓存创建按输入基础价1.25倍计，缓存读取仍按缓存价。fallback按实际回复模型定价，未知价则结算该次预留并明确警告。修正输入报价为原始输入token估算+上次max_tokens+固定2048 token开销，修正错误最多8条、每条96字，先前输出使用独立数据块，避免再次JSON转义。可用性读取公开元数据状态不解密Key，只有真正调用读取内部配置时解密。Claude schema转换对schema-valued additionalProperties、非字符串format、递归引用抛出带JSON Pointer位置的UnsupportedSchema。

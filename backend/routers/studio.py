@@ -5,7 +5,7 @@ from typing import Literal
 from fastapi import APIRouter, Depends, HTTPException, Query, UploadFile
 from pydantic import BaseModel, ConfigDict, Field, StrictBool, StrictInt, field_validator
 
-from studio import pricing, spend, storage, store
+from studio import brain_jobs, pricing, spend, storage, store
 from studio.config import get_settings
 from studio.gate import PRIVATE_HEADERS, studio_user
 
@@ -71,13 +71,55 @@ class ReleaseBody(BaseModel):
     note: str | None = Field(default=None, max_length=2000)
 
 
+class BrainProjectBody(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+    brain_provider: Literal["claude", "qwen", "deepseek"]
+
+
+class BrainTrialBody(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+    text: str = Field(min_length=1, max_length=20000)
+    tasks: list[Literal["read_through", "style_proposals", "bible_extract"]] = Field(min_length=1, max_length=3)
+    providers: Literal["current", "all"] = "current"
+
+
 @router.get("/access")
 async def access(user: str = Depends(studio_user)):
     settings = get_settings()
     return {"enabled": True, "caps": {"daily_cny": settings.daily_cny,
             "max_quote_cny": settings.max_quote_cny,
+            "brain_monthly_usd": settings.brain_monthly_usd,
+            "brain_month_used_usd": float(await spend.brain_month_used(user)),
             "inflight": {"wan": settings.max_inflight_wan, "seedance": settings.max_inflight_seedance}},
             "today": await spend.today()}
+
+
+@router.get("/brain/providers")
+async def brain_providers(user: str = Depends(studio_user)):
+    from studio.brain import provider_options
+    return await provider_options(user)
+
+
+@router.patch("/projects/{pid}")
+async def patch_project(pid: str, body: BrainProjectBody, user: str = Depends(studio_user)):
+    return await brain_jobs.patch_project(pid, user, body.brain_provider)
+
+
+@router.post("/projects/{pid}/brain/quote")
+async def quote_brain(pid: str, body: BrainTrialBody, user: str = Depends(studio_user)):
+    return await brain_jobs.quote_trial(pid, user, body.text, body.tasks, body.providers)
+
+
+@router.post("/projects/{pid}/brain/trial")
+async def trial_brain(pid: str, body: BrainTrialBody, user: str = Depends(studio_user)):
+    result = await brain_jobs.start_trial(pid, user, body.text, body.tasks, body.providers)
+    return {**result, "jobs": [_public_job(job) for job in result["jobs"]]}
+
+
+@router.get("/projects/{pid}/brain/groups/{group_id}")
+async def brain_group(pid: str, group_id: str, user: str = Depends(studio_user)):
+    result = await brain_jobs.group(pid, user, group_id)
+    return {**result, "jobs": [_public_job(job) for job in result["jobs"]]}
 
 
 @router.post("/projects", status_code=201)

@@ -24,7 +24,7 @@ STUDIO_TABLES_DDL = (
         id TEXT PRIMARY KEY, owner TEXT NOT NULL, title TEXT NOT NULL,
         aspect TEXT NOT NULL CHECK(aspect IN ('16:9','9:16')),
         created_at TEXT NOT NULL, updated_at TEXT NOT NULL,
-        archived INTEGER NOT NULL DEFAULT 0, UNIQUE(id, owner)
+        archived INTEGER NOT NULL DEFAULT 0, brain_provider TEXT NOT NULL DEFAULT 'claude', UNIQUE(id, owner)
     )""",
     """CREATE TABLE IF NOT EXISTS studio_assets (
         id TEXT PRIMARY KEY, project_id TEXT NOT NULL, owner TEXT NOT NULL,
@@ -56,7 +56,12 @@ STUDIO_TABLES_DDL = (
         error_code TEXT, error_message TEXT, needs_recheck INTEGER NOT NULL DEFAULT 0,
         poll_requested INTEGER NOT NULL DEFAULT 0, next_poll_at TEXT,
         submitted_at TEXT, finished_at TEXT, created_at TEXT NOT NULL, updated_at TEXT NOT NULL,
-        confirmed_day TEXT NOT NULL, UNIQUE(quote_id,quote_item_id),
+        confirmed_day TEXT NOT NULL,
+        task TEXT, result_json TEXT, warnings_json TEXT, currency TEXT NOT NULL DEFAULT 'CNY',
+        input_chars INTEGER, group_id TEXT, brain_provider TEXT, reserved_amount TEXT, actual_amount TEXT,
+        confirmed_month TEXT, latency_s REAL, stop_reason TEXT, repaired INTEGER NOT NULL DEFAULT 0,
+        attempt INTEGER NOT NULL DEFAULT 1, parent_job_id TEXT,
+        UNIQUE(quote_id,quote_item_id),
         FOREIGN KEY(project_id,owner) REFERENCES studio_projects(id,owner),
         FOREIGN KEY(quote_id) REFERENCES studio_quotes(id),
         FOREIGN KEY(result_asset_id) REFERENCES studio_assets(id)
@@ -79,9 +84,18 @@ STUDIO_TABLES_DDL = (
     """CREATE UNIQUE INDEX IF NOT EXISTS idx_studio_jobs_inflight_fingerprint
        ON studio_jobs(fingerprint)
        WHERE status IN ('queued','submitting','submitted','running','uncertain')""",
+    """CREATE TABLE IF NOT EXISTS studio_notice_pending (
+        job_id TEXT PRIMARY KEY, username TEXT NOT NULL, project_id TEXT NOT NULL,
+        target TEXT NOT NULL, before_id INTEGER NOT NULL, content TEXT NOT NULL, summary TEXT NOT NULL
+    )""",
+    "CREATE TABLE IF NOT EXISTS studio_notice_meta (key TEXT PRIMARY KEY, value TEXT NOT NULL)",
+    "CREATE TABLE IF NOT EXISTS studio_notice_historical (job_id TEXT PRIMARY KEY)",
+    """CREATE INDEX IF NOT EXISTS idx_studio_jobs_notice_terminal ON studio_jobs(COALESCE(finished_at,updated_at),id)
+       WHERE kind='i2v' AND status IN ('downloaded','failed','rejected','filtered','expired','uncertain')""",
 )
 
-_JSON_FIELDS = {"params_json": "params", "items_json": "items", "usage_json": "usage", "meta_json": "meta"}
+_JSON_FIELDS = {"params_json": "params", "items_json": "items", "usage_json": "usage", "meta_json": "meta",
+                "result_json": "output", "warnings_json": "warnings"}
 _MONEY_FIELDS = {"total_min_cny", "total_max_cny", "est_min_cny", "est_max_cny", "reserved_cny", "actual_cny"}
 _JOB_UPDATE_FIELDS = {
     "status", "task_id", "run_token", "reserved_cny", "actual_cny", "usage_json", "result_host",
@@ -127,7 +141,39 @@ def _row(row) -> dict | None:
     for key in _MONEY_FIELDS:
         if key in result and result[key] is not None:
             result[key] = float(pricing.money(result[key]))
+    if result.get("kind") == "brain":
+        result["provider"] = result["brain_provider"]
+        if result.get("error_code") in {"invalid_output", "max_tokens"} and result["status"] == "failed":
+            result["status"] = "invalid_output"
+        result["repaired"] = bool(result.get("repaired"))
+        result["warnings"] = result.get("warnings") or []
+        result["cost"] = {"currency": result["currency"], "amount": (
+            float(result["actual_amount"]) if result.get("actual_amount") is not None else None)}
+        result["result"] = result.get("output")
     return result
+
+
+async def migrate_schema(db) -> None:
+    """只补列：旧库 provider/status CHECK 保留，brain 使用新增的权威列。"""
+    additions = {
+        "studio_projects": {"brain_provider": "TEXT NOT NULL DEFAULT 'claude'"},
+        "studio_jobs": {
+            "task": "TEXT", "result_json": "TEXT", "warnings_json": "TEXT",
+            "currency": "TEXT NOT NULL DEFAULT 'CNY'", "input_chars": "INTEGER",
+            "group_id": "TEXT", "brain_provider": "TEXT", "reserved_amount": "TEXT",
+            "actual_amount": "TEXT", "confirmed_month": "TEXT", "latency_s": "REAL",
+            "stop_reason": "TEXT", "repaired": "INTEGER NOT NULL DEFAULT 0",
+            "attempt": "INTEGER NOT NULL DEFAULT 1", "parent_job_id": "TEXT",
+        },
+    }
+    for table, columns in additions.items():
+        async with db.execute(f"PRAGMA table_info({table})") as cursor:
+            existing = {row[1] for row in await cursor.fetchall()}
+        for column, definition in columns.items():
+            if column not in existing:
+                await db.execute(f"ALTER TABLE {table} ADD COLUMN {column} {definition}")
+    await db.execute("CREATE INDEX IF NOT EXISTS idx_studio_brain_group ON studio_jobs(owner,project_id,group_id)")
+    await db.execute("CREATE INDEX IF NOT EXISTS idx_studio_brain_month ON studio_jobs(owner,currency,confirmed_month)")
 
 
 @asynccontextmanager
@@ -189,8 +235,8 @@ async def create_project(owner: str, title: str, aspect: str) -> dict:
         if await _one(db, "SELECT username FROM users WHERE username=?", (owner,)) is None:
             raise HTTPException(404, "Not Found")
         await db.execute(
-            "INSERT INTO studio_projects(id,owner,title,aspect,created_at,updated_at) VALUES(?,?,?,?,?,?)",
-            (project_id, owner, title.strip(), aspect, now, now),
+            "INSERT INTO studio_projects(id,owner,title,aspect,created_at,updated_at,brain_provider) VALUES(?,?,?,?,?,?,?)",
+            (project_id, owner, title.strip(), aspect, now, now, get_settings().brain_default),
         )
         return await _project(db, project_id, owner)
 
@@ -403,7 +449,7 @@ async def get_job(job_id: str, owner: str | None = None) -> dict:
 async def list_jobs(project_id: str, owner: str) -> list[dict]:
     async with connection() as db:
         await _project(db, project_id, owner)
-        return await _many(db, "SELECT * FROM studio_jobs WHERE project_id=? AND owner=? ORDER BY created_at DESC,id",
+        return await _many(db, "SELECT * FROM studio_jobs WHERE project_id=? AND owner=? AND kind='i2v' ORDER BY created_at DESC,id",
                            (project_id, owner))
 
 
@@ -422,6 +468,9 @@ async def cas_job(job_id: str, expected_status, updates: dict, run_token=None, d
             return await cas_job(job_id, expected_status, updates, run_token=run_token, db=current)
     expected = {expected_status} if isinstance(expected_status, str) else set(expected_status)
     job = await _get_job(db, job_id)
+    if job and job.get("kind") == "brain":
+        from .brain_jobs import transition
+        return await transition(db, job, expected_status, updates, run_token=run_token)
     if job is None or job["status"] not in expected or (run_token is not None and job["run_token"] != run_token):
         return False
     project = await _one(db, "SELECT id FROM studio_projects WHERE id=? AND owner=? AND archived=0",
@@ -471,12 +520,12 @@ transition_job = cas_job
 async def claim_next_job(provider: str, limit: int, run_token: str) -> dict | None:
     async with connection(transaction=True) as db:
         async with db.execute(
-            "SELECT COUNT(*) FROM studio_jobs WHERE provider=? AND status IN ('submitting','submitted','running')", (provider,)
+            "SELECT COUNT(*) FROM studio_jobs WHERE kind='i2v' AND provider=? AND status IN ('submitting','submitted','running')", (provider,)
         ) as cursor:
             active = (await cursor.fetchone())[0]
         if active >= limit:
             return None
-        job = await _one(db, "SELECT * FROM studio_jobs WHERE provider=? AND status='queued' ORDER BY created_at,id LIMIT 1", (provider,))
+        job = await _one(db, "SELECT * FROM studio_jobs WHERE kind='i2v' AND provider=? AND status='queued' ORDER BY created_at,id LIMIT 1", (provider,))
         if job is None:
             return None
         stamp = utcnow()
@@ -488,7 +537,7 @@ async def claim_next_job(provider: str, limit: int, run_token: str) -> dict | No
 async def list_due_jobs(now=None) -> list[dict]:
     stamp = _timestamp(now)
     async with connection() as db:
-        return await _many(db, """SELECT * FROM studio_jobs WHERE task_id IS NOT NULL AND task_id!=''
+        return await _many(db, """SELECT * FROM studio_jobs WHERE kind='i2v' AND task_id IS NOT NULL AND task_id!=''
             AND status IN ('submitted','running','uncertain')
             AND (poll_requested=1 OR (status IN ('submitted','running') AND needs_recheck=0))
             AND (poll_requested=1 OR next_poll_at IS NULL OR next_poll_at<=?) ORDER BY created_at,id""", (stamp,))
@@ -496,7 +545,7 @@ async def list_due_jobs(now=None) -> list[dict]:
 
 async def list_pending_downloads(now=None) -> list[dict]:
     async with connection() as db:
-        return await _many(db, """SELECT * FROM studio_jobs WHERE status='succeeded' AND result_asset_id IS NULL
+        return await _many(db, """SELECT * FROM studio_jobs WHERE kind='i2v' AND status='succeeded' AND result_asset_id IS NULL
             AND (poll_requested=1 OR (needs_recheck=0 AND (next_poll_at IS NULL OR next_poll_at<=?)))
             ORDER BY created_at,id""", (_timestamp(now),))
 
@@ -531,6 +580,8 @@ async def link_task(job_id: str, owner: str, task_id: str) -> dict:
         raise HTTPException(422, "请提供有效的上游任务 ID")
     async with connection(transaction=True) as db:
         job = await _owned_job(db, job_id, owner)
+        if job.get("kind") == "brain":
+            raise HTTPException(409, "导演模型为同步调用，没有上游任务号，只能核对后释放")
         if job["status"] != "uncertain" or job["task_id"]:
             raise HTTPException(409, "只能为没有上游任务 ID 的不确定任务关联 ID")
         stamp = utcnow()

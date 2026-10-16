@@ -98,8 +98,10 @@ function resolve(request){request.resolve({ok:request.status===200,status:reques
 
 
 def probe(script):
-    if not shutil.which("node") or not (ROOT / "frontend/node_modules/typescript").exists():
-        pytest.skip("node and the existing frontend dependencies are needed")
+    if not (ROOT / "frontend" / "node_modules" / "typescript/lib/typescript.js").is_file():
+        pytest.skip("frontend dependencies unavailable: typescript")
+    if not shutil.which("node"):
+        pytest.skip("node is unavailable")
     result = subprocess.run(
         ["node", "-e", DRIVER + "\n(async()=>{\n" + script + "\n})().catch(error=>{process.stderr.write(error.stack);process.exitCode=1;});", str(ROOT)],
         cwd=ROOT, capture_output=True, text=True, check=False, timeout=30,

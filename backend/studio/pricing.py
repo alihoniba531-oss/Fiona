@@ -131,3 +131,118 @@ def actual_cost(provider: str, resolution: str, usage: dict | None) -> Decimal |
         return money(duration * WAN_PRICES[key])
     except (InvalidOperation, ValueError):
         return money(0)
+
+
+# 每百万 token；平台模型默认价沿用 WO0，待核实，可逐模型覆盖。
+BRAIN_PRICES = {
+    "claude-opus-5-5": ("USD", "4", "20", "0.20"),
+    "claude-sonnet-5-5": ("USD", "2", "10", "0.20"),
+    "claude-haiku-5-5": ("USD", "0.10", "0.50", "0.10"),
+    "qwen3.8-max": ("CNY", "6", "24", "6"),
+    "deepseek-v4-pro": ("CNY", "2", "3", "2"),
+    "qwen3-vl-plus": ("CNY", "1", "10", "1"),  # 待核实：作者账号实测可用，价格以账单为准。
+    "qwen-vl-max": ("CNY", "2.4", "9.6", "2.4"),
+}
+REPAIR_OVERHEAD_TOKENS = 2048
+
+
+def brain_price_env(model: str) -> str:
+    import re
+    return "FIONA_STUDIO_PRICE_" + re.sub(r"[^A-Za-z0-9]", "_", model).upper()
+
+
+def brain_price(model: str) -> dict:
+    """覆盖格式为 JSON {input,output,cache_read?}，单位 / 百万 token。"""
+    import json
+    import os
+    name = brain_price_env(model)
+    default = BRAIN_PRICES.get(model)
+    # 自定义千问视觉模型仍计入人民币日上限；旧 Claude 覆盖保持美元语义。
+    currency = default[0] if default else ("USD" if model.startswith("claude-") else "CNY")
+    raw = os.getenv(name)
+    try:
+        if raw is not None:
+            value = json.loads(raw)
+            values = [value["input"], value["output"], value.get("cache_read", value["input"])]
+        elif default:
+            values = default[1:]
+        else:
+            raise ValueError
+        rates = [Decimal(str(value)) for value in values]
+        if any(not value.is_finite() or value < 0 for value in rates):
+            raise ValueError
+    except (ValueError, TypeError, KeyError, InvalidOperation):
+        raise HTTPException(409, f"模型 {model} 单价未配置或无效，请设置环境变量 {name}") from None
+    return dict(zip(("currency", "input", "output", "cache_read"), (currency, *rates)))
+
+
+def estimate_brain(model: str, input_chars: int, max_tokens: int, *, image_tokens: int = 0) -> dict:
+    from math import ceil
+    return estimate_brain_tokens(model, ceil(input_chars * 1.5) + image_tokens, max_tokens)
+
+
+def estimate_brain_tokens(model: str, input_tokens: int, max_tokens: int) -> dict:
+    price = brain_price(model)
+    prices = [price]
+    if model in {"claude-sonnet-5-5", "claude-opus-5-5"}:
+        # 这两个型号启用服务端 default fallback，预留必须覆盖已知 Claude 型号的最高价。
+        for candidate in BRAIN_PRICES:
+            if candidate.startswith("claude-") and candidate != model:
+                try:
+                    prices.append(brain_price(candidate))
+                except HTTPException:
+                    # 无法定价的 fallback 会按本次预留结算，不可影响已配置的请求模型。
+                    pass
+    if model.startswith("claude-"):
+        input_rate = max(max(item["input"] * Decimal("1.25"), item["cache_read"]) for item in prices)
+    else:
+        input_rate = max(price["input"], price["cache_read"])
+    output_rate = max(item["output"] for item in prices)
+    amount = (input_tokens * input_rate + max_tokens * output_rate) / 1_000_000
+    return {"currency": price["currency"], "amount": float(money(amount))}
+
+
+def estimate_brain_repair(model: str, input_chars: int, max_tokens: int, *, image_tokens: int = 0) -> dict:
+    """上轮输出以其 token 上限计入，不将生成 token 再当字符放大。"""
+    from math import ceil
+    inputs = ceil(input_chars * 1.5) + image_tokens + max_tokens + REPAIR_OVERHEAD_TOKENS
+    return estimate_brain_tokens(model, inputs, max_tokens)
+
+
+def brain_actual_cost(model: str, usage: dict | None) -> dict:
+    price = brain_price(model)
+    result = {"currency": price["currency"], "amount": None}
+    if not isinstance(usage, dict):
+        return result
+    def count(key, *, required=False):
+        value = usage.get(key, None if required else 0)
+        if isinstance(value, bool) or value is None:
+            raise ValueError
+        value = Decimal(str(value))
+        if not value.is_finite() or value < 0 or value != value.to_integral_value():
+            raise ValueError
+        return value
+    try:
+        inputs = count("input_tokens", required=True)
+        outputs = count("output_tokens", required=True)
+        cached = count("cache_read_input_tokens")
+        created = count("cache_creation_input_tokens")
+        # Anthropic input_tokens 不包括缓存；OpenAI 兼容用量包含缓存命中。
+        ordinary = inputs if model.startswith("claude-") else max(Decimal(0), inputs - cached)
+        amount = ((ordinary + created * Decimal("1.25")) * price["input"] + cached * price["cache_read"]
+                  + outputs * price["output"]) / 1_000_000
+        result["amount"] = float(money(amount))
+    except (ValueError, TypeError, InvalidOperation):
+        pass
+    return result
+
+
+def settle_brain_response(model: str, usage: dict | None, *, currency: str, reserved_amount) -> tuple[dict, list[str]]:
+    """完整响应按实际模型计价；无法定价时最多结算本次已确认预留。"""
+    try:
+        return brain_actual_cost(model, usage), []
+    except HTTPException as exc:
+        if exc.status_code != 409:
+            raise
+        return ({"currency": currency, "amount": float(money(reserved_amount))},
+                ["fallback 模型单价未配置，按预留计"])

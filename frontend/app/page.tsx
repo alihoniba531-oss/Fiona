@@ -1657,7 +1657,7 @@ export default function ChatPage() {
     return () => { cancelled = true; };
   }, [localWatchInbox, currentConversation?.id, conversationLocked, conversationLoading, username, getSelectionVersion, setMessages]);
   useEffect(() => {
-    if (!hydrated || !username) return;
+    if (!hydrated || !username || !studioAllowed) return;
     let mounted = true;
     const poller = createStudioNoticePoller({
       isVisible: () => mounted && readStoredUsername() === username && document.visibilityState === "visible",
@@ -1695,7 +1695,7 @@ export default function ChatPage() {
       window.clearInterval(timer);
       document.removeEventListener("visibilitychange", onVisibility);
     };
-  }, [hydrated, username, refreshList]);
+  }, [hydrated, username, refreshList, studioAllowed]);
 
   useEffect(() => {
     const conversationId = currentConversation?.id;
@@ -2378,6 +2378,7 @@ export default function ChatPage() {
           novelActive={novelOpen}
           onStudioClick={() => { if (studioAllowed) toggleDrawer("studio"); }}
           studioActive={studioOpen}
+          studioAccessAllowed={studioAllowed}
           onBalanceChange={setStrawberryBalance}
         />
 

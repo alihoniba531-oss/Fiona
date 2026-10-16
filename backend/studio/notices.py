@@ -96,16 +96,20 @@ async def write_job_notice(job_id: str) -> None:
                         a.duration_s AS result_duration_s
                     FROM studio_jobs j JOIN studio_projects p ON p.id=j.project_id AND p.owner=j.owner
                     LEFT JOIN studio_assets a ON a.id=j.result_asset_id AND a.owner=j.owner
-                    WHERE j.id=? AND p.archived=0
-                        AND NOT EXISTS(SELECT 1 FROM studio_notices n WHERE n.job_id=j.id)""", (job_id,))
+                    WHERE j.id=? AND j.kind='i2v' AND p.archived=0
+                        AND NOT EXISTS(SELECT 1 FROM studio_notices n WHERE n.job_id=j.id)
+                        AND NOT EXISTS(SELECT 1 FROM studio_notice_historical h WHERE h.job_id=j.id)""", (job_id,))
             if job is None:
                 _PENDING_NOTICES.pop(pending_key, None)
                 return
             pending = _PENDING_NOTICES.get(pending_key)
             if pending is None:
-                if job["status"] not in NOTICE_STATUSES:
+                async with store.connection() as db:
+                    durable = await store._one(db, "SELECT content FROM studio_notice_pending WHERE job_id=? AND username=?",
+                                               (job_id, job["owner"]))
+                if durable is None and job["status"] not in NOTICE_STATUSES:
                     return
-                content = notice_content(job, job["project_title"])
+                content = durable["content"] if durable else notice_content(job, job["project_title"])
                 pending = {"owner": job["owner"], "content": database.WatchPrivateText(content)}
                 _PENDING_NOTICES[pending_key] = pending
             content = pending["content"]
@@ -117,17 +121,58 @@ async def write_job_notice(job_id: str) -> None:
         logger.warning("studio code=notice_write_error")
 
 
+async def initialize_notice_cutoff() -> str:
+    """Atomically mark pre-deployment terminals and the first scheduler start.
+
+    Historical job IDs remain excluded if an old uncertain task later changes
+    updated_at during recheck. Already-attempted notifications retain their
+    durable retry records and are never mistaken for a historical backfill.
+    """
+    import database
+    async with store.connection(transaction=True) as db:
+        row = await store._one(db, "SELECT value FROM studio_notice_meta WHERE key='started_at'")
+        if row is not None:
+            return row["value"]
+        await db.execute("""INSERT OR IGNORE INTO studio_notice_historical(job_id)
+            SELECT j.id FROM studio_jobs j
+            WHERE j.kind='i2v'
+                AND j.status IN ('downloaded','failed','rejected','filtered','expired','uncertain')
+                AND NOT EXISTS(SELECT 1 FROM studio_notice_pending d WHERE d.job_id=j.id)""")
+        for key in list(_PENDING_NOTICES):
+            if key[0] == str(database.DB_PATH):
+                await db.execute("DELETE FROM studio_notice_historical WHERE job_id=?", (key[1],))
+        now = store.utcnow()
+        await db.execute("INSERT INTO studio_notice_meta(key,value) VALUES('started_at',?)", (now,))
+        return now
+
+
 async def retry_pending_notices() -> None:
     try:
         import database
+        cutoff = await initialize_notice_cutoff()
         pending_ids = [key[1] for key in _PENDING_NOTICES if key[0] == str(database.DB_PATH)]
         async with store.connection() as db:
-            jobs = await store._many(db, """SELECT j.id FROM studio_jobs j
-                WHERE j.status IN ('downloaded','failed','rejected','filtered','expired','uncertain')
+            # This expression matches idx_studio_jobs_notice_terminal. Uncertain
+            # submissions may not have finished_at, so their transition time is
+            # updated_at. Old completed jobs are excluded before joining notices.
+            jobs = await store._many(db, """SELECT j.id FROM studio_jobs AS j INDEXED BY idx_studio_jobs_notice_terminal
+                JOIN studio_projects p ON p.id=j.project_id AND p.owner=j.owner AND p.archived=0
+                JOIN users u ON u.username=j.owner
+                WHERE j.kind='i2v'
+                    AND j.status IN ('downloaded','failed','rejected','filtered','expired','uncertain')
+                    AND COALESCE(j.finished_at,j.updated_at)>=?
                     AND NOT EXISTS(SELECT 1 FROM studio_notices n WHERE n.job_id=j.id)
-                ORDER BY j.created_at,j.id""")
-        # 用户可能在下一 tick 前关联了任务号；仍须补首次失败时的正文。
-        for job_id in dict.fromkeys([job["id"] for job in jobs] + pending_ids):
+                    AND NOT EXISTS(SELECT 1 FROM studio_notice_historical h WHERE h.job_id=j.id)
+                ORDER BY COALESCE(j.finished_at,j.updated_at),j.id""", (cutoff,))
+            persisted = await store._many(db, """SELECT d.job_id AS id FROM studio_notice_pending d
+                JOIN studio_jobs j ON j.id=d.job_id AND j.owner=d.username AND j.kind='i2v'
+                JOIN studio_projects p ON p.id=j.project_id AND p.owner=j.owner AND p.archived=0
+                JOIN users u ON u.username=j.owner
+                WHERE NOT EXISTS(SELECT 1 FROM studio_notices n WHERE n.job_id=j.id)""")
+        # Durable snapshots survive a restart even if the author linked the job
+        # and its status is no longer terminal. Memory snapshots cover a failure
+        # before save_studio_notice had an opportunity to persist its marker.
+        for job_id in dict.fromkeys([job["id"] for job in jobs + persisted] + pending_ids):
             await write_job_notice(job_id)
     except asyncio.CancelledError:
         raise

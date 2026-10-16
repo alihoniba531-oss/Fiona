@@ -38,7 +38,7 @@ export default function ShotCard({ job, busy = false, onCancel, onRecheck, onLin
     catch (cause) { setError(studioErrorMessage(cause)); return false; }
     finally { locked.current = false; setWorking(false); }
   };
-  return <article className="ceramic-card min-w-0 space-y-4 rounded-[16px] p-4 [overflow-wrap:anywhere]" aria-label={`镜头：${studioStatusLabel(job.status)}`}>
+  return <article className="ceramic-card min-w-0 space-y-4 rounded-[16px] p-4 [overflow-wrap:anywhere] [&_.tag]:h-auto [&_.tag]:min-h-[22px] [&_.tag]:whitespace-normal [&_.tag]:py-1 [&_.tag]:leading-relaxed" aria-label={`镜头：${studioStatusLabel(job.status)}`}>
     {job.params.first_frame_asset_id && <div className="mount-frame overflow-hidden rounded-[10px] p-2"><StudioAssetImage assetId={job.params.first_frame_asset_id} alt="镜头首帧" className="max-h-56" /></div>}
     <div className="flex min-w-0 flex-wrap gap-2"><span className="chip">{studioModelLabel(job.model || job.provider)}</span><span className="chip">{job.params.resolution.toUpperCase()}</span><span className="chip">{job.params.duration === -1 ? `${job.params.duration_min_s}–${job.params.duration_max_s}` : job.params.duration} 秒</span></div>
     <p className="text-[14px] leading-[1.9]">{job.actual_cny != null ? <>实付 <span className="readout">¥{job.actual_cny.toFixed(2)}</span></> : <>预估 <span className="readout">¥{job.est_min_cny.toFixed(2)}–¥{job.est_max_cny.toFixed(2)}</span>（预留 <span className="readout">¥{job.reserved_cny.toFixed(2)}</span>）</>}</p>
@@ -53,7 +53,7 @@ export default function ShotCard({ job, busy = false, onCancel, onRecheck, onLin
     </div>
     {uncertain && !job.task_id && <form className="min-w-0 space-y-2" onSubmit={event => { event.preventDefault(); if (taskId.trim()) void run(() => onLinkTask(job, taskId.trim())); }}><label htmlFor={taskInputId} className="block text-[14px]">控制台任务号</label><input id={taskInputId} value={taskId} maxLength={512} disabled={disabled} className={novelFieldClass} onChange={event => setTaskId(event.target.value)} /><button type="submit" disabled={disabled || !taskId.trim()} className="btn btn-quiet min-h-10">关联任务号</button></form>}
     {uncertain && <button type="button" className="btn btn-danger min-h-10 max-w-full whitespace-normal" disabled={disabled} onClick={() => setReleaseOpen(true)}>确认未扣费，释放额度</button>}
-    {error && <ErrorNotice message={error} />}
+    {error && !releaseOpen && <ErrorNotice message={error} />}
     {releaseOpen && uncertain && <ReleaseDialog busy={disabled} error={error} onClose={() => setReleaseOpen(false)} onConfirm={async () => { if (await run(() => onRelease(job))) setReleaseOpen(false); }} />}
   </article>;
 }

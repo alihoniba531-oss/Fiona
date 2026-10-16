@@ -1,7 +1,10 @@
 """Offline probes run real request helpers, shell hooks and polling effects."""
 from pathlib import Path
 import json
+import shutil
 import subprocess
+
+import pytest
 
 from test_novel_p2_r1 import DRIVER
 
@@ -14,6 +17,10 @@ STUDIO_DRIVER = DRIVER.replace("if(url==='/api/novels')", """if(url==='/api/stud
 
 
 def probe(script):
+    if not (ROOT / "frontend/node_modules/typescript/lib/typescript.js").is_file():
+        pytest.skip("frontend dependencies unavailable: typescript")
+    if not shutil.which("node"):
+        pytest.skip("node is unavailable")
     result = subprocess.run(
         ["node", "-e", STUDIO_DRIVER + "\n(async()=>{\n" + script + "\n})().catch(e=>{process.stderr.write(e.stack);process.exitCode=1;});", str(ROOT)],
         cwd=ROOT, capture_output=True, text=True, check=False, timeout=30,
