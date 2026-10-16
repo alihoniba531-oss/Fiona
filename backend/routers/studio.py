@@ -2,7 +2,7 @@
 import asyncio
 from typing import Literal
 
-from fastapi import APIRouter, Depends, HTTPException, UploadFile
+from fastapi import APIRouter, Depends, HTTPException, Query, UploadFile
 from pydantic import BaseModel, ConfigDict, Field, StrictBool, StrictInt, field_validator
 
 from studio import pricing, spend, storage, store
@@ -88,6 +88,28 @@ async def create_project(body: ProjectBody, user: str = Depends(studio_user)):
 @router.get("/projects")
 async def projects(user: str = Depends(studio_user)):
     return await store.list_projects(user)
+
+
+@router.get("/projects/{pid}")
+async def project_detail(pid: str, user: str = Depends(studio_user)):
+    try:
+        return await store.get_project(pid, user)
+    except HTTPException as exc:
+        raise HTTPException(exc.status_code, exc.detail, headers=PRIVATE_HEADERS) from None
+
+
+@router.get("/projects/{pid}/assets")
+async def project_assets(pid: str, user: str = Depends(studio_user)):
+    try:
+        return [_public_asset(asset) for asset in await store.list_assets(pid, user)]
+    except HTTPException as exc:
+        raise HTTPException(exc.status_code, exc.detail, headers=PRIVATE_HEADERS) from None
+
+
+@router.get("/notices")
+async def notices(after: int = Query(default=0, ge=0), user: str = Depends(studio_user)):
+    import database
+    return await database.list_studio_notices_with_content(user, after)
 
 
 @router.post("/projects/{pid}/assets", status_code=201)

@@ -7,6 +7,8 @@ import { useEffect, useRef, useState } from "react";
 import { cn } from "@/lib/utils";
 import { getUsername, updateBalance, apiFetch } from "@/lib/auth";
 import { useTheme } from "@/lib/useTheme";
+import { useAccountIdentity, useAccountRequest } from "@/lib/useAccountIdentity";
+import { checkStudioAccess } from "@/lib/studio";
 
 import { API_BASE as API } from "@/lib/config";
 
@@ -31,6 +33,8 @@ export default function Sidebar({
   settingsActive,
   onNovelClick,
   novelActive,
+  onStudioClick,
+  studioActive,
   onBalanceChange,
 }: {
   onHistoryClick?: () => void;
@@ -45,12 +49,27 @@ export default function Sidebar({
   settingsActive?: boolean;
   onNovelClick?: () => void;
   novelActive?: boolean;
+  onStudioClick?: () => void;
+  studioActive?: boolean;
   onBalanceChange?: (balance: number | null) => void;
 }) {
   const pathname = usePathname();
   const { dark, toggleTheme } = useTheme();
   const [balance, setBalance] = useState<number | null>(null);
+  const username = useAccountIdentity();
+  const { beginRequest } = useAccountRequest(username);
+  const [studioAccess, setStudioAccess] = useState({ owner: "", allowed: false });
   const onBalanceChangeRef = useRef(onBalanceChange);
+
+  useEffect(() => {
+    const request = beginRequest();
+    if (!request) return;
+    void checkStudioAccess(request.signal).then(allowed => {
+      if (request.isCurrent()) setStudioAccess({ owner: username, allowed });
+    }).catch(() => {
+      if (request.isCurrent()) setStudioAccess({ owner: username, allowed: false });
+    });
+  }, [username, beginRequest]);
 
   useEffect(() => {
     onBalanceChangeRef.current = onBalanceChange;
@@ -85,12 +104,14 @@ export default function Sidebar({
   }, []);
 
   const shared = !!onChatClick;
-  const items = navItems.map(({href,label}) => {
-    const drawerActive=(href === "/agents/me" && agentActive) || (href === "/agents" && exchangeActive) || (href === "/plaza" && plazaActive) || (href === "/settings" && settingsActive) || (href === "/novels" && novelActive);
-    const anyDrawer=!!(agentActive || exchangeActive || plazaActive || settingsActive || novelActive);
-    const active=!!drawerActive || (href === "/" && pathname === "/" && !anyDrawer) || (href !== "/" && (pathname === href || (href === "/novels" && pathname.startsWith("/novels/"))));
-    const callback=href === "/" ? onChatClick : href === "/agents/me" ? onAgentClick : href === "/agents" ? onExchangeClick : href === "/plaza" ? onPlazaClick : href === "/novels" ? onNovelClick : onSettingsClick;
-    const drawerId=href === "/agents/me" ? "agent-drawer" : href === "/agents" ? "exchange-drawer" : href === "/plaza" ? "plaza-drawer" : href === "/settings" ? "settings-drawer" : href === "/novels" ? "novel-drawer" : undefined;
+  const desktopNavItems = studioAccess.owner === username && studioAccess.allowed
+    ? [...navItems, { href: "/studio", label: "工作室" }] : navItems;
+  const items = desktopNavItems.map(({href,label}) => {
+    const drawerActive=(href === "/agents/me" && agentActive) || (href === "/agents" && exchangeActive) || (href === "/plaza" && plazaActive) || (href === "/settings" && settingsActive) || (href === "/novels" && novelActive) || (href === "/studio" && studioActive);
+    const anyDrawer=!!(agentActive || exchangeActive || plazaActive || settingsActive || novelActive || studioActive);
+    const active=!!drawerActive || (href === "/" && pathname === "/" && !anyDrawer) || (href !== "/" && (pathname === href || (href === "/novels" && pathname.startsWith("/novels/")) || (href === "/studio" && pathname.startsWith("/studio/"))));
+    const callback=href === "/" ? onChatClick : href === "/agents/me" ? onAgentClick : href === "/agents" ? onExchangeClick : href === "/plaza" ? onPlazaClick : href === "/novels" ? onNovelClick : href === "/studio" ? onStudioClick : onSettingsClick;
+    const drawerId=href === "/agents/me" ? "agent-drawer" : href === "/agents" ? "exchange-drawer" : href === "/plaza" ? "plaza-drawer" : href === "/settings" ? "settings-drawer" : href === "/novels" ? "novel-drawer" : href === "/studio" ? "studio-drawer" : undefined;
     return {href,label,active,callback,drawerActive,drawerId};
   });
   const desktop = <aside className={cn(shared && "relative z-[2] my-3 ml-3", "bookmark-sidebar flex min-h-0 w-[var(--nav-w)] shrink-0 flex-col items-center border-r border-[var(--carve)] py-[22px] max-md:hidden")} aria-label="主导航">
@@ -114,7 +135,7 @@ export default function Sidebar({
     </div>
   </aside>;
   const mobile = <nav aria-label="主导航" className={cn("mobile-tabbar fixed inset-x-0 bottom-0 z-[70] flex h-[calc(var(--tabbar-h)+env(safe-area-inset-bottom))] items-start pb-[env(safe-area-inset-bottom)] md:hidden", shared && "border-t border-[var(--carve)]")}>
-    {items.map(({href,label,active,callback,drawerActive,drawerId}) => {
+    {items.filter(item => item.href !== "/studio").map(({href,label,active,callback,drawerActive,drawerId}) => {
       const classes=cn("flex h-[var(--tabbar-h)] min-w-0 flex-1 flex-col items-center justify-center gap-1.5 whitespace-nowrap text-sm tracking-[.2em]",active ? "font-medium text-[var(--ink)]":"text-[var(--ink2)] hover:text-[var(--ink)]");
       const content=<><span aria-hidden="true" className={cn("h-[1.5px] w-4",active ? "bg-[var(--ink)]":"bg-transparent")}/>{label}</>;
       return callback ? <button key={href} type="button" onClick={callback} aria-expanded={drawerId ? !!drawerActive:undefined}

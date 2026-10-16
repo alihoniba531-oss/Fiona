@@ -27,6 +27,7 @@ import { readLocalReferenceImage, MAX_REFERENCE_FILE_BYTES, REFERENCE_FILE_TYPES
 import { useAccountRequest } from "@/lib/useAccountIdentity";
 import { CHAT_MODEL_REV_KEY, CLAUDE_EFFORTS, CHAT_MODEL_EFFORT_LABELS, CHAT_MODEL_EFFORT_TITLES, chatModelErrorMessage, getChatModel, setChatModelEnabled, setChatModelOptions, publishChatModelRevision, parseReplyModel, type ChatModelEffort, type ChatModelSettings } from "@/lib/chatModel";
 import { createLocalWatchPoller, appendLocalWatchMessages, localWatchNotificationsEnabled, type LocalWatchAlert } from "@/lib/localWatch";
+import { checkStudioAccess, createStudioNoticePoller, mergeStudioNotices, type StudioNotice } from "@/lib/studio";
 
 import { API_BASE as API, WS_BASE } from "@/lib/config";
 
@@ -431,7 +432,7 @@ export default function ChatPage() {
   const [input, setInput] = useState("");
   const [isLoading, setIsLoading] = useState(false);
   // 右侧面板互斥，分身管理也在当前聊天页内打开。
-  type DrawerName = "agent" | "exchange" | "plaza" | "settings" | "novel" | null;
+  type DrawerName = "agent" | "exchange" | "plaza" | "settings" | "studio" | "novel" | null;
   const [drawer, setDrawer] = useState<DrawerName>(null);
   const [worldTab, setWorldTab] = useState<"plaza" | "match">("plaza");
   const [settingsTab, setSettingsTab] = useState<"settings" | "profile">("settings");
@@ -474,9 +475,13 @@ export default function ChatPage() {
   const novelOpen = drawer === "novel";
   const novelFrameRef = useRef<HTMLIFrameElement>(null);
   const novelPanelRef = useRef<HTMLElement>(null);
+  const studioOpen = drawer === "studio";
+  const studioFrameRef = useRef<HTMLIFrameElement>(null);
+  const studioPanelRef = useRef<HTMLElement>(null);
   useEffect(() => {
     if (novelOpen) novelPanelRef.current?.focus();
-  }, [novelOpen]);
+    if (studioOpen) studioPanelRef.current?.focus();
+  }, [novelOpen, studioOpen]);
   useEffect(() => {
     const openNovelSettings = (event: MessageEvent) => {
       if (event.origin !== window.location.origin || event.source !== novelFrameRef.current?.contentWindow) return;
@@ -491,6 +496,17 @@ export default function ChatPage() {
     };
     window.addEventListener("message", openNovelSettings);
     return () => window.removeEventListener("message", openNovelSettings);
+  }, []);
+  useEffect(() => {
+    const closeStudio = (event: MessageEvent) => {
+      if (event.origin !== window.location.origin || event.source !== studioFrameRef.current?.contentWindow) return;
+      if (event.data?.type !== "fiona-studio-close") return;
+      setDrawer(current => current === "studio" ? null : current);
+      Array.from(document.querySelectorAll<HTMLButtonElement>('button[aria-controls="studio-drawer"]'))
+        .find(button => button.getClientRects().length > 0)?.focus();
+    };
+    window.addEventListener("message", closeStudio);
+    return () => window.removeEventListener("message", closeStudio);
   }, []);
   const anyDrawerOpen = drawer !== null;
   useEffect(() => {
@@ -553,6 +569,24 @@ export default function ChatPage() {
   const [username, setUsername] = useState("");
   const [hydrated, setHydrated] = useState(false);
   const [localWatchInbox, setLocalWatchInbox] = useState<{ owner: string; alerts: LocalWatchAlert[] }>({ owner: "", alerts: [] });
+  const [studioInbox, setStudioInbox] = useState<{ owner: string; notices: StudioNotice[] }>({ owner: "", notices: [] });
+  const [studioAccess, setStudioAccess] = useState({ owner: "", allowed: false });
+  const studioAllowed = studioAccess.owner === username && studioAccess.allowed;
+  const { beginRequest: beginStudioAccessRequest } = useAccountRequest(username);
+  useEffect(() => {
+    if (!hydrated) return;
+    const request = beginStudioAccessRequest();
+    if (!request) return;
+    void checkStudioAccess(request.signal).then(allowed => {
+      if (!request.isCurrent()) return;
+      setStudioAccess({ owner: username, allowed });
+      if (!allowed) setDrawer(current => current === "studio" ? null : current);
+    }).catch(() => {
+      if (!request.isCurrent()) return;
+      setStudioAccess({ owner: username, allowed: false });
+      setDrawer(current => current === "studio" ? null : current);
+    });
+  }, [hydrated, username, beginStudioAccessRequest]);
   const {
     agent, conversations, current: currentConversation, messages, setMessages,
     loading: conversationLoading, error: conversationError, reload: reloadConversations,
@@ -1559,6 +1593,10 @@ export default function ChatPage() {
   const pendingLocalWatchAlerts = localWatchInbox.owner === username ? localWatchInbox.alerts : [];
   const localWatchNotices = pendingLocalWatchAlerts.filter((alert, index, alerts) =>
     alerts.findIndex(item => item.conversation_id === alert.conversation_id) === index);
+  const pendingStudioNotices = studioInbox.owner === username ? studioInbox.notices : [];
+  const studioNotices = pendingStudioNotices.filter((notice, index, notices) =>
+    notice.conversation_id !== currentConversation?.id
+      && notices.findIndex(item => item.conversation_id === notice.conversation_id) === index);
 
   useEffect(() => {
     if (!hydrated || !username) return;
@@ -1618,6 +1656,62 @@ export default function ChatPage() {
     });
     return () => { cancelled = true; };
   }, [localWatchInbox, currentConversation?.id, conversationLocked, conversationLoading, username, getSelectionVersion, setMessages]);
+  useEffect(() => {
+    if (!hydrated || !username) return;
+    let mounted = true;
+    const poller = createStudioNoticePoller({
+      isVisible: () => mounted && readStoredUsername() === username && document.visibilityState === "visible",
+      fetchPage: async (after, signal) => {
+        const response = await apiFetch(`${API}/studio/notices?after=${after}`, { signal, cache: "no-store" });
+        return { status: response.status, notices: response.ok ? await response.json() as StudioNotice[] : [] };
+      },
+      onNotices: notices => {
+        if (!mounted || readStoredUsername() !== username) return;
+        setStudioInbox(previous => {
+          const existing = previous.owner === username ? previous.notices : [];
+          return { owner: username, notices: [...existing, ...notices.filter(notice => !existing.some(item => item.id === notice.id))] };
+        });
+        void refreshList();
+        if (localWatchNotificationsEnabled(username) && "Notification" in window && Notification.permission === "granted") {
+          for (const notice of notices) {
+            try {
+              const notification = new Notification("Fiona · 工作室提醒", { body: notice.summary, tag: `fiona-studio-${notice.id}` });
+              notification.onclick = () => { window.focus(); notification.close(); };
+            } catch { /* The saved chat notice remains available without system notifications. */ }
+          }
+        }
+      },
+    });
+    const onVisibility = () => {
+      if (document.visibilityState === "visible") void poller.tick();
+      else poller.pause();
+    };
+    void poller.tick();
+    const timer = window.setInterval(() => void poller.tick(), 10_000);
+    document.addEventListener("visibilitychange", onVisibility);
+    return () => {
+      mounted = false;
+      poller.dispose();
+      window.clearInterval(timer);
+      document.removeEventListener("visibilitychange", onVisibility);
+    };
+  }, [hydrated, username, refreshList]);
+
+  useEffect(() => {
+    const conversationId = currentConversation?.id;
+    if (!conversationId || conversationLocked || conversationLoading || studioInbox.owner !== username) return;
+    const notices = studioInbox.notices.filter(notice => notice.conversation_id === conversationId);
+    if (!notices.length) return;
+    const selectionVersion = getSelectionVersion();
+    let cancelled = false;
+    void Promise.resolve().then(() => {
+      if (cancelled || chatAbortRef.current || readStoredUsername() !== username || selectionVersion !== getSelectionVersion()) return;
+      setMessages(previous => mergeStudioNotices(previous, notices, conversationId));
+      setStudioInbox(previous => previous.owner === username
+        ? { ...previous, notices: previous.notices.filter(notice => !notices.some(item => item.id === notice.id)) } : previous);
+    });
+    return () => { cancelled = true; };
+  }, [studioInbox, currentConversation?.id, conversationLocked, conversationLoading, username, getSelectionVersion, setMessages]);
   const selectedReferenceImages = referenceImages?.owner === username && referenceImages.conversationId === currentConversation?.id
     ? referenceImages.images : [];
   const selectedReferenceImagePaths = selectedReferenceImages.map(image => image.source.image_path ?? `local:${image.id}`);
@@ -2282,6 +2376,8 @@ export default function ChatPage() {
           settingsActive={settingsOpen}
           onNovelClick={() => toggleDrawer("novel")}
           novelActive={novelOpen}
+          onStudioClick={() => { if (studioAllowed) toggleDrawer("studio"); }}
+          studioActive={studioOpen}
           onBalanceChange={setStrawberryBalance}
         />
 
@@ -2434,6 +2530,15 @@ export default function ChatPage() {
                         }
                         void handleSelectConversation(alert.conversation_id);
                       }}>有新的本机提醒 · {conversations.find(item => item.id === alert.conversation_id)?.title || alert.rule_name}</button>)}
+                  </div>}
+                  {studioNotices.length > 0 && <div role="status" className="flex flex-wrap gap-2">
+                    {studioNotices.map(notice => <button key={notice.conversation_id} type="button"
+                      className="chip min-h-10 max-w-full whitespace-normal text-left text-xs disabled:opacity-50"
+                      disabled={conversationLocked || conversationLoading}
+                      onClick={() => {
+                        if (chatAbortRef.current || conversationLocked || conversationLoading) return;
+                        void handleSelectConversation(notice.conversation_id);
+                      }}>有新的工作室提醒 · {notice.project_title}</button>)}
                   </div>}
                   {hasMoreMessages && <p className="text-xs text-muted-foreground text-center">当前显示最近 500 条消息；更早记录可在历史页查看。</p>}
                   {messages.length === 0 && (
@@ -2747,6 +2852,37 @@ export default function ChatPage() {
         </div>
         {username ? <iframe ref={novelFrameRef} title="书斋工作区" src="/novels?embed=1" className="min-h-0 w-full flex-1 border-0" />
           : <div role="status" className="flex-1 p-5 text-sm text-muted-foreground">正在加载身份…</div>}
+      </Glaze>
+
+      {/* 工作室仅在当前账号通过访问检查后挂载，关闭后保留工作区状态。 */}
+      <Glaze variant="panel"
+        id="studio-drawer"
+        ref={studioPanelRef}
+        tabIndex={-1}
+        aria-label="工作室"
+        aria-hidden={!studioOpen}
+        inert={!studioOpen}
+        onKeyDown={event => {
+          if (event.key === "Escape") { closeDrawer(); focusVisibleDrawerTrigger("studio-drawer"); }
+        }}
+        lens={false}
+        backdrop={false}
+        className="fixed top-3 bottom-3 right-3 z-[55] flex flex-col overflow-hidden outline-none max-md:left-0 max-md:top-0 max-md:right-0 max-md:bottom-[calc(var(--tabbar-h)+env(safe-area-inset-bottom))]! max-md:w-screen! max-md:rounded-none max-md:pt-[env(safe-area-inset-top)]"
+        style={{
+          width: "calc((100vw - var(--rail-w) - 12px) * 2 / 3)",
+          borderLeft: "1px solid var(--glass-border)",
+          ...drawerStyle(studioOpen),
+          willChange: "transform",
+        }}
+      >
+        <div className="flex shrink-0 items-center justify-between border-b px-4 py-2" style={{ background: "var(--hi)", borderColor: "var(--glass-border)" }}>
+          <span className="text-xs font-medium tracking-[.24em] text-muted-foreground">工作室</span>
+          <button type="button" onClick={() => { closeDrawer(); focusVisibleDrawerTrigger("studio-drawer"); }}
+            className="flex h-10 w-10 items-center justify-center rounded text-muted-foreground hover:bg-secondary hover:text-foreground"
+            title="收起工作室" aria-label="收起工作室"><X size={14} /></button>
+        </div>
+        {studioAllowed ? <iframe key={username} ref={studioFrameRef} title="短片工作室工作区" src="/studio?embed=1" className="min-h-0 w-full flex-1 border-0" />
+          : <div role="status" className="flex-1 p-5 text-sm text-muted-foreground">暂未开放</div>}
       </Glaze>
 
       {/* 抽屉外部点击关闭 — 任一右侧抽屉打开时铺一层透明背板，盖在抽屉之下、聊天区之上。

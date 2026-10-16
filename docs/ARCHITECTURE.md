@@ -258,7 +258,7 @@ SQLite 表由 `backend/database.py:init_db()` 在启动时创建，初始化时�
 
 主要数据域包括：加密自带模型配置、用户和画像、消息、匹配、待接受卡片、真人消息、帖子/点赞、标签与时间偏好、用户成长状态、事件、OTP、邀请码、退役用户名、槽位状态和上传清理队列。
 
-`fiona.db`、`uploads/` 与 `studio/` 必须作为一个隐私数据集合共同备份和清理。WAL 模式下在线数据库备份必须使用 SQLite `.backup` 或在线备份 API；只复制主数据库文件会漏掉未检查点的提交。`deploy/fiona-backup.sh` 以数据库属主运行并校验备份完整性，库快照与 uploads 包、存在时的 studio 第三个包使用同一时间戳、权限 `0600`，媒体排除隐藏文件和 `.part`，默认共同保留 14 天；systemd timer 每天北京时间 04:00 执行并补跑。`backend/migrate.py` 默认在数据库及伴生文件的临时副本上只执行 `init_db`，不恢复交流或清理文件，明确 `--in-place` 才迁移指定库。删除单条消息、清空历史或删除账户时，数据库会在同一事务中找出不再被消息/帖子引用的媒体并写入 `upload_cleanup_queue`；删号还在同一事务删除四张 `studio_*` 表的 owner 行、把工作室项目目录加入同一队列。清理器只递归删除真实路径位于工作室根内的目录，不能删除根本身；原普通上传文件清理行为保持不变。文件和目录会立即清理，失败项在后端启动时和运行期间周期重试，每轮异常只记类型并继续。新帖子在库内保存 owner；能通过当前 HMAC 或旧 MD5 匿名标识识别的历史帖子会自动回填，无法识别的旧行仍需人工处置。
+`fiona.db`、`uploads/` 与 `studio/` 必须作为一个隐私数据集合共同备份和清理。WAL 模式下在线数据库备份必须使用 SQLite `.backup` 或在线备份 API；只复制主数据库文件会漏掉未检查点的提交。`deploy/fiona-backup.sh` 以数据库属主运行并校验备份完整性，库快照与 uploads 包、存在时的 studio 第三个包使用同一时间戳、权限 `0600`，媒体排除隐藏文件和 `.part`，默认共同保留 14 天；systemd timer 每天北京时间 04:00 执行并补跑。`backend/migrate.py` 默认在数据库及伴生文件的临时副本上只执行 `init_db`，不恢复交流或清理文件，明确 `--in-place` 才迁移指定库。删除单条消息、清空历史或删除账户时，数据库会在同一事务中找出不再被消息/帖子引用的媒体并写入 `upload_cleanup_queue`；删号还在同一事务删除四张 `studio_*` 业务表的 owner 行和 `studio_notices` 的 username 行、把工作室项目目录加入同一队列。清理器只递归删除真实路径位于工作室根内的目录，不能删除根本身；原普通上传文件清理行为保持不变。文件和目录会立即清理，失败项在后端启动时和运行期间周期重试，每轮异常只记类型并继续。新帖子在库内保存 owner；能通过当前 HMAC 或旧 MD5 匿名标识识别的历史帖子会自动回填，无法识别的旧行仍需人工处置。
 
 ## 匹配和真人连接
 
@@ -326,9 +326,9 @@ Markdown 导出按原顺序保留所有有正文的章节，在 stale 章节标�
 
 开关：FIONA_NOVEL 默认 0，仅字面 1 开启；FIONA_NOVEL_USERS 空白名单拒绝全部用户；FIONA_NOVEL_MAX_RUNNING 默认 3；FIONA_DAILY_NOVEL_CHAPTERS 默认 30；FIONA_NOVEL_PRICE_JSON 是完整价格覆盖。
 
-## 短片工作室后端
+## 短片工作室
 
-`studio.store.STUDIO_TABLES_DDL` 由 `database.init_db()` 统一执行，只新增 `studio_projects/assets/quotes/jobs` 与索引，不改既有表、不新增迁移版本。金额以八位十进制保存和计算。确认报价在 `BEGIN IMMEDIATE` 内核对有效期、确认状态和全工作室当日占用，锁价并创建 queued 任务；指纹由参数与 quote_item_id 计算，在途状态有部分唯一索引。报价有效期不影响已确认任务。
+`studio.store.STUDIO_TABLES_DDL` 由 `database.init_db()` 统一执行，只新增 `studio_projects/assets/quotes/jobs/notices` 与索引，不改既有表、不新增迁移版本。金额以八位十进制保存和计算。确认报价在 `BEGIN IMMEDIATE` 内核对有效期、确认状态和全工作室当日占用，锁价并创建 queued 任务；指纹由参数与 quote_item_id 计算，在途状态有部分唯一索引。报价有效期不影响已确认任务。
 
 进程启动在小说恢复之后执行工作室恢复，再启动受统一后台任务管理的 2 秒调度循环。抢占以 queued 状态与 run_token 作 CAS；两家厂商分别限制在途数。付费 POST 只有一次，完整 4xx/429 为 rejected，其余无法确定结果的提交为 uncertain 并保留预留。submitting 重启转 uncertain，submitted/running 恢复只读轮询，succeeded 恢复下载。所有状态转换检查条件更新的受影响行数。
 
@@ -381,3 +381,14 @@ Markdown 导出按原顺序保留所有有正文的章节，在 stale 章节标�
 第 10 节第 1–12 项分别已在上表标注；第 13 项由 `test_studio_integration` 验证删号的四表清空、目录入队、清理和越界拒绝，另有上传/下载晚到删号的并发回归；第 14 项验证工作室目录不可写的 503/studio_storage 和关闭时免检；第 15 项通过完整既有回归核对聊天、普通媒体、鉴权等行为。断网钩子仅作用于 `test_studio_*.py`，允许回环连接与解析，其作用域及白名单使用模拟底层调用验证；不修改其他测试的传输或解析。
 
 删号事务以 `studio:<project_id>` 将项目加入清理队列，清理时按当前工作室根目录解析；兼容根内旧绝对目录条目，拒绝根本身、根外、符号链接和非目录。普通 `/uploads/` 文件沿用原清理规则。删消息、清空历史和删号的文件清理通过 `asyncio.to_thread` 执行，失败项保留供重试。
+
+
+### WO2 前端与聊天提醒
+
+App Router `/studio` 和 `/studio/[id]` 使用客户端组件加 Suspense，动态页经 useParams 读取 id。`components/studio/StudioShelf` 负责项目列表、新建原生 dialog 与今日额度；`StudioWorkbench` 默认第四阶段，其他阶段保留真实空态。`ClipComposer` 上传前校验 PNG/JPEG/WebP 与 20MB 限制，首帧经认证 blob/objectURL 预览并在卸载时释放。`QuoteDialog` 显示报价区间与到期倒计时，确认锁防重复提交。`ShotWall/ShotCard` 展示 13 状态、结算/预留、成片 Range 播放与人工核对操作；重新报价仅回填。所有网络走 `lib/studio.ts` 的 apiFetch/apiJson，使用解析后的字段和账号作用域取消请求。在途 queued/submitting/submitted/running/succeeded 使用 5 秒 timeout 链刷新列表与额度，隐藏暂停，操作中跳过，操作完成强制刷新；终态停表。
+
+Sidebar 的静态六项保持不变，仅桌面在 access=200 后追加第七项。主页 studio-drawer 的 iframe 也在门禁通过后才挂载，aria-hidden/inert、遮罩关闭和同源/source 消息校验沿用小说抽屉。嵌入内链保留 embed=1，StudioShell 省去侧栏/背景并用 Esc 发 fiona-studio-close；原生对话框或编辑输入时尊重现有小说关闭守卫。手机底栏继续六项，工作室可直接访问。
+
+后端增加 owner 隔离的项目详情、素材列表（过滤 rel_path）与 notices 游标接口，统一 private,no-store。`studio.notices` 在六种通知终态独立写提醒；`studio_notices.job_id` 唯一，summary 最多 200 字。`database.save_studio_notice` 解析默认会话，调用普通 save_message 保存 assistant 正文，再在 BEGIN IMMEDIATE 内精确回查 message_id、核验用户/任务存在并登记提醒。通知失败仅固定错误码日志，不回滚状态/结算，下 tick 重试；同正文任务按账号串行避免关联到同一消息，消息已保存而提醒登记失败时补写复用精确消息边界。正文不拼接上游异常、URL、任务编号或密钥。删号同事务清理 notices。
+
+主页独立的工作室提醒 poller 复用本机监控语义：10 秒可见 tick、首次完整分页仅建基线、错误保留游标、404 永久停表、账号切换销毁请求。当前会话非回复/加载时按 dbId 去重追加标准 assistant 消息，其他会话显示项目名 chip 并切换会话；系统通知共用本机提醒开关，原本机提醒行为保持不变。离线测试分别见新增 test_studio_frontend_components/navigation/shell.py 和 test_studio_wo2_backend.py。

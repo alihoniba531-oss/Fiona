@@ -319,7 +319,11 @@ Markdown 导出保留所有有正文的章节；前文改稿后标为 stale 的�
 
 隐私：故事思路、圣经、正文与留言会发给所选厂商，可能包括阿里云百炼、DeepSeek、火山方舟以及自带模型厂商 Anthropic。小说步骤不存提示词，只存请求摘要、模型产物与用量；密钥不进入小说表、日志或接口。失败重试照常计费；真实厂商质量与可达性需作者另行验收。
 
-## 短片工作室 WO1（后端）
+## 短片工作室（WO1–WO2）
+
+作者可访问 `/studio` 新建项目，再在默认「④镜头」页上传首帧、填写提示词并选择模型、分辨率、时长和音频。先查看报价和今日额度，再点击「确认生成（最多 ¥x.xx）」。镜头墙显示中文状态、花费和成片；不确定的任务需核对控制台，可关联任务号或二次确认未扣费后释放额度。「用同样参数重新报价」只回填，不会自动报价或提交。其余四阶段将在后续版本开放。
+
+桌面侧栏入口和主页嵌入抽屉只在访问检查成功后开放。手机底栏保留六项，手机作者可直接访问 `/studio`。在途任务每 5 秒刷新，页面隐藏或操作中暂停；后台完成或异常结果写进默认聊天会话，聊天每 10 秒读取新提醒。首次进入不重推历史，其他会话的提醒可以点击切换，共用本机提醒的系统通知开关。
 
 作者可依次调用 `POST /studio/projects`、`POST /studio/projects/{pid}/assets`、`POST /studio/projects/{pid}/clips/quote`、`POST /studio/quotes/{qid}/confirm`，再通过任务接口查看状态并从 `GET /studio/assets/{aid}/file` 下载成片。默认万相 480P、5 秒、原生音频，也支持 Seedance 2.5；首帧为 PNG/JPEG/WebP，最大 20MB。
 
@@ -328,3 +332,6 @@ Markdown 导出保留所有有正文的章节；前文改稿后标为 stale 的�
 调度器在进程内运行，只支持单 worker。重启恢复不会重新提交，轮询超时可手动 recheck；万相按 usage.duration、Seedance 按 completion_tokens 结算。成片用 ffprobe 按时长校验，文件下载支持 Range 并检查归属。配置见 `backend/.env.example`。
 
 工作室文件默认 `backend/studio_data/`；生产配置 `/var/lib/fiona/studio`，符合 systemd 只允许写 `/var/lib/fiona` 的限制。目录不作静态挂载。`/health` 在工作室开启时增加 `studio_storage` 可写检查，关闭时不检查。备份包含数据库、uploads 及存在时的 studio 第三个包，两个媒体包都排除隐藏文件和 `.part`，默认共同保留 14 天。studio 打包失败会保留旧 studio 包、继续发布数据库和 uploads，并以退出码 1 报告部分失败。
+
+
+WO2 追加 `GET /studio/projects/{pid}`、`GET /studio/projects/{pid}/assets` 和 `GET /studio/notices?after=<id>`，均隔离 owner、禁止缓存；素材列表不暴露文件路径。通知每页最多 50 条，同一任务只写一条，通知失败不会影响任务状态或费用结算，并在后续 tick 补写。删号会在原有工作室清理事务中一并删除通知。

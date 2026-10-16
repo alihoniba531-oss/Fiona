@@ -908,6 +908,7 @@ async def delete_account_data(username: str) -> dict:
             await db.execute(f"DELETE FROM {watch_table} WHERE username = ?", (username,))
         async with db.execute("SELECT id FROM studio_projects WHERE owner = ?", (username,)) as cursor:
             studio_paths = [f"studio:{row['id']}" for row in await cursor.fetchall()]
+        await db.execute("DELETE FROM studio_notices WHERE username = ?", (username,))
         for studio_table in ("studio_jobs", "studio_quotes", "studio_assets", "studio_projects"):
             await db.execute(f"DELETE FROM {studio_table} WHERE owner = ?", (username,))
         await db.executemany(
@@ -920,6 +921,11 @@ async def delete_account_data(username: str) -> dict:
         unreferenced_paths = await _queue_unreferenced_uploads(db, upload_paths)
 
         await db.commit()
+        from studio.notices import discard_pending_notices
+        discard_pending_notices(username)
+        for pending_key in list(_pending_studio_messages):
+            if pending_key[:2] == (str(DB_PATH), username):
+                _pending_studio_messages.pop(pending_key, None)
         return {"deleted": True, "upload_paths": unreferenced_paths + studio_paths}
 
 
@@ -1964,4 +1970,90 @@ async def list_watch_alerts_with_content(username: str, after: int = 0) -> list[
             LEFT JOIN messages m ON m.id=a.message_id AND m.username=a.username
                 AND m.conversation_id=a.conversation_id AND m.role='assistant'
             WHERE a.username=? AND a.id>? ORDER BY a.id LIMIT 50""", (username, after)) as cursor:
+            return [dict(row) for row in await cursor.fetchall()]
+
+
+_pending_studio_messages: dict[tuple[str, str, str], dict] = {}
+
+
+async def _studio_notice_message(db, username: str, pending: dict):
+    async with db.execute("""SELECT m.id,m.conversation_id FROM messages m
+        WHERE m.username=? AND m.role='assistant' AND m.conversation_id=? AND m.content=? AND m.id>?
+            AND NOT EXISTS(SELECT 1 FROM studio_notices n WHERE n.message_id=m.id AND n.username=m.username)
+        ORDER BY m.id LIMIT 1""", (username, pending["target"], pending["content"], pending["before_id"])) as cursor:
+        return await cursor.fetchone()
+
+
+async def save_studio_notice(username: str, job: dict, summary: str, content: str) -> dict | None:
+    """沿用普通 assistant 消息持久化，并在写锁内精确回查 owner/会话/正文。
+
+    工作室通知服务按账号串行调用；唯一 job_id 是数据库的最终去重约束。
+    保留本次精确回查边界，notice 写入失败后下一个 tick 复用已保存的消息。
+    """
+    from agent_store import resolve_chat_conversation, ResourceNotFound
+    pending_key = (str(DB_PATH), username, job["id"])
+    async with aiosqlite.connect(DB_PATH, timeout=SQLITE_BUSY_TIMEOUT) as db:
+        db.row_factory = aiosqlite.Row
+        async with db.execute("SELECT * FROM studio_notices WHERE username=? AND job_id=?", (username, job["id"])) as cursor:
+            existing = await cursor.fetchone()
+        if existing is not None:
+            _pending_studio_messages.pop(pending_key, None)
+            return dict(existing)
+    try:
+        context = await resolve_chat_conversation(username)
+    except ResourceNotFound:
+        _pending_studio_messages.pop(pending_key, None)
+        return None
+    target = context["conversation"]["id"]
+    pending = _pending_studio_messages.get(pending_key)
+    async with aiosqlite.connect(DB_PATH, timeout=SQLITE_BUSY_TIMEOUT) as db:
+        db.row_factory = aiosqlite.Row
+        if pending is None or pending["target"] != target:
+            async with db.execute("SELECT COALESCE(MAX(id),0) FROM messages WHERE username=?", (username,)) as cursor:
+                before_id = (await cursor.fetchone())[0]
+            pending = {"before_id": before_id, "target": target,
+                       "content": WatchPrivateText(content), "summary": WatchPrivateText(summary[:200])}
+            _pending_studio_messages[pending_key] = pending
+        message = await _studio_notice_message(db, username, pending)
+    if message is None:
+        if not await save_message(username, "assistant", pending["content"], conversation_id=target):
+            if not await save_message(username, "assistant", pending["content"], conversation_id=None):
+                return None
+            try:
+                context = await resolve_chat_conversation(username)
+            except ResourceNotFound:
+                return None
+            pending["target"] = context["conversation"]["id"]
+    async with aiosqlite.connect(DB_PATH, timeout=SQLITE_BUSY_TIMEOUT) as db:
+        db.row_factory = aiosqlite.Row
+        await db.execute("BEGIN IMMEDIATE")
+        message = await _studio_notice_message(db, username, pending)
+        if message is None or not await _users_exist(db, username):
+            return None
+        async with db.execute("SELECT id FROM studio_jobs WHERE id=? AND project_id=? AND owner=?",
+                              (job["id"], job["project_id"], username)) as cursor:
+            if await cursor.fetchone() is None:
+                return None
+        await db.execute("""INSERT OR IGNORE INTO studio_notices
+            (username,project_id,job_id,summary,message_id,conversation_id) VALUES(?,?,?,?,?,?)""",
+                         (username, job["project_id"], job["id"], pending["summary"],
+                          message["id"], message["conversation_id"]))
+        async with db.execute("SELECT * FROM studio_notices WHERE username=? AND job_id=?", (username, job["id"])) as selected:
+            result = dict(await selected.fetchone())
+        await db.commit()
+        _pending_studio_messages.pop(pending_key, None)
+        return result
+
+
+async def list_studio_notices_with_content(username: str, after: int = 0) -> list[dict]:
+    async with aiosqlite.connect(DB_PATH, timeout=SQLITE_BUSY_TIMEOUT) as db:
+        db.row_factory = aiosqlite.Row
+        async with db.execute("""SELECT n.id,n.project_id,COALESCE(p.title,'已删除项目') AS project_title,
+                n.job_id,n.summary,n.created_at,n.conversation_id,n.message_id,
+                COALESCE(m.content,'') AS content
+            FROM studio_notices n
+            LEFT JOIN studio_projects p ON p.id=n.project_id AND p.owner=n.username
+            LEFT JOIN messages m ON m.id=n.message_id AND m.username=n.username
+                AND m.conversation_id=n.conversation_id AND m.role='assistant'
+            WHERE n.username=? AND n.id>? ORDER BY n.id LIMIT 50""", (username, after)) as cursor:
             return [dict(row) for row in await cursor.fetchall()]

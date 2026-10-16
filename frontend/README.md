@@ -20,8 +20,10 @@ Fiona 的 Web/PWA 客户端，使用 Next.js 16.3.3、React 19、Tailwind CSS 4 
 | `/profile` | 用户画像 |
 | `/history` | 历史、导出和删除 |
 | `/settings` | 用户偏好 |
+| `/novels`、`/novels/new`、`/novels/[id]` | 小说工坊书架、向导和工作台 |
+| `/studio`、`/studio/[id]` | 作者私用项目列表、单镜试拍和镜头墙 |
 
-这些页面中的 Plaza、Match、Community、Profile 和 Settings 目前也会以 iframe 方式挂载在主页面抽屉中。它们并不是独立的微前端，继续共享同源鉴权和 API。
+这些页面中的 Plaza、Match、Community、Profile 和 Settings 目前也会以 iframe 方式挂载在主页面抽屉中。小说工坊和通过访问门禁的短片工作室也支持 `?embed=1` 抽屉，继续共享同源鉴权和 API。工作室只在桌面侧栏追加入口，手机底栏保持六项，可直接打开 `/studio`。
 
 ## 本地运行
 

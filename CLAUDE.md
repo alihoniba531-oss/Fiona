@@ -121,7 +121,7 @@ npm run build
 - 搜索与旅行卡片来源只取自原生 `output.search_info.search_results`，经公网 HTTP(S) 格式校验后下发，模型生成的 URL 不进入卡片；此校验不访问来源站点。前端最多显示 5 条可点击来源，统一用 `openExternal` 打开；模型正文（要点、旅行标题与非 JSON 回退行）在卡片组装前依次清理引用角标与 HTTP(S)、www.、Markdown 链接，朗读和历史摘要使用清理后的正文。非字符串要点只允许非 bool 的 int/float 转成文字，其余对象丢弃。搜索无可核实来源时错误且不计费，旅行建议允许没有来源。卡片及来源不落库，刷新或切换会话后只剩文字摘要。
 - 问句式天气请求走 `weather`，没明确城市就追问“哪个城市？”，取消或非城市回复不会调用高德；普通 `web_search` 不按“天气”关键词分流。天气卡最多四天的中文日夜预报，无实时温度、体感或湿度；卡片不落库。天气调用失败日志仅记录工具名、错误类型和耗时，城市名、用户原话、响应体不得进入日志、trace payload 或异常文案。
 - Layer 2 双边卡片、双方偏好验证、手动匹配输出约束和跨用户画像最小化已完成；候选原始消息不得进入匹配模型。
-- 完整账户删除会在删除 users 前同事务删除 `user_model_configs` 配置（含 `effort`）与加密 Key，清理其他数据库关联记录、关闭真人连接，并通过持久化队列重试无引用上传文件和工作室项目目录；删号同事务删除四张 `studio_*` 表中的 owner 行并入队项目目录，目录清理拒绝工作室根外路径；关键后台写入必须继续防止删号后重建数据。
+- 完整账户删除会在删除 users 前同事务删除 `user_model_configs` 配置（含 `effort`）与加密 Key，清理其他数据库关联记录、关闭真人连接，并通过持久化队列重试无引用上传文件和工作室项目目录；删号同事务删除四张 `studio_*` 业务表中的 owner 行和 `studio_notices` 的 username 行，并入队项目目录，目录清理拒绝工作室根外路径；关键后台写入必须继续防止删号后重建数据。
 - 总请求体、Chat/图片、ASR、TTS、帖子和分页已有应用层边界；通用聊天的模型并发、真实 usage 与持久化成本控制仍未完成；工作室已独立持久化人民币预留、结算与每日上限。
 - 聊天和广场图片在线程中纠正方向、按原格式逐帧重建去元数据，仅保留 ICC；MPO 只存主帧，动图有限帧和总像素，并发重编码最多 2，广场在线程派发前排队，聊天等待槽位超时返回 503。广场视频依赖 ffmpeg 无损 remux，清 metadata、章节、数据和字幕轨，失败拒绝上传。上传目录内临时文件原子落盘，权限 0600；广场失败或取消、聊天同步处理失败及等待线程期间取消会清理，线程完成后的消息写库取消窗口仍保留。启动清扫超过 1 小时的上传临时文件，点文件不提供静态访问且不进入媒体备份。旧文件清理脚本默认 dry-run，跳过已清理图片，apply 有失败返回非零并保留原权限。语音合成仅保留 HTTP/流式接口，真人 Peer WebSocket 保留。
 - 聊天模型预算是进程内估算，不等同于供应商真实账单；草莓预扣、退款及每日补给已实现原子化。工作室额度独立存 SQLite，实际金额由厂商 usage 折算。
@@ -160,10 +160,15 @@ P2.1 建书可选 `drama_adaptation`（默认 false，建书后不可修改）�
 
 平台模型使用 DASHSCOPE_API_KEY、DEEPSEEK_API_KEY、ARK_API_KEY；Claude 只经 BYOK。思路、圣经、正文与留言会发给阿里云百炼、DeepSeek、火山方舟或用户自带厂商（包括 Anthropic）。Key 仅调用时从 byok.store 取用，不写小说库、日志或响应；步骤只存请求摘要，不存提示词。测试必须离线、不得读仓库外输入或依赖 git 历史；本机监控原有内容不得修改或移动。
 
-## 短片工作室 WO1
+## 短片工作室 WO1–WO2
 
-`backend/studio/` 与 `routers/studio.py` 提供作者私用的首帧视频接口，暂无前端。全部 `/studio/*`（含文件）要求开关非字面 `0`、精确命中 `FIONA_STUDIO_OWNERS` 与 Bearer/Cookie JWT；不满足一律 404、`private, no-store`。中间件记录 `auth_method=jwt/dev`，其他路由鉴权保持原行为。
+`backend/studio/` 与 `routers/studio.py` 提供作者私用的首帧视频接口；`/studio`、`/studio/[id]` 提供项目列表与单镜试拍前端。全部 `/studio/*`（含文件）要求开关非字面 `0`、精确命中 `FIONA_STUDIO_OWNERS` 与 Bearer/Cookie JWT；不满足一律 404、`private, no-store`。中间件记录 `auth_method=jwt/dev`，其他路由鉴权保持原行为。
 
 报价 15 分钟内只可确认一次，确认事务锁定价格、预留额度、建 queued 任务；日上限按确认时的上海自然日计算，全工作室共用，DEV_MODE 和通用限流开关不能跳过。付费 POST 最多一次；超时、断流、5xx、成功响应无任务编号均 uncertain 并保留预留，只允许人工核对、关联 task_id、只读复查或明确未扣费后释放。启动先恢复再调度，submitting 变 uncertain，其他在途恢复 GET，不能重新提交。
 
 文件默认 `backend/studio_data/`，生产 `FIONA_STUDIO_DIR=/var/lib/fiona/studio`，因为 systemd `ProtectSystem=strict` 只允许写 `/var/lib/fiona`。文件不挂静态目录，按素材归属和真实路径校验后用 FileResponse 支持 Range。仅下载白名单 host，不跟重定向、不转发凭据，限 300MB；ffprobe 按时长校验。万相按原图提交，Seedance 只在提交内存中等比缩图。所有测试用模拟传输，业务不得 import WO0 探针。
+
+
+WO2：桌面侧栏仅在 `/studio/access` 返回 200 后运行时追加「工作室」，静态六项和手机底栏保持不变；主页同样 gate 后才挂载 `/studio?embed=1` 抽屉。五阶段默认镜头页可上传首帧、报价确认、播放及处理 uncertain，其余显示后续开放。前端复用小说状态组件、Glaze 和原生 dialog，`lib/studio.ts` 只消费解析后的 items/params/usage/meta。任务在途时每 5 秒刷新任务与额度，页面隐藏或操作中暂停，账号切换取消请求。
+
+项目详情、素材列表和 `/studio/notices?after=` 都经过工作室 gate 与 owner 隔离；素材列表不含 rel_path。调度器到 downloaded/failed/rejected/filtered/expired/uncertain 时单任务最多写一条 `studio_notices`，通过普通 `save_message` 落入默认聊天会话；写失败只记录固定错误码，下 tick 补写，不影响结算。主页每 10 秒可见轮询，首次建立完整基线、404 永久停止；当前会话空闲时按 dbId 去重插入，其余会话显示切换 chip，共用本机提醒通知开关。

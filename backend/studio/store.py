@@ -61,6 +61,13 @@ STUDIO_TABLES_DDL = (
         FOREIGN KEY(quote_id) REFERENCES studio_quotes(id),
         FOREIGN KEY(result_asset_id) REFERENCES studio_assets(id)
     )""",
+    """CREATE TABLE IF NOT EXISTS studio_notices (
+        id INTEGER PRIMARY KEY AUTOINCREMENT, username TEXT NOT NULL,
+        project_id TEXT NOT NULL, job_id TEXT NOT NULL UNIQUE,
+        created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+        summary TEXT NOT NULL CHECK(length(summary) <= 200),
+        message_id INTEGER, conversation_id TEXT
+    )""",
     "CREATE INDEX IF NOT EXISTS idx_studio_projects_owner_updated ON studio_projects(owner,updated_at)",
     "CREATE INDEX IF NOT EXISTS idx_studio_assets_owner_project ON studio_assets(owner,project_id)",
     "CREATE INDEX IF NOT EXISTS idx_studio_assets_sha ON studio_assets(project_id,owner,sha256)",
@@ -68,6 +75,7 @@ STUDIO_TABLES_DDL = (
     "CREATE INDEX IF NOT EXISTS idx_studio_jobs_owner_project ON studio_jobs(owner,project_id)",
     "CREATE INDEX IF NOT EXISTS idx_studio_jobs_schedule ON studio_jobs(status,provider,created_at)",
     "CREATE INDEX IF NOT EXISTS idx_studio_jobs_confirmed_day ON studio_jobs(confirmed_day)",
+    "CREATE INDEX IF NOT EXISTS idx_studio_notices_username_id ON studio_notices(username,id)",
     """CREATE UNIQUE INDEX IF NOT EXISTS idx_studio_jobs_inflight_fingerprint
        ON studio_jobs(fingerprint)
        WHERE status IN ('queued','submitting','submitted','running','uncertain')""",
@@ -281,6 +289,14 @@ async def get_asset(asset_id: str, owner: str) -> dict:
             raise HTTPException(404, "Not Found")
         await _project(db, asset["project_id"], owner)
         return asset
+
+
+async def list_assets(project_id: str, owner: str) -> list[dict]:
+    async with connection() as db:
+        await _project(db, project_id, owner)
+        return await _many(db, """SELECT * FROM studio_assets
+            WHERE project_id=? AND owner=? AND archived=0 ORDER BY created_at DESC,id""",
+                           (project_id, owner))
 
 
 async def find_asset_by_sha(project_id: str, owner: str, sha256: str) -> dict | None:

@@ -12,7 +12,7 @@ import weakref
 
 from fastapi import HTTPException
 
-from . import spend, storage, store
+from . import notices, spend, storage, store
 from .config import get_settings
 from .providers import ProviderError, get_provider
 from .providers.base import UNCERTAIN_MESSAGE
@@ -72,6 +72,8 @@ class StudioScheduler:
         except Exception as error:
             # 异常正文可能含签名 URL、提示词或密钥；只记录错误码、任务 ID 和异常类型。
             logger.warning("studio code=job_tick_error id=%s error=%s", job["id"], type(error).__name__)
+        finally:
+            await notices.write_job_notice(job["id"])
 
     async def _dispatch(self, callback, jobs: list[dict], *args, wait: bool) -> None:
         tasks = []
@@ -100,6 +102,8 @@ class StudioScheduler:
             settings = get_settings()
             if not settings.enabled:
                 return
+            # 上一轮通知失败或启动恢复到 uncertain 的任务，先补写聊天提醒。
+            await notices.retry_pending_notices()
             now = self._time()
             jobs = await store.list_due_jobs(now)
             await self._dispatch(self._poll, jobs, now, settings.poll_timeout_min, wait=wait)
