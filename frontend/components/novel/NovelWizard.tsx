@@ -58,6 +58,9 @@ function Wizard({ owner, embedded }: { owner: string; embedded: boolean }) {
   const [chapterWords, setChapterWords] = useState("2000");
   const [mainCharacters, setMainCharacters] = useState("6");
   const [scenes, setScenes] = useState("3");
+  const [dramaAdaptation, setDramaAdaptation] = useState(false);
+  const [adaptationOpen, setAdaptationOpen] = useState(false);
+  const [adaptationAdvisorError, setAdaptationAdvisorError] = useState("");
   const [agents, setAgents] = useState<Record<string, string>>({});
   const [panelMode, setPanelMode] = useState<NovelPanelMode>("critique");
   const [automation, setAutomation] = useState<NovelAutomation>("per_batch");
@@ -76,7 +79,8 @@ function Wizard({ owner, embedded }: { owner: string; embedded: boolean }) {
     panel_mode: panelMode, automation, batch_size: Number(batch),
     target: { min_chapters: Number(minChapters), max_chapters: Number(maxChapters), chapter_words: Number(chapterWords) },
     adaptation: { max_main_characters: Number(mainCharacters), max_scenes_per_chapter: Number(scenes) },
-  }), [seed, agents, panelMode, automation, batch, minChapters, maxChapters, chapterWords, mainCharacters, scenes]);
+    drama_adaptation: dramaAdaptation,
+  }), [seed, agents, panelMode, automation, batch, minChapters, maxChapters, chapterWords, mainCharacters, scenes, dramaAdaptation]);
   const input = useMemo<NovelCreateInput>(() => ({ ...estimateInput, budget_strawberries: Number(budget) }), [estimateInput, budget]);
   const load = useCallback(async () => {
     const request = beginData();
@@ -155,6 +159,18 @@ function Wizard({ owner, embedded }: { owner: string; embedded: boolean }) {
     } catch (cause) { if (request.isCurrent()) setError(novelErrorMessage(cause)); }
     finally { if (request.isCurrent()) setBusy(false); }
   };
+  const toggleDramaAdaptation = (enabled: boolean) => {
+    setDramaAdaptation(enabled); setAdaptationAdvisorError("");
+    if (!enabled) return;
+    setAdaptationOpen(true);
+    if (!catalog || agents.adaptation_advisor) return;
+    const advisors = Object.keys(agents).filter(role => !["editor", "writer", "archivist", "reviewer"].includes(role) && agents[role]);
+    if (advisors.length >= 5) {
+      setAdaptationAdvisorError("顾问已满 5 位，先取消一位才能加入短剧改编顾问");
+      return;
+    }
+    setAgents(current => ({ ...current, adaptation_advisor: novelModelOptions(catalog, "adaptation_advisor")[0]?.value ?? "" }));
+  };
   const fieldError = (field: string) => errors[field] ? <p id={`novel-error-${field}`} role="alert" className="mt-1 text-[13px] leading-[1.8] text-[color:var(--ink)]">{errors[field]}</p> : null;
   const numeric = (id: string, label: string, value: string, change: (value: string) => void, min: number, max: number) => <div className="min-w-0"><label htmlFor={`novel-${id}`} className="mb-2 block text-[14px]">{label}</label><input id={`novel-${id}`} type="number" inputMode="numeric" min={min} max={max} step="1" value={value} onChange={event => { change(event.target.value); setErrors(current => ({ ...current, [id]: "" })); }} aria-invalid={!!errors[id]} aria-describedby={errors[id] ? `novel-error-${id}` : undefined} className={novelFieldClass} />{fieldError(id)}</div>;
   return <div className={`relative flex min-w-0 ${embedded ? "min-h-full" : "h-dvh"} overflow-hidden`}>
@@ -172,17 +188,18 @@ function Wizard({ owner, embedded }: { owner: string; embedded: boolean }) {
                 {step === 0 && <div className="space-y-6">
                   <div><label htmlFor="novel-seed" className="mb-2 block text-[16px]">故事思路</label><textarea id="novel-seed" rows={6} maxLength={2000} value={seed} onChange={event => { setSeed(event.target.value); setErrors(current => ({ ...current, seed: "" })); }} aria-invalid={!!errors.seed} aria-describedby="novel-seed-count novel-error-seed" placeholder="一位替亡人修补家书的年轻匠人，在一封没有署名的信里，发现了自己尚未经历的明天。" className={`${novelFieldClass} resize-y`} /><p id="novel-seed-count" className="readout mt-1 text-right text-[12px] text-[color:var(--ink2)]">{seed.length} / 2000 字</p>{fieldError("seed")}</div>
                   <div className="grid grid-cols-3 gap-4 mobile:grid-cols-1">{numeric("minChapters", "最少章数", minChapters, setMinChapters, 1, 200)}{numeric("maxChapters", "最多章数", maxChapters, setMaxChapters, 1, 200)}{numeric("chapterWords", "每章字数", chapterWords, setChapterWords, 1000, 4000)}</div>
-                  <details><summary className="flex min-h-10 cursor-pointer items-center text-[14px] text-[color:var(--ink2)]">改编参数（可选，展开调整）</summary><div className="mt-3 grid grid-cols-2 gap-4 mobile:grid-cols-1">{numeric("mainCharacters", "主要人物上限", mainCharacters, setMainCharacters, 1, 12)}{numeric("scenes", "每章场景上限", scenes, setScenes, 1, 10)}</div></details>
+                  <div className="min-w-0 space-y-2"><label className="flex min-h-10 items-center gap-2 text-[16px]"><input type="checkbox" checked={dramaAdaptation} onChange={event => toggleDramaAdaptation(event.target.checked)} aria-describedby="novel-drama-help" className="h-5 w-5 shrink-0 accent-[color:var(--ink)]" />这本书要改编成短剧</label><p id="novel-drama-help" className="text-[13px] leading-[1.85] text-[color:var(--ink2)]">{panelMode === "solo" ? "主编独自构思时不请顾问参会；审校仍会按「场景太多、主要人物太多」这类硬伤要求重写。" : "勾选后会请短剧改编顾问参会；审校发现「场景太多、主要人物太多」这类不好拍的硬伤时，会要求重写。每章可能多花一些草莓。"}</p>{adaptationAdvisorError && <ErrorNotice message={adaptationAdvisorError} />}</div>
+                  <details open={adaptationOpen} onToggle={event => setAdaptationOpen(event.currentTarget.open)}><summary className="flex min-h-10 cursor-pointer items-center text-[14px] text-[color:var(--ink2)]">改编参数（可选，展开调整）</summary><div className="mt-3 grid grid-cols-2 gap-4 mobile:grid-cols-1">{numeric("mainCharacters", "主要人物上限", mainCharacters, setMainCharacters, 1, 12)}{numeric("scenes", "每章场景上限", scenes, setScenes, 1, 10)}</div></details>
                 </div>}
                 {step === 1 && <>
                   <fieldset className="min-w-0"><legend className="mb-2 text-[16px]">推演方式</legend><div className="space-y-2">{([{ value: "critique", label: "主编出方案、顾问挑错" }, { value: "solo", label: "主编独自构思" }] as const).map(option => <label key={option.value} className="flex min-h-10 items-center gap-2 text-[14px]"><input type="radio" name="panel-mode" value={option.value} checked={panelMode === option.value} onChange={() => setPanelMode(option.value)} className="h-5 w-5 accent-[color:var(--ink)]" />{option.label}</label>)}</div></fieldset>
-                  {fieldError("agents")}<NovelModelFields catalog={catalog} agents={agents} panelMode={panelMode} allowRoleChanges onChange={next => { setAgents(next); setErrors(current => ({ ...current, agents: "" })); }} disabled={busy} />
+                  {fieldError("agents")}<NovelModelFields catalog={catalog} agents={agents} panelMode={panelMode} allowRoleChanges onChange={next => { setAgents(next); setAdaptationAdvisorError(""); setErrors(current => ({ ...current, agents: "" })); }} disabled={busy} />
                 </>}
                 {step === 2 && <div className="space-y-6">
                   <fieldset><legend className="mb-2 text-[16px]">自动化方式</legend><div className="space-y-2">{([{ value: "per_batch", label: "每写 N 章停下来给我看" }, { value: "per_chapter", label: "每章先给我看细纲" }, { value: "full_auto", label: "全自动写到完结" }] as const).map(option => <label key={option.value} className="flex min-h-10 items-center gap-2 text-[14px]"><input type="radio" name="automation" checked={automation === option.value} onChange={() => setAutomation(option.value)} className="h-5 w-5 accent-[color:var(--ink)]" />{option.label}</label>)}</div></fieldset>
                   {automation === "per_batch" && numeric("batch", "每批章数 N", batch, setBatch, 1, 10)}
                   <div className="grid grid-cols-2 items-start gap-5 mobile:grid-cols-1">{numeric("budget", "本书预算（草莓）", budget, setBudget, 1, 10000000)}<div className="pt-1 text-[14px] leading-[1.95]"><p>当前余额 <span className="readout">{balance ?? "—"}</span> 草莓</p><div aria-live="polite">{estimating && <LoadingState>正在估算…</LoadingState>}{estimate && <><p>每章约 <span className="readout">{estimate.per_chapter.min}–{estimate.per_chapter.max}</span> 草莓</p><p>整本约 <span className="readout">{estimate.total.min}–{estimate.total.max}</span> 草莓</p></>}{!estimate && !estimating && !estimateError && <p className="text-[color:var(--ink2)]">等待估算…</p>}{estimateError && <ErrorNotice message={estimateError} />}</div><p className="mt-2 text-[12px] text-[color:var(--ink2)]">估算口径：近 20 次调用均值或基线，±20%</p></div></div>
-                  <section className="border-t border-[color:var(--carve)] pt-5" aria-label="提交前汇总确认"><h2 className="mb-3 text-[18px] tracking-[.12em]">确认这本书</h2><dl className="space-y-3 text-[14px] leading-[1.9]"><div><dt className="text-[color:var(--ink2)]">思路摘要</dt><dd className="whitespace-pre-wrap break-words">{seed.length > 180 ? `${seed.slice(0, 180)}…` : seed}</dd></div><div><dt className="text-[color:var(--ink2)]">智能体和模型</dt><dd><ul className="space-y-1">{Object.entries(input.agents).map(([role, model]) => <li key={role} className="break-words">{catalog.agents.find(agent => agent.id === role)?.name ?? role} · {model === "byok:self" && catalog.byok ? `我的模型（${catalog.byok.provider}·${catalog.byok.model}）· 不扣草莓` : novelModelLabel(model)}</li>)}</ul></dd></div><div><dt className="text-[color:var(--ink2)]">篇幅</dt><dd className="readout">{minChapters}–{maxChapters} 章 · 每章 {chapterWords} 字</dd></div><div><dt className="text-[color:var(--ink2)]">节奏与预算</dt><dd>{automation === "per_batch" ? `每 ${batch} 章审阅` : automation === "per_chapter" ? "每章先确认细纲" : "全自动写到完结"} · <span className="readout">{budget}</span> 草莓</dd></div></dl></section>
+                  <section className="border-t border-[color:var(--carve)] pt-5" aria-label="提交前汇总确认"><h2 className="mb-3 text-[18px] tracking-[.12em]">确认这本书</h2><dl className="space-y-3 text-[14px] leading-[1.9]"><div><dt className="text-[color:var(--ink2)]">思路摘要</dt><dd className="whitespace-pre-wrap break-words">{seed.length > 180 ? `${seed.slice(0, 180)}…` : seed}</dd></div><div><dt className="text-[color:var(--ink2)]">智能体和模型</dt><dd><ul className="space-y-1">{Object.entries(input.agents).map(([role, model]) => <li key={role} className="break-words">{catalog.agents.find(agent => agent.id === role)?.name ?? role} · {model === "byok:self" && catalog.byok ? `我的模型（${catalog.byok.provider}·${catalog.byok.model}）· 不扣草莓` : novelModelLabel(model)}</li>)}</ul></dd></div><div><dt className="text-[color:var(--ink2)]">改编短剧</dt><dd>{dramaAdaptation ? "是" : "否"}</dd></div><div><dt className="text-[color:var(--ink2)]">篇幅</dt><dd className="readout">{minChapters}–{maxChapters} 章 · 每章 {chapterWords} 字</dd></div><div><dt className="text-[color:var(--ink2)]">节奏与预算</dt><dd>{automation === "per_batch" ? `每 ${batch} 章审阅` : automation === "per_chapter" ? "每章先确认细纲" : "全自动写到完结"} · <span className="readout">{budget}</span> 草莓</dd></div></dl></section>
                 </div>}
                 <div className="mt-8 flex flex-wrap items-center justify-between gap-3 border-t border-[color:var(--carve)] pt-5"><div>{step > 0 && <button type="button" className="btn min-h-10" onClick={() => { setStep(current => current - 1); setErrors({}); setError(""); }}>上一步</button>}</div><button type="submit" disabled={busy} className="btn btn-primary min-h-10">{busy && <Loader2 size={14} className="animate-spin" />}{busy ? "正在立项…" : step < 2 ? "下一步" : "开始立项"}</button></div>
               </fieldset>

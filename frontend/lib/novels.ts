@@ -10,6 +10,7 @@ export interface NovelCreateInput {
   seed_idea: string; agents: Record<string, string>; panel_mode: NovelPanelMode;
   automation: NovelAutomation; batch_size: number; target: NovelTarget;
   adaptation: { max_main_characters: number; max_scenes_per_chapter: number };
+  drama_adaptation?: boolean;
   budget_strawberries: number;
 }
 export interface NovelPatchInput { budget_strawberries?: number; automation?: NovelAutomation; batch_size?: number; agents?: Record<string, string> }
@@ -89,6 +90,7 @@ export interface NovelCatalog {
 }
 export interface NovelEstimate { per_chapter: { min: number; max: number }; total: { min: number; max: number }; method: string }
 export interface NovelSetupPatch { compass?: Partial<NovelCompass>; locked?: Partial<NovelBible["locked"]> }
+export type NovelCharacterEdit = Partial<Pick<NovelCharacter, "appearance" | "personality" | "motivation">>;
 export type NovelAction = "setup/approve" | "plan/approve" | "plan/redo" | "continue" | "pause" | "resume" | "end/confirm" | "end/reject";
 type Options = { signal?: AbortSignal };
 const bookPath = (id: string) => `${API_BASE}/novels/${encodeURIComponent(id)}`;
@@ -121,6 +123,7 @@ export const confirmNovelEnd = (id: string, signal?: AbortSignal) => action(id, 
 export const rejectNovelEnd = (id: string, body: { extend_chapters: number; text?: string }, signal?: AbortSignal) => action(id, "end/reject", body, signal);
 export const addNovelNote = (id: string, text: string, signal?: AbortSignal) => apiJson<{ status: "pending" }>(`${bookPath(id)}/notes`, json("POST", { text }, signal));
 export const updateNovelChapter = (id: string, chapter: number, body: string, signal?: AbortSignal) => apiJson<{ rearchiving: boolean; message: string }>(`${bookPath(id)}/chapters/${chapter}`, json("PUT", { body }, signal));
+export const updateNovelCharacter = (id: string, characterId: string, input: NovelCharacterEdit, signal?: AbortSignal) => apiJson<NovelBible>(bookPath(id) + "/characters/" + encodeURIComponent(characterId), json("PATCH", input, signal));
 export const deleteNovel = (id: string, signal?: AbortSignal) => apiJson<{ deleted: boolean }>(bookPath(id), { method: "DELETE", signal });
 export async function exportNovel(id: string, signal?: AbortSignal): Promise<Blob> {
   const response = await apiFetch(`${bookPath(id)}/export`, { signal });

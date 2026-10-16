@@ -20,7 +20,7 @@ import { useNovelEmbedClose } from "./NovelShell";
 import { EmptyState, ErrorNotice, LoadingState } from "./NovelStates";
 import { ApiError } from "@/lib/agents";
 import { useAccountIdentity, useAccountRequest } from "@/lib/useAccountIdentity";
-import { addNovelNote, novelApi, novelErrorMessage, novelHref, novelStatusLabel, updateNovelChapter, type NovelAction, type NovelBible, type NovelCatalog, type NovelChapter, type NovelDetail, type NovelNote, type NovelPatchInput } from "@/lib/novels";
+import { addNovelNote, novelApi, novelErrorMessage, novelHref, novelStatusLabel, updateNovelCharacter, updateNovelChapter, type NovelAction, type NovelBible, type NovelCatalog, type NovelChapter, type NovelCharacterEdit, type NovelDetail, type NovelNote, type NovelPatchInput } from "@/lib/novels";
 
 const active = (status?: string) => status === "setup_running" || status === "running";
 const signature = (chapter: NovelDetail["chapters"][number]) => JSON.stringify([chapter.status, chapter.words, chapter.flags, chapter.edited_by_user]);
@@ -228,6 +228,14 @@ function AccountWorkbench({ owner, id, embedded }: { owner: string; id: string; 
   const saveSettings = async (patch: NovelPatchInput, resume: boolean) => {
     await mutate("patch", async signal => { await novelApi.patch(id, patch, { signal }); if (resume) await novelApi.action(id, "resume", undefined, { signal }); }, { errorTarget: "local" });
   };
+  const saveCharacter = async (characterId: string, patch: NovelCharacterEdit) => {
+    const result = await mutate("character", signal => updateNovelCharacter(id, characterId, patch, signal), { errorTarget: "local" });
+    if (!result || !isCurrentOwner()) return false;
+    // Cancel older reads before publishing the complete bible returned by PATCH.
+    beginBible(); bibleVersion.current = result.version;
+    setBible(result); setBibleError(""); setBibleLoading(false);
+    return true;
+  };
   const currentChapter = chapter?.chapter === selectedChapter ? chapter : null;
   const beatSheet = book?.status === "awaiting_plan" && currentChapter?.status === "awaiting_plan_approval" ? currentChapter.meeting.decision?.beat_sheet : null;
   const writingChapter = book?.status === "running" ? book.chapters.findLast(item => ["planning", "writing", "reviewing", "archiving"].includes(item.status))?.chapter ?? book.chapters_done + 1 : null;
@@ -246,7 +254,7 @@ function AccountWorkbench({ owner, id, embedded }: { owner: string; id: string; 
             {notesError && <ErrorNotice message={`留言暂未更新：${notesError}`} retry={() => void loadNotes()} />}
             {loading ? <LoadingState>正在打开这本书…</LoadingState> : !book ? <EmptyState>暂时无法打开这本书，请重新加载。</EmptyState> : <>
               <Glaze variant="strip" as="header" className="rounded-xl p-5 mobile:p-4"><div className="relative flex flex-wrap items-start justify-between gap-5">
-                <div className="min-w-0 flex-1 basis-72"><div className="flex flex-wrap items-center gap-3"><h1 className="min-w-0 break-words text-[26px] font-medium tracking-[.24em] mobile:text-[23px]">{book.title || "立项中"}</h1><span className="tag">{novelStatusLabel(book)}</span></div>
+                <div className="min-w-0 flex-1 basis-72"><div className="flex flex-wrap items-center gap-3"><h1 className="min-w-0 break-words text-[26px] font-medium tracking-[.24em] mobile:text-[23px]">{book.title || "立项中"}</h1><span className="tag">{novelStatusLabel(book)}</span>{book.config.drama_adaptation && <span className="tag">改编短剧</span>}</div>
                   {book.compass?.logline && <p className="mt-3 whitespace-pre-wrap break-words text-sm leading-[1.9] text-[color:var(--ink2)]">{book.compass.logline}</p>}
                   <p className="readout mt-4 text-sm leading-[1.9]">第 {book.chapters_done} / {book.config.target.max_chapters} 章 · 共 {book.words_done} 字</p>
                   <div className="mt-2 max-w-[320px]"><p className="readout text-sm">草莓 {book.spent_strawberries} / {book.budget_strawberries}</p><div role="progressbar" aria-label="草莓预算使用进度" aria-valuemin={0} aria-valuemax={book.budget_strawberries} aria-valuenow={book.spent_strawberries} className="mt-2 h-[3px] overflow-hidden bg-[color:var(--carve)]"><div className="h-full bg-[color:var(--ink2)]" style={{ width: `${Math.min(100, book.spent_strawberries / Math.max(1, book.budget_strawberries) * 100)}%` }} /></div></div>
@@ -278,7 +286,7 @@ function AccountWorkbench({ owner, id, embedded }: { owner: string; id: string; 
                 <aside id="novel-details" role="tabpanel" aria-labelledby="novel-tab-details" className={`ceramic-card min-w-0 break-words p-4 ${mobileTab !== "details" ? "hidden @[1040px]:block" : ""}`} aria-label="推演、圣经与留言">
                   <nav role="tablist" aria-label="书籍资料" className="mb-5 flex min-w-0 border-b" style={{ borderColor: "var(--carve)" }}>{([{ id: "meeting", label: "推演" }, { id: "bible", label: "圣经" }, { id: "notes", label: "留言" }] as const).map(tab => <button key={tab.id} id={`novel-detail-tab-${tab.id}`} role="tab" type="button" aria-selected={rightTab === tab.id} aria-controls={`novel-detail-${tab.id}`} onClick={() => setRightTab(tab.id)} className={`min-h-10 min-w-0 flex-1 border-b px-2 py-3 text-sm ${rightTab === tab.id ? "border-[color:var(--ink)]" : "border-transparent text-[color:var(--ink2)]"}`}>{tab.label}</button>)}</nav>
                   <div id="novel-detail-meeting" role="tabpanel" aria-labelledby="novel-detail-tab-meeting" hidden={rightTab !== "meeting"}>{rightTab === "meeting" && (chapterLoading ? <LoadingState>正在加载推演记录…</LoadingState> : <DeliberationTimeline meeting={currentChapter?.meeting ?? null} panelMode={book.config.panel_mode} />)}</div>
-                  <div id="novel-detail-bible" role="tabpanel" aria-labelledby="novel-detail-tab-bible" hidden={rightTab !== "bible"}>{rightTab === "bible" && <BiblePanel bible={bible ? { ...bible, compass: bible.compass ?? book.compass } : null} loading={bibleLoading} />}</div>
+                  <div id="novel-detail-bible" role="tabpanel" aria-labelledby="novel-detail-tab-bible" hidden={rightTab !== "bible"}>{rightTab === "bible" && <BiblePanel bible={bible ? { ...bible, compass: bible.compass ?? book.compass } : null} loading={bibleLoading} status={book.status} busy={!!busy} onSaveCharacter={saveCharacter} />}</div>
                   <div id="novel-detail-notes" role="tabpanel" aria-labelledby="novel-detail-tab-notes" hidden={rightTab !== "notes"}>{rightTab === "notes" && <NotesPanel notes={notes} loading={notesLoading} busy={!!busy} onSubmit={async text => { await mutate("note", signal => addNovelNote(id, text, signal), { errorTarget: "local", notes: true }); }} />}</div>
                 </aside>
               </div>

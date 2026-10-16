@@ -307,6 +307,12 @@ Layer 2 会为双方创建待接受卡片；Layer 1、Layer 2 和手动匹配都
 
 P2 新增只读 `GET /novels/{id}/bible` 返回最新未裁剪圣经和罗盘，`GET /novels/{id}/notes` 返回按时间排序的全部留言和主编回应；复用相同开关、白名单和所有权校验。R1 经作者授权仅增补列表摘要整数 `max_chapters` 与详情目录布尔 `edited_by_user`，书架每轮仅请求列表，工作台不再逐章补读元数据；既有字段、上下文裁剪及写操作语义保持原样。工作台运行轮询仅取 detail，圣经按版本/首次打开、留言按可见/提交/章数状态变化、当前章按摘要签名或切章按需读取。工作台按内容容器1040px切换三栏与三标签，适配窄桌面抽屉；独立页内容在 main 内滚动，侧栏保持首屏。界面用现有影青釉令牌和宋体，正文纯文本展示，导出校验 Markdown Content-Type 后下载 Blob。
 
+P2.1 的 `CreateNovel.drama_adaptation` 默认 false，写入 `config_json` 且不加入 PATCH 白名单。只有开启时，审校 payload 添加 `adaptation_blocking=true` 和配置中的 `adaptation_limits`，`validate_review(..., adaptation_blocking=True)` 保留 adaptation 问题的模型阻断值，style 仍强制非阻断。冻结的审校提示词保留原句并紧接追加条件例外；关闭时审校 payload 保持原样。档案校验通过 `validate_archive(..., require_new_appearance=False)` 兼容既有调用，P1 写书和重新归档显式开启新人物外形至少 20 字要求，`bible.apply_archive` 使用默认值。
+
+`PATCH /novels/{id}/characters/{character_id}` 复用门禁、`owned()`、改稿互斥与 `BEGIN IMMEDIATE`，仅在 awaiting_review、awaiting_plan、awaiting_end、paused、completed 接受外形/性格/动机修改。读取当前完整圣经后写入 `source=user_edit` 的新版本并更新 `bible_version`，返回与 GET bible 相同的完整圣经和罗盘，不改变章节状态。前端人物卡提供外形不足提示、允许状态下的就近表单和错误。
+
+Markdown 导出按原顺序保留所有有正文的章节，在 stale 章节标题后加入待复核行，并在书名下汇总数量与章号；无 stale 时字节输出、响应头和文件名规则保持原样。供进程内改编工作室使用的 `service.find_books(username, query)` 复用列表摘要与顺序，按当前用户书名进行去首尾空白、不区分大小写的包含匹配；`service.chapters_range(username, novel_id, start, end)` 先验证所有权，再校验 1–300 且至多 50 章的范围，共用 `chapter()` 内部组装，跳过缺章。两项均为只读函数，不增加 HTTP 路由、表或列。
+
 登录后的 `/novels` 路由调用 `novel/service.py`，业务层只写入状态和指令，`novel/runner.py` 使用统一后台任务追踪器执行 P0 `deliberate` 与 `write_chapter`，不阻塞 HTTP 等待模型。每用户最多一本运行书，全局默认三个槽，排队任务保持 running；SQLite run_token 与账号存在条件保护每次后台写库。启动恢复退款 reserved 并从步骤缓存续跑，关闭、暂停和删除先取消任务并退款。
 
 五张 SQLite 表为 `novels`（配置、进度、预算、运行令牌）、`novel_bible_versions`（版本圣经）、`novel_chapters`（正文、推演、审校与档案）、`novel_steps`（请求 sha256、产物、token/缓存命中量和计费状态）、`novel_notes`（待处理留言和主编回应）。各表均带 username；版本/章节/步骤以 novel_id 复合主键，关联表按 novel_id 索引，novels 按 username/status 索引。`init_db` 幂等建表，无新迁移版本；删号同事务删除全部小说数据。

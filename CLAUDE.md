@@ -152,6 +152,10 @@ P2 前端入口为第六个书签「书斋」；`frontend/app/novels/page.tsx` �
 
 P1 后端入口 `backend/routers/novel.py`（`/novels`），业务层 `novel/service.py`，状态机 `novel/runner.py`，数据库适配 `novel/store_db.py`，计费 `novel/billing.py`，BYOK 适配 `novel/byok_bridge.py`。必须复用 P0 deliberate/write_chapter，离线 pilot 的步骤键与流程不得改变。
 
+P2.1 建书可选 `drama_adaptation`（默认 false，建书后不可修改）；向导勾选时尝试加入短剧改编顾问并展开改编参数，顾问仍可手动取消。开启后审校 payload 才包含 `adaptation_blocking` 和 `adaptation_limits`，允许场景数/主要人物数超限阻断；style 永不阻断。审校冻结原句保留，紧接追加条件例外。`validate_archive(..., require_new_appearance=False)` 保持 P0/直接归档兼容，P1 写书和重新归档传 true，要求新人物外形去空白至少 20 字。
+
+`PATCH /novels/{id}/characters/{character_id}` 仅允许在 awaiting_review、awaiting_plan、awaiting_end、paused、completed 时修改外形/性格/动机，写入新的 `user_edit` 圣经版本，不标记章节 stale。Markdown 导出保留所有有正文的章节，对 stale 章追加待复核提示和书首汇总；无 stale 时输出不变。进程内只读服务 `find_books(username, query)` 按本人书名包含匹配，`chapters_range(username, novel_id, start, end)` 按 1–300 章、单次最多 50 章读取，共用单章返回组装；两者不新增 HTTP 路由。
+
 开关 `FIONA_NOVEL=1` 且用户名位于 `FIONA_NOVEL_USERS` 才开放；并发 FIONA_NOVEL_MAX_RUNNING 默认 3，每日 FIONA_DAILY_NOVEL_CHAPTERS 默认 30，完整价目覆盖 FIONA_NOVEL_PRICE_JSON。SQLite 五表 novels、novel_bible_versions、novel_chapters、novel_steps、novel_notes 由 init_db 幂等创建，无新迁移版本，删号前取消任务/退款，同事务删全部关联行。后台写库需 run_token 与 users 存在检查。
 
 平台模型使用 DASHSCOPE_API_KEY、DEEPSEEK_API_KEY、ARK_API_KEY；Claude 只经 BYOK。思路、圣经、正文与留言会发给阿里云百炼、DeepSeek、火山方舟或用户自带厂商（包括 Anthropic）。Key 仅调用时从 byok.store 取用，不写小说库、日志或响应；步骤只存请求摘要，不存提示词。测试必须离线、不得读仓库外输入或依赖 git 历史；本机监控原有内容不得修改或移动。

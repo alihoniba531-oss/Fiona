@@ -11,7 +11,7 @@ from pydantic import BaseModel, ConfigDict, Field, model_validator
 
 from .agent_pool import AGENTS
 from .billing import estimate_cost, get_prices
-from .schemas import ValidationError, validate_decision, validate_setup
+from .schemas import ValidationError, compact, validate_decision, validate_setup
 from .store_db import get_db
 from .writing import compact_length
 
@@ -59,6 +59,7 @@ class CreateNovel(Input):
     batch_size: int = Field(default=5, ge=1, le=10)
     target: Target = Field(default_factory=Target)
     adaptation: Adaptation = Field(default_factory=Adaptation)
+    drama_adaptation: bool = False
     budget_strawberries: int = Field(ge=1, le=10_000_000)
 
 
@@ -75,6 +76,20 @@ class Note(Input):
 
 class Manuscript(Input):
     body: str = Field(min_length=1, max_length=30000)
+
+
+class CharacterEdit(Input):
+    appearance: str | None = None
+    personality: str | None = Field(default=None, min_length=1)
+    motivation: str | None = Field(default=None, min_length=1)
+
+    @model_validator(mode='after')
+    def nonempty(self):
+        if not self.model_fields_set:
+            raise ValueError('至少修改外形、性格或动机中的一项')
+        if any(getattr(self, field) is None for field in self.model_fields_set):
+            raise ValueError('人物修改字段必须为字符串')
+        return self
 
 
 class PlanApproval(Input):
@@ -197,6 +212,13 @@ async def list_books(username):
         return [summary(book) for book in await rows(db,'SELECT * FROM novels WHERE username=? ORDER BY created_at DESC,id',(username,))]
 
 
+async def find_books(username, query):
+    query = query.strip().casefold()
+    if not query:
+        return []
+    return [book for book in await list_books(username) if query in (book['title'] or '').casefold()]
+
+
 async def detail(username, novel_id):
     async with get_db() as db:
         book = await owned(db,username,novel_id)
@@ -243,11 +265,24 @@ async def chapter(username, novel_id, number):
         result=await row(db,'SELECT * FROM novel_chapters WHERE novel_id=? AND chapter=?',(novel_id,number))
     if not result:
         fail('章节不存在',404)
+    return _chapter_result(result)
+
+
+def _chapter_result(result):
     for field in ('flags','meeting','review','archive'):
         result[field]=json.loads(result.pop(field+'_json') or ('[]' if field in ('flags','review') else '{}'))
     result['review_summary']={'retained':sum(len(review.get('issues',[])) for review in result['review']), 'discarded':sum(len(review.get('dropped_issues',[])) for review in result['review'])}
     result.pop('username',None)
     return result
+
+
+async def chapters_range(username, novel_id, start, end):
+    async with get_db() as db:
+        await owned(db,username,novel_id)
+        if type(start) is not int or type(end) is not int or not 1 <= start <= end <= 300 or end-start+1 > 50:
+            fail('章节范围须在 1 至 300 章之间，且一次最多读取 50 章',422)
+        chapters = await rows(db,'SELECT * FROM novel_chapters WHERE novel_id=? AND chapter BETWEEN ? AND ? ORDER BY chapter',(novel_id,start,end))
+    return [_chapter_result(item) for item in chapters]
 
 
 async def _latest_bible(db,book):
@@ -268,6 +303,36 @@ def _check_not_editing(novel_id):
     from .runner import is_editing
     if is_editing(novel_id):
         fail('章节正在改稿，请稍后再继续')
+
+
+async def update_character(username, novel_id, character_id, data):
+    async with get_db() as db:
+        await db.execute('BEGIN IMMEDIATE')
+        book = await owned(db,username,novel_id)
+        if book['status'] == 'awaiting_setup':
+            fail('立项阶段请在立项卡里修改')
+        if book['status'] == 'failed':
+            fail('这本书已出错，不能修改人物')
+        if book['status'] not in ('awaiting_review','awaiting_plan','awaiting_end','paused','completed'):
+            fail('书正在运行，请先暂停再改人物')
+        _check_not_editing(novel_id)
+        changes = data.model_dump(exclude_unset=True)
+        version = await row(db,'SELECT bible_json FROM novel_bible_versions WHERE novel_id=? AND version=?',(novel_id,book['bible_version']))
+        if not version:
+            fail('人物不存在',404)
+        current = json.loads(version['bible_json'])
+        character = next((item for item in current['locked']['characters'] if item['id'] == character_id),None)
+        if character is None:
+            fail('人物不存在',404)
+        if 'appearance' in changes and len(compact(changes['appearance'])) < 20:
+            fail('外形至少写 20 个字',422)
+        character.update(changes)
+        current['version'] = book['bible_version']+1
+        await db.execute('INSERT INTO novel_bible_versions(novel_id,username,version,bible_json,source) VALUES(?,?,?,?,?)',(novel_id,username,current['version'],encoded(current),'user_edit'))
+        await db.execute('UPDATE novels SET bible_version=?,updated_at=CURRENT_TIMESTAMP WHERE id=?',(current['version'],novel_id))
+        await db.commit()
+    current['compass'] = json.loads(book['compass_json']) if book['compass_json'] else None
+    return current
 
 
 async def approve_setup(username, novel_id, data):
@@ -476,5 +541,17 @@ async def delete(username,novel_id):
 async def export(username,novel_id):
     async with get_db() as db:
         book=await owned(db,username,novel_id)
-        chapters=await rows(db,"SELECT body FROM novel_chapters WHERE novel_id=? AND body IS NOT NULL ORDER BY chapter",(novel_id,))
-    return '# '+(book['title'] or '未命名小说')+'\n\n'+'\n\n'.join(c['body'] for c in chapters)
+        chapters=await rows(db,"SELECT chapter,status,body FROM novel_chapters WHERE novel_id=? AND body IS NOT NULL ORDER BY chapter",(novel_id,))
+    pending = [item['chapter'] for item in chapters if item['status'] == 'stale']
+    heading = '# '+(book['title'] or '未命名小说')
+    if pending:
+        heading += '\n本书有 '+str(len(pending))+' 章待复核：第 '+'、'.join(str(number) for number in pending)+' 章。'
+    bodies = []
+    for item in chapters:
+        body = item['body']
+        if item['status'] == 'stale':
+            first, separator, rest = body.partition('\n')
+            marker = '【待复核】前面章节改过稿，本章尚未按新内容复核。'
+            body = first+'\n'+marker+(separator+rest if separator else '') if first.startswith('# ') else marker+'\n'+body
+        bodies.append(body)
+    return heading+'\n\n'+'\n\n'.join(bodies)

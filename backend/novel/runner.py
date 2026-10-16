@@ -383,11 +383,36 @@ async def _rearchive(store, router, book, config, compass):
     digest = hashlib.sha256(manuscript["body"].encode()).hexdigest()[:20]
     archive = await router.call(step_key=f"rearchive/ch{chapter:03d}/{digest}.json", role="archivist",
         model=config["agents"]["archivist"], messages=messages, max_tokens=card["max_tokens"],
-        validator=lambda value: validate_archive(value, bible), experiment="P1", chapter=chapter)
+        validator=lambda value: validate_archive(value, bible, require_new_appearance=True),
+        experiment="P1", chapter=chapter)
     next_bible = await apply_archived_chapter(router, config, compass, bible, archive,
         chapter=chapter, title=manuscript["title"], beat_sheet=beat,
         arm="solo" if config.get("panel_mode") == "solo" else "panel",
         arc_step_key=f"rearchive/ch{chapter:03d}/{digest}-arc-summary.json")
+    # Rebuild chapter facts from its original base, then replay only explicit
+    # character edits. Compare each edit to its immediate prior version so
+    # intervening archive changes never become author overrides.
+    async with get_db() as db:
+        edits = await _rows(db,
+            "SELECT edited.bible_json, previous.bible_json AS previous_json "
+            "FROM novel_bible_versions AS edited JOIN novel_bible_versions AS previous "
+            "ON previous.novel_id=edited.novel_id AND previous.version=("
+            "SELECT MAX(version) FROM novel_bible_versions "
+            "WHERE novel_id=edited.novel_id AND version<edited.version) "
+            "WHERE edited.novel_id=? AND edited.version>? AND edited.source='user_edit' "
+            "ORDER BY edited.version", (store.novel_id, original["version"]))
+    rebuilt_characters = {item["id"]: item for item in next_bible["locked"]["characters"]}
+    for edit in edits:
+        previous_characters = {item["id"]: item
+            for item in json.loads(edit["previous_json"])["locked"]["characters"]}
+        for character in json.loads(edit["bible_json"])["locked"]["characters"]:
+            target = rebuilt_characters.get(character["id"])
+            if target is None or target["name"] != character["name"]:
+                continue
+            previous_character = previous_characters.get(character["id"], {})
+            for field in ("appearance", "personality", "motivation"):
+                if field in character and character[field] != previous_character.get(field):
+                    target[field] = deepcopy(character[field])
     next_bible["version"] = book["bible_version"] + 1
     status = config.pop("_after_rearchive", "awaiting_review")
     reason = config.pop("_after_rearchive_reason", None)
