@@ -1,11 +1,13 @@
-"""仅向工作室作者开放的单镜首帧视频 API。"""
+"""仅向工作室作者开放的作品接入、导演拆解与视频 API。"""
 import asyncio
+from urllib.parse import quote
 from typing import Literal
 
 from fastapi import APIRouter, Depends, HTTPException, Query, Request, UploadFile
+from fastapi.responses import Response
 from pydantic import BaseModel, ConfigDict, Field, StrictBool, StrictInt, field_validator
 
-from studio import brain_jobs, pricing, sources, spend, storage, store
+from studio import brain_jobs, breakdown_plan, pricing, sources, spend, storage, store
 from studio.config import get_settings
 from studio.gate import PRIVATE_HEADERS, studio_user
 
@@ -97,7 +99,100 @@ class ReleaseBody(BaseModel):
 
 class BrainProjectBody(BaseModel):
     model_config = ConfigDict(extra="forbid")
-    brain_provider: Literal["claude", "qwen", "deepseek"]
+    brain_provider: Literal["claude", "qwen", "deepseek"] | None = None
+    episode_seconds_min: StrictInt | None = Field(default=None, ge=60, le=900)
+    episode_seconds_max: StrictInt | None = Field(default=None, ge=60, le=900)
+
+
+class BreakdownQuoteBody(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+    target_episodes: StrictInt | None = Field(default=None, ge=1, le=300)
+    episode_seconds_min: StrictInt | None = Field(default=None, ge=60, le=900)
+    episode_seconds_max: StrictInt | None = Field(default=None, ge=60, le=900)
+
+
+class BreakdownStartBody(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+    quote_id: str = Field(min_length=1, max_length=100)
+
+
+class BreakdownRetryQuoteBody(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+    provider: Literal["claude", "qwen", "deepseek"]
+
+
+class SynopsisBody(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+    synopsis: dict
+
+
+class BibleFields(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+    name: str | None = Field(default=None, min_length=1, max_length=200)
+    aliases: list[str] | None = Field(default=None, max_length=100)
+    role: str | None = Field(default=None, max_length=2000)
+    description: str | None = Field(default=None, max_length=10000)
+    appearance: str | None = Field(default=None, max_length=10000)
+    needs_author: StrictBool | None = None
+
+    @field_validator("name")
+    @classmethod
+    def nonempty_name(cls, value):
+        if value is not None and not value.strip():
+            raise ValueError("名字不能为空")
+        return value.strip() if value is not None else value
+
+    @field_validator("aliases")
+    @classmethod
+    def valid_aliases(cls, value):
+        if value is not None and any(not item.strip() or len(item) > 200 for item in value):
+            raise ValueError("别名须为 1–200 字")
+        return [item.strip() for item in value] if value is not None else value
+
+
+class BibleCreateBody(BibleFields):
+    project_id: str = Field(min_length=1, max_length=100)
+    kind: Literal["character", "location", "prop"]
+    name: str = Field(min_length=1, max_length=200)
+
+
+class BibleMergeBody(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+    keep_id: str = Field(min_length=1, max_length=100)
+    merge_ids: list[str] = Field(min_length=1, max_length=100)
+
+
+class EpisodeFields(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+    title: str | None = Field(default=None, min_length=1, max_length=500)
+    change: str | None = Field(default=None, max_length=10000)
+    hook: str | None = Field(default=None, max_length=10000)
+    notes: str | None = Field(default=None, max_length=10000)
+    target_min: StrictInt | None = Field(default=None, ge=60, le=900)
+    target_max: StrictInt | None = Field(default=None, ge=60, le=900)
+
+
+class EpisodeOperationBody(EpisodeFields):
+    expected_revision: StrictInt = Field(ge=0)
+    op: Literal["edit", "merge", "split", "move_boundary", "delete", "insert"]
+    no: StrictInt | None = Field(default=None, ge=1)
+    at_unit: StrictInt | None = Field(default=None, ge=1)
+    delta: StrictInt | None = Field(default=None, ge=-1, le=1)
+    unit_from: StrictInt | None = Field(default=None, ge=1)
+    unit_to: StrictInt | None = Field(default=None, ge=1)
+    fields: EpisodeFields | None = None
+
+    @field_validator("delta")
+    @classmethod
+    def valid_delta(cls, value):
+        if value is not None and value not in (-1, 1):
+            raise ValueError("边界只能移动 -1 或 +1 场")
+        return value
+
+
+class PlanApproveBody(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+    expected_revision: StrictInt = Field(ge=0)
 
 
 class BrainTrialBody(BaseModel):
@@ -126,7 +221,103 @@ async def brain_providers(user: str = Depends(studio_user)):
 
 @router.patch("/projects/{pid}")
 async def patch_project(pid: str, body: BrainProjectBody, user: str = Depends(studio_user)):
-    return await brain_jobs.patch_project(pid, user, body.brain_provider)
+    return await breakdown_plan.patch_project(pid, user, body.model_dump(exclude_unset=True, exclude_none=True))
+
+
+@router.post("/projects/{pid}/breakdown/quote")
+async def quote_breakdown(pid: str, body: BreakdownQuoteBody, user: str = Depends(studio_user)):
+    from studio import breakdown
+    return await breakdown.quote(pid, user, body.target_episodes,
+                                 episode_seconds_min=body.episode_seconds_min,
+                                 episode_seconds_max=body.episode_seconds_max)
+
+
+@router.post("/projects/{pid}/breakdown/start")
+async def start_breakdown(pid: str, body: BreakdownStartBody, user: str = Depends(studio_user)):
+    from studio import breakdown
+    return await breakdown.start(pid, user, body.quote_id)
+
+
+@router.get("/projects/{pid}/breakdown")
+async def current_breakdown(pid: str, user: str = Depends(studio_user)):
+    from studio import breakdown
+    return await breakdown.get_current(pid, user)
+
+
+@router.patch("/projects/{pid}/breakdown")
+@router.patch("/projects/{pid}/breakdown/synopsis")
+async def patch_breakdown(pid: str, body: SynopsisBody, user: str = Depends(studio_user)):
+    return await breakdown_plan.patch_synopsis(pid, user, body.synopsis)
+
+
+@router.post("/breakdowns/{bid}/chunks/{cid}/retry/quote")
+async def quote_retry_breakdown(bid: str, cid: str, body: BreakdownRetryQuoteBody, user: str = Depends(studio_user)):
+    from studio import breakdown
+    return await breakdown.retry_quote(bid, cid, user, body.provider)
+
+
+@router.post("/breakdowns/{bid}/chunks/{cid}/retry")
+async def retry_breakdown(bid: str, cid: str, body: BreakdownStartBody, user: str = Depends(studio_user)):
+    from studio import breakdown
+    return await breakdown.retry(bid, cid, user, body.quote_id)
+
+
+@router.post("/breakdowns/{bid}/cancel")
+async def cancel_breakdown(bid: str, user: str = Depends(studio_user)):
+    from studio import breakdown
+    return await breakdown.cancel(bid, user)
+
+
+@router.get("/projects/{pid}/bible")
+async def breakdown_bible(pid: str, kind: Literal["character", "location", "prop"] | None = None,
+                          user: str = Depends(studio_user)):
+    return await breakdown_plan.list_bible(pid, user, kind)
+
+
+@router.patch("/bible/{item_id}")
+async def patch_breakdown_bible(item_id: str, body: BibleFields, user: str = Depends(studio_user)):
+    return await breakdown_plan.patch_bible(item_id, user, body.model_dump(exclude_unset=True, exclude_none=True))
+
+
+@router.post("/bible/merge")
+async def merge_breakdown_bible(body: BibleMergeBody, user: str = Depends(studio_user)):
+    return await breakdown_plan.merge_bible(user, body.keep_id, body.merge_ids)
+
+
+@router.post("/bible", status_code=201)
+async def create_breakdown_bible(body: BibleCreateBody, user: str = Depends(studio_user)):
+    return await breakdown_plan.create_bible(user, body.model_dump(exclude_none=True))
+
+
+@router.delete("/bible/{item_id}")
+async def archive_breakdown_bible(item_id: str, user: str = Depends(studio_user)):
+    return await breakdown_plan.archive_bible(item_id, user)
+
+
+@router.get("/projects/{pid}/episodes")
+async def breakdown_episodes(pid: str, user: str = Depends(studio_user)):
+    return await breakdown_plan.get_episodes(pid, user)
+
+
+@router.post("/projects/{pid}/episodes/ops")
+async def operate_breakdown_episodes(pid: str, body: EpisodeOperationBody, user: str = Depends(studio_user)):
+    data = body.model_dump(exclude_unset=True)
+    if body.fields is not None:
+        data['fields'] = body.fields.model_dump(exclude_unset=True)
+    return await breakdown_plan.operate_episodes(pid, user, data)
+
+
+@router.post("/projects/{pid}/episodes/approve")
+async def approve_breakdown_episodes(pid: str, body: PlanApproveBody, user: str = Depends(studio_user)):
+    return await breakdown_plan.approve(pid, user, body.expected_revision)
+
+
+@router.get("/projects/{pid}/breakdown/export")
+async def export_breakdown(pid: str, user: str = Depends(studio_user)):
+    title, markdown = await breakdown_plan.export_markdown(pid, user)
+    return Response(markdown, media_type='text/markdown', headers={
+        'Content-Disposition': "attachment; filename*=UTF-8''" + quote(title + '-拆解与分集.md', safe=''),
+        'Cache-Control': 'private, no-store', 'X-Content-Type-Options': 'nosniff'})
 
 
 @router.post("/projects/{pid}/brain/quote")

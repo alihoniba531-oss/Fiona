@@ -1,6 +1,10 @@
 """启动恢复只调整数据库状态，绝不提交或查询上游。"""
+import logging
+
 from . import store
 from .providers.base import UNCERTAIN_MESSAGE
+
+logger = logging.getLogger(__name__)
 
 
 async def recover_studio_jobs() -> None:
@@ -12,13 +16,27 @@ async def recover_studio_jobs() -> None:
     now = store.utcnow()
     from . import notices
     await notices.initialize_notice_cutoff()
-    for job in await store.list_jobs_by_status(("submitting", "submitted", "running", "succeeded")):
+    async with store.connection() as db:
+        # 恢复只需要导演任务的状态，不读取、解析其大文本素材与输出。
+        async with db.execute('''SELECT id,kind,task,status,run_token FROM studio_jobs
+            WHERE kind='brain' AND status IN ('submitting','submitted','running','succeeded')
+            ORDER BY created_at,id''') as cursor:
+            jobs = [dict(row) for row in await cursor.fetchall()]
+        jobs.extend(await store._many(db, '''SELECT * FROM studio_jobs WHERE kind!='brain'
+            AND status IN ('submitting','submitted','running','succeeded') ORDER BY created_at,id'''))
+    for job in jobs:
         if job.get("kind") == "brain":
             if job["status"] in {"submitting", "running"}:
-                await store.cas_job(job["id"], job["status"], {
-                    "status": "uncertain", "error_code": "restart_during_submission",
-                    "error_message": "服务重启时请求可能已发出；" + UNCERTAIN_MESSAGE,
-                }, run_token=job.get("run_token"))
+                try:
+                    await store.cas_job(job["id"], job["status"], {
+                        "status": "uncertain", "error_code": "restart_during_submission",
+                        "error_message": "服务重启时请求可能已发出；" + UNCERTAIN_MESSAGE,
+                    }, run_token=job.get("run_token"))
+                except Exception as exc:
+                    if job.get('task') not in {'novel_complete', 'text_map', 'synopsis', 'episode_plan'}:
+                        raise
+                    # 一个损坏的拆解任务不能阻断其它任务或应用启动；不记录素材。
+                    logger.error('Could not recover breakdown job %s (%s)', job['id'], type(exc).__name__)
             continue
         if job["status"] == "submitting":
             updates = {
@@ -35,3 +53,6 @@ async def recover_studio_jobs() -> None:
             updates = {"next_poll_at": now} if not job.get("needs_recheck") else {}
         if updates:
             await store.cas_job(job["id"], job["status"], updates, run_token=job.get("run_token"))
+
+    from .breakdown import recover
+    await recover()

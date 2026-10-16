@@ -90,4 +90,71 @@ def task_hard_errors(task: str, output: dict, inputs: dict) -> list[str]:
                 errors.append(path + " 原文未写外形时必须留空，不得编造")
             elif character["appearance_status"] == "from_text" and (not excerpt.strip() or excerpt not in source):
                 errors.append(path + " 必须是原文中非空的逐字外形摘录")
+    elif task == 'novel_complete':
+        expected = [item['chapter'] for item in inputs.get('chapters', [])]
+        actual = [item['chapter'] for item in output['chapters']]
+        if sorted(expected) != sorted(actual):
+            errors.append('$.chapters 必须逐一包含全部输入章号，不得重复或越界')
+    elif task == 'episode_plan':
+        units = {item['seq'] for item in inputs.get('units', [])}
+        previous = 0
+        for index, episode in enumerate(output['episodes']):
+            first, last = episode['unit_from'], episode['unit_to']
+            if (first > last or first <= previous or not units or first < min(units) or last > max(units)
+                    or sum(first <= seq <= last for seq in units) != last - first + 1):
+                errors.append(f'$.episodes[{index}] 范围必须有序、非空、互不重叠且位于本段内')
+            previous = last
     return errors
+
+# WO3c: the four tasks share scene units; timing is a computed soft constraint.
+_SCENE = _object({
+    'location': _string(empty=True), 'summary': _string(),
+    'characters': _array(_string()), 'est_seconds': {'type': 'integer', 'minimum': 1},
+    'change': _string(empty=True), 'start_anchor': {'type': 'string', 'minLength': 8, 'maxLength': 30},
+})
+_ENTITY = _object({'name': _string(), 'description': _string(empty=True),
+                   'first_chapter': {'type': 'integer', 'minimum': 1}, 'excerpt': _string(empty=True)})
+NOVEL_COMPLETE_SCHEMA = _object({
+    'chapters': _array(_object({'chapter': {'type': 'integer', 'minimum': 1},
+                               'scenes': _array(_SCENE, minItems=1)}), minItems=1),
+    'locations': _array(_ENTITY), 'props': _array(_ENTITY),
+    'appearance_fills': _array(_object({'character': _string(), 'excerpt': _string()})),
+    'new_characters': _array(_object({'name': _string(), 'role': _string(empty=True),
+                                     'first_chapter': {'type': 'integer', 'minimum': 1},
+                                     'excerpt': _string(empty=True)})),
+})
+TEXT_MAP_SCHEMA = _object({
+    'summary': _string(), 'scenes': _array(_SCENE, minItems=1),
+    'characters': _array(_object({'name': _string(), 'aliases': _array(_string()),
+                                'role': _string(empty=True), 'excerpt': _string(empty=True)})),
+    'locations': _array(_ENTITY), 'props': _array(_ENTITY),
+})
+SYNOPSIS_SCHEMA = _object({**{key: _string() for key in ('logline', 'synopsis', 'genre', 'tone')},
+                           'themes': _array(_string())})
+EPISODE_PLAN_SCHEMA = _object({'episodes': _array(_object({
+    'unit_from': {'type': 'integer', 'minimum': 1}, 'unit_to': {'type': 'integer', 'minimum': 1},
+    'title': _string(), 'change': _string(empty=True), 'hook': _string(empty=True),
+}), minItems=1)})
+
+
+def _episode_warnings(output, inputs):
+    units = {item['seq']: item for item in inputs.get('units', [])}
+    covered, warnings = set(), []
+    for index, episode in enumerate(output['episodes'], 1):
+        seqs = {seq for seq in units if episode['unit_from'] <= seq <= episode['unit_to']}
+        covered.update(seqs)
+        seconds = sum(units[seq].get('est_seconds') or 0 for seq in seqs if seq in units)
+        if seconds < inputs.get('target_min', 180) * .85 or seconds > inputs.get('target_max', 240) * 1.15:
+            warnings.append(f'第 {index} 集预估时长超出目标区间 ±15%。')
+    if set(units) - covered:
+        warnings.append('本段有未纳入分集的单元。')
+    return warnings
+
+
+TASKS.update({
+    'novel_complete': BrainTask('小说补全', 'novel_complete.md', NOVEL_COMPLETE_SCHEMA, _no_warnings, 8192),
+    'text_map': BrainTask('逐块通读', 'text_map.md', TEXT_MAP_SCHEMA, _no_warnings, 4096),
+    'synopsis': BrainTask('故事梗概', 'synopsis.md', SYNOPSIS_SCHEMA, _no_warnings, 2048),
+    'episode_plan': BrainTask('分集方案', 'episode_plan.md', EPISODE_PLAN_SCHEMA, _episode_warnings, 4096),
+})
+BREAKDOWN_TASKS = ('novel_complete', 'text_map', 'synopsis', 'episode_plan')

@@ -100,8 +100,16 @@ async def brain_month_used(owner: str, *, now=None, db=None) -> Decimal:
 
 
 async def check_brain_budget(db, owner: str, totals: dict, *, now=None) -> None:
-    await check_reservation(db, totals.get("CNY", 0), now=now)
+    cny = pricing.money(totals.get("CNY", 0))
+    maximum = pricing.money(get_settings().max_quote_cny)
+    if cny > maximum:
+        raise HTTPException(409, f"超过单次报价上限 ¥{maximum:.4f}，超出 ¥{cny - maximum:.4f}")
+    occupied = await committed(db, shanghai_day(now))
+    daily_remaining = max(Decimal(0), pricing.money(get_settings().daily_cny) - occupied)
+    if cny > daily_remaining:
+        raise HTTPException(409, f"今日额度不足，剩余额度 ¥{daily_remaining:.4f}，还差 ¥{cny - daily_remaining:.4f}")
     remaining = max(Decimal(0), pricing.money(get_settings().brain_monthly_usd)
                     - await brain_month_used(owner, now=now, db=db))
     if pricing.money(totals.get("USD", 0)) > remaining:
-        raise HTTPException(409, f"Claude 本月额度不足，剩余额度 ${remaining:.2f}")
+        shortage = pricing.money(totals.get("USD", 0)) - remaining
+        raise HTTPException(409, f"Claude 本月额度不足，剩余额度 ${remaining:.4f}，还差 ${shortage:.4f}")

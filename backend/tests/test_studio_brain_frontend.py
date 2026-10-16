@@ -185,6 +185,6 @@ assert(!named(page,'BrainTrial'));all(page.tree,node=>node.props?.role==='tab')[
 const panels=all(page.tree,node=>node.props?.role==='tabpanel'&&!node.props.hidden);assert.equal(panels.length,1);
 const children=panels[0].props.children.props.children;assert.equal(children.length,2);
 assert.equal(children[0].type.name,'SourcePanel');assert.equal(children[0].props.projectId,'project');assert.equal(children[0].props.owner,env.owner);
-assert.equal(children[1].type.name,'EmptyState');assert.equal(children[1].props.children,'这一阶段将在后续版本开放');
+assert.equal(children[1].type,'div');assert(JSON.stringify(children[1]).includes('先关联作品才能拆解'));const details=all(children[1],n=>n.type==='details')[0];assert(details);assert(!details.props.open);assert(JSON.stringify(details).includes('试读与三家对比'));
 page.close();process.stdout.write('true');
 """) is True

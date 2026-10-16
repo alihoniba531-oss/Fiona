@@ -8,9 +8,17 @@ export function SourceFlags({ chapters }: { chapters: StudioFlaggedChapter[] }) 
   if (!chapters.length) return null;
   return <details className="min-w-0 break-words text-sm text-[color:var(--ink2)]"><summary className="min-h-10 cursor-pointer py-2">{chapters.length} 章带有标记</summary><ul className="space-y-2 pl-4">{chapters.map(item => <li key={item.chapter}>第 {item.chapter} 章 {item.title}：{item.flags.map(studioSourceFlagLabel).join("、")}</li>)}</ul></details>;
 }
+export function sourceProjectCreatedDate(value: string): string {
+  const normalized = /[zZ]$|[+-]\d\d:\d\d$/.test(value) ? value : `${value.replace(" ", "T")}Z`;
+  const date = new Date(normalized);
+  if (Number.isNaN(date.getTime())) return value;
+  const pad = (number: number) => String(number).padStart(2, "0");
+  return `${date.getFullYear()}-${pad(date.getMonth() + 1)}-${pad(date.getDate())} ${pad(date.getHours())}:${pad(date.getMinutes())}`;
+}
 export function ExistingSourceProjects({ projects, embedded, primary = false }: { projects: StudioNovelCandidate["projects"]; embedded: boolean; primary?: boolean }) {
   if (!projects.length) return null;
-  return <div className="mt-2 space-y-2 text-sm"><p className="text-[color:var(--ink2)]">已有工作室项目</p>{projects.map(project => <div key={project.id} className="flex min-w-0 flex-wrap items-center gap-2"><span className="min-w-0 break-words">{project.title} · 快照第 {project.snapshot_no ?? 0} 版</span><Link className={`btn ${primary ? "btn-primary" : "btn-quiet"} min-h-10`} href={studioHref(`/studio/${encodeURIComponent(project.id)}`, embedded)}>打开</Link></div>)}</div>;
+  const ordered = [...projects].sort((left, right) => right.created_at.localeCompare(left.created_at));
+  return <div className="mt-2 space-y-2 text-sm"><p className="text-[color:var(--ink2)]">已有工作室项目</p>{ordered.map((project, index) => <div key={project.id} className="flex min-w-0 flex-wrap items-center gap-2"><span className="min-w-0 break-words">{project.title} · <time dateTime={project.created_at} suppressHydrationWarning>{sourceProjectCreatedDate(project.created_at)}</time> · 快照第 {project.snapshot_no ?? 0} 版</span><Link className={`btn ${primary && index === 0 ? "btn-primary" : "btn-quiet"} min-h-10`} href={studioHref(`/studio/${encodeURIComponent(project.id)}`, embedded)}>打开</Link></div>)}</div>;
 }
 export function NovelSourceChoice({ book, selected = false, disabled = false, embedded, onSelect }: { book: StudioNovelCandidate; selected?: boolean; disabled?: boolean; embedded: boolean; onSelect?: () => void }) {
   return <article className={`ceramic-card min-w-0 rounded-xl p-3 ${book.eligible ? "" : "text-[color:var(--ink2)]"} ${selected ? "ring-1 ring-[color:var(--ink)]" : ""}`}>

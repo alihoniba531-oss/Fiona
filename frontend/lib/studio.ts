@@ -6,7 +6,7 @@ import type { Message } from "@/components/ChatBubble";
 export type StudioJobStatus = "queued" | "submitting" | "submitted" | "running" | "succeeded" | "downloaded" | "rejected" | "uncertain" | "failed" | "filtered" | "expired" | "cancelled" | "released";
 export type BrainProviderId = "claude" | "qwen" | "deepseek";
 export type StudioSourceKind = "novel" | "upload" | "paste" | "exchange";
-export interface StudioProject { id: string; owner: string; title: string; aspect: "16:9" | "9:16"; brain_provider: BrainProviderId; created_at: string; updated_at: string; source_kind?: StudioSourceKind | null; source_ref?: string | null; snapshot_no?: number }
+export interface StudioProject { id: string; owner: string; title: string; aspect: "16:9" | "9:16"; brain_provider: BrainProviderId; created_at: string; updated_at: string; source_kind?: StudioSourceKind | null; source_ref?: string | null; snapshot_no?: number; episode_seconds_min?: number; episode_seconds_max?: number; plan_revision?: number; plan_approved_revision?: number | null; breakdown_id?: string | null }
 export interface StudioFlaggedChapter { chapter: number; title: string; flags: string[] }
 export interface StudioNovelCandidate {
   id: string; title: string; status: string; chapters_done: number; words_done: number;

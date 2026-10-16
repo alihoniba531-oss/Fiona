@@ -296,9 +296,9 @@ class ClaudeProvider:
         sources = await asyncio.to_thread(lambda: [_image_source(image) for image in _images(images)])
         body = {
             "model": self.model, "stream": False, "max_tokens": min(definition.max_tokens, 16000),
-            "system": [{"type": "text", "text": system_prompt(task), "cache_control": {"type": "ephemeral"}}],
+            "system": [{"type": "text", "text": await asyncio.to_thread(system_prompt, task), "cache_control": {"type": "ephemeral"}}],
             "messages": [{"role": "user", "content": [
-                {"type": "text", "text": material_prompt(inputs, repair)},
+                {"type": "text", "text": await asyncio.to_thread(material_prompt, inputs, repair)},
                 *[{"type": "image", "source": source} for source in sources],
             ]}],
             "output_config": {"format": {"type": "json_schema", "schema": to_claude_schema(definition.schema)},
@@ -405,7 +405,7 @@ class QwenProvider:
             visual = QwenProvider(client_factory=self.client_factory)
             visual.pin_vision_model(model)
             return await visual.call(task, inputs, images=image_list, repair=repair)
-        content = material_prompt(inputs, repair)
+        content = await asyncio.to_thread(material_prompt, inputs, repair)
         if image_list:
             sources = await asyncio.to_thread(lambda: [_image_source(image) for image in image_list])
             content = [{"type": "text", "text": content}, *[
@@ -413,10 +413,13 @@ class QwenProvider:
                 for source in sources]]
         body = {
             "model": model, "stream": False, "max_tokens": definition.max_tokens,
-            "messages": [{"role": "system", "content": system_prompt(task)}, {"role": "user", "content": content}],
+            "messages": [{"role": "system", "content": await asyncio.to_thread(system_prompt, task)}, {"role": "user", "content": content}],
             "response_format": {"type": "json_object"}, "temperature": 0.2,
             "extra_body": {"thinking": {"type": "disabled"}} if self.provider == "deepseek" else {"enable_thinking": False},
         }
+        from .brain_tasks import BREAKDOWN_TASKS
+        if task in BREAKDOWN_TASKS:
+            body['_studio_timeout'] = 300.0
         return await asyncio.to_thread(self._once, body, bool(image_list))
 
     def _once(self, body, vision: bool) -> BrainReply:
@@ -427,7 +430,7 @@ class QwenProvider:
             import openai
             _protect_sdk_logs()
             client = (self.client_factory or openai.OpenAI)(
-                api_key=self.api_key, base_url=self.base_url, timeout=120.0, max_retries=0)
+                api_key=self.api_key, base_url=self.base_url, timeout=body.pop('_studio_timeout', 120.0), max_retries=0)
             response = client.chat.completions.create(**body)
             choices = _value(response, "choices")
             if not isinstance(choices, list) or not choices:

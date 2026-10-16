@@ -79,7 +79,7 @@ async def _candidate(username, book):
     async with store.connection() as db:
         projects = await store._many(db, """SELECT id,title,snapshot_no,created_at FROM studio_projects
             WHERE owner=? AND source_kind='novel' AND source_ref=? AND archived=0
-            ORDER BY created_at,id""", (username, book['id']))
+            ORDER BY created_at DESC,id DESC""", (username, book['id']))
     return {**{key: detail.get(key) for key in ('id', 'title', 'status', 'chapters_done', 'words_done',
                                               'completed_at', 'updated_at')},
             'title': detail.get('title') or '未命名小说',
@@ -480,7 +480,8 @@ async def _save_snapshot(username, pid, no, snapshot, expected_no):
                 (str(uuid.uuid4()), pid, username, no, manifest['kind'], manifest['ref_id'], manifest['title'],
                  (manifest.get('book') or {}).get('bible_version'), len(manifest['chapters']), manifest['chars'],
                  digest, rel_dir, manifest['created_at']))
-            # 第 3c 期以 snapshot_no 判断哪些集需要退回；旧快照目录始终归档保留。
+            await db.execute('''UPDATE studio_breakdowns SET outdated=1,updated_at=?
+                WHERE id=? AND owner=? AND snapshot_no<>?''', (store.utcnow(), project.get('breakdown_id'), username, no))
             await db.execute('''UPDATE studio_projects SET source_kind=?,source_ref=?,snapshot_no=?,updated_at=?
                 WHERE id=? AND owner=?''', (manifest['kind'], manifest['ref_id'], no, store.utcnow(), pid, username))
             commit_task = asyncio.create_task(db.commit())
@@ -607,6 +608,20 @@ async def read_snapshot(username, pid, start_index, end_index):
     _, row = await _current_snapshot(username, pid)
     if row is None:
         raise HTTPException(404, '项目没有关联作品')
+    manifest = await asyncio.to_thread(_read_manifest, row)
+    return await asyncio.to_thread(_read_snapshot_chunks, row, manifest, start_index, end_index)
+
+
+async def read_snapshot_at(username, pid, snapshot_no, start_index, end_index):
+    """读取拆解已绑定的归档快照，不把后续同步的原文混入旧批。"""
+    if type(snapshot_no) is not int or snapshot_no < 1:
+        raise HTTPException(422, '快照版本无效')
+    async with store.connection() as db:
+        await store._project(db, pid, username)
+        row = await store._one(db, '''SELECT * FROM studio_snapshots
+            WHERE project_id=? AND owner=? AND no=?''', (pid, username, snapshot_no))
+    if row is None:
+        raise HTTPException(404, 'Not Found')
     manifest = await asyncio.to_thread(_read_manifest, row)
     return await asyncio.to_thread(_read_snapshot_chunks, row, manifest, start_index, end_index)
 

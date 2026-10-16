@@ -26,7 +26,10 @@ STUDIO_TABLES_DDL = (
         created_at TEXT NOT NULL, updated_at TEXT NOT NULL,
         archived INTEGER NOT NULL DEFAULT 0, brain_provider TEXT NOT NULL DEFAULT 'claude',
         source_kind TEXT CHECK(source_kind IN ('novel','upload','paste','exchange')),
-        source_ref TEXT, snapshot_no INTEGER NOT NULL DEFAULT 0, UNIQUE(id, owner)
+        source_ref TEXT, snapshot_no INTEGER NOT NULL DEFAULT 0,
+        episode_seconds_min INTEGER NOT NULL DEFAULT 180, episode_seconds_max INTEGER NOT NULL DEFAULT 240,
+        plan_revision INTEGER NOT NULL DEFAULT 0, plan_approved_revision INTEGER, breakdown_id TEXT,
+        UNIQUE(id, owner)
     )""",
     """CREATE TABLE IF NOT EXISTS studio_assets (
         id TEXT PRIMARY KEY, project_id TEXT NOT NULL, owner TEXT NOT NULL,
@@ -84,6 +87,60 @@ STUDIO_TABLES_DDL = (
         created_at TEXT NOT NULL, UNIQUE(project_id,no),
         FOREIGN KEY(project_id,owner) REFERENCES studio_projects(id,owner)
     )""",
+    """CREATE TABLE IF NOT EXISTS studio_breakdowns (
+        id TEXT PRIMARY KEY, project_id TEXT NOT NULL, owner TEXT NOT NULL, snapshot_no INTEGER NOT NULL,
+        provider TEXT NOT NULL, status TEXT NOT NULL CHECK(status IN ('draft','running','partial','done','cancelled')),
+        settings_json TEXT NOT NULL DEFAULT '{}', import_json TEXT NOT NULL DEFAULT '{}', synopsis_json TEXT,
+        quote_id TEXT, outdated INTEGER NOT NULL DEFAULT 0, superseded_by TEXT,
+        created_at TEXT NOT NULL, updated_at TEXT NOT NULL,
+        FOREIGN KEY(project_id,owner) REFERENCES studio_projects(id,owner)
+    )""",
+    """CREATE TABLE IF NOT EXISTS studio_chunks (
+        id TEXT PRIMARY KEY, breakdown_id TEXT NOT NULL, project_id TEXT NOT NULL, owner TEXT NOT NULL,
+        no INTEGER NOT NULL, task TEXT NOT NULL CHECK(task IN ('novel_complete','text_map','synopsis','episode_plan')),
+        source_json TEXT NOT NULL DEFAULT '{}', depends_on_json TEXT NOT NULL DEFAULT '[]',
+        status TEXT NOT NULL CHECK(status IN ('blocked','queued','running','succeeded','failed','uncertain',
+            'rejected','invalid_output','released','cancelled')), job_id TEXT, provider TEXT NOT NULL,
+        result_json TEXT, warnings_json TEXT NOT NULL DEFAULT '[]', created_at TEXT, updated_at TEXT,
+        UNIQUE(breakdown_id,no), FOREIGN KEY(breakdown_id) REFERENCES studio_breakdowns(id),
+        FOREIGN KEY(project_id,owner) REFERENCES studio_projects(id,owner)
+    )""",
+    """CREATE TABLE IF NOT EXISTS studio_units (
+        breakdown_id TEXT NOT NULL, seq INTEGER NOT NULL, label TEXT NOT NULL, chapter INTEGER NOT NULL,
+        scene_index INTEGER NOT NULL, location TEXT NOT NULL DEFAULT '', summary TEXT NOT NULL DEFAULT '',
+        characters_json TEXT NOT NULL DEFAULT '[]', est_seconds INTEGER, change TEXT NOT NULL DEFAULT '',
+        start INTEGER, end INTEGER, PRIMARY KEY(breakdown_id,seq),
+        FOREIGN KEY(breakdown_id) REFERENCES studio_breakdowns(id)
+    )""",
+    """CREATE TABLE IF NOT EXISTS studio_bible (
+        id TEXT PRIMARY KEY, project_id TEXT NOT NULL, owner TEXT NOT NULL, breakdown_id TEXT NOT NULL,
+        kind TEXT NOT NULL CHECK(kind IN ('character','location','prop')), name TEXT NOT NULL,
+        aliases_json TEXT NOT NULL DEFAULT '[]', role TEXT NOT NULL DEFAULT '', description TEXT NOT NULL DEFAULT '',
+        appearance TEXT NOT NULL DEFAULT '', appearance_source TEXT NOT NULL DEFAULT 'none'
+            CHECK(appearance_source IN ('workshop','excerpt','author','none')),
+        excerpt TEXT NOT NULL DEFAULT '', needs_author INTEGER NOT NULL DEFAULT 0, first_unit INTEGER,
+        episodes_json TEXT NOT NULL DEFAULT '[]', ref_id TEXT, merged_into TEXT, archived INTEGER NOT NULL DEFAULT 0,
+        updated_at TEXT NOT NULL, FOREIGN KEY(breakdown_id) REFERENCES studio_breakdowns(id),
+        FOREIGN KEY(project_id,owner) REFERENCES studio_projects(id,owner)
+    )""",
+    """CREATE TABLE IF NOT EXISTS studio_episodes (
+        id TEXT PRIMARY KEY, project_id TEXT NOT NULL, owner TEXT NOT NULL, breakdown_id TEXT NOT NULL,
+        no INTEGER NOT NULL, title TEXT NOT NULL, unit_from INTEGER NOT NULL, unit_to INTEGER NOT NULL,
+        change TEXT NOT NULL DEFAULT '', hook TEXT NOT NULL DEFAULT '', target_min INTEGER, target_max INTEGER,
+        notes TEXT NOT NULL DEFAULT '', updated_at TEXT NOT NULL,
+        FOREIGN KEY(breakdown_id) REFERENCES studio_breakdowns(id),
+        FOREIGN KEY(project_id,owner) REFERENCES studio_projects(id,owner)
+    )""",
+    """CREATE TABLE IF NOT EXISTS studio_plan_revisions (
+        project_id TEXT NOT NULL, owner TEXT NOT NULL, revision INTEGER NOT NULL, plan_json TEXT NOT NULL,
+        created_at TEXT NOT NULL, created_reason TEXT NOT NULL, PRIMARY KEY(project_id,revision),
+        FOREIGN KEY(project_id,owner) REFERENCES studio_projects(id,owner)
+    )""",
+    "CREATE INDEX IF NOT EXISTS idx_studio_breakdowns_project ON studio_breakdowns(owner,project_id,created_at)",
+    "CREATE INDEX IF NOT EXISTS idx_studio_chunks_breakdown ON studio_chunks(breakdown_id,no)",
+    "CREATE INDEX IF NOT EXISTS idx_studio_chunks_job ON studio_chunks(job_id)",
+    "CREATE INDEX IF NOT EXISTS idx_studio_bible_breakdown ON studio_bible(owner,breakdown_id,kind)",
+    "CREATE INDEX IF NOT EXISTS idx_studio_episodes_breakdown ON studio_episodes(owner,breakdown_id,no)",
     "CREATE INDEX IF NOT EXISTS idx_studio_snapshots_owner_project ON studio_snapshots(owner,project_id)",
     "CREATE INDEX IF NOT EXISTS idx_studio_projects_owner_updated ON studio_projects(owner,updated_at)",
     "CREATE INDEX IF NOT EXISTS idx_studio_assets_owner_project ON studio_assets(owner,project_id)",
@@ -170,7 +227,12 @@ async def migrate_schema(db) -> None:
     additions = {
         "studio_projects": {"brain_provider": "TEXT NOT NULL DEFAULT 'claude'",
                             "source_kind": "TEXT CHECK(source_kind IN ('novel','upload','paste','exchange'))",
-                            "source_ref": "TEXT", "snapshot_no": "INTEGER NOT NULL DEFAULT 0"},
+                            "source_ref": "TEXT", "snapshot_no": "INTEGER NOT NULL DEFAULT 0",
+                            "episode_seconds_min": "INTEGER NOT NULL DEFAULT 180",
+                            "episode_seconds_max": "INTEGER NOT NULL DEFAULT 240",
+                            "plan_revision": "INTEGER NOT NULL DEFAULT 0", "plan_approved_revision": "INTEGER",
+                            "breakdown_id": "TEXT"},
+        "studio_breakdowns": {"superseded_by": "TEXT"},
         "studio_jobs": {
             "task": "TEXT", "result_json": "TEXT", "warnings_json": "TEXT",
             "currency": "TEXT NOT NULL DEFAULT 'CNY'", "input_chars": "INTEGER",
@@ -181,6 +243,10 @@ async def migrate_schema(db) -> None:
         },
     }
     for table, columns in additions.items():
+        # 只补已存在的表：旧库可能还没建这张表，建表由 STUDIO_TABLES_DDL 负责。
+        async with db.execute("SELECT 1 FROM sqlite_master WHERE type='table' AND name=?", (table,)) as cursor:
+            if await cursor.fetchone() is None:
+                continue
         async with db.execute(f"PRAGMA table_info({table})") as cursor:
             existing = {row[1] for row in await cursor.fetchall()}
         for column, definition in columns.items():
@@ -235,7 +301,14 @@ async def _get_job(db, job_id: str, owner: str | None = None) -> dict | None:
     if owner is not None:
         sql += " AND owner=?"
         args.append(owner)
-    return await _one(db, sql, args)
+    async with db.execute(sql, args) as cursor:
+        row = await cursor.fetchone()
+    if row is not None and row['kind'] == 'brain' and row['task'] in {
+        'novel_complete', 'text_map', 'synopsis', 'episode_plan',
+    }:
+        from .breakdown import decode_job_row
+        return await decode_job_row(row)
+    return _row(row)
 
 
 async def create_project(owner: str, title: str, aspect: str) -> dict:
@@ -418,6 +491,8 @@ async def confirm_quote(quote_id: str, owner: str, *, now=None) -> list[dict]:
             raise HTTPException(409, "报价已经确认，不能重复确认")
         if parse_time(quote["expires_at"]) <= parse_time(stamp):
             raise HTTPException(409, "报价已过期，请重新报价")
+        if not isinstance(quote["items"], list) or any("params" not in item for item in quote["items"]):
+            raise HTTPException(409, "此报价须通过对应任务的确认接口开始")
         day = await spend.check_reservation(db, quote["total_max_cny"], now=stamp)
         async with db.execute(
             "UPDATE studio_quotes SET status='confirmed',confirmed_at=? WHERE id=? AND owner=? AND status='open'",
