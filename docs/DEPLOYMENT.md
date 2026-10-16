@@ -123,6 +123,7 @@ OpenAI 兼容模型客户端默认 60 秒超时、最多重试 1 次，可通过
 | 环境变量 | 用途 |
 |---|---|
 | `DASHSCOPE_API_KEY` | DashScope 模型密钥，天气也使用此 Key；需先在百炼控制台开通 Amap Maps |
+| `FIONA_CHAT_VISION_MODEL` | 聊天看图模型，默认 `qwen3.8-omni-flash`，使用 `DASHSCOPE_API_KEY`；每次调用时读取，空值用默认，非法值回落默认并只告警一次；请求固定关闭思考模式 |
 | `QWEN_IMAGE_MODEL` | 面板与旧路由默认生图和修图模型，默认 `qwen-image-3.0`，使用 `DASHSCOPE_API_KEY` |
 | `ARK_API_KEY` | 聊天工具默认 Seedream 及面板可选生图和修图的火山方舟密钥，仅服务端读取；须先在方舟控制台开通 Seedream 5.0 Flash |
 | `SEEDREAM_IMAGE_MODEL` | Seedream 真实模型名，默认 `doubao-seedream-5-0-flash-260915`，调用时读取 |

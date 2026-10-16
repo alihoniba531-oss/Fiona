@@ -7,7 +7,7 @@
 - `backend/`：FastAPI + SQLite `fiona.db`，入口 `main.py`，通过 `run.py` 监听 `127.0.0.1:8000`。
 - `frontend/`：Next.js 16.2.6 App Router + React 19，开发端口 3000。
 - `desktop/`：Tauri 2 Windows 壳；有配置时建 SSH 隧道，无配置时加载 `https://madchloechat.online`（线上服务已于 2026-09-25 下线，该地址当前不可用）。
-- 模型：DashScope/Qwen；主力 `qwen3.8-omni-flash`，轻量 `qwen3.8-flash`，图片 `qwen-vl-max`，搜索、旅行规划、热点展开和卡片详情 `qwen-plus`，语音使用 Qwen ASR 和 DashScope TTS。这四项走 DashScope 原生接口并强制联网搜索，固定 30 秒 socket 超时、不重试，不受兼容客户端的 `DASHSCOPE_TIMEOUT_SECONDS` / `DASHSCOPE_MAX_RETRIES` 控制；卡片详情路由外层另有 45 秒总超时。热点分类使用 `qwen3.8-flash`，请求固定 8 秒超时、不重试。聊天生图工具默认火山方舟 Seedream 5.0 Flash；面板生图和修图默认 Qwen Image 3.0，也可选 Seedream；两者均扣 10 颗草莓，后者将描述和参考图发送给字节跳动火山引擎。
+- 模型：DashScope/Qwen；主力 `qwen3.8-omni-flash`，轻量 `qwen3.8-flash`，看图 `qwen3.8-omni-flash`（`FIONA_CHAT_VISION_MODEL` 可改；原 `qwen-vl-max` 已不在账号可用模型列表），搜索、旅行规划、热点展开和卡片详情 `qwen-plus`，语音使用 Qwen ASR 和 DashScope TTS。这四项走 DashScope 原生接口并强制联网搜索，固定 30 秒 socket 超时、不重试，不受兼容客户端的 `DASHSCOPE_TIMEOUT_SECONDS` / `DASHSCOPE_MAX_RETRIES` 控制；卡片详情路由外层另有 45 秒总超时。热点分类使用 `qwen3.8-flash`，请求固定 8 秒超时、不重试。聊天生图工具默认火山方舟 Seedream 5.0 Flash；面板生图和修图默认 Qwen Image 3.0，也可选 Seedream；两者均扣 10 颗草莓，后者将描述和参考图发送给字节跳动火山引擎。
 - 天气：独立 `weather` 意图，使用阿里云百炼托管的高德地图 MCP（Amap Maps）；需在百炼控制台开通，复用 `DASHSCOPE_API_KEY`，目前限时免费，结束后按量计费，单价以控制台为准。每次只向该服务发送用户明确说出的城市名，不发送聊天历史、私有记忆或用户位置，不做 IP 定位、不默认城市。
 - 数据：SQLite、`backend/uploads/`、`backend/.env` 都是本机/单机状态，不进入 Git。
 
@@ -185,7 +185,7 @@ WO2：桌面侧栏仅在 `/studio/access` 返回 200 后运行时追加「工作
 
 WO3a：`studio.brain` 统一 Claude BYOK/千问/DeepSeek 适配，`brain_tasks` 和 prompts 定义四类任务，完整 schema 本地严格校验。`brain_jobs` 在 BEGIN IMMEDIATE 中预检/预留，create_background_task 执行，每提供方最多3个；queued重启后恢复，running重启转uncertain。首次模型请求不重试，只有 JSON/硬约束不合格可明确修正一次，分别建 job 与计费。千问/DeepSeek沿用全工作室人民币日额度，Claude按作者上海自然月美元额度，默认40，DEV_MODE不豁免。看图时非Claude统一交给 `FIONA_STUDIO_VISION_MODEL` 指定的千问视觉模型，默认 `qwen3-vl-plus`；DeepSeek永不接收图片。原文是不可信数据，日志仅写ID/状态/错误码。
 
-工作室视觉模型每次调用时读取配置；允许空值，空值使用默认 `qwen3-vl-plus` 且不告警。非空值须匹配 `^[a-z0-9][a-z0-9.\-]{1,63}$`，非法值回落 `qwen3-vl-plus` 且只告警一次。`/studio/brain/providers` 的 `vision_via` 与「看图由千问视觉（实际模型）完成」警告均注明实际模型，手动评测报告同样记录。`qwen3-vl-plus` 默认输入/输出价为每百万 token ¥1/¥10（待核实），可用 `FIONA_STUDIO_PRICE_QWEN3_VL_PLUS` 覆盖；旧 `qwen-vl-max` 价目保留以兼容旧job。自定义视觉模型没有配置单价时返回409，不发模型请求。此配置只作用于工作室，聊天看图沿用现有配置。
+工作室视觉模型每次调用时读取配置；允许空值，空值使用默认 `qwen3-vl-plus` 且不告警。非空值须匹配 `^[a-z0-9][a-z0-9.\-]{1,63}$`，非法值回落 `qwen3-vl-plus` 且只告警一次。`/studio/brain/providers` 的 `vision_via` 与「看图由千问视觉（实际模型）完成」警告均注明实际模型，手动评测报告同样记录。`qwen3-vl-plus` 默认输入/输出价为每百万 token ¥1/¥10（待核实），可用 `FIONA_STUDIO_PRICE_QWEN3_VL_PLUS` 覆盖；旧 `qwen-vl-max` 价目保留以兼容旧job。自定义视觉模型没有配置单价时返回409，不发模型请求。此配置只作用于工作室；聊天看图由 `FIONA_CHAT_VISION_MODEL` 单独配置（默认 `qwen3.8-omni-flash`）。
 
 新增补列由 `studio.store.migrate_schema` 执行。旧jobs.provider/status的CHECK原样保留：brain行原provider列使用兼容占位wan，新增brain_provider是权威提供方，所有数据库读取统一对外转为真实provider；invalid_output保存在既有failed状态加错误码并在读取时还原。视频调度查询明确kind=i2v。不得重建或删除老表以改变约束。
 

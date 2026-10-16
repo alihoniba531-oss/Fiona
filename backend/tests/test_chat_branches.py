@@ -46,7 +46,8 @@ def test_chat_mirror_branch(client, dev_headers, monkeypatch):
 
 
 def test_chat_image_branch(client, dev_headers, monkeypatch):
-    """带图片 → 走 qwen-vl-max 看图分支（直接用 QWEN_CLIENT）。"""
+    """带图片 → 走看图分支（直接用 QWEN_CLIENT，默认 qwen3.8-omni-flash）。"""
+    monkeypatch.delenv("FIONA_CHAT_VISION_MODEL", raising=False)
     import services.chat_service as chat
     from _fakes import FakeStream
 
@@ -75,6 +76,11 @@ def test_chat_image_branch(client, dev_headers, monkeypatch):
     assert _has_text(events) and _has_done(events)
     image_url = captured["messages"][1]["content"][0]["image_url"]["url"]
     assert image_url.startswith("data:image/png;base64,")
+    assert captured["model"] == "qwen3.8-omni-flash"
+    assert captured["extra_body"] == {"enable_thinking": False}
+    assert captured["stream"] is True
+    assert captured["max_tokens"] == 400
+    assert captured["temperature"] == 0.9
 
 
 def test_chat_rejects_invalid_image_before_visual_model(client, dev_headers, monkeypatch):

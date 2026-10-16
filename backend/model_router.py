@@ -131,7 +131,7 @@ def choose_model(
     mode 取值：
       "mirror"  — 镜子模式（Chloe纯陪伴，无工具）
       "image"   — 保留分支；实际图片消息在 chat_service 里直接走
-                  stream_image(qwen-vl-max 看图)，不会路由到这里
+                  stream_image(看图模型见 llm.CHAT_VISION_MODEL_DEFAULT)，不会路由到这里
       "normal"  — 普通对话
 
     history_len — 当前会话已积累的历史消息条数（第 4 个位置参数，默认 0）。
