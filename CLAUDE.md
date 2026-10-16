@@ -152,6 +152,8 @@ P2 前端入口为第六个书签「书斋」；`frontend/app/novels/page.tsx` �
 
 P1 后端入口 `backend/routers/novel.py`（`/novels`），业务层 `novel/service.py`，状态机 `novel/runner.py`，数据库适配 `novel/store_db.py`，计费 `novel/billing.py`，BYOK 适配 `novel/byok_bridge.py`。必须复用 P0 deliberate/write_chapter，离线 pilot 的步骤键与流程不得改变。
 
+结构 v2 第一期仅改后端：`CreateNovel.structure` 默认 `v1`，旧书缺键也视为 v1，显式 `v2` 才生成 `compass.genre_contract`、每十章的 `dynamic.volumes` 和独立 `dynamic.structure_history`。卷规划以 `source=volume:n` 新建版本，约束核心主线与类型爽点的滑窗、到期里程碑及伏笔预算。后台 `volume_gate` 默认 false，建书/PATCH 不开放；设 true 时每批/每章方式先停 `awaiting_volume`，全自动不停，卷关卡先于同时到达的批/章关卡。接口为 GET `/{id}/volumes`、POST `/{id}/volume/approve`、`volume/redo` 与 `upgrade-structure`；升级仅允许 awaiting_review/paused，不改旧正文或圣经、不开卷关卡。P1 所有书首审最多八条阻断，复审仅保留旧问题及改动段落内的新问题；无新增/修改段落时省略 `changed_passages`、内部按空集降级，P0 提示词及 payload 不变。
+
 P2.1 建书可选 `drama_adaptation`（默认 false，建书后不可修改）；向导勾选时尝试加入短剧改编顾问并展开改编参数，顾问仍可手动取消。开启后审校 payload 才包含 `adaptation_blocking` 和 `adaptation_limits`，允许场景数/主要人物数超限阻断；style 永不阻断。审校冻结原句保留，紧接追加条件例外。`validate_archive(..., require_new_appearance=False)` 保持 P0/直接归档兼容，P1 写书和重新归档传 true，要求新人物外形去空白至少 20 字。
 
 `PATCH /novels/{id}/characters/{character_id}` 仅允许在 awaiting_review、awaiting_plan、awaiting_end、paused、completed 时修改外形/性格/动机，写入新的 `user_edit` 圣经版本，不标记章节 stale。Markdown 导出保留所有有正文的章节，对 stale 章追加待复核提示和书首汇总；无 stale 时输出不变。进程内只读服务 `find_books(username, query)` 按本人书名包含匹配，`chapters_range(username, novel_id, start, end)` 按 1–300 章、单次最多 50 章读取，共用单章返回组装；两者不新增 HTTP 路由。

@@ -29,6 +29,17 @@ def probe(script):
     return json.loads(result.stdout or "null")
 
 
+def test_probe_skips_when_frontend_dependencies_are_missing(monkeypatch, tmp_path):
+    monkeypatch.setitem(globals(), "ROOT", tmp_path)
+
+    def unexpected_render(*args, **kwargs):
+        pytest.fail("rendering must not run without frontend dependencies")
+
+    monkeypatch.setattr(subprocess, "run", unexpected_render)
+    with pytest.raises(pytest.skip.Exception, match="frontend dependencies unavailable: typescript"):
+        probe("process.stdout.write('true');")
+
+
 SETUP = r"""
 env.access={enabled:true,caps:{daily_cny:100,max_quote_cny:20,inflight:{wan:1,seedance:1}},today:{committed_cny:2,remaining_cny:98}};
 env.project={id:'project',title:'试拍',aspect:'16:9',created_at:'2026-01-01 00:00:00',updated_at:'2026-01-01 00:00:00'};

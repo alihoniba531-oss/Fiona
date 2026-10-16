@@ -9,7 +9,7 @@ import json
 from .agent_pool import AGENTS, get_agent
 from .context import build_brief, context_messages
 from .schemas import (validate_critique, validate_critique_plan, validate_decision,
-                      validate_proposals)
+                      validate_proposals, validate_volume_plan)
 
 
 DIMENSIONS = ("logic", "character", "appeal", "compass_fit", "filmability")
@@ -42,8 +42,9 @@ async def _gather_phase(coroutines):
         raise
 
 
-def messages_for(role, payload, *, chapter_words=2000, task=None, split_context=False):
-    card = get_agent(role, chapter_words, task=task)
+def messages_for(role, payload, *, chapter_words=2000, task=None, split_context=False,
+                 structure=None, experiment=None):
+    card = get_agent(role, chapter_words, task=task, structure=structure, experiment=experiment)
     users = context_messages(payload) if split_context else [
         {"role": "user", "content": json.dumps(payload, ensure_ascii=False, sort_keys=True)}]
     return card, [{"role": "system", "content": card["system_prompt"]}, *users]
@@ -72,7 +73,8 @@ async def deliberate(router, config, compass, bible, *, chapter, arm,
             roles.append(role)
     brief = build_brief(compass, bible, chapter, history=history,
                         written_words=written_words, user_notes=user_notes,
-                        timeline_limit=10 if config.get("enable_context_compression") else 5)
+                        timeline_limit=10 if config.get("enable_context_compression") else 5,
+                        config=config)
     mode = brief.get("mode", brief.get("progress", {}).get("mode", "normal"))
     base = {"chapter": chapter, "brief": brief, "mode": mode}
     prefix = f"arm-{arm}/ch{chapter:03d}"
@@ -81,7 +83,8 @@ async def deliberate(router, config, compass, bible, *, chapter, arm,
     async def call(role, task, path, payload, validator, *, failure_status="step_failed"):
         card, messages = messages_for(role, {**base, "task": task, **payload},
                                       chapter_words=config["target"]["chapter_words"], task=task,
-                                      split_context=config.get("enable_context_compression", False))
+                                      split_context=config.get("enable_context_compression", False),
+                                      structure=config.get("structure"), experiment=config.get("experiment"))
         async with semaphore:
             return await router.call(
                 step_key=f"{prefix}/{path}", role=role, model=config["agents"][role],
@@ -99,7 +102,8 @@ async def deliberate(router, config, compass, bible, *, chapter, arm,
             return validate_decision(data, compass=compass, bible=bible,
                                      chapter=chapter, mode=mode, proposal_ids=[],
                                      objection_ids=objection_ids, note_ids=note_ids,
-                                     solo=True, alternative_ids=alternative_ids)
+                                     solo=True, alternative_ids=alternative_ids,
+                                     config=config, history=history)
 
         plan = await call(
             "editor", "plan", "01-plan-editor.json",
@@ -113,11 +117,14 @@ async def deliberate(router, config, compass, bible, *, chapter, arm,
             brief = build_brief(compass, bible, chapter, history=history,
                                 written_words=written_words, user_notes=user_notes,
                                 timeline_limit=10,
-                                named_characters=plan["beat_sheet"]["characters"])
+                                named_characters=plan["beat_sheet"]["characters"], config=config)
             base["brief"] = brief
         # Advisors see the same brief and the initial plan, without any voting.
         plan_input = {key: deepcopy(plan[key])
                       for key in ("beat_sheet", "rationale", "ending_status")}
+        if config.get("structure") == "v2":
+            plan_input.update({key: deepcopy(plan[key])
+                               for key in ("genre_payoff", "milestones_advanced")})
         critique_results = await _gather_phase([
             call(role, "critique_plan", f"02-critique-plan-{role}.json",
                  {"plan": plan_input},
@@ -207,6 +214,55 @@ async def deliberate(router, config, compass, bible, *, chapter, arm,
         lambda data: validate_decision(data, compass=compass, bible=bible,
                                        chapter=chapter, mode=mode, proposal_ids=proposal_ids,
                                        objection_ids=objection_ids, note_ids=note_ids,
-                                       solo=not roles), failure_status="decision_invalid")
+                                       solo=not roles, config=config, history=history),
+        failure_status="decision_invalid")
     return {"brief": brief, "proposals": proposals, "reviews": reviews,
             "scores": scores, "objections": objections, "decision": decision}
+
+
+async def deliberate_volume(router, config, compass, bible, *, volume,
+                            start_chapter, end_chapter, arm, history=(),
+                            author_instruction=None, redo_count=0):
+    """Run the fixed editor → selected pacing/reader advisors → editor meeting.
+
+    Persisted step keys are stable across interruptions. A requested redo has
+    its own keys so it is billed once rather than reusing the original output.
+    """
+    if config.get("structure") != "v2":
+        raise ValueError("卷会议仅适用于 v2 小说")
+    brief = build_brief(compass, bible, start_chapter, history=history, config=config,
+                        timeline_limit=10 if config.get("enable_context_compression") else 5)
+    base = {"brief": brief, "volume": volume,
+            "chapters": [start_chapter, end_chapter]}
+    if author_instruction is not None:
+        base["author_instruction"] = author_instruction
+    suffix = f"-redo{redo_count}" if redo_count else ""
+    prefix = f"arm-{arm}/vol{volume:02d}"
+
+    def validate_plan(value):
+        return validate_volume_plan(value, compass=compass, bible=bible, volume=volume,
+                                    start_chapter=start_chapter, end_chapter=end_chapter)
+
+    async def call(role, task, filename, payload, validator):
+        card, messages = messages_for(
+            role, {**base, "task": task, **payload}, task=task,
+            chapter_words=config["target"]["chapter_words"],
+            split_context=config.get("enable_context_compression", False),
+            structure="v2", experiment=config.get("experiment"))
+        return await router.call(
+            step_key=f"{prefix}/{filename}{suffix}.json", role=role,
+            model=config["agents"][role], messages=messages, max_tokens=card["max_tokens"],
+            output=card["output"], experiment=config["experiment"], arm=arm,
+            chapter=start_chapter, validator=validator, failure_status="decision_invalid")
+
+    plan = await call("editor", "volume_plan", "01-volume-plan-editor", {}, validate_plan)
+    roles = [role for role in ("pacing_advisor", "reader_rep") if role in config["agents"]]
+    results = await _gather_phase([
+        call(role, "volume_critique", f"02-volume-critique-{role}", {"plan": plan},
+             lambda value, role=role: validate_critique_plan(value, role))
+        for role in roles])
+    critiques = [{**deepcopy(result), "author": role, "author_name": AGENTS[role]["name"]}
+                 for role, result in zip(roles, results)]
+    finalized = await call("editor", "volume_finalize", "03-volume-finalize-editor",
+                           {"plan": plan, "critiques": critiques}, validate_plan)
+    return finalized
