@@ -912,7 +912,7 @@ async def delete_account_data(username: str) -> dict:
         await db.execute("DELETE FROM studio_notices WHERE username = ?", (username,))
         await db.execute("DELETE FROM studio_notice_pending WHERE username = ?", (username,))
         await db.execute("DELETE FROM studio_notice_historical WHERE job_id IN (SELECT id FROM studio_jobs WHERE owner=?)", (username,))
-        for studio_table in ("studio_jobs", "studio_quotes", "studio_assets", "studio_projects"):
+        for studio_table in ("studio_snapshots", "studio_jobs", "studio_quotes", "studio_assets", "studio_projects"):
             await db.execute(f"DELETE FROM {studio_table} WHERE owner = ?", (username,))
         await db.executemany(
             "INSERT OR IGNORE INTO upload_cleanup_queue (path) VALUES (?)",

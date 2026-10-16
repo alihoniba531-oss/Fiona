@@ -72,7 +72,7 @@ let page=mount(Workbench,{id:'project',owner:env.owner,embedded:false});await fl
 const tabs=all(page.tree,n=>n.props?.role==='tab');assert.equal(tabs.length,5);assert.equal(tabs[3].props['aria-selected'],true);
 assert.equal(all(page.tree,n=>n.props?.role==='tabpanel'&&!n.props.hidden).length,1);
 tabs[0].props.onClick();await flush();
-assert.equal(all(page.tree,n=>n.props?.role==='tabpanel'&&!n.props.hidden)[0].props.children.props.children,'这一阶段将在后续版本开放');
+assert.equal(named(page,'SourcePanel').props.projectId,'project');assert.equal(named(page,'SourcePanel').props.owner,env.owner);assert.equal(all(page.tree,n=>n.props?.role==='tabpanel'&&!n.props.hidden).length,1);
 page.close();env.calls=[];env.failures.set('GET /api/studio/access',{status:404,message:'Not Found'});
 page=mount(Workbench,{id:'project',owner:env.owner,embedded:false});await flush();assert.equal(env.calls.some(x=>x.includes('/projects/')),false);
 assert(all(page.tree,n=>n.props?.children==='暂未开放').length);page.close();process.stdout.write('true');
@@ -153,4 +153,45 @@ def test_shelf_loads_budget_projects_and_hides_chat_back_link_when_embedded():
     assert probe(SETUP + r"""
 env.search='embed=1';const shelf=await screen('components/studio/StudioShelf.tsx');assert.equal(named(shelf,'StudioBudget').props.access.today.remaining_cny,98);assert(all(shelf.tree,n=>n.props?.href==='/studio/project?embed=1').length);assert(!all(shelf.tree,n=>n.props?.href==='/').length);
 const create=all(shelf.tree,n=>n.type==='button'&&JSON.stringify(n.props.children).includes('新建项目'))[0];assert(create);create.props.onClick();await flush();assert(named(shelf,'CreateProjectDialog'));shelf.close();process.stdout.write('true');
+""") is True
+
+
+@pytest.mark.parametrize("source_kind", ["novel", "upload", "paste", "exchange"])
+def test_source_project_lands_on_source_stage_once(source_kind):
+    assert probe(SETUP + "env.project.source_kind=" + json.dumps(source_kind) + r""";env.project.snapshot_no=1;
+const page=mount(load('components/studio/StudioWorkbench.tsx').AccountStudioWorkbench,{id:'project',owner:env.owner,embedded:true});await flush();
+const tabs=()=>all(page.tree,n=>n.props?.role==='tab');
+assert.equal(tabs()[0].props['aria-selected'],true);assert.equal(tabs()[3].props['aria-selected'],false);
+assert.equal(named(page,'SourcePanel').props.projectId,'project');assert.equal(named(page,'SourcePanel').props.owner,env.owner);
+assert.equal(all(page.tree,n=>n.props?.role==='tabpanel'&&!n.props.hidden)[0].props.id,'studio-panel-0');
+// Project and job refreshes leave the initial stage intact.
+await named(page,'ClipComposer').props.onChanged();await flush();await timer(5000);
+assert.equal(tabs()[0].props['aria-selected'],true);page.close();process.stdout.write('true');
+""") is True
+
+
+@pytest.mark.parametrize("interaction", ["mouse", "keyboard"])
+def test_project_refresh_preserves_manually_selected_stage(interaction):
+    assert probe(SETUP + "const interaction=" + json.dumps(interaction) + r""";env.project.source_kind='novel';env.project.snapshot_no=1;
+const page=mount(load('components/studio/StudioWorkbench.tsx').AccountStudioWorkbench,{id:'project',owner:env.owner,embedded:false});await flush();
+const tabs=()=>all(page.tree,n=>n.props?.role==='tab');assert.equal(tabs()[0].props['aria-selected'],true);
+let prevented=0,focused=0;
+if(interaction==='mouse')tabs()[2].props.onClick();else tabs()[0].props.onKeyDown({key:'ArrowRight',preventDefault(){prevented++;},currentTarget:{parentElement:{querySelectorAll:()=>tabs().map(()=>({focus(){focused++;}}))}}});
+await flush();const chosen=interaction==='mouse'?2:1;assert.equal(tabs()[chosen].props['aria-selected'],true);
+if(interaction==='keyboard'){assert.equal(prevented,1);assert.equal(focused,1);}
+// Both full refreshes and the job poll must preserve the chosen stage.
+await named(page,'ClipComposer').props.onChanged();await flush();await timer(5000);
+assert.equal(tabs()[chosen].props['aria-selected'],true);assert.equal(tabs()[0].props['aria-selected'],false);assert(!named(page,'SourcePanel'));
+// A later source metadata change must never initialize the stage again.
+env.project.source_kind='paste';env.project.snapshot_no=2;await named(page,'ClipComposer').props.onChanged();await flush();
+assert.equal(tabs()[chosen].props['aria-selected'],true);page.close();process.stdout.write('true');
+""") is True
+
+
+def test_blank_project_does_not_reinitialize_stage_if_source_appears_on_later_refresh():
+    assert probe(SETUP + r"""
+env.project.source_kind=null;const page=mount(load('components/studio/StudioWorkbench.tsx').AccountStudioWorkbench,{id:'project',owner:env.owner,embedded:false});await flush();
+const tabs=()=>all(page.tree,n=>n.props?.role==='tab');assert.equal(tabs()[3].props['aria-selected'],true);
+env.project.source_kind='novel';env.project.snapshot_no=1;await named(page,'ClipComposer').props.onChanged();await flush();
+assert.equal(tabs()[3].props['aria-selected'],true);assert.equal(tabs()[0].props['aria-selected'],false);page.close();process.stdout.write('true');
 """) is True

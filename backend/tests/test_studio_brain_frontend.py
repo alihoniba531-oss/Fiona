@@ -182,6 +182,9 @@ def test_workbench_legacy_project_keeps_wo2_stage_empty_state():
     assert shell_probe(SHELL_SETUP + r"""
 const page=mount(load('components/studio/StudioWorkbench.tsx').AccountStudioWorkbench,{id:'project',owner:env.owner,embedded:true});await flush();
 assert(!named(page,'BrainTrial'));all(page.tree,node=>node.props?.role==='tab')[0].props.onClick();await flush();
-assert.equal(all(page.tree,node=>node.props?.role==='tabpanel'&&!node.props.hidden)[0].props.children.props.children,'这一阶段将在后续版本开放');
+const panels=all(page.tree,node=>node.props?.role==='tabpanel'&&!node.props.hidden);assert.equal(panels.length,1);
+const children=panels[0].props.children.props.children;assert.equal(children.length,2);
+assert.equal(children[0].type.name,'SourcePanel');assert.equal(children[0].props.projectId,'project');assert.equal(children[0].props.owner,env.owner);
+assert.equal(children[1].type.name,'EmptyState');assert.equal(children[1].props.children,'这一阶段将在后续版本开放');
 page.close();process.stdout.write('true');
 """) is True

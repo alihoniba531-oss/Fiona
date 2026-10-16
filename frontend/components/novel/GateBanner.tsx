@@ -8,9 +8,9 @@ interface Props {
   book: NovelDetail; busy: boolean;
   onAction: (action: NovelAction, body?: unknown) => Promise<void>;
   onNotes: () => void; onSettings: (resumeAfter?: boolean) => void;
-  onView: () => void; onExport: () => void; onOpenSettings: () => void;
+  onView: () => void; onExport: () => void; onOpenSettings: () => void; onMakeFilm?: () => void;
 }
-export default function GateBanner({ book, busy, onAction, onNotes, onSettings, onView, onExport, onOpenSettings }: Props) {
+export default function GateBanner({ book, busy, onAction, onNotes, onSettings, onView, onExport, onOpenSettings, onMakeFilm }: Props) {
   const [extend, setExtend] = useState(3);
   const [note, setNote] = useState("");
   if (book.status === "running" || book.status === "setup_running") return null;
@@ -25,7 +25,7 @@ export default function GateBanner({ book, busy, onAction, onNotes, onSettings, 
     const number = book.chapters.find(chapter => chapter.status === "awaiting_plan_approval")?.chapter ?? book.chapters_done + 1;
     content = <><p>第 <span className="readout">{number}</span> 章细纲已定稿。</p><button type="button" className="btn min-h-10" disabled={busy} onClick={onView}>查看并批准细纲</button></>;
   } else if (book.status === "awaiting_end") content = <><p>智能体判断故事可以收尾了。</p><div className="flex flex-wrap gap-2">{action("end/confirm", "确认完结")}</div><div className="flex flex-wrap items-end gap-3"><label className="space-y-2 text-sm"><span className="block">再写章数（1–10）</span><input type="number" min={1} max={10} step={1} value={extend} disabled={busy} className="ceramic-card min-h-10 w-24 rounded-lg px-3 py-2 text-[16px]" onChange={event => setExtend(Number(event.target.value))} /></label><label className="min-w-0 flex-1 basis-48 space-y-2 text-sm"><span className="block">附一句话（可选）</span><input value={note} maxLength={500} disabled={busy} className="ceramic-card min-h-10 w-full min-w-0 rounded-lg px-3 py-2 text-[16px]" onChange={event => setNote(event.target.value)} /></label><button type="button" className="btn min-h-10" disabled={busy || !Number.isInteger(extend) || extend < 1 || extend > 10} onClick={() => { void onAction("end/reject", { extend_chapters: extend, ...(note.trim() ? { text: note.trim() } : {}) }).catch(() => undefined); }}>{busy ? "正在处理…" : `还没完，再写 ${extend || "N"} 章`}</button></div></>;
-  else if (book.status === "completed") content = <><p>全书完结，共 <span className="readout">{book.chapters_done}</span> 章 <span className="readout">{book.words_done}</span> 字。</p><button type="button" className="btn min-h-10" disabled={busy} onClick={onExport}>{busy ? "正在导出…" : "导出"}</button></>;
+  else if (book.status === "completed") content = <><p>全书完结，共 <span className="readout">{book.chapters_done}</span> 章 <span className="readout">{book.words_done}</span> 字。</p><button type="button" className="btn min-h-10" disabled={busy} onClick={onExport}>{busy ? "正在导出…" : "导出"}</button>{onMakeFilm && <button type="button" className="btn min-h-10 ml-2" disabled={busy} onClick={onMakeFilm}>做成片</button>}</>;
   else if (book.status === "failed") content = <p className="whitespace-pre-wrap break-words">{book.last_error || "写作出错了，请查看原因后稍后重试。"}</p>;
   else if (book.status === "paused") {
     switch (book.pause_reason) {

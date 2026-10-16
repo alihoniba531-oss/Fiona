@@ -188,6 +188,7 @@ async def chat(request: Request, req: ChatRequest, user: str = Depends(get_curre
         try:
             options = {"byok_unreserved": True} if byok_unreserved else {}
             ctx = await build_context(req, user, crisis_resolver=final_crisis, **options)
+            ctx.auth_method = getattr(request.state, "auth_method", None)
             crisis = await final_crisis()
         except ResourceNotFound:
             if reserved:

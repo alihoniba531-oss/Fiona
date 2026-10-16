@@ -136,7 +136,64 @@ MISSING_QUESTIONS = {
     "destination": "去哪儿？",
     "prompt":      "想生成什么画面？可以告诉我主体、场景和风格。",
     "city":        "哪个城市？",
+    "book":        "要读哪本书？",
 }
+
+NOVEL_INTENTS = frozenset({"novel_list", "novel_read", "novel_to_film"})
+NOVEL_INTENT_PROMPT = """
+
+【作者的小说工坊（仅本人作品，免费）】
+  novel_list     列出自己的小说 params: (无)
+  novel_read     读取小说当前原文章节 params: book(书名), chapter(章号如\"3\"或\"3-5\"，默认\"1\"), offset(非负整数，可选)
+  novel_to_film  把已完结小说建立短片工作室项目 params: book(书名)
+缺少书名时 missing=[book]，不得猜测书名。
+\"我有哪些小说\" → novel_list
+\"把《春山》第3章念给我听\" → novel_read, book=春山, chapter=3
+\"帮我看看《春山》第2章的节奏\" → novel_read, book=春山, chapter=2
+\"把《春山》做成片\" → novel_to_film, book=春山
+"""
+
+
+def novel_intents_enabled(username: str | None, crisis: bool = False) -> bool:
+    if crisis or username is None or os.getenv("FIONA_NOVEL_CHAT", "0") != "1":
+        return False
+    from studio.sources import novel_access
+    return novel_access(username)
+
+
+def get_novel_read_position(username: StateKey) -> dict | None:
+    state_key, _owner = _slot_identity(username)
+    with _slot_conn() as conn:
+        row = conn.execute(
+            "SELECT payload_json, expires_at FROM chat_slot_state WHERE state_key=? AND kind='novel_read'",
+            (state_key,),
+        ).fetchone()
+        if row is None:
+            return None
+        try:
+            value = json.loads(row[0])
+        except (TypeError, ValueError):
+            value = None
+        if not isinstance(value, dict) or _is_expired(row[1], datetime.now(timezone.utc)):
+            conn.execute("DELETE FROM chat_slot_state WHERE state_key=? AND kind='novel_read'", (state_key,))
+            conn.commit()
+            return None
+        return value
+
+
+def set_novel_read_position(username: StateKey, data: dict | None):
+    state_key, owner = _slot_identity(username)
+    now = datetime.now(timezone.utc)
+    with _slot_conn() as conn:
+        if data is None:
+            conn.execute("DELETE FROM chat_slot_state WHERE state_key=? AND kind='novel_read'", (state_key,))
+        else:
+            conn.execute(
+                "INSERT OR REPLACE INTO chat_slot_state (state_key,kind,owner_username,payload_json,expires_at,updated_at) VALUES (?,?,?,?,?,?)",
+                (state_key, "novel_read", owner, json.dumps(data, ensure_ascii=False),
+                 (now + timedelta(minutes=30)).isoformat(), now.isoformat()),
+            )
+        conn.commit()
 
 
 def image_aspect_ratio(message: str, fallback: str = "1:1") -> str:
@@ -373,7 +430,7 @@ def fill_param(pending: dict, message: str) -> dict:
     return pending
 
 
-def normalize_intent_result(raw) -> dict:
+def normalize_intent_result(raw, *, username: str | None = None, crisis: bool = False) -> dict:
     """Normalize model output without changing other dispatcher or slot inputs."""
     allowed_params = {
         "web_search": {"query"},
@@ -385,6 +442,8 @@ def normalize_intent_result(raw) -> dict:
         "generate_image": {"prompt", "aspect_ratio"},
         "weather": {"city"},
     }
+    if novel_intents_enabled(username, crisis):
+        allowed_params.update(novel_list=set(), novel_read={"book", "chapter", "offset"}, novel_to_film={"book"})
     if not isinstance(raw, dict):
         return {"intent": None}
     intent = raw.get("intent")
@@ -403,10 +462,17 @@ def normalize_intent_result(raw) -> dict:
         else:
             params.pop("city", None)
             missing = ["city"]
+    if intent in {"novel_read", "novel_to_film"}:
+        if isinstance(params.get("book"), str) and params["book"].strip():
+            params["book"] = params["book"].strip()
+            missing = [key for key in missing if key != "book"]
+        else:
+            params.pop("book", None)
+            missing = ["book"]
     return {"intent": intent, "params": params, "missing": missing}
 
 
-def recognize_intent(client, message: str, history: list[dict] | None = None) -> dict:
+def recognize_intent(client, message: str, history: list[dict] | None = None, *, username: str | None = None, crisis: bool = False) -> dict:
     """调用主力大脑识别意图，返回 {intent, params, missing}
 
     history: 最近的对话历史，用于让分类器看到"她刚做了什么"，区分新指令 vs 抱怨/吐槽
@@ -429,13 +495,13 @@ def recognize_intent(client, message: str, history: list[dict] | None = None) ->
             model=MAIN_MODEL,
             extra_body=MAIN_EXTRA_BODY,
             messages=[
-                {"role": "system", "content": INTENT_PROMPT},
+                {"role": "system", "content": INTENT_PROMPT + (NOVEL_INTENT_PROMPT if novel_intents_enabled(username, crisis) else "")},
                 {"role": "user", "content": user_content},
             ],
             response_format={"type": "json_object"},
             max_tokens=150,
             temperature=0.1,
         )
-        return normalize_intent_result(json.loads(resp.choices[0].message.content))
+        return normalize_intent_result(json.loads(resp.choices[0].message.content), username=username, crisis=crisis)
     except Exception:
         return {"intent": None}

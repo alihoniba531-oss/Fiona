@@ -5,7 +5,26 @@ import type { Message } from "@/components/ChatBubble";
 
 export type StudioJobStatus = "queued" | "submitting" | "submitted" | "running" | "succeeded" | "downloaded" | "rejected" | "uncertain" | "failed" | "filtered" | "expired" | "cancelled" | "released";
 export type BrainProviderId = "claude" | "qwen" | "deepseek";
-export interface StudioProject { id: string; owner: string; title: string; aspect: "16:9" | "9:16"; brain_provider: BrainProviderId; created_at: string; updated_at: string }
+export type StudioSourceKind = "novel" | "upload" | "paste" | "exchange";
+export interface StudioProject { id: string; owner: string; title: string; aspect: "16:9" | "9:16"; brain_provider: BrainProviderId; created_at: string; updated_at: string; source_kind?: StudioSourceKind | null; source_ref?: string | null; snapshot_no?: number }
+export interface StudioFlaggedChapter { chapter: number; title: string; flags: string[] }
+export interface StudioNovelCandidate {
+  id: string; title: string; status: string; chapters_done: number; words_done: number;
+  completed_at: string | null; updated_at: string; drama_adaptation: boolean; eligible: boolean; reason: string | null;
+  flagged: StudioFlaggedChapter[]; projects: Pick<StudioProject, "id" | "title" | "snapshot_no" | "created_at">[];
+}
+export interface StudioNovelSources { enabled: boolean; books: StudioNovelCandidate[] }
+export interface StudioExchangeSource { id: string; title: string; completed_at: string; chars: number; artifact_status: string }
+export interface StudioSourceStatus {
+  kind: StudioSourceKind | null; title?: string;
+  snapshot?: { no: number; title?: string; created_at: string; chapters: number; chars: number; flagged?: StudioFlaggedChapter[] };
+  flagged?: StudioFlaggedChapter[];
+  drift?: { state: "not_applicable" | "unchanged" | "changed" | "unavailable"; changed?: number[]; added?: number[]; removed?: number[]; bible_changed?: boolean; book_status?: string; eligible?: boolean; reason?: string | null };
+}
+export type StudioCreateInput = { title: string; aspect: StudioProject["aspect"] } & (
+  { kind: "blank" } | { kind: "novel"; book_id: string } | { kind: "exchange"; exchange_id: string }
+  | { kind: "upload"; file: File } | { kind: "paste"; text: string }
+);
 export interface StudioToday { committed_cny: number; remaining_cny: number }
 export interface StudioAccess { enabled: boolean; caps: { daily_cny: number; max_quote_cny: number; brain_monthly_usd: number; brain_month_used_usd: number; inflight: { wan: number; seedance: number } }; today: StudioToday }
 export interface StudioClipParams {
@@ -48,6 +67,23 @@ export async function checkStudioAccess(signal?: AbortSignal): Promise<boolean> 
 }
 export const listStudioProjects = (signal?: AbortSignal) => apiJson<StudioProject[]>(`${root}/projects`, { signal, cache: "no-store" });
 export const createStudioProject = (input: Pick<StudioProject, "title" | "aspect">, signal?: AbortSignal) => apiJson<StudioProject>(`${root}/projects`, json(input, signal));
+export const listStudioNovelSources = (signal?: AbortSignal) => apiJson<StudioNovelSources>(`${root}/sources/novels`, { signal, cache: "no-store" });
+export const listStudioExchangeSources = (signal?: AbortSignal) => apiJson<StudioExchangeSource[]>(`${root}/sources/exchanges`, { signal, cache: "no-store" });
+export const createStudioFromNovel = (input: { book_id: string; title?: string; aspect: StudioProject["aspect"] }, signal?: AbortSignal) => apiJson<StudioProject>(`${root}/projects/from-novel`, json(input, signal));
+export const createStudioFromExchange = (input: { exchange_id: string; title?: string; aspect: StudioProject["aspect"] }, signal?: AbortSignal) => apiJson<StudioProject>(`${root}/projects/from-exchange`, json(input, signal));
+export const getStudioSource = (id: string, signal?: AbortSignal) => apiJson<StudioSourceStatus>(`${projectPath(id)}/source`, { signal, cache: "no-store" });
+export const syncStudioSource = (id: string, expectedNo: number, signal?: AbortSignal) => apiJson<StudioSourceStatus>(`${projectPath(id)}/source/sync`, json({ expected_no: expectedNo }, signal));
+export function createStudioFromSource(input: StudioCreateInput, signal?: AbortSignal): Promise<StudioProject> {
+  const { title, aspect } = input;
+  if (input.kind === "blank") return createStudioProject({ title, aspect }, signal);
+  if (input.kind === "novel") return createStudioFromNovel({ title, aspect, book_id: input.book_id }, signal);
+  if (input.kind === "exchange") return createStudioFromExchange({ title, aspect, exchange_id: input.exchange_id }, signal);
+  const body = new FormData(); body.append("title", title); body.append("aspect", aspect); body.append("kind", input.kind);
+  if (input.kind === "upload") body.append("file", input.file); else body.append("text", input.text);
+  return apiJson<StudioProject>(`${root}/projects/from-text`, { method: "POST", body, signal });
+}
+export const studioSourceKindLabel = (kind: StudioSourceKind) => ({ novel: "小说工坊", upload: "上传文件", paste: "粘贴文本", exchange: "创意搭档成稿" })[kind];
+export const studioSourceFlagLabel = (flag: string) => ({ length_out_of_range: "字数超出范围", review_degraded: "审阅降级", review_unresolved: "审阅问题待处理", locked_conflict: "锁定设定冲突", deviation: "偏离细纲" } as Record<string, string>)[flag] ?? flag;
 export const getStudioProject = (id: string, signal?: AbortSignal) => apiJson<StudioProject>(projectPath(id), { signal, cache: "no-store" });
 export const patchStudioProject = (id: string, brainProvider: BrainProviderId, signal?: AbortSignal) => apiJson<StudioProject>(projectPath(id), { ...json({ brain_provider: brainProvider }, signal), method: "PATCH" });
 export const listStudioAssets = (id: string, signal?: AbortSignal) => apiJson<StudioAsset[]>(`${projectPath(id)}/assets`, { signal, cache: "no-store" });

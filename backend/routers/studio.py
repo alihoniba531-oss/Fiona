@@ -2,10 +2,10 @@
 import asyncio
 from typing import Literal
 
-from fastapi import APIRouter, Depends, HTTPException, Query, UploadFile
+from fastapi import APIRouter, Depends, HTTPException, Query, Request, UploadFile
 from pydantic import BaseModel, ConfigDict, Field, StrictBool, StrictInt, field_validator
 
-from studio import brain_jobs, pricing, spend, storage, store
+from studio import brain_jobs, pricing, sources, spend, storage, store
 from studio.config import get_settings
 from studio.gate import PRIVATE_HEADERS, studio_user
 
@@ -33,6 +33,30 @@ class ProjectBody(BaseModel):
         if not value.strip():
             raise ValueError("项目名称不能为空")
         return value.strip()
+
+
+class NovelProjectBody(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+    book_id: str = Field(min_length=1, max_length=100)
+    title: str | None = Field(default=None, min_length=1, max_length=200)
+    aspect: Literal["16:9", "9:16"] = "16:9"
+
+
+class ExchangeProjectBody(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+    exchange_id: str = Field(min_length=1, max_length=100)
+    title: str | None = Field(default=None, min_length=1, max_length=200)
+    aspect: Literal["16:9", "9:16"] = "16:9"
+
+
+class SourceSyncBody(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+    expected_no: StrictInt
+
+
+class TextProjectBody(ProjectBody):
+    kind: Literal["upload", "paste"]
+    text: str | None = Field(default=None, max_length=2_000_000)
 
 
 class QuoteBody(BaseModel):
@@ -120,6 +144,67 @@ async def trial_brain(pid: str, body: BrainTrialBody, user: str = Depends(studio
 async def brain_group(pid: str, group_id: str, user: str = Depends(studio_user)):
     result = await brain_jobs.group(pid, user, group_id)
     return {**result, "jobs": [_public_job(job) for job in result["jobs"]]}
+
+
+@router.get("/sources/novels")
+async def source_novels(user: str = Depends(studio_user)):
+    return await sources.list_candidates(user)
+
+
+@router.get("/sources/novels/search")
+async def search_source_novels(q: str = Query(min_length=1, max_length=200), user: str = Depends(studio_user)):
+    if not q.strip():
+        raise HTTPException(422, "书名不能为空")
+    return await sources.find_candidates(user, q)
+
+
+@router.get("/sources/exchanges")
+async def source_exchanges(user: str = Depends(studio_user)):
+    return await sources.list_exchanges(user)
+
+
+@router.post("/projects/from-novel", status_code=201)
+async def project_from_novel(body: NovelProjectBody, user: str = Depends(studio_user)):
+    return await sources.create_novel_project(user, body.book_id, body.title, body.aspect)
+
+
+@router.post("/projects/from-text", status_code=201)
+async def project_from_text(request: Request, user: str = Depends(studio_user)):
+    # 先过作者门禁再解析表单；禁止未知字段，与 JSON 请求模型的 extra=forbid 一致。
+    async with request.form(max_files=1, max_fields=5, max_part_size=8_000_000) as form:
+        if set(form) - {"title", "aspect", "kind", "file", "text"} or any(len(form.getlist(key)) != 1 for key in form):
+            raise HTTPException(422, "作品表单包含未知或重复字段")
+        from pydantic import ValidationError
+        try:
+            body = TextProjectBody.model_validate({key: form[key] for key in ("title", "aspect", "kind", "text") if key in form})
+        except ValidationError:
+            raise HTTPException(422, "作品标题、画幅或来源格式无效") from None
+        if body.kind == "upload":
+            file = form.get("file")
+            if not hasattr(file, "read") or body.text is not None:
+                raise HTTPException(422, "请上传一个作品文件")
+            raw = await file.read(sources.MAX_UPLOAD_BYTES + 1)
+            filename = file.filename
+        else:
+            if "file" in form or body.text is None:
+                raise HTTPException(422, "请粘贴作品文本")
+            raw, filename = body.text, None
+        return await sources.create_text_project(user, body.kind, body.title, raw, filename, body.aspect)
+
+
+@router.post("/projects/from-exchange", status_code=201)
+async def project_from_exchange(body: ExchangeProjectBody, user: str = Depends(studio_user)):
+    return await sources.create_exchange_project(user, body.exchange_id, body.title, body.aspect)
+
+
+@router.get("/projects/{pid}/source")
+async def project_source(pid: str, user: str = Depends(studio_user)):
+    return await sources.source_status(user, pid)
+
+
+@router.post("/projects/{pid}/source/sync")
+async def sync_project_source(pid: str, body: SourceSyncBody, user: str = Depends(studio_user)):
+    return await sources.sync_source(user, pid, body.expected_no)
 
 
 @router.post("/projects", status_code=201)

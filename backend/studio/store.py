@@ -24,7 +24,9 @@ STUDIO_TABLES_DDL = (
         id TEXT PRIMARY KEY, owner TEXT NOT NULL, title TEXT NOT NULL,
         aspect TEXT NOT NULL CHECK(aspect IN ('16:9','9:16')),
         created_at TEXT NOT NULL, updated_at TEXT NOT NULL,
-        archived INTEGER NOT NULL DEFAULT 0, brain_provider TEXT NOT NULL DEFAULT 'claude', UNIQUE(id, owner)
+        archived INTEGER NOT NULL DEFAULT 0, brain_provider TEXT NOT NULL DEFAULT 'claude',
+        source_kind TEXT CHECK(source_kind IN ('novel','upload','paste','exchange')),
+        source_ref TEXT, snapshot_no INTEGER NOT NULL DEFAULT 0, UNIQUE(id, owner)
     )""",
     """CREATE TABLE IF NOT EXISTS studio_assets (
         id TEXT PRIMARY KEY, project_id TEXT NOT NULL, owner TEXT NOT NULL,
@@ -73,6 +75,16 @@ STUDIO_TABLES_DDL = (
         summary TEXT NOT NULL CHECK(length(summary) <= 200),
         message_id INTEGER, conversation_id TEXT
     )""",
+    """CREATE TABLE IF NOT EXISTS studio_snapshots (
+        id TEXT PRIMARY KEY, project_id TEXT NOT NULL, owner TEXT NOT NULL,
+        no INTEGER NOT NULL CHECK(no >= 1),
+        kind TEXT NOT NULL CHECK(kind IN ('novel','upload','paste','exchange')),
+        ref_id TEXT, title TEXT NOT NULL, bible_version INTEGER, chapters INTEGER NOT NULL,
+        chars INTEGER NOT NULL, manifest_sha256 TEXT NOT NULL, rel_dir TEXT NOT NULL,
+        created_at TEXT NOT NULL, UNIQUE(project_id,no),
+        FOREIGN KEY(project_id,owner) REFERENCES studio_projects(id,owner)
+    )""",
+    "CREATE INDEX IF NOT EXISTS idx_studio_snapshots_owner_project ON studio_snapshots(owner,project_id)",
     "CREATE INDEX IF NOT EXISTS idx_studio_projects_owner_updated ON studio_projects(owner,updated_at)",
     "CREATE INDEX IF NOT EXISTS idx_studio_assets_owner_project ON studio_assets(owner,project_id)",
     "CREATE INDEX IF NOT EXISTS idx_studio_assets_sha ON studio_assets(project_id,owner,sha256)",
@@ -156,7 +168,9 @@ def _row(row) -> dict | None:
 async def migrate_schema(db) -> None:
     """只补列：旧库 provider/status CHECK 保留，brain 使用新增的权威列。"""
     additions = {
-        "studio_projects": {"brain_provider": "TEXT NOT NULL DEFAULT 'claude'"},
+        "studio_projects": {"brain_provider": "TEXT NOT NULL DEFAULT 'claude'",
+                            "source_kind": "TEXT CHECK(source_kind IN ('novel','upload','paste','exchange'))",
+                            "source_ref": "TEXT", "snapshot_no": "INTEGER NOT NULL DEFAULT 0"},
         "studio_jobs": {
             "task": "TEXT", "result_json": "TEXT", "warnings_json": "TEXT",
             "currency": "TEXT NOT NULL DEFAULT 'CNY'", "input_chars": "INTEGER",

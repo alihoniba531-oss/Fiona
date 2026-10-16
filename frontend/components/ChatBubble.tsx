@@ -87,7 +87,7 @@ export interface CardData {
   source: string;
   points: string[];
   url?: string;
-  error?: boolean;
+  error?: boolean | string;
   subtype?: string;  // "weather" = 天气卡片专用渲染
   weather?: WeatherData;
   items?: { title: string; url?: string }[];
@@ -98,8 +98,17 @@ interface ChatCardProps {
   card: CardData;
 }
 
-function ChatCard(props: ChatCardProps) {
+export function ChatCard(props: ChatCardProps) {
   const card = props.card;
+  if (card.subtype === "studio_project") {
+    if (card.error) return <p role="alert" className="ceramic-card max-w-full break-words p-4 text-sm text-[color:var(--seal)]">{typeof card.error === "string" ? card.error : card.points.join("\n") || "工作室项目建立失败。"}</p>;
+    const safeUrl = typeof card.url === "string" && card.url.startsWith("/studio/") && card.url.length > 8 && !/[^A-Za-z0-9/_-]/.test(card.url) ? card.url : null;
+    return <div className="ceramic-card w-[340px] max-w-full overflow-hidden">
+      <div className="border-b px-4 py-3 text-sm font-medium" style={{ borderColor: "var(--carve)" }}>{card.source || "短片工作室"}</div>
+      <ul className="space-y-2 px-4 py-3 text-sm">{card.points.map((point, index) => <li key={index} className="break-words">{point}</li>)}</ul>
+      {safeUrl && <div className="px-4 pb-4"><a href={safeUrl} className="btn btn-primary min-h-10">打开工作室</a></div>}
+    </div>;
+  }
   return <>
     {/* 天气卡片（weather subtype） */}
     {card.subtype === "weather" && card.weather && card.weather.forecast.length > 0 && (() => {

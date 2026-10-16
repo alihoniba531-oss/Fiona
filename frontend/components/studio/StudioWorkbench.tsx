@@ -15,6 +15,7 @@ import ClipComposer from "./ClipComposer";
 import QuoteDialog from "./QuoteDialog";
 import ShotWall from "./ShotWall";
 import BrainTrial, { BrainProviderPicker } from "./BrainTrial";
+import SourcePanel from "./SourcePanel";
 
 const stages = ["①拆解", "②定妆", "③分镜", "④镜头", "⑤成片"] as const;
 
@@ -31,7 +32,10 @@ export function AccountStudioWorkbench({ id, owner, embedded }: { id: string; ow
   const [unavailable, setUnavailable] = useState(false);
   const [error, setError] = useState("");
   const [stage, setStage] = useState(3);
-  const tabProps = useRovingTabs(stages.length, stage, setStage);
+  const stageTouched = useRef(false);
+  const stageInitialized = useRef(false);
+  const selectStage = useCallback((index: number) => { stageTouched.current = true; setStage(index); }, []);
+  const tabProps = useRovingTabs(stages.length, stage, selectStage);
   const [busy, setBusy] = useState(false);
   const [quote, setQuote] = useState<StudioQuote | null>(null);
   const [refill, setRefill] = useState<{ token: number; params: StudioClipParams }>();
@@ -67,7 +71,15 @@ export function AccountStudioWorkbench({ id, owner, embedded }: { id: string; ow
       // Video polling and rendering remain separate from synchronous brain jobs.
       const videoJobs = nextJobs.filter(job => !("kind" in job) || job.kind === "i2v");
       inFlight.current = hasStudioInflightJobs(videoJobs);
-      if (nextProject) setProject(nextProject);
+      if (nextProject) {
+        setProject(nextProject);
+        // Choose the landing stage once; refreshes must preserve the author's
+        // later mouse or keyboard choice, even if source metadata changes.
+        if (!stageInitialized.current) {
+          stageInitialized.current = true;
+          if (!stageTouched.current && nextProject.source_kind) setStage(0);
+        }
+      }
       if (Array.isArray(nextProviders)) setProviders(nextProviders);
       setJobs(videoJobs); setAccess(gate); setUnavailable(false); setError("");
     } catch (cause) { if (request.isCurrent()) setError(studioErrorMessage(cause)); }
@@ -124,11 +136,11 @@ export function AccountStudioWorkbench({ id, owner, embedded }: { id: string; ow
     {!owner ? <EmptyState>请登录后打开工作室。</EmptyState> : loading ? <LoadingState>正在打开项目…</LoadingState> : unavailable ? <EmptyState>暂未开放</EmptyState> : <>
       {error && <ErrorNotice message={error} retry={() => void refresh()} />}
       {project && <>
-        <nav role="tablist" aria-label="短片制作阶段" className="mb-5 flex min-w-0 border-b border-[color:var(--carve)]">{stages.map((label, index) => <button key={label} id={`studio-stage-${index}`} type="button" role="tab" aria-selected={stage === index} aria-controls={`studio-panel-${index}`} {...tabProps(index)} onClick={() => setStage(index)} className={`min-h-10 min-w-0 flex-1 border-b px-1 py-3 text-[13px] @[640px]:text-base ${stage === index ? "border-[color:var(--ink)] text-[color:var(--ink)]" : "border-transparent text-[color:var(--ink2)]"}`}>{label}</button>)}</nav>
+        <nav role="tablist" aria-label="短片制作阶段" className="mb-5 flex min-w-0 border-b border-[color:var(--carve)]">{stages.map((label, index) => <button key={label} id={`studio-stage-${index}`} type="button" role="tab" aria-selected={stage === index} aria-controls={`studio-panel-${index}`} {...tabProps(index)} onClick={() => selectStage(index)} className={`min-h-10 min-w-0 flex-1 border-b px-1 py-3 text-[13px] @[640px]:text-base ${stage === index ? "border-[color:var(--ink)] text-[color:var(--ink)]" : "border-transparent text-[color:var(--ink2)]"}`}>{label}</button>)}</nav>
         {stages.map((label, index) => <section key={label} role="tabpanel" id={`studio-panel-${index}`} aria-labelledby={`studio-stage-${index}`} hidden={stage !== index} className="min-w-0">
-          {index === 0 && project.brain_provider ? <BrainTrial projectId={id} owner={owner} provider={project.brain_provider} providers={providers} busy={busy} onBusyChange={setComposerBusy} onChanged={changed} onPoll={polled} onProviderChange={changeProvider} /> : index === 3 ? <div className="grid min-w-0 grid-cols-1 items-start gap-5 @[1120px]:grid-cols-[minmax(300px,.8fr)_minmax(0,1.5fr)]">
+          {index === 0 ? <>{stage === 0 && <SourcePanel projectId={id} owner={owner} busy={busy} onChanged={changed} />}{project.brain_provider ? <BrainTrial projectId={id} owner={owner} provider={project.brain_provider} providers={providers} busy={busy} onBusyChange={setComposerBusy} onChanged={changed} onPoll={polled} onProviderChange={changeProvider} /> : <EmptyState>这一阶段将在后续版本开放</EmptyState>}</> : index === 3 ? <div className="grid min-w-0 grid-cols-1 items-start gap-5 @[1120px]:grid-cols-[minmax(300px,.8fr)_minmax(0,1.5fr)]">
             <ClipComposer projectId={id} owner={owner} busy={busy} refill={refill} onQuote={setQuote} onBusyChange={setComposerBusy} onChanged={changed} />
-            <ShotWall jobs={jobs} busy={busy} onCancel={job => mutate(signal => cancelStudioJob(job.id, signal))} onRecheck={job => mutate(signal => recheckStudioJob(job.id, signal))} onLinkTask={(job, taskId) => mutate(signal => linkStudioTask(job.id, taskId, signal))} onRelease={job => mutate(signal => releaseStudioJob(job.id, signal))} onRefill={params => { setRefill(previous => ({ token: (previous?.token ?? 0) + 1, params })); setStage(3); }} />
+            <ShotWall jobs={jobs} busy={busy} onCancel={job => mutate(signal => cancelStudioJob(job.id, signal))} onRecheck={job => mutate(signal => recheckStudioJob(job.id, signal))} onLinkTask={(job, taskId) => mutate(signal => linkStudioTask(job.id, taskId, signal))} onRelease={job => mutate(signal => releaseStudioJob(job.id, signal))} onRefill={params => { setRefill(previous => ({ token: (previous?.token ?? 0) + 1, params })); selectStage(3); }} />
           </div> : <EmptyState>这一阶段将在后续版本开放</EmptyState>}
         </section>)}
       </>}

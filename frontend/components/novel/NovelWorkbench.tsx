@@ -13,6 +13,8 @@ import DeliberationTimeline from "./DeliberationTimeline";
 import BiblePanel from "./BiblePanel";
 import NotesPanel from "./NotesPanel";
 import GateBanner from "./GateBanner";
+import NovelFilmDialog from "./NovelFilmDialog";
+import { checkStudioAccess } from "@/lib/studio";
 import SetupEditor from "./SetupEditor";
 import PlanEditor from "./PlanEditor";
 import NovelSettingsDialog from "./NovelSettingsDialog";
@@ -56,6 +58,9 @@ function AccountWorkbench({ owner, id, embedded }: { owner: string; id: string; 
   const [wideLayout, setWideLayout] = useState(false);
   const [rightTab, setRightTab] = useState<"meeting" | "bible" | "notes">("meeting");
   const [settings, setSettings] = useState<{ resumeAfter: boolean } | null>(null);
+  const [studioAllowed, setStudioAllowed] = useState(false);
+  const [filmDialog, setFilmDialog] = useState(false);
+  const studioChecked = useRef(false);
   const status = useRef<string>("");
   const mutating = useRef(false);
   const chapterValue = useRef<NovelChapter | null>(null);
@@ -70,6 +75,18 @@ function AccountWorkbench({ owner, id, embedded }: { owner: string; id: string; 
   const { beginRequest: beginNotes } = useAccountRequest(owner);
   const { beginRequest: beginMutation, isCurrentOwner } = useAccountRequest(owner);
   const { beginRequest: beginCatalog } = useAccountRequest(owner);
+  const { beginRequest: beginStudio } = useAccountRequest(owner);
+  const completed = book?.status === "completed";
+  useEffect(() => {
+    if (!completed) return;
+    void Promise.resolve().then(async () => {
+      if (studioChecked.current) return;
+      const request = beginStudio(); if (!request) return;
+      studioChecked.current = true;
+      try { const allowed = await checkStudioAccess(request.signal); if (request.isCurrent()) setStudioAllowed(allowed); }
+      catch { if (request.isCurrent()) setStudioAllowed(false); }
+    });
+  }, [beginStudio, completed]);
 
   const load = useCallback(async (force = false, refresh: RefreshOptions = {}) => {
     if (mutating.current && !force) return;
@@ -264,12 +281,13 @@ function AccountWorkbench({ owner, id, embedded }: { owner: string; id: string; 
                   {book.status === "paused" && <button type="button" className="btn min-h-10" disabled={!!busy} onClick={() => { void act("resume").catch(() => undefined); }}>{busy === "resume" ? "继续中…" : "继续"}</button>}
                   <button type="button" className="btn min-h-10" disabled={!!busy} onClick={() => setSettings({ resumeAfter: false })}>调整</button>
                   <button type="button" className="btn min-h-10" disabled={!!busy} onClick={() => void download()}>{busy === "export" ? "导出中…" : "导出"}</button>
+                  {completed && studioAllowed && <button type="button" className="btn min-h-10" disabled={!!busy} onClick={() => setFilmDialog(true)}>做成片</button>}
                   <details className="relative"><summary className="btn min-h-10 cursor-pointer list-none">更多</summary><div className="ceramic-card absolute right-0 z-20 mt-2 w-40 p-2"><button type="button" className="btn btn-danger min-h-10 w-full" disabled={!!busy} onClick={() => void remove()}>{busy === "delete" ? "删除中…" : "删除这本书"}</button></div></details>
                   {embedded && <a href={`/novels/${encodeURIComponent(id)}`} target="_blank" rel="noopener noreferrer" className="btn btn-quiet min-h-10">在新页面打开</a>}
                 </div>
               </div></Glaze>
               {book.status === "setup_running" && <p role="status" className="py-2 text-sm text-[color:var(--ink2)]">主编正在生成罗盘和设定…</p>}
-              <GateBanner book={book} busy={!!busy} onAction={act} onNotes={() => { setRightTab("notes"); setMobileTab("details"); }} onSettings={resumeAfter => setSettings({ resumeAfter: !!resumeAfter })} onView={showReader} onExport={() => void download()} onOpenSettings={() => { if (embedded) window.parent.postMessage({ type: "fiona-novel-open-settings" }, window.location.origin); else router.push("/settings"); }} />
+              <GateBanner book={book} busy={!!busy} onMakeFilm={completed && studioAllowed ? () => setFilmDialog(true) : undefined} onAction={act} onNotes={() => { setRightTab("notes"); setMobileTab("details"); }} onSettings={resumeAfter => setSettings({ resumeAfter: !!resumeAfter })} onView={showReader} onExport={() => void download()} onOpenSettings={() => { if (embedded) window.parent.postMessage({ type: "fiona-novel-open-settings" }, window.location.origin); else router.push("/settings"); }} />
               <div ref={columnsRef} className="@container min-w-0 [overflow-wrap:anywhere]" data-novel-columns>
               <nav className="mb-5 flex min-w-0 border-b @[1040px]:hidden" style={{ borderColor: "var(--carve)" }} aria-label="工作台栏目" role="tablist">{([{ id: "directory", label: "目录" }, { id: "reader", label: "正文" }, { id: "details", label: "推演·圣经·留言" }] as const).map(tab => <button key={tab.id} id={`novel-tab-${tab.id}`} type="button" role="tab" aria-controls={`novel-${tab.id}`} aria-selected={mobileTab === tab.id} onClick={() => setMobileTab(tab.id)} className={`min-h-10 min-w-0 flex-1 border-b px-1 py-3 text-[13px] ${mobileTab === tab.id ? "border-[color:var(--ink)] text-[color:var(--ink)]" : "border-transparent text-[color:var(--ink2)]"}`}>{tab.label}</button>)}</nav>
               <div className="min-w-0 items-start gap-5 @[1040px]:grid @[1040px]:grid-cols-[minmax(180px,.65fr)_minmax(480px,2fr)_minmax(300px,1fr)]">
@@ -291,6 +309,7 @@ function AccountWorkbench({ owner, id, embedded }: { owner: string; id: string; 
                 </aside>
               </div>
               </div>
+              {filmDialog && completed && studioAllowed && <NovelFilmDialog owner={owner} bookId={id} bookTitle={book.title || "未命名作品"} embedded={embedded} onClose={() => setFilmDialog(false)} />}
               {settings && <NovelSettingsDialog book={book} catalog={catalog} catalogError={catalogError} busy={!!busy} resumeAfter={settings.resumeAfter} onSave={saveSettings} onClose={() => setSettings(null)} />}
             </>}
           </>}

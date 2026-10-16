@@ -5,13 +5,14 @@ import { useRouter, useSearchParams } from "next/navigation";
 import { useCallback, useEffect, useRef, useState } from "react";
 import { ArrowLeft, Plus } from "lucide-react";
 import Glaze from "@/components/Glaze";
-import { novelFieldClass } from "@/components/novel/NovelModelFields";
 import { EmptyState, ErrorNotice, LoadingState } from "@/components/novel/NovelStates";
 import { ApiError } from "@/lib/agents";
-import { createStudioProject, formatStudioDate, getStudioAccess, listStudioProjects, studioErrorMessage, studioHref, type StudioAccess, type StudioProject } from "@/lib/studio";
+import { createStudioFromSource, formatStudioDate, getStudioAccess, listStudioProjects, studioErrorMessage, studioHref, type StudioAccess, type StudioProject, type StudioCreateInput } from "@/lib/studio";
 import { useAccountIdentity, useAccountRequest } from "@/lib/useAccountIdentity";
 import StudioShell from "./StudioShell";
 import StudioBudget from "./StudioBudget";
+import { CreateProjectDialog } from "./CreateProjectDialog";
+export { CreateProjectDialog } from "./CreateProjectDialog";
 
 export default function StudioShelf() {
   const owner = useAccountIdentity();
@@ -49,13 +50,13 @@ function Shelf({ owner, embedded }: { owner: string; embedded: boolean }) {
     finally { if (request.isCurrent()) setLoading(false); }
   }, [beginRead]);
   useEffect(() => { void Promise.resolve().then(refresh); }, [refresh]);
-  const create = async (title: string, aspect: StudioProject["aspect"]) => {
+  const create = async (input: StudioCreateInput) => {
     if (busyRef.current) return;
     const request = beginMutation();
     if (!request) return;
     busyRef.current = true; setBusy(true);
     try {
-      const project = await createStudioProject({ title, aspect }, request.signal);
+      const project = await createStudioFromSource(input, request.signal);
       if (!request.isCurrent()) return;
       setCreating(false);
       await refresh();
@@ -80,29 +81,6 @@ function Shelf({ owner, embedded }: { owner: string; embedded: boolean }) {
         <h2 className="break-words text-xl tracking-[.24em]">{project.title}</h2><span className="chip mt-4">{project.aspect}</span>
         <p className="readout mt-4 text-xs text-[color:var(--ink2)]">最近更新 {formatStudioDate(project.updated_at)}</p>
       </Link>)}</div>}
-    {creating && <CreateProjectDialog busy={busy} onCreate={create} onClose={() => setCreating(false)} />}
+    {creating && <CreateProjectDialog owner={owner} embedded={embedded} busy={busy} onCreate={create} onClose={() => setCreating(false)} />}
   </StudioShell>;
-}
-export function CreateProjectDialog({ busy, onCreate, onClose }: { busy: boolean; onCreate: (title: string, aspect: StudioProject["aspect"]) => Promise<void>; onClose: () => void }) {
-  const ref = useRef<HTMLDialogElement>(null);
-  const [title, setTitle] = useState("");
-  const [aspect, setAspect] = useState<StudioProject["aspect"]>("16:9");
-  const [error, setError] = useState("");
-  const lock = useRef(false);
-  useEffect(() => { const dialog = ref.current; dialog?.showModal(); return () => dialog?.close(); }, []);
-  const submit = async () => {
-    if (lock.current || busy) return;
-    if (!title.trim()) { setError("请填写项目标题。"); return; }
-    lock.current = true; setError("");
-    try { await onCreate(title.trim(), aspect); }
-    catch (cause) { setError(studioErrorMessage(cause)); }
-    finally { lock.current = false; }
-  };
-  return <dialog ref={ref} aria-labelledby="studio-create-title" onCancel={event => { if (busy || lock.current) event.preventDefault(); else onClose(); }} className="m-auto max-h-[85dvh] w-[min(560px,calc(100vw-32px))] max-w-full overflow-y-auto rounded-2xl border border-[color:var(--carve)] bg-[color:var(--paper)] p-5 text-[color:var(--ink)] backdrop:bg-[color:var(--scrim)]">
-    <h2 id="studio-create-title" className="mb-5 text-xl tracking-[.24em]">新建项目</h2>
-    {error && <ErrorNotice message={error} />}
-    <label className="mt-4 block space-y-2"><span>项目标题</span><input autoFocus maxLength={200} value={title} disabled={busy} onChange={event => setTitle(event.target.value)} className={novelFieldClass} /></label>
-    <fieldset className="my-5" disabled={busy}><legend className="mb-2">画幅</legend><div className="flex flex-wrap gap-2">{(["16:9", "9:16"] as const).map(value => <button key={value} type="button" aria-pressed={aspect === value} className={`chip min-h-10 min-w-10 ${aspect === value ? "chip-on" : ""}`} onClick={() => setAspect(value)}>{value}</button>)}</div></fieldset>
-    <div className="flex flex-wrap gap-3"><button type="button" className="btn btn-primary min-h-10" disabled={busy || !title.trim()} onClick={() => void submit()}>{busy ? "创建中…" : "创建项目"}</button><button type="button" className="btn btn-quiet min-h-10" disabled={busy} onClick={onClose}>取消</button></div>
-  </dialog>;
 }
