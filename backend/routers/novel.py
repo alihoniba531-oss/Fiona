@@ -81,6 +81,29 @@ async def redo_plan(request: Request,novel_id: str,body: service.Note,user: str 
     return await service.redo_plan(user,novel_id,body)
 
 
+@router.get('/{novel_id}/volumes')
+async def volumes(novel_id: str,user: str = Depends(workshop_user)):
+    return await service.volumes(user,novel_id)
+
+
+@router.post('/{novel_id}/volume/approve')
+@limiter.limit('20/minute')
+async def approve_volume(request: Request,novel_id: str,body: service.VolumeApproval = service.VolumeApproval(),user: str = Depends(workshop_user)):
+    return await service.approve_volume(user,novel_id,body)
+
+
+@router.post('/{novel_id}/volume/redo')
+@limiter.limit('20/minute')
+async def redo_volume(request: Request,novel_id: str,body: service.Note,user: str = Depends(workshop_user)):
+    return await service.redo_volume(user,novel_id,body)
+
+
+@router.post('/{novel_id}/upgrade-structure')
+@limiter.limit('20/minute')
+async def upgrade_structure(request: Request,novel_id: str,user: str = Depends(workshop_user)):
+    return await service.upgrade_structure(user,novel_id)
+
+
 @router.post('/{novel_id}/continue')
 @limiter.limit('20/minute')
 async def continue_book(request: Request,novel_id: str,user: str = Depends(workshop_user)):

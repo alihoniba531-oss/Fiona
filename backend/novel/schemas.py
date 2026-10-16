@@ -195,6 +195,86 @@ def _foreshadowing(c: _Check, value: Any, path: str):
     c.enum(item.get("importance"), f"{path}.importance", ("major", "minor"))
 
 
+def _genre_contract(c: _Check, data: Any, main_threads) -> dict:
+    path = "genre_contract"
+    root = c.obj(data, path, ("genre", "reader_promise", "core_thread", "core_payoffs",
+                              "payoff_every_chapters", "progression_ladder", "drift_warnings"))
+    for field in ("genre", "reader_promise"):
+        c.text(root.get(field), f"{path}.{field}", minimum=1)
+    allowed = {item.get("id", f"T{i}") for i, item in enumerate(main_threads, 1)
+               if isinstance(item, dict) and isinstance(item.get("id", f"T{i}"), str)}
+    c.text(root.get("core_thread"), f"{path}.core_thread", minimum=1)
+    if not isinstance(root.get("core_thread"), str) or root["core_thread"] not in allowed:
+        c.fail(f"{path}.core_thread", "必须引用 main_threads 中存在的主线 ID")
+    c.strings(root.get("core_payoffs"), f"{path}.core_payoffs", 3, 8, nonempty=True)
+    c.integer(root.get("payoff_every_chapters"), f"{path}.payoff_every_chapters", 1, 5)
+    c.strings(root.get("progression_ladder"), f"{path}.progression_ladder", 3, 12, nonempty=True)
+    c.strings(root.get("drift_warnings"), f"{path}.drift_warnings", 0, 5, nonempty=True)
+    return root
+
+
+def validate_genre_contract(data: Any, main_threads) -> dict:
+    """Validate assigned compass IDs or setup's ordered, code-owned IDs."""
+    data = _normalized_copy(data)
+    c = _Check()
+    _genre_contract(c, data, main_threads)
+    return c.finish(data)
+
+
+def validate_volume_plan(data: Any, *, compass: dict, bible: dict, volume: int,
+                         start_chapter: int, end_chapter: int) -> dict:
+    data = _normalized_copy(data)
+    c = _Check()
+    root = c.obj(data, "volume_plan", ("volume", "chapters", "goal", "milestones",
+                                      "payoff_plan", "threads_focus", "foreshadowing_to_resolve",
+                                      "new_mystery_budget"))
+    if c.integer(root.get("volume"), "volume_plan.volume", 1) and root["volume"] != volume:
+        c.fail("volume_plan.volume", f"必须为本次卷号 {volume}")
+    bounds = c.array(root.get("chapters"), "volume_plan.chapters", 2, 2)
+    for i, number in enumerate(bounds):
+        c.integer(number, f"volume_plan.chapters[{i}]", 1)
+    if bounds != [start_chapter, end_chapter]:
+        c.fail("volume_plan.chapters", f"必须为本卷范围 [{start_chapter}, {end_chapter}]")
+    c.text(root.get("goal"), "volume_plan.goal", minimum=1)
+    thread_ids = _ids(compass["main_threads"])
+    contract = compass["genre_contract"]
+    milestones = c.array(root.get("milestones"), "volume_plan.milestones", 2, 5)
+    identifiers = []
+    has_core = False
+    for i, milestone in enumerate(milestones):
+        path = f"volume_plan.milestones[{i}]"
+        item = c.obj(milestone, path, ("id", "thread", "description", "due_chapter"))
+        c.text(item.get("id"), f"{path}.id", minimum=1)
+        identifiers.append(item.get("id"))
+        c.text(item.get("description"), f"{path}.description", minimum=1)
+        c.text(item.get("thread"), f"{path}.thread", minimum=1)
+        if not isinstance(item.get("thread"), str) or item["thread"] not in thread_ids:
+            c.fail(f"{path}.thread", "必须引用存在的主线 ID")
+        has_core |= item.get("thread") == contract["core_thread"]
+        c.integer(item.get("due_chapter"), f"{path}.due_chapter", start_chapter, end_chapter)
+        if "status" in item:
+            c.enum(item["status"], f"{path}.status", ("open", "done", "missed"))
+    if len(identifiers) != len(set(key for key in identifiers if isinstance(key, str))):
+        c.fail("volume_plan.milestones", "里程碑 ID 不得重复")
+    if not has_core:
+        c.fail("volume_plan.milestones", "至少 1 条里程碑必须属于核心主线")
+    period = contract["payoff_every_chapters"]
+    minimum = (end_chapter - start_chapter + period) // period
+    payoffs = c.array(root.get("payoff_plan"), "volume_plan.payoff_plan", minimum)
+    if len(payoffs) < minimum:
+        c.fail("volume_plan.payoff_plan", f"本卷 {end_chapter - start_chapter + 1} 章、爽点间隔 {period} 章，至少需要 {minimum} 条，实际 {len(payoffs)} 条")
+    for i, payoff in enumerate(payoffs):
+        path = f"volume_plan.payoff_plan[{i}]"
+        item = c.obj(payoff, path, ("chapter_hint", "type"))
+        c.integer(item.get("chapter_hint"), f"{path}.chapter_hint", start_chapter, end_chapter)
+        c.enum(item.get("type"), f"{path}.type", contract["core_payoffs"])
+    c.refs(root.get("threads_focus"), "volume_plan.threads_focus", thread_ids)
+    open_ids = {item["id"] for item in bible["dynamic"]["foreshadowing"] if item["status"] == "open"}
+    c.refs(root.get("foreshadowing_to_resolve"), "volume_plan.foreshadowing_to_resolve", open_ids)
+    c.integer(root.get("new_mystery_budget"), "volume_plan.new_mystery_budget", 0, 6)
+    return c.finish(data)
+
+
 def validate_setup(data: Any, config: dict) -> dict:
     data = _normalized_copy(data)
     c = _Check()
@@ -228,6 +308,11 @@ def validate_setup(data: Any, config: dict) -> dict:
     c.strings(style.get("banned_phrases"), "setup.style_guide.banned_phrases", minimum=5, nonempty=True)
     for i, foreshadow in enumerate(c.array(root.get("initial_foreshadowing"), "setup.initial_foreshadowing")):
         _foreshadowing(c, foreshadow, f"setup.initial_foreshadowing[{i}]")
+    if config.get("structure") == "v2":
+        threads = root.get("main_threads", [])
+        _genre_contract(c, root.get("genre_contract"),
+                        [{"id": f"T{i}"} for i, _ in enumerate(threads, 1)]
+                        if isinstance(threads, list) else [])
     return c.finish(data)
 
 
@@ -345,7 +430,8 @@ def _alternative_responses(c: _Check, value: Any, allowed: set[str]) -> list[str
 
 def validate_decision(data: Any, *, compass: dict, bible: dict, chapter: int,
                       mode: str, proposal_ids: Iterable[str], objection_ids: Iterable[str],
-                      note_ids: Iterable[str], solo=False, alternative_ids: Iterable[str] = ()) -> dict:
+                      note_ids: Iterable[str], solo=False, alternative_ids: Iterable[str] = (),
+                      config=None, history=()) -> dict:
     data = _normalized_copy(data)
     if (isinstance(data, dict) and data.get("ending_status") != "closing"
             and data.get("closing_chapters_left") is None):
@@ -423,7 +509,55 @@ def validate_decision(data: Any, *, compass: dict, bible: dict, chapter: int,
         unresolved_major = {item["id"] for item in bible["dynamic"]["foreshadowing"] if item["status"] == "open" and item["importance"] == "major" and item["id"] not in resolved}
         if any(key not in handling_ids for key in unresolved_major):
             c.fail("decision.unresolved_major_handling", "完结时每条未回收的主要伏笔都必须给出 leave_open 和非空理由")
+    if (config or {}).get("structure") == "v2":
+        _decision_v2(c, root, beat, compass, bible, chapter, history)
     return c.finish(data)
+
+
+def _decision_v2(c, root, beat, compass, bible, chapter, history):
+    from .context import v2_structure_context
+
+    structure = v2_structure_context(compass, bible, chapter, history)
+    contract = compass["genre_contract"]
+    if "genre_payoff" not in root:
+        c.fail("decision.genre_payoff", "缺少字段")
+    payoff = root.get("genre_payoff")
+    if payoff is not None:
+        item = c.obj(payoff, "decision.genre_payoff", ("type", "beat_index"))
+        c.enum(item.get("type"), "decision.genre_payoff.type", contract["core_payoffs"])
+        beats = beat.get("beats", [])
+        c.integer(item.get("beat_index"), "decision.genre_payoff.beat_index", 1,
+                  len(beats) if isinstance(beats, list) else 0)
+    if structure["payoff_required"] and payoff is None:
+        period = contract["payoff_every_chapters"]
+        c.fail("decision.genre_payoff", f"最近 {period - 1} 章爽点数为 0，本章必须安排爽点；每 {period} 章至少 1 个")
+    core = contract["core_thread"]
+    advances = beat.get("advances_threads", [])
+    if structure["thread_staleness"][core] >= 3 and (not isinstance(advances, list) or core not in advances):
+        c.fail("decision.beat_sheet.advances_threads", f"核心主线已连续 {structure['thread_staleness'][core] - 1} 章未推进，本章必须推进；每 3 章至少 1 次")
+    volume = structure["current_volume"]
+    milestones = volume["milestones"] if volume else []
+    advanced = c.refs(root.get("milestones_advanced"), "decision.milestones_advanced", _ids(milestones))
+    for item in milestones:
+        if item.get("status", "open") == "open" and item["due_chapter"] <= chapter and item["id"] not in advanced:
+            overdue = chapter - item["due_chapter"]
+            timing = f"已逾期 {overdue} 章，" if overdue else ""
+            c.fail("decision.milestones_advanced", f"里程碑 {item['id']} 在第 {item['due_chapter']} 章到期，{timing}仍为 open，本章必须推进")
+    plants = beat.get("foreshadowing_plant", [])
+    resolves = beat.get("foreshadowing_resolve", [])
+    if isinstance(plants, list) and isinstance(resolves, list):
+        _foreshadowing_budget(c, "decision.beat_sheet.foreshadowing_plant", len(plants), len(resolves),
+                              structure["open_foreshadowing_count"], volume,
+                              structure["volume_foreshadowing_planted"])
+
+
+def _foreshadowing_budget(c, path, planted, resolved, open_count, volume, volume_planted):
+    if planted > 2:
+        c.fail(path, f"本章新埋 {planted} 条，超过每章上限 2 条")
+    if open_count > 20 and planted > resolved:
+        c.fail(path, f"未回收伏笔 {open_count} 条，超过上限 20；本章新埋 {planted} 条不得多于回收 {resolved} 条")
+    if volume and volume_planted + planted > volume["new_mystery_budget"]:
+        c.fail(path, f"本卷此前新埋 {volume_planted} 条，本章 {planted} 条，合计 {volume_planted + planted} 条，超过卷预算 {volume['new_mystery_budget']} 条")
 
 
 def validate_review(data: Any, body: str, *, adaptation_blocking=False) -> dict:
@@ -470,7 +604,8 @@ def validate_review(data: Any, body: str, *, adaptation_blocking=False) -> dict:
             "passed": not any(item["blocking"] for item in kept)}
 
 
-def validate_archive(data: Any, bible: dict, *, require_new_appearance=False) -> dict:
+def validate_archive(data: Any, bible: dict, *, require_new_appearance=False,
+                     config=None, decision=None) -> dict:
     data = _normalized_copy(data)
     c = _Check()
     root = c.obj(data, "archive", ("summary", "character_state_changes", "timeline_add", "foreshadowing_planted", "foreshadowing_resolved", "used_beats_add", "new_characters", "deviation_from_beat_sheet", "locked_conflicts"))
@@ -516,7 +651,41 @@ def validate_archive(data: Any, bible: dict, *, require_new_appearance=False) ->
     deviation = c.obj(root.get("deviation_from_beat_sheet"), "archive.deviation_from_beat_sheet", ("deviated", "note"))
     c.boolean(deviation.get("deviated"), "archive.deviation_from_beat_sheet.deviated")
     c.text(deviation.get("note"), "archive.deviation_from_beat_sheet.note")
+    if (config or {}).get("structure") == "v2":
+        _archive_v2(c, root, bible, decision)
     return c.finish(data)
+
+
+def _archive_v2(c, root, bible, decision):
+    decision = decision or {}
+    advanced = decision.get("milestones_advanced", [])
+    if "milestones_done" in root:
+        c.refs(root["milestones_done"], "archive.milestones_done", set(advanced))
+    if decision.get("genre_payoff") is not None or "payoff_delivered" in root:
+        c.boolean(root.get("payoff_delivered"), "archive.payoff_delivered")
+    # Upgrading changes future planning rules, never the factual archive of a
+    # chapter originally written under v1 (which had no genre_payoff key).
+    if "genre_payoff" not in decision:
+        return
+    planted = root.get("foreshadowing_planted", [])
+    resolved = root.get("foreshadowing_resolved", [])
+    if not isinstance(planted, list) or not isinstance(resolved, list):
+        return
+    dynamic = bible["dynamic"]
+    # The pending chapter immediately follows canonical summaries; an archive
+    # may never add more mysteries than its already validated decision budget.
+    chapter = max((item["chapter"] for item in dynamic["chapter_summaries"]), default=0) + 1
+    volume = next((item for item in dynamic.get("volumes", [])
+                   if item["chapters"][0] <= chapter <= item["chapters"][1]), None)
+    prior = (sum(volume["chapters"][0] <= item.get("planted_chapter", 0) < chapter
+                 for item in dynamic["foreshadowing"]) if volume else 0)
+    open_count = sum(item.get("status") == "open" for item in dynamic["foreshadowing"])
+    _foreshadowing_budget(c, "archive.foreshadowing_planted", len(planted), len(resolved),
+                          open_count, volume, prior)
+    if decision:
+        planned = decision.get("beat_sheet", {}).get("foreshadowing_plant", [])
+        if len(planted) > len(planned):
+            c.fail("archive.foreshadowing_planted", f"实际新埋 {len(planted)} 条，不得超过细纲计划 {len(planned)} 条")
 
 
 def validate_insertions(data: Any, body: str, bible: dict | None = None) -> dict:

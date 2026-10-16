@@ -28,6 +28,9 @@ def trim_bible(bible: dict, chapter: int | None = None, named_characters=(), *,
     dynamic["chapter_summaries"] = recent
     dynamic["timeline"] = dynamic.get("timeline", [])[-timeline_limit:]
     dynamic["used_beats"] = dynamic.get("used_beats", [])[-30:]
+    if "structure_history" in dynamic:
+        dynamic["structure_history"] = [item for item in dynamic["structure_history"]
+                                          if item.get("chapter", 0) >= current - 10][-10:]
     foreshadowing = dynamic.get("foreshadowing", [])
     resolved = sorted((item for item in foreshadowing if item.get("status") != "open"),
                       key=lambda item: item.get("resolved_chapter", 0))[-5:]
@@ -118,7 +121,7 @@ def chapter_stage(chapter: int, max_chapters: int, mode: str) -> str:
 
 def build_brief(compass: dict, bible: dict, chapter: int, history=(),
                 written_words=0, user_notes=(), *, timeline_limit=5,
-                named_characters=()) -> dict:
+                named_characters=(), config=None) -> dict:
     maximum = compass["target"]["max_chapters"]
     mode = chapter_mode(chapter, maximum, history)
     stage = chapter_stage(chapter, maximum, mode)
@@ -137,7 +140,99 @@ def build_brief(compass: dict, bible: dict, chapter: int, history=(),
     }
     if mode in ("closing", "final"):
         result["closing_instruction"] = CLOSING_INSTRUCTION
+    if (config or {}).get("structure") == "v2":
+        result.update(v2_structure_context(compass, bible, chapter, history))
     return result
+
+
+def v2_structure_context(compass: dict, bible: dict, chapter: int, history=()) -> dict:
+    """Compute sliding windows from full history before any context trimming.
+
+    Thread distance includes this chapter: three means two prior chapters were
+    empty, so advancement now preserves the promised three-chapter window.
+    """
+    contract = compass["genre_contract"]
+    dynamic = bible["dynamic"]
+    records = {}
+    for item in [*dynamic.get("structure_history", []), *history]:
+        if not isinstance(item, dict):
+            continue
+        number = item.get("chapter")
+        if type(number) is not int or not 0 < number < chapter:
+            continue
+        decision = item.get("decision", item)
+        if not isinstance(decision, dict):
+            continue
+        beat = decision.get("beat_sheet", decision)
+        if not isinstance(beat, dict):
+            beat = {}
+        old = records.get(number, {})
+        records[number] = {
+            "chapter": number,
+            "genre_payoff": deepcopy(decision.get("genre_payoff", old.get("genre_payoff"))),
+            "advances_threads": deepcopy(beat.get("advances_threads", old.get("advances_threads", []))),
+        }
+        archive = item.get("archive")
+        confirmation = (archive if isinstance(archive, dict) and "payoff_delivered" in archive
+                        else item if "payoff_delivered" in item else old)
+        if "payoff_delivered" in confirmation:
+            records[number]["payoff_delivered"] = confirmation["payoff_delivered"]
+            if confirmation["payoff_delivered"] is False:
+                records[number]["genre_payoff"] = None
+    period = contract["payoff_every_chapters"]
+    payoff_history = []
+    for number in range(max(1, chapter - period * 2), chapter):
+        record = records.get(number, {})
+        payoff = {"chapter": number, "genre_payoff": deepcopy(record.get("genre_payoff"))}
+        if "payoff_delivered" in record:
+            payoff["payoff_delivered"] = record["payoff_delivered"]
+        payoff_history.append(payoff)
+    staleness = {}
+    for thread in compass["main_threads"]:
+        last = max((number for number, item in records.items()
+                    if thread["id"] in item["advances_threads"]), default=0)
+        staleness[thread["id"]] = chapter - last
+    current = next((item for item in dynamic.get("volumes", [])
+                    if item["chapters"][0] <= chapter <= item["chapters"][1]), None)
+    open_count = sum(item.get("status") == "open" for item in dynamic["foreshadowing"])
+    prior_payoff = any(records.get(number, {}).get("genre_payoff") is not None
+                       for number in range(max(1, chapter - period + 1), chapter))
+    payoff_required = chapter >= period and not prior_payoff
+    flags = []
+    core = contract["core_thread"]
+    if staleness[core] >= 3:
+        flags.append(f"核心主线 {core} 已 {staleness[core] - 1} 章未推进，本章必须推进（每 3 章至少 1 次）")
+    for thread, distance in staleness.items():
+        if thread != core and distance >= 6:
+            flags.append(f"主线 {thread} 已连续 {distance - 1} 章未推进")
+    if payoff_required:
+        flags.append(f"本章必须安排类型爽点（每 {period} 章至少 1 个）")
+    if current:
+        for milestone in current["milestones"]:
+            if milestone.get("status", "open") == "open" and milestone["due_chapter"] <= chapter:
+                overdue = chapter - milestone["due_chapter"]
+                timing = f"已逾期 {overdue} 章" if overdue else "到期"
+                flags.append(f"里程碑 {milestone['id']} {timing}（第 {milestone['due_chapter']} 章），本章必须推进")
+    for volume in dynamic.get("volumes", []):
+        if volume["chapters"][1] < chapter:
+            for milestone in volume["milestones"]:
+                if milestone.get("status") == "missed":
+                    flags.append(f"第 {volume['volume']} 卷里程碑 {milestone['id']} 未完成（到期第 {milestone['due_chapter']} 章）")
+    if open_count > 20:
+        flags.append(f"未回收伏笔 {open_count} 条，已超上限 20，新埋不得多于回收")
+    planted = (sum(current["chapters"][0] <= item.get("planted_chapter", 0) < chapter
+                   for item in dynamic["foreshadowing"]) if current else 0)
+    if current and planted >= current["new_mystery_budget"]:
+        flags.append(f"本卷已新埋伏笔 {planted} 条，卷预算 {current['new_mystery_budget']} 条，本章不得新埋")
+    if open_count > 20 or current and planted >= current["new_mystery_budget"]:
+        flags.append("本章章末钩子不得引入新的未解谜团，只能使用已有线索或正面冲突")
+    return {
+        "genre_contract": deepcopy(contract), "current_volume": deepcopy(current),
+        "payoff_history": payoff_history, "thread_staleness": staleness,
+        "open_foreshadowing_count": open_count, "foreshadowing_limit": 20,
+        "volume_foreshadowing_planted": planted, "payoff_required": payoff_required,
+        "red_flags": flags,
+    }
 
 
 def build_writer_context(compass: dict, bible: dict, beat_sheet: dict,

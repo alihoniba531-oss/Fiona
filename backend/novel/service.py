@@ -1,8 +1,12 @@
 """Authenticated workshop operations; model work is delegated to the runner."""
 from __future__ import annotations
 
+from contextlib import asynccontextmanager
 from copy import deepcopy
+import hashlib
+import inspect
 import json
+import math
 from typing import Literal
 from uuid import uuid4
 
@@ -11,7 +15,8 @@ from pydantic import BaseModel, ConfigDict, Field, model_validator
 
 from .agent_pool import AGENTS
 from .billing import estimate_cost, get_prices
-from .schemas import ValidationError, compact, validate_decision, validate_setup
+from .schemas import (ValidationError, compact, validate_decision,
+                      validate_genre_contract, validate_setup, validate_volume_plan)
 from .store_db import get_db
 from .writing import compact_length
 
@@ -20,6 +25,7 @@ JSON_MODELS = (PLATFORM_MODELS[0], PLATFORM_MODELS[2], 'byok:self')
 WRITER_MODELS = (PLATFORM_MODELS[1], PLATFORM_MODELS[0], 'byok:self')
 ROLE_DESCRIPTIONS = {'editor':'生成立项与章节定稿，回应顾问和作者意见。','writer':'依照细纲撰写和修订正文。','archivist':'维护故事圣经与伏笔账本。','reviewer':'核对正文与设定，给出有证据的修订意见。','plot_architect':'检查主线因果与情节结构。','character_advocate':'检查人物动机与成长。','reader_rep':'检查阅读吸引力。','twist_designer':'提出反转和替代走向。','pacing_advisor':'检查章节节奏。','adaptation_advisor':'检查短剧改编可行性。'}
 ADVISORS = ('plot_architect', 'character_advocate', 'reader_rep', 'twist_designer', 'pacing_advisor', 'adaptation_advisor')
+_upgrading: set[str] = set()
 
 
 def fail(message, code=409):
@@ -60,6 +66,7 @@ class CreateNovel(Input):
     target: Target = Field(default_factory=Target)
     adaptation: Adaptation = Field(default_factory=Adaptation)
     drama_adaptation: bool = False
+    structure: Literal['v1', 'v2'] = 'v1'
     budget_strawberries: int = Field(ge=1, le=10_000_000)
 
 
@@ -105,11 +112,22 @@ class PlanApproval(Input):
 class SetupApproval(Input):
     compass: dict | None = None
     locked: dict | None = None
+    genre_contract: dict | None = None
 
     @model_validator(mode='after')
     def bounded(self):
         if len(encoded(self.model_dump())) > 60000:
             raise ValueError('立项修改过长')
+        return self
+
+
+class VolumeApproval(Input):
+    volume_plan: dict | None = None
+
+    @model_validator(mode='after')
+    def bounded(self):
+        if len(encoded(self.volume_plan)) > 30000:
+            raise ValueError('卷规划过长')
         return self
 
 
@@ -192,6 +210,10 @@ async def create(username, data):
         fail('预算低于估算下限的一章份额', 422)
     config = data.model_dump()
     config.update(experiment='P1', critique_rounds=1, enable_arc_summaries=True, enable_context_compression=True)
+    if config.get('structure')=='v2':
+        config['volume_gate']=False
+    else:
+        config.pop('structure',None)
     if not set(config['agents']) & set(ADVISORS):
         config['panel_mode'] = 'solo'
     novel_id = str(uuid4())
@@ -305,6 +327,17 @@ def _check_not_editing(novel_id):
         fail('章节正在改稿，请稍后再继续')
 
 
+@asynccontextmanager
+async def _structure_upgrade(novel_id):
+    from .runner import editing_novel
+    async with editing_novel(novel_id):
+        _upgrading.add(novel_id)
+        try:
+            yield
+        finally:
+            _upgrading.discard(novel_id)
+
+
 async def update_character(username, novel_id, character_id, data):
     async with get_db() as db:
         await db.execute('BEGIN IMMEDIATE')
@@ -313,7 +346,7 @@ async def update_character(username, novel_id, character_id, data):
             fail('立项阶段请在立项卡里修改')
         if book['status'] == 'failed':
             fail('这本书已出错，不能修改人物')
-        if book['status'] not in ('awaiting_review','awaiting_plan','awaiting_end','paused','completed'):
+        if book['status'] not in ('awaiting_review','awaiting_plan','awaiting_volume','awaiting_end','paused','completed'):
             fail('书正在运行，请先暂停再改人物')
         _check_not_editing(novel_id)
         changes = data.model_dump(exclude_unset=True)
@@ -341,13 +374,21 @@ async def approve_setup(username, novel_id, data):
         book=await owned(db,username,novel_id,('awaiting_setup',))
         config=json.loads(book['config_json']); compass=json.loads(book['compass_json']); bible=await _latest_bible(db,book)
         compass_fields={'title','logline','theme','candidate_endings','main_threads'}
+        if config.get('structure') == 'v2':
+            compass_fields.add('genre_contract')
+        elif data.genre_contract is not None:
+            fail('类型承诺仅适用于 v2 小说',422)
         locked_fields={'characters','world_rules','style_guide'}
         if set(data.compass or {})-compass_fields or set(data.locked or {})-locked_fields:
             fail('立项修改包含不可修改的字段',422)
         compass.update(deepcopy(data.compass or {})); bible['locked'].update(deepcopy(data.locked or {}))
+        if data.genre_contract is not None:
+            compass['genre_contract']=deepcopy(data.genre_contract)
         old=await _latest_bible(db,book)
         try:
             setup={key:compass[key] for key in ('title','logline','theme','core_conflict','protagonist','candidate_endings','main_threads')}
+            if config.get('structure') == 'v2':
+                setup['genre_contract']=compass.get('genre_contract')
             setup.update(characters=[dict(char,initial_state=bible['dynamic']['character_states'].get(char.get('id'),{})) for char in bible['locked']['characters']],world_rules=bible['locked']['world_rules'],style_guide=bible['locked']['style_guide'],initial_foreshadowing=bible['dynamic']['foreshadowing'])
             validate_setup(setup,config)
         except (ValidationError,KeyError,TypeError,AttributeError):
@@ -378,10 +419,18 @@ async def approve_plan(username,novel_id,data):
         if not current or not current['meeting_json']:
             fail('当前没有可批准的待批细纲，请刷新后重试')
         meeting=json.loads(current['meeting_json']); decision=deepcopy(meeting['decision'])
+        config=json.loads(book['config_json'])
+        history=()
+        if config.get('structure')=='v2':
+            prior=await rows(db,'SELECT chapter,meeting_json,archive_json,ending_status FROM novel_chapters WHERE novel_id=? AND chapter<? ORDER BY chapter',(novel_id,current['chapter']))
+            history=[{'chapter':item['chapter'],'ending_status':item['ending_status'],
+                      'decision':json.loads(item['meeting_json'] or '{}').get('decision',{}),
+                      'archive':json.loads(item['archive_json'] or '{}')}
+                     for item in prior]
         if data.beat_sheet is not None:
             decision['beat_sheet']=data.beat_sheet
         try:
-            decision=validate_decision(decision,compass=json.loads(book['compass_json']),bible=await _latest_bible(db,book),chapter=current['chapter'],mode=meeting['brief']['mode'],proposal_ids=[p['id'] for p in meeting.get('proposals',[])],objection_ids=[o['id'] for o in meeting.get('objections',[])],note_ids=[n['id'] for n in meeting['brief']['user_notes']],solo=not meeting.get('proposals'))
+            decision=validate_decision(decision,compass=json.loads(book['compass_json']),bible=await _latest_bible(db,book),chapter=current['chapter'],mode=meeting['brief']['mode'],proposal_ids=[p['id'] for p in meeting.get('proposals',[])],objection_ids=[o['id'] for o in meeting.get('objections',[])],note_ids=[n['id'] for n in meeting['brief']['user_notes']],solo=not meeting.get('proposals'),config=config,history=history)
         except ValidationError:
             fail('细纲不符合裁决要求',422)
         meeting['decision']=decision
@@ -404,6 +453,166 @@ async def redo_plan(username,novel_id,data):
         await _activate(db,book,username); await db.commit()
     from .runner import start_novel
     await start_novel(novel_id,username)
+    return await detail(username,novel_id)
+
+
+async def volumes(username,novel_id):
+    """Return canonical plans, including all archived milestone states."""
+    async with get_db() as db:
+        book=await owned(db,username,novel_id)
+        if json.loads(book['config_json']).get('structure') != 'v2' or not book['bible_version']:
+            return []
+        current=await _latest_bible(db,book)
+    return current['dynamic'].get('volumes',[])
+
+
+async def _pending_volume(db,book):
+    config=json.loads(book['config_json'])
+    gate=config.get('_volume_gate')
+    if config.get('structure') != 'v2' or not gate or gate.get('approved'):
+        fail('当前没有可批准的待批卷规划，请刷新后重试')
+    current=await _latest_bible(db,book)
+    index=next((index for index,plan in enumerate(current['dynamic'].get('volumes',[]))
+                if plan['volume']==gate['volume'] and plan['chapters']==[gate['start_chapter'],gate['end_chapter']]),None)
+    if index is None:
+        fail('当前没有可批准的待批卷规划，请刷新后重试')
+    return config,current,gate,index
+
+
+async def approve_volume(username,novel_id,data):
+    async with get_db() as db:
+        await db.execute('BEGIN IMMEDIATE')
+        book=await owned(db,username,novel_id,('awaiting_volume',))
+        _check_not_editing(novel_id)
+        config,current,gate,index=await _pending_volume(db,book)
+        if data.volume_plan is not None:
+            plan=deepcopy(data.volume_plan)
+            # The author approves future work; completion is archive-owned.
+            for milestone in plan.get('milestones',[]) if isinstance(plan.get('milestones'),list) else []:
+                if isinstance(milestone,dict):
+                    milestone['status']='open'
+            try:
+                plan=validate_volume_plan(plan,compass=json.loads(book['compass_json']),bible=current,
+                    volume=gate['volume'],start_chapter=gate['start_chapter'],end_chapter=gate['end_chapter'])
+            except ValidationError as error:
+                fail('卷规划不符合要求：'+str(error),422)
+            current['dynamic']['volumes'][index]=plan
+            current['version']=book['bible_version']+1
+            await db.execute('INSERT INTO novel_bible_versions(novel_id,username,version,bible_json,source) VALUES(?,?,?,?,?)',
+                (novel_id,username,current['version'],encoded(current),'user_edit'))
+            await db.execute('UPDATE novels SET bible_version=? WHERE id=?',(current['version'],novel_id))
+        gate['approved']=True
+        await db.execute('UPDATE novels SET config_json=? WHERE id=?',(encoded(config),novel_id))
+        await _activate(db,book,username)
+        await db.commit()
+    from .runner import start_novel
+    await start_novel(novel_id,username)
+    return await detail(username,novel_id)
+
+
+async def redo_volume(username,novel_id,data):
+    async with get_db() as db:
+        await db.execute('BEGIN IMMEDIATE')
+        book=await owned(db,username,novel_id,('awaiting_volume',))
+        _check_not_editing(novel_id)
+        config,_current,gate,_index=await _pending_volume(db,book)
+        # Keep a durable counter after the runner consumes the redo marker,
+        # so every requested revision gets a fresh, independently billed key.
+        counts=config.setdefault('_volume_redo_counts',{})
+        key=str(gate['volume'])
+        counts[key]=counts.get(key,0)+1
+        config['_volume_redo']={'volume':gate['volume'],'note':data.text,'count':counts[key]}
+        await db.execute('UPDATE novels SET config_json=? WHERE id=?',(encoded(config),novel_id))
+        await _activate(db,book,username)
+        await db.commit()
+    from .runner import start_novel
+    await start_novel(novel_id,username)
+    return await detail(username,novel_id)
+
+
+async def upgrade_structure(username,novel_id):
+    """Generate one paid contract without advancing or rewriting the book."""
+    from . import runner
+    from .billing import (InsufficientStrawberries, NovelBilling, NovelBudgetExceeded,
+                          RunNoLongerActive)
+    from .deliberation import messages_for
+    from .llm_router import BudgetExhausted, StepFailed
+    from .store_db import DbStepStore
+
+    async with get_db() as db:
+        await owned(db,username,novel_id,('awaiting_review','paused'))
+        _check_not_editing(novel_id)
+    async with _structure_upgrade(novel_id):
+        # A gate becomes visible just before the outgoing worker finishes.
+        # Drain it before leasing a token for this foreground operation.
+        await runner.cancel_novel(novel_id,username)
+        token=str(uuid4())
+        router=None
+        claimed=False
+        try:
+            async with get_db() as db:
+                await db.execute('BEGIN IMMEDIATE')
+                book=await owned(db,username,novel_id,('awaiting_review','paused'))
+                config=json.loads(book['config_json'])
+                if config.get('structure') == 'v2':
+                    fail('这本小说已经使用 v2 结构')
+                if not book['compass_json'] or not book['bible_version']:
+                    fail('请先完成立项再升级结构')
+                compass=json.loads(book['compass_json'])
+                current=await _latest_bible(db,book)
+                await db.execute('UPDATE novels SET run_token=? WHERE id=? AND username=?',(token,novel_id,username))
+                await db.commit()
+                claimed=True
+            store=DbStepStore(username,novel_id,token,max_total_tokens=2**63-1)
+            await store.initialize()
+            router=runner.router_factory(store,username,novel_id,token)
+            if inspect.isawaitable(router):
+                router=await router
+            payload={'task':'genre_contract','seed_idea':book['seed_idea'],'compass':compass,
+                     'chapter_summaries':current['dynamic']['chapter_summaries']}
+            digest=hashlib.sha256(encoded(payload).encode('utf-8')).hexdigest()
+            card,messages=messages_for('editor',payload,task='genre_contract',
+                chapter_words=config['target']['chapter_words'],split_context=True,
+                structure='v2',experiment='P1')
+            contract=await router.call(step_key=f'upgrade/genre-contract-editor-{digest}.json',role='editor',
+                model=config['agents']['editor'],messages=messages,max_tokens=card['max_tokens'],
+                experiment='P1',validator=lambda value:validate_genre_contract(value,compass['main_threads']))
+            async with store.transaction() as db:
+                if db is None:
+                    fail('小说状态已变化，请刷新后重试')
+                latest=await owned(db,username,novel_id,('awaiting_review','paused'))
+                # Merge concurrent budget or automation edits rather than
+                # replacing the config snapshot sent to the editor.
+                updated_config=json.loads(latest['config_json'])
+                updated_compass=json.loads(latest['compass_json'])
+                updated_compass['genre_contract']=contract
+                done=latest['chapters_done']
+                end=(done//10+1)*10
+                if end-done<3:
+                    end+=10
+                updated_config.update(structure='v2',volume_gate=False,
+                    _volume_upgrade={'volume':math.ceil(done/10)+1,'start_chapter':done+1,
+                        'end_chapter':min(end,updated_config['target']['max_chapters'])})
+                await db.execute('UPDATE novels SET compass_json=?,config_json=?,updated_at=CURRENT_TIMESTAMP WHERE id=? AND username=?',
+                    (encoded(updated_compass),encoded(updated_config),novel_id,username))
+        except (InsufficientStrawberries,NovelBudgetExceeded,BudgetExhausted) as error:
+            fail(str(error))
+        except StepFailed:
+            fail('类型承诺生成失败，请稍后重试',422)
+        except RunNoLongerActive:
+            fail('小说状态已变化，请刷新后重试')
+        finally:
+            if claimed:
+                await NovelBilling(username,novel_id).refund_reserved()
+                async with get_db() as db:
+                    await db.execute('UPDATE novels SET run_token=NULL WHERE id=? AND username=? AND run_token=?',(novel_id,username,token))
+                    await db.commit()
+            if router is not None:
+                for client in getattr(router,'_clients',{}).values():
+                    try:
+                        await client.close()
+                    except Exception:
+                        pass
     return await detail(username,novel_id)
 
 
@@ -436,13 +645,18 @@ async def note(username,novel_id,data):
 
 
 async def transition(username,novel_id,action):
-    from .runner import start_novel,cancel_novel
+    from .runner import start_novel,cancel_novel,editing_novel
     if action=='pause':
         async with get_db() as db:
-            await owned(db,username,novel_id,('setup_running','running','awaiting_plan','awaiting_review'))
-        await cancel_novel(novel_id,username)
-        async with get_db() as db:
-            await db.execute("UPDATE novels SET status='paused',pause_reason='user',run_token=NULL,updated_at=CURRENT_TIMESTAMP WHERE id=? AND username=?",(novel_id,username)); await db.commit()
+            book=await owned(db,username,novel_id)
+            if novel_id in _upgrading:
+                fail('正在升级结构，请稍后再试')
+            if book['status'] not in ('setup_running','running','awaiting_plan','awaiting_volume','awaiting_review'):
+                fail('当前状态不能执行此操作')
+        async with editing_novel(novel_id):
+            await cancel_novel(novel_id,username)
+            async with get_db() as db:
+                await db.execute("UPDATE novels SET status='paused',pause_reason='user',run_token=NULL,updated_at=CURRENT_TIMESTAMP WHERE id=? AND username=?",(novel_id,username)); await db.commit()
     else:
         states={'continue':('awaiting_review',),'resume':('paused',),'confirm':('awaiting_end',)}[action]
         async with get_db() as db:
@@ -463,9 +677,15 @@ async def transition(username,novel_id,action):
                         balance=await row(db,'SELECT strawberry_balance FROM users WHERE username=?',(username,))
                         if not balance or balance['strawberry_balance']<1:
                             fail('草莓余额不足，请先补充')
+                config=json.loads(book['config_json'])
                 if book['compass_json'] and book['bible_version']==1:
                     # A pause racing setup completion must retain the fixed gate.
                     await db.execute("UPDATE novels SET status='awaiting_setup',pause_reason=NULL,updated_at=CURRENT_TIMESTAMP WHERE id=?",(novel_id,))
+                elif (config.get('structure')=='v2' and config.get('volume_gate',False)
+                      and config.get('automation','per_batch')!='full_auto'
+                      and config.get('_volume_gate',{}).get('approved') is False
+                      and not config.get('_volume_redo')):
+                    await db.execute("UPDATE novels SET status='awaiting_volume',pause_reason=NULL,updated_at=CURRENT_TIMESTAMP WHERE id=?",(novel_id,))
                 else:
                     await _activate(db,book,username)
                     if not book['compass_json']:
@@ -480,11 +700,30 @@ async def reject_end(username,novel_id,data):
     async with get_db() as db:
         await db.execute('BEGIN IMMEDIATE'); book=await owned(db,username,novel_id,('awaiting_end',))
         config=json.loads(book['config_json']); compass=json.loads(book['compass_json'])
+        previous_max=config['target']['max_chapters']
         config['target']['max_chapters']+=data.extend_chapters
         config['target']['min_chapters']=max(config['target']['min_chapters'],book['chapters_done']+1)
         if config['target']['max_chapters']>300:
             fail('延长后的篇幅超过上限',422)
         compass['target']=deepcopy(config['target'])
+        if config.get('structure')=='v2' and book['bible_version']:
+            current=await _latest_bible(db,book)
+            plans=current['dynamic'].get('volumes',[])
+            if plans and plans[-1]['chapters'][1]==previous_max:
+                plan=plans[-1]
+                plan['chapters'][1]=config['target']['max_chapters']
+                period=compass['genre_contract']['payoff_every_chapters']
+                minimum=(plan['chapters'][1]-plan['chapters'][0]+period)//period
+                missing=max(0,minimum-len(plan['payoff_plan']))
+                for index in range(missing):
+                    plan['payoff_plan'].append({'chapter_hint':min(previous_max+(index+1)*period,plan['chapters'][1]),
+                        'type':compass['genre_contract']['core_payoffs'][index%len(compass['genre_contract']['core_payoffs'])]})
+                current['version']=book['bible_version']+1
+                await db.execute('INSERT INTO novel_bible_versions(novel_id,username,version,bible_json,source) VALUES(?,?,?,?,?)',
+                    (novel_id,username,current['version'],encoded(current),f"volume_extend:{plan['volume']}"))
+                await db.execute('UPDATE novels SET bible_version=? WHERE id=?',(current['version'],novel_id))
+                if config.get('_volume_gate',{}).get('volume')==plan['volume']:
+                    config['_volume_gate']['end_chapter']=plan['chapters'][1]
         await db.execute('UPDATE novels SET config_json=?,compass_json=? WHERE id=?',(encoded(config),encoded(compass),novel_id))
         if data.text:
             count=await row(db,"SELECT COUNT(*) AS n FROM novel_notes WHERE novel_id=? AND status='pending'",(novel_id,))

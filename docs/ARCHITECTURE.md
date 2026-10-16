@@ -306,11 +306,15 @@ Layer 2 会为双方创建待接受卡片；Layer 1、Layer 2 和手动匹配都
 
 ## 小说工坊 P1 / P2
 
+结构 v2 第一期使用 `config.structure` 显式开关，建书默认 v1、缺键旧书按 v1。新增罗盘 `genre_contract` 和圣经 `dynamic.volumes/structure_history`；`novel_chapters`、既有圣经键和短片工作室五个只读服务接口不变。`deliberate_volume` 使用稳定 `arm-{arm}/volNN/` 步骤键，主编初案、已选择的节奏/读者意见、主编定稿均走现有计费路由，版本以 `volume:n` 原子发布。后台 `volume_gate` 默认 false 且不加入建书/PATCH 输入；true 的非全自动书进入 `awaiting_volume`，卷关卡优先于同点批/章关卡。升级通过编辑互斥和临时 run_token 调一次主编，只更新罗盘与配置，下一章先生成截短卷，不开启卷关卡。
+
+v2 简报在裁剪前用完整历史计算主线停滞、爽点窗口、卷里程碑及伏笔预算；决策校验失败复用 `decision_invalid` 修复重试。归档将里程碑标为 done、卷末未完成标为 missed，并再次检查实际伏笔增量。P1 审校在保留冻结提示词的基础上追加首审最多八条和复审范围；`difflib` 按段落生成最多约 3000 字 `changed_passages`，为空时省略字段，内部仍按空集执行降级。P0 审校 payload 和提示词不增加字段或规则。
+
 前端入口为侧栏「书斋」与主页 `novel-drawer`，保持原五项导航的样式和行为。App Router 页面 `/novels`（书架）、`/novels/new`（三步向导）、`/novels/[id]`（工作台）通过 `lib/novels.ts` 统一请求 `/api/novels`；共享 `apiFetch` / `apiJson` / `ApiError`，账号切换时按 owner 重挂载并取消旧请求。主页常驻 iframe 使用 `/novels?embed=1`，内链保留 embed，布局尊重根文档 `data-shell` 和 `mobile:` 变体。工作台桌面三栏、手机三标签；运行态用 3 秒 `setTimeout` 链刷新，文档隐藏时暂停，其余状态停止。
 
 P2 新增只读 `GET /novels/{id}/bible` 返回最新未裁剪圣经和罗盘，`GET /novels/{id}/notes` 返回按时间排序的全部留言和主编回应；复用相同开关、白名单和所有权校验。R1 经作者授权仅增补列表摘要整数 `max_chapters` 与详情目录布尔 `edited_by_user`，书架每轮仅请求列表，工作台不再逐章补读元数据；既有字段、上下文裁剪及写操作语义保持原样。工作台运行轮询仅取 detail，圣经按版本/首次打开、留言按可见/提交/章数状态变化、当前章按摘要签名或切章按需读取。工作台按内容容器1040px切换三栏与三标签，适配窄桌面抽屉；独立页内容在 main 内滚动，侧栏保持首屏。界面用现有影青釉令牌和宋体，正文纯文本展示，导出校验 Markdown Content-Type 后下载 Blob。
 
-P2.1 的 `CreateNovel.drama_adaptation` 默认 false，写入 `config_json` 且不加入 PATCH 白名单。只有开启时，审校 payload 添加 `adaptation_blocking=true` 和配置中的 `adaptation_limits`，`validate_review(..., adaptation_blocking=True)` 保留 adaptation 问题的模型阻断值，style 仍强制非阻断。冻结的审校提示词保留原句并紧接追加条件例外；关闭时审校 payload 保持原样。档案校验通过 `validate_archive(..., require_new_appearance=False)` 兼容既有调用，P1 写书和重新归档显式开启新人物外形至少 20 字要求，`bible.apply_archive` 使用默认值。
+P2.1 的 `CreateNovel.drama_adaptation` 默认 false，写入 `config_json` 且不加入 PATCH 白名单。只有开启时，审校 payload 添加 `adaptation_blocking=true` 和配置中的 `adaptation_limits`，`validate_review(..., adaptation_blocking=True)` 保留 adaptation 问题的模型阻断值，style 仍强制非阻断。冻结的审校提示词保留原句并紧接追加条件例外；关闭时不增加改编相关字段，复审仅在确有新增/修改段落时增加上述 changed_passages。档案校验通过 `validate_archive(..., require_new_appearance=False)` 兼容既有调用，P1 写书和重新归档显式开启新人物外形至少 20 字要求。
 
 `PATCH /novels/{id}/characters/{character_id}` 复用门禁、`owned()`、改稿互斥与 `BEGIN IMMEDIATE`，仅在 awaiting_review、awaiting_plan、awaiting_end、paused、completed 接受外形/性格/动机修改。读取当前完整圣经后写入 `source=user_edit` 的新版本并更新 `bible_version`，返回与 GET bible 相同的完整圣经和罗盘，不改变章节状态。前端人物卡提供外形不足提示、允许状态下的就近表单和错误。
 

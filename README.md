@@ -309,6 +309,8 @@ npm audit
 
 小说工坊复用 `backend/novel/` 的 P0 推演、写作、审校与归档引擎，以 SQLite 存储步骤并在后台按章运行。`/novels` 提供 catalog、estimate、建书/列表/详情、章节、立项与细纲确认、重定稿、继续/暂停/恢复、预算修改、留言、改稿、完结确认/拒绝、Markdown 导出和删除；全部要求登录。`FIONA_NOVEL=1` 且用户名列入 `FIONA_NOVEL_USERS` 才可访问，默认关闭，空白名单无人可用。
 
+推演结构 v2 第一期通过后端请求显式传 `structure: "v2"` 开启，默认仍为 v1，界面保持现状。v2 会提炼类型承诺、每十章先开卷会议，并检查爽点节奏、核心主线、里程碑和伏笔预算。卷规划默认自动批准；后台可设 `volume_gate=true` 测试卷确认接口，建书请求暂不开放此配置。`GET /novels/{id}/volumes` 查看卷规划和里程碑，`POST /novels/{id}/volume/approve`、`volume/redo` 批准或付费重做；`upgrade-structure` 可在暂停或批次审阅时付费升级旧书，不重写旧章节、不打开卷关卡。所有 P1 书的审校复审限制在上一轮问题及本轮改动范围，避免不断追加未改段落的新阻断。
+
 新增表为 `novels`、`novel_bible_versions`、`novel_chapters`、`novel_steps`、`novel_notes`，初始化使用幂等建表，不增加迁移版本；删书和删号清理全部关联数据。全局并发 `FIONA_NOVEL_MAX_RUNNING=3`，每日章节 `FIONA_DAILY_NOVEL_CHAPTERS=30`；`FIONA_NOVEL_PRICE_JSON` 可整体覆盖价目。平台模型为千问、DeepSeek、豆包；Claude 只能使用用户已启用的 BYOK。平台按实际 token 预扣/结算草莓，BYOK、fake、DEV_MODE 免费。
 
 前端从侧栏第六个书签「书斋」进入：`/novels` 是书架，`/novels/new` 是三步建书向导，`/novels/[id]` 是目录、正文与推演/圣经/留言工作台。主页以常驻 iframe `/novels?embed=1` 承载，内页保留嵌入参数，也可在新页面打开。立项、细纲、审阅和完结关卡支持作者确认，后台运行期间仅在页面可见时每 3 秒刷新；完整圣经和留言分别由只读 `GET /novels/{id}/bible`、`GET /novels/{id}/notes` 提供。
