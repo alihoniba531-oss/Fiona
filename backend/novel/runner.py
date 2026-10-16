@@ -16,12 +16,13 @@ from weakref import WeakKeyDictionary
 from rate_limit import check_chat_daily_cap, check_daily_cap
 from utils.background_tasks import create_background_task
 
-from .bible import build_setup
+from .bible import apply_volume_plan, build_setup
 from .billing import (InsufficientStrawberries, NovelBilling, NovelBudgetExceeded,
                       RunNoLongerActive)
 from .byok_bridge import ByokBridge, ByokUnavailable
 from .context import build_review_bible
-from .deliberation import deliberate, messages_for, required_response_ids, split_response_ids
+from .deliberation import (deliberate, deliberate_volume, messages_for,
+                           required_response_ids, split_response_ids)
 from .llm_router import BudgetExhausted, LLMRouter, StepFailed
 from .schemas import validate_archive, validate_decision, validate_setup
 from .store_db import DbStepStore, get_db
@@ -139,8 +140,19 @@ async def cancel_novel(novel_id, username):
     """Drain the worker before refunding and invalidating its token."""
     task = TASKS.get(novel_id)
     if task is not None and _owners.get(novel_id) == username and task is not asyncio.current_task():
-        task.cancel()
-        await asyncio.gather(task, return_exceptions=True)
+        if not task.done():
+            async def cancel_and_drain():
+                task.cancel()
+                await asyncio.gather(task, return_exceptions=True)
+
+            if task.get_loop() is asyncio.get_running_loop():
+                await cancel_and_drain()
+            else:
+                # Foreground service tooling can run on a different event loop
+                # from the HTTP worker. Cancel and drain on the owning loop
+                # before invalidating its token or refunding its reservations.
+                await asyncio.wrap_future(asyncio.run_coroutine_threadsafe(
+                    cancel_and_drain(), task.get_loop()))
     await NovelBilling(username, novel_id).refund_reserved()
     async with get_db() as db:
         await db.execute("UPDATE novels SET run_token=NULL WHERE id=? AND username=?", (novel_id, username))
@@ -256,8 +268,11 @@ async def _advance(store, router):
         if book["status"] == "setup_running":
             payload = {"task": "setup", "seed_idea": book["seed_idea"], "target": config["target"],
                        "adaptation": config["adaptation"]}
+            if config.get("structure") == "v2":
+                payload["structure"] = "v2"
             card, messages = messages_for("editor", payload, task="setup",
-                                          chapter_words=config["target"]["chapter_words"], split_context=True)
+                                          chapter_words=config["target"]["chapter_words"], split_context=True,
+                                          structure=config.get("structure"), experiment="P1")
             setup = await router.call(step_key="setup/steps/00-setup-editor.json", role="editor",
                 model=config["agents"]["editor"], messages=messages, max_tokens=card["max_tokens"],
                 validator=lambda value: validate_setup(value, config), experiment="P1")
@@ -293,12 +308,37 @@ async def _advance(store, router):
         chapter = book["chapters_done"] + 1
         async with get_db() as db:
             plans = await _row(db, "SELECT * FROM novel_chapters WHERE novel_id=? AND chapter=?", (store.novel_id, chapter))
-            history = await _rows(db, "SELECT chapter,ending_status FROM novel_chapters WHERE novel_id=? AND chapter<? ORDER BY chapter", (store.novel_id, chapter))
+            history_fields = "chapter,ending_status,meeting_json,archive_json" if config.get("structure") == "v2" else "chapter,ending_status"
+            history = await _rows(db, f"SELECT {history_fields} FROM novel_chapters WHERE novel_id=? AND chapter<? ORDER BY chapter", (store.novel_id, chapter))
             previous = await _row(db, "SELECT body FROM novel_chapters WHERE novel_id=? AND chapter=?", (store.novel_id, chapter - 1))
             notes = await _rows(db, "SELECT id,text FROM novel_notes WHERE novel_id=? AND username=? AND status='pending' ORDER BY id", (store.novel_id, store.username))
         participants = [role for role in config["agents"]
                         if role not in ("editor", "writer", "archivist", "reviewer")]
         arm = "solo" if config.get("panel_mode") == "solo" or not participants else "panel"
+        if config.get("structure") == "v2":
+            for record in history:
+                if record.get("meeting_json"):
+                    record["decision"] = json.loads(record.pop("meeting_json"))["decision"]
+                if record.get("archive_json"):
+                    record["archive"] = json.loads(record.pop("archive_json"))
+            bible = await _ensure_volume(store, router, config, compass, bible,
+                                         chapter=chapter, arm=arm, history=history)
+            if bible is None:
+                return
+            if config.get("_volume_batch_pending", chapter) <= book["chapters_done"]:
+                async with store.transaction() as db:
+                    if db is not None:
+                        current = await _row(db, "SELECT config_json FROM novels WHERE id=?", (store.novel_id,))
+                        saved = json.loads(current["config_json"])
+                        saved.pop("_volume_batch_pending", None)
+                        stop = config.get("automation", "per_batch") == "per_batch"
+                        await db.execute("UPDATE novels SET config_json=?,status=?,"
+                                         "run_token=CASE WHEN ? THEN NULL ELSE run_token END,"
+                                         "updated_at=CURRENT_TIMESTAMP WHERE id=?",
+                                         (_encode(saved), "awaiting_review" if stop else "running", stop, store.novel_id))
+                if config.get("automation", "per_batch") == "per_batch":
+                    return
+                config.pop("_volume_batch_pending", None)
         if plans and plans["meeting_json"]:
             meeting = json.loads(plans["meeting_json"])
             if meeting.get("_redo_note") is not None:
@@ -326,10 +366,93 @@ async def _advance(store, router):
             status, reason = "paused", "daily_cap"
         elif config.get("automation", "per_batch") == "per_batch" and chapter % config.get("batch_size", 5) == 0:
             status = "awaiting_review"
+            if config.get("structure") == "v2" and chapter % 10 == 0 and chapter < config["target"]["max_chapters"]:
+                # Publish the following volume gate before the simultaneous
+                # batch gate. Persist the pending chapter before committing it;
+                # recovery ignores the marker until that chapter is committed.
+                async with store.transaction() as db:
+                    if db is None:
+                        return
+                    current = await _row(db, "SELECT config_json FROM novels WHERE id=?", (store.novel_id,))
+                    saved = json.loads(current["config_json"])
+                    saved["_volume_batch_pending"] = chapter
+                    await db.execute("UPDATE novels SET config_json=? WHERE id=?", (_encode(saved), store.novel_id))
+                status = "running"
         if not await store.commit_chapter(chapter, meeting, product, status=status, pause_reason=reason):
             return
         if status != "running":
             return
+
+
+async def _ensure_volume(store, router, config, compass, bible, *, chapter, arm, history):
+    """Publish one versioned plan, or recover it without repeating paid steps."""
+    volumes = bible["dynamic"].get("volumes", [])
+    current = next((plan for plan in volumes
+                    if plan["chapters"][0] <= chapter <= plan["chapters"][1]), None)
+    redo = config.get("_volume_redo")
+    upgrade = config.get("_volume_upgrade")
+    waiting = config.get("volume_gate", False) and config.get("automation", "per_batch") != "full_auto"
+    if current is not None and not redo and not upgrade:
+        gate = config.get("_volume_gate", {})
+        if waiting and gate.get("volume") == current["volume"] and not gate.get("approved", False):
+            async with store.transaction() as db:
+                if db is not None:
+                    await db.execute("UPDATE novels SET status='awaiting_volume',run_token=NULL,"
+                                     "updated_at=CURRENT_TIMESTAMP WHERE id=?", (store.novel_id,))
+            return None
+        if not waiting and gate.get("volume") == current["volume"] and gate.get("approved") is False:
+            async with store.transaction() as db:
+                if db is None:
+                    return None
+                book = await _row(db, "SELECT config_json FROM novels WHERE id=?", (store.novel_id,))
+                saved = json.loads(book["config_json"])
+                saved["_volume_gate"]["approved"] = True
+                await db.execute("UPDATE novels SET config_json=? WHERE id=?", (_encode(saved), store.novel_id))
+            config["_volume_gate"] = saved["_volume_gate"]
+        return bible
+    if redo and current:
+        volume = current["volume"]
+        start, end = current["chapters"]
+    elif upgrade:
+        volume, start, end = (upgrade[key] for key in ("volume", "start_chapter", "end_chapter"))
+        # A paused final chapter may be upgraded before its author extends the
+        # target. Use the current target when the next run actually begins.
+        end = ((start - 1) // 10 + 1) * 10
+        if end - start + 1 < 3:
+            end += 10
+        end = min(end, compass["target"]["max_chapters"])
+    else:
+        start, end = chapter, ((chapter - 1) // 10 + 1) * 10
+        if end - start + 1 < 3:
+            end += 10
+        end = min(end, compass["target"]["max_chapters"])
+        volume = max((item["volume"] for item in volumes), default=0) + 1
+    plan = await deliberate_volume(
+        router, config, compass, bible, volume=volume, start_chapter=start, end_chapter=end,
+        arm=arm, history=history, author_instruction=redo.get("note") if redo else None,
+        redo_count=redo.get("count", 0) if redo else 0)
+    next_bible = apply_volume_plan(bible, plan)
+    async with store.transaction() as db:
+        if db is None:
+            return None
+        book = await _row(db, "SELECT bible_version,config_json FROM novels WHERE id=?", (store.novel_id,))
+        saved = json.loads(book["config_json"])
+        saved.pop("_volume_redo", None)
+        saved.pop("_volume_upgrade", None)
+        saved["_volume_gate"] = {"volume": volume, "start_chapter": start,
+                                 "end_chapter": end, "approved": not waiting,
+                                 "redo_count": redo["count"] if redo else 0}
+        next_bible["version"] = book["bible_version"] + 1
+        await db.execute("INSERT INTO novel_bible_versions(novel_id,username,version,bible_json,source) VALUES(?,?,?,?,?)",
+                         (store.novel_id, store.username, next_bible["version"], _encode(next_bible), f"volume:{volume}"))
+        await db.execute("UPDATE novels SET bible_version=?,config_json=?,status=?,"
+                         "run_token=CASE WHEN ? THEN NULL ELSE run_token END,updated_at=CURRENT_TIMESTAMP WHERE id=?",
+                         (next_bible["version"], _encode(saved), "awaiting_volume" if waiting else "running",
+                          waiting, store.novel_id))
+    config.update(saved)
+    config.pop("_volume_redo", None)
+    config.pop("_volume_upgrade", None)
+    return None if waiting else next_bible
 
 
 async def _redo(store, router, config, compass, bible, chapter, arm, meeting):
@@ -352,8 +475,19 @@ async def _redo(store, router, config, compass, bible, chapter, arm, meeting):
             payload["objection_ids"])
     payload["required_response_ids"] = required_response_ids(
         payload["objection_ids"], payload["note_ids"])
+    history = ()
+    if config.get("structure") == "v2":
+        async with get_db() as db:
+            history = await _rows(db, "SELECT chapter,meeting_json,archive_json,ending_status FROM novel_chapters "
+                                  "WHERE novel_id=? AND chapter<? ORDER BY chapter", (store.novel_id, chapter))
+        for item in history:
+            if item.get("meeting_json"):
+                item["decision"] = json.loads(item["meeting_json"])["decision"]
+            if item.get("archive_json"):
+                item["archive"] = json.loads(item["archive_json"])
     card, messages = messages_for("editor", payload, task=task,
-        chapter_words=config["target"]["chapter_words"], split_context=True)
+        chapter_words=config["target"]["chapter_words"], split_context=True,
+        structure=config.get("structure"), experiment="P1")
     meeting["decision"] = await router.call(
         step_key=f"arm-{arm}/ch{chapter:03d}/03-{task}-editor-redo{meeting['_redo_count']}.json",
         role="editor", model=config["agents"]["editor"], messages=messages, max_tokens=card["max_tokens"],
@@ -361,7 +495,7 @@ async def _redo(store, router, config, compass, bible, chapter, arm, meeting):
         validator=lambda value: validate_decision(value, compass=compass, bible=bible,
             chapter=chapter, mode=brief["mode"], proposal_ids=payload["proposal_ids"],
             objection_ids=payload["objection_ids"], note_ids=payload["note_ids"], solo=payload["solo"],
-            alternative_ids=payload.get("alternative_ids", ())))
+            alternative_ids=payload.get("alternative_ids", ()), config=config, history=history))
     return meeting
 
 
@@ -373,22 +507,42 @@ async def _rearchive(store, router, book, config, compass):
         previous = await _row(db, "SELECT bible_json FROM novel_bible_versions WHERE novel_id=? AND version<? ORDER BY version DESC LIMIT 1",
                               (store.novel_id, original["version"]))
         manuscript = await _row(db, "SELECT * FROM novel_chapters WHERE novel_id=? AND chapter=?", (store.novel_id, chapter))
+        latest_row = (await _row(db, "SELECT bible_json FROM novel_bible_versions WHERE novel_id=? AND version=?",
+                                (store.novel_id, book["bible_version"]))
+                      if config.get("structure") == "v2" else None)
     bible = json.loads(previous["bible_json"])
+    latest_bible = json.loads(latest_row["bible_json"]) if latest_row else None
+    if latest_bible:
+        extended = {plan["volume"]: plan for plan in latest_bible["dynamic"].get("volumes", [])}
+        for plan in bible["dynamic"].get("volumes", []):
+            latest_plan = extended.get(plan["volume"])
+            if latest_plan and latest_plan["chapters"][1] > plan["chapters"][1]:
+                # Recompute this chapter's milestone outcomes against the
+                # author's extended range, rather than its former volume end.
+                plan["chapters"] = deepcopy(latest_plan["chapters"])
+                plan["payoff_plan"] = deepcopy(latest_plan["payoff_plan"])
     meeting = json.loads(manuscript["meeting_json"])
-    beat = meeting["decision"]["beat_sheet"]
+    decision = meeting["decision"]
+    beat = decision["beat_sheet"]
+    v2_chapter = config.get("structure") == "v2" and "genre_payoff" in decision
     payload = {"task": "archive", "chapter": chapter, "body": manuscript["body"], "beat_sheet": beat,
                "bible": build_review_bible(compass, bible, chapter, beat["characters"])}
+    if v2_chapter:
+        payload["genre_payoff"] = deepcopy(decision["genre_payoff"])
+        payload["milestones_advanced"] = decision.get("milestones_advanced", [])
     card, messages = messages_for("archivist", payload, task="archive",
-        chapter_words=config["target"]["chapter_words"], split_context=True)
+        chapter_words=config["target"]["chapter_words"], split_context=True,
+        structure="v2" if v2_chapter else None, experiment="P1")
     digest = hashlib.sha256(manuscript["body"].encode()).hexdigest()[:20]
     archive = await router.call(step_key=f"rearchive/ch{chapter:03d}/{digest}.json", role="archivist",
         model=config["agents"]["archivist"], messages=messages, max_tokens=card["max_tokens"],
-        validator=lambda value: validate_archive(value, bible, require_new_appearance=True),
+        validator=lambda value: validate_archive(value, bible, require_new_appearance=True,
+                                                 config=config, decision=decision),
         experiment="P1", chapter=chapter)
     next_bible = await apply_archived_chapter(router, config, compass, bible, archive,
         chapter=chapter, title=manuscript["title"], beat_sheet=beat,
         arm="solo" if config.get("panel_mode") == "solo" else "panel",
-        arc_step_key=f"rearchive/ch{chapter:03d}/{digest}-arc-summary.json")
+        arc_step_key=f"rearchive/ch{chapter:03d}/{digest}-arc-summary.json", decision=decision)
     # Rebuild chapter facts from its original base, then replay only explicit
     # character edits. Compare each edit to its immediate prior version so
     # intervening archive changes never become author overrides.
@@ -413,6 +567,14 @@ async def _rearchive(store, router, book, config, compass):
             for field in ("appearance", "personality", "motivation"):
                 if field in character and character[field] != previous_character.get(field):
                     target[field] = deepcopy(character[field])
+    if latest_bible:
+        # A volume meeting can precede the batch gate at chapter ten. Editing
+        # that latest chapter must not discard the already paid next plan.
+        future = [deepcopy(plan) for plan in latest_bible["dynamic"].get("volumes", [])
+                  if plan["chapters"][0] > chapter]
+        if future or "volumes" in next_bible["dynamic"]:
+            rebuilt = next_bible["dynamic"].setdefault("volumes", [])
+            rebuilt[:] = [plan for plan in rebuilt if plan["chapters"][0] <= chapter] + future
     next_bible["version"] = book["bible_version"] + 1
     status = config.pop("_after_rearchive", "awaiting_review")
     reason = config.pop("_after_rearchive_reason", None)

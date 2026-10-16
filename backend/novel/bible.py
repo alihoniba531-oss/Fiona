@@ -23,6 +23,8 @@ def build_setup(data: dict, config: dict) -> tuple[dict, dict]:
                                for i, item in enumerate(setup["main_threads"], 1)]
     compass["target"] = deepcopy(config["target"])
     compass["seed_idea"] = deepcopy(config.get("seed_idea", ""))
+    if config.get("structure") == "v2":
+        compass["genre_contract"] = deepcopy(setup["genre_contract"])
     characters, states = [], {}
     for i, source in enumerate(setup["characters"], 1):
         character_id = f"C{i}"
@@ -53,9 +55,31 @@ def build_setup(data: dict, config: dict) -> tuple[dict, dict]:
     return compass, bible
 
 
-def apply_archive(bible: dict, archive: dict, chapter: int, title: str) -> dict:
+def apply_volume_plan(bible: dict, plan: dict) -> dict:
+    """Install a validated plan as a new immutable bible version.
+
+    Replacing an unapproved draft resets its milestones; models and authors
+    cannot claim completion through volume planning. Archiving owns statuses.
+    """
+    result = deepcopy(bible)
+    volumes = result["dynamic"].setdefault("volumes", [])
+    installed = deepcopy(plan)
+    for milestone in installed["milestones"]:
+        milestone["status"] = "open"
+    index = next((i for i, item in enumerate(volumes)
+                  if item["volume"] == installed["volume"]), None)
+    if index is None:
+        volumes.append(installed)
+    else:
+        volumes[index] = installed
+    result["version"] += 1
+    return result
+
+
+def apply_archive(bible: dict, archive: dict, chapter: int, title: str, *,
+                  config=None, decision=None) -> dict:
     """Apply an archivist delta to a fresh copy, preserving all earlier versions."""
-    delta = validate_archive(archive, bible)
+    delta = validate_archive(archive, bible, config=config, decision=decision)
     result = deepcopy(bible)
     dynamic = result["dynamic"]
     for change in delta["character_state_changes"]:
@@ -88,5 +112,22 @@ def apply_archive(bible: dict, archive: dict, chapter: int, title: str) -> dict:
             "location": "", "condition": "", "knows": [], "relationships": {}}
     dynamic["chapter_summaries"].append({"chapter": chapter, "title": title,
                                          "summary": delta["summary"]})
+    if (config or {}).get("structure") == "v2" and "genre_payoff" in (decision or {}):
+        decision = decision or {}
+        record = {
+            "chapter": chapter, "genre_payoff": deepcopy(decision.get("genre_payoff")),
+            "advances_threads": deepcopy(decision.get("beat_sheet", {}).get("advances_threads", [])),
+        }
+        if "payoff_delivered" in delta:
+            record["payoff_delivered"] = delta["payoff_delivered"]
+        dynamic.setdefault("structure_history", []).append(record)
+        for volume in dynamic.get("volumes", []):
+            if volume["chapters"][0] <= chapter <= volume["chapters"][1]:
+                done = set(delta.get("milestones_done", []))
+                for milestone in volume["milestones"]:
+                    if milestone["id"] in done:
+                        milestone["status"] = "done"
+                    elif chapter == volume["chapters"][1] and milestone.get("status", "open") == "open":
+                        milestone["status"] = "missed"
     result["version"] += 1
     return result

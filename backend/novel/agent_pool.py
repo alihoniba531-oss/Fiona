@@ -143,6 +143,57 @@ CORRUPTER_SCHEMA = """只返回 JSON：{"insertions":[{"after_anchor":"正文中
 每个 after_anchor 必须在原正文中恰好出现一次，三个锚点互不相同。只输出插入信息，不改写整章，不虚构圣经未给出的事实。""" + "\n" + JSON_STRING_QUOTE_RULE
 
 
+GENRE_CONTRACT_SCHEMA = """genre_contract 的结构为：
+{"genre":"类型","reader_promise":"这类读者追这本书是为了什么","core_thread":"T1",
+"core_payoffs":["类型爽点1","类型爽点2","类型爽点3"],"payoff_every_chapters":3,
+"progression_ladder":["成长阶段1","成长阶段2","成长阶段3"],"drift_warnings":[]}。
+genre、reader_promise 必须非空；core_thread 必须引用 main_threads 中存在的 ID。
+core_payoffs 为 3–8 条非空文本，payoff_every_chapters 为 1–5 的整数，默认 3；
+progression_ladder 为 3–12 条，drift_warnings 为 0–5 条。
+从作者原始思路提炼类型承诺。思路包含「一路变强」「最强」或同类成长意思时，core_thread 必须指向成长线。
+立项输出的 main_threads 不生成 ID；代码按输出顺序分配 T1、T2……，core_thread 按此顺序引用。"""
+
+VOLUME_SCHEMA = """只返回卷规划 JSON 对象：
+{"volume":1,"chapters":[1,10],"goal":"本卷阶段目标",
+"milestones":[{"id":"M1","thread":"T1","description":"阶段成果","due_chapter":6}],
+"payoff_plan":[{"chapter_hint":3,"type":"类型爽点"}],"threads_focus":["T1"],
+"foreshadowing_to_resolve":[],"new_mystery_budget":4}。
+使用输入指定的 volume 与 chapters 范围，不自行延长；最后一卷可以不足十章。
+milestones 为 2–5 条，ID 本卷内唯一，thread 必须存在，至少一条属于 genre_contract.core_thread。
+各 due_chapter 均在本卷范围内。payoff_plan 条数不少于 ceil(本卷章数 / payoff_every_chapters)，
+chapter_hint 必须在本卷范围内，type 从 genre_contract.core_payoffs 中选择。
+threads_focus 只能引用已存在主线；foreshadowing_to_resolve 只能引用 open 状态伏笔。
+new_mystery_budget 是 0–6 的整数。卷规划必须服务于 reader_promise、可见成长和类型爽点。"""
+
+PAYOFF_PROTECTION_RULE = (
+    "不得仅因『太快 / 太巧 / 太爽』否定 genre_payoff。"
+    "只有在它与锁定设定或已发生的事实冲突时才能反对，并且要引用该事实；"
+    "可以建议改成别的方式兑现，但不能建议删除。")
+
+P1_REVIEW_RULES = """以下为 P1 审校规则，对前文的轮次数量与复审范围作补充约定：
+首轮列出全部阻断问题，最多 8 条，按严重程度排序；首轮适用此上限。
+复审先逐条判断 previous_blocking_issues 是否已解决，未解决的原问题仍须报告，不受改动范围限制。
+复审新发现的问题只有当 evidence 位于 changed_passages 的某个改动段落中时，才可以判为阻断；其他新问题 blocking=false。
+复审时如果 payload 中没有 changed_passages，表示本轮正文没有改动：只核对 previous_blocking_issues，新问题一律不阻断。
+changed_passages 仅列新增或修改段落；删除的段落没有当前正文引文，截断说明不是正文证据。
+changed_passages 带截断说明时仅是改动摘录；仍核查完整 body 中的实际改动及旧阻断，
+不因未出现在摘录中而放过已核实的新硬伤；代码会按未截断的改动全集判定范围。
+beat_sheet 类问题只有在整条节拍或整个场景缺失时才能阻断；钩子措辞、节拍顺序的细节差异一律不阻断。
+P1 复审的每条问题可选填 previous_issue_index：从 1 开始，对应 previous_blocking_issues 中同一个旧问题的序号，
+不得超过上一轮问题总数。旧问题换了引用跨度也要标出对应序号；真正的新问题不要填写此字段。"""
+
+
+def _append_rules(card, rules):
+    """Extend an isolated card while keeping the shared quote and guard last."""
+    suffix = "\n" + INJECTION_GUARD
+    if card["output"] == "json":
+        suffix = "\n" + JSON_STRING_QUOTE_RULE + suffix
+    prompt = card["system_prompt"]
+    assert prompt.endswith(suffix)
+    card["system_prompt"] = prompt[:-len(suffix)] + "\n" + rules + suffix
+    return card
+
+
 def _card(role, name, category, required, prompt, max_tokens, output="json"):
     prompt = prompt.rstrip()
     quote_rule = ""
@@ -210,7 +261,7 @@ AGENTS = {
 }
 
 
-def get_agent(role, chapter_words=2000, task=None):
+def get_agent(role, chapter_words=2000, task=None, *, structure=None, experiment=None):
     """Return an isolated role card; dynamic token limits never mutate the registry."""
     if role not in AGENTS:
         raise ValueError(f"未知智能体：{role}")
@@ -232,10 +283,65 @@ def get_agent(role, chapter_words=2000, task=None):
     elif role == "archivist" and task == "arc_summary":
         card = _card(role, card["name"], card["category"], card["required"],
                      ARC_SUMMARY_SCHEMA, 1200)
-    elif task == "critique_plan" and card["category"] == "deliberation" and role != "editor":
+    elif (task == "critique_plan" or (structure == "v2" and task == "volume_critique")) and card["category"] == "deliberation" and role != "editor":
         perspective = card["system_prompt"].split(PROPOSAL_SCHEMA, 1)[0]
+        schema = (CRITIQUE_PLAN_SCHEMA.replace("task=critique_plan", "task=volume_critique")
+                  .replace("本章", "本卷")
+                  .replace("主编初案的 beat_sheet、rationale、ending_status", "主编卷规划初案")
+                  if task == "volume_critique" else CRITIQUE_PLAN_SCHEMA)
         card = _card(role, card["name"], card["category"], card["required"],
-                     perspective + CRITIQUE_PLAN_SCHEMA, card["max_tokens"])
+                     perspective + schema, card["max_tokens"])
+    if structure == "v2":
+        if role == "editor" and task == "setup":
+            _append_rules(card, "v2 立项必须在 setup 对象中额外返回 genre_contract。\n" + GENRE_CONTRACT_SCHEMA)
+        elif role == "editor" and task == "genre_contract":
+            card = _card(role, card["name"], card["category"], card["required"],
+                         "task=genre_contract：依据思路、罗盘和已写章节摘要，只返回类型承诺对象，不包裹其他字段。\n"
+                         + GENRE_CONTRACT_SCHEMA + "\n" + JSON_STRING_QUOTE_RULE, 4000)
+        elif role == "editor" and task in {"volume_plan", "volume_finalize"}:
+            purpose = "提出本卷规划初案" if task == "volume_plan" else "综合顾问意见定稿本卷规划"
+            card = _card(role, card["name"], card["category"], card["required"],
+                         f"task={task}：你是主编，负责{purpose}。\n" + VOLUME_SCHEMA
+                         + "\n" + JSON_STRING_QUOTE_RULE, 6000)
+        elif role == "editor" and task in {None, "decision", "plan", "finalize"}:
+            _append_rules(card, "v2 细纲在 decision 对象（与 beat_sheet 同级）额外返回 genre_payoff 和 milestones_advanced。\n"
+                          'genre_payoff 为 {"type":"core_payoffs 中的一项","beat_index":1} 或 null；'
+                          "beat_index 从 1 开始，不能超过本章节拍数。milestones_advanced 是本卷里程碑 ID 列表，可为空。\n"
+                          "遵守简报 red_flags 中的爽点节奏、核心主线、到期里程碑及伏笔预算硬规则。\n"
+                          "伏笔预算用尽或 open 伏笔超过 20 条时，本章章末钩子不得引入新的未解谜团，"
+                          "只能使用已有线索或正面冲突；遵守 red_flags 中对应提示。\n"
+                          "采纳会删除 genre_payoff 的意见时，必须同时给出替代的爽点。")
+        elif role == "writer" and task in {None, "write"}:
+            _append_rules(card, "v2 本章类型爽点见 context.genre_payoff，里程碑推进见 context.milestones_advanced。"
+                          "genre_payoff 非 null 时，必须在它指定的 beat_index（从 1 开始）节拍里写出可见的兑现场面："
+                          "用人物行动、具体结果和可感知的反应兑现该 type，不能只用一句标签或旁白声称已经发生。"
+                          "本章 milestones_advanced 的推进也必须落实为正文中可核对的行动与变化。")
+        elif role == "reviewer" and task in {None, "review"}:
+            _append_rules(card, "v2 payload.genre_payoff 非 null 时，核对正文是否实际写出了该 type 在指定 beat_index "
+                          "中的可见兑现场面。如果对应兑现场面完全缺失，按整条节拍缺失处理："
+                          "报告 beat_sheet 类 blocking=true 的问题，用正文原文作为 evidence 并明确应补出的兑现场面。"
+                          "仅爽感措辞、强弱偏好或表达顺序差异不阻断；复审仍遵守 P1 的旧问题和改动范围规则。")
+        elif role == "archivist" and task in {None, "archive"}:
+            _append_rules(card, "v2 归档可以额外返回 milestones_done: [ID]；只列本章 milestones_advanced 中"
+                          "已由最终正文真正完成的里程碑，部分推进不能标为完成。\n"
+                          "输入 genre_payoff 非 null 时，归档必须填写 payoff_delivered: true|false（布尔值）。"
+                          "逐项核实最终正文是否写出该 type 的可见兑现场面，确实兑现才填 true；"
+                          "仅细纲计划或标签不足以证明兑现，未写出就如实填 false，不得为了通过节奏规则谎报。")
+        if card["category"] == "deliberation" and role != "editor":
+            _append_rules(card, PAYOFF_PROTECTION_RULE)
+            if task == "critique_plan":
+                _append_rules(card, "v2 critique_plan 除 beat_sheet、rationale、ending_status 外，必须检查主编初案的 "
+                              "genre_payoff 与 milestones_advanced，确认类型爽点及里程碑能在本章兑现。"
+                              "genre_payoff 适用前述爽点保护规则：不得仅因太快、太巧或太爽否定；"
+                              "只有与锁定设定或已发生事实冲突且引用该事实时才能反对，可以换方式兑现，不能建议删除。")
+            if role == "reader_rep":
+                _append_rules(card, "你代表 genre_contract.genre 这一类型的读者。先检查本章是否兑现了 reader_promise "
+                              "和类型爽点、主角的成长是否看得见；然后才看上一章留下的悬念。")
+            elif role == "pacing_advisor":
+                _append_rules(card, "增加三项检查：本卷里程碑进度及 due_chapter；引用 thread_staleness 检查主线均衡；"
+                              "核对每章最多新埋 2 条、未回收超过 20 条时新埋不得多于回收、全卷不得超过 new_mystery_budget。")
+    if role == "reviewer" and experiment == "P1":
+        _append_rules(card, P1_REVIEW_RULES)
     return card
 
 

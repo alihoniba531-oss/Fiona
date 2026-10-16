@@ -3,16 +3,92 @@
 from __future__ import annotations
 
 from copy import deepcopy
+from difflib import SequenceMatcher
 import re
 
 from .bible import apply_archive
 from .context import build_review_bible, build_writer_context, trim_bible
 from .deliberation import messages_for
-from .schemas import ValidationError, validate_archive, validate_review
+from .schemas import ValidationError, compact, validate_archive, validate_review
 
 
 def compact_length(text):
     return len(re.sub(r"\s+", "", text))
+
+
+def _paragraphs(text):
+    paragraphs = [paragraph for paragraph in re.split(r"\n\s*\n", text)
+                  if paragraph.strip()]
+    if len(paragraphs) <= 2 and len(text.splitlines()) >= 6:
+        return [line for line in text.splitlines() if line.strip()]
+    return paragraphs
+
+
+def changed_passages(previous_text, current_text, *, limit=3000):
+    """Compute changed paragraphs; ``limit=None`` preserves the full evidence.
+
+    The default remains the bounded payload view. Review validation requests
+    the full collection separately, so clipping never removes an error's scope.
+    Deletions have no surviving passage to quote and yield no new passages.
+    """
+    previous, current = _paragraphs(previous_text), _paragraphs(current_text)
+    changed = []
+    for operation, _a, _b, start, end in SequenceMatcher(
+            None, previous, current, autojunk=False).get_opcodes():
+        if operation in {"insert", "replace"}:
+            changed.extend(current[start:end])
+    changed = list(dict.fromkeys(changed))
+    return _passages_payload(changed, limit=limit)
+
+
+def _passages_payload(passages, *, limit=3000):
+    """Bound only model context, never the collection used to validate reviews."""
+    if limit is None or sum(map(len, passages)) <= limit:
+        return list(passages)
+    marker = "（改动段落超过上限，已截断）"
+    remaining = max(0, limit - len(marker))
+    bounded = []
+    for paragraph in passages:
+        if not remaining:
+            break
+        bounded.append(paragraph[:remaining])
+        remaining -= len(bounded[-1])
+    bounded.append(marker[:limit])
+    return bounded
+
+
+def _validate_focused_review(data, body, *, adaptation_blocking, previous_issues,
+                             passages):
+    """Keep old blockers in scope and downgrade fresh unchanged-text findings."""
+    review = validate_review(data, body, adaptation_blocking=adaptation_blocking)
+    old_evidence = [compact(issue["evidence"]) for issue in previous_issues]
+    changed_evidence = [compact(passage) for passage in passages]
+    body_compact = compact(body)
+    paragraphs = [compact(paragraph) for paragraph in _paragraphs(body)]
+
+    def was_reported(issue, evidence):
+        index = issue.get("previous_issue_index")
+        if type(index) is int and 1 <= index <= len(previous_issues):
+            return True
+        start = body_compact.find(evidence)
+        for old in old_evidence:
+            if evidence in old or old in evidence:
+                return True
+            old_start = body_compact.find(old)
+            if (start >= 0 and old_start >= 0
+                    and start < old_start + len(old) and old_start < start + len(evidence)):
+                return True
+            if any(evidence in paragraph and old in paragraph for paragraph in paragraphs):
+                return True
+        return False
+
+    for issue in review["issues"]:
+        evidence = compact(issue["evidence"])
+        if not was_reported(issue, evidence) and not any(evidence in passage for passage in changed_evidence):
+            issue["blocking"] = False
+            issue["outside_changes"] = True
+    review["passed"] = not any(issue["blocking"] for issue in review["issues"])
+    return review
 
 
 def validate_manuscript(body, chapter, title):
@@ -80,13 +156,15 @@ def _chapter_number(value):
 
 
 async def apply_archived_chapter(router, config, compass, bible, archive, *,
-                                 chapter, title, beat_sheet, arm, arc_step_key=None):
+                                 chapter, title, beat_sheet, arm, arc_step_key=None,
+                                 decision=None):
     """Apply one canonical delta and shared P1 metadata/paid volume-summary task.
 
     Both a newly written chapter and a user-edited latest chapter use this path.
     Callers provide the complete previous bible, not its context-only view.
     """
-    next_bible = apply_archive(bible, archive, chapter, title)
+    next_bible = apply_archive(bible, archive, chapter, title,
+                               config=config, decision=decision)
     if config.get("enable_context_compression"):
         old_ids = {item["id"] for item in bible["locked"]["characters"]}
         new_ids = [item["id"] for item in next_bible["locked"]["characters"]
@@ -115,7 +193,8 @@ async def apply_archived_chapter(router, config, compass, bible, archive, *,
                              "compass": deepcopy(compass)}}
         card, messages = messages_for("archivist", payload, task="arc_summary",
             chapter_words=config["target"]["chapter_words"],
-            split_context=config.get("enable_context_compression", False))
+            split_context=config.get("enable_context_compression", False),
+            structure=config.get("structure"), experiment=config.get("experiment"))
         arc = await router.call(
             step_key=arc_step_key or f"arm-{arm}/ch{chapter:03d}/07-arc-summary-archivist.json",
             role="archivist", model=config["agents"]["archivist"], messages=messages,
@@ -143,16 +222,22 @@ async def write_chapter(router, config, compass, bible, meeting, *, chapter, arm
     context = build_writer_context(compass, bible, beat_sheet, chapter,
                                    previous_text=previous_text,
                                    compressed=config.get("enable_context_compression", False))
+    if config.get("structure") == "v2":
+        context["genre_payoff"] = deepcopy(decision.get("genre_payoff"))
+        context["milestones_advanced"] = deepcopy(decision.get("milestones_advanced", []))
     prefix = f"arm-{arm}/ch{chapter:03d}"
     flags, reviews = [], []
     body = ""
     blocking_issues = []
     revision_rounds = 0
+    previous_review_body = ""
+    focused_reviews = config.get("experiment") == "P1"
 
     async def call(role, task, filename, payload, validator):
         card, messages = messages_for(role, {"task": task, "chapter": chapter, **payload},
                                       chapter_words=words, task=task,
-                                      split_context=config.get("enable_context_compression", False))
+                                      split_context=config.get("enable_context_compression", False),
+                                      structure=config.get("structure"), experiment=config.get("experiment"))
         return await router.call(
             step_key=f"{prefix}/{filename}", role=role, model=config["agents"][role],
             messages=messages, max_tokens=card["max_tokens"], validator=validator,
@@ -186,16 +271,27 @@ async def write_chapter(router, config, compass, bible, meeting, *, chapter, arm
             "body": body, "beat_sheet": beat_sheet,
             "bible": build_review_bible(compass, bible, chapter, beat_sheet["characters"]),
             "review_round": revision}
+        if config.get("structure") == "v2":
+            review_payload["genre_payoff"] = deepcopy(decision.get("genre_payoff"))
         adaptation_blocking = bool(config.get("drama_adaptation"))
         if adaptation_blocking:
             review_payload["adaptation_blocking"] = True
             review_payload["adaptation_limits"] = config["adaptation"]
         if revision >= 1:
             review_payload["previous_blocking_issues"] = deepcopy(blocking_issues)
+        passages = []
+        if focused_reviews and revision >= 1:
+            passages = changed_passages(previous_review_body, body, limit=None)
+            if passages:
+                review_payload["changed_passages"] = _passages_payload(passages)
         review = await call(
             "reviewer", "review", f"05-review-reviewer-r{revision}.json",
-            review_payload, lambda data: validate_review(
-                data, body, adaptation_blocking=adaptation_blocking))
+            review_payload, lambda data: (
+                _validate_focused_review(data, body, adaptation_blocking=adaptation_blocking,
+                                         previous_issues=blocking_issues, passages=passages)
+                if focused_reviews and revision >= 1 else
+                validate_review(data, body, adaptation_blocking=adaptation_blocking)))
+        previous_review_body = body
         reviews.append(review)
         if not review["issues"] and review["dropped_issues"] and "review_degraded" not in flags:
             flags.append("review_degraded")
@@ -211,16 +307,21 @@ async def write_chapter(router, config, compass, bible, meeting, *, chapter, arm
     # chapter's length flag describes the accepted final manuscript.
     if not length_range["min"] <= compact_length(body) <= length_range["max"]:
         flags.insert(0, "length_out_of_range")
+    archive_payload = {"body": body, "beat_sheet": beat_sheet,
+                       "bible": (build_review_bible(compass, bible, chapter, beat_sheet["characters"])
+                                 if config.get("enable_context_compression") else bible)}
+    if config.get("structure") == "v2":
+        archive_payload["genre_payoff"] = deepcopy(decision.get("genre_payoff"))
+        archive_payload["milestones_advanced"] = deepcopy(decision.get("milestones_advanced", []))
     archive = await call(
         "archivist", "archive", "06-archive-archivist.json",
-        {"body": body, "beat_sheet": beat_sheet,
-         "bible": (build_review_bible(compass, bible, chapter, beat_sheet["characters"])
-                   if config.get("enable_context_compression") else bible)},
+        archive_payload,
         lambda data: validate_archive(
-            data, bible, require_new_appearance=config.get("experiment") == "P1"))
+            data, bible, require_new_appearance=config.get("experiment") == "P1",
+            config=config, decision=decision))
     next_bible = await apply_archived_chapter(
         router, config, compass, bible, archive, chapter=chapter, title=title,
-        beat_sheet=beat_sheet, arm=arm)
+        beat_sheet=beat_sheet, arm=arm, decision=decision)
     if archive["locked_conflicts"]:
         flags.append("locked_conflict")
     if archive["deviation_from_beat_sheet"]["deviated"]:
