@@ -5,6 +5,7 @@ import binascii
 import io
 import os
 import shutil
+import stat
 import subprocess
 import tempfile
 import threading
@@ -372,11 +373,48 @@ def _save_uploaded_image(image_base64: str) -> tuple[str, str]:
 
 
 def delete_uploaded_files(paths: list[str]) -> tuple[list[str], list[str]]:
-    """只删除 uploads 根目录下由应用记录的普通文件，拒绝路径穿越。"""
+    """清理普通上传文件和工作室内的项目目录，拒绝越界路径。"""
     deleted: list[str] = []
     failed: list[str] = []
     upload_root = os.path.realpath(UPLOADS_DIR)
     for stored_path in dict.fromkeys(paths):
+        if isinstance(stored_path, str) and (
+            stored_path.startswith("studio:")
+            or (os.path.isabs(stored_path) and not stored_path.startswith("/uploads/"))
+        ):
+            from pathlib import Path
+            from studio.config import get_settings
+            try:
+                studio_root = get_settings().directory.resolve()
+                if stored_path.startswith("studio:"):
+                    project_id = stored_path.removeprefix("studio:")
+                    if (not project_id or Path(project_id).name != project_id
+                            or project_id in {".", ".."} or "\\" in project_id):
+                        failed.append(stored_path)
+                        continue
+                    candidate = studio_root / project_id
+                else:
+                    # 兼容旧队列的绝对目录；新条目只存 studio:<project_id>。
+                    candidate = Path(stored_path)
+                target = candidate.resolve()
+                # 项目目录必须位于根内，根本身和目录符号链接都不能删除。
+                if (not candidate.is_absolute() or target == studio_root
+                        or not target.is_relative_to(studio_root) or candidate.is_symlink()):
+                    failed.append(stored_path)
+                    continue
+                try:
+                    target_stat = target.stat()
+                except FileNotFoundError:
+                    deleted.append(stored_path)
+                    continue
+                if not stat.S_ISDIR(target_stat.st_mode):
+                    failed.append(stored_path)
+                    continue
+                shutil.rmtree(target)
+                deleted.append(stored_path)
+            except (OSError, RuntimeError, ValueError):
+                failed.append(stored_path)
+            continue
         if not isinstance(stored_path, str) or not stored_path.startswith("/uploads/"):
             failed.append(str(stored_path))
             continue

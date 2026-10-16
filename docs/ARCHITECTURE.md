@@ -182,7 +182,7 @@ V4 事务迁移为交流增加 `workflow_version/artifact/artifact_status/comple
 
 BYOK 等待上游建流或正文块期间，每 10 秒发送 SSE 注释心跳（`: thinking`），防止 Next 开发代理的 30 秒空闲超时或其他中间层切断长时间思考；取消时仍先中断上游、等待 worker 结束，再关闭并释放槽位。
 
-Claude 思考强度可选低 / 中 / 高，默认低；聊天底栏和设置页切换立即保存到服务端账号。低、中、高的 `max_tokens` 普通/镜子分别为 4096/2048、8192/4096、16384/8192；低与中总时限为 `FIONA_BYOK_TOTAL_SECONDS`（默认 120 秒），高为 `min(240, FIONA_BYOK_TOTAL_SECONDS×1.5)`（默认 180 秒），Nginx 的 300 秒是两次读之间的间隔，并非整轮总时限。调高会先思考再回答，用户自己的额度消耗随档位上升；其他厂商不受影响。单次请求正文仍限普通 4000 字、镜子 600 字，智能体整轮累计限 8000 字，测试连接固定低档/1024 tokens/原总时限。`user_model_configs` 新增 `effort TEXT NOT NULL DEFAULT 'low'`，老库启动时自动补列，已有行默认低，不新增迁移版本号，`/health` 不变；保存模型、Key 或切换厂商保留档位，只在 Claude 下生效。
+Claude 思考强度可选低 / 中 / 高，默认低；聊天底栏和设置页切换立即保存到服务端账号。低、中、高的 `max_tokens` 普通/镜子分别为 4096/2048、8192/4096、16384/8192；低与中总时限为 `FIONA_BYOK_TOTAL_SECONDS`（默认 120 秒），高为 `min(240, FIONA_BYOK_TOTAL_SECONDS×1.5)`（默认 180 秒），Nginx 的 300 秒是两次读之间的间隔，并非整轮总时限。调高会先思考再回答，用户自己的额度消耗随档位上升；其他厂商不受影响。单次请求正文仍限普通 4000 字、镜子 600 字，智能体整轮累计限 8000 字，测试连接固定低档/1024 tokens/原总时限。`user_model_configs` 新增 `effort TEXT NOT NULL DEFAULT 'low'`，老库启动时自动补列，已有行默认低，不新增迁移版本号，该 BYOK 变更不增加健康检查项；保存模型、Key 或切换厂商保留档位，只在 Claude 下生效。
 
 零余额且已启用 BYOK、未预扣时，generate_image / weather 以外的 pending：「算了/取消/不用了/不要了/不查了/没事了」免费取消并清 pending；以「先聊/聊点/换个话题/先不」开头清 pending、由用户模型回复；其他补参消息仍报草莓不足、pending 保留。天气 pending 的「换个话题」类句子同样清 pending、由用户模型回复；余额充足用户与平台路由保持不变。
 
@@ -222,9 +222,11 @@ HTTP 默认经过 `backend/main.py` 的鉴权中间件，身份来源优先级�
 
 1. `Authorization: Bearer <jwt>`
 2. `fiona_token` Cookie
-3. `DEV_MODE=1` 时的 `X-Dev-User`/`dev_user`
+3. `DEV_MODE=1` 且回环地址时的 `X-Dev-User`/`dev_user`
 
-当前公开范围包括根进程响应和 `/health`、认证入口、`/hot/*` 中的只读榜单，以及 Plaza 的标签、Feed 和社群兴趣三个只读端点。`/health` 接受 GET/HEAD，3 秒总超时，以只读方式检查现有数据库及其可写权限、五道迁移和上传目录可写性，不建库、不调用外部服务，正常为 200 `{"status":"ok"}`，失败为 503 且仅列 `database/schema/uploads` 检查项，不泄露路径或异常。`/hot/expand` 会触发联网模型调用，中间件和路由依赖都要求登录。API 文档（`/docs`、`/redoc`、`/openapi.json`）只在 `DEV_MODE=1` 时开放，生产环境返回 404。WebSocket 不经过 HTTP 中间件，由具体端点单独认证。
+中间件在 `request.state.auth_method` 标记 `jwt` 或 `dev`。工作室另要求作者名单与默认 JWT；只有 `FIONA_STUDIO_REQUIRE_JWT=0` 才允许开发身份。所有 `/studio/*`（含文件）未通过准入均 404、`private, no-store`。
+
+当前公开范围包括根进程响应和 `/health`、认证入口、`/hot/*` 中的只读榜单，以及 Plaza 的标签、Feed 和社群兴趣三个只读端点。`/health` 接受 GET/HEAD，3 秒总超时，以只读方式检查现有数据库及其可写权限、五道迁移和上传目录可写性；工作室未关闭时还检查 `FIONA_STUDIO_DIR` 可写性，不建库、不调用外部服务，正常为 200 `{"status":"ok"}`，失败为 503 且仅列 `database/schema/uploads/studio_storage` 检查项（工作室关闭时省略最后一项），不泄露路径或异常。`/hot/expand` 会触发联网模型调用，中间件和路由依赖都要求登录。API 文档（`/docs`、`/redoc`、`/openapi.json`）只在 `DEV_MODE=1` 时开放，生产环境返回 404。WebSocket 不经过 HTTP 中间件，由具体端点单独认证。
 
 按 IP 限流只在 ASGI `client.host` 属于调用时读取的 `FIONA_TRUSTED_PROXIES`（默认回环，支持 IP/CIDR）时采信 X-Real-IP/XFF；uvicorn 可能已把 `client.host` 改写为真实客户端 IP。每个 Nginx 入口必须覆盖 X-Real-IP 并追加 XFF，避免只设一个头时由 uvicorn 采信客户端伪造的 XFF；开发鉴权的 `is_loopback_client` 保持只看 ASGI 对端。
 
@@ -235,15 +237,16 @@ HTTP 默认经过 `backend/main.py` 的鉴权中间件，身份来源优先级�
 当前持久化完全位于单机。开发环境的默认路径为：
 
 - SQLite：`backend/fiona.db`
-- 媒体：`backend/uploads/`
+- 聊天/广场媒体：`backend/uploads/`
+- 工作室私有素材和成片：`backend/studio_data/`
 - 环境变量：`backend/.env`
 - 桌面开发连接：`desktop/fiona.config.json`
 
-生产部署通过 `FIONA_DB_PATH` 和 `FIONA_UPLOADS_DIR` 将前两项放到
-`/var/lib/fiona/fiona.db` 和 `/var/lib/fiona/uploads/`；API Key/JWT Secret 位于
+生产部署通过 `FIONA_DB_PATH`、`FIONA_UPLOADS_DIR`、`FIONA_STUDIO_DIR` 将数据库及两类媒体放到
+`/var/lib/fiona/fiona.db`、`/var/lib/fiona/uploads/`、`/var/lib/fiona/studio/`；工作室使用此路径是因为 systemd 只允许写 `/var/lib/fiona`。API Key/JWT Secret 位于
 权限为 `0600` 的 `/etc/fiona/fiona.env`，不写入只读代码目录。
 
-SQLite 表由 `backend/database.py:init_db()` 在启动时创建，初始化时启用持久的 WAL 模式，连接设置一致且不低于 5 秒的 busy timeout。历史字段仍使用旧的容错式 `ALTER TABLE`，其中包括可空列 `users.strawberry_refill_date`；兼容建表还包括 `retired_usernames`、`user_model_configs`；后者在 init_db 直接执行模块 DDL，并紧接着容错执行 `ALTER TABLE user_model_configs ADD COLUMN effort TEXT NOT NULL DEFAULT 'low'`，老库启动时自动补列，不新增迁移版本，health 与五道迁移不变。新增分身与会话由 `backend/agent_store.py:migrate_avatar_schema()` 执行版本化事务迁移，版本记入 `schema_migrations`。当前没有通用迁移框架或 PostgreSQL 实现。
+SQLite 表由 `backend/database.py:init_db()` 在启动时创建，初始化时启用持久的 WAL 模式，连接设置一致且不低于 5 秒的 busy timeout。历史字段仍使用旧的容错式 `ALTER TABLE`，其中包括可空列 `users.strawberry_refill_date`；兼容建表还包括 `retired_usernames`、`user_model_configs`；后者在 init_db 直接执行模块 DDL，并紧接着容错执行 `ALTER TABLE user_model_configs ADD COLUMN effort TEXT NOT NULL DEFAULT 'low'`，老库启动时自动补列，不新增迁移版本，该变更不改变五道迁移检查。新增分身与会话由 `backend/agent_store.py:migrate_avatar_schema()` 执行版本化事务迁移，版本记入 `schema_migrations`。当前没有通用迁移框架或 PostgreSQL 实现。
 
 `agents` 对每个 owner 设置唯一约束，保存可编辑身份，以及不经名片 API 输出的 `private_memory_json/memory_revision`。初次创建时复制本人旧画像作为私有基线，之后与 `users.profile_json` 分开；旧社会画像仍用于原有显式匹配流程。公开名片只经字段白名单返回，不返回用户名、人格设定或私有记忆。
 
@@ -255,7 +258,7 @@ SQLite 表由 `backend/database.py:init_db()` 在启动时创建，初始化时�
 
 主要数据域包括：加密自带模型配置、用户和画像、消息、匹配、待接受卡片、真人消息、帖子/点赞、标签与时间偏好、用户成长状态、事件、OTP、邀请码、退役用户名、槽位状态和上传清理队列。
 
-`fiona.db` 与 `uploads/` 必须作为一个隐私数据集合共同备份和清理。WAL 模式下在线数据库备份必须使用 SQLite `.backup` 或在线备份 API；只复制主数据库文件会漏掉未检查点的提交。`deploy/fiona-backup.sh` 以数据库属主运行并校验备份完整性，媒体与库用同一时间戳、权限 `0600`，默认保留 14 天；systemd timer 每天北京时间 04:00 执行并补跑。`backend/migrate.py` 默认在数据库及伴生文件的临时副本上只执行 `init_db`，不恢复交流或清理文件，明确 `--in-place` 才迁移指定库。删除单条消息、清空历史或删除账户时，数据库会在同一事务中找出不再被消息/帖子引用的媒体并写入 `upload_cleanup_queue`；文件会立即清理，失败项在后端启动时和运行期间周期重试，每轮异常只记类型并继续。新帖子在库内保存 owner；能通过当前 HMAC 或旧 MD5 匿名标识识别的历史帖子会自动回填，无法识别的旧行仍需人工处置。
+`fiona.db`、`uploads/` 与 `studio/` 必须作为一个隐私数据集合共同备份和清理。WAL 模式下在线数据库备份必须使用 SQLite `.backup` 或在线备份 API；只复制主数据库文件会漏掉未检查点的提交。`deploy/fiona-backup.sh` 以数据库属主运行并校验备份完整性，库快照与 uploads 包、存在时的 studio 第三个包使用同一时间戳、权限 `0600`，媒体排除隐藏文件和 `.part`，默认共同保留 14 天；systemd timer 每天北京时间 04:00 执行并补跑。`backend/migrate.py` 默认在数据库及伴生文件的临时副本上只执行 `init_db`，不恢复交流或清理文件，明确 `--in-place` 才迁移指定库。删除单条消息、清空历史或删除账户时，数据库会在同一事务中找出不再被消息/帖子引用的媒体并写入 `upload_cleanup_queue`；删号还在同一事务删除四张 `studio_*` 表的 owner 行、把工作室项目目录加入同一队列。清理器只递归删除真实路径位于工作室根内的目录，不能删除根本身；原普通上传文件清理行为保持不变。文件和目录会立即清理，失败项在后端启动时和运行期间周期重试，每轮异常只记类型并继续。新帖子在库内保存 owner；能通过当前 HMAC 或旧 MD5 匿名标识识别的历史帖子会自动回填，无法识别的旧行仍需人工处置。
 
 ## 匹配和真人连接
 
@@ -280,9 +283,9 @@ Layer 2 会为双方创建待接受卡片；Layer 1、Layer 2 和手动匹配都
 ## 运行和扩展限制
 
 - SQLite 每次操作创建连接；WAL、统一 busy timeout 和异步路径的槽位读写隔离已启用，正式迁移和更高并发能力仍待建设。
-- 模型预算计数是单进程内存状态，不是供应商账单或集群级配额；草莓预扣、退款和每日补给已原子化，真实 usage 与持久化成本控制仍待完成。
+- 聊天模型预算计数是单进程内存状态，不是供应商账单或集群级配额；草莓预扣、退款和每日补给已原子化。工作室独立使用数据库预留、实际 usage 结算及上海自然日上限；调度器在进程内运行，只支持单 worker。
 - 消息/账户删除已有引用检查和持久化文件清理周期重试；全目录孤儿扫描与保留期限尚未完成。
-- ASGI 层限制总请求体为 25 MB，Chat/图片、ASR、TTS、帖子和分页还有更严格的领域边界；上传图片验证真实格式、完整性和像素量并去元数据，广场视频由 ffmpeg remux 去元数据，处理失败拒绝保存。官方体验、热点展开、卡片详情、ASR、天气、BYOK 聊天和测试连接已叠加七项每日每账号上限，天气超限通过聊天错误事件退款；兼容模型客户端已有可配置超时和有限重试，搜索、旅行规划、热点展开和卡片详情的原生调用则固定 30 秒 socket 超时、无重试且不受兼容客户端超时/重试环境变量控制；热点分类使用 `qwen3.8-flash`，固定 8 秒超时、不重试。并发边界、公共热点缓存和持久化成本上限仍需继续治理。
+- ASGI 层限制总请求体为 25 MB，Chat/图片、ASR、TTS、帖子和分页还有更严格的领域边界；上传图片验证真实格式、完整性和像素量并去元数据，广场视频由 ffmpeg remux 去元数据，处理失败拒绝保存。官方体验、热点展开、卡片详情、ASR、天气、BYOK 聊天和测试连接已叠加七项每日每账号上限，天气超限通过聊天错误事件退款；兼容模型客户端已有可配置超时和有限重试，搜索、旅行规划、热点展开和卡片详情的原生调用则固定 30 秒 socket 超时、无重试且不受兼容客户端超时/重试环境变量控制；热点分类使用 `qwen3.8-flash`，固定 8 秒超时、不重试。通用聊天的并发边界、公共热点缓存和持久化成本上限仍需继续治理；工作室使用独立的持久化人民币额度。
 - 热点与网页卡片的服务端抓取通过只允许公网 HTTP(S) 的客户端访问，每次 DNS 和重定向都会重新校验并限制响应体与超时；搜索与旅行卡片只展示原生搜索结果中经公网 HTTP(S) 格式校验的链接，模型生成的 URL 不进入这两类卡片。
 - 前端主页面承担职责过多，多个隐藏 iframe 会继续运行轮询或 3D 场景。
 - 仓库已增加后端与 Web 质量门禁工作流；Windows 桌面工作流会运行 Rust 单测再打包。新工作流仍需在 GitHub 首次运行中确认 runner 环境。
@@ -322,3 +325,59 @@ Markdown 导出按原顺序保留所有有正文的章节，在 stale 章节标�
 数据流：思路、圣经、正文与留言发送到用户选择的阿里云百炼、DeepSeek、火山方舟或 BYOK 厂商（包括 Anthropic）。BYOK 仅允许已知型号的 anthropic/dashscope/deepseek 预设，Key 调用时通过 `byok.store.get_internal_config` 在内存取得。平台仅读取 DASHSCOPE_API_KEY、DEEPSEEK_API_KEY、ARK_API_KEY；小说日志不记思路、正文、提示词或 Key。
 
 开关：FIONA_NOVEL 默认 0，仅字面 1 开启；FIONA_NOVEL_USERS 空白名单拒绝全部用户；FIONA_NOVEL_MAX_RUNNING 默认 3；FIONA_DAILY_NOVEL_CHAPTERS 默认 30；FIONA_NOVEL_PRICE_JSON 是完整价格覆盖。
+
+## 短片工作室后端
+
+`studio.store.STUDIO_TABLES_DDL` 由 `database.init_db()` 统一执行，只新增 `studio_projects/assets/quotes/jobs` 与索引，不改既有表、不新增迁移版本。金额以八位十进制保存和计算。确认报价在 `BEGIN IMMEDIATE` 内核对有效期、确认状态和全工作室当日占用，锁价并创建 queued 任务；指纹由参数与 quote_item_id 计算，在途状态有部分唯一索引。报价有效期不影响已确认任务。
+
+进程启动在小说恢复之后执行工作室恢复，再启动受统一后台任务管理的 2 秒调度循环。抢占以 queued 状态与 run_token 作 CAS；两家厂商分别限制在途数。付费 POST 只有一次，完整 4xx/429 为 rejected，其余无法确定结果的提交为 uncertain 并保留预留。submitting 重启转 uncertain，submitted/running 恢复只读轮询，succeeded 恢复下载。所有状态转换检查条件更新的受影响行数。
+
+额度以确认时的 Asia/Shanghai 日期归属，共用全工作室付款上限；已结算实际金额加未结算预留构成占用，DEV_MODE 与通用限流器都不能绕过。万相结算 usage.duration × 分辨率秒价，Seedance 结算 completion_tokens × 0.07/1000，接受整数值浮点数和数字字符串；显式无效 token 数无法结算，即使任务已终止也保留预留并计入占用。过滤、明确拒绝、排队取消、作者确认未扣费释放为零。uncertain 不自动重投，作者只能关联 task_id、只读 recheck 或声明未扣费后 release。用户金额文案统一两位小数，数值字段保留结算精度。
+
+素材只按 asset_id 提供，先核验 owner 与真实路径，再用 FileResponse 返回 Range/no-store。万相在报价时检查透明通道、240–8000 边长和 20MB；Seedance 提交时在内存按输出长短边等比缩图，不改原始文件。下载只接受配置白名单 host，不跟随重定向、不携带 API 凭据，流式限制 300MB、临时文件完整后原子改名。ffprobe 限 file/pipe 协议，按时长容差 0.2 秒验证；短片记 short_output，结果 403/404 记 expired。轮询前两分钟间隔 15 秒、之后 30 秒，超时标 needs_recheck；手动复查只触发 GET。
+
+### WO1 规格逐条对应
+
+下表对应 `docs/tasks/2026-10-16-studio-wo1-backend/02-spec.md`，测试均使用临时库、TestClient 或 MockTransport。
+
+| 第 3 节硬规则 | 实现位置与行为 | 第 10 节测试对应 |
+|---|---|---|
+| 1. 付费 POST 最多一次 | providers/base + scheduler；超时、重置、中断、5xx、无编号、无效 JSON 均 uncertain，保留额度和已知 task_id | 1：test_studio_providers / test_studio_scheduler |
+| 2. 明确拒绝 | 完整 4xx/429 保留上游 code/message，rejected 原子清空预留 | 1：上述两组覆盖两家厂商 |
+| 3. 只读重试 | GET 失败留待后续 tick；下载每 tick 最多 3 次 | 10：test_studio_scheduler 的重试用例 |
+| 4. 防重复 | 确认写事务、15 分钟期限、参数与 quote_item_id 指纹、在途部分唯一索引；排队不受报价过期影响 | 2、3、4：test_studio_store / test_studio_scheduler |
+| 5. 重启恢复 | recovery 仅改库：submitting→uncertain；submitted/running 续查；succeeded 续下载；queued 保留 | 5：test_studio_scheduler，恢复请求数为 0 |
+| 6. 数据库上限 | spend + store；确认时的上海日期，全工作室 actual 加未结算预留；开发开关不豁免 | 7、12：test_studio_store / test_studio_pricing / test_studio_integration |
+| 7. 准入 | main.auth_method + gate，调用时读取作者名单与开关；不合格统一 404/no-store | 8：test_studio_api 遍历全部 13 接口、Cookie/Bearer/dev |
+| 8. 私有文件 | storage 真实路径限制、owner 查询、FileResponse Range；API 隐藏内部路径及签名结果 URL | 9：test_studio_api / test_studio_storage |
+| 9. 安全下载 | 白名单、无重定向、无鉴权头、300MB、临时原子写、ffprobe 时长容差；short_output/expired 结算 | 10：test_studio_storage / test_studio_scheduler |
+| 10. 首帧 | 万相报价验证无透明、240–8000、20MB，提交原图；Seedance 按长短边界内存等比缩图 | 11：test_studio_api / test_studio_providers |
+
+第 8 节接口全部在 `routers/studio.py`，共同经过 gate 和 owner 隔离：
+
+| 方法与路径 | 对应实现 |
+|---|---|
+| GET /studio/access | 开关、两级预算、独立在途上限、当日占用与剩余 |
+| POST /studio/projects | 建项目，事务内复核账号存在 |
+| GET /studio/projects | 本人项目，updated_at 倒序 |
+| POST /studio/projects/{pid}/assets | PNG/JPEG/WebP、Pillow、20MB、sha256 去重，落盘与删号串行 |
+| POST /studio/projects/{pid}/clips/quote | 校验参数和万相首帧，锁定报价项及 15 分钟期限，返回 today |
+| POST /studio/quotes/{qid}/confirm | 原子确认、预算检查、预留和 queued 任务；重复确认 409 |
+| GET /studio/projects/{pid}/jobs | 本项目任务列表 |
+| GET /studio/jobs/{jid} | 本人任务详情 |
+| POST /studio/jobs/{jid}/cancel | 只取消 queued，原子释放 |
+| POST /studio/jobs/{jid}/recheck | 为有 task_id 的 submitted/running/uncertain 或已暂停的 succeeded 安排一次 GET，允许人工越过轮询暂停 |
+| POST /studio/jobs/{jid}/link-task | 为无 task_id 的 uncertain 关联编号，转 submitted 并安排 GET |
+| POST /studio/jobs/{jid}/release | 仅 uncertain 且 not_charged 必须严格为 true，按零结算 |
+| GET /studio/assets/{aid}/file | owner、真实路径、Range 206、private/no-store |
+
+| 第 9 节调度要求 | 对应实现与测试 |
+|---|---|
+| 两秒循环、异常不中止、可取消 | run_scheduler 每两秒派发独立任务；异常只记 ID/固定错误码/异常类名；退出收齐取消的子任务，test_studio_scheduler 验证慢 POST 不延误 tick |
+| 提交与两家独立在途上限 | store.claim_next_job 的数据库事务计数与 CAS 抢占；httpx 异步单次提交；第 10 节第 6 项用 5 个万相任务及独立 Seedance 配额验证 |
+| 轮询节奏与状态映射 | 前两分钟 15 秒，之后 30 秒；超时 needs_recheck 停止自动查询，成功但缺结果地址也适用；按 WO0 成功结构和本期失败/过滤状态映射，相关测试均在 test_studio_scheduler/providers |
+| 下载与结算 | 成功结果经下载、ffprobe、asset 入库和结算；403/404→expired，短片→failed；test_studio_scheduler 用 30fps/24fps 及实际 usage 断言 |
+
+第 10 节第 1–12 项分别已在上表标注；第 13 项由 `test_studio_integration` 验证删号的四表清空、目录入队、清理和越界拒绝，另有上传/下载晚到删号的并发回归；第 14 项验证工作室目录不可写的 503/studio_storage 和关闭时免检；第 15 项通过完整既有回归核对聊天、普通媒体、鉴权等行为。断网钩子仅作用于 `test_studio_*.py`，允许回环连接与解析，其作用域及白名单使用模拟底层调用验证；不修改其他测试的传输或解析。
+
+删号事务以 `studio:<project_id>` 将项目加入清理队列，清理时按当前工作室根目录解析；兼容根内旧绝对目录条目，拒绝根本身、根外、符号链接和非目录。普通 `/uploads/` 文件沿用原清理规则。删消息、清空历史和删号的文件清理通过 `asyncio.to_thread` 执行，失败项保留供重试。

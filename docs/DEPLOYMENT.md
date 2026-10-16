@@ -4,7 +4,7 @@
 
 > **2026-09-25：线上服务已下线。** 原 `madchloechat.online` 服务器已关闭，当前没有任何在线部署，详见文末[下线记录](#下线记录)。本文其余内容保留为重新部署时的参考基线。
 
-> 仓库无法证明外部服务器此刻的真实配置。首次使用或接手服务器时，必须先核对 Nginx、systemd、证书、数据库和上传目录，再按本文操作。
+> 仓库无法证明外部服务器此刻的真实配置。首次使用或接手服务器时，必须先核对 Nginx、systemd、证书、数据库、上传目录和工作室目录，再按本文操作。
 
 ## 目标拓扑
 
@@ -24,10 +24,11 @@ systemd:
 state:
     /var/lib/fiona/fiona.db
     /var/lib/fiona/uploads/
+    /var/lib/fiona/studio/
     /etc/fiona/fiona.env
 ```
 
-该拓扑目前只支持单个后端实例。SQLite、进程内预算计数器和短时、限次 TTS 票据不适合直接横向扩容。
+该拓扑目前只支持单个后端实例。工作室调度器在进程内运行，只支持单 worker；不得启动多个 uvicorn worker 或第二个服务进程共享同一工作室库。SQLite、进程内预算计数器和短时、限次 TTS 票据不适合直接横向扩容。
 
 ## 2026-09-05 分身与会话迁移
 
@@ -68,7 +69,7 @@ state:
 - Certbot 或等价 TLS 证书管理工具
 - 有效的 DashScope API Key
 
-上传图片和视频以 `0600` 落盘，只能经后端鉴权后的 `/uploads/` 访问；不要配置 Nginx 直接读取上传目录。GIF 相同的连续帧可能合并，总播放时长不变。3GP 中的 AMR 音频未验证能否 remux 到 MP4，可能处理失败；失败时需先转成兼容的 MP4 再上传。
+聊天和广场上传图片、视频以 `0600` 落盘，经后端鉴权后的 `/uploads/` 访问；工作室文件只经 `/studio/assets/{aid}/file` 按 owner 获取，支持 Range 与 no-store，不挂静态目录；不要配置 Nginx 直接读取上传目录。GIF 相同的连续帧可能合并，总播放时长不变。3GP 中的 AMR 音频未验证能否 remux 到 MP4，可能处理失败；失败时需先转成兼容的 MP4 再上传。
 
 Debian/Ubuntu 可用 `sudo apt-get update && sudo apt-get install -y ffmpeg sqlite3` 安装前两项；用 `ffmpeg -version`、`sqlite3 --version` 和 `python3 -c "import sqlite3; print(sqlite3.sqlite_version)"` 自检。最后一条应输出 3.35.0 或更新版本。
 
@@ -81,7 +82,7 @@ Debian/Ubuntu 可用 `sudo apt-get update && sudo apt-get install -y ffmpeg sqli
 ```bash
 useradd --system --home /var/lib/fiona --shell /usr/sbin/nologin fiona
 install -d -o root -g root -m 0755 /opt/fiona
-install -d -o fiona -g fiona -m 0700 /var/lib/fiona /var/lib/fiona/uploads
+install -d -o fiona -g fiona -m 0700 /var/lib/fiona /var/lib/fiona/uploads /var/lib/fiona/studio
 install -d -o root -g root -m 0755 /etc/fiona
 install -d -o fiona -g fiona -m 0700 /var/backups/fiona
 
@@ -105,6 +106,11 @@ JWT_SECRET=<足够长的随机字符串>
 DEV_MODE=0
 FIONA_DB_PATH=/var/lib/fiona/fiona.db
 FIONA_UPLOADS_DIR=/var/lib/fiona/uploads
+FIONA_STUDIO_DIR=/var/lib/fiona/studio
+FIONA_STUDIO=1
+FIONA_STUDIO_OWNERS=
+FIONA_STUDIO_REQUIRE_JWT=1
+DASHSCOPE_WORKSPACE_ID=<百炼业务空间ID>
 STRAWBERRY_DAILY_REFILL=0
 ```
 
@@ -124,7 +130,15 @@ OpenAI 兼容模型客户端默认 60 秒超时、最多重试 1 次，可通过
 | `FIONA_CRISIS_MODEL_ENABLED` | 危机模型复核默认开启，仅 `0` 关闭；规则高危不复核，模型只能升档 |
 | `FIONA_CRISIS_MODEL_TIMEOUT_SECONDS` | 独立危机客户端超时，默认 `2.0` 秒，合法范围 `0.5–10`，无效值回落默认；不重试，失败按规则结果走 |
 | `FIONA_DB_PATH` | 服务和管理脚本使用的 SQLite 数据库路径 |
-| `FIONA_UPLOADS_DIR` | 上传文件目录 |
+| `FIONA_UPLOADS_DIR` | 聊天和广场上传文件目录 |
+| `FIONA_STUDIO_DIR` | 工作室私有文件；生产 `/var/lib/fiona/studio`，本地默认 `backend/studio_data` |
+| `FIONA_STUDIO` / `FIONA_STUDIO_OWNERS` | 仅字面 `0` 关闭；作者用户名逗号分隔、去空白后精确匹配，名单默认空 |
+| `FIONA_STUDIO_REQUIRE_JWT` | 默认开启，只有字面 `0` 才允许已有的回环开发通道 |
+| `FIONA_STUDIO_DAILY_CNY` / `FIONA_STUDIO_MAX_QUOTE_CNY` | 全工作室每日/单报价上限，默认 300/100 元，正有限数，DEV_MODE 仍生效 |
+| `FIONA_STUDIO_MAX_INFLIGHT_WAN` / `FIONA_STUDIO_MAX_INFLIGHT_SEEDANCE` | 两家厂商独立在途上限，各默认 3，范围 1–10 |
+| `FIONA_STUDIO_VIDEO_HOSTS` | 结果白名单，默认 `*.oss-accelerate.aliyuncs.com,*.oss-cn-beijing.aliyuncs.com,*.tos-cn-beijing.volces.com`，逗号分隔、支持 `*` |
+| `FIONA_STUDIO_POLL_TIMEOUT_MIN` | 自动轮询时限，默认 30 分钟，正有限数，超时需人工 recheck |
+| `DASHSCOPE_WORKSPACE_ID` | 万相使用的百炼业务空间 ID，配合 DASHSCOPE_API_KEY；Seedance 使用 ARK_API_KEY |
 | `FIONA_TRUSTED_PROXIES` | 按 IP 限流信任的代理 IP/CIDR，逗号分隔，默认 `127.0.0.1,::1`；每次调用读取 |
 | `FIONA_DAILY_OFFICIAL_EXCHANGES` | 每账号每个北京时间自然日创建官方体验次数，默认 `3` |
 | `FIONA_DAILY_HOT_EXPANDS` | 每账号每天热点展开次数，默认 `30` |
@@ -208,7 +222,7 @@ BYOK 接管普通/镜子聊天回复，智能体模式关闭时的 Claude 与两
 
 BYOK 等待上游建流或正文块期间，每 10 秒发送 SSE 注释心跳（`: thinking`），防止 Next 开发代理的 30 秒空闲超时或其他中间层切断长时间思考；取消时仍先中断上游、等待 worker 结束，再关闭并释放槽位。
 
-Claude 思考强度可选低 / 中 / 高，默认低；聊天底栏和设置页切换立即保存到服务端账号。低、中、高的 `max_tokens` 普通/镜子分别为 4096/2048、8192/4096、16384/8192；低与中总时限为 `FIONA_BYOK_TOTAL_SECONDS`（默认 120 秒），高为 `min(240, FIONA_BYOK_TOTAL_SECONDS×1.5)`（默认 180 秒），Nginx 的 300 秒是两次读之间的间隔，并非整轮总时限。调高会先思考再回答，用户自己的额度消耗随档位上升；其他厂商不受影响。单次请求正文仍限普通 4000 字、镜子 600 字，智能体整轮累计限 8000 字，测试连接固定低档/1024 tokens/原总时限。`user_model_configs` 新增 `effort TEXT NOT NULL DEFAULT 'low'`，老库启动时自动补列，已有行默认低，不新增迁移版本号，`/health` 不变；保存模型、Key 或切换厂商保留档位，只在 Claude 下生效。
+Claude 思考强度可选低 / 中 / 高，默认低；聊天底栏和设置页切换立即保存到服务端账号。低、中、高的 `max_tokens` 普通/镜子分别为 4096/2048、8192/4096、16384/8192；低与中总时限为 `FIONA_BYOK_TOTAL_SECONDS`（默认 120 秒），高为 `min(240, FIONA_BYOK_TOTAL_SECONDS×1.5)`（默认 180 秒），Nginx 的 300 秒是两次读之间的间隔，并非整轮总时限。调高会先思考再回答，用户自己的额度消耗随档位上升；其他厂商不受影响。单次请求正文仍限普通 4000 字、镜子 600 字，智能体整轮累计限 8000 字，测试连接固定低档/1024 tokens/原总时限。`user_model_configs` 新增 `effort TEXT NOT NULL DEFAULT 'low'`，老库启动时自动补列，已有行默认低，不新增迁移版本号，该 BYOK 变更不增加健康检查项；保存模型、Key 或切换厂商保留档位，只在 Claude 下生效。
 
 零余额且已启用 BYOK、未预扣时，generate_image / weather 以外的 pending：「算了/取消/不用了/不要了/不查了/没事了」免费取消并清 pending；以「先聊/聊点/换个话题/先不」开头清 pending、由用户模型回复；其他补参消息仍报草莓不足、pending 保留。天气 pending 的「换个话题」类句子同样清 pending、由用户模型回复；余额充足用户与平台路由保持不变。
 
@@ -247,6 +261,8 @@ install -d -o fiona -g fiona -m 0700 /opt/fiona/frontend/.next/cache
 ## systemd
 
 ### 后端服务
+
+`ProtectSystem=strict` 配合 `ReadWritePaths=/var/lib/fiona` 限制可写范围，所以生产必须设置 `FIONA_STUDIO_DIR=/var/lib/fiona/studio`，不能沿用代码目录内默认路径。保持单 worker。
 
 创建 `/etc/systemd/system/fiona.service`：
 
@@ -438,7 +454,7 @@ curl --fail https://madchloechat.online/api/health
 
 账户删除是破坏性操作，只能用专门创建的一次性测试账号验证。确认该账号的消息、匹配、真人消息、广场帖子、媒体文件及 user_model_configs 自带模型配置与加密Key都已删除，并检查后端日志没有文件清理失败。
 
-`/health` 无需登录，接受 GET 和 HEAD：只读检查现有数据库及其可写权限、五道迁移和上传目录可写性，整个检查最多等待 3 秒；成功返回 `{"status":"ok"}`，失败返回 503 和检查项名称，不泄露路径、异常正文、版本或提交。它不会探测外部模型服务。原来的 `/`（公网 `/api/`）仍只是进程级检查；后端从未成功启动时 `run.py` 以退出码 3 结束，使 systemd 能按失败重启。上传清理某轮异常只记录类型，下一轮继续，关停取消照常传播。
+`/health` 无需登录，接受 GET 和 HEAD：只读检查现有数据库及其可写权限、五道迁移和上传目录可写性；`FIONA_STUDIO != "0"` 时增加 `studio_storage` 工作室目录可写检查，关闭时不检查。整个检查最多等待 3 秒；成功返回 `{"status":"ok"}`，失败返回 503 和 `database/schema/uploads/studio_storage` 中失败的检查项名称，不泄露路径、异常正文、版本或提交。它不会探测外部模型服务。原来的 `/`（公网 `/api/`）仍只是进程级检查；后端从未成功启动时 `run.py` 以退出码 3 结束，使 systemd 能按失败重启。上传清理某轮异常只记录类型，下一轮继续，关停取消照常传播。
 
 ## 日常发布
 
@@ -449,11 +465,12 @@ cd /opt/fiona
 systemctl stop fiona
 git rev-parse HEAD
 sudo -u fiona env FIONA_DB_PATH=/var/lib/fiona/fiona.db \
-    FIONA_UPLOADS_DIR=/var/lib/fiona/uploads FIONA_BACKUP_DIR=/var/backups/fiona \
+    FIONA_UPLOADS_DIR=/var/lib/fiona/uploads FIONA_STUDIO_DIR=/var/lib/fiona/studio \
+    FIONA_BACKUP_DIR=/var/backups/fiona \
     /opt/fiona/deploy/fiona-backup.sh
 ```
 
-备份脚本内的 `umask 077` 不影响更新用 shell。后端初始化时会开启 SQLite WAL 模式。发布、日常运行和手工导出时都必须用脚本内的 `sqlite3 .backup`（或 SQLite 在线备份 API）生成一致快照，不能只复制 `fiona.db` 主文件：未检查点的已提交数据可能仍在 `fiona.db-wal`。数据库和上传目录使用同一时间戳配套保管；在线媒体 tar 与数据库快照并非跨文件系统事务，要求严格同一时点时应先停止写入再备份。不要把 `fiona.db-wal`、`fiona.db-shm` 当成可独立恢复的备份。
+备份脚本内的 `umask 077` 不影响更新用 shell。后端初始化时会开启 SQLite WAL 模式。发布、日常运行和手工导出时都必须用脚本内的 `sqlite3 .backup`（或 SQLite 在线备份 API）生成一致快照，不能只复制 `fiona.db` 主文件：未检查点的已提交数据可能仍在 `fiona.db-wal`。数据库、上传目录和存在时的工作室目录使用同一时间戳配套保管；在线媒体 tar 与数据库快照并非跨文件系统事务，要求严格同一时点时应先停止写入再备份。不要把 `fiona.db-wal`、`fiona.db-shm` 当成可独立恢复的备份。
 
 发布前备份也受默认 14 天保留期约束，到期会自动清理。BYOK 密文在日常数据库备份中最多保留 14 天，`FIONA_BYOK_SECRET` 及 `PREVIOUS` 须单独保管、不放入数据库或媒体备份。需要超出 14 天长期归档时，先从一致快照制作归档副本，并在另存前仅对**副本**执行：
 
@@ -485,7 +502,7 @@ systemctl status fiona fiona-web
 
 当前 `npm run lint` 已恢复为绿色，但仍有非阻断警告。发布者必须人工查看 Lint 输出，不能把生产构建成功等同于所有维护债务已经清零。
 
-数据库兼容 DDL 会在后端启动时执行。既有迁移增加了 `users.session_version`、邀请码撤销/用量字段、`posts.owner_username`、`upload_cleanup_queue` 和可空列 `users.strawberry_refill_date`；兼容建表包括 `retired_usernames(username TEXT PRIMARY KEY, retired_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP)` 和 `user_model_configs`（加密用户Key、模型配置、启用位与 `effort TEXT NOT NULL DEFAULT 'low'`）表；后者直接在 init_db 执行DDL，紧接着用容错 ALTER TABLE 补 `effort`，老库启动时自动补列、已有行取 low，不增加迁移版本号，health与五道迁移不变，并启用持久的 WAL 模式与统一的 SQLite busy timeout。新账号初始 `session_version` 为随机正整数，旧账号版本保持原值，不强制重新登录；删号事务记录退役用户名，之后的 `testerNN` 发码跳过它。后端启动还会回填可识别的旧帖子 owner，并重试队列中的文件清理。由于当前没有通用迁移和自动回滚，任何涉及 `database.py` 的发布都必须先同时备份数据库与上传目录。
+数据库兼容 DDL 会在后端启动时执行。既有迁移增加了 `users.session_version`、邀请码撤销/用量字段、`posts.owner_username`、`upload_cleanup_queue` 和可空列 `users.strawberry_refill_date`；兼容建表包括 `retired_usernames(username TEXT PRIMARY KEY, retired_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP)` 和 `user_model_configs`（加密用户Key、模型配置、启用位与 `effort TEXT NOT NULL DEFAULT 'low'`）表；后者直接在 init_db 执行DDL，紧接着用容错 ALTER TABLE 补 `effort`，老库启动时自动补列、已有行取 low，不增加迁移版本号，五道迁移检查不变，并启用持久的 WAL 模式与统一的 SQLite busy timeout。新账号初始 `session_version` 为随机正整数，旧账号版本保持原值，不强制重新登录；删号事务记录退役用户名，之后的 `testerNN` 发码跳过它。后端启动还会回填可识别的旧帖子 owner，并重试队列中的文件清理。由于当前没有通用迁移和自动回滚，任何涉及 `database.py` 的发布都必须先同时备份数据库、上传目录和工作室目录。
 
 ## 邀请码、会话与草莓运维
 
@@ -542,13 +559,13 @@ journalctl -u fiona-web -f
 2. 本机 8000 和 3000 是否可访问。
 3. `nginx -t` 和 Nginx error log。
 4. `/etc/fiona/fiona.env` 是否缺少 Key，且权限是否为 `0600`。
-5. `/var/lib/fiona/fiona.db` 和 `/var/lib/fiona/uploads/` 是否只允许服务账号写入。
+5. `/var/lib/fiona/fiona.db`、`/var/lib/fiona/uploads/` 和 `/var/lib/fiona/studio/` 是否只允许服务账号写入。
 6. SSE 是否被代理缓冲，WebSocket Upgrade 头是否保留。
 7. DashScope 或外部热点源是否发生超时/额度问题。
 
 ## 定时备份
 
-仓库 `deploy/fiona-backup.sh` 使用 SQLite `.backup` 在线生成一致数据库快照，转为独立的非 WAL 文件并要求 `PRAGMA integrity_check` 为 `ok`，再打包上传目录，排除点开头的文件。两份备份共用 UTC 时间戳和进程号，媒体 tar 固定带 `uploads/` 前缀；脚本全程 `umask 077`，成品权限 `0600`。失败时非零退出并清理临时文件和未完成配对；GNU tar 因打包期间文件变化返回 1 时会明确告警，并保留已验证的数据库快照及已生成的媒体包，此媒体包可能不完整，需重新备份。默认仅清理备份目录第一层中本脚本命名的、达到 14 个完整 24 小时的旧备份，不递归删除子目录。
+仓库 `deploy/fiona-backup.sh` 使用 SQLite `.backup` 在线生成一致数据库快照，转为独立的非 WAL 文件并要求 `PRAGMA integrity_check` 为 `ok`，再打包上传目录，并在工作室目录存在时生成第三个 `fiona-studio-*.tar.gz` 包；两个媒体包都排除隐藏文件、隐藏目录和 `.part` 文件。所有备份共用 UTC 时间戳和进程号，媒体 tar 分别固定带 `uploads/`、`studio/` 前缀；脚本全程 `umask 077`，成品权限 `0600`。数据库或 uploads 严重失败时非零退出并清理临时文件和未完成配对；uploads 的 tar 因文件变化返回 1 时会告警，保留已验证的数据库快照及已生成的 uploads 包，退出码为 1，此 uploads 包可能不完整，需重新备份。工作室打包的任何非零退出独立处理：告警并丢弃本次工作室临时包，照常发布数据库快照与 uploads 包，保留全部旧工作室包并暂停其轮转，最终以退出码 **1** 表示部分失败；下次工作室打包成功后恢复正常轮转。全部成功退出 0。默认仅清理备份目录第一层中本脚本命名的、达到 14 个完整 24 小时的旧备份，不递归删除子目录。`test_studio_backup.py` 以本地临时库和模拟 tar 退出码覆盖成功及工作室部分失败。
 
 备份必须以数据库属主账号 `fiona` 运行；脚本拒绝不同属主账号，避免在线库旁生成 root 属主的 `-wal`、`-shm`。备份目录设为 `fiona:fiona 0700`，不能由 Nginx 暴露。安装脚本和两个 unit：
 
@@ -581,7 +598,7 @@ timer 每天北京时间 04:00 执行，`Persistent=true` 补跑错过的任务�
 
 ## 旧备份恢复演练
 
-全程只操作副本，不启动任何服务。绝不能拿唯一一份备份直接启动后端：启动不仅迁移，还会把进行中的交流改为停止、结算未决调用，并按清理队列删上传文件。以下先把两个同时间戳备份复制到演练目录；将时间戳替换成真实备份名：
+全程只操作副本，不启动任何服务。绝不能拿唯一一份备份直接启动后端：启动不仅迁移，还会把进行中的交流改为停止、结算未决调用、恢复工作室任务并按清理队列删上传文件和工作室项目目录。以下先把同时间戳数据库与媒体包复制到演练目录；有工作室数据时必须同时取回第三个 studio 包；将时间戳替换成真实备份名：
 
 ```bash
 backup_db=/var/backups/fiona/fiona-db-YYYYMMDDTHHMMSSZ-PID.sqlite3
@@ -648,7 +665,7 @@ systemd < 254 时，服务自动重启期间不会进入 failed 状态。仅设 
 
 代码回滚应使用发布前记录的提交或正式发布标签，重新安装依赖、重新构建前端，再重启两个服务。不要只恢复 `.next` 目录。
 
-如果新版本已经改变 SQLite schema，应优先把备份恢复到 `/var/lib/fiona/fiona.db`，再启动旧代码；同时恢复匹配时间点的 `/var/lib/fiona/uploads/` 备份，避免消息记录和文件不一致。
+如果新版本已经改变 SQLite schema，应优先把备份恢复到 `/var/lib/fiona/fiona.db`，再启动旧代码；同时恢复匹配时间点的 `/var/lib/fiona/uploads/` 和 `/var/lib/fiona/studio/` 备份，避免消息记录和文件不一致。
 
 恢复前先停后端：
 
@@ -749,4 +766,18 @@ sudo -u fiona env FIONA_UPLOADS_DIR=/var/lib/fiona/uploads \
 
 平台分别使用服务器环境中的 DASHSCOPE_API_KEY、DEEPSEEK_API_KEY、ARK_API_KEY；不提供平台 Claude。Claude 只能使用用户已启用的 BYOK；仅 anthropic/dashscope/deepseek 预设和引擎已知型号开放。发布前应告知作者：思路、圣经、正文与留言会发送给所选的阿里云百炼、DeepSeek、火山方舟或用户自带厂商（可能含 Anthropic）。小说表不存 Key 或完整提示词，日志只含运行元数据。
 
-启动以 CREATE TABLE IF NOT EXISTS 创建 novels、novel_bible_versions、novel_chapters、novel_steps、novel_notes，不增加迁移版本，/health 不变。备份 SQLite 会包含私有小说正文与模型产物，应按私有数据管理。关闭时先取消小说任务并退款；重启时先退还未结算预扣、标为 interrupted，再按并发槽恢复 setup_running/running 任务。删书与删号删除五张表中的对应记录。
+启动以 CREATE TABLE IF NOT EXISTS 创建 novels、novel_bible_versions、novel_chapters、novel_steps、novel_notes，不增加迁移版本，该小说工坊变更不增加健康检查项。备份 SQLite 会包含私有小说正文与模型产物，应按私有数据管理。关闭时先取消小说任务并退款；重启时先退还未结算预扣、标为 interrupted，再按并发槽恢复 setup_running/running 任务。删书与删号删除五张表中的对应记录。
+
+## 短片工作室 WO1 运维
+
+工作室全部配置调用时读取，非法数值回落默认并只告警一次。作者名单默认空；为实际作者填入用户名后，用已有 JWT Cookie 或 Bearer 验收，其他身份、关闭开关或默认的 X-Dev-User 访问均为 404，带 `Cache-Control: private, no-store`。工作室不占草莓，人民币上限在 SQLite 事务中检查，开发模式和关闭限流器也无法绕过。
+
+报价 15 分钟内只确认一次；确认时按报价上限预留，以该时刻的上海日期记入全工作室总占用。两家厂商的付费 POST 均不重试；超时、连接中断、5xx、2xx 缺 task_id 或坏 JSON 都记 uncertain，提示「可能已扣费，请勿直接重试，去控制台核对」。完整 4xx/429 明确拒绝则释放。uncertain 须先在控制台核对：有任务编号用 link-task 恢复 GET 轮询，确定未扣费用 release 并传 not_charged=true。不要通过复制数据库或手工改状态重新提交。
+
+调度器在进程内运行，只支持单 worker。启动先把 submitting 置 uncertain，保留 queued，恢复 submitted/running 的只读轮询及 succeeded 的下载；恢复过程不发 POST。正常调度每 2 秒运行，万相与 Seedance 默认各 3 个在途任务；轮询超时标 needs_recheck，作者可手动 recheck。结果只下载白名单 host、拒绝重定向、不转发 API 凭据、最大 300MB，依赖系统 ffprobe 按时长校验；短于请求时长减 0.2 秒记 short_output。首帧提交和计费细节见架构文档。
+
+删号在同一事务删除该 owner 的全部 studio_projects/assets/quotes/jobs 行，并以 `studio:<project_id>` 写入 upload_cleanup_queue，只保存项目 id；清理时按当前 `FIONA_STUDIO_DIR` 拼出目录。兼容根内旧绝对目录条目，拒绝根本身、根外、符号链接和非目录。立即清理和后台重试沿用同一清理器；删号、清空历史及删消息的文件删除在线程中执行。原上传文件清理行为保持不变。
+
+恢复演练及生产回滚都要核对同时间戳的 studio 包。先用 tar -tzf 盘点，确认只含可信 studio/ 树，再解压到新建的受控副本目录，使用 --strip-components=1；生产恢复时保持停服，把旧 studio 目录另存后恢复，目录属主 fiona:fiona、权限 0700，文件 0600。旧版备份若没有工作室表和文件可省略此包；有工作室数据库行但缺媒体包时不能声称恢复完整。不要对工作室原始素材运行聊天上传去元数据脚本。配置文件与 API Key 始终单独保管，不进入归档。
+
+WO1 离线验收只使用模拟传输。真实接口由作者另行确认模型开通、业务空间、肖像/内容闸、签名结果地址与账单。WO0 与本期不同之处：本期 5xx 按 uncertain；Seedance 按 480p/720p/1080p 的 9700/21600/48938 token/s 分档，折扣到原价再乘 0.8–1.2；轮询采用 15/30 秒和默认 30 分钟上限。时长沿用参考实现的整数范围（万相 2–30、Seedance 4–30）及 -1 智能时长，智能时长按区间报价、按最低时长验证输出。

@@ -311,6 +311,9 @@ async def init_db():
         from novel.store_db import NOVEL_TABLES_DDL
         for novel_table_ddl in NOVEL_TABLES_DDL:
             await db.execute(novel_table_ddl)
+        from studio.store import STUDIO_TABLES_DDL
+        for studio_table_ddl in STUDIO_TABLES_DDL:
+            await db.execute(studio_table_ddl)
         for watch_table_ddl in LOCAL_WATCH_TABLES_DDL:
             await db.execute(watch_table_ddl)
         await db.execute("CREATE INDEX IF NOT EXISTS idx_watch_rules_username ON watch_rules(username)")
@@ -903,13 +906,21 @@ async def delete_account_data(username: str) -> dict:
         await db.execute("DELETE FROM novels WHERE username = ?", (username,))
         for watch_table in ("watch_devices", "watch_rules", "watch_alerts"):
             await db.execute(f"DELETE FROM {watch_table} WHERE username = ?", (username,))
+        async with db.execute("SELECT id FROM studio_projects WHERE owner = ?", (username,)) as cursor:
+            studio_paths = [f"studio:{row['id']}" for row in await cursor.fetchall()]
+        for studio_table in ("studio_jobs", "studio_quotes", "studio_assets", "studio_projects"):
+            await db.execute(f"DELETE FROM {studio_table} WHERE owner = ?", (username,))
+        await db.executemany(
+            "INSERT OR IGNORE INTO upload_cleanup_queue (path) VALUES (?)",
+            [(path,) for path in studio_paths],
+        )
         await db.execute("DELETE FROM users WHERE username = ?", (username,))
 
         # UUID 文件理论上不会共享；仍在事务内复核引用，避免误删异常旧数据。
         unreferenced_paths = await _queue_unreferenced_uploads(db, upload_paths)
 
         await db.commit()
-        return {"deleted": True, "upload_paths": unreferenced_paths}
+        return {"deleted": True, "upload_paths": unreferenced_paths + studio_paths}
 
 
 async def get_pending_upload_cleanup() -> list[str]:

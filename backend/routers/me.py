@@ -59,7 +59,7 @@ async def delete_one_message(message_id: int, user: str = Depends(get_current_us
         raise HTTPException(status_code=404, detail="消息不存在")
     if result["status"] == "forbidden":
         raise HTTPException(status_code=403, detail="无权操作")
-    deleted_files, _ = delete_uploaded_files(result["upload_paths"])
+    deleted_files, _ = await asyncio.to_thread(delete_uploaded_files, result["upload_paths"])
     await mark_upload_cleanup_done(deleted_files)
     return {"status": "deleted"}
 
@@ -70,7 +70,7 @@ async def clear_history(user: str = Depends(get_current_user)):
     from utils.media import delete_uploaded_files
 
     upload_paths = await clear_message_history(user)
-    deleted_files, _ = delete_uploaded_files(upload_paths)
+    deleted_files, _ = await asyncio.to_thread(delete_uploaded_files, upload_paths)
     await mark_upload_cleanup_done(deleted_files)
     return {"status": "cleared"}
 
@@ -97,7 +97,7 @@ async def delete_account(
     await asyncio.to_thread(clear_user_pending, user)
     await asyncio.to_thread(clear_all_user_modes, user)
     await ws_manager.disconnect_user(user)
-    deleted_files, failed_files = delete_uploaded_files(result["upload_paths"])
+    deleted_files, failed_files = await asyncio.to_thread(delete_uploaded_files, result["upload_paths"])
     await mark_upload_cleanup_done(deleted_files)
 
     response = JSONResponse({

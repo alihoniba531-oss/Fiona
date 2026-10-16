@@ -170,7 +170,7 @@ Claude 思考强度可选低 / 中 / 高，默认低。保存 Claude 配置后�
 | 中（`medium`） | 8192/4096 | `FIONA_BYOK_TOTAL_SECONDS`，默认 120 秒 |
 | 高（`high`） | 16384/8192 | `min(240, FIONA_BYOK_TOTAL_SECONDS×1.5)`，默认 180 秒 |
 
-`max_tokens` 同时限制思考与正文；单次请求正文仍限普通 4000 字、镜子 600 字，智能体整轮累计限 8000 字。Nginx 的 300 秒是两次读之间的间隔，并非整轮总时限；测试连接固定低档、1024 tokens 和原总时限。`user_model_configs` 新增 `effort TEXT NOT NULL DEFAULT 'low'`，老库启动时自动补列，已有行默认低；不增加迁移版本号，`/health` 不变。保存模型、Key 或切换厂商保留原档位，只在 Claude 下生效。
+`max_tokens` 同时限制思考与正文；单次请求正文仍限普通 4000 字、镜子 600 字，智能体整轮累计限 8000 字。Nginx 的 300 秒是两次读之间的间隔，并非整轮总时限；测试连接固定低档、1024 tokens 和原总时限。`user_model_configs` 新增 `effort TEXT NOT NULL DEFAULT 'low'`，老库启动时自动补列，已有行默认低；不增加迁移版本号，该 BYOK 变更不增加健康检查项。保存模型、Key 或切换厂商保留原档位，只在 Claude 下生效。
 
 启用后，每条聊天回复会把分身设定、用户的私有长期记忆、本会话最近 60 条消息（含平台看图生成的图片描述）与本条消息发送给用户选择的厂商；系统提示中的账号名替换为「（账号已隐藏）」。危机复核、工具执行、图片执行及朗读仍由平台处理并读取对话内容；智能体模式之外的意图识别、模式判定和看图也由平台处理；原生模式由关闭智能体模式的 Claude 或两个精确 DeepSeek 型号决定生图，其他 BYOK 使用平台判断器读取最近 6 条对话（历史每条最多 600 字，本轮原话最多 1500 字（超长时保留首尾）），画像提取也仍由平台执行，并会读到用户模型的回复；明确危机轮仍由平台回复。用户模型失败不改用平台模型。Key 加密保存，删除 Key 或删号时删除，数据库备份中最多保留 14 天，无服务端密钥无法解密。长期归档副本须先清除 Key 密文，步骤见部署手册。Claude 的接口不对中国大陆提供服务，大陆服务器通常无法连接该预设。
 
@@ -217,7 +217,7 @@ Windows 也可以在根目录运行 `start.ps1`，它会分别打开后端和前
 - `backend/seed_invites.py` 用于创建绑定新 `testerNN` 用户名的邀请码，编号不会与现有账号、邀请码绑定名或已退役用户名重复，删号后不回收；新账号使用随机的初始会话版本，旧账号版本不变。`backend/manage_invites.py` 用于查看、撤销和轮换邀请码。
 - 生产私聊能扣就先原子预扣 10 颗草莓，只对已保存的平台模型回复、已生成并保存的图片或成功真实工具结算；BYOK 聊天回复不扣草莓、退还预扣。零余额启用 BYOK 时只允许用户模型聊天，工具、生图、看图保持草莓不足。失败、缺参追问和桌面占位工具退还预扣。`STRAWBERRY_DAILY_REFILL` 可配置每日补到至少指定余额（默认 `0` 为关闭），管理员可用 `backend/manage_strawberries.py` 手动补充。
 - 私聊危机采用规则加模型复核：规则 `high` 直接进入支持流程；其他非空文字消息由 `qwen3.8-flash` 复核，只看当前消息；超过 2000 字时取首尾各 1000 字，中间用「……」连接。取较高档位，不能降档。复核与预扣、上下文装配并行，默认 2 秒超时，失败按规则结果走；只记录档位、异常类型和耗时，不记录原文。信息或求助语境只看规则，模型从未命中升到可能相关时跳过工具。明确的第一人称自伤或自杀危机进入支持流程，不执行工具或普通镜子话术；余额足够时按正常轮次预扣和结算，不足时无需付费即可收到资源文案且不调用回复模型。可能相关的表达保留模式判定、镜子、看图、普通回复与计费；除信息或求助语境外，跳过自然语言生图候选、意图识别、工具及待补参数，保留 pending。信息或求助语境、界面显式生图或修图、缺少修图参考的固定引导保持原路由；唯一例外是已有天气 pending 时，到达工具路由的 `possible` 信息或求助语句清除该 pending，按新消息路由，不能当作城市名发给高德。文字、工具、图片及失败路径都会附求助资源，余额不足时免费先送资源再提示余额。进入 `/chat` 路由之前发生的 422 请求校验和 429 限流不在资源送达保证范围内。模型不能消除规则已有的日常误判。繁体『計畫』与『計劃』判级一致。图片模式中的明确危机按文字回复显示。普通私聊和分身交流的模型提示词均带基础安全规则。
-- `DEV_MODE=1` 时仅对回环地址开放 `/auth/test-login` 和 `X-Dev-User` 等调试通道；不要经不可信代理转发开发站点。
+- `DEV_MODE=1` 时仅对回环地址开放 `/auth/test-login` 和 `X-Dev-User` 等调试通道；工作室还须显式设置 `FIONA_STUDIO_REQUIRE_JWT=0` 才接受开发身份；不要经不可信代理转发开发站点。
 - 生产环境必须使用 `DEV_MODE=0` 和足够强的 `JWT_SECRET`。
 
 生产管理示例（脚本会显示所加载的配置文件和数据库绝对路径；数据库不存在时须明确传 `--init-db` 才能首次创建）：
@@ -233,9 +233,9 @@ python manage_strawberries.py grant tester01 50 --env-file /etc/fiona/fiona.env
 python manage_strawberries.py set tester01 200 --env-file /etc/fiona/fiona.env
 ```
 
-设置页支持退出登录和完整账户删除。删除消息、清空历史或删号时都会清理不再被消息/帖子引用的上传文件；失败项进入持久化队列，并在启动时及运行期间周期重试。
+设置页支持退出登录和完整账户删除。删除消息、清空历史或删号时都会清理不再被消息/帖子引用的上传文件；删号还在同一事务删除工作室项目、素材、报价和任务，并把项目目录加入清理队列。失败项在启动时及运行期间周期重试；工作室目录外的目录一律拒绝删除。
 
-不要提交 `backend/.env`、`backend/fiona.db`、`backend/uploads/` 或 `desktop/fiona.config.json`。
+不要提交 `backend/.env`、`backend/fiona.db`、`backend/uploads/`、`backend/studio_data/` 或 `desktop/fiona.config.json`。
 
 ## 检查与构建
 
@@ -318,3 +318,13 @@ npm audit
 Markdown 导出保留所有有正文的章节；前文改稿后标为 stale 的章节会在标题下显示「待复核」，书首汇总章号，没有待复核章节时输出保持原样。短片工作室可在进程内调用只读服务 `find_books(username, query)` 按书名查找本人的书，或 `chapters_range(username, novel_id, start, end)` 读取 1–300 章范围内至多 50 章；这两项不提供新 HTTP 路由。
 
 隐私：故事思路、圣经、正文与留言会发给所选厂商，可能包括阿里云百炼、DeepSeek、火山方舟以及自带模型厂商 Anthropic。小说步骤不存提示词，只存请求摘要、模型产物与用量；密钥不进入小说表、日志或接口。失败重试照常计费；真实厂商质量与可达性需作者另行验收。
+
+## 短片工作室 WO1（后端）
+
+作者可依次调用 `POST /studio/projects`、`POST /studio/projects/{pid}/assets`、`POST /studio/projects/{pid}/clips/quote`、`POST /studio/quotes/{qid}/confirm`，再通过任务接口查看状态并从 `GET /studio/assets/{aid}/file` 下载成片。默认万相 480P、5 秒、原生音频，也支持 Seedance 2.5；首帧为 PNG/JPEG/WebP，最大 20MB。
+
+全部接口要求 `FIONA_STUDIO != "0"`、用户名精确命中 `FIONA_STUDIO_OWNERS`、JWT Bearer 或 Cookie；未授权统一 404 且禁止缓存。作者名单默认空。报价 15 分钟过期、只确认一次；确认后额度持续预留。工作室共用每日默认 300 元、单报价默认 100 元，上海自然日按确认时间记账，DEV_MODE 仍生效。付费 POST 不重试，超时、5xx 或无 task_id 的结果进入 uncertain，须到厂商控制台核对后关联任务或明确未扣费释放。
+
+调度器在进程内运行，只支持单 worker。重启恢复不会重新提交，轮询超时可手动 recheck；万相按 usage.duration、Seedance 按 completion_tokens 结算。成片用 ffprobe 按时长校验，文件下载支持 Range 并检查归属。配置见 `backend/.env.example`。
+
+工作室文件默认 `backend/studio_data/`；生产配置 `/var/lib/fiona/studio`，符合 systemd 只允许写 `/var/lib/fiona` 的限制。目录不作静态挂载。`/health` 在工作室开启时增加 `studio_storage` 可写检查，关闭时不检查。备份包含数据库、uploads 及存在时的 studio 第三个包，两个媒体包都排除隐藏文件和 `.part`，默认共同保留 14 天。studio 打包失败会保留旧 studio 包、继续发布数据库和 uploads，并以退出码 1 报告部分失败。

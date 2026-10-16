@@ -5,6 +5,7 @@ umask 077
 
 db_path=${FIONA_DB_PATH:-/var/lib/fiona/fiona.db}
 uploads_dir=${FIONA_UPLOADS_DIR:-/var/lib/fiona/uploads}
+studio_dir=${FIONA_STUDIO_DIR:-/var/lib/fiona/studio}
 backup_dir=${FIONA_BACKUP_DIR:-/var/backups/fiona}
 retention_days=${FIONA_BACKUP_RETENTION_DAYS:-14}
 
@@ -36,13 +37,15 @@ db_path=$(cd "$db_parent" && pwd -P)/$db_name
 stamp=$(date -u '+%Y%m%dT%H%M%SZ')-$$
 db_backup=$backup_dir/fiona-db-$stamp.sqlite3
 uploads_backup=$backup_dir/fiona-uploads-$stamp.tar.gz
+studio_backup=$backup_dir/fiona-studio-$stamp.tar.gz
 db_temp=$backup_dir/.fiona-db-$stamp.tmp
 uploads_temp=$backup_dir/.fiona-uploads-$stamp.tmp
+studio_temp=$backup_dir/.fiona-studio-$stamp.tmp
 published=0
 cleanup() {
-    rm -f "$db_temp" "$db_temp-wal" "$db_temp-shm" "$uploads_temp"
+    rm -f "$db_temp" "$db_temp-wal" "$db_temp-shm" "$uploads_temp" "$studio_temp"
     if [ "$published" -eq 0 ]; then
-        rm -f "$db_backup" "$uploads_backup"
+        rm -f "$db_backup" "$uploads_backup" "$studio_backup"
     fi
 }
 trap cleanup EXIT
@@ -63,12 +66,30 @@ trap 'cleanup; rm -rf "$media_stage"' EXIT
 ln -s "$uploads_dir" "$media_stage/uploads"
 tar_status=0
 # macOS tar 否则会自动生成 ._* AppleDouble 条目，绕过源文件排除规则。
-COPYFILE_DISABLE=1 tar -czhf "$uploads_temp" --exclude='.*' -C "$media_stage" uploads || tar_status=$?
+COPYFILE_DISABLE=1 tar -czhf "$uploads_temp" --exclude='.*' --exclude='*.part' -C "$media_stage" uploads || tar_status=$?
+studio_tar_status=0
+if [ -d "$studio_dir" ]; then
+    if (
+        studio_dir=$(cd "$studio_dir" && pwd -P) &&
+        ln -s "$studio_dir" "$media_stage/studio" &&
+        COPYFILE_DISABLE=1 tar -czhf "$studio_temp" --exclude='.*' --exclude='*.part' -C "$media_stage" studio
+    ); then
+        :
+    else
+        studio_tar_status=$?
+        rm -f "$studio_temp"
+        echo '警告：工作室打包失败，保留旧工作室备份；继续发布数据库快照和 uploads 包' >&2
+    fi
+fi
 case "$tar_status" in
     0)
         chmod 600 "$db_temp" "$uploads_temp"
         mv "$db_temp" "$db_backup"
         mv "$uploads_temp" "$uploads_backup"
+        if [ -f "$studio_temp" ]; then
+            chmod 600 "$studio_temp"
+            mv "$studio_temp" "$studio_backup"
+        fi
         published=1
         ;;
     1)
@@ -81,6 +102,10 @@ case "$tar_status" in
             chmod 600 "$uploads_temp"
             mv "$uploads_temp" "$uploads_backup"
         fi
+        if [ -f "$studio_temp" ]; then
+            chmod 600 "$studio_temp"
+            mv "$studio_temp" "$studio_backup"
+        fi
         ;;
     *)
         echo '媒体打包失败，本次备份未发布' >&2
@@ -92,7 +117,11 @@ esac
 older_than=$((retention_days - 1))
 find "$backup_dir" -maxdepth 1 -type f \( -name 'fiona-db-*.sqlite3' -o -name 'fiona-uploads-*.tar.gz' \) \
     -mtime +"$older_than" -exec rm -f {} +
-if [ "$tar_status" -eq 1 ]; then
+if [ "$studio_tar_status" -eq 0 ]; then
+    find "$backup_dir" -maxdepth 1 -type f -name 'fiona-studio-*.tar.gz' \
+        -mtime +"$older_than" -exec rm -f {} +
+fi
+if [ "$tar_status" -eq 1 ] || [ "$studio_tar_status" -ne 0 ]; then
     echo '备份以失败状态结束：请核对媒体备份并重新执行' >&2
     exit 1
 fi

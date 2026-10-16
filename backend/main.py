@@ -40,6 +40,7 @@ from rate_limit import limiter
 from routers import agent_exchanges, agents, auth, cards, chat, chat_model, conversations, hot, image_models, match, me, peer, plaza, voice
 from routers import novel
 from routers import local_watch
+from routers import studio
 from utils import media
 from utils.background_tasks import create_background_task, shutdown_background_tasks
 from utils.request_limits import MAX_REQUEST_BODY_BYTES, RequestBodyLimitMiddleware
@@ -123,6 +124,18 @@ async def lifespan(app: FastAPI):
     await recover_interrupted_exchanges()
     from novel.runner import recover_interrupted_novels
     await recover_interrupted_novels()
+    from studio.recovery import recover_studio_jobs
+    from studio.scheduler import run_scheduler
+    from studio.config import get_settings
+    from studio.storage import storage_root
+    await recover_studio_jobs()
+    if get_settings().enabled:
+        try:
+            storage_root(create=True)
+        except OSError:
+            # 启动后由健康检查报告目录故障，不输出私有路径。
+            print("[studio] code=storage_unavailable")
+    create_background_task(run_scheduler(), label="studio-scheduler")
     await _run_upload_cleanup_once()
     create_background_task(
         _run_upload_cleanup_periodically(),
@@ -175,6 +188,7 @@ app.include_router(conversations.router)
 app.include_router(agent_exchanges.router)
 app.include_router(novel.router)
 app.include_router(local_watch.router)
+app.include_router(studio.router)
 
 app.add_middleware(
     CORSMiddleware,
@@ -220,6 +234,13 @@ async def _can_view_generated_image(username: str, image_path: str) -> bool:
 @app.middleware("http")
 async def require_auth(request: Request, call_next):
     path = request.url.path
+    studio_path = path == "/studio" or path.startswith("/studio/")
+    if studio_path:
+        from studio.config import get_settings
+        settings = get_settings()
+        if not settings.enabled or not settings.owners:
+            return JSONResponse({"detail": "Not Found"}, status_code=404,
+                                headers={"Cache-Control": "private, no-store"})
     if path.rstrip("/") in {"/local-watch/heartbeat", "/local-watch/observations"}:
         # Device tokens are scoped and authenticated by the local-watch router;
         # they are never accepted as account JWTs for user-side endpoints.
@@ -229,7 +250,7 @@ async def require_auth(request: Request, call_next):
     hidden_upload = upload_path.startswith("/uploads/") and any(
         part.startswith(".") for part in upload_path.split("/")[2:]
     )
-    if request.method == "OPTIONS":  # CORS 预检
+    if request.method == "OPTIONS" and not studio_path:  # CORS 预检
         return await call_next(request)
     private_chat_image = upload_path.startswith("/uploads/") and posixpath.basename(upload_path).startswith(("generated_", "reference_", ".generated_", ".reference_"))
     if (path.startswith("/uploads/") and not private_chat_image and not hidden_upload
@@ -254,6 +275,7 @@ async def require_auth(request: Request, call_next):
         cookie_token = request.cookies.get("fiona_token")
         if cookie_token:
             user = await authenticate_token(cookie_token)
+    request.state.auth_method = "jwt" if user else None
     if not user and os.getenv("DEV_MODE", "0") == "1" and is_loopback_client(request):
         from urllib.parse import unquote
         dev = request.headers.get("x-dev-user") or request.query_params.get("dev_user")
@@ -263,6 +285,12 @@ async def require_auth(request: Request, call_next):
                 # 仅开发通道允许用 X-Dev-User 临时建测试账号。
                 from database import get_or_create_user
                 await get_or_create_user(user)
+                request.state.auth_method = "dev"
+    if studio_path:
+        from studio.gate import allow_studio
+        if not allow_studio(user, request.state.auth_method):
+            return JSONResponse({"detail": "Not Found"}, status_code=404,
+                                headers={"Cache-Control": "private, no-store"})
     if not user:
         chat_model_path = path.rstrip("/") in {"/chat-model", "/chat-model/test"}
         headers = {"Cache-Control": "private, no-store"} if chat_model_path else None
@@ -276,7 +304,7 @@ async def require_auth(request: Request, call_next):
     if private_chat_image and not await _can_view_generated_image(user, upload_path):
         return JSONResponse({"detail": "图片不存在或无权访问"}, status_code=404, headers={"Cache-Control": "private, no-store"})
     response = await call_next(request)
-    if path.rstrip("/") in {"/chat-model", "/chat-model/test"}:
+    if studio_path or path.rstrip("/") in {"/chat-model", "/chat-model/test"}:
         response.headers["Cache-Control"] = "private, no-store"
     if private_chat_image:
         # Do not retain private files in browser/shared caches after deletion/logout.
@@ -343,6 +371,12 @@ async def _check_health() -> list[str]:
         failed.append("database")
     if not os.path.isdir(media.UPLOADS_DIR) or not os.access(media.UPLOADS_DIR, os.W_OK):
         failed.append("uploads")
+    from studio.config import get_settings
+    settings = get_settings()
+    if settings.enabled and (
+        not settings.directory.is_dir() or not os.access(settings.directory, os.W_OK)
+    ):
+        failed.append("studio_storage")
     return failed
 
 

@@ -25,6 +25,9 @@ atexit.register(_test_paths.cleanup)
 _isolated_root = Path(_test_paths.name).resolve()
 os.environ["FIONA_DB_PATH"] = str(_isolated_root / "test.db")
 os.environ["FIONA_UPLOADS_DIR"] = str(_isolated_root / "uploads")
+os.environ["FIONA_STUDIO_DIR"] = str(_isolated_root / "studio")
+os.environ.setdefault("FIONA_STUDIO_OWNERS", "")
+(_isolated_root / "studio").mkdir()
 
 import pytest
 
@@ -42,6 +45,48 @@ os.environ.setdefault("FIONA_CHAT_IMAGE_TOOL", "0")
 os.environ.setdefault("FIONA_CLAUDE_AGENT", "0")
 
 
+@pytest.fixture(autouse=True)
+def _offline_studio_tests(monkeypatch, request):
+    """只隔离工作室测试的外网；回环和其他测试原有的网络桩保持可用。"""
+    if not request.node.path.name.startswith("test_studio_"):
+        return
+    import socket
+
+    original_connect = socket.socket.connect
+    original_connect_ex = socket.socket.connect_ex
+
+    def is_loopback(host):
+        if isinstance(host, bytes):
+            host = host.decode("ascii", errors="replace")
+        return isinstance(host, str) and host.lower() in {"127.0.0.1", "::1", "localhost"}
+
+    def allowed_address(address):
+        return isinstance(address, tuple) and bool(address) and is_loopback(address[0])
+
+    def guarded_connect(sock, address):
+        if sock.family in (socket.AF_INET, socket.AF_INET6) and not allowed_address(address):
+            raise AssertionError("离线测试禁止真实网络连接，请使用模拟传输")
+        return original_connect(sock, address)
+
+    def guarded_connect_ex(sock, address):
+        if sock.family in (socket.AF_INET, socket.AF_INET6) and not allowed_address(address):
+            raise AssertionError("离线测试禁止真实网络连接，请使用模拟传输")
+        return original_connect_ex(sock, address)
+
+    monkeypatch.setattr(socket.socket, "connect", guarded_connect)
+    monkeypatch.setattr(socket.socket, "connect_ex", guarded_connect_ex)
+
+    for name in ("getaddrinfo", "gethostbyname", "gethostbyname_ex", "gethostbyaddr"):
+        original = getattr(socket, name)
+
+        def guarded_resolution(host, *args, _original=original, **kwargs):
+            if not is_loopback(host):
+                raise AssertionError("离线测试禁止真实 DNS 查询，请使用模拟解析")
+            return _original(host, *args, **kwargs)
+
+        monkeypatch.setattr(socket, name, guarded_resolution)
+
+
 @pytest.fixture
 def client(tmp_path, monkeypatch):
     """带 DB 隔离 + 全网络打桩的 TestClient。"""
@@ -53,6 +98,14 @@ def client(tmp_path, monkeypatch):
     monkeypatch.setattr(database, "DB_PATH", str(tmp_path / "test.db"))
 
     import main  # noqa: F401  触发 app 装配
+    import studio.scheduler
+
+    async def _idle_studio_scheduler():
+        import asyncio
+        await asyncio.Event().wait()
+
+    # 测试显式调用单次 tick，后台任务不能抢占测试刚创建的待提交任务。
+    monkeypatch.setattr(studio.scheduler, "run_scheduler", _idle_studio_scheduler)
     # /chat 逻辑已抽到 services.chat_service，符号经 `from X import Y` 绑定在该模块命名空间，
     # 所以 chat 相关打桩目标是 services.chat_service；find_matches 仍在 routers.match。
     import services.chat_service as chat
