@@ -54,7 +54,7 @@ export default function SetupCard({ aspect, setup, busy, onSave }: { aspect: "16
       </div>
       <div className="min-w-0 space-y-1 text-sm">
         <p className="text-[color:var(--ink2)]">定妆图尺寸（只读）</p>
-        <p className="readout">{sheetSizeLabel}（三视图横幅）</p>
+        <p className="readout">{sheetSizeLabel}（一图两区：三视图 + 细节栏）</p>
       </div>
       {error && <p role="alert" className="text-sm">{error}</p>}
       <div className="flex min-w-0 flex-wrap gap-2">

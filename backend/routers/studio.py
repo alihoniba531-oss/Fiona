@@ -235,12 +235,17 @@ class CastingItemPatchBody(BaseModel):
     model_config = ConfigDict(extra="forbid")
     locked_features: str | None = Field(default=None, max_length=600)
     extra_prompt: str | None = Field(default=None, max_length=500)
+    look: dict[str, str] | None = None
     reference_asset_ids: list[str] | None = Field(default=None, max_length=4)
 
 
 class CastingApproveBody(BaseModel):
     model_config = ConfigDict(extra="forbid")
     asset_id: str = Field(min_length=1, max_length=100)
+
+
+class VoiceApproveBody(CastingApproveBody):
+    baseline: str | None = Field(default=None, max_length=200)
 
 
 class SheetEntryBody(BaseModel):
@@ -257,14 +262,28 @@ class SheetsQuoteBody(BaseModel):
     items: list[SheetEntryBody] = Field(min_length=1, max_length=30)
 
 
+class LooksQuoteBody(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+    item_ids: list[str] = Field(min_length=1, max_length=30)
+
+
 class VoiceVariantBody(BaseModel):
     model_config = ConfigDict(extra="forbid")
-    engine: Literal["cosyvoice", "edge-tts"]
+    engine: Literal["doubao", "cosyvoice", "edge-tts"]
     voice: str = Field(min_length=1, max_length=100)
     rate: float | str
     pitch: float | str
     fx: str | None = Field(default=None, max_length=100)
     role: Literal["dialogue", "narration"] = "dialogue"
+    direction: str | None = Field(default=None, max_length=200)
+
+    @field_validator("pitch", mode="before")
+    @classmethod
+    def boolean_pitch_is_invalid(cls, value):
+        # float|str 会把 true 静默转成 1.0，必须在类型转换前拦下。
+        if isinstance(value, bool):
+            raise ValueError("音高须为整数")
+        return value
 
 
 class AuditionBody(BaseModel):
@@ -612,6 +631,16 @@ async def casting_put_style(pid: str, body: CastingStyleBody, user: str = Depend
                           proposal_index=body.proposal_index, custom=custom)
 
 
+@router.post("/projects/{pid}/casting/looks/quote")
+async def casting_looks_quote(pid: str, body: LooksQuoteBody, user: str = Depends(studio_user)):
+    return await _guarded(casting.quote_looks, pid, user, body.item_ids)
+
+
+@router.post("/projects/{pid}/casting/looks/start")
+async def casting_looks_start(pid: str, body: CastingStartBody, user: str = Depends(studio_user)):
+    return await _guarded(casting.start_looks, pid, user, body.quote_id)
+
+
 @router.patch("/casting/items/{item_id}")
 async def casting_patch_item(item_id: str, body: CastingItemPatchBody, user: str = Depends(studio_user)):
     data = body.model_dump(exclude_unset=True, exclude_none=True)
@@ -634,8 +663,8 @@ async def casting_reopen_item(item_id: str, user: str = Depends(studio_user)):
 
 
 @router.post("/casting/items/{item_id}/voice/approve")
-async def casting_approve_voice(item_id: str, body: CastingApproveBody, user: str = Depends(studio_user)):
-    return await _guarded(casting.approve_voice, item_id, user, body.asset_id)
+async def casting_approve_voice(item_id: str, body: VoiceApproveBody, user: str = Depends(studio_user)):
+    return await _guarded(casting.approve_voice, item_id, user, body.asset_id, baseline=body.baseline)
 
 
 @router.post("/casting/assets/{asset_id}/archive")

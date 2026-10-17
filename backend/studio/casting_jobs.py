@@ -82,6 +82,16 @@ async def _synthesize_edge(text: str, *, voice: str, rate: str, pitch: str):
     return await synthesize_edge(text, voice=voice, rate=rate, pitch=pitch)
 
 
+async def _synthesize_doubao(text: str, *, voice: str, rate: float, pitch: int, direction: str):
+    from .providers.tts_doubao import synthesize_doubao
+    return await synthesize_doubao(text, voice=voice, rate=rate, pitch=pitch, direction=direction)
+
+
+def doubao_configured() -> bool:
+    from .providers.tts_doubao import doubao_configured as _configured
+    return _configured()
+
+
 async def _process_voice(raw: bytes, *, input_format: str, fx, target_lufs: float):
     from .audio import process_voice
     return await process_voice(raw, input_format=input_format, fx=fx, target_lufs=target_lufs, true_peak=-1.5)
@@ -438,6 +448,7 @@ async def _run_image(job: dict, token: str) -> bool:
         appearance=(bible or {}).get("appearance") or "",
         description=(bible or {}).get("description") or "",
         locked_features=spec.get("locked_features") or "",
+        look=spec.get("look"),
         style=style, extra_prompt=params.get("extra_prompt") or "",
         reference_notes=notes,
     )
@@ -479,13 +490,20 @@ async def _run_tts(job: dict, token: str) -> bool:
     if not spec or not text:
         raise PreflightError("missing_spec", "试听任务缺少声线方案或台词")
     engine = spec.get("engine")
-    if engine == "cosyvoice":
-        raw = await _synthesize_cosy(text, voice=spec["voice"], rate=float(spec["rate"]),
-                                     pitch=float(spec["pitch"]))
-    elif engine == "edge-tts":
-        raw = await _synthesize_edge(text, voice=spec["voice"], rate=spec["rate"], pitch=spec["pitch"])
-    else:
-        raise PreflightError("unknown_engine", "未知的配音引擎")
+    try:
+        if engine == "cosyvoice":
+            raw = await _synthesize_cosy(text, voice=spec["voice"], rate=float(spec["rate"]),
+                                         pitch=float(spec["pitch"]))
+        elif engine == "doubao":
+            raw = await _synthesize_doubao(text, voice=spec["voice"], rate=float(spec["rate"]),
+                                           pitch=int(spec["pitch"]), direction=spec.get("direction") or "")
+        elif engine == "edge-tts":
+            raw = await _synthesize_edge(text, voice=spec["voice"], rate=spec["rate"], pitch=spec["pitch"])
+        else:
+            raise PreflightError("unknown_engine", "未知的配音引擎")
+    except (TypeError, ValueError) as exc:
+        # 参数校验 / 请求体构造失败都在发 POST 之前，按 rejected 释放预留。
+        raise PreflightError("invalid_parameters", str(exc) or "试听参数无效") from exc
     target_lufs = -16.0 if spec.get("role") == "dialogue" else -18.0
     processed = await _process_voice(raw.audio, input_format=raw.audio_format, fx=spec.get("fx"),
                                      target_lufs=target_lufs)
@@ -553,4 +571,6 @@ def price_for(media_provider: str, *, chars: int = 0) -> Decimal:
         return pricing.seedream_price()
     if media_provider == "cosyvoice":
         return pricing.money(pricing.estimate_speech(chars, "cosyvoice")["amount"])
+    if media_provider == "doubao":
+        return pricing.money(pricing.estimate_speech(chars, "doubao")["amount"])
     return pricing.money(0)

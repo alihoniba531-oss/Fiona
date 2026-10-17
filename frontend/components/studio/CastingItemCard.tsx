@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 import { LoadingState } from "@/components/novel/NovelStates";
-import { castingItemFinished, castingItemInflight, castingItemStatusLabel, castingJobStatusLabel, type CastingItem, type CastingItemPatch, type CastingJob, type CastingVersion } from "@/lib/studio-casting";
+import { CASTING_LOOK_FIELDS, CASTING_LOOK_MAX_CHARS, castingItemFinished, castingItemInflight, castingItemStatusLabel, castingJobStatusLabel, castingLookInflight, castingLookSourceLabel, type CastingItem, type CastingItemPatch, type CastingJob, type CastingLook, type CastingVersion } from "@/lib/studio-casting";
 import BreakdownDialog, { breakdownFieldClass } from "./BreakdownDialog";
 import StudioAssetImage from "./StudioAssetImage";
 
@@ -20,6 +20,8 @@ export default function CastingItemCard({ item, jobs, selected, busy, onSelect, 
   const [appearanceDraft, setAppearanceDraft] = useState<string | null>(null);
   const [lockedDraft, setLockedDraft] = useState<string | null>(null);
   const [extraDraft, setExtraDraft] = useState<string | null>(null);
+  const [lookDraft, setLookDraft] = useState<CastingLook | null>(null);
+  const [lookBase, setLookBase] = useState<CastingLook | null>(null);
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState("");
   const [preview, setPreview] = useState<CastingVersion | null>(null);
@@ -27,6 +29,11 @@ export default function CastingItemCard({ item, jobs, selected, busy, onSelect, 
   const versions = item.versions.filter(version => !version.archived);
   const inflight = castingItemInflight(jobs, item.id);
   const problems = castingItemFinished(jobs, item.id);
+  const lookInflight = castingLookInflight(jobs, item.id);
+  const lookFields = item.kind === "location" ? null : CASTING_LOOK_FIELDS[item.kind];
+  const lookSource = castingLookSourceLabel(item.look_source);
+  const lookValues = item.look ?? {};
+  const hasLook = !!lookFields?.some(([key]) => (lookValues[key] ?? "").trim());
   const run = async (action: () => Promise<void>) => {
     if (blocked) return;
     setSaving(true); setError("");
@@ -37,6 +44,23 @@ export default function CastingItemCard({ item, jobs, selected, busy, onSelect, 
   const saveAppearance = () => run(async () => { await onSaveAppearance((appearanceDraft ?? "").trim()); setAppearanceDraft(null); });
   const saveLocked = () => run(async () => { await onPatch({ locked_features: lockedDraft ?? "" }); setLockedDraft(null); });
   const saveExtra = () => run(async () => { await onPatch({ extra_prompt: extraDraft ?? "" }); setExtraDraft(null); });
+  const startLookEdit = () => {
+    if (!lookFields) return;
+    const base: CastingLook = {};
+    for (const [key] of lookFields) base[key] = (lookValues[key] ?? "").trim();
+    setLookBase(base); setLookDraft(base); setError("");
+  };
+  const saveLook = () => {
+    if (!lookFields || !lookDraft || !lookBase) return;
+    const changes: CastingLook = {};
+    for (const [key] of lookFields) {
+      const value = (lookDraft[key] ?? "").trim();
+      if (value !== (lookBase[key] ?? "")) changes[key] = value;
+    }
+    if (!Object.keys(changes).length) return;
+    void run(async () => { await onPatch({ look: changes }); setLookDraft(null); setLookBase(null); });
+  };
+  const lookChanged = !!lookFields && !!lookDraft && !!lookBase && lookFields.some(([key]) => (lookDraft[key] ?? "").trim() !== (lookBase[key] ?? ""));
   return <div className="ceramic-card min-w-0 space-y-3 p-3">
     <div className="flex min-w-0 flex-wrap items-start justify-between gap-2">
       <label className="flex min-h-10 min-w-0 items-start gap-2">
@@ -53,6 +77,30 @@ export default function CastingItemCard({ item, jobs, selected, busy, onSelect, 
           <div className="flex flex-wrap gap-2"><button type="submit" className="btn btn-primary min-h-10" disabled={busy || saving || !appearanceDraft.trim()}>{saving ? "保存中…" : "保存外形"}</button><button type="button" className="btn btn-quiet min-h-10" disabled={busy || saving} onClick={() => { setAppearanceDraft(null); setError(""); }}>取消</button></div>
         </form>}
     </div> : <p className="min-w-0 whitespace-pre-wrap break-words text-sm">{item.appearance || item.description || "—"}</p>}
+    {lookFields && <div className="min-w-0 space-y-2 text-sm">
+      <div className="flex min-w-0 flex-wrap items-center gap-2">
+        <p className="text-[color:var(--ink2)]">造型说明</p>
+        {lookSource && <span className="tag">{lookSource}</span>}
+        {!!lookInflight.length && <p role="status" className="text-[color:var(--ink2)]">导演正在补全造型…</p>}
+        {lookDraft === null && <button type="button" className="btn btn-quiet min-h-10" disabled={blocked || !!lookInflight.length} onClick={startLookEdit}>编辑</button>}
+        {!!lookInflight.length && <span className="tag">导演补全中</span>}
+      </div>
+      {lookDraft === null ? (hasLook
+        ? <ul className="min-w-0 space-y-1">{lookFields.map(([key, label]) => <li key={key} className="grid min-w-0 grid-cols-[6.5rem_minmax(0,1fr)] gap-2">
+          <span className="text-[color:var(--ink2)]">{label}</span><span className="min-w-0 whitespace-pre-wrap break-words">{lookValues[key]?.trim() || "—"}</span>
+        </li>)}</ul>
+        : <p className="text-[color:var(--ink2)]">还没有造型说明。勾选条目后点『补全造型说明』，或直接手写。</p>)
+        : <div className="min-w-0 space-y-2">
+          {lookFields.map(([key, label]) => <label key={key} htmlFor={`look-${item.id}-${key}`} className="block min-w-0 space-y-1">
+            <span className="text-[color:var(--ink2)]">{label}</span>
+            <textarea id={`look-${item.id}-${key}`} rows={2} maxLength={CASTING_LOOK_MAX_CHARS} disabled={busy || saving} value={lookDraft[key] ?? ""} className={breakdownFieldClass} onChange={event => setLookDraft(current => ({ ...(current ?? {}), [key]: event.target.value.slice(0, CASTING_LOOK_MAX_CHARS) }))} />
+          </label>)}
+          <div className="flex min-w-0 flex-wrap gap-2">
+            <button type="button" className="btn btn-primary min-h-10" disabled={busy || saving || !lookChanged} onClick={saveLook}>{saving ? "保存中…" : "保存造型说明"}</button>
+            <button type="button" className="btn btn-quiet min-h-10" disabled={busy || saving} onClick={() => { setLookDraft(null); setLookBase(null); setError(""); }}>取消</button>
+          </div>
+        </div>}
+    </div>}
     <div className="min-w-0 space-y-2 text-sm">
       <label htmlFor={`locked-${item.id}`} className="block text-[color:var(--ink2)]">锁定特征（出图提示词会带上，之后不得改动）</label>
       <textarea id={`locked-${item.id}`} rows={2} disabled={blocked} value={lockedDraft ?? item.locked_features} className={breakdownFieldClass} onChange={event => setLockedDraft(event.target.value)} />

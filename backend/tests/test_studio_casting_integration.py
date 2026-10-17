@@ -39,8 +39,9 @@ from PIL import Image
 import pytest
 
 from studio import audio, brain, brain_jobs, breakdown_plan, casting_jobs, pricing, recovery
+from studio import casting as casting_module
 from studio import spend, storage, store, voices
-from studio.providers import image_seedream, tts_cosy
+from studio.providers import image_seedream, tts_cosy, tts_doubao
 
 
 if shutil.which("ffmpeg") is None or shutil.which("ffprobe") is None:
@@ -64,15 +65,16 @@ PROPOSAL_KEYS = {"name", "visual_style", "palette", "camera", "lighting", "ratio
 CHOICE_KEYS = PROPOSAL_KEYS | {"realism", "source", "proposal_index"}
 ITEM_KEYS = {"id", "bible_id", "kind", "name", "role", "appearance", "description", "needs_author",
              "orphaned", "status", "locked_features", "extra_prompt", "reference_asset_ids",
-             "approved_asset_id", "versions", "voice"}
+             "look", "look_source", "approved_asset_id", "versions", "voice"}
 VERSION_KEYS = {"asset_id", "version_no", "created_at", "archived", "prompt"}
 VOICE_KEYS = {"spec", "approved_asset_id", "auditions"}
-VOICE_SPEC_KEYS = {"engine", "voice", "rate", "pitch", "fx", "role"}
+AUDITION_SPEC_KEYS = {"engine", "voice", "rate", "pitch", "fx", "role", "direction"}
+VOICE_SPEC_KEYS = AUDITION_SPEC_KEYS | {"baseline"}
 AUDITION_KEYS = {"asset_id", "spec", "text", "duration_s", "measured_lufs", "created_at", "archived"}
-JOB_KEYS = {"id", "kind", "item_id", "status", "error_code", "error_message",
+JOB_KEYS = {"id", "kind", "task", "item_id", "status", "error_code", "error_message",
             "reserved_amount", "actual_amount", "currency", "created_at"}
 G1_KEYS = {"approved", "total", "done", "skipped"}
-PRICE_KEYS = {"seedream_cny", "cosyvoice_cny_per_10k_chars"}
+PRICE_KEYS = {"seedream_cny", "cosyvoice_cny_per_10k_chars", "doubao_cny_per_10k_chars"}
 QUOTE_KEYS = {"id", "kind", "items", "total", "currency", "expires_at"}
 QUOTE_LINE_KEYS = {"item_id", "name", "versions", "unit", "est"}
 VOICE_OPTION_KEYS = {"engine", "voice", "label", "lang", "gender", "note"}
@@ -87,11 +89,14 @@ CUSTOM_STYLE = {"name": "水墨", "visual_style": "宣纸质感", "palette": "�
                 "lighting": "柔和侧光", "rationale": "含蓄"}
 
 COSY_VARIANT = {"engine": "cosyvoice", "voice": "longxiaocheng_v2", "rate": 1.0, "pitch": 1.0,
-                "fx": "robot:B", "role": "dialogue"}
+                "fx": "robot:B", "role": "dialogue", "direction": None}
 NARRATION_VARIANT = {"engine": "cosyvoice", "voice": "longjielidou_v2", "rate": 1.2, "pitch": 0.9,
-                     "fx": "inner:A", "role": "narration"}
+                     "fx": "inner:A", "role": "narration", "direction": None}
 EDGE_VARIANT = {"engine": "edge-tts", "voice": "en-US-AndrewNeural", "rate": "+0%", "pitch": "+0Hz",
-                "fx": None, "role": "narration"}
+                "fx": None, "role": "narration", "direction": None}
+DOUBAO_DIRECTION = "压低声音，不安里带着一点倔强，像在问自己"
+DOUBAO_VARIANT = {"engine": "doubao", "voice": "zh_female_sophie_uranus_bigtts", "rate": 1.2,
+                  "pitch": -3, "fx": None, "role": "dialogue", "direction": DOUBAO_DIRECTION}
 
 
 def run(coro):
@@ -200,6 +205,25 @@ def install_cosy(monkeypatch, payload: bytes) -> CosyFactory:
     return factory
 
 
+def install_doubao(monkeypatch, payload: bytes) -> list:
+    """注入 MockTransport；适配器把多行 JSON 里的 base64 音频块拼回完整 mp3。"""
+    requests: list[httpx.Request] = []
+    middle = max(1, len(payload) // 2)
+    lines = [
+        {"code": 0, "data": base64.b64encode(payload[:middle]).decode()},
+        {"code": 0, "data": base64.b64encode(payload[middle:]).decode()},
+        {"code": 20000000, "message": "ok"},
+    ]
+    body = ("\n".join(json.dumps(line) for line in lines) + "\n").encode("utf-8")
+
+    def record(request: httpx.Request) -> httpx.Response:
+        requests.append(request)
+        return httpx.Response(200, content=body)
+
+    monkeypatch.setattr(tts_doubao, "_default_transport", lambda: httpx.MockTransport(record))
+    return requests
+
+
 def install_edge(monkeypatch, payload: bytes, words: list[dict]) -> dict:
     """向 sys.modules 注入假 edge_tts；Communicate 契约与真 SDK 一致。"""
     state: dict = {"built": []}
@@ -274,6 +298,11 @@ def edge_mp3(tmp_path_factory) -> bytes:
     return _sine(tmp_path_factory.mktemp("edge") / "en.mp3", container="mp3")
 
 
+@pytest.fixture(scope="module")
+def doubao_mp3(tmp_path_factory) -> bytes:
+    return _sine(tmp_path_factory.mktemp("doubao") / "zh.mp3", container="mp3")
+
+
 # ---------------------------------------------------------------------------
 # 夹具：建库 / JWT 作者 / G0 已批准（沿用 tests/test_studio_casting_api.py 的写法）
 # ---------------------------------------------------------------------------
@@ -293,6 +322,8 @@ def casting(client, monkeypatch, tmp_path):
     # 占位密钥：假传输下不出网，只为让适配器通过配置校验。
     monkeypatch.setenv("ARK_API_KEY", "offline-ark-key")
     monkeypatch.setenv("DASHSCOPE_API_KEY", "offline-dashscope-key")
+    # 占位 Key：MockTransport 下不出网，只为让适配器通过配置校验。
+    monkeypatch.setenv("VOLC_SPEECH_API_KEY", "offline-volc-key")
     monkeypatch.delenv("SEEDREAM_IMAGE_MODEL", raising=False)
 
     accounts = {}
@@ -415,6 +446,11 @@ def skip_item(casting, item_id):
     return casting["client"].post(f"/studio/casting/items/{item_id}/skip", headers=auth(casting))
 
 
+def patch_look(casting, item_id, look):
+    return casting["client"].patch(f"/studio/casting/items/{item_id}", json={"look": look},
+                                   headers=auth(casting))
+
+
 def prepared_items(casting, *, count=1, **bible):
     """G0 已批准 + 开工已确认 + 风格已选定；返回 (project, [item_id])。"""
     project = make_project(casting)
@@ -507,6 +543,10 @@ def assert_wav_48k_mono16(path: Path) -> None:
 
 def assert_voice_spec_shape(spec: dict) -> None:
     assert set(spec) == VOICE_SPEC_KEYS
+
+
+def assert_audition_spec_shape(spec: dict) -> None:
+    assert set(spec) == AUDITION_SPEC_KEYS
 
 
 # ---------------------------------------------------------------------------
@@ -655,6 +695,32 @@ def test_full_casting_flow_end_to_end(casting, monkeypatch, sheet_png):
     final = get_state(casting, project)
     assert final["g1"] == {"approved": True, "total": 2, "done": 2, "skipped": 1}
     assert final["setup"] == state["setup"] and final["style"]["chosen"] == chosen
+
+
+def test_sheet_prompt_uses_look_and_two_zone_layout(casting, monkeypatch, sheet_png):
+    """真实块 C：人物新版式含「细节栏」，并把造型说明逐字段写进 Seedream 提示词。"""
+    requests = install_seedream(monkeypatch, lambda request: httpx.Response(200, json=_seedream_ok(sheet_png)))
+    project = make_project(casting)
+    confirm_setup(casting, project)
+    assert choose_style(casting, project).status_code == 200
+    bible = seed_items(casting, project, count=1)[0]
+    item = item_by_bible(get_state(casting, project), bible)
+    look = {"hair": "齐耳短发，发尾略翘", "makeup": "眉尾淡疤，裸色唇",
+            "top": "洗旧的灰蓝棉布工装", "bottom": "深灰束脚裤",
+            "footwear": "磨白的帆布鞋", "accessories": "旧邮差包",
+            "materials": "棉布起球，皮革开裂", "palette": "灰蓝、赭石、米白"}
+    response = patch_look(casting, item["id"], look)
+    assert response.status_code == 200, response.text
+    assert response.json()["look"] == look and response.json()["look_source"] == "author"
+
+    quote = quote_sheets(casting, project, [{"item_id": item["id"], "versions": 1}])
+    job = image_jobs(start_sheets(casting, project, quote["id"]).json())[0]
+    run_jobs([job])
+    assert len(requests) == 1
+    prompt = image_body(requests[0])["prompt"]
+    assert "细节栏" in prompt
+    for value in look.values():
+        assert value in prompt
 
 
 # ---------------------------------------------------------------------------
@@ -807,11 +873,106 @@ def test_chinese_audition_processes_audio_and_settles_by_chars(casting, monkeypa
     assert entry["text"] == TEXT_ZH and entry["archived"] is False
     assert entry["duration_s"] == pytest.approx(asset["duration_s"], abs=0.01)
     assert entry["measured_lufs"] == pytest.approx(meta["measured_lufs"])
-    assert_voice_spec_shape(entry["spec"])
+    assert_audition_spec_shape(entry["spec"])
 
 
 # ---------------------------------------------------------------------------
 # 6. 英文试听：edge-tts 免费
+# ---------------------------------------------------------------------------
+
+def test_doubao_audition_end_to_end(casting, monkeypatch, doubao_mp3):
+    """真实适配器 + MockTransport + 真实 ffmpeg：mp3 进，48k 单声道 WAV 出。"""
+    requests = install_doubao(monkeypatch, doubao_mp3)
+    project, [item_id] = prepared_items(casting)
+
+    response = audition(casting, project, item_id=item_id, text=TEXT_ZH, variants=[DOUBAO_VARIANT])
+    assert response.status_code == 200, response.text
+    job = tts_jobs(response.json())[0]
+    assert job["reserved_amount"] == pytest.approx(0.01)
+    assert get_state(casting, project)["prices"]["doubao_cny_per_10k_chars"] == pytest.approx(3.0)
+
+    run_jobs([job])
+    assert len(requests) == 1, "豆包只允许一次 POST"
+    request = requests[0]
+    assert str(request.url) == tts_doubao.ENDPOINT
+    assert request.headers["X-Api-Resource-Id"] == "seed-tts-2.0"
+    body = json.loads(request.content)
+    assert body["req_params"]["text"] == TEXT_ZH
+    assert body["req_params"]["speaker"] == DOUBAO_VARIANT["voice"]
+    assert body["req_params"]["audio_params"] == {"format": "mp3", "sample_rate": 24000,
+                                                  "speech_rate": 20}
+    assert isinstance(body["req_params"]["additions"], str)
+    additions = json.loads(body["req_params"]["additions"])
+    assert additions == {"context_texts": [DOUBAO_DIRECTION], "post_process": {"pitch": -3}}
+
+    row = run(job_row(job["id"]))
+    assert row["status"] == "succeeded"
+    assert float(row["reserved_amount"]) == 0 and float(row["actual_amount"]) == pytest.approx(0.01)
+    assert run(spend.today())["committed_cny"] == pytest.approx(0.01)
+
+    assets = run(audio_assets(item_id))
+    assert len(assets) == 1
+    asset = assets[0]
+    path = casting["studio_dir"] / asset["rel_path"]
+    assert_wav_48k_mono16(path)
+    probe = storage.probe_audio(path)
+    assert probe["sample_rate"] == 48000 and probe["channels"] == 1
+
+    meta = json.loads(asset["meta_json"])
+    assert meta["spec"] == DOUBAO_VARIANT and meta["text"] == TEXT_ZH
+    assert meta["sample_rate"] == 48000
+    assert meta["measured_lufs"] == pytest.approx(-16.0, abs=1.0)
+
+    item = next(entry for entry in get_state(casting, project)["items"] if entry["id"] == item_id)
+    entry = item["voice"]["auditions"][0]
+    assert entry["spec"] == DOUBAO_VARIANT and entry["spec"]["direction"] == DOUBAO_DIRECTION
+    assert_audition_spec_shape(entry["spec"])
+
+
+def test_doubao_audition_blocks_without_key_or_ffmpeg(casting, monkeypatch):
+    """缺 Key / 缺 ffmpeg 都在付费请求之前 503；请求数为 0。"""
+    requests = install_doubao(monkeypatch, b"unused")
+    project, [item_id] = prepared_items(casting)
+
+    monkeypatch.delenv("VOLC_SPEECH_API_KEY", raising=False)
+    response = audition(casting, project, item_id=item_id, text=TEXT_ZH, variants=[DOUBAO_VARIANT])
+    assert response.status_code == 503 and "VOLC_SPEECH_API_KEY" in response.json()["detail"]
+    assert requests == [] and tts_jobs(get_state(casting, project)) == []
+    assert run(spend.today())["committed_cny"] == pytest.approx(0)
+
+    monkeypatch.setenv("VOLC_SPEECH_API_KEY", "offline-volc-key")
+    monkeypatch.setattr(casting_module.shutil, "which", lambda name: None)
+    response = audition(casting, project, item_id=item_id, text=TEXT_ZH, variants=[DOUBAO_VARIANT])
+    assert response.status_code == 503 and "ffmpeg" in response.json()["detail"]
+    assert requests == [] and tts_jobs(get_state(casting, project)) == []
+    assert run(spend.today())["committed_cny"] == pytest.approx(0)
+
+
+def test_doubao_voice_approve_writes_direction_and_baseline(casting, monkeypatch, doubao_mp3):
+    install_doubao(monkeypatch, doubao_mp3)
+    project, [item_id] = prepared_items(casting)
+    response = audition(casting, project, item_id=item_id, text=TEXT_ZH, variants=[DOUBAO_VARIANT])
+    run_jobs(tts_jobs(response.json()))
+    item = next(entry for entry in get_state(casting, project)["items"] if entry["id"] == item_id)
+    asset_id = item["voice"]["auditions"][0]["asset_id"]
+    url = f"/studio/casting/items/{item_id}/voice/approve"
+
+    # 不带 baseline：默认取该条试听的指示。
+    body = casting["client"].post(url, json={"asset_id": asset_id}, headers=auth(casting)).json()
+    assert body["voice"]["spec"] == {**DOUBAO_VARIANT, "baseline": DOUBAO_DIRECTION}
+    assert_voice_spec_shape(body["voice"]["spec"])
+
+    # 带 baseline：角色基调可以改成更短的一句。
+    body = casting["client"].post(url, json={"asset_id": asset_id, "baseline": "克制，像在自言自语"},
+                                  headers=auth(casting)).json()
+    assert body["voice"]["spec"]["direction"] == DOUBAO_DIRECTION
+    assert body["voice"]["spec"]["baseline"] == "克制，像在自言自语"
+    stored = json.loads(run(one("SELECT spec_json FROM studio_items WHERE id=?", (item_id,)))["spec_json"])
+    assert stored["voice"] == body["voice"]["spec"]
+
+
+# ---------------------------------------------------------------------------
+# 6b. 英文试听：edge-tts 免费
 # ---------------------------------------------------------------------------
 
 def test_english_audition_is_free_and_outputs_48k_wav(casting, monkeypatch, edge_mp3):
@@ -871,12 +1032,12 @@ def test_voice_approve_writes_selected_spec(casting, monkeypatch, cosy_wav):
     assert set(body) == ITEM_KEYS
     assert set(body["voice"]) == VOICE_KEYS
     assert body["voice"]["approved_asset_id"] == chosen_asset
-    assert body["voice"]["spec"] == chosen_spec
+    assert body["voice"]["spec"] == {**chosen_spec, "baseline": None}
     assert_voice_spec_shape(body["voice"]["spec"])
     assert [entry["asset_id"] for entry in body["voice"]["auditions"]] == list(specs)
 
     stored = json.loads(run(one("SELECT spec_json FROM studio_items WHERE id=?", (item_id,)))["spec_json"])
-    assert stored["voice"] == chosen_spec
+    assert stored["voice"] == {**chosen_spec, "baseline": None}
     assert run(one("SELECT voice_asset_id FROM studio_items WHERE id=?", (item_id,)))["voice_asset_id"] \
         == chosen_asset
 
@@ -899,9 +1060,14 @@ def test_voice_catalog_matches_fx_presets_and_frontend_keys(casting):
     engines = {}
     for option in body["voices"]:
         engines.setdefault(option["engine"], []).append(option["voice"])
-    assert set(engines) == {"cosyvoice", "edge-tts"}
+    assert set(engines) == {"doubao", "cosyvoice", "edge-tts"}
+    assert DOUBAO_VARIANT["voice"] in engines["doubao"]
     assert COSY_VARIANT["voice"] in engines["cosyvoice"]
     assert EDGE_VARIANT["voice"] in engines["edge-tts"]
+    doubao_options = [option for option in body["voices"] if option["engine"] == "doubao"]
+    assert len(doubao_options) == 11
+    assert all(option["lang"] == "zh" and option["voice"].endswith("_uranus_bigtts")
+               and option["label"] and option["note"] for option in doubao_options)
 
     # 前端 castingFxLabel 里硬编码的特效类别必须都能在目录里找到。
     source = FRONTEND_TS.read_text(encoding="utf-8")

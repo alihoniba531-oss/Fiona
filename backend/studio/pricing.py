@@ -254,9 +254,14 @@ def settle_brain_response(model: str, usage: dict | None, *, currency: str, rese
 DEFAULT_SEEDREAM_PRICE_CNY = Decimal("0.30")
 # CosyVoice 按字符数计费，2 元/万字符（待核实）。
 DEFAULT_COSYVOICE_PRICE_CNY_PER_10K_CHARS = Decimal("2.0")
-MIN_COSYVOICE_PRICE_CNY = Decimal("0.01")
+# 豆包语音 2.0 按字符数计费，3 元/万字符（待核实）；表演指示不计费。
+DEFAULT_DOUBAO_TTS_PRICE_CNY_PER_10K_CHARS = Decimal("3.0")
+MIN_SPEECH_PRICE_CNY = Decimal("0.01")
+# 旧名称保留给既有调用方。
+MIN_COSYVOICE_PRICE_CNY = MIN_SPEECH_PRICE_CNY
 PRICE_SEEDREAM_ENV = "FIONA_STUDIO_PRICE_SEEDREAM_CNY"
 PRICE_COSYVOICE_ENV = "FIONA_STUDIO_PRICE_COSYVOICE_CNY_PER_10K_CHARS"
+PRICE_DOUBAO_ENV = "FIONA_STUDIO_PRICE_DOUBAO_TTS_CNY_PER_10K_CHARS"
 _PRICE_WARNED: set[str] = set()
 
 
@@ -289,6 +294,10 @@ def cosyvoice_price_per_10k_chars() -> Decimal:
     return _price(PRICE_COSYVOICE_ENV, DEFAULT_COSYVOICE_PRICE_CNY_PER_10K_CHARS)
 
 
+def doubao_price_per_10k_chars() -> Decimal:
+    return _price(PRICE_DOUBAO_ENV, DEFAULT_DOUBAO_TTS_PRICE_CNY_PER_10K_CHARS)
+
+
 def estimate_sheets(count: int) -> dict:
     """出图报价 = 张数 × 单价。"""
     if isinstance(count, bool) or not isinstance(count, int) or count < 1:
@@ -297,12 +306,14 @@ def estimate_sheets(count: int) -> dict:
 
 
 def estimate_speech(chars: int, engine: str) -> dict:
-    """CosyVoice 按字符数预留与结算（最低 0.01 元）；edge-tts 免费。"""
+    """CosyVoice / 豆包按字符数预留与结算（最低 0.01 元）；edge-tts 免费。"""
     if engine == "edge-tts":
         return {"currency": "CNY", "amount": 0.0}
-    if engine != "cosyvoice":
-        raise HTTPException(422, "配音引擎必须为 cosyvoice 或 edge-tts")
+    if engine not in {"cosyvoice", "doubao"}:
+        raise HTTPException(422, "配音引擎必须为 doubao、cosyvoice 或 edge-tts")
     if isinstance(chars, bool) or not isinstance(chars, int) or chars < 1:
         raise HTTPException(422, "试听台词不能为空")
-    amount = cosyvoice_price_per_10k_chars() * Decimal(chars) / 10000
-    return {"currency": "CNY", "amount": float(money(max(amount, MIN_COSYVOICE_PRICE_CNY)))}
+    unit = (doubao_price_per_10k_chars() if engine == "doubao"
+            else cosyvoice_price_per_10k_chars())
+    amount = unit * Decimal(chars) / 10000
+    return {"currency": "CNY", "amount": float(money(max(amount, MIN_SPEECH_PRICE_CNY)))}

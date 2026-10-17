@@ -6,7 +6,7 @@ import { EmptyState } from "@/components/novel/NovelStates";
 import { useRovingTabs } from "@/lib/useRovingTabs";
 import { patchStudioBible } from "@/lib/studio-breakdown";
 import { releaseStudioJob, uploadStudioAsset } from "@/lib/studio";
-import { approveCastingItem, archiveCastingAsset, castingNeedsAppearance, patchCastingItem, reopenCastingItem, skipCastingItem, type CastingG1, type CastingItem, type CastingItemKind, type CastingItemPatch, type CastingJob, type CastingMutate, type CastingSheetRequest } from "@/lib/studio-casting";
+import { approveCastingItem, archiveCastingAsset, castingJobStatusLabel, castingLookInflight, castingLookProblem, castingNeedsAppearance, patchCastingItem, reopenCastingItem, skipCastingItem, type CastingG1, type CastingItem, type CastingItemKind, type CastingItemPatch, type CastingJob, type CastingMutate, type CastingSheetRequest } from "@/lib/studio-casting";
 import { breakdownFieldClass } from "./BreakdownDialog";
 import CastingItemCard from "./CastingItemCard";
 
@@ -14,9 +14,9 @@ const kinds: CastingItemKind[] = ["character", "location", "prop"];
 const kindLabels = ["人物", "场景", "道具"];
 const maxSheets = 60;
 
-export default function CastingItems({ projectId, items, jobs, g1, busy, mutate, onQuoteSheets }: {
-  projectId: string; items: CastingItem[]; jobs: CastingJob[]; g1: CastingG1; busy: boolean;
-  mutate: CastingMutate; onQuoteSheets: (requests: CastingSheetRequest[]) => Promise<void>;
+export default function CastingItems({ projectId, items, jobs, g1, busy, styleChosen, mutate, onQuoteSheets, onQuoteLooks }: {
+  projectId: string; items: CastingItem[]; jobs: CastingJob[]; g1: CastingG1; busy: boolean; styleChosen: boolean;
+  mutate: CastingMutate; onQuoteSheets: (requests: CastingSheetRequest[]) => Promise<void>; onQuoteLooks: (itemIds: string[]) => Promise<void>;
 }) {
   const [tab, setTab] = useState(0);
   const [selected, setSelected] = useState<string[]>([]);
@@ -32,6 +32,9 @@ export default function CastingItems({ projectId, items, jobs, g1, busy, mutate,
   const kind = kinds[tab];
   const visible = items.filter(item => item.kind === kind);
   const selectedItems = items.filter(item => selected.includes(item.id) && !item.orphaned);
+  const lookTargets = selectedItems.filter(item => item.kind !== "location" && !castingLookInflight(jobs, item.id).length);
+  const lookProblem = castingLookProblem(jobs);
+  const lookOverLimit = lookTargets.length > 30;
   const deriveBlocked = selectedItems.some(item => !item.approved_asset_id);
   const useDerive = derive && !deriveBlocked;
   const needsAuthor = selectedItems.filter(item => item.kind === "character" && item.needs_author).map(item => item.name);
@@ -74,6 +77,17 @@ export default function CastingItems({ projectId, items, jobs, g1, busy, mutate,
       </div>
       <div role="progressbar" aria-label="G1 定妆进度" aria-valuemin={0} aria-valuemax={g1.total} aria-valuenow={g1.done} className="h-1.5 w-full overflow-hidden rounded-full bg-[color:var(--slip)]"><div className="h-full rounded-full bg-[color:var(--ink2)] transition-[width]" style={{ width: `${percent}%` }} /></div>
     </div>
+    {lookProblem && <div className="ceramic-card mb-3 min-w-0 space-y-2 p-3">
+      <div className="flex min-w-0 flex-wrap items-center justify-between gap-2">
+        <p className="text-sm">最近一次造型说明任务：{castingJobStatusLabel(lookProblem.status)}</p>
+        {lookProblem.status === "uncertain" && <span className="tag">可能已扣费</span>}
+      </div>
+      {!!lookProblem.error_message && <p className="min-w-0 break-words text-sm text-[color:var(--ink2)]">{lookProblem.error_message}</p>}
+      {lookProblem.status === "uncertain" && <div className="flex min-w-0 flex-wrap items-center gap-2">
+        <p role="status" className="text-sm">可能已扣费，请先到供应商控制台核对再释放。</p>
+        <button type="button" className="btn btn-quiet min-h-10" disabled={busy} onClick={() => void mutate(signal => releaseStudioJob(lookProblem.id, signal), "已释放预留。")}>释放预留</button>
+      </div>}
+    </div>}
     <div role="tablist" aria-label="定妆类型" className="mb-3 flex min-w-0 gap-2">{kindLabels.map((label, index) => <button key={label} type="button" id={`${prefix}-tab-${index}`} role="tab" aria-selected={tab === index} aria-controls={`${prefix}-panel-${index}`} {...tabProps(index)} className={`chip min-h-10 ${tab === index ? "chip-on" : ""}`} onClick={() => chooseTab(index)}>{label} {items.filter(item => item.kind === kinds[index]).length}</button>)}</div>
     <div role="tabpanel" id={`${prefix}-panel-${tab}`} aria-labelledby={`${prefix}-tab-${tab}`} className="min-w-0 space-y-3">
       {visible.length ? visible.map(card) : <EmptyState>这一类还没有条目，先在①拆解里补进总表。</EmptyState>}
@@ -90,8 +104,12 @@ export default function CastingItems({ projectId, items, jobs, g1, busy, mutate,
       {!!references.length && <ul className="flex min-w-0 flex-wrap gap-2">{references.map((assetId, index) => <li key={assetId} title={assetId} className="chip min-w-0 max-w-full"><span className="min-w-0 truncate">参考图 {index + 1} · {assetId.slice(0, 8)}</span><button type="button" className="btn btn-quiet min-h-0 h-7" aria-label={`移除参考图 ${index + 1}`} disabled={busy} onClick={() => setReferences(list => list.filter(value => value !== assetId))}>移除</button></li>)}</ul>}
       {needsAuthor.length > 0 && <p role="status" className="text-sm">以下人物需要先补写外形：{needsAuthor.join("、")}。</p>}
       {overLimit && <p role="status" className="text-sm">一次最多 {maxSheets} 张，请减少条目或版本数。</p>}
+      <p role="status" className="text-sm">出定妆图前建议先补全造型说明，图里的服装与妆造细节以它为准。</p>
+      {!styleChosen && <p role="status" className="text-sm">先选定风格</p>}
+      {lookOverLimit && <p role="status" className="text-sm">一次最多补全 30 个条目，请减少勾选。</p>}
       {referenceError && <p role="alert" className="text-sm">{referenceError}</p>}
       <div className="flex min-w-0 flex-wrap gap-2">
+        <button type="button" className="btn btn-quiet min-h-10" disabled={busy || !styleChosen || !lookTargets.length || lookOverLimit} title={!styleChosen ? "先选定风格" : lookOverLimit ? "一次最多补全 30 个条目" : undefined} onClick={() => void onQuoteLooks(lookTargets.map(item => item.id))}>补全造型说明</button>
         <button type="button" className="btn btn-primary min-h-10" disabled={busy || uploading || missingAppearance || overLimit} onClick={() => void onQuoteSheets(requests)}>报价出图</button>
         <button type="button" className="btn btn-quiet min-h-10" disabled={busy} onClick={() => { setSelected([]); setReferences([]); setExtra(""); setDerive(false); setReferenceError(""); }}>取消选择</button>
       </div>

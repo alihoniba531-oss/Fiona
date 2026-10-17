@@ -48,7 +48,7 @@ def casting(client, monkeypatch, tmp_path):
         user = run(database.get_or_create_user(username))
         accounts[username] = {"Authorization": f"Bearer {create_token(username, user['session_version'])}"}
 
-    calls = {"image": 0, "cosy": 0, "edge": 0, "scheduled": []}
+    calls = {"image": 0, "cosy": 0, "edge": 0, "doubao": 0, "scheduled": []}
     gates = {"g0": True}
 
     async def fake_image(*args, **kwargs):
@@ -61,6 +61,10 @@ def casting(client, monkeypatch, tmp_path):
 
     async def fake_edge(*args, **kwargs):
         calls["edge"] += 1
+        raise AssertionError("API 测试不应真正合成")
+
+    async def fake_doubao(*args, **kwargs):
+        calls["doubao"] += 1
         raise AssertionError("API 测试不应真正合成")
 
     async def fake_episodes(pid, owner):
@@ -77,6 +81,8 @@ def casting(client, monkeypatch, tmp_path):
     monkeypatch.setattr(casting_jobs, "_generate_sheet", fake_image)
     monkeypatch.setattr(casting_jobs, "_synthesize_cosy", fake_cosy)
     monkeypatch.setattr(casting_jobs, "_synthesize_edge", fake_edge)
+    monkeypatch.setattr(casting_jobs, "_synthesize_doubao", fake_doubao)
+    monkeypatch.setattr(casting_jobs, "doubao_configured", lambda: True)
     monkeypatch.setattr(casting_jobs, "_schedule", lambda jid: calls["scheduled"].append(jid))
     monkeypatch.setattr(brain_jobs, "_schedule", lambda jid: calls["scheduled"].append(jid))
     monkeypatch.setattr(breakdown_plan, "get_episodes", fake_episodes)
@@ -224,7 +230,7 @@ def test_gates_require_g0_setup_and_style_without_paid_calls(casting):
                            json={"items": [{"item_id": "x", "versions": 1}]}, headers=auth(casting))
     assert response.status_code == 409 and "风格" in response.json()["detail"]
 
-    assert casting["calls"] == {"image": 0, "cosy": 0, "edge": 0, "scheduled": []}
+    assert casting["calls"] == {"image": 0, "cosy": 0, "edge": 0, "doubao": 0, "scheduled": []}
     assert run(rows("SELECT id FROM studio_jobs")) == []
 
 
@@ -250,7 +256,8 @@ def test_setup_validation_persistence_and_overwrite(casting):
 
     state = confirm_setup(casting, project, resolution="1080P").json()
     assert state["setup"]["resolution"] == "1080P" and state["setup"]["language"] == "zh"
-    assert state["prices"] == {"seedream_cny": 0.30, "cosyvoice_cny_per_10k_chars": 2.0}
+    assert state["prices"] == {"seedream_cny": 0.30, "cosyvoice_cny_per_10k_chars": 2.0,
+                               "doubao_cny_per_10k_chars": 3.0}
 
 
 def test_style_quote_confirms_once_persists_and_expires(casting):
@@ -832,7 +839,9 @@ def test_approve_archive_rules_and_g1(casting):
 VOICES = [{"engine": "cosyvoice", "voice": "longxiaocheng_v2", "label": "龙小诚", "lang": "zh",
            "gender": "male", "note": ""},
           {"engine": "edge-tts", "voice": "en-US-AndrewNeural", "label": "Andrew", "lang": "en",
-           "gender": "male", "note": ""}]
+           "gender": "male", "note": ""},
+          {"engine": "doubao", "voice": "zh_female_sophie_uranus_bigtts", "label": "魅力苏菲 2.0",
+           "lang": "zh", "gender": "female", "note": "高冷御姐，外冷内柔（官方标注指令遵循）"}]
 
 
 @pytest.fixture
@@ -848,12 +857,17 @@ def voice_stubs(casting, monkeypatch):
 
 def cosy(**overrides):
     return {"engine": "cosyvoice", "voice": "longxiaocheng_v2", "rate": 1.0, "pitch": 1.0,
-            "fx": None, "role": "dialogue", **overrides}
+            "fx": None, "role": "dialogue", "direction": None, **overrides}
 
 
 def edge(**overrides):
     return {"engine": "edge-tts", "voice": "en-US-AndrewNeural", "rate": "+0%", "pitch": "+0Hz",
-            "fx": None, "role": "narration", **overrides}
+            "fx": None, "role": "narration", "direction": None, **overrides}
+
+
+def doubao(**overrides):
+    return {"engine": "doubao", "voice": "zh_female_sophie_uranus_bigtts", "rate": 1.0,
+            "pitch": 0, "fx": None, "role": "dialogue", "direction": None, **overrides}
 
 
 def test_voice_catalog_and_audition(voice_stubs, monkeypatch):
@@ -940,6 +954,85 @@ def test_cosyvoice_audition_requires_ffmpeg_tools(voice_stubs, monkeypatch):
     assert casting["calls"]["cosy"] == 0 and casting["calls"]["edge"] == 0
 
 
+def test_doubao_audition_validation_and_spec(voice_stubs):
+    """豆包方案：rate 0.5–2.0、pitch 为 -12~12 整数、指示只对豆包开放。"""
+    casting = voice_stubs
+    client = casting["client"]
+    project = make_project(casting)
+    character = run(new_bible(project, name="阿宁"))
+    confirm_setup(casting, project)
+    item = item_by_bible(get_state(casting, project), character)
+    url = f"/studio/projects/{project['id']}/casting/voices/audition"
+    text = "我是阿宁。"
+    direction = "压低声音，不安里带着一点倔强"
+
+    def post(variant):
+        return client.post(url, json={"item_id": item["id"], "text": text, "variants": [variant]},
+                           headers=auth(casting))
+
+    # 非豆包引擎不能带表演指示。
+    assert post(cosy(direction=direction)).status_code == 422
+    assert post(edge(direction=direction)).status_code == 422
+    # 201 字指示在请求层就被 max_length 拦下。
+    assert post(doubao(direction="长" * 201)).status_code == 422
+    assert post(doubao(pitch=1.5)).status_code == 422
+    assert post(doubao(pitch="0")).status_code == 422
+    assert post(doubao(pitch=True)).status_code == 422
+    assert post(doubao(pitch=13)).status_code == 422
+    assert post(doubao(pitch=-13)).status_code == 422
+    for bad in (doubao(rate=0.4), doubao(rate=2.1), doubao(rate="fast")):
+        assert post(bad).status_code == 422, bad
+    assert post(doubao(voice="longxiaocheng_v2")).status_code == 422
+    assert post(doubao(fx="robot:Z")).status_code == 422
+    assert casting["calls"]["cosy"] == 0 and casting["calls"]["edge"] == 0
+    assert casting["calls"]["doubao"] == 0
+
+    # 值是整数的浮点（3.0）按整数接受；指示去首尾空白后写进 spec。
+    response = post(doubao(rate=1.2, pitch=3.0, direction=f"  {direction}  "))
+    assert response.status_code == 200, response.text
+    jobs = [job for job in response.json()["jobs"] if job["kind"] == "tts"]
+    assert len(jobs) == 1 and jobs[0]["reserved_amount"] == pytest.approx(0.01)
+    stored = run(rows("SELECT params_json,media_provider FROM studio_jobs WHERE kind='tts'"))
+    assert len(stored) == 1 and stored[0]["media_provider"] == "doubao"
+    spec = json.loads(stored[0]["params_json"])["spec"]
+    assert spec == doubao(rate=1.2, pitch=3, direction=direction)
+    assert run(spend.today())["committed_cny"] == pytest.approx(0.01)
+    assert casting["calls"]["doubao"] == 0
+
+
+def test_doubao_audition_requires_key_and_ffmpeg(voice_stubs, monkeypatch):
+    """块 B：缺 Key / 缺 ffmpeg 都返回 503，预检在任何付费请求之前。"""
+    casting = voice_stubs
+    client = casting["client"]
+    project = make_project(casting)
+    character = run(new_bible(project, name="阿宁"))
+    confirm_setup(casting, project)
+    item = item_by_bible(get_state(casting, project), character)
+    url = f"/studio/projects/{project['id']}/casting/voices/audition"
+
+    monkeypatch.setattr(casting_jobs, "doubao_configured", lambda: False)
+    response = client.post(url, json={"item_id": item["id"], "text": "我是阿宁。", "variants": [doubao()]},
+                           headers=auth(casting))
+    assert response.status_code == 503 and "VOLC_SPEECH_API_KEY" in response.json()["detail"]
+    assert run(rows("SELECT id FROM studio_jobs WHERE kind='tts'")) == []
+    assert casting["calls"]["doubao"] == 0
+
+    # 混合批次里只要有一条豆包，同样在落库前 503。
+    response = client.post(url, json={"item_id": item["id"], "text": "我是阿宁。",
+                                      "variants": [edge(), doubao()]}, headers=auth(casting))
+    assert response.status_code == 503
+    assert run(rows("SELECT id FROM studio_jobs WHERE kind='tts'")) == []
+
+    monkeypatch.setattr(casting_jobs, "doubao_configured", lambda: True)
+    monkeypatch.setattr(casting_module.shutil, "which", lambda name: None)
+    response = client.post(url, json={"item_id": item["id"], "text": "我是阿宁。", "variants": [doubao()]},
+                           headers=auth(casting))
+    assert response.status_code == 503 and "ffmpeg" in response.json()["detail"]
+    assert run(rows("SELECT id FROM studio_jobs WHERE kind='tts'")) == []
+    assert run(spend.today())["committed_cny"] == pytest.approx(0)
+    assert casting["calls"]["doubao"] == 0
+
+
 def test_voice_approve_writes_spec(voice_stubs):
     casting = voice_stubs
     client = casting["client"]
@@ -958,11 +1051,43 @@ def test_voice_approve_writes_spec(voice_stubs):
     response = client.post(url, json={"asset_id": audition_asset}, headers=auth(casting))
     assert response.status_code == 200
     body = response.json()
-    assert body["voice"]["spec"] == spec and body["voice"]["approved_asset_id"] == audition_asset
+    assert body["voice"]["spec"] == {**spec, "baseline": None}
+    assert body["voice"]["approved_asset_id"] == audition_asset
     entry = body["voice"]["auditions"][0]
     assert entry == {"asset_id": audition_asset, "created_at": entry["created_at"],
                      "archived": False, "spec": spec, "text": "我是阿宁。", "duration_s": 1.6,
                      "measured_lufs": -16.2}
+
+
+def test_voice_approve_baseline_defaults_to_direction(voice_stubs):
+    """定档时方向写进 spec；baseline 未传时默认取该条试听的指示。"""
+    casting = voice_stubs
+    client = casting["client"]
+    project = make_project(casting)
+    character = run(new_bible(project, name="阿宁"))
+    confirm_setup(casting, project)
+    item = item_by_bible(get_state(casting, project), character)
+    direction = "压低声音，不安里带着一点倔强"
+    spec = doubao(direction=direction)
+    asset = run(new_asset(project, item_id=item["id"], role="audition", kind="audio",
+                          version_no=1, spec=spec, text="我是阿宁。", duration_s=1.6,
+                          measured_lufs=-16.2))
+    url = f"/studio/casting/items/{item['id']}/voice/approve"
+
+    body = client.post(url, json={"asset_id": asset}, headers=auth(casting)).json()
+    assert body["voice"]["spec"] == {**spec, "baseline": direction}
+
+    body = client.post(url, json={"asset_id": asset, "baseline": "  克制，像在自言自语  "},
+                       headers=auth(casting)).json()
+    assert body["voice"]["spec"]["direction"] == direction
+    assert body["voice"]["spec"]["baseline"] == "克制，像在自言自语"
+
+    # 空白 baseline 视为未传，仍回落到试听指示。
+    body = client.post(url, json={"asset_id": asset, "baseline": "   "}, headers=auth(casting)).json()
+    assert body["voice"]["spec"]["baseline"] == direction
+
+    response = client.post(url, json={"asset_id": asset, "baseline": "基" * 201}, headers=auth(casting))
+    assert response.status_code == 422
 
 
 # ---------------------------------------------------------------------------
@@ -1014,3 +1139,452 @@ def test_ownership_404_and_account_deletion(casting):
     assert [row["id"] for row in run(rows("SELECT id FROM studio_projects WHERE owner='other'"))] == [other_project["id"]]
     assert run(rows("SELECT id FROM studio_items WHERE owner='other'")) == []
 
+
+# ---------------------------------------------------------------------------
+# 造型说明（块 A）
+# ---------------------------------------------------------------------------
+
+async def mark_looks_succeeded(project, looks):
+    async with store.connection(transaction=True) as db:
+        await db.execute("""UPDATE studio_jobs SET status='succeeded',result_json=?,actual_amount='0',
+            finished_at=? WHERE kind='brain' AND task='casting_look' AND project_id=?""",
+                         (store._json({"looks": looks}), store.utcnow(), project["id"]))
+
+
+async def set_bible(bible_id, **fields):
+    assignments = ",".join(f"{key}=?" for key in fields)
+    async with store.connection(transaction=True) as db:
+        await db.execute(f"UPDATE studio_bible SET {assignments} WHERE id=?", (*fields.values(), bible_id))
+
+
+def looks_quote(casting, project, item_ids):
+    return casting["client"].post(f"/studio/projects/{project['id']}/casting/looks/quote",
+                                  json={"item_ids": item_ids}, headers=auth(casting))
+
+
+def looks_start(casting, project, quote_id):
+    return casting["client"].post(f"/studio/projects/{project['id']}/casting/looks/start",
+                                  json={"quote_id": quote_id}, headers=auth(casting))
+
+
+def test_looks_quote_gates_author_exclusion_and_batching(casting):
+    client = casting["client"]
+    project = make_project(casting)
+    bibles = [run(new_bible(project, name=f"人物{index}")) for index in range(12)]
+    prop = run(new_bible(project, kind="prop", name="旧邮包", appearance="", description="帆布邮包"))
+    state = get_state(casting, project)
+    ids = [item_by_bible(state, bible)["id"] for bible in bibles]
+    ids.append(item_by_bible(state, prop)["id"])
+
+    casting["gates"]["g0"] = False
+    assert looks_quote(casting, project, ids).status_code == 409
+    casting["gates"]["g0"] = True
+    assert looks_quote(casting, project, ids[:1]).status_code == 409
+    confirm_setup(casting, project)
+    response = looks_quote(casting, project, ids[:1])
+    assert response.status_code == 409 and "风格" in response.json()["detail"]
+    choose_style(casting, project)
+
+    assert looks_quote(casting, project, []).status_code == 422
+    assert looks_quote(casting, project, ids * 3).status_code == 422
+    assert looks_quote(casting, project, [str(uuid.uuid4())]).status_code == 404
+
+    location = run(new_bible(project, kind="location", name="车站", appearance="", description="旧站台"))
+    location_id = item_by_bible(get_state(casting, project), location)["id"]
+    response = looks_quote(casting, project, [ids[0], location_id])
+    assert response.status_code == 409 and "场景" in response.json()["detail"]
+
+    orphan_bible = run(new_bible(project, name="孤儿"))
+    orphan_id = item_by_bible(get_state(casting, project), orphan_bible)["id"]
+    run(set_bible(orphan_bible, archived=1))
+    response = looks_quote(casting, project, [orphan_id])
+    assert response.status_code == 409 and "总表" in response.json()["detail"]
+
+    author = client.patch(f"/studio/casting/items/{ids[0]}", json={"look": {"hair": "作者手写"}},
+                          headers=auth(casting))
+    assert author.status_code == 200 and author.json()["look_source"] == "author"
+    response = looks_quote(casting, project, [ids[0]])
+    assert response.status_code == 409 and response.json()["detail"] == "这些条目的造型说明已由作者修改"
+
+    quote = looks_quote(casting, project, ids)
+    assert quote.status_code == 200, quote.text
+    body = quote.json()
+    assert body["kind"] == "casting_looks" and body["currency"] == "USD"
+    assert [line["versions"] for line in body["items"]] == [1, 1, 1]
+    assert [line["name"] for line in body["items"]] == [
+        "造型说明 第 1 批（4 个条目）", "造型说明 第 2 批（4 个条目）", "造型说明 第 3 批（4 个条目）"]
+    assert [line["item_count"] for line in body["items"]] == [4, 4, 4]
+    assert body["total"] == pytest.approx(sum(line["unit"] for line in body["items"]))
+
+
+def test_looks_start_writes_back_and_protects_author_and_orphans(casting):
+    project = make_project(casting)
+    confirm_setup(casting, project)
+    choose_style(casting, project)
+    bibles = [run(new_bible(project, name=name)) for name in ("阿宁", "老周", "小满", "作者条目")]
+    state = get_state(casting, project)
+    ids = [item_by_bible(state, bible)["id"] for bible in bibles]
+    assert [item_by_bible(state, bible)["look"] for bible in bibles] == [None] * 4
+    assert [item_by_bible(state, bible)["look_source"] for bible in bibles] == [None] * 4
+    assert casting["client"].patch(f"/studio/casting/items/{ids[3]}", json={"look": {"hair": "作者发型"}},
+                                   headers=auth(casting)).status_code == 200
+
+    quote = looks_quote(casting, project, ids).json()
+    assert len(quote["items"]) == 1
+    response = looks_start(casting, project, quote["id"])
+    assert response.status_code == 200, response.text
+    started = response.json()
+    job = next(entry for entry in started["jobs"] if entry["task"] == "casting_look")
+    assert job["kind"] == "brain" and job["status"] == "queued"
+    assert job["id"] in casting["calls"]["scheduled"]
+    stored = run(rows("SELECT * FROM studio_jobs WHERE task='casting_look'"))
+    assert len(stored) == 1 and stored[0]["status"] == "queued"
+    assert "looks" not in (stored[0].get("result") or {})
+    assert looks_start(casting, project, quote["id"]).status_code == 409
+
+    # 任务进行期间作者改了阿宁、老周被移出总表；结果里还夹了不属于本次请求的 id。
+    assert casting["client"].patch(f"/studio/casting/items/{ids[0]}", json={"look": {"hair": "期间改成"}},
+                                   headers=auth(casting)).status_code == 200
+    run(set_bible(bibles[1], merged_into="other-bible"))
+    look_a = {"hair": "导演发型", "makeup": "导演妆容", "top": "灰蓝工装", "bottom": "束脚裤",
+              "footwear": "帆布鞋", "accessories": "邮差包", "materials": "棉布磨损", "palette": "灰蓝"}
+    look_b = {"hair": "导演发型B", "makeup": "妆容B", "top": "上装B", "bottom": "下装B",
+              "footwear": "鞋B", "accessories": "配饰B", "materials": "材质B", "palette": "主色B"}
+    unknown = {"hair": "不该写回", "makeup": "x", "top": "x", "bottom": "x",
+               "footwear": "x", "accessories": "x", "materials": "x", "palette": "x"}
+    run(mark_looks_succeeded(project, [
+        {"item_id": ids[0], "kind": "character", "look": look_a},
+        {"item_id": ids[1], "kind": "character", "look": look_b},
+        {"item_id": ids[2], "kind": "character", "look": look_b},
+        {"item_id": str(uuid.uuid4()), "kind": "character", "look": unknown},
+    ]))
+
+    state = get_state(casting, project)
+    assert item_by_bible(state, bibles[0])["look"] == {"hair": "期间改成"}
+    assert item_by_bible(state, bibles[0])["look_source"] == "author"
+    assert item_by_bible(state, bibles[1])["look"] is None
+    assert item_by_bible(state, bibles[2])["look"] == look_b
+    assert item_by_bible(state, bibles[2])["look_source"] == "director"
+    assert item_by_bible(state, bibles[3])["look"] == {"hair": "作者发型"}
+    succeeded = next(entry for entry in state["jobs"] if entry["task"] == "casting_look")
+    assert succeeded["status"] == "succeeded"
+
+    # 导演任务再次被读到时不覆盖后来的作者修改。
+    assert casting["client"].patch(f"/studio/casting/items/{ids[2]}", json={"look": {"hair": "作者再改"}},
+                                   headers=auth(casting)).status_code == 200
+    state = get_state(casting, project)
+    assert item_by_bible(state, bibles[2])["look"]["hair"] == "作者再改"
+    assert item_by_bible(state, bibles[2])["look_source"] == "author"
+
+
+def test_looks_start_revalidates_locked_features_from_quote_payload(casting):
+    client = casting["client"]
+    project = make_project(casting)
+    confirm_setup(casting, project)
+    choose_style(casting, project)
+    bibles = [run(new_bible(project, name=name)) for name in ("阿宁", "老周")]
+    state = get_state(casting, project)
+    ids = [item_by_bible(state, bible)["id"] for bible in bibles]
+    for item_id in ids:
+        assert client.patch(f"/studio/casting/items/{item_id}",
+                            json={"locked_features": "右眉有疤"}, headers=auth(casting)).status_code == 200
+
+    unchanged = looks_quote(casting, project, [ids[0]]).json()
+    response = looks_start(casting, project, unchanged["id"])
+    assert response.status_code == 200, response.text
+    assert len(run(rows("SELECT id FROM studio_jobs WHERE task='casting_look'"))) == 1
+
+    changed = looks_quote(casting, project, [ids[1]]).json()
+    assert client.patch(f"/studio/casting/items/{ids[1]}",
+                        json={"locked_features": "左眉有疤"}, headers=auth(casting)).status_code == 200
+    response = looks_start(casting, project, changed["id"])
+    assert response.status_code == 409 and "锁定特征已修改" in response.json()["detail"]
+    assert run(rows("SELECT status FROM studio_quotes WHERE id=?", (changed["id"],)))[0]["status"] == "open"
+
+
+def test_looks_start_rejects_second_open_quote_and_keeps_it_open(casting):
+    project = make_project(casting)
+    confirm_setup(casting, project)
+    choose_style(casting, project)
+    bibles = [run(new_bible(project, name=name)) for name in ("阿宁", "老周")]
+    state = get_state(casting, project)
+    ids = [item_by_bible(state, bible)["id"] for bible in bibles]
+
+    first = looks_quote(casting, project, ids).json()
+    second = looks_quote(casting, project, ids).json()
+    assert first["id"] != second["id"]
+    assert looks_start(casting, project, first["id"]).status_code == 200
+
+    response = looks_start(casting, project, second["id"])
+    assert response.status_code == 409
+    assert response.json()["detail"] == "这些条目正在补全造型，请等完成后再报价"
+    stored = run(rows("SELECT * FROM studio_jobs WHERE task='casting_look'"))
+    assert len(stored) == 1 and float(stored[0]["reserved_amount"]) > 0
+    statuses = {row["id"]: row["status"] for row in run(rows("SELECT id,status FROM studio_quotes"))}
+    assert statuses[first["id"]] == "confirmed" and statuses[second["id"]] == "open"
+
+
+def test_patch_look_validates_fields_and_merges(casting):
+    client = casting["client"]
+    project = make_project(casting)
+    confirm_setup(casting, project)
+    choose_style(casting, project)
+    character = run(new_bible(project, name="阿宁"))
+    prop = run(new_bible(project, kind="prop", name="旧邮包", appearance="", description="帆布邮包"))
+    location = run(new_bible(project, kind="location", name="车站", appearance="", description="旧站台"))
+    state = get_state(casting, project)
+    item_id = item_by_bible(state, character)["id"]
+    prop_id = item_by_bible(state, prop)["id"]
+    location_id = item_by_bible(state, location)["id"]
+
+    response = client.patch(f"/studio/casting/items/{item_id}", json={"look": {"hair": "短发"}},
+                            headers=auth(casting))
+    assert response.status_code == 200
+    assert response.json()["look"] == {"hair": "短发"} and response.json()["look_source"] == "author"
+    response = client.patch(f"/studio/casting/items/{item_id}",
+                            json={"look": {"makeup": "裸妆", "top": "棉布外套"}}, headers=auth(casting))
+    assert response.json()["look"] == {"hair": "短发", "makeup": "裸妆", "top": "棉布外套"}
+    assert response.json()["look_source"] == "author"
+
+    assert client.patch(f"/studio/casting/items/{item_id}", json={"look": {"unknown": "x"}},
+                        headers=auth(casting)).status_code == 422
+    assert client.patch(f"/studio/casting/items/{item_id}", json={"look": {"hair": "长" * 201}},
+                        headers=auth(casting)).status_code == 422
+    assert client.patch(f"/studio/casting/items/{item_id}", json={"look": {"hair": 3}},
+                        headers=auth(casting)).status_code == 422
+    assert client.patch(f"/studio/casting/items/{location_id}", json={"look": {"form": "站牌"}},
+                        headers=auth(casting)).status_code == 422
+    response = client.patch(f"/studio/casting/items/{prop_id}",
+                            json={"look": {"form": "方形帆布包", "material": "蜡布"}}, headers=auth(casting))
+    assert response.status_code == 200 and response.json()["look_source"] == "author"
+    assert response.json()["look"] == {"form": "方形帆布包", "material": "蜡布"}
+    assert client.patch(f"/studio/casting/items/{prop_id}", json={"look": {"hair": "短发"}},
+                        headers=auth(casting)).status_code == 422
+    assert client.patch(f"/studio/casting/items/{item_id}", json={"look": "not-a-dict"},
+                        headers=auth(casting)).status_code == 422
+
+
+
+# ---------------------------------------------------------------------------
+# 返修 R1（块 A）
+# ---------------------------------------------------------------------------
+
+def insert_look_job(project, item_ids, looks, *, created_at, finished_at=None,
+                    status="succeeded", owner="owner"):
+    """直接落一条已完成 / 指定状态的造型任务，便于构造时序与损坏结果。"""
+    params = {"item_ids": list(item_ids),
+              "inputs": {"items": [{"item_id": item_id} for item_id in item_ids]}}
+
+    async def write():
+        async with store.connection(transaction=True) as db:
+            qid = await casting_jobs._synthetic_quote(db, project["id"], owner, f"look-{uuid.uuid4()}")
+            job_id = str(uuid.uuid4())
+            await db.execute("""INSERT INTO studio_jobs(id,project_id,owner,kind,provider,model,
+                params_json,fingerprint,quote_id,quote_item_id,status,est_min_cny,est_max_cny,
+                created_at,updated_at,confirmed_day,task,result_json,currency,brain_provider,finished_at)
+                VALUES(?,?,?,'brain','wan','claude-sonnet-5-5',?,?,?,?,?,'0','0',?,?,?,'casting_look',?,'USD','claude',?)""",
+                             (job_id, project["id"], owner, store._json(params), job_id, qid, job_id, status,
+                              created_at, created_at, spend.shanghai_day(created_at),
+                              store._json({"looks": looks}), finished_at or created_at))
+            return job_id
+
+    return run(write())
+
+
+def stored_spec(item_id):
+    row = run(rows("SELECT spec_json FROM studio_items WHERE id=?", (item_id,)))[0]
+    return json.loads(row["spec_json"])
+
+
+LOOK_FULL = {"hair": "齐耳短发", "makeup": "裸妆", "top": "灰蓝工装", "bottom": "束脚裤",
+             "footwear": "帆布鞋", "accessories": "邮差包", "materials": "棉布磨损", "palette": "灰蓝"}
+
+
+def make_item(casting, project, **kwargs):
+    bible = run(new_bible(project, **kwargs))
+    return bible, item_by_bible(get_state(casting, project), bible)["id"]
+
+
+def test_looks_quote_currency_follows_provider(casting):
+    project = make_project(casting)
+    confirm_setup(casting, project)
+    choose_style(casting, project)
+    _, item_id = make_item(casting, project)
+
+    claude = looks_quote(casting, project, [item_id])
+    assert claude.status_code == 200, claude.text
+    assert claude.json()["currency"] == "USD"
+
+    async def set_qwen():
+        async with store.connection(transaction=True) as db:
+            await db.execute("UPDATE studio_projects SET brain_provider='qwen' WHERE id=? AND owner=?",
+                             (project["id"], "owner"))
+
+    run(set_qwen())
+    qwen = looks_quote(casting, project, [item_id])
+    assert qwen.status_code == 200, qwen.text
+    assert qwen.json()["currency"] == "CNY"
+
+
+def test_look_results_use_created_at_watermark(casting, monkeypatch):
+    project = make_project(casting)
+    confirm_setup(casting, project)
+    choose_style(casting, project)
+    _, item_id = make_item(casting, project)
+    old_look = {**LOOK_FULL, "hair": "旧发型"}
+    new_look = {**LOOK_FULL, "hair": "新发型"}
+    # 旧请求创建得早、完成得晚；按完成时间回放会翻回旧值。
+    insert_look_job(project, [item_id], [{"item_id": item_id, "kind": "character", "look": old_look}],
+                    created_at="2026-01-01T00:00:00+00:00", finished_at="2026-01-03T00:00:00+00:00")
+    insert_look_job(project, [item_id], [{"item_id": item_id, "kind": "character", "look": new_look}],
+                    created_at="2026-01-02T00:00:00+00:00", finished_at="2026-01-02T12:00:00+00:00")
+
+    state = get_state(casting, project)
+    item = next(item for item in state["items"] if item["id"] == item_id)
+    assert item["look"] == new_look and item["look_source"] == "director"
+    spec = stored_spec(item_id)
+    assert spec["look_job_created_at"] == "2026-01-02T00:00:00+00:00"
+    assert "look_job_ids" not in spec
+
+    calls = []
+    real = casting_module._clean_look
+    monkeypatch.setattr(casting_module, "_clean_look",
+                        lambda kind, value: calls.append(value) or real(kind, value))
+    get_state(casting, project)
+    assert calls == []
+
+
+def test_look_results_apply_before_quote_and_start(casting):
+    client = casting["client"]
+    project = make_project(casting)
+    confirm_setup(casting, project)
+    choose_style(casting, project)
+    _, item_id = make_item(casting, project)
+    first = {**LOOK_FULL, "hair": "第一次导演"}
+    insert_look_job(project, [item_id], [{"item_id": item_id, "kind": "character", "look": first}],
+                    created_at="2026-01-01T00:00:00+00:00")
+    response = client.post(f"/studio/projects/{project['id']}/casting/sheets/quote",
+                           json={"items": [{"item_id": item_id, "versions": 1}]}, headers=auth(casting))
+    assert response.status_code == 200, response.text
+    assert stored_spec(item_id)["look"] == first
+
+    quote = response.json()
+    second = {**LOOK_FULL, "hair": "第二次导演"}
+    insert_look_job(project, [item_id], [{"item_id": item_id, "kind": "character", "look": second}],
+                    created_at="2026-01-02T00:00:00+00:00")
+    started = client.post(f"/studio/projects/{project['id']}/casting/sheets/start",
+                          json={"quote_id": quote["id"]}, headers=auth(casting))
+    assert started.status_code == 200, started.text
+    assert stored_spec(item_id)["look"] == second
+
+
+def test_patch_look_merges_on_top_of_pending_director_result(casting):
+    project = make_project(casting)
+    confirm_setup(casting, project)
+    choose_style(casting, project)
+    _, item_id = make_item(casting, project)
+    insert_look_job(project, [item_id],
+                    [{"item_id": item_id, "kind": "character",
+                      "look": {"hair": "导演发型", "makeup": "导演妆容"}}],
+                    created_at="2026-01-01T00:00:00+00:00")
+    response = casting["client"].patch(f"/studio/casting/items/{item_id}",
+                                      json={"look": {"hair": "作者发型"}}, headers=auth(casting))
+    assert response.status_code == 200, response.text
+    assert response.json()["look"] == {"hair": "作者发型", "makeup": "导演妆容"}
+    assert response.json()["look_source"] == "author"
+
+
+def test_patch_look_rejects_empty_object_and_clears_blank_result(casting):
+    client = casting["client"]
+    project = make_project(casting)
+    confirm_setup(casting, project)
+    choose_style(casting, project)
+    _, item_id = make_item(casting, project)
+
+    assert client.patch(f"/studio/casting/items/{item_id}", json={"look": {}},
+                        headers=auth(casting)).status_code == 422
+    response = client.patch(f"/studio/casting/items/{item_id}", json={"look": {"hair": ""}},
+                            headers=auth(casting))
+    assert response.status_code == 200, response.text
+    assert response.json()["look"] is None and response.json()["look_source"] is None
+    # 清空后可重新交给导演补全。
+    assert looks_quote(casting, project, [item_id]).status_code == 200
+
+
+def test_looks_quote_skips_inflight_items_and_jobs_expose_item_ids(casting):
+    project = make_project(casting)
+    confirm_setup(casting, project)
+    choose_style(casting, project)
+    bibles = [run(new_bible(project, name=name)) for name in ("阿宁", "老周")]
+    state = get_state(casting, project)
+    ids = [item_by_bible(state, bible)["id"] for bible in bibles]
+
+    quote = looks_quote(casting, project, [ids[0]])
+    started = looks_start(casting, project, quote.json()["id"])
+    assert started.status_code == 200, started.text
+    job = next(entry for entry in started.json()["jobs"] if entry["task"] == "casting_look")
+    assert job["item_ids"] == [ids[0]]
+    stored = run(rows("SELECT params_json FROM studio_jobs WHERE task='casting_look'"))[0]
+    assert json.loads(stored["params_json"])["item_ids"] == [ids[0]]
+
+    response = looks_quote(casting, project, [ids[0]])
+    assert response.status_code == 409 and "正在补全" in response.json()["detail"]
+    response = looks_quote(casting, project, [ids[0], ids[1]])
+    assert response.status_code == 200, response.text
+    body = response.json()
+    assert len(body["items"]) == 1
+    assert body["items"][0]["name"] == "造型说明 第 1 批（1 个条目）"
+
+
+def test_looks_start_revalidates_quote(casting):
+    client = casting["client"]
+    project = make_project(casting)
+    confirm_setup(casting, project)
+    choose_style(casting, project)
+    bibles = [run(new_bible(project, name=name)) for name in ("锁定", "手改", "孤儿")]
+    state = get_state(casting, project)
+    ids = [item_by_bible(state, bible)["id"] for bible in bibles]
+
+    quote = looks_quote(casting, project, [ids[0]]).json()
+    assert client.patch(f"/studio/casting/items/{ids[0]}", json={"locked_features": "新特征"},
+                        headers=auth(casting)).status_code == 200
+    response = looks_start(casting, project, quote["id"])
+    assert response.status_code == 409 and "重新报价" in response.json()["detail"]
+
+    quote = looks_quote(casting, project, [ids[1]]).json()
+    assert client.patch(f"/studio/casting/items/{ids[1]}", json={"look": {"hair": "作者改"}},
+                        headers=auth(casting)).status_code == 200
+    response = looks_start(casting, project, quote["id"])
+    assert response.status_code == 409 and "重新报价" in response.json()["detail"]
+
+    quote = looks_quote(casting, project, [ids[2]]).json()
+    run(set_bible(bibles[2], archived=1))
+    response = looks_start(casting, project, quote["id"])
+    assert response.status_code == 409 and "重新报价" in response.json()["detail"]
+
+
+def test_corrupt_look_result_is_skipped_with_warning(casting, monkeypatch, caplog):
+    project = make_project(casting)
+    confirm_setup(casting, project)
+    choose_style(casting, project)
+    bibles = [run(new_bible(project, name=name)) for name in ("坏结果", "好结果")]
+    state = get_state(casting, project)
+    ids = [item_by_bible(state, bible)["id"] for bible in bibles]
+    insert_look_job(project, ids, [
+        {"item_id": ids[0], "kind": "character", "look": {"hair": "坏"}},
+        {"item_id": ids[1], "kind": "character", "look": {"hair": "好"}},
+    ], created_at="2026-01-01T00:00:00+00:00")
+
+    real = casting_module._clean_look
+
+    def clean(kind, value):
+        if value.get("hair") == "坏":
+            raise RuntimeError("损坏的结果")
+        return real(kind, value)
+
+    monkeypatch.setattr(casting_module, "_clean_look", clean)
+    with caplog.at_level("WARNING"):
+        state = get_state(casting, project)
+    assert item_by_bible(state, bibles[0])["look"] is None
+    assert item_by_bible(state, bibles[1])["look"] == {"hair": "好"}
+    assert any("造型说明" in record.message for record in caplog.records)

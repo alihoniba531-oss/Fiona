@@ -62,8 +62,8 @@ def casting_db(tmp_path, monkeypatch):
 @pytest.fixture
 def paid(monkeypatch):
     """全部块 B / 块 C 的假实现 + 派发打桩；返回可观察的调用记录。"""
-    calls = {"image": [], "cosy": [], "edge": [], "voice": [], "discarded": [], "saved": []}
-    state = {"image_exc": None, "cosy_exc": None, "edge_exc": None, "save_exc": None,
+    calls = {"image": [], "cosy": [], "edge": [], "doubao": [], "voice": [], "discarded": [], "saved": []}
+    state = {"image_exc": None, "cosy_exc": None, "edge_exc": None, "doubao_exc": None, "save_exc": None,
              "image_result": SheetResult(), "processed": Processed()}
 
     async def fake_image(prompt, *, size, reference_images):
@@ -83,6 +83,13 @@ def paid(monkeypatch):
         if state["edge_exc"] is not None:
             raise state["edge_exc"]
         return RawAudio(audio_format="mp3", engine="edge-tts", voice=voice)
+
+    async def fake_doubao(text, *, voice, rate, pitch, direction):
+        calls["doubao"].append({"text": text, "voice": voice, "rate": rate, "pitch": pitch,
+                                "direction": direction})
+        if state["doubao_exc"] is not None:
+            raise state["doubao_exc"]
+        return RawAudio(audio_format="mp3", engine="doubao", voice=voice, chars=len(text))
 
     async def fake_process(raw, *, input_format, fx, target_lufs):
         calls["voice"].append({"fx": fx, "target_lufs": target_lufs, "format": input_format})
@@ -115,6 +122,7 @@ def paid(monkeypatch):
     monkeypatch.setattr(casting_jobs, "_generate_sheet", fake_image)
     monkeypatch.setattr(casting_jobs, "_synthesize_cosy", fake_cosy)
     monkeypatch.setattr(casting_jobs, "_synthesize_edge", fake_edge)
+    monkeypatch.setattr(casting_jobs, "_synthesize_doubao", fake_doubao)
     monkeypatch.setattr(casting_jobs, "_process_voice", fake_process)
     monkeypatch.setattr(casting_jobs, "_save_image", fake_save_image)
     monkeypatch.setattr(casting_jobs, "_save_audio", fake_save_audio)
@@ -154,10 +162,15 @@ STYLE = {"name": "水墨", "visual_style": "写实电影感", "palette": "青灰
 
 async def new_item(project, *, kind="character", name="阿宁", appearance="短发、旧棉袄",
                    description="小镇邮差", role="主角", needs_author=0, locked_features="",
-                   extra_prompt="", reference_asset_ids=(), approved_asset_id=None):
+                   extra_prompt="", reference_asset_ids=(), approved_asset_id=None,
+                   look=None, look_source=None):
     bible_id, item_id, stamp = uuid.uuid4().hex, uuid.uuid4().hex, store.utcnow()
     spec = {"locked_features": locked_features, "extra_prompt": extra_prompt,
             "reference_asset_ids": list(reference_asset_ids), "voice": None}
+    if look is not None:
+        spec["look"] = look
+    if look_source is not None:
+        spec["look_source"] = look_source
     async with store.connection(transaction=True) as db:
         await db.execute("""INSERT INTO studio_bible(id,project_id,owner,breakdown_id,kind,name,
             aliases_json,role,description,appearance,appearance_source,excerpt,needs_author,episodes_json,
@@ -254,6 +267,29 @@ def test_image_success_lands_versioned_asset_and_settles(casting_db, paid):
         assert meta["prompt"] == "组装后的定妆提示词" and meta["size"] == "2560x1440"
         assert meta["reference_asset_ids"] == [] and meta["provider"] == "seedream"
         assert (await spend.today())["committed_cny"] == pytest.approx(0.30)
+
+    run(scenario())
+
+
+def test_image_prompt_receives_look(casting_db, paid, monkeypatch):
+    seen = {}
+
+    def capture(**kwargs):
+        seen.update(kwargs)
+        return "带造型说明的定妆提示词"
+
+    monkeypatch.setattr(casting_jobs, "_build_sheet_prompt", capture)
+    look = {"hair": "齐耳短发", "makeup": "裸妆", "top": "灰蓝工装",
+            "bottom": "束脚裤", "footwear": "帆布鞋", "accessories": "邮差包",
+            "materials": "棉布磨损", "palette": "灰蓝"}
+
+    async def scenario():
+        project = await new_project(style=STYLE)
+        item_id, _ = await new_item(project, look=look, look_source="director")
+        jobs = await create_image_jobs(project, item_id)
+        assert await casting_jobs.execute(jobs[0]["id"]) is True
+        assert seen["look"] == look
+        assert seen["kind"] == "character" and seen["name"] == "阿宁"
 
     run(scenario())
 
@@ -672,6 +708,91 @@ def test_tts_preflight_rejects_missing_spec_and_unknown_engine(casting_db, paid)
     run(scenario())
 
 
+def test_doubao_tts_job_passes_direction_and_processes_mp3(casting_db, paid):
+    """豆包任务：延迟导入的封装收到 int pitch 与指示，mp3 走 ffmpeg 处理后再入库。"""
+    async def scenario():
+        project = await new_project(style=STYLE)
+        item_id, _ = await new_item(project)
+        spec = {"engine": "doubao", "voice": "zh_female_sophie_uranus_bigtts", "rate": 1.2,
+                "pitch": -3, "fx": "inner:A", "role": "dialogue",
+                "direction": "压低声音，不安里带着一点倔强"}
+        jobs = await casting_jobs.create_jobs(
+            project, "author", kind="tts", media_provider=None, quote_id=None,
+            entries=[tts_entry(item_id, engine="doubao", reserved="0.01", spec=spec)])
+        assert await casting_jobs.execute(jobs[0]["id"]) is True
+
+        assert paid["calls"]["doubao"] == [{"text": "我是阿宁。", "voice": spec["voice"],
+                                            "rate": 1.2, "pitch": -3,
+                                            "direction": spec["direction"]}]
+        assert paid["calls"]["voice"] == [{"fx": "inner:A", "target_lufs": -16.0, "format": "mp3"}]
+        row = await job_row(jobs[0]["id"])
+        assert row["status"] == "succeeded" and float(row["actual_amount"]) == pytest.approx(0.01)
+        meta = json.loads((await asset_rows(item_id))[0]["meta_json"])
+        assert meta["spec"] == spec
+        assert (await spend.today())["committed_cny"] == pytest.approx(0.01)
+
+    run(scenario())
+
+
+def test_doubao_preflight_error_releases_reservation(casting_db, paid):
+    async def scenario():
+        project = await new_project(style=STYLE)
+        item_id, _ = await new_item(project)
+        spec = {"engine": "doubao", "voice": "zh_female_sophie_uranus_bigtts", "rate": 1.0,
+                "pitch": 0, "fx": None, "role": "dialogue", "direction": ""}
+        jobs = await casting_jobs.create_jobs(
+            project, "author", kind="tts", media_provider=None, quote_id=None,
+            entries=[tts_entry(item_id, engine="doubao", reserved="0.01", spec=spec)])
+        paid["state"]["doubao_exc"] = MediaCallError("rejected", "doubao_45002001", "上游拒绝")
+        assert await casting_jobs.execute(jobs[0]["id"]) is True
+        row = await job_row(jobs[0]["id"])
+        assert row["status"] == "rejected" and row["error_code"] == "doubao_45002001"
+        assert float(row["actual_amount"]) == 0 and float(row["reserved_amount"]) == 0
+        assert len(paid["calls"]["doubao"]) == 1
+
+    run(scenario())
+
+
+@pytest.mark.parametrize("mutate", [
+    lambda spec: spec.update(direction="字" * 201),
+    lambda spec: spec.update(pitch=13),
+    lambda spec: spec.update(rate="abc"),
+])
+def test_doubao_pre_send_error_is_rejected_without_post(casting_db, monkeypatch, mutate):
+    """POST 之前抛出的参数 / 构造错误必须记 rejected 并释放预留。"""
+    from studio.providers import tts_doubao
+
+    posts = []
+
+    def handler(request):
+        posts.append(request)
+        return httpx.Response(200, content=b"")
+
+    monkeypatch.setenv(tts_doubao.API_KEY_ENV, "test-doubao-key-not-real")
+    monkeypatch.setattr(tts_doubao, "_default_transport", lambda: httpx.MockTransport(handler))
+    monkeypatch.setattr(casting_jobs, "_schedule", lambda job_id: None)
+
+    async def scenario():
+        project = await new_project(style=STYLE)
+        item_id, _ = await new_item(project)
+        spec = {"engine": "doubao", "voice": "zh_female_sophie_uranus_bigtts", "rate": 1.0,
+                "pitch": 0, "fx": None, "role": "dialogue", "direction": ""}
+        mutate(spec)
+        jobs = await casting_jobs.create_jobs(
+            project, "author", kind="tts", media_provider=None, quote_id=None,
+            entries=[tts_entry(item_id, engine="doubao", reserved="0.01", spec=spec)])
+        assert await casting_jobs.execute(jobs[0]["id"]) is True
+
+        row = await job_row(jobs[0]["id"])
+        assert posts == []
+        assert row["status"] == "rejected"
+        assert row["error_code"] == "invalid_parameters"
+        assert float(row["actual_amount"]) == 0
+        assert float(row["reserved_amount"]) == 0
+
+    run(scenario())
+
+
 def test_inflight_limit_defaults_and_env_validation(monkeypatch):
     monkeypatch.delenv(casting_jobs.INFLIGHT_IMAGE_ENV, raising=False)
     monkeypatch.delenv(casting_jobs.INFLIGHT_TTS_ENV, raising=False)
@@ -693,11 +814,16 @@ def test_inflight_limit_defaults_and_env_validation(monkeypatch):
 def test_price_helpers_default_and_env(monkeypatch):
     monkeypatch.delenv(pricing.PRICE_SEEDREAM_ENV, raising=False)
     monkeypatch.delenv(pricing.PRICE_COSYVOICE_ENV, raising=False)
+    monkeypatch.delenv(pricing.PRICE_DOUBAO_ENV, raising=False)
     assert pricing.seedream_price() == Decimal("0.30")
+    assert pricing.doubao_price_per_10k_chars() == Decimal("3.0")
     assert pricing.estimate_sheets(3) == {"currency": "CNY", "amount": pytest.approx(0.90)}
     assert pricing.estimate_speech(5000, "cosyvoice")["amount"] == pytest.approx(1.0)
     assert pricing.estimate_speech(10, "cosyvoice")["amount"] == pytest.approx(0.01)
+    assert pricing.estimate_speech(5000, "doubao")["amount"] == pytest.approx(1.5)
+    assert pricing.estimate_speech(10, "doubao")["amount"] == pytest.approx(0.01)
     assert pricing.estimate_speech(10, "edge-tts") == {"currency": "CNY", "amount": 0.0}
+    assert casting_jobs.price_for("doubao", chars=10) == Decimal("0.01000000")
 
     monkeypatch.setenv(pricing.PRICE_SEEDREAM_ENV, "0.42")
     assert pricing.seedream_price() == Decimal("0.42")
@@ -706,3 +832,7 @@ def test_price_helpers_default_and_env(monkeypatch):
     assert pricing.seedream_price() == Decimal("0.30")
     monkeypatch.setenv(pricing.PRICE_COSYVOICE_ENV, "-1")
     assert pricing.cosyvoice_price_per_10k_chars() == Decimal("2.0")
+    monkeypatch.setenv(pricing.PRICE_DOUBAO_ENV, "4.2")
+    assert pricing.doubao_price_per_10k_chars() == Decimal("4.2")
+    monkeypatch.setenv(pricing.PRICE_DOUBAO_ENV, "abc")
+    assert pricing.doubao_price_per_10k_chars() == Decimal("3.0")

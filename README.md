@@ -365,6 +365,6 @@ WO3d「②定妆」把 G0 批准到可开拍的准备串起来：先确认开工
 
 G1 定妆要求总表里的每个人物、场景、道具都定妆或标为「不需要定妆」。勾选条目、每项设 1–4 版后按批报价，确认一次即批量出图；定妆图固定 Seedream 5.0、2560×1440 横幅三视图、纯白背景。多个版本并排显示，选定一版并确认该条目，废版只归档不删除；可以上传参考图或以已选定版本派生新版本，也可以填写以后不得改动的「锁定特征」。原文没有外形描述的人物必须先补写外形才能出图；全部条目确认或跳过即 G1 通过。
 
-声线只针对人物：每个角色最多配置 3 个试听方案（引擎、音色、语速、音高、声线特效），用一句试听台词生成试听，作者选定一条定档。中文使用 CosyVoice，金额很小、不弹报价框但会先预留额度并受上限约束；英文使用免费 edge-tts。声线特效提供机器人 / 巨兽 / 内心独白三档，特效后做两遍响度标准化，输出 48kHz 单声道 WAV，依赖系统安装的 ffmpeg。
+声线只针对人物：每个角色最多配置 3 个试听方案（引擎、音色、语速、音高、表演指示、声线特效），用一句试听台词生成试听，作者选定一条定档。中文默认使用豆包语音 2.0，CosyVoice 与 edge-tts 保留为备选；英文使用免费 edge-tts。豆包方案可写最多 200 字的「表演指示」，用自然语言说明情绪、语气与场景；定档时再填写可修改的「角色基调」，后续逐句配音会把角色基调与每句表演指示合并使用。中文配音金额很小、不弹报价框但会先预留额度并受上限约束。声线特效提供机器人 / 巨兽 / 内心独白三档，特效后做两遍响度标准化，输出 48kHz 单声道 WAV，依赖系统安装的 ffmpeg。
 
-出图与配音各有独立在途上限，可用 `FIONA_STUDIO_MAX_INFLIGHT_IMAGE`（默认 3）和 `FIONA_STUDIO_MAX_INFLIGHT_TTS`（默认 2）配置，合法 1–10，非法值回落默认并只告警一次。定妆图单价默认 `FIONA_STUDIO_PRICE_SEEDREAM_CNY=0.30` 元/张（待核实，以实际账单为准），CosyVoice 默认 `FIONA_STUDIO_PRICE_COSYVOICE_CNY_PER_10K_CHARS=2.0` 元/万字符（待核实，最低结算 0.01 元）；配置均调用时读取。新增依赖 `edge-tts==7.3.1`，另需系统 `ffmpeg`；配置见 `backend/.env.example`。
+出图与配音各有独立在途上限，可用 `FIONA_STUDIO_MAX_INFLIGHT_IMAGE`（默认 3）和 `FIONA_STUDIO_MAX_INFLIGHT_TTS`（默认 2）配置，合法 1–10，非法值回落默认并只告警一次。定妆图单价默认 `FIONA_STUDIO_PRICE_SEEDREAM_CNY=0.30` 元/张（待核实，以实际账单为准）；豆包语音默认 `FIONA_STUDIO_PRICE_DOUBAO_TTS_CNY_PER_10K_CHARS=3.0` 元/万字符，CosyVoice 默认 `FIONA_STUDIO_PRICE_COSYVOICE_CNY_PER_10K_CHARS=2.0` 元/万字符（均待核实，最低结算 0.01 元，表演指示不计费）。豆包 Key 取 `VOLC_SPEECH_API_KEY`，资源 ID 取 `VOLC_SPEECH_RESOURCE_ID`（默认 `seed-tts-2.0`）；在火山引擎「豆包语音」控制台开通「语音合成 2.0」，再到「API Key」页复制。配置均调用时读取。新增依赖 `edge-tts==7.3.1`，另需系统 `ffmpeg`；配置见 `backend/.env.example`。

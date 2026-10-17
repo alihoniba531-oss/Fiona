@@ -5,6 +5,8 @@ from dataclasses import dataclass
 from pathlib import Path
 from typing import Callable
 
+from .casting_prompts import CASTING_LOOK_SCHEMA
+
 
 def _object(properties: dict) -> dict:
     return {"type": "object", "properties": properties, "required": list(properties),
@@ -25,6 +27,15 @@ def _no_warnings(output: dict, inputs: dict) -> list[str]:
 
 def _style_warnings(output: dict, inputs: dict) -> list[str]:
     return [] if 2 <= len(output["proposals"]) <= 3 else ["风格提案建议为 2–3 个，当前结果已原样保留。"]
+
+
+def _look_warnings(output: dict, inputs: dict) -> list[str]:
+    warnings = []
+    for index, entry in enumerate(output.get("looks") or [], 1):
+        for key, value in (entry.get("look") or {}).items():
+            if isinstance(value, str) and len(value) > 60:
+                warnings.append(f"第 {index} 条造型说明的「{key}」超过 60 字。")
+    return warnings
 
 
 @dataclass(frozen=True)
@@ -152,6 +163,7 @@ def _episode_warnings(output, inputs):
 
 
 TASKS.update({
+    "casting_look": BrainTask("造型说明", "casting_look.md", CASTING_LOOK_SCHEMA, _look_warnings, 4096),
     'novel_complete': BrainTask('小说补全', 'novel_complete.md', NOVEL_COMPLETE_SCHEMA, _no_warnings, 8192),
     'text_map': BrainTask('逐块通读', 'text_map.md', TEXT_MAP_SCHEMA, _no_warnings, 4096),
     'synopsis': BrainTask('故事梗概', 'synopsis.md', SYNOPSIS_SCHEMA, _no_warnings, 2048),
