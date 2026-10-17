@@ -81,6 +81,11 @@ def casting(client, monkeypatch, tmp_path):
     monkeypatch.setattr(brain_jobs, "_schedule", lambda jid: calls["scheduled"].append(jid))
     monkeypatch.setattr(breakdown_plan, "get_episodes", fake_episodes)
     monkeypatch.setattr(brain, "provider_options", available)
+    # 本文件不跑真实音频处理；CI 机器没有 ffmpeg，预检按「工具在位」模拟（缺工具的分支另有专测）。
+    real_which = shutil.which
+    monkeypatch.setattr(casting_module.shutil, "which",
+                        lambda name, *args, **kwargs: f"/usr/bin/{name}" if name in casting_module.AUDIO_TOOLS
+                        else real_which(name, *args, **kwargs))
 
     return {"client": client, "headers": accounts, "calls": calls, "gates": gates}
 
