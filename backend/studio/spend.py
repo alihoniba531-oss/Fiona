@@ -66,6 +66,15 @@ async def check_reservation(db, amount, *, now=None) -> str:
     return day
 
 
+async def check_quote_budget(db, amount, *, now=None) -> str:
+    """人民币报价的单次上限与日上限；只能在确认或写入报价的写事务内调用。"""
+    value = pricing.money(amount)
+    cap = pricing.money(get_settings().max_quote_cny)
+    if value > cap:
+        raise HTTPException(409, f"超过单次报价上限 ¥{cap:.2f}，超出 ¥{value - cap:.2f}")
+    return await check_reservation(db, value, now=now)
+
+
 async def settle_job(job_id: str, expected_status, status: str, *, usage=None, run_token=None, **updates) -> bool:
     """终态和额度在同一条 CAS 中提交，重复结算不会重复计费。"""
     from . import store

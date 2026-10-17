@@ -273,3 +273,69 @@ async def download_video(url: str, project_id: str, job_id: str, *, transport=No
     finally:
         if temporary is not None:
             temporary.unlink(missing_ok=True)
+
+
+MAX_AUDIO_BYTES = 300 * 1024 * 1024
+
+
+def save_audio(project_id: str, data: bytes, *, ext: str = ".wav") -> dict:
+    """原子写入工作室音频；路径 ``<pid>/audio/<sha256><ext>``。
+
+    只新增，不改变 ``save_image`` / ``discard_file`` 等既有函数的行为。
+    非法项目标识或扩展名抛 ``ValueError``，绝不让路径逃出存储根目录。
+    """
+    if not isinstance(data, (bytes, bytearray)) or not data:
+        raise ValueError("音频数据为空")
+    if not isinstance(ext, str) or not re.fullmatch(r"\.[A-Za-z0-9]{1,8}", ext):
+        raise ValueError("音频扩展名无效")
+    if len(data) > MAX_AUDIO_BYTES:
+        raise ValueError("音频文件超过 300MB")
+    payload = bytes(data)
+    digest = hashlib.sha256(payload).hexdigest()
+    rel_path = f"{_component(project_id)}/audio/{digest}{ext.lower()}"
+    target = _parent(rel_path)
+    temporary = None
+    try:
+        with tempfile.NamedTemporaryFile(dir=target.parent, suffix=".part", delete=False) as handle:
+            temporary = Path(handle.name)
+            handle.write(payload)
+            handle.flush()
+            os.fsync(handle.fileno())
+        temporary.replace(target)
+    finally:
+        if temporary is not None:
+            temporary.unlink(missing_ok=True)
+    return {"rel_path": rel_path, "sha256": digest, "bytes": len(payload)}
+
+
+def probe_audio(path) -> dict:
+    """ffprobe 只读第一条音频流，返回 ``{"duration_s","sample_rate","channels"}``。
+
+    ``-select_streams a:0`` 保证纯视频文件会被判为无音频；失败时抛
+    ``DownloadError``（与 ``probe_video`` 同一约定）。
+    """
+    target = Path(path)
+    try:
+        result = subprocess.run(
+            ["ffprobe", "-v", "error", "-protocol_whitelist", "file,pipe",
+             "-select_streams", "a:0", "-show_streams", "-show_format",
+             "-of", "json", str(target.resolve())],
+            capture_output=True, text=True, timeout=60, check=True,
+        )
+        raw = json.loads(result.stdout)
+        streams = raw.get("streams", [])
+        audio = next(item for item in streams if item.get("codec_type") == "audio")
+        duration_value = audio.get("duration")
+        if duration_value in (None, "", "N/A"):
+            duration_value = raw.get("format", {}).get("duration")
+        duration = float(duration_value)
+        sample_rate = int(audio["sample_rate"])
+        channels = int(audio["channels"])
+        if sample_rate <= 0 or channels <= 0 or not math.isfinite(duration) or duration <= 0:
+            raise ValueError
+        return {"duration_s": duration, "sample_rate": sample_rate, "channels": channels}
+    except FileNotFoundError:
+        raise DownloadError("ffprobe_unavailable", "未安装 ffprobe，暂时无法校验音频", retryable=True) from None
+    except (OSError, subprocess.SubprocessError, ValueError, TypeError, KeyError,
+            StopIteration, AttributeError):
+        raise DownloadError("invalid_output", "音频文件无法通过媒体校验") from None

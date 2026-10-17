@@ -162,13 +162,17 @@ P2.1 建书可选 `drama_adaptation`（默认 false，建书后不可修改）�
 
 平台模型使用 DASHSCOPE_API_KEY、DEEPSEEK_API_KEY、ARK_API_KEY；Claude 只经 BYOK。思路、圣经、正文与留言会发给阿里云百炼、DeepSeek、火山方舟或用户自带厂商（包括 Anthropic）。Key 仅调用时从 byok.store 取用，不写小说库、日志或响应；步骤只存请求摘要，不存提示词。测试必须离线、不得读仓库外输入或依赖 git 历史；本机监控原有内容不得修改或移动。
 
-## 短片工作室 WO1–WO3b
+## 短片工作室 WO1–WO3d
 
 `backend/studio/` 与 `routers/studio.py` 提供作者私用的首帧视频接口；`/studio`、`/studio/[id]` 提供项目列表与单镜试拍前端。全部 `/studio/*`（含文件）要求开关非字面 `0`、精确命中 `FIONA_STUDIO_OWNERS` 与 Bearer/Cookie JWT；不满足一律 404、`private, no-store`。中间件记录 `auth_method=jwt/dev`，其他路由鉴权保持原行为。
 
 WO3b 通过 `studio.sources` 只读接入小说工坊：只调用 `list_books/find_books/detail/bible/chapter/chapters_range` 与 `runner.is_editing`，不直接操作 `novel_*` 表、不触发写作任务。已完结、圣经非空、全部章节 done 且无 stale、没有正在改稿的作品才可建项目；flags 只提示。另支持 txt/md/docx 上传、粘贴文本与本人发起的已完成 `official:short-video-creator` 成稿，正文最多 50 万字、文件最多 10 MB，docx 只用标准库解析并限制 XML 为 30 MB、拒绝 DOCTYPE。
 
-`studio_snapshots` 记录版本与清单哈希，`studio_projects` 增加 `source_kind/source_ref/snapshot_no`。快照位于 `<FIONA_STUDIO_DIR>/<pid>/source/snap-0001/`：`snapshot.json` 保存章级哈希、小说圣经/罗盘/精简细纲，`chapters/0001.md` 保留原文；非小说另存 `full.txt` 与字符偏移。每个文件 fsync 后整体 rename，再事务写库；失败回滚，旧版本永不覆盖。来源面板按需检测正文、标题、增删章与圣经版本差异；同步使用 expected_no 防重，并拒绝在途导演任务。后续拆解、分集以当前 `snapshot_no` 为依据，本期不新增拆解或付费调用。
+`studio_snapshots` 记录版本与清单哈希，`studio_projects` 增加 `source_kind/source_ref/snapshot_no`。快照位于 `<FIONA_STUDIO_DIR>/<pid>/source/snap-0001/`：`snapshot.json` 保存章级哈希、小说圣经/罗盘/精简细纲，`chapters/0001.md` 保留原文；非小说另存 `full.txt` 与字符偏移。每个文件 fsync 后整体 rename，再事务写库；失败回滚，旧版本永不覆盖。来源面板按需检测正文、标题、增删章与圣经版本差异；同步使用 expected_no 防重，并拒绝在途导演任务。后续拆解、分集以当前 `snapshot_no` 为依据（WO3c）。
+
+WO3c 在「①拆解」页签基于快照完成拆解与分集，新增表 `studio_breakdowns/chunks/units/bible/episodes/plan_revisions`，`studio_projects` 补 `episode_seconds_min`（默认 180）/`episode_seconds_max`（默认 240）/`plan_revision`/`plan_approved_revision`/`breakdown_id`，`studio_breakdowns` 补 `superseded_by`，全部经 `migrate_schema` 补列、不重建老表。小说来源先由 `studio.breakdown_material.structured_import` 做结构化导入（不调模型：圣经人物、每章细纲场景成初始单元，梗概由罗盘与弧摘要拼成，伏笔/时间线与改编参数存为参考），再按每批 ≤10 章且 ≤24,000 字调 `novel_complete` 以正文为准补全场景、场景/道具表、人物外形摘录与新人物；次要来源把 >12,000 字的块在段落边界切成 ≤10,000 字子块，逐块 `text_map` 通读后再调一次 `synopsis` 成梗概。两条路径共用 `episode_plan` 分集（小说每 10 章一段、次要来源每 5 块一段），段内硬约束不合格触发一次修正，时长偏差 ±15% 与未覆盖单元只记 warning；模型只给 `start_anchor`，`locate_scenes` 在原文精确子串定位并记 warning，预估镜头数 = `round(预估秒数/3.5)`。总表按规范化名字与别名确定性合并；没有外形的人物标 `needs_author` 由作者补写，绝不编造。
+拆解按批报价（`POST /studio/projects/{pid}/breakdown/quote`，可带 1–300 的「大约几集」与 60–900 秒的每集目标时长，默认 180–240）；报价时模型输出未知，分集批按每单元 400 字估算。千问/DeepSeek 受 `FIONA_STUDIO_MAX_QUOTE_CNY`（默认 100）与全工作室当日额度约束，Claude 受本月美元额度约束，超限 409 且不发请求。确认后一个事务内建拆解、全部批与可立即执行的 job 并为全部批预留，有依赖的批先 `blocked`、依赖成功后在线程里组装输入转 `queued`；千问/DeepSeek 拆解任务超时放宽到 300 秒。单批失败/被拒/不合格可只重跑该批（先单独报价确认，可换一家模型），`uncertain` 必须先经 `/jobs/{jid}/release` 释放；取消只取消 `queued/blocked` 并释放预留，`running` 不打断。重启沿用 `running→uncertain`、`queued` 补发，并解除依赖已满足的 `blocked`；旧拆解仍有 `uncertain/running/submitting` 批次时拒绝重新拆解（409），已完成旧拆解记 `superseded_by` 但保持 `done`。
+`GET /studio/projects/{pid}/breakdown` 返回各批状态/费用/warning、单元数、`outdated`、`retry_needed` 与 `blocked_segments`；某段分集无法完成时整次拆解为 `partial`、已完成段照常展示但不能批准 G0。分集方案（`GET /studio/projects/{pid}/episodes`）给出每集预估秒数/镜头数/原文范围/出场人物与未纳入单元，以及 `plan_revision`/`plan_approved_revision`/`g0_approved`；`/episodes/ops` 的合并/拆分/挪边界/改标题时长等操作必须带 `expected_revision`，不一致 409，操作在同一事务里 revision 加 1 并写 `studio_plan_revisions`，批准后 `plan_approved_revision = plan_revision`。快照同步后当前拆解标 `outdated` 并提供「重新拆解」，不自动作废 G0。总表可改、同 kind 合并（被合并项标 `merged_into`）、归档（`archived=1`），都不物理删除；`GET /studio/projects/{pid}/breakdown/export` 导出 Markdown（梗概、三张总表、分集方案、未纳入单元、小说来源的伏笔与时间线），文件名用 `filename*=UTF-8''`。拆解无专属环境变量，沿用 `FIONA_STUDIO_MAX_QUOTE_CNY`、`FIONA_STUDIO_DAILY_CNY`、`FIONA_STUDIO_BRAIN_MONTHLY_USD` 与 `FIONA_STUDIO_BRAIN_DEFAULT`；前端 `Breakdown*` 组件在拆解未完成时每 5 秒轮询、页面隐藏或操作中暂停。本期不做风格提案、定妆、本集剧本与拆镜。
 
 聊天读小说独立使用 `FIONA_NOVEL_CHAT=1`，默认关闭，每次读取配置；还须满足小说工坊开关与白名单，危机轮不开放。Claude 按请求追加 `list_novels/read_novel/start_film`，不改变 `CLAUDE_CLIENT_TOOLS`；平台使用 `novel_list/novel_read/novel_to_film`。开关关闭或白名单外沿用原请求、提示词、事件、历史和草莓流程。读的是工坊当前原文，单次正文最多 6000 字，stale 标待复核，非完成章跳过并注明；续读按用户与会话保存 30 分钟。成功读取受 `FIONA_DAILY_NOVEL_READS`（默认 60）限制，列书与建项目不计；均不扣草莓。做成片还要求 `gate.allow_studio(user, auth_method)`，auth_method 缺失拒绝，优先复用已有未归档项目。
 
@@ -179,7 +183,7 @@ WO3b 通过 `studio.sources` 只读接入小说工坊：只调用 `list_books/fi
 文件默认 `backend/studio_data/`，生产 `FIONA_STUDIO_DIR=/var/lib/fiona/studio`，因为 systemd `ProtectSystem=strict` 只允许写 `/var/lib/fiona`。文件不挂静态目录，按素材归属和真实路径校验后用 FileResponse 支持 Range。仅下载白名单 host，不跟重定向、不转发凭据，限 300MB；ffprobe 按时长校验。万相按原图提交，Seedance 只在提交内存中等比缩图。所有测试用模拟传输，业务不得 import WO0 探针。
 
 
-WO2：桌面侧栏仅在 `/studio/access` 返回 200 后运行时追加「工作室」，静态六项和手机底栏保持不变；主页同样 gate 后才挂载 `/studio?embed=1` 抽屉。五阶段默认镜头页可上传首帧、报价确认、播放及处理 uncertain，拆解页提供 WO3a 剧本试读预览，其他三个阶段显示后续开放。前端复用小说状态组件、Glaze 和原生 dialog，`lib/studio.ts` 只消费解析后的 items/params/usage/meta。任务在途时每 5 秒刷新任务与额度，页面隐藏或操作中暂停，账号切换取消请求。
+WO2：桌面侧栏仅在 `/studio/access` 返回 200 后运行时追加「工作室」，静态六项和手机底栏保持不变；主页同样 gate 后才挂载 `/studio?embed=1` 抽屉。五阶段默认镜头页可上传首帧、报价确认、播放及处理 uncertain，拆解页为 WO3c 拆解与分集、定妆页为 WO3d 定妆与声线，其余阶段显示后续开放。前端复用小说状态组件、Glaze 和原生 dialog，`lib/studio.ts` 只消费解析后的 items/params/usage/meta。任务在途时每 5 秒刷新任务与额度，页面隐藏或操作中暂停，账号切换取消请求。
 
 项目详情、素材列表和 `/studio/notices?after=` 都经过工作室 gate 与 owner 隔离；素材列表不含 rel_path。调度器到 downloaded/failed/rejected/filtered/expired/uncertain 时单任务最多写一条 `studio_notices`，通过普通 `save_message` 落入默认聊天会话；写失败只记录固定错误码，下 tick 补写，不影响结算。主页每 10 秒可见轮询，首次建立完整基线、404 永久停止；当前会话空闲时按 dbId 去重插入，其余会话显示切换 chip，共用本机提醒通知开关。
 
@@ -190,3 +194,11 @@ WO3a：`studio.brain` 统一 Claude BYOK/千问/DeepSeek 适配，`brain_tasks` 
 新增补列由 `studio.store.migrate_schema` 执行。旧jobs.provider/status的CHECK原样保留：brain行原provider列使用兼容占位wan，新增brain_provider是权威提供方，所有数据库读取统一对外转为真实provider；invalid_output保存在既有failed状态加错误码并在读取时还原。视频调度查询明确kind=i2v。不得重建或删除老表以改变约束。
 
 试读报价接口不调用模型，价格上界包含最多一次修正；`providers=all` 任一家不可用就整体409。同步导演任务uncertain只能释放，不能关联上游ID。月上限与价格覆盖见backend/.env.example；未知Claude价格拒绝调用。主页access只请求一次并传Sidebar，成功后才启动notices轮询。提醒首次调度启动时间持久化，历史终态不补发；持久pending边界保证消息写入后进程重启不会产生重复聊天消息，归档项目不补写提醒。
+
+WO3d：作者在「②定妆」页签依次完成开工确认、风格提案、G1 定妆出图与声线定档。开工确认写入视频分辨率（默认 480P）、默认视频模型（默认万相）与语言（中文/英文），画幅沿用项目设置；G0 未批准、未开工确认或未选风格时相关接口一律 409 且零付费调用。风格提案由导演模型给出 2–3 案并绑定当前项目，作者选一案、可微调文字并选定写实度（写实/动漫/3D），先报价后调用。提案输入由 `studio.casting_prompts.style_inputs` 组装，只含摘要（梗概、人物/场景/道具名与外形摘要、集数与总时长、语言），不含原文全文。
+
+G1 定妆：总表里的人物/场景/道具逐条定妆或标「不需要定妆」。勾选条目、每项设 1–4 版并按批报价，确认一次后批量出图；定妆图固定 Seedream 5.0、2560×1440 横幅三视图、纯白背景，与项目画幅无关。多版并排，选定一版并确认该条目，废版只归档不删除；可上传参考图或以已选定版本派生，可填「锁定特征」随提示词下发。人物外形仍是「待作者补充」时先补写才能出图；全部条目确认或跳过即 G1 通过。出图提示词由 `studio.casting_prompts.build_sheet_prompt` 组装（版式、写实度负向、原创声明、锁定特征、参考图说明与风格段），总长 ≤1800 字符，超长时先裁补充提示词、再裁说明的尾部，锁定特征与版式始终完整。
+
+声线只针对人物：每角色最多 3 个试听方案（引擎、音色、语速、音高、声线特效），用一句试听台词生成、作者选定一条定档。中文用 CosyVoice（付费，不弹报价框但先预留额度并受上限约束），英文用 edge-tts（免费）。声线特效分机器人/巨兽/内心独白三档，特效之后做两遍 loudnorm 响度标准化，输出 48kHz 单声道 s16 WAV；`studio.audio.process_voice` 在系统没有 ffmpeg 时抛 `RuntimeError("ffmpeg unavailable")`，不静默降级，子进程超时会被 kill。
+
+出图与配音各有独立在途上限，`FIONA_STUDIO_MAX_INFLIGHT_IMAGE` 默认 3、`FIONA_STUDIO_MAX_INFLIGHT_TTS` 默认 2，合法 1–10，非法值回落默认并只告警一次。单价 `FIONA_STUDIO_PRICE_SEEDREAM_CNY` 默认 0.30 元/张（响应不含计费字段，按此价预留与结算）、`FIONA_STUDIO_PRICE_COSYVOICE_CNY_PER_10K_CHARS` 默认 2.0 元/万字符（按字符数预留与结算，最低 0.01 元），均待核实、调用时读取。出图与配音沿用付费只发一次：超时、断连、5xx 与坏 JSON 记 uncertain 并保留预留，完整 4xx/429 释放。唯一新增依赖 `edge-tts==7.3.1`，另需系统 ffmpeg；离线测试见 `test_studio_casting_prompts.py` 与各块 `test_studio_casting_*` / `test_studio_media_*`。本期不做导演看图质检、关键帧、视频与本集剧本。

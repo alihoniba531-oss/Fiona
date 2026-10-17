@@ -29,6 +29,7 @@ STUDIO_TABLES_DDL = (
         source_ref TEXT, snapshot_no INTEGER NOT NULL DEFAULT 0,
         episode_seconds_min INTEGER NOT NULL DEFAULT 180, episode_seconds_max INTEGER NOT NULL DEFAULT 240,
         plan_revision INTEGER NOT NULL DEFAULT 0, plan_approved_revision INTEGER, breakdown_id TEXT,
+        setup_json TEXT, setup_confirmed_at TEXT, style_json TEXT, style_group_id TEXT,
         UNIQUE(id, owner)
     )""",
     """CREATE TABLE IF NOT EXISTS studio_assets (
@@ -38,6 +39,7 @@ STUDIO_TABLES_DDL = (
         rel_path TEXT NOT NULL, sha256 TEXT NOT NULL, bytes INTEGER NOT NULL,
         width INTEGER, height INTEGER, duration_s REAL, fps REAL, has_audio INTEGER,
         meta_json TEXT NOT NULL DEFAULT '{}', archived INTEGER NOT NULL DEFAULT 0,
+        item_id TEXT, version_no INTEGER, role TEXT,
         created_at TEXT NOT NULL,
         FOREIGN KEY(project_id,owner) REFERENCES studio_projects(id,owner)
     )""",
@@ -66,10 +68,20 @@ STUDIO_TABLES_DDL = (
         input_chars INTEGER, group_id TEXT, brain_provider TEXT, reserved_amount TEXT, actual_amount TEXT,
         confirmed_month TEXT, latency_s REAL, stop_reason TEXT, repaired INTEGER NOT NULL DEFAULT 0,
         attempt INTEGER NOT NULL DEFAULT 1, parent_job_id TEXT,
+        media_provider TEXT, item_id TEXT,
         UNIQUE(quote_id,quote_item_id),
         FOREIGN KEY(project_id,owner) REFERENCES studio_projects(id,owner),
         FOREIGN KEY(quote_id) REFERENCES studio_quotes(id),
         FOREIGN KEY(result_asset_id) REFERENCES studio_assets(id)
+    )""",
+    """CREATE TABLE IF NOT EXISTS studio_items (
+        id TEXT PRIMARY KEY, project_id TEXT NOT NULL, owner TEXT NOT NULL, bible_id TEXT NOT NULL,
+        kind TEXT NOT NULL CHECK(kind IN ('character','location','prop')), name TEXT NOT NULL,
+        status TEXT NOT NULL DEFAULT 'pending' CHECK(status IN ('pending','approved','skipped')),
+        spec_json TEXT NOT NULL DEFAULT '{}', approved_asset_id TEXT, voice_asset_id TEXT,
+        created_at TEXT NOT NULL, updated_at TEXT NOT NULL,
+        UNIQUE(project_id,bible_id),
+        FOREIGN KEY(project_id,owner) REFERENCES studio_projects(id,owner)
     )""",
     """CREATE TABLE IF NOT EXISTS studio_notices (
         id INTEGER PRIMARY KEY AUTOINCREMENT, username TEXT NOT NULL,
@@ -145,6 +157,8 @@ STUDIO_TABLES_DDL = (
     "CREATE INDEX IF NOT EXISTS idx_studio_projects_owner_updated ON studio_projects(owner,updated_at)",
     "CREATE INDEX IF NOT EXISTS idx_studio_assets_owner_project ON studio_assets(owner,project_id)",
     "CREATE INDEX IF NOT EXISTS idx_studio_assets_sha ON studio_assets(project_id,owner,sha256)",
+    # idx_studio_assets_item 引用迁移才补的 item_id/role/version_no，见 _ADDED_COLUMN_INDEXES。
+    "CREATE INDEX IF NOT EXISTS idx_studio_items_project ON studio_items(owner,project_id,bible_id)",
     "CREATE INDEX IF NOT EXISTS idx_studio_quotes_owner_project ON studio_quotes(owner,project_id)",
     "CREATE INDEX IF NOT EXISTS idx_studio_jobs_owner_project ON studio_jobs(owner,project_id)",
     "CREATE INDEX IF NOT EXISTS idx_studio_jobs_schedule ON studio_jobs(status,provider,created_at)",
@@ -171,6 +185,8 @@ _JOB_UPDATE_FIELDS = {
     "result_url", "result_asset_id", "error_code", "error_message", "needs_recheck", "poll_requested",
     "next_poll_at", "submitted_at", "finished_at", "updated_at",
 }
+# 定妆出图与声线的任务 kind；它们的结算口径与 i2v 不同（见 casting_jobs.transition）。
+CASTING_JOB_KINDS = ("image", "tts")
 _TRANSITIONS = {
     "queued": {"submitting", "cancelled"},
     "submitting": {"submitted", "uncertain", "rejected", "failed"},
@@ -222,6 +238,17 @@ def _row(row) -> dict | None:
     return result
 
 
+# 只引用迁移补列（或迁移后才存在的表）的索引：database.init_db 先跑 STUDIO_TABLES_DDL，
+# 旧库里 CREATE TABLE IF NOT EXISTS 不改旧表，索引留在 DDL 里会报 no such column。
+# 这些索引必须在补列之后创建，所以由 migrate_schema 负责。
+_ADDED_COLUMN_INDEXES = (
+    ("studio_jobs", "CREATE INDEX IF NOT EXISTS idx_studio_brain_group ON studio_jobs(owner,project_id,group_id)"),
+    ("studio_jobs", "CREATE INDEX IF NOT EXISTS idx_studio_brain_month ON studio_jobs(owner,currency,confirmed_month)"),
+    ("studio_assets", "CREATE INDEX IF NOT EXISTS idx_studio_assets_item ON studio_assets(owner,item_id,role,version_no)"),
+    ("studio_assets", "CREATE UNIQUE INDEX IF NOT EXISTS idx_studio_assets_item_version ON studio_assets(item_id,role,version_no) WHERE item_id IS NOT NULL"),
+)
+
+
 async def migrate_schema(db) -> None:
     """只补列：旧库 provider/status CHECK 保留，brain 使用新增的权威列。"""
     additions = {
@@ -231,7 +258,9 @@ async def migrate_schema(db) -> None:
                             "episode_seconds_min": "INTEGER NOT NULL DEFAULT 180",
                             "episode_seconds_max": "INTEGER NOT NULL DEFAULT 240",
                             "plan_revision": "INTEGER NOT NULL DEFAULT 0", "plan_approved_revision": "INTEGER",
-                            "breakdown_id": "TEXT"},
+                            "breakdown_id": "TEXT", "setup_json": "TEXT", "setup_confirmed_at": "TEXT",
+                            "style_json": "TEXT", "style_group_id": "TEXT"},
+        "studio_assets": {"item_id": "TEXT", "version_no": "INTEGER", "role": "TEXT"},
         "studio_breakdowns": {"superseded_by": "TEXT"},
         "studio_jobs": {
             "task": "TEXT", "result_json": "TEXT", "warnings_json": "TEXT",
@@ -240,6 +269,7 @@ async def migrate_schema(db) -> None:
             "actual_amount": "TEXT", "confirmed_month": "TEXT", "latency_s": "REAL",
             "stop_reason": "TEXT", "repaired": "INTEGER NOT NULL DEFAULT 0",
             "attempt": "INTEGER NOT NULL DEFAULT 1", "parent_job_id": "TEXT",
+            "media_provider": "TEXT", "item_id": "TEXT",
         },
     }
     for table, columns in additions.items():
@@ -252,8 +282,11 @@ async def migrate_schema(db) -> None:
         for column, definition in columns.items():
             if column not in existing:
                 await db.execute(f"ALTER TABLE {table} ADD COLUMN {column} {definition}")
-    await db.execute("CREATE INDEX IF NOT EXISTS idx_studio_brain_group ON studio_jobs(owner,project_id,group_id)")
-    await db.execute("CREATE INDEX IF NOT EXISTS idx_studio_brain_month ON studio_jobs(owner,currency,confirmed_month)")
+    for table, statement in _ADDED_COLUMN_INDEXES:
+        async with db.execute("SELECT 1 FROM sqlite_master WHERE type='table' AND name=?", (table,)) as cursor:
+            if await cursor.fetchone() is None:
+                continue
+        await db.execute(statement)
 
 
 @asynccontextmanager
@@ -342,7 +375,8 @@ async def list_projects(owner: str) -> list[dict]:
 async def _create_asset(db, owner: str, project_id: str, fields: dict) -> dict:
     await _project(db, project_id, owner)
     allowed = {"id", "kind", "source", "rel_path", "sha256", "bytes", "width", "height", "duration_s",
-               "fps", "has_audio", "meta_json", "meta", "created_at", "archived"}
+               "fps", "has_audio", "meta_json", "meta", "created_at", "archived",
+               "item_id", "version_no", "role"}
     if set(fields) - allowed:
         raise ValueError("未知素材字段")
     fields = dict(fields)
@@ -560,6 +594,10 @@ async def cas_job(job_id: str, expected_status, updates: dict, run_token=None, d
     if job and job.get("kind") == "brain":
         from .brain_jobs import transition
         return await transition(db, job, expected_status, updates, run_token=run_token)
+    if job and job.get("kind") in CASTING_JOB_KINDS:
+        # 定妆与声线任务有自己的结算口径，绝不走 i2v 的 params["resolution"] 计价。
+        from .casting_jobs import transition
+        return await transition(db, job, expected_status, updates, run_token=run_token)
     if job is None or job["status"] not in expected or (run_token is not None and job["run_token"] != run_token):
         return False
     project = await _one(db, "SELECT id FROM studio_projects WHERE id=? AND owner=? AND archived=0",
@@ -671,6 +709,8 @@ async def link_task(job_id: str, owner: str, task_id: str) -> dict:
         job = await _owned_job(db, job_id, owner)
         if job.get("kind") == "brain":
             raise HTTPException(409, "导演模型为同步调用，没有上游任务号，只能核对后释放")
+        if job.get("kind") in CASTING_JOB_KINDS:
+            raise HTTPException(409, "定妆与声线任务没有上游任务号，只能核对后释放")
         if job["status"] != "uncertain" or job["task_id"]:
             raise HTTPException(409, "只能为没有上游任务 ID 的不确定任务关联 ID")
         stamp = utcnow()

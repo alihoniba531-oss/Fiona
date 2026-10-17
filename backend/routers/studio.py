@@ -7,7 +7,7 @@ from fastapi import APIRouter, Depends, HTTPException, Query, Request, UploadFil
 from fastapi.responses import Response
 from pydantic import BaseModel, ConfigDict, Field, StrictBool, StrictInt, field_validator
 
-from studio import brain_jobs, breakdown_plan, pricing, sources, spend, storage, store
+from studio import brain_jobs, breakdown_plan, casting, pricing, sources, spend, storage, store
 from studio.config import get_settings
 from studio.gate import PRIVATE_HEADERS, studio_user
 
@@ -200,6 +200,93 @@ class BrainTrialBody(BaseModel):
     text: str = Field(min_length=1, max_length=20000)
     tasks: list[Literal["read_through", "style_proposals", "bible_extract"]] = Field(min_length=1, max_length=3)
     providers: Literal["current", "all"] = "current"
+
+
+class CastingSetupBody(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+    resolution: Literal["480P", "720P", "1080P"] = "480P"
+    video_model: Literal["wan", "seedance"] = "wan"
+    language: Literal["zh", "en"] = "zh"
+
+
+class CastingStartBody(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+    quote_id: str = Field(min_length=1, max_length=100)
+
+
+class StyleFieldsBody(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+    name: str = Field(default="", max_length=200)
+    visual_style: str = Field(default="", max_length=2000)
+    palette: str = Field(default="", max_length=2000)
+    camera: str = Field(default="", max_length=2000)
+    lighting: str = Field(default="", max_length=2000)
+    rationale: str = Field(default="", max_length=2000)
+
+
+class CastingStyleBody(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+    realism: Literal["photoreal", "anime", "3d"]
+    proposal_index: StrictInt | None = Field(default=None, ge=0)
+    custom: StyleFieldsBody | None = None
+
+
+class CastingItemPatchBody(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+    locked_features: str | None = Field(default=None, max_length=600)
+    extra_prompt: str | None = Field(default=None, max_length=500)
+    reference_asset_ids: list[str] | None = Field(default=None, max_length=4)
+
+
+class CastingApproveBody(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+    asset_id: str = Field(min_length=1, max_length=100)
+
+
+class SheetEntryBody(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+    item_id: str = Field(min_length=1, max_length=100)
+    versions: StrictInt = Field(ge=1, le=4)
+    extra_prompt: str | None = Field(default=None, max_length=500)
+    reference_asset_ids: list[str] | None = Field(default=None, max_length=4)
+    derive_from_approved: StrictBool = False
+
+
+class SheetsQuoteBody(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+    items: list[SheetEntryBody] = Field(min_length=1, max_length=30)
+
+
+class VoiceVariantBody(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+    engine: Literal["cosyvoice", "edge-tts"]
+    voice: str = Field(min_length=1, max_length=100)
+    rate: float | str
+    pitch: float | str
+    fx: str | None = Field(default=None, max_length=100)
+    role: Literal["dialogue", "narration"] = "dialogue"
+
+
+class AuditionBody(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+    item_id: str = Field(min_length=1, max_length=100)
+    text: str = Field(min_length=1, max_length=120)
+    variants: list[VoiceVariantBody] = Field(min_length=1, max_length=3)
+
+    @field_validator("text")
+    @classmethod
+    def nonempty_text(cls, value):
+        if not value.strip():
+            raise ValueError("试听台词不能为空")
+        return value.strip()
+
+
+async def _guarded(call, *args, **kwargs):
+    """定妆接口的错误一律带私密缓存头，避免代理缓存作者数据。"""
+    try:
+        return await call(*args, **kwargs)
+    except HTTPException as exc:
+        raise HTTPException(exc.status_code, exc.detail, headers=PRIVATE_HEADERS) from None
 
 
 @router.get("/access")
@@ -493,3 +580,85 @@ async def release_job(jid: str, body: ReleaseBody, user: str = Depends(studio_us
 async def asset_file(aid: str, user: str = Depends(studio_user)):
     asset = await store.get_asset(aid, user)
     return storage.asset_file_response(asset)
+
+# ---------------------------------------------------------------------------
+# WO3d 定妆（G1）与声线
+# ---------------------------------------------------------------------------
+
+@router.get("/projects/{pid}/casting")
+async def casting_state(pid: str, user: str = Depends(studio_user)):
+    return await _guarded(casting.state, pid, user)
+
+
+@router.put("/projects/{pid}/casting/setup")
+async def casting_setup(pid: str, body: CastingSetupBody, user: str = Depends(studio_user)):
+    return await _guarded(casting.put_setup, pid, user, **body.model_dump())
+
+
+@router.post("/projects/{pid}/casting/style/quote")
+async def casting_style_quote(pid: str, user: str = Depends(studio_user)):
+    return await _guarded(casting.quote_style, pid, user)
+
+
+@router.post("/projects/{pid}/casting/style/start")
+async def casting_style_start(pid: str, body: CastingStartBody, user: str = Depends(studio_user)):
+    return await _guarded(casting.start_style, pid, user, body.quote_id)
+
+
+@router.put("/projects/{pid}/casting/style")
+async def casting_put_style(pid: str, body: CastingStyleBody, user: str = Depends(studio_user)):
+    custom = body.custom.model_dump() if body.custom is not None else None
+    return await _guarded(casting.put_style, pid, user, realism=body.realism,
+                          proposal_index=body.proposal_index, custom=custom)
+
+
+@router.patch("/casting/items/{item_id}")
+async def casting_patch_item(item_id: str, body: CastingItemPatchBody, user: str = Depends(studio_user)):
+    data = body.model_dump(exclude_unset=True, exclude_none=True)
+    return await _guarded(casting.patch_item, item_id, user, data)
+
+
+@router.post("/casting/items/{item_id}/approve")
+async def casting_approve_item(item_id: str, body: CastingApproveBody, user: str = Depends(studio_user)):
+    return await _guarded(casting.approve_item, item_id, user, body.asset_id)
+
+
+@router.post("/casting/items/{item_id}/skip")
+async def casting_skip_item(item_id: str, user: str = Depends(studio_user)):
+    return await _guarded(casting.set_status, item_id, user, "skipped")
+
+
+@router.post("/casting/items/{item_id}/reopen")
+async def casting_reopen_item(item_id: str, user: str = Depends(studio_user)):
+    return await _guarded(casting.set_status, item_id, user, "pending")
+
+
+@router.post("/casting/items/{item_id}/voice/approve")
+async def casting_approve_voice(item_id: str, body: CastingApproveBody, user: str = Depends(studio_user)):
+    return await _guarded(casting.approve_voice, item_id, user, body.asset_id)
+
+
+@router.post("/casting/assets/{asset_id}/archive")
+async def casting_archive_asset(asset_id: str, user: str = Depends(studio_user)):
+    return await _guarded(casting.archive_asset, asset_id, user)
+
+
+@router.post("/projects/{pid}/casting/sheets/quote")
+async def casting_sheets_quote(pid: str, body: SheetsQuoteBody, user: str = Depends(studio_user)):
+    return await _guarded(casting.quote_sheets, pid, user, [item.model_dump() for item in body.items])
+
+
+@router.post("/projects/{pid}/casting/sheets/start")
+async def casting_sheets_start(pid: str, body: CastingStartBody, user: str = Depends(studio_user)):
+    return await _guarded(casting.start_sheets, pid, user, body.quote_id)
+
+
+@router.post("/projects/{pid}/casting/voices/audition")
+async def casting_audition(pid: str, body: AuditionBody, user: str = Depends(studio_user)):
+    return await _guarded(casting.audition, pid, user, item_id=body.item_id, text=body.text,
+                          variants=[variant.model_dump() for variant in body.variants])
+
+
+@router.get("/casting/voice-catalog")
+async def casting_voice_catalog(user: str = Depends(studio_user)):
+    return casting.voice_catalog()

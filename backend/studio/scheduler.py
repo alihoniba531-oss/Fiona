@@ -104,8 +104,9 @@ class StudioScheduler:
                 return
             # 上一轮通知失败或启动恢复到 uncertain 的任务，先补写聊天提醒。
             await notices.retry_pending_notices()
-            from . import brain_jobs
+            from . import brain_jobs, casting_jobs
             await brain_jobs.dispatch_queued()
+            await casting_jobs.dispatch_queued()
             now = self._time()
             jobs = await store.list_due_jobs(now)
             await self._dispatch(self._poll, jobs, now, settings.poll_timeout_min, wait=wait)

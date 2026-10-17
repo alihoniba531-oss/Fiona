@@ -38,6 +38,16 @@ async def recover_studio_jobs() -> None:
                     # 一个损坏的拆解任务不能阻断其它任务或应用启动；不记录素材。
                     logger.error('Could not recover breakdown job %s (%s)', job['id'], type(exc).__name__)
             continue
+        if job.get("kind") in store.CASTING_JOB_KINDS:
+            # 定妆出图与声线试听：与导演任务相同，running / submitting 转 uncertain
+            # （保留预留，只能手动释放）；queued 交给调度器补发，绝不重发。
+            if job["status"] in {"submitting", "running"}:
+                await store.cas_job(job["id"], job["status"], {
+                    "status": "uncertain", "error_code": "restart_during_submission",
+                    "error_message": "服务重启时请求可能已发出；" + UNCERTAIN_MESSAGE,
+                    "needs_recheck": 1, "next_poll_at": None,
+                })
+            continue
         if job["status"] == "submitting":
             updates = {
                 "status": "uncertain", "error_code": "restart_during_submission",

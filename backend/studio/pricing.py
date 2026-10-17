@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 from decimal import Decimal, InvalidOperation, ROUND_HALF_UP, localcontext
+import os
 import uuid
 
 from fastapi import HTTPException
@@ -246,3 +247,62 @@ def settle_brain_response(model: str, usage: dict | None, *, currency: str, rese
             raise
         return ({"currency": currency, "amount": float(money(reserved_amount))},
                 ["fallback 模型单价未配置，按预留计"])
+
+
+# 定妆出图与声线的参考单价，单位人民币，可被环境变量覆盖；非法值回落默认并只告警一次。
+# Seedream 响应不含计费字段，按此价预留与结算（待核实）。
+DEFAULT_SEEDREAM_PRICE_CNY = Decimal("0.30")
+# CosyVoice 按字符数计费，2 元/万字符（待核实）。
+DEFAULT_COSYVOICE_PRICE_CNY_PER_10K_CHARS = Decimal("2.0")
+MIN_COSYVOICE_PRICE_CNY = Decimal("0.01")
+PRICE_SEEDREAM_ENV = "FIONA_STUDIO_PRICE_SEEDREAM_CNY"
+PRICE_COSYVOICE_ENV = "FIONA_STUDIO_PRICE_COSYVOICE_CNY_PER_10K_CHARS"
+_PRICE_WARNED: set[str] = set()
+
+
+def _price_warn(name: str) -> None:
+    if name not in _PRICE_WARNED:
+        print(f"[studio] {name} 无效，使用默认值")
+        _PRICE_WARNED.add(name)
+
+
+def _price(name: str, default: Decimal) -> Decimal:
+    raw = os.getenv(name)
+    if raw is None:
+        return default
+    try:
+        value = Decimal(str(raw).strip())
+        if not value.is_finite() or value < 0:
+            raise ValueError("invalid price")
+        return money(value)
+    except (InvalidOperation, ValueError, TypeError):
+        _price_warn(name)
+        return default
+
+
+def seedream_price() -> Decimal:
+    """每张定妆图的预留与结算单价。"""
+    return _price(PRICE_SEEDREAM_ENV, DEFAULT_SEEDREAM_PRICE_CNY)
+
+
+def cosyvoice_price_per_10k_chars() -> Decimal:
+    return _price(PRICE_COSYVOICE_ENV, DEFAULT_COSYVOICE_PRICE_CNY_PER_10K_CHARS)
+
+
+def estimate_sheets(count: int) -> dict:
+    """出图报价 = 张数 × 单价。"""
+    if isinstance(count, bool) or not isinstance(count, int) or count < 1:
+        raise HTTPException(422, "出图张数必须是正整数")
+    return {"currency": "CNY", "amount": float(money(seedream_price() * count))}
+
+
+def estimate_speech(chars: int, engine: str) -> dict:
+    """CosyVoice 按字符数预留与结算（最低 0.01 元）；edge-tts 免费。"""
+    if engine == "edge-tts":
+        return {"currency": "CNY", "amount": 0.0}
+    if engine != "cosyvoice":
+        raise HTTPException(422, "配音引擎必须为 cosyvoice 或 edge-tts")
+    if isinstance(chars, bool) or not isinstance(chars, int) or chars < 1:
+        raise HTTPException(422, "试听台词不能为空")
+    amount = cosyvoice_price_per_10k_chars() * Decimal(chars) / 10000
+    return {"currency": "CNY", "amount": float(money(max(amount, MIN_COSYVOICE_PRICE_CNY)))}
