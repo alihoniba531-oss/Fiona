@@ -17,3 +17,4 @@ slowapi>=0.1.9
 anthropic==1.12.1
 cryptography==50.0.0
 edge-tts==7.3.1
+pypinyin==0.55.0

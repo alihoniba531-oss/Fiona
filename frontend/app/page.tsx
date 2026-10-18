@@ -74,6 +74,19 @@ interface ChatStreamEvent {
   generated_image?: { image_path: string; model: string; width: number; height: number; reference_image_paths?: string[]; reference_image_path?: string };
 }
 
+function lastSongCardMessageIds(messages: Message[]): Map<string, string> {
+  const lastByProject = new Map<string, string>();
+  for (const message of messages) {
+    const cards = message.cardData ? [...(message.cards ?? []), message.cardData] : message.cards ?? [];
+    for (const card of cards) {
+      if (card.subtype === "song_project" && card.project_id) {
+        lastByProject.set(card.project_id, message.id);
+      }
+    }
+  }
+  return lastByProject;
+}
+
 interface ImageReferenceSelection {
   images: { id: string; source: ReferenceImageInput }[];
   owner: string;
@@ -626,6 +639,10 @@ export default function ChatPage() {
     if (agentPanelRef.current?.getAttribute("aria-hidden") !== "false" && exchangePanelRef.current?.getAttribute("aria-hidden") !== "false") {
       textareaRef.current?.focus();
     }
+  }, []);
+  const composeSongSection = useCallback((text: string) => {
+    setInput(text);
+    requestAnimationFrame(() => textareaRef.current?.focus());
   }, []);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const referenceFileInputRef = useRef<HTMLInputElement>(null);
@@ -2063,6 +2080,7 @@ export default function ChatPage() {
               url: data.card.url,
               error: data.card.error,
               subtype: data.card.subtype,
+              project_id: data.card.project_id,
               weather: data.card.weather,
               items: data.card.items,
               sources: data.card.sources,
@@ -2077,6 +2095,7 @@ export default function ChatPage() {
               url: data.card.url,
               error: data.card.error,
               subtype: data.card.subtype,
+              project_id: data.card.project_id,
               weather: data.card.weather,
               items: data.card.items,
               sources: data.card.sources,
@@ -2341,6 +2360,8 @@ export default function ChatPage() {
 
   // ── render ──
 
+  const lastSongCardMessageId = lastSongCardMessageIds(messages);
+
   const imageModelGroup = (
     <div role="group" aria-label="图片模型" className="image-model-segments flex items-center gap-1 max-md:w-full"><span className="hidden shrink-0 text-xs text-[var(--ink2)] max-md:inline">模型</span>
       {imageModels.map(model => <button key={model.id} type="button" aria-pressed={imageModel === model.id} disabled={isLoading || !model.available}
@@ -2551,6 +2572,8 @@ export default function ChatPage() {
                     <ChatBubble key={`${username}-${currentConversation?.id}-${msg.id}`} message={msg} agentName={agent?.display_name} onDelete={isLoading ? undefined : handleDeleteMessage} onConfirmTts={handleConfirmTts} onDeclineTts={handleDeclineTts}
                       onRetryImage={request => { void handleSend(request.prompt, request); }} onEditImage={handleSelectReferenceImage}
                       selectedReferenceImagePaths={selectedReferenceImagePaths}
+                      onCompose={composeSongSection}
+                      songCardCompact={projectId => lastSongCardMessageId.get(projectId) !== msg.id}
                       imageRetryDisabled={conversationLocked || conversationLoading || !currentConversation || !!pendingImage || isReadingImage || isReadingReferences} />
                     </div>
                   ))}

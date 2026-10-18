@@ -211,7 +211,9 @@ song_versions(
 - **删号后不复活**：轮询与下载写库时用 `WHERE id=? AND EXISTS(SELECT 1 FROM users WHERE username=owner_username)`；写库影响 0 行则删除刚下载的文件。
 - **重启恢复**（lifespan，**仅开关开启时**；§5.3 的启动清理与孤儿清扫也只在开关开启时执行——测试用临时库启动时若清扫真实目录，会把开发目录里的歌全部当孤儿删掉）：`submitting` → `uncertain` 并退款（不知道是否已建任务）；`queued` → 重新调度提交；`downloading` → 改回 `running` 且 `next_poll_at=now`（URL 一年有效，可再下）；`submitted`/`running` 照常轮询。
 - **测试隔离**：所有新测试必须用 `monkeypatch.setenv("FIONA_SONG_DIR", str(tmp_path / ...))` 把音频目录指到临时目录，不得在仓库目录下产生任何文件；打开 `FIONA_SONG_AGENT` 的测试要把 `run_poller` 换成空转，直接调用 `poll_once` / 提交函数推进状态。
-- **轮询器**：`run_poller()` 无限循环，每轮 `poll_once` + 每 60 秒 `drain_cleanup_queue`，单轮异常打印错误码后继续；lifespan 仅在 `FIONA_SONG_AGENT=1` 时 `create_background_task(run_poller(), label="song-poller")`。供应商用模块级工厂 `get_provider()`，测试可 monkeypatch 成假供应商。
+- **退款对账**（R2 修订）：`reconcile_refunds()` 对 `status IN ('failed','rejected','uncertain','expired') AND billing_state='reserved'` 且用户仍存在的版本逐个调用 `refund_version`（幂等）；`succeeded` 与在途状态一律不碰。lifespan 在 `recover_on_startup` 之后调用一次，轮询器每 60 秒随 `drain_cleanup_queue` 调用一次。
+- **单版本兜底**（R2 修订）：`poll_once` 里 `provider.query` 抛出 `PollError` 以外的异常时，打印固定错误码、该版本 `next_poll_at=now+10`、继续处理其余版本，整轮不抛出；下载转码阶段抛出 `MediaError` 以外的异常时，按 `failure_code='download_unexpected'` 标 `failed` 并退款。
+- **轮询器**：`run_poller()` 无限循环，每轮 `poll_once` + 每 60 秒 `drain_cleanup_queue` 与 `reconcile_refunds`，单轮异常打印错误码后继续；lifespan 仅在 `FIONA_SONG_AGENT=1` 时 `create_background_task(run_poller(), label="song-poller")`。供应商用模块级工厂 `get_provider()`，测试可 monkeypatch 成假供应商。
 
 ### 7.3 下载、转码与隐式标识（新文件 `backend/song/media.py`）
 
@@ -232,6 +234,7 @@ song_versions(
 2. `song_save_lyrics`：保存整首歌词。入参 `project_id`、`base_revision`（当前最新稿号，新项目为 0）、`sections`（§6.3）。`base_revision` 不等于项目最新稿号 → 不保存，返回「歌词已被更新，请先调用 song_get_status」。成功则稿号 +1、存自检结果，返回新稿号 + 自检摘要（errors/warnings 逐条）。
 3. `song_revise_section`：只改一段。入参 `project_id`、`base_revision`、`section_id`、`lines`、`reason`（≤60 字）。以 `base_revision` 那一稿为底，**只替换该段**，其余段落逐字保留，存为新稿（`changed_section_ids=[section_id]`），返回新稿号 + 该段新旧对照 + 自检摘要。
 4. `song_get_status`：只读。入参 `project_id`。返回简报摘要、结构、最新稿号与歌词全文、自检摘要、最近 3 个版本的状态（不含音频地址）。
+- `song_save_brief` 更新**已有歌词**的项目时（`lyrics_revision > 0`），用最新一稿的段落按新的结构蓝图与语言重跑 `check_lyrics`，另存为新的一稿（`changed_section_ids=[]`），返回文本附上重检摘要；结构对不上时自检会给出 `structure_mismatch` 错误，生成按钮因此不可用，直到 Claude 按新结构重写（R1 修订）。
 - 所有工具：项目必须属于 `ctx.user` 且属于本轮会话，否则返回「找不到这个写歌项目」；不扣草莓、不调用火山；执行只读写本地 SQLite，必须远小于 1 秒。
 - 工具结果文本不得包含用户名、会话 id 以外的内部路径、密钥。
 
@@ -243,7 +246,7 @@ song_versions(
 - `ChatState` 增加字段 `song_project_id: str | None = None`；追加卡片时赋值；`_save_response` 把它传给 `save_message(..., song_project_id=state.song_project_id)`。
 - 写歌工具**不改变计费**：不设置 `billable_pending`。
 - 本轮会话 id：`ctx.conversation_id` 为 None 时，用 `agent_store.resolve_chat_conversation(ctx.user, None)` 得到默认会话 id（与 `save_message` 写入的是同一个）。
-- 写歌开启的轮次，在 `state.sys_prompt_final` **末尾**追加 §8.3 的固定文本（静态，利于缓存）；并在 `_agent_messages` 构造的本轮 user 消息里、北京时间块之后，若本会话存在写歌项目，加一个文本块（≤300 字）：「（本会话的写歌项目：《标题》id=…，最新第 N 稿，自检 X 个问题 / Y 条提醒，最近一次生成：状态。需要歌词全文请调用 song_get_status。）」，只取最近更新的一个项目。写歌关闭时这两处输出与现在逐字节一致。
+- 写歌开启的轮次，把 §8.3 的固定文本拼进系统提示（**镜子模式的轮次不拼**：镜子轮不带工具，其 system 文本必须与写歌关闭时逐字节相同，R2 修订），**但基础安全规则必须仍在最后一条 system 消息的末尾且只出现一次**（Fiona 既有不变量，见 `tests/test_beta_safety.py:219–226`）：在 `chat._final_system_prompt(...)` 的入参里拼接，即 `chat._final_system_prompt(chat.apply_mode_prompt(chat._without_safety(ctx.system_prompt), mode) + "\n\n" + SONG_MODE_PROMPT, trailing_system=...)`，不得在 `_final_system_prompt` 的返回值后面追加（R1 修订）；并在 `_agent_messages` 构造的本轮 user 消息里、北京时间块之后，若本会话存在写歌项目，加一个文本块（≤300 字）：「（本会话的写歌项目：《标题》id=…，最新第 N 稿，自检 X 个问题 / Y 条提醒，最近一次生成：状态。需要歌词全文请调用 song_get_status。）」，只取最近更新的一个项目。写歌关闭时这两处输出与现在逐字节一致。
 
 ### 8.3 写歌模式提示词（逐字使用，放在 `song/tools.py` 常量 `SONG_MODE_PROMPT`）
 
@@ -349,3 +352,8 @@ song_versions(
 | I 文档 | `CLAUDE.md`、`README.md`、`docs/*.md`、`PLAN.md`、`.env.example`、`.gitignore`、`requirements.txt` |
 
 模块之间的接口以本规格为准（函数名、参数、返回形状）；先由主代理把 §5–§8 的函数签名写成各 agent 共享的接口说明，再并行。全部完成后由主代理统一跑 §13 的 1–3、10，修好再写报告。
+
+## 15. 修订记录
+
+- **R1（2026-10-18，规格作者在门禁中发现）**：① §8.2 写歌提示原写「在 `sys_prompt_final` 末尾追加」，会把基础安全规则挤离末尾，违反既有不变量，改为拼进 `_final_system_prompt` 的入参。② §8.1 补「更新简报时对已有歌词重检并另存新稿」。③ 补两类测试：只改一段时其余段落逐字不变（改中间段与最后一段都要测）；回读标识 `ProduceID` 不符或缺 `AIGC` 标签时判 `invalid_audio`。④ 版本状态 `rejected` 的文案改为「提交被拒，已退回草莓」（原来与 failed 同显示「失败」）。
+- **R2（2026-10-18，复核可优化项经用户决定修复）**：① §7.2 新增退款对账 `reconcile_refunds`（启动一次 + 轮询器每 60 秒），覆盖「终态已提交、退款事务未完成」的崩溃或锁超时窗口。② §8.2 镜子模式轮次不拼写歌提示（R1 的改法使镜子轮也带上了它）。③ §7.2 `poll_once` 单版本兜底：非 `PollError` 异常推迟 10 秒不热循环；下载阶段非 `MediaError` 异常标 failed 并退款。

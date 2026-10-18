@@ -40,6 +40,7 @@ from rate_limit import limiter
 from routers import agent_exchanges, agents, auth, cards, chat, chat_model, conversations, hot, image_models, match, me, peer, plaza, voice
 from routers import novel
 from routers import local_watch
+from routers import songs
 from routers import studio
 from utils import media
 from utils.background_tasks import create_background_task, shutdown_background_tasks
@@ -120,6 +121,17 @@ async def lifespan(app: FastAPI):
     )
     await asyncio.to_thread(_cleanup_stale_upload_temporaries)
     await init_db()
+    # 写歌：只有开关打开时才触碰写歌目录、恢复状态和启动轮询器。开关关闭时
+    # 这里完全不执行任何写歌清理，避免测试或开发环境误删真实音频文件。
+    from song.config import song_agent_enabled
+    if song_agent_enabled():
+        from song import jobs as song_jobs
+        from song import media as song_media
+        await song_media.drain_cleanup_queue()
+        await song_media.cleanup_orphans()
+        await song_jobs.recover_on_startup()
+        await song_jobs.reconcile_refunds()
+        create_background_task(song_jobs.run_poller(), label="song-poller")
     from exchange_store import recover_interrupted_exchanges
     await recover_interrupted_exchanges()
     from novel.runner import recover_interrupted_novels
@@ -188,6 +200,7 @@ app.include_router(conversations.router)
 app.include_router(agent_exchanges.router)
 app.include_router(novel.router)
 app.include_router(local_watch.router)
+app.include_router(songs.router)
 app.include_router(studio.router)
 
 app.add_middleware(
@@ -314,6 +327,16 @@ async def require_auth(request: Request, call_next):
             response.headers["Content-Disposition"] = (
                 "attachment; filename*=UTF-8''" + quote(posixpath.basename(upload_path), safe="")
             )
+    return response
+
+
+@app.middleware("http")
+async def private_song_responses(request: Request, call_next):
+    """写歌接口一律私有缓存；覆盖 404/422/429 等路由层之外生成的响应。"""
+    is_song = request.url.path == "/songs" or request.url.path.startswith("/songs/")
+    response = await call_next(request)
+    if is_song:
+        response.headers["Cache-Control"] = "private, no-store"
     return response
 
 

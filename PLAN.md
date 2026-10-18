@@ -1,6 +1,6 @@
 # Fiona / Chloe 当前状态与路线图
 
-最后同步：2026-10-11
+最后同步：2026-10-18
 
 本文只记录当前实现、发布边界和下一步工作。最初的“天人合一私人助理”构想仍可通过 Git 历史查看，但其中的 Next.js 14、DuckDuckGo、Docker/Vercel 和原始未来功能描述已经不再代表现状；Claude 作为可选 BYOK 聊天厂商接入，并支持多步工具、直接看图与 Anthropic 联网搜索的智能体模式。
 
@@ -20,7 +20,7 @@ Claude 自己决定天气、旅行、路线、热榜和生图工具，可以把�
 
 工具生图失败通过 image_failed 状态清除生成提示，失败原因回灌 Claude 后继续正常作答；工具来源的 done 不因缺图报错，面板生图及其重试行为保持原样。多步两段文字之间加两个换行，同样保存到正文。工具异常累加到 agent_tool_errors，成功保存的整轮仍执行画像提取等后续任务；模式判定、pending 或会话确认等平台侧失败沿用平台文案。尚未交付任何文字、平台卡片或图片就请求失败时，不补发来源卡，也不落库。全局槽等待超时显示「自带模型通道繁忙，请稍后再试」；预算耗尽时，完成的图片必须落库或清理，不能留下孤立文件。
 
-已知局限：历史图片不再发送原图，仅发送「［图中：摘要］」文字；镜子模式不带工具；危机轮不进入智能体模式；卡片不落库，刷新后仅保留正文摘要和生成图。进入智能体路径即清除 pending，不读写工具补参；本轮只保存一条 assistant，按文字、卡片摘要和生图描述的交付顺序拼接。服务器端工具版本、结果块类型和 `usage.server_tool_use` 字段仍需作者用真实 Key 核实。
+已知局限：历史图片不再发送原图，仅发送「［图中：摘要］」文字；镜子模式不带工具；危机轮不进入智能体模式；卡片不落库，写歌卡例外（`messages.song_project_id` 重建，见文末），其余卡片刷新后仅保留正文摘要和生成图。进入智能体路径即清除 pending，不读写工具补参；本轮只保存一条 assistant，按文字、卡片摘要和生图描述的交付顺序拼接。服务器端工具版本、结果块类型和 `usage.server_tool_use` 字段仍需作者用真实 Key 核实。
 
 ### 2026-10-10：聊天生图判断器与原生工具（R1）
 
@@ -162,7 +162,7 @@ Fiona 的目标已确认调整为“每个用户拥有自己的 AI 分身，分�
 - 官方体验不扣草莓。聊天与工具的七项每日上限为官方体验 3、热点展开 30、卡片详情 30、ASR 300、天气 30、自带模型聊天 200、测试连接 20；后两项分别由 `FIONA_DAILY_BYOK_CHATS`（`byok_chat`）、`FIONA_DAILY_BYOK_TESTS`（`byok_test`）配置。配置均调用时读取，只接受正整数，非法值回落默认并只告警一次；开发模式或关闭限流器时跳过。官方创建用数据库事务计数，热点展开、卡片详情、ASR、天气分别沿用 `FIONA_DAILY_HOT_EXPANDS`、`FIONA_DAILY_CARD_DETAILS`、`FIONA_DAILY_ASR`、`FIONA_DAILY_WEATHER`；其余六项使用单进程内存计数，重启清零、北京零点换日，上游失败不退还次数。BYOK 聊天先检查并发，再计每日次数；超限在流内报错、退款，测试连接超限仍用 HTTP 200 返回 `ok:false`。 天气缺参追问只检查额度，取消和本地校验失败不计数；天气超限发聊天错误事件、不写 pending、不扣草莓，成功天气卡才按普通工具结算。官方体验、热点展开、卡片详情与 ASR 四类 HTTP 接口 429 带中文文案与次日零点 Retry-After；语音识别超限显示提示并关闭免提。
 - 按 IP 限流仅信任 `FIONA_TRUSTED_PROXIES` 配置的代理头，支持 IP/CIDR 和 IPv4 映射地址；部署手册要求所有反代入口覆盖 X-Real-IP 并追加 XFF，开发回环鉴权保持原逻辑。
 - 新增公开 `/health` 支持 GET/HEAD，3 秒总超时，检查数据库及其可写权限、五道迁移和上传目录，不建库、不调用外部服务、不泄露路径。后端从未成功启动时退出 3，定期上传清理单轮异常后继续运行。
-- 新增只跑迁移的 `backend/migrate.py`，默认在含 WAL/SHM 的副本上演练；新增同账号在线备份脚本和每天北京时间 04:00、Persistent 的 systemd timer，默认保留 14 天、备份权限 0600。部署手册补充第 5 道迁移、旧备份恢复、异地保存、外部拨测与 systemd 失败告警；供应商消费告警、桌面卸载和旧密钥删除仍需作者确认。
+- 新增只跑迁移的 `backend/migrate.py`，默认在含 WAL/SHM 的副本上演练；新增同账号在线备份脚本和每天北京时间 04:00、Persistent 的 systemd timer，默认保留 14 天、备份权限 0600。备份当前覆盖数据库、`uploads/` 和存在时的 `studio/`，写歌目录尚未纳入（P2）。部署手册补充第 5 道迁移、旧备份恢复、异地保存、外部拨测与 systemd 失败告警；供应商消费告警、桌面卸载和旧密钥删除仍需作者确认。
 
 ### 2026-10-05：危机路由保护
 
@@ -222,6 +222,7 @@ Fiona 的目标已确认调整为“每个用户拥有自己的 AI 分身，分�
 - 高德地图 MCP 中文天气预报、旅行规划、提醒和部分系统/微信辅助工具；旅行规划复用原生搜索来源，前端可点击核验。
 - 浏览器录音、Qwen ASR。
 - TTS 普通响应和流式朗读。
+- 写歌智能体 P0（2026-10-18）：Claude 智能体白名单用户通过四个工具保存简报、整首歌词和单段改词；主人在卡片确认后预扣草莓，经火山豆包音乐 v4.3 异步生成一版，音频写 ID3v2.4 `TXXX:AIGC` 并经鉴权 Range 播放。SQLite 新增四表，`messages` 补 `song_project_id`；删号/删会话/清空历史同事务清理行与音频。开关、配额和待办见文末。
 
 ### 社交
 
@@ -374,6 +375,11 @@ Fiona 的目标已确认调整为“每个用户拥有自己的 AI 分身，分�
 - 继续为尚未覆盖的昂贵模型接口增加按用户限流、并发限制和取消处理；兼容客户端已有可配置超时/有限重试，搜索、旅行规划、热点展开和卡片详情的原生调用固定 30 秒 socket 超时、无重试，不受兼容客户端超时/重试环境变量控制；热点分类请求固定 8 秒超时、无重试。
 - 为公共热点和后台画像/匹配任务设置缓存、队列和并发边界。
 
+### 写歌
+
+- 基于已冻结的 `params_json` 做同参数重生成和两版对比；改一段词后整首重生成时保留其余段落，并提供新旧歌词对照。
+- 解析火山 `Captions`，再评估 LRC 导出与歌词时间轴；偏好记忆只保存作者确认过的显式偏好。
+
 ### 本轮明确暂缓
 
 按当前产品决定，以下一项不进入本轮实现，也不应被描述为已经完成：
@@ -400,6 +406,7 @@ Fiona 的目标已确认调整为“每个用户拥有自己的 AI 分身，分�
 - 处理 SlowAPI/Starlette/httpx 弃用警告。
 - 给 ASR 大字节参数增加短测试 ID，避免 pytest cache 膨胀。
 - 引入正式数据库迁移并继续梳理一致的事务边界；SQLite WAL 与统一 busy timeout 已于 2026-09-25 接入。
+- 备份脚本纳入 `FIONA_SONG_DIR` 并完成恢复演练；评估腾讯云 MPS/MiniMax 第二供应商、纯音乐和平台模型写歌路径。
 - 用户量和并发增长前评估 PostgreSQL；当前仓库尚无 PostgreSQL 实现，不能称为“无缝迁移”。
 - `/health` 和外部拨测/systemd 失败通知部署说明已完成；结构化日志、错误追踪、外部依赖监控仍待建设，DashScope/DeepSeek 消费告警需作者手工配置。
 - 清理会全局结束 Python/Node 进程的旧 Windows 启动脚本，仅保留按 PID/子进程管理的入口。
@@ -470,3 +477,21 @@ Fiona 的目标已确认调整为“每个用户拥有自己的 AI 分身，分�
 ## 2026-10-16：小说推演结构 v2 第一期后端
 
 按结构 v2 规格及 R1/R2 实现显式 v2、类型承诺、十章卷规划、主线与爽点滑窗、伏笔预算、里程碑归档、卷确认/重做/查询和旧书升级。第一期默认 v1，后台 volume_gate 默认 false，前端与既有测试不改；第二期再提供类型承诺和卷关卡界面、切换默认 v2。P1 全部书启用审校收敛，零改动复审保持旧 payload，P0 pilot 保持原样。实现、基线逐字节证据、25 章 fake 账目验收及两次按 §6 停止记录见 `docs/tasks/2026-10-16-novel-structure-v2/03-report.md`。真实模型 v1/v2 各十章对比须另行报价获批后执行。
+
+## 2026-10-18：写歌智能体 P0
+
+写歌 P0 已实现，入口在 `backend/song/`、`backend/routers/songs.py`、`frontend/components/SongProjectCard.tsx` 与 `frontend/lib/songs.ts`。对话入口只对 Claude 智能体模式开放：`FIONA_SONG_AGENT=1`（默认 0，只有字面 1 开启）且用户名精确命中 `FIONA_SONG_USERS`（逗号分隔，空表示无人可用），危机轮不追加。开启轮次把固定写歌模式提示词拼进系统提示（`_final_system_prompt` 的入参），基础安全规则仍在最后一条 system 消息末尾且恰好出现一次，并在本轮 user 消息里带本会话最近一个写歌项目摘要；四个工具按请求追加，`CLAUDE_CLIENT_TOOLS` 本身仍是 5 个，写歌关闭时请求、提示词与消息逐字节不变。
+
+四个 Claude 客户端工具：`song_save_brief` 新建或更新创作简报与结构蓝图；`song_save_lyrics` 按 `base_revision` 提交整首歌词；`song_revise_section` 只替换一段，其余段落逐字保留；`song_get_status` 只读返回简报、结构、最新歌词、自检和最近版本。工具只读写本地 SQLite，不扣草莓、不调用火山；项目必须属于当前用户和本轮会话。卡片显示简报、按段歌词、字数与押韵自检、改这一段、生成试听、进度和播放，页眉常驻「AI 生成」；同一项目只有最后一条消息展开完整卡片。
+
+计费与配额：每次生成预扣 `FIONA_SONG_STRAWBERRIES` 默认 30 颗（1–500），只能由主人点卡片按钮确认后触发，模型不能代扣；失败、不确定、超时、`rejected` 自动退回且只退一次，同一幂等键重复提交只扣一次，`DEV_MODE=1` 不扣不退。每日 `FIONA_DAILY_SONGS` 默认 10（1–100，上海自然日，`DEV_MODE` 不豁免），在途 `FIONA_SONG_MAX_INFLIGHT` 默认 2（1–5）。
+
+供应商、状态机与文件：P0 只接火山豆包音乐，固定 v4.3，`GenSongForTime` 提交、`QuerySong` 查询，每次 1 版；`Captions` 原样保存不解析。状态机为 `queued → submitting → submitted → running → downloading → succeeded`，终态还有 `failed`、`rejected`、`uncertain`、`expired`；重启时 `submitting→uncertain` 并退款、`queued` 重调度、`downloading→running`，失败或超时退款。音频经 ffmpeg 转 mp3 并写 ID3v2.4 `TXXX:AIGC`（`ContentProducer`/`ProduceID`），`FIONA_SONG_EXPLICIT_WATERMARK` 默认 1（只有字面 0 关闭火山显式水印），`FIONA_AIGC_PRODUCER` 默认 `Fiona`。音频存 `FIONA_SONG_DIR`（默认 `backend/song_data`，生产 `/var/lib/fiona/songs`），不进入 `uploads/`、不挂静态目录，经 `/songs/versions/{id}/audio` 鉴权并支持 Range。
+
+数据与删除：SQLite 新增 `song_projects`、`song_lyrics`、`song_versions`、`song_cleanup_queue`，由 `init_db` 幂等建表；`messages` 补可空 `song_project_id`，校验项目归属后写入，刷新时据此重建卡片。不新增迁移版本，`/health` 仍只校验五道迁移。删号、删会话、清空历史在原有事务内删除对应 `song_*` 行并把 `audio_rel_path` 登记 `song_cleanup_queue`，提交后 drain；只删 `FIONA_SONG_DIR` 根内普通文件，拒绝符号链接与 `..`；启动时仅在开关开启时做孤儿清扫并恢复。
+
+隐私：写歌时歌词与曲风参数发送给字节跳动火山引擎，Claude 侧仍是用户自带 Key；`VOLC_MUSIC_ACCESS_KEY`/`VOLC_MUSIC_SECRET_KEY` 只从环境变量读取，不写数据库、日志、trace、异常文案或响应；缺失时生成返回 409「写歌服务未配置」且不发请求。
+
+P0 明确不做：腾讯云 MPS/MiniMax、一次两版与版本对比、偏好记忆、LRC 导出、歌词时间轴解析、纯音乐 BGM、平台模型/判断器/意图识别路径的写歌。已知局限：火山没有局部编辑，改一段词只能整首重新生成，旋律不保证延续；`Captions` 未解析；只对 Claude 智能体模式开放；P0 只接火山、一次一版；备份脚本尚未包含写歌目录。
+
+P1/P2 待办：同参数重生成与两版对比、改词后整首重生成的新旧对照、`Captions` 解析与 LRC 评估、偏好记忆见「P1：近期迭代 / 写歌」；备份纳入 `FIONA_SONG_DIR`、腾讯 MPS/MiniMax 第二供应商、纯音乐和平台模型写歌路径见「P2：工程治理」。

@@ -23,6 +23,9 @@ backend/.pytest_cache/
 backend/uploads/*
 !backend/uploads/.gitkeep
 
+# 写歌音频（本地/测试数据，不进入 Git）
+backend/song_data/
+
 # ===== 数据库（本地数据，不上传）=====
 backend/*.db
 # 备份文件如 fiona.db.bak-20260518-183540

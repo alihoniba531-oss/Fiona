@@ -13,6 +13,7 @@ interface StoredMessage {
   content: string;
   image_path: string | null;
   reference_image_paths?: string[];
+  song_project_id?: string | null;
   created_at: string;
 }
 
@@ -62,6 +63,9 @@ function toMessages(messages: StoredMessage[]): Message[] {
     imageUrl: message.image_path ? `${API}${message.image_path}` : undefined,
     referenceImageUrls: message.role === "user"
       ? storedReferenceImagePaths(message.reference_image_paths, message.image_path).map(path => `${API}${path}`)
+      : undefined,
+    cards: message.role === "assistant" && message.song_project_id
+      ? [{ source: "写歌", points: [], subtype: "song_project", project_id: message.song_project_id }]
       : undefined,
   }));
 }

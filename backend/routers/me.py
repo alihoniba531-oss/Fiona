@@ -72,6 +72,11 @@ async def clear_history(user: str = Depends(get_current_user)):
     upload_paths = await clear_message_history(user)
     deleted_files, _ = await asyncio.to_thread(delete_uploaded_files, upload_paths)
     await mark_upload_cleanup_done(deleted_files)
+    try:
+        from song.media import drain_cleanup_queue
+        await drain_cleanup_queue()
+    except Exception as exc:
+        print(f"[song] code=cleanup_drain_failed type={type(exc).__name__}")
     return {"status": "cleared"}
 
 
@@ -99,6 +104,11 @@ async def delete_account(
     await ws_manager.disconnect_user(user)
     deleted_files, failed_files = await asyncio.to_thread(delete_uploaded_files, result["upload_paths"])
     await mark_upload_cleanup_done(deleted_files)
+    try:
+        from song.media import drain_cleanup_queue
+        await drain_cleanup_queue()
+    except Exception as exc:
+        print(f"[song] code=cleanup_drain_failed type={type(exc).__name__}")
 
     response = JSONResponse({
         "status": "deleted",

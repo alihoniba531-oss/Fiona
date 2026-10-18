@@ -12,6 +12,7 @@ Fiona 正在演进为个人 AI 分身交流与 Skill 交易平台，当前用于
 - 陪伴对话：流式回复、长期画像、成长阶段、人设与对话模式路由；每用户可在设置中接入自己的聊天模型（BYOK），普通与镜子回复不扣草莓。
 - 模型与工具：Qwen 主力/轻量模型、用户图片理解、联网搜索、热点展开、旅行规划和中文天气预报；搜索与旅行卡片可点击真实搜索来源，天气使用阿里云百炼托管的高德地图 MCP（Amap Maps）。
 - 聊天生图：平台判断器或 BYOK 原生工具决定生图，默认 Seedream 5.0 Flash；面板可选 Qwen Image 3.0（面板默认）或 Seedream 5.0 Flash，文字生成图片、参考图编辑、方形/横版/竖版、对话内预览与下载，生成图随会话保存。
+- 写歌智能体：Claude 智能体模式下按创作简报、分段歌词与字数/押韵自检逐步确认，主人点卡片按钮生成试听；火山豆包音乐单供应商，P0 一次一版。
 - 语音：浏览器录音、Qwen ASR、TTS HTTP/流式朗读。
 - 社交连接：两层候选匹配、待接受卡片、双方接受后的真人房间和历史消息。
 - 广场：热点、发帖、图片/短视频上传、点赞、兴趣与时间偏好；社群页面仍为占位。
@@ -23,9 +24,9 @@ Fiona 正在演进为个人 AI 分身交流与 Skill 交易平台，当前用于
 |---|---|
 | Web | Next.js 16.3.3、React 19、Tailwind CSS 4、React Three Fiber |
 | API | FastAPI、Uvicorn、Pydantic、SlowAPI |
-| 模型 | DashScope / Qwen（主力、轻量、视觉、搜索、生图、ASR、TTS）；生图和修图可选火山方舟 Seedream 5.0 Flash；官方搭档可独立接入 DeepSeek V4 Pro |
+| 模型 | DashScope / Qwen（主力、轻量、视觉、搜索、生图、ASR、TTS）；生图和修图可选火山方舟 Seedream 5.0 Flash；写歌使用火山豆包音乐 v4.3（`VOLC_MUSIC_ACCESS_KEY` / `VOLC_MUSIC_SECRET_KEY`）；官方搭档可独立接入 DeepSeek V4 Pro |
 | 天气 | 阿里云百炼托管的高德地图 MCP（Amap Maps），复用 `DASHSCOPE_API_KEY` |
-| 数据 | SQLite + 本地媒体；开发默认位于 `backend/`，生产建议位于 `/var/lib/fiona/` |
+| 数据 | SQLite + 本地媒体；开发默认位于 `backend/`（写歌音频在 `backend/song_data/`），生产建议位于 `/var/lib/fiona/`（写歌音频 `/var/lib/fiona/songs/`） |
 | 桌面 | Tauri 2，Windows MSI/NSIS |
 | 生产拓扑 | 单域名 Nginx，前端 `:3000`，后端 `127.0.0.1:8000` |
 
@@ -39,6 +40,7 @@ Fiona/
 │   ├── routers/             # auth/chat/hot/match/me/peer/plaza/voice
 │   ├── services/            # 聊天主流程
 │   ├── byok/                # 用户模型加密配置、地址防护与流适配
+│   ├── song/                # 写歌智能体、歌词自检与火山音乐
 │   ├── tools/               # 搜索、天气、热点、旅行、系统工具等
 │   └── tests/               # 后端回归测试
 ├── frontend/                # Next.js App Router Web/PWA
@@ -125,7 +127,7 @@ npm run dev
 
 Claude 智能体模式仅在 `FIONA_CLAUDE_AGENT` 开启、普通 `chat` 请求、危机级别为空、BYOK 已启用且 `provider == "anthropic"`、配置无错误且未触发 `byok_unreserved` 的余额守卫时进入。零余额用户保持原路由；high 和 possible 危机轮不进入智能体模式，生图/修图面板保持现状。`FIONA_CLAUDE_AGENT` 默认 `1`，每轮读取，只有字面 `0` 关闭，其他非法值按开启并只告警一次；关闭后 Claude 保留原生单轮生图路径。
 
-Claude 自己决定天气、旅行、路线、热榜和生图工具，可以把工具结果回灌后继续调用或作答；不走平台意图识别或生图判断器。本轮有图时直接 friend，不调用平台模式判定或视觉模型；无图时仍判定模式，镜子模式不带工具。本轮图片和工具结果发送给 Anthropic；联网搜索和网页读取由 Anthropic 执行，按其价格计入用户额度。提示前缀使用 ephemeral 缓存，本轮北京时间随 user 消息发送。
+Claude 自己决定天气、旅行、路线、热榜、生图工具，以及白名单轮次的写歌工具，可以把工具结果回灌后继续调用或作答；不走平台意图识别或生图判断器。本轮有图时直接 friend，不调用平台模式判定或视觉模型；无图时仍判定模式，镜子模式不带工具。本轮图片和工具结果发送给 Anthropic；联网搜索和网页读取由 Anthropic 执行，按其价格计入用户额度。提示前缀使用 ephemeral 缓存，本轮北京时间随 user 消息发送。
 
 计费每轮仅预扣一次 10 颗草莓，不追加扣费：至少交付一张 `error=false` 且 `stale=false` 的平台工具卡，或生图成功，先累加计费项，整轮落库成功后才结算；后续工具失败不撤销已成立的计费。未落库的计费项退款，包括会话被删、保存失败或客户端断开；未保存的生成图会清理。否则全额退款。纯文字、Anthropic 联网搜索和 Claude 直接看图使用用户自己的 Key，不扣草莓；每日 `byok_chat` 在拿到首个全局槽后才计数，每轮仅计一次。
 
@@ -137,7 +139,29 @@ Claude 自己决定天气、旅行、路线、热榜和生图工具，可以把�
 
 工具生图失败通过 image_failed 状态清除生成提示，失败原因回灌 Claude 后继续正常作答；工具来源的 done 不因缺图报错，面板生图及其重试行为保持原样。多步两段文字之间加两个换行，同样保存到正文。工具异常累加到 agent_tool_errors，成功保存的整轮仍执行画像提取等后续任务；模式判定、pending 或会话确认等平台侧失败沿用平台文案。尚未交付任何文字、平台卡片或图片就请求失败时，不补发来源卡，也不落库。全局槽等待超时显示「自带模型通道繁忙，请稍后再试」；预算耗尽时，完成的图片必须落库或清理，不能留下孤立文件。
 
-已知局限：历史图片不再发送原图，仅发送「［图中：摘要］」文字；镜子模式不带工具；危机轮不进入智能体模式；卡片不落库，刷新后仅保留正文摘要和生成图。进入智能体路径即清除 pending，不读写工具补参；本轮只保存一条 assistant，按文字、卡片摘要和生图描述的交付顺序拼接。服务器端工具版本、结果块类型和 `usage.server_tool_use` 字段仍需作者用真实 Key 核实。
+已知局限：历史图片不再发送原图，仅发送「［图中：摘要］」文字；镜子模式不带工具；危机轮不进入智能体模式；卡片不落库，刷新后仅保留正文摘要和生成图；写歌卡例外，消息新增可空 `song_project_id`，刷新后按它重建。进入智能体路径即清除 pending，不读写工具补参；本轮只保存一条 assistant，按文字、卡片摘要和生图描述的交付顺序拼接。服务器端工具版本、结果块类型和 `usage.server_tool_use` 字段仍需作者用真实 Key 核实。
+
+### 写歌智能体（P0）
+
+在聊天里说「帮我写首歌」即可进入。写歌只在 Claude 智能体模式、`FIONA_SONG_AGENT=1` 且用户名精确列入 `FIONA_SONG_USERS` 时开放；默认关闭，空白名单无人可用，危机轮不开放。写歌开启的轮次会把固定写歌模式提示词拼进系统提示（`_final_system_prompt` 的入参），基础安全规则仍在最后一条 system 消息末尾且恰好出现一次，并在本轮 user 消息里带上本会话最近一个写歌项目的摘要；`CLAUDE_CLIENT_TOOLS` 仍是原来的 5 个，四个写歌工具只在白名单轮次按请求追加，写歌关闭时请求、提示词与消息逐字节不变。
+
+1. Claude 先简短了解写给谁、什么场合、想要的情绪与曲风、大约多长，一次最多问三个问题。
+2. 用 `song_save_brief` 保存创作简报和结构蓝图：段落、每段行数、每行字数范围与押韵格式。
+3. 用 `song_save_lyrics` 提交整首歌词；服务端用纯代码检查结构、字数与十三辙押韵，有「问题」先自行修改再提交，只有「提醒」时说明取舍。
+4. 主人在卡片上看到简报、按段歌词、每行字数与押韵标记、自检结果；点某段「改这一段」后，Claude 用 `song_revise_section` 只改那一段，其他段逐字保留。
+5. 主人点「生成试听（N 草莓）」并在确认框确认后，才会预扣草莓并提交火山生成；模型不能替主人触发。
+6. 火山异步生成，卡片显示排队、进度和保存状态，完成后可播放、下载；`song_get_status` 供 Claude 读取简报、歌词、自检和最近版本。
+7. 音频写入 AI 隐式标识，卡片页眉在所有状态下都显示「AI 生成」。
+
+计费：每次生成预扣 `FIONA_SONG_STRAWBERRIES`（默认 30，1–500）颗，失败、不确定、超时或 `rejected` 自动退回且只退一次，`DEV_MODE=1` 不扣不退；同幂等键重复提交只扣一次。每日 `FIONA_DAILY_SONGS` 默认 10（1–100，上海自然日，`DEV_MODE` 不豁免），每用户同时最多 `FIONA_SONG_MAX_INFLIGHT` 个在途生成（默认 2，1–5）。
+
+供应商与隐私：P0 只接火山豆包音乐 v4.3，使用 `GenSongForTime` 提交、`QuerySong` 查询，每次 1 版；`Captions` 原样保存、不解析；不做腾讯 MPS/MiniMax，也不做两版对比。写歌时歌词与曲风参数会发送给字节跳动火山引擎；Claude 侧仍是用户自带 Key。火山子账号 AK/SK 只从 `VOLC_MUSIC_ACCESS_KEY`、`VOLC_MUSIC_SECRET_KEY` 读取，缺一即生成接口返回 409「写歌服务未配置」，不写数据库、日志、trace、异常文案或响应。
+
+标识与数据：音频写 ID3v2.4 `TXXX:AIGC` 隐式标识（`ContentProducer`/`ProduceID`），界面常驻「AI 生成」；`FIONA_SONG_EXPLICIT_WATERMARK` 默认 `1`，只有字面 `0` 关闭（火山显式水印），`FIONA_AIGC_PRODUCER` 默认 `Fiona`。音频根目录 `FIONA_SONG_DIR` 默认 `backend/song_data/`，生产使用 `/var/lib/fiona/songs`；不放进 `uploads/`、不挂静态目录，经 `/songs/versions/{id}/audio` 鉴权并按 Range 返回。SQLite 新增 `song_projects`、`song_lyrics`、`song_versions`、`song_cleanup_queue` 四表，`init_db` 幂等建表，`messages` 补可空 `song_project_id`；不增加迁移版本，`/health` 仍只校验五道迁移。
+
+删除：删号、删会话和清空历史会在各自原有事务内删除对应的写歌项目、歌词和版本行，把音频路径登记进 `song_cleanup_queue`，提交后再清理；只删 `FIONA_SONG_DIR` 根内的普通文件，拒绝符号链接与 `..`。启动时仅在开关打开时做孤儿清扫并启动轮询器。刷新后写歌卡按 `messages.song_project_id` 重建；同一项目出现在多条消息里时，只有最新一条显示完整卡片。
+
+已知局限：火山没有局部编辑，改一段词只能整首重新生成，旋律不保证延续；`Captions` 未解析；只对 Claude 智能体模式开放；P0 只接火山、一次一版；备份脚本尚未包含写歌目录（P2）。
 
 ### 聊天生图：判断器与原生工具
 
@@ -234,9 +258,9 @@ python manage_strawberries.py grant tester01 50 --env-file /etc/fiona/fiona.env
 python manage_strawberries.py set tester01 200 --env-file /etc/fiona/fiona.env
 ```
 
-设置页支持退出登录和完整账户删除。删除消息、清空历史或删号时都会清理不再被消息/帖子引用的上传文件；删号还在同一事务删除工作室项目、素材、报价和任务，并把项目目录加入清理队列。失败项在启动时及运行期间周期重试；工作室目录外的目录一律拒绝删除。
+设置页支持退出登录和完整账户删除。删除消息、清空历史或删号时都会清理不再被消息/帖子引用的上传文件；删号、删会话和清空历史还会在同一事务删除对应的写歌项目、歌词与版本，把音频登记进 `song_cleanup_queue`，提交后只删 `FIONA_SONG_DIR` 根内的普通文件。删号还在同一事务删除工作室项目、素材、报价和任务，并把项目目录加入清理队列。失败项在启动时及运行期间周期重试；工作室目录与写歌目录外的路径一律拒绝删除。
 
-不要提交 `backend/.env`、`backend/fiona.db`、`backend/uploads/`、`backend/studio_data/` 或 `desktop/fiona.config.json`。
+不要提交 `backend/.env`、`backend/fiona.db`、`backend/uploads/`、`backend/studio_data/`、`backend/song_data/` 或 `desktop/fiona.config.json`。
 
 ## 检查与构建
 
@@ -250,7 +274,7 @@ python -m pip check
 python -m pip_audit -r requirements.txt --progress-spinner off
 ```
 
-测试收集阶段会把数据库和上传目录固定到会话临时目录；单独运行任一后端测试文件也使用隔离路径。
+测试收集阶段会把数据库、上传目录和工作室目录固定到会话临时目录；写歌测试另行把 `FIONA_SONG_DIR` 指到临时目录；单独运行任一后端测试文件也使用隔离路径。
 
 请使用 `python -m pytest`；当前直接调用某些环境中的 `pytest` 命令可能无法找到后端顶层模块。
 
@@ -342,7 +366,7 @@ Markdown 导出保留所有有正文的章节；前文改稿后标为 stale 的�
 
 调度器在进程内运行，只支持单 worker。重启恢复不会重新提交，轮询超时可手动 recheck；万相按 usage.duration、Seedance 按 completion_tokens 结算。成片用 ffprobe 按时长校验，文件下载支持 Range 并检查归属。配置见 `backend/.env.example`。
 
-工作室文件默认 `backend/studio_data/`；生产配置 `/var/lib/fiona/studio`，符合 systemd 只允许写 `/var/lib/fiona` 的限制。目录不作静态挂载。`/health` 在工作室开启时增加 `studio_storage` 可写检查，关闭时不检查。备份包含数据库、uploads 及存在时的 studio 第三个包，两个媒体包都排除隐藏文件和 `.part`，默认共同保留 14 天。studio 打包失败会保留旧 studio 包、继续发布数据库和 uploads，并以退出码 1 报告部分失败。
+工作室文件默认 `backend/studio_data/`；生产配置 `/var/lib/fiona/studio`，符合 systemd 只允许写 `/var/lib/fiona` 的限制。目录不作静态挂载。`/health` 在工作室开启时增加 `studio_storage` 可写检查，关闭时不检查。备份包含数据库、uploads 及存在时的 studio 第三个包，两个媒体包都排除隐藏文件和 `.part`，默认共同保留 14 天；写歌音频目录（`FIONA_SONG_DIR`，默认 `backend/song_data/`，生产 `/var/lib/fiona/songs`）尚未纳入备份脚本（P2）。studio 打包失败会保留旧 studio 包、继续发布数据库和 uploads，并以退出码 1 报告部分失败。
 
 
 WO2 追加 `GET /studio/projects/{pid}`、`GET /studio/projects/{pid}/assets` 和 `GET /studio/notices?after=<id>`，均隔离 owner、禁止缓存；素材列表不暴露文件路径。通知每页最多 50 条，同一任务只写一条，通知失败不会影响任务状态或费用结算，并在后续 tick 补写。删号会在原有工作室清理事务中一并删除通知。

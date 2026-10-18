@@ -70,4 +70,9 @@ async def remove_conversation(conversation_id: str, user: str = Depends(get_curr
     await asyncio.to_thread(clear_user_mode, state_key)
     deleted_files, failed_files = delete_uploaded_files(result["upload_paths"])
     await mark_upload_cleanup_done(deleted_files)
+    try:
+        from song.media import drain_cleanup_queue
+        await drain_cleanup_queue()
+    except Exception as exc:
+        print(f"[song] code=cleanup_drain_failed type={type(exc).__name__}")
     return {"status": "deleted", "file_cleanup_complete": not failed_files}

@@ -141,6 +141,8 @@ async def init_db():
         # 图片内容进入长期文字记录：VL 看完图的那句回复同时作为该条 user 消息的摘要，
         # 下一轮起注入上下文，避免"发图=对话砍两段"。
         await _safe_migrate(db, "ALTER TABLE messages ADD COLUMN image_summary TEXT DEFAULT NULL")
+        # 写歌：assistant 消息可指向本轮触达的 song_projects 行；旧查询都写列名，无影响。
+        await _safe_migrate(db, "ALTER TABLE messages ADD COLUMN song_project_id TEXT DEFAULT NULL")
         # 用户性别 + 匹配偏好（老库迁移）
         await _safe_migrate(db, "ALTER TABLE users ADD COLUMN gender TEXT DEFAULT NULL")
         await _safe_migrate(db, "ALTER TABLE users ADD COLUMN match_pref TEXT DEFAULT 'both'")
@@ -311,6 +313,9 @@ async def init_db():
         from novel.store_db import NOVEL_TABLES_DDL
         for novel_table_ddl in NOVEL_TABLES_DDL:
             await db.execute(novel_table_ddl)
+        from song.store import SONG_TABLES_DDL
+        for song_table_ddl in SONG_TABLES_DDL:
+            await db.execute(song_table_ddl)
         from studio.store import STUDIO_TABLES_DDL, migrate_schema as migrate_studio_schema
         for studio_table_ddl in STUDIO_TABLES_DDL:
             await db.execute(studio_table_ddl)
@@ -463,7 +468,13 @@ async def delete_message_for_user(message_id: int, username: str) -> dict:
 
 
 async def clear_message_history(username: str) -> list[str]:
-    """原子清空用户消息，并登记清空后已无引用的附件。"""
+    """原子清空用户消息，并登记清空后已无引用的附件与写歌音频。
+
+    返回值仍只是上传路径；写歌音频登记进 ``song_cleanup_queue``，由调用方
+    在事务提交后交给 ``song.media`` 清理。
+    """
+    from song.store import delete_user_song_data
+
     async with aiosqlite.connect(DB_PATH, timeout=SQLITE_BUSY_TIMEOUT) as db:
         await db.execute("BEGIN IMMEDIATE")
         async with db.execute(
@@ -473,6 +484,7 @@ async def clear_message_history(username: str) -> list[str]:
             paths = [path for row in await cursor.fetchall() for path in message_upload_paths(row[0], row[1])]
         await db.execute("DELETE FROM messages WHERE username = ?", (username,))
         upload_paths = await _queue_unreferenced_uploads(db, paths)
+        await delete_user_song_data(db, username)
         await db.commit()
         return upload_paths
 
@@ -495,6 +507,7 @@ async def save_message(
     require_image_reference: bool = False,
     reference_image_paths: list[str] | None = None,
     new_reference_image_paths: list[str] | None = None,
+    song_project_id: str | None = None,
 ):
     from agent_store import ResourceNotFound, _ensure_default_conversation, _owned_conversation
 
@@ -533,10 +546,23 @@ async def save_message(
                     await db.rollback()
                     raise ResourceNotFound("Reference image not found")
             image_path = references[0]
+        # 写歌归属只做附加校验：任何失败都不能让聊天消息落库失败。
+        stored_song_project_id = None
+        if song_project_id is not None:
+            try:
+                async with db.execute(
+                    """SELECT 1 FROM song_projects
+                       WHERE id = ? AND owner_username = ? AND conversation_id = ?""",
+                    (song_project_id, username, conversation["id"]),
+                ) as cursor:
+                    if await cursor.fetchone() is not None:
+                        stored_song_project_id = song_project_id
+            except Exception:
+                stored_song_project_id = None
         await db.execute(
-            """INSERT INTO messages (username, role, content, image_path, conversation_id, agent_id, reference_image_paths)
-               VALUES (?, ?, ?, ?, ?, ?, ?)""",
-            (username, role, content, image_path, conversation["id"], conversation["agent_id"], _json.dumps(references) if references else None),
+            """INSERT INTO messages (username, role, content, image_path, conversation_id, agent_id, reference_image_paths, song_project_id)
+               VALUES (?, ?, ?, ?, ?, ?, ?, ?)""",
+            (username, role, content, image_path, conversation["id"], conversation["agent_id"], _json.dumps(references) if references else None, stored_song_project_id),
         )
         await db.execute(
             "UPDATE conversations SET updated_at = CURRENT_TIMESTAMP WHERE id = ?",
@@ -798,6 +824,7 @@ async def delete_account_data(username: str) -> dict:
 
     # Cancellation and refunds must finish before taking the deletion lock.
     from novel.runner import cancel_user_tasks
+    from song.store import delete_user_song_data
     await cancel_user_tasks(username)
 
     aliases = (
@@ -816,7 +843,7 @@ async def delete_account_data(username: str) -> dict:
             user_row = await cursor.fetchone()
         if user_row is None:
             await db.rollback()
-            return {"deleted": False, "upload_paths": []}
+            return {"deleted": False, "upload_paths": [], "song_audio_paths": []}
 
         async with db.execute(
             "SELECT image_path, reference_image_paths FROM messages WHERE username = ?",
@@ -921,6 +948,7 @@ async def delete_account_data(username: str) -> dict:
             "INSERT OR IGNORE INTO upload_cleanup_queue (path) VALUES (?)",
             [(path,) for path in studio_paths],
         )
+        song_audio_paths = await delete_user_song_data(db, username)
         await db.execute("DELETE FROM users WHERE username = ?", (username,))
 
         # UUID 文件理论上不会共享；仍在事务内复核引用，避免误删异常旧数据。
@@ -932,7 +960,7 @@ async def delete_account_data(username: str) -> dict:
         for pending_key in list(_pending_studio_messages):
             if pending_key[:2] == (str(DB_PATH), username):
                 _pending_studio_messages.pop(pending_key, None)
-        return {"deleted": True, "upload_paths": unreferenced_paths + studio_paths}
+        return {"deleted": True, "upload_paths": unreferenced_paths + studio_paths, "song_audio_paths": song_audio_paths}
 
 
 async def get_pending_upload_cleanup() -> list[str]:

@@ -4,6 +4,7 @@ import { cn } from "@/lib/utils";
 import { Volume2, VolumeX, Trash2, Globe, LoaderCircle, RotateCcw, ArrowUpRight } from "lucide-react";
 import { memo, useState, useEffect, useRef, useMemo } from "react";
 import GeneratedImage from "@/components/GeneratedImage";
+import SongProjectCard from "@/components/SongProjectCard";
 import { generatedImagePath, referenceImagePath, storedReferenceImagePaths, isLocalReferenceDataUrl, type ReferenceImageInput } from "@/lib/generatedImages";
 import { API_BASE as API } from "@/lib/config";
 import { openExternal, toSafeExternalUrl } from "@/lib/open";
@@ -89,6 +90,7 @@ export interface CardData {
   url?: string;
   error?: boolean | string;
   subtype?: string;  // "weather" = 天气卡片专用渲染
+  project_id?: string;  // "song_project" = 写歌项目卡片
   weather?: WeatherData;
   items?: { title: string; url?: string }[];
   sources?: { title: string; url: string; site_name?: string; index?: number }[];
@@ -96,10 +98,24 @@ export interface CardData {
 
 interface ChatCardProps {
   card: CardData;
+  onCompose?: (text: string) => void;
+  songCardCompact?: (projectId: string) => boolean;
 }
 
 export function ChatCard(props: ChatCardProps) {
-  const card = props.card;
+  const { card, onCompose, songCardCompact } = props;
+  if (card.subtype === "song_project") {
+    const projectId = card.project_id;
+    if (!projectId) return null;
+    if (songCardCompact?.(projectId)) {
+      const firstPoint = typeof card.points?.[0] === "string" ? card.points[0] : "";
+      const title = firstPoint.match(/《([^》]+)》/)?.[1]?.trim();
+      return <p className="ceramic-card w-full max-w-[600px] break-words px-4 py-3 text-xs text-[color:var(--ink2)]">
+        {title ? `写歌《${title}》已更新，见下方最新卡片` : "写歌已更新，见下方最新卡片"}
+      </p>;
+    }
+    return <SongProjectCard projectId={projectId} onCompose={onCompose} />;
+  }
   if (card.subtype === "studio_project") {
     if (card.error) return <p role="alert" className="ceramic-card max-w-full break-words p-4 text-sm text-[color:var(--seal)]">{typeof card.error === "string" ? card.error : card.points.join("\n") || "工作室项目建立失败。"}</p>;
     const safeUrl = typeof card.url === "string" && card.url.startsWith("/studio/") && card.url.length > 8 && !/[^A-Za-z0-9/_-]/.test(card.url) ? card.url : null;
@@ -247,9 +263,11 @@ interface ChatBubbleProps {
   imageRetryDisabled?: boolean;
   onEditImage?: (imageUrl: string) => void;
   selectedReferenceImagePaths?: string[];
+  onCompose?: (text: string) => void;
+  songCardCompact?: (projectId: string) => boolean;
 }
 
-function ChatBubble({ message, agentName = "Chloe", onDelete, onConfirmTts, onDeclineTts, onRetryImage, imageRetryDisabled, onEditImage, selectedReferenceImagePaths = [] }: ChatBubbleProps) {
+function ChatBubble({ message, agentName = "Chloe", onDelete, onConfirmTts, onDeclineTts, onRetryImage, imageRetryDisabled, onEditImage, selectedReferenceImagePaths = [], onCompose, songCardCompact }: ChatBubbleProps) {
   const isUser = message.role === "user";
   const referenceUrls = useMemo(() => {
     if (!isUser) return [];
@@ -342,8 +360,8 @@ function ChatBubble({ message, agentName = "Chloe", onDelete, onConfirmTts, onDe
           </div>
         )}
 
-        {message.cardData && <ChatCard card={message.cardData} />}
-        {message.cards?.map((card, index) => <ChatCard key={index} card={card} />)}
+        {message.cardData && <ChatCard card={message.cardData} onCompose={onCompose} songCardCompact={songCardCompact} />}
+        {message.cards?.map((card, index) => <ChatCard key={index} card={card} onCompose={onCompose} songCardCompact={songCardCompact} />)}
 
         {message.imageGenerationRetry && onRetryImage && <button type="button"
           disabled={imageRetryDisabled}

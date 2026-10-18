@@ -25,10 +25,13 @@ state:
     /var/lib/fiona/fiona.db
     /var/lib/fiona/uploads/
     /var/lib/fiona/studio/
+    /var/lib/fiona/songs/
     /etc/fiona/fiona.env
 ```
 
-该拓扑目前只支持单个后端实例。工作室调度器在进程内运行，只支持单 worker；不得启动多个 uvicorn worker 或第二个服务进程共享同一工作室库。SQLite、进程内预算计数器和短时、限次 TTS 票据不适合直接横向扩容。
+该拓扑目前只支持单个后端实例。工作室调度器在进程内运行，只支持单 worker；写歌轮询器同样只在后端进程内运行，不得启动多个 uvicorn worker 或第二个服务进程共享同一数据库。SQLite、进程内预算计数器和短时、限次 TTS 票据不适合直接横向扩容。
+
+写歌音频位于 `FIONA_SONG_DIR`（生产 `/var/lib/fiona/songs/`），只经后端 `/songs/versions/{id}/audio` 鉴权并按 Range 返回，不放进 `/uploads/`，也不映射静态目录。`/var/lib/fiona/songs/` 不在 Nginx 的任何 `location` 中，不能配置 `alias`、`root` 或直接读取。
 
 ## 2026-09-05 分身与会话迁移
 
@@ -42,7 +45,7 @@ state:
 
 第 5 道 `20260905_official_exchange_workflow_v4` 为交流增加工作流、作品与完成原因字段，为回复增加阶段与审稿 JSON 字段；既有记录保留原流程，新官方体验使用主创、审稿、修订流程。五道迁移都应出现在 `schema_migrations` 中。
 
-更新前停止旧后端写入，按本文备份数据库与媒体，再启动新版。迁移版本和回填在一个事务中提交；发现无有效 owner 的旧消息或其他迁移错误时会回滚并阻止启动，应检查数据归属后重试，不要手动写入迁移成功标记。
+更新前停止旧后端写入，按本文备份数据库与媒体（写歌启用时另含 `FIONA_SONG_DIR` 音频），再启动新版。迁移版本和回填在一个事务中提交；发现无有效 owner 的旧消息或其他迁移错误时会回滚并阻止启动，应检查数据归属后重试，不要手动写入迁移成功标记。
 
 兼容范围是旧客户端的 HTTP 接口，不包括旧后端与新版同时写同一数据库。若回退到迁移前的服务版本，应按下文恢复流程使用匹配的数据库/媒体备份，并先保全迁移后产生的数据；不要让旧服务继续写入新库后再直接切回新版。
 
@@ -50,9 +53,50 @@ state:
 
 浏览器隔离联调可设置前端服务端变量 `FIONA_BACKEND_ORIGIN=http://127.0.0.1:8001`，将 `/api` 代理到临时后端；默认仍为 `http://localhost:8000`。该变量参与 Next 配置，正式构建前应清除测试值。测试浏览器使用 `localhost`，与现有 `127.0.0.1` 预览隔离 Cookie。聊天流带 `Cache-Control: no-transform`，避免 Next 代理压缩缓冲导致流式事件延迟到达。
 
-多参考图编辑升级会在启动时为 `messages` 增加可空的 `reference_image_paths` 列，已有单图消息保持原样；新消息按顺序存入参考图数组，并保留首张 `image_path` 兼容字段。更新前停止旧后端并备份数据库与媒体。升级后应同时使用新版媒体权限与清理逻辑，以保护数组中的第二、第三张参考图；不要单独回退后端的附件清理代码。
+多参考图编辑升级会在启动时为 `messages` 增加可空的 `reference_image_paths` 列，已有单图消息保持原样；新消息按顺序存入参考图数组，并保留首张 `image_path` 兼容字段。更新前停止旧后端并备份数据库与媒体（写歌启用时另含 `FIONA_SONG_DIR` 音频）。升级后应同时使用新版媒体权限与清理逻辑，以保护数组中的第二、第三张参考图；不要单独回退后端的附件清理代码。
 
 外部参考图上传与生成图共用上述引用字段，无新增表。上传源图规范为私有 `reference_*.png`，媒体权限不可只保护 `generated_*`。前后端请求体上限25MB；若使用额外反向代理，也应允许至少25MB请求体，才能提交三张各5MB的Base64参考图。
+
+## 老库升级步骤（messages.song_project_id + 写歌表）
+
+写歌 P0 不新增迁移版本号；老库升级由新版后端启动时的 `database.init_db()` 幂等执行：给 `messages` 补可空 `song_project_id`，并创建 `song_projects`、`song_lyrics`、`song_versions`、`song_cleanup_queue` 四张表。升级前必须先停后端并备份，不能跳过演练直接启动唯一生产库。以下命令以生产路径为例，替换 `<库>`、日期和备份路径后逐条执行：
+
+1. **停后端**，确认没有其他进程或 worker 仍在使用该库：
+   ```bash
+   systemctl stop fiona
+   pgrep -af 'run.py|uvicorn' || true
+   ```
+2. **用 SQLite `.backup` 生成一致快照**。以数据库属主 `fiona` 执行，避免生成 root 属主的 `-wal`/`-shm`；备份文件权限保持 `0600`：
+   ```bash
+   sudo -u fiona sqlite3 /var/lib/fiona/fiona.db \
+       ".backup '/var/backups/fiona/fiona.db.bak-song-20261018'"
+   sudo -u fiona sqlite3 -readonly /var/backups/fiona/fiona.db.bak-song-20261018 \
+       'PRAGMA integrity_check;'
+   ```
+   日期和文件名按实际替换；不能只复制 `fiona.db`，未检查点的数据可能仍在 `-wal`。
+3. **先在临时副本上演练迁移**。`migrate.py` 默认再复制库及存在的 `-wal`、`-shm` 到临时目录，只调用 `database.init_db()`，核对输出中没有报错；此步骤不写生产库，不要加 `--in-place`：
+   ```bash
+   cd /opt/fiona/backend
+   .venv/bin/python migrate.py --env-file /etc/fiona/fiona.env \
+       --db /var/lib/fiona/fiona.db
+   ```
+   演练输出应显示迁移前后版本与行数统计；出现异常、缺库或「没有归属用户的消息」时先按本文“旧备份恢复演练”排查，不要继续。
+4. **正常启动服务**。启动时 `init_db` 自动建四张写歌表并补 `messages.song_project_id`；不要手工建表或改结构：
+   ```bash
+   systemctl start fiona
+   systemctl status fiona
+   journalctl -u fiona -n 100 --no-pager
+   ```
+5. **核对列、表和健康检查**。确认 `messages` 有 `song_project_id`，四张 `song_*` 表已存在，`/health` 仍为 ok：
+   ```bash
+   sudo -u fiona sqlite3 -readonly /var/lib/fiona/fiona.db \
+       "PRAGMA table_info(messages);" | grep song_project_id
+   sudo -u fiona sqlite3 -readonly /var/lib/fiona/fiona.db \
+       "SELECT name FROM sqlite_master WHERE type='table' AND name LIKE 'song_%';"
+   curl --fail http://127.0.0.1:8000/health
+   ```
+   `/health` 仍只校验五道迁移、数据库可写、上传目录和（工作室开启时的）工作室目录；写歌表和 `messages.song_project_id` 不增加健康检查项。
+6. **回滚 = 停服恢复备份**。若升级失败或需要回到旧版本：先 `systemctl stop fiona`，保全当前故障库，再按“回滚与恢复”删除旧 `-wal`/`-shm`、恢复第 2 步的 `.backup` 快照并核对 `PRAGMA integrity_check`。旧代码不会读取 `song_*` 表；但写歌音频目录 `FIONA_SONG_DIR` 不在本次数据库备份内，必须单独处理，见“定时备份”和“回滚与恢复”。
 
 ## 前置条件
 
@@ -60,7 +104,8 @@ state:
 - Git
 - Python 及 `venv`
 - Node.js 20+ 和 npm
-- ffmpeg（浏览器录制的 WebM/Opus 语音需要转码；广场视频去元数据也依赖它，建议 ≥ 6，旧版 remux 可能丢旋转信息）
+- ffmpeg（浏览器录制的 WebM/Opus 语音需要转码；广场视频去元数据也依赖它，建议 ≥ 6，旧版 remux 可能丢旋转信息；写歌音频下载后转码和写 ID3 标识还要求 `libmp3lame`）
+- `ffprobe`（写歌音频时长与 `AIGC` 标签回读校验依赖它，随 ffmpeg 一起安装）
 - `sqlite3` 命令行（数据库在线备份依赖 `.backup`）
 - Python 链接的 SQLite ≥ 3.35（数据写入使用 `RETURNING`）
 - Nginx
@@ -68,10 +113,11 @@ state:
 - 域名 DNS 已指向服务器
 - Certbot 或等价 TLS 证书管理工具
 - 有效的 DashScope API Key
+- 可选：火山引擎子账号 AK/SK，并已在 AI 音乐控制台开通“生成人声歌曲”后付费（写歌默认关闭，不启用时不需要）
 
-聊天和广场上传图片、视频以 `0600` 落盘，经后端鉴权后的 `/uploads/` 访问；工作室文件只经 `/studio/assets/{aid}/file` 按 owner 获取，支持 Range 与 no-store，不挂静态目录；不要配置 Nginx 直接读取上传目录。GIF 相同的连续帧可能合并，总播放时长不变。3GP 中的 AMR 音频未验证能否 remux 到 MP4，可能处理失败；失败时需先转成兼容的 MP4 再上传。
+聊天和广场上传图片、视频以 `0600` 落盘，经后端鉴权后的 `/uploads/` 访问；工作室文件只经 `/studio/assets/{aid}/file` 按 owner 获取，支持 Range 与 no-store，不挂静态目录；写歌音频只经 `/songs/versions/{id}/audio` 鉴权并按 Range 返回，同样不挂静态目录，也不放进 `/uploads/`。不要配置 Nginx 直接读取上传目录或写歌目录。GIF 相同的连续帧可能合并，总播放时长不变。3GP 中的 AMR 音频未验证能否 remux 到 MP4，可能处理失败；失败时需先转成兼容的 MP4 再上传。
 
-Debian/Ubuntu 可用 `sudo apt-get update && sudo apt-get install -y ffmpeg sqlite3` 安装前两项；用 `ffmpeg -version`、`sqlite3 --version` 和 `python3 -c "import sqlite3; print(sqlite3.sqlite_version)"` 自检。最后一条应输出 3.35.0 或更新版本。
+Debian/Ubuntu 可用 `sudo apt-get update && sudo apt-get install -y ffmpeg sqlite3` 安装前两项；用 `ffmpeg -version`、`ffprobe -version`、`sqlite3 --version` 和 `python3 -c "import sqlite3; print(sqlite3.sqlite_version)"` 自检。最后一条应输出 3.35.0 或更新版本。写歌还要求 ffmpeg 带 `libmp3lame` 编码器：`ffmpeg -hide_banner -encoders | grep libmp3lame` 应有输出；缺失时生成会失败并退款，不会静默降级。
 
 建议只对公网开放 22、80 和 443，端口 3000、8000 仅监听或仅允许本机访问。
 
@@ -82,7 +128,7 @@ Debian/Ubuntu 可用 `sudo apt-get update && sudo apt-get install -y ffmpeg sqli
 ```bash
 useradd --system --home /var/lib/fiona --shell /usr/sbin/nologin fiona
 install -d -o root -g root -m 0755 /opt/fiona
-install -d -o fiona -g fiona -m 0700 /var/lib/fiona /var/lib/fiona/uploads /var/lib/fiona/studio
+install -d -o fiona -g fiona -m 0700 /var/lib/fiona /var/lib/fiona/uploads /var/lib/fiona/studio /var/lib/fiona/songs
 install -d -o root -g root -m 0755 /etc/fiona
 install -d -o fiona -g fiona -m 0700 /var/backups/fiona
 
@@ -110,9 +156,21 @@ FIONA_STUDIO_DIR=/var/lib/fiona/studio
 FIONA_STUDIO=1
 FIONA_STUDIO_OWNERS=
 FIONA_STUDIO_REQUIRE_JWT=1
+FIONA_SONG_AGENT=0
+FIONA_SONG_USERS=
+FIONA_SONG_STRAWBERRIES=30
+FIONA_DAILY_SONGS=10
+FIONA_SONG_MAX_INFLIGHT=2
+FIONA_SONG_DIR=/var/lib/fiona/songs
+FIONA_SONG_EXPLICIT_WATERMARK=1
+FIONA_AIGC_PRODUCER=Fiona
+VOLC_MUSIC_ACCESS_KEY=
+VOLC_MUSIC_SECRET_KEY=
 DASHSCOPE_WORKSPACE_ID=<百炼业务空间ID>
 STRAWBERRY_DAILY_REFILL=0
 ```
+
+写歌默认关闭（`FIONA_SONG_AGENT=0`、空白名单），首次部署可以先保留空 AK/SK。要启用时，把 `FIONA_SONG_AGENT` 改为 `1`，在 `FIONA_SONG_USERS` 填入精确用户名，再填火山子账号 AK/SK；匿名、平台模型和非 Claude BYOK 用户即使猜不到接口也会得到 404。`FIONA_SONG_DIR` 必须指向 systemd 可写的 `/var/lib/fiona` 下（生产固定 `/var/lib/fiona/songs`），不能留在代码目录的默认 `backend/song_data`。
 
 OpenAI 兼容模型客户端默认 60 秒超时、最多重试 1 次，可通过 `DASHSCOPE_TIMEOUT_SECONDS` / `DASHSCOPE_MAX_RETRIES` 调整（模板允许 5–300 秒、0–3 次）。搜索、旅行规划、热点展开和卡片详情均使用 DashScope 原生 `qwen-plus` 接口、强制开启联网搜索，固定 30 秒 socket 超时、不重试，不受这两个环境变量控制；调大兼容客户端超时不会延长这四项调用。卡片详情路由外层另有 45 秒总超时。热点分类使用 `qwen3.8-flash`，请求固定 8 秒超时、不重试。
 
@@ -153,6 +211,15 @@ OpenAI 兼容模型客户端默认 60 秒超时、最多重试 1 次，可通过
 | `FIONA_BYOK_TOTAL_SECONDS` | 建流起的低/中档及非 Claude 总预算默认120秒（10–240）；Claude 高档为 min(240, FIONA_BYOK_TOTAL_SECONDS×1.5)，默认180秒，Nginx 的 300 秒按两次读之间的间隔计算；调用时读取，非法回退并只告警一次；实际中断边界见下文 |
 | `FIONA_CLAUDE_AGENT` | Claude 智能体模式默认 `1`；只有字面 `0` 关闭，其他值按开启并只告警一次，每轮读取 |
 | `FIONA_CLAUDE_AGENT_TOTAL_SECONDS` | Claude 智能体整轮预算默认 `240` 秒，范围 `60–290`，非法值回落默认；每次请求同时受剩余预算和现有 BYOK 时限约束 |
+| `FIONA_SONG_AGENT` | 写歌智能体默认 `0`，只有字面 `1` 开启；仅对 Claude 智能体模式生效，每轮读取 |
+| `FIONA_SONG_USERS` | 写歌白名单，逗号分隔、去空白后精确匹配；默认空表示无人可用 |
+| `FIONA_SONG_STRAWBERRIES` | 每次生成预扣草莓，默认 `30`，范围 `1–500`；失败/不确定/超时/被拒退回且只退一次，`DEV_MODE` 不扣不退 |
+| `FIONA_DAILY_SONGS` | 每用户每个上海自然日提交/在途生成上限，默认 `10`，范围 `1–100`；`DEV_MODE` 不豁免 |
+| `FIONA_SONG_MAX_INFLIGHT` | 每用户同时在途版本上限，默认 `2`，范围 `1–5` |
+| `FIONA_SONG_DIR` | 写歌音频目录；相对路径按 `backend/` 解析，本地默认 `backend/song_data`，生产 `/var/lib/fiona/songs`；不挂静态目录 |
+| `FIONA_SONG_EXPLICIT_WATERMARK` | 火山显式水印默认 `1`，只有字面 `0` 关闭；隐式标识另写 ID3v2.4 `TXXX:AIGC` |
+| `FIONA_AIGC_PRODUCER` | 隐式标识中的服务提供者名称，默认 `Fiona`，1–40 个可见字符 |
+| `VOLC_MUSIC_ACCESS_KEY` / `VOLC_MUSIC_SECRET_KEY` | 火山子账号 AK/SK，只从环境变量读取；缺任一则生成返回 409「写歌服务未配置」且不发请求，不写入数据库/日志/响应 |
 | `FIONA_DAILY_WEATHER` | 每账号每个北京时间自然日天气查询次数，默认 `30`；正整数，非法值回落默认并只告警一次，调用时读取 |
 | `FIONA_AMAP_ENABLED` | 高德地图 MCP 天气默认开启（`1`），只有字面 `0` 关闭；关闭时返回“天气服务暂未开启”，不发请求，调用时读取 |
 | `FIONA_AMAP_TIMEOUT_SECONDS` | 天气 MCP 请求总预算，默认 `8` 秒，合法范围 `1–30` 的有限浮点数；空串、非数字、`nan`、`inf` 和越界值回落 `8`，调用时读取 |
@@ -175,19 +242,19 @@ journalctl -u fiona | grep -c '\[crisis-model\] level='
 
 Claude 智能体模式仅在 `FIONA_CLAUDE_AGENT` 开启、普通 `chat` 请求、危机级别为空、BYOK 已启用且 `provider == "anthropic"`、配置无错误且未触发 `byok_unreserved` 的余额守卫时进入。零余额用户保持原路由；high 和 possible 危机轮不进入智能体模式，生图/修图面板保持现状。`FIONA_CLAUDE_AGENT` 默认 `1`，每轮读取，只有字面 `0` 关闭，其他非法值按开启并只告警一次；关闭后 Claude 保留原生单轮生图路径。
 
-Claude 自己决定天气、旅行、路线、热榜和生图工具，可以把工具结果回灌后继续调用或作答；不走平台意图识别或生图判断器。本轮有图时直接 friend，不调用平台模式判定或视觉模型；无图时仍判定模式，镜子模式不带工具。本轮图片和工具结果发送给 Anthropic；联网搜索和网页读取由 Anthropic 执行，按其价格计入用户额度。提示前缀使用 ephemeral 缓存，本轮北京时间随 user 消息发送。
+Claude 自己决定天气、旅行、路线、热榜、生图工具，以及白名单轮次的写歌工具，可以把工具结果回灌后继续调用或作答；不走平台意图识别或生图判断器。写歌工具只在 `FIONA_SONG_AGENT=1` 且用户名精确命中 `FIONA_SONG_USERS` 时按请求追加，`CLAUDE_CLIENT_TOOLS` 本身仍是 5 个；写歌关闭时请求、提示词与消息逐字节不变。写歌开启的轮次还会把固定写歌模式提示词拼进系统提示（`_final_system_prompt` 的入参），基础安全规则仍在最后一条 system 消息末尾且恰好出现一次，并在本轮 user 消息里附本会话最近一个写歌项目摘要。本轮有图时直接 friend，不调用平台模式判定或视觉模型；无图时仍判定模式，镜子模式不带工具。本轮图片和工具结果发送给 Anthropic；联网搜索和网页读取由 Anthropic 执行，按其价格计入用户额度。提示前缀使用 ephemeral 缓存，本轮北京时间随 user 消息发送。
 
 计费每轮仅预扣一次 10 颗草莓，不追加扣费：至少交付一张 `error=false` 且 `stale=false` 的平台工具卡，或生图成功，先累加计费项，整轮落库成功后才结算；后续工具失败不撤销已成立的计费。未落库的计费项退款，包括会话被删、保存失败或客户端断开；未保存的生成图会清理。否则全额退款。纯文字、Anthropic 联网搜索和 Claude 直接看图使用用户自己的 Key，不扣草莓；每日 `byok_chat` 在拿到首个全局槽后才计数，每轮仅计一次。
 
 天气只匹配本轮用户原文或最近 3 条 user 消息原文，同时比较原文及其规范化结果。Claude 提供的城市可使用原样、规范化结果和去掉一个末尾行政后缀（市、省、区、县、州、盟、自治州、特别行政区）的写法，候选至少 2 个字，单字拒绝；实际查询使用匹配到的主人原文写法，再经 normalize_city 处理。北京/北京市、那曲市天气/那曲均可匹配。没有匹配就先询问城市，记忆、system、图片摘要和位置都不参与，也不在日志或 trace 记录城市/工具参数。
 
-上限为每轮 4 次客户端工具、默认 240 秒整轮预算、可见文字累计 8000 字（单次仍限 4000 字）、每轮一张图。`FIONA_CLAUDE_AGENT_TOTAL_SECONDS` 默认 `240`，合法范围 `60–290` 秒，非法值回落默认；每次请求时限取剩余预算与现有 BYOK 时限的较小值。整轮保持每用户锁，Claude 请求期间才占全局槽，工具执行释放全局槽并发送心跳；重新获取槽最多等 10 秒。
+上限为每轮 4 次客户端工具（含写歌工具）、默认 240 秒整轮预算、可见文字累计 8000 字（单次仍限 4000 字）、每轮一张图。`FIONA_CLAUDE_AGENT_TOTAL_SECONDS` 默认 `240`，合法范围 `60–290` 秒，非法值回落默认；每次请求时限取剩余预算与现有 BYOK 时限的较小值。整轮保持每用户锁，Claude 请求期间才占全局槽，工具执行释放全局槽并发送心跳；重新获取槽最多等 10 秒。
 
 本轮图片只处理发给 Claude 的副本：小图原样发送；长边超过 2000 像素或原始字节超过 3.5MB 时，在后台线程等比缩放到长边不超过 2000 像素。有透明通道的 PNG 保留 PNG，其他图片转 JPEG、质量 85；处理后仍超过 3.5MB 则继续缩小尺寸，media_type 与实际编码一致，上传落盘文件不变。
 
 工具生图失败通过 image_failed 状态清除生成提示，失败原因回灌 Claude 后继续正常作答；工具来源的 done 不因缺图报错，面板生图及其重试行为保持原样。多步两段文字之间加两个换行，同样保存到正文。工具异常累加到 agent_tool_errors，成功保存的整轮仍执行画像提取等后续任务；模式判定、pending 或会话确认等平台侧失败沿用平台文案。尚未交付任何文字、平台卡片或图片就请求失败时，不补发来源卡，也不落库。全局槽等待超时显示「自带模型通道繁忙，请稍后再试」；预算耗尽时，完成的图片必须落库或清理，不能留下孤立文件。
 
-已知局限：历史图片不再发送原图，仅发送「［图中：摘要］」文字；镜子模式不带工具；危机轮不进入智能体模式；卡片不落库，刷新后仅保留正文摘要和生成图。进入智能体路径即清除 pending，不读写工具补参；本轮只保存一条 assistant，按文字、卡片摘要和生图描述的交付顺序拼接。服务器端工具版本、结果块类型和 `usage.server_tool_use` 字段仍需作者用真实 Key 核实。
+已知局限：历史图片不再发送原图，仅发送「［图中：摘要］」文字；镜子模式不带工具；危机轮不进入智能体模式。卡片不落库（写歌项目卡例外：assistant 消息保存可空 `song_project_id`，刷新后按该项目重建；其余卡片刷新后仅保留正文摘要和生成图）。进入智能体路径即清除 pending，不读写工具补参；本轮只保存一条 assistant，按文字、卡片摘要和生图描述的交付顺序拼接。服务器端工具版本、结果块类型和 `usage.server_tool_use` 字段仍需作者用真实 Key 核实。
 
 在受控服务环境中设置 `FIONA_CLAUDE_AGENT=0` 可恢复旧 Claude 路由，无需修改用户 Key；默认开启。三个型号统一使用 `web_search_20250305`、`web_fetch_20250910`：带动态过滤的 `_20260209` 版本内部使用程序化工具调用，与本路径的 `disable_parallel_tool_use` 冲突，真实 Key 实测返回 400。
 
@@ -214,6 +281,8 @@ Claude 自己决定天气、旅行、路线、热榜和生图工具，可以把�
 图片模式默认 Qwen Image 3.0，也可选择 Seedream 5.0 Flash；登录后的 `/image-models` 只检查密钥是否配置，不探测模型权限。未开通时返回安全错误，不自动切换供应商。隐私数据流：Qwen 生图和修图将本轮描述及参考图发送给阿里云 DashScope；Seedream 将相同数据发送给字节跳动火山引擎，不发送聊天历史或私有记忆。两个图片模型每次都扣 10 颗草莓，失败照常退款。
 
 天气隐私数据流：每次只把用户本轮或最近对话里明确说出的城市名发送给阿里云百炼托管的高德地图服务，不发送聊天历史、私有记忆或用户位置，不做 IP 定位，不使用画像城市或默认城市。失败日志只含工具名、错误类型和耗时，不记录城市名、用户原话或上游响应；上游失败只向用户显示固定中文文案。天气卡最多展示四天中文日夜预报，不提供实时温度、体感温度或湿度；卡片结构不落库，仅保留文字摘要。部署后抽查应覆盖真实高德响应、失败卡退款、缺城市追问与取消。
+
+写歌隐私数据流：只有主人在写歌卡片上确认生成后，才把歌词与曲风参数发送给字节跳动火山引擎；Claude 侧仍使用用户自带的 Anthropic Key。火山 AK/SK 只从 `VOLC_MUSIC_ACCESS_KEY` / `VOLC_MUSIC_SECRET_KEY` 环境变量读取，不写入数据库、日志、trace、异常文案或响应；服务端日志只允许写项目/版本 ID、状态和错误码，不写歌词正文、音频 URL 或上游响应正文。`Captions` 原样保存、不解析，也不展示给其他用户。关闭写歌或用户不在白名单时，`/songs/*` 一律 404，Claude 请求体、提示词和消息保持原样。
 
 平台模型正常回复每条 10 颗草莓，预扣后只对已保存的平台模型回复、图片或成功真实工具结算；BYOK 普通/镜子纯文字回复不扣草莓并退还预扣，工具图成功时结算预扣，失败、追问及桌面占位工具也退还。余额 0 或不足10颗且启用BYOK时，仅自带模型聊天可继续；工具、看图、自然语言生图及显式图片模式保持草莓不足，守卫不消耗天气额度、不清pending。明确危机仍由平台回复，有余额按交付计费，余额不足时不调用回复模型、不落库、免费送资源；possible的BYOK聊天免费，失败先资源再错误。`DEV_MODE=1` 不预扣，零余额守卫为空操作。每日补给不降低较高余额，同日一次。
 
@@ -263,7 +332,7 @@ install -d -o fiona -g fiona -m 0700 /opt/fiona/frontend/.next/cache
 
 ### 后端服务
 
-`ProtectSystem=strict` 配合 `ReadWritePaths=/var/lib/fiona` 限制可写范围，所以生产必须设置 `FIONA_STUDIO_DIR=/var/lib/fiona/studio`，不能沿用代码目录内默认路径。保持单 worker。
+`ProtectSystem=strict` 配合 `ReadWritePaths=/var/lib/fiona` 限制可写范围，所以生产必须设置 `FIONA_STUDIO_DIR=/var/lib/fiona/studio` 和 `FIONA_SONG_DIR=/var/lib/fiona/songs`，不能沿用代码目录内默认路径。若把写歌目录改到 `/var/lib/fiona` 之外，必须同步扩充 `ReadWritePaths` 并保证服务账号可写，否则生成会在保存阶段失败并退款。保持单 worker；写歌轮询器也在进程内运行，启动多个 worker 会重复轮询和清理。
 
 创建 `/etc/systemd/system/fiona.service`：
 
@@ -452,10 +521,11 @@ curl --fail https://madchloechat.online/api/health
 11. 余额0和5的BYOK用户可聊天，工具/自然语言生图/看图被守卫且不消耗天气额度、不清pending；显式image模式保持草莓不足。
 12. 抽查byok_chat默认200与byok_test默认20额度、每用户一条、全进程8条、低/中默认120秒与高默认180秒总时限；高档预算不得超过240秒，生图另有150秒预算，检查两阶段每10秒心跳和Nginx两次读之间的300秒间隔；检查非法配置回退不打印值，trace不含Key/URL/用户模型名/原文。
 13. 核查服务端密钥单独保管且不进备份；轮换可解旧配置、丢失Key提示重填，删号后迟到保存不重建配置。
+14. 写歌白名单用户完成一次真实或模拟生成：确认卡片按钮才触发、预扣/退款、音频 Range 与 `AIGC` 标签、删除会话后 `song_*` 行与音频都被清理；开关关闭时 `/api/songs/*` 返回 404。详细步骤见“写歌智能体（P0）部署”的部署后冒烟。
 
-账户删除是破坏性操作，只能用专门创建的一次性测试账号验证。确认该账号的消息、匹配、真人消息、广场帖子、媒体文件及 user_model_configs 自带模型配置与加密Key都已删除，并检查后端日志没有文件清理失败。
+账户删除是破坏性操作，只能用专门创建的一次性测试账号验证。确认该账号的消息、匹配、真人消息、广场帖子、媒体文件及 user_model_configs 自带模型配置与加密Key都已删除，并检查写歌的 `song_projects`/`song_lyrics`/`song_versions` 行和 `FIONA_SONG_DIR` 下对应音频已清理，后端日志没有文件清理失败。
 
-`/health` 无需登录，接受 GET 和 HEAD：只读检查现有数据库及其可写权限、五道迁移和上传目录可写性；`FIONA_STUDIO != "0"` 时增加 `studio_storage` 工作室目录可写检查，关闭时不检查。整个检查最多等待 3 秒；成功返回 `{"status":"ok"}`，失败返回 503 和 `database/schema/uploads/studio_storage` 中失败的检查项名称，不泄露路径、异常正文、版本或提交。它不会探测外部模型服务。原来的 `/`（公网 `/api/`）仍只是进程级检查；后端从未成功启动时 `run.py` 以退出码 3 结束，使 systemd 能按失败重启。上传清理某轮异常只记录类型，下一轮继续，关停取消照常传播。
+`/health` 无需登录，接受 GET 和 HEAD：只读检查现有数据库及其可写权限、五道迁移和上传目录可写性；`FIONA_STUDIO != "0"` 时增加 `studio_storage` 工作室目录可写检查，关闭时不检查。写歌表和 `messages.song_project_id` 由 `init_db` 幂等创建/补列，不增加迁移版本，也不增加健康检查项，因此 `/health` 仍只校验五道迁移，不检查写歌目录或写歌表；写歌目录不可写只会在实际生成保存时失败并退款。整个检查最多等待 3 秒；成功返回 `{"status":"ok"}`，失败返回 503 和 `database/schema/uploads/studio_storage` 中失败的检查项名称，不泄露路径、异常正文、版本或提交。它不会探测外部模型服务。原来的 `/`（公网 `/api/`）仍只是进程级检查；后端从未成功启动时 `run.py` 以退出码 3 结束，使 systemd 能按失败重启。上传清理某轮异常只记录类型，下一轮继续，关停取消照常传播。
 
 ## 日常发布
 
@@ -471,7 +541,15 @@ sudo -u fiona env FIONA_DB_PATH=/var/lib/fiona/fiona.db \
     /opt/fiona/deploy/fiona-backup.sh
 ```
 
-备份脚本内的 `umask 077` 不影响更新用 shell。后端初始化时会开启 SQLite WAL 模式。发布、日常运行和手工导出时都必须用脚本内的 `sqlite3 .backup`（或 SQLite 在线备份 API）生成一致快照，不能只复制 `fiona.db` 主文件：未检查点的已提交数据可能仍在 `fiona.db-wal`。数据库、上传目录和存在时的工作室目录使用同一时间戳配套保管；在线媒体 tar 与数据库快照并非跨文件系统事务，要求严格同一时点时应先停止写入再备份。不要把 `fiona.db-wal`、`fiona.db-shm` 当成可独立恢复的备份。
+备份脚本内的 `umask 077` 不影响更新用 shell。后端初始化时会开启 SQLite WAL 模式。发布、日常运行和手工导出时都必须用脚本内的 `sqlite3 .backup`（或 SQLite 在线备份 API）生成一致快照，不能只复制 `fiona.db` 主文件：未检查点的已提交数据可能仍在 `fiona.db-wal`。数据库、上传目录和存在时的工作室目录使用同一时间戳配套保管；在线媒体 tar 与数据库快照并非跨文件系统事务，要求严格同一时点时应先停止写入再备份。**备份脚本尚未包含写歌目录（P2）**：`/var/lib/fiona/songs` 不在数据库、uploads、studio 三个包中。已启用写歌时，应在同一个停服窗口手工打包并与数据库快照配套保管，例如：
+
+```bash
+sudo -u fiona tar -czf "/var/backups/fiona/fiona-songs-$(date -u +%Y%m%dT%H%M%SZ).tar.gz" \
+    -C /var/lib/fiona songs
+chmod 0600 /var/backups/fiona/fiona-songs-*.tar.gz
+```
+
+写歌目录的包必须单独记录、同样限制访问，并在恢复演练时与数据库快照一起核对；只恢复数据库会留下有版本行但无音频的记录，或在新库启动孤儿清扫时删除未被引用的旧音频。不要把 `fiona.db-wal`、`fiona.db-shm` 当成可独立恢复的备份。
 
 发布前备份也受默认 14 天保留期约束，到期会自动清理。BYOK 密文在日常数据库备份中最多保留 14 天，`FIONA_BYOK_SECRET` 及 `PREVIOUS` 须单独保管、不放入数据库或媒体备份。需要超出 14 天长期归档时，先从一致快照制作归档副本，并在另存前仅对**副本**执行：
 
@@ -503,13 +581,13 @@ systemctl status fiona fiona-web
 
 当前 `npm run lint` 已恢复为绿色，但仍有非阻断警告。发布者必须人工查看 Lint 输出，不能把生产构建成功等同于所有维护债务已经清零。
 
-数据库兼容 DDL 会在后端启动时执行。既有迁移增加了 `users.session_version`、邀请码撤销/用量字段、`posts.owner_username`、`upload_cleanup_queue` 和可空列 `users.strawberry_refill_date`；兼容建表包括 `retired_usernames(username TEXT PRIMARY KEY, retired_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP)` 和 `user_model_configs`（加密用户Key、模型配置、启用位与 `effort TEXT NOT NULL DEFAULT 'low'`）表；后者直接在 init_db 执行DDL，紧接着用容错 ALTER TABLE 补 `effort`，老库启动时自动补列、已有行取 low，不增加迁移版本号，五道迁移检查不变，并启用持久的 WAL 模式与统一的 SQLite busy timeout。新账号初始 `session_version` 为随机正整数，旧账号版本保持原值，不强制重新登录；删号事务记录退役用户名，之后的 `testerNN` 发码跳过它。后端启动还会回填可识别的旧帖子 owner，并重试队列中的文件清理。由于当前没有通用迁移和自动回滚，任何涉及 `database.py` 的发布都必须先同时备份数据库、上传目录和工作室目录。
+数据库兼容 DDL 会在后端启动时执行。既有迁移增加了 `users.session_version`、邀请码撤销/用量字段、`posts.owner_username`、`upload_cleanup_queue` 和可空列 `users.strawberry_refill_date`；写歌变更增加可空列 `messages.song_project_id`，并由 `init_db` 幂等创建 `song_projects`、`song_lyrics`、`song_versions`、`song_cleanup_queue` 四张表，不新增迁移版本号。兼容建表还包括 `retired_usernames(username TEXT PRIMARY KEY, retired_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP)` 和 `user_model_configs`（加密用户Key、模型配置、启用位与 `effort TEXT NOT NULL DEFAULT 'low'`）表；后者直接在 init_db 执行DDL，紧接着用容错 ALTER TABLE 补 `effort`，老库启动时自动补列、已有行取 low，不增加迁移版本号，五道迁移检查不变，并启用持久的 WAL 模式与统一的 SQLite busy timeout。新账号初始 `session_version` 为随机正整数，旧账号版本保持原值，不强制重新登录；删号事务记录退役用户名，之后的 `testerNN` 发码跳过它。后端启动还会回填可识别的旧帖子 owner，并重试队列中的文件清理。由于当前没有通用迁移和自动回滚，任何涉及 `database.py` 的发布都必须先同时备份数据库、上传目录、工作室目录和启用时的写歌目录；写歌目录 `FIONA_SONG_DIR` 尚未纳入备份脚本（P2），升级或回滚前须手工复制并按“定时备份”一节记录缺口。
 
 ## 邀请码、会话与草莓运维
 
 在后端目录运行本机管理命令。明确传入服务使用的环境文件；脚本会在导入数据库模块前读取它，并向 stderr 显示配置文件路径与解析后的数据库绝对路径。命令行 `--env-file` 优先于 `FIONA_ENV_FILE`；两者都未指定时默认 `backend/.env`，与服务进程一致。生产示例应显式传 `--env-file /etc/fiona/fiona.env`。进程中已设置的环境变量仍优先。运行账号必须能读取配置文件并写入实际数据库。当前示例的环境文件为 `root:root 0600`，因此用有读取权限的运维账号执行管理脚本时，应先停止 `fiona` 服务；命令结束后按下方步骤修正数据库、`-wal`、`-shm` 属主，再启动服务，避免运维账号创建的伴生文件阻止服务账号写入。若需不停服在线执行，应先提供服务账号可读的受控配置及可写的备份目的地，并以服务账号运行数据库命令。
 
-三个脚本进入初始化路径时会执行与服务启动相同的兼容 DDL（只加列、建表或索引），并可能启用 WAL、执行旧帖 owner 回填及版本化迁移；对已有数据库运行发码、邀请码管理或草莓 `grant/set`，即使未传 `--init-db` 也会进入此路径。请先用 `.backup` 备份数据库、同时备份媒体，再运行这些命令。`manage_strawberries.py list` 默认跳过初始化与迁移，以只读连接查看库内原始余额和最近补给日期，不触发每日补给；显式传 `--init-db` 时则会初始化数据库。`grant`、`set` 先应用当日补给再修改余额。
+三个脚本进入初始化路径时会执行与服务启动相同的兼容 DDL（只加列、建表或索引），并可能启用 WAL、执行旧帖 owner 回填及版本化迁移；对已有数据库运行发码、邀请码管理或草莓 `grant/set`，即使未传 `--init-db` 也会进入此路径。请先用 `.backup` 备份数据库、同时备份媒体（写歌启用时另含 `FIONA_SONG_DIR` 音频），再运行这些命令。`manage_strawberries.py list` 默认跳过初始化与迁移，以只读连接查看库内原始余额和最近补给日期，不触发每日补给；显式传 `--init-db` 时则会初始化数据库。`grant`、`set` 先应用当日补给再修改余额。
 
 ```bash
 cd /opt/fiona/backend
@@ -559,14 +637,17 @@ journalctl -u fiona-web -f
 1. `systemctl status` 是否显示进程存活。
 2. 本机 8000 和 3000 是否可访问。
 3. `nginx -t` 和 Nginx error log。
-4. `/etc/fiona/fiona.env` 是否缺少 Key，且权限是否为 `0600`。
-5. `/var/lib/fiona/fiona.db`、`/var/lib/fiona/uploads/` 和 `/var/lib/fiona/studio/` 是否只允许服务账号写入。
+4. `/etc/fiona/fiona.env` 是否缺少 Key（写歌启用时还包括 `VOLC_MUSIC_ACCESS_KEY` / `VOLC_MUSIC_SECRET_KEY`），且权限是否为 `0600`。
+5. `/var/lib/fiona/fiona.db`、`/var/lib/fiona/uploads/`、`/var/lib/fiona/studio/` 和写歌目录 `/var/lib/fiona/songs/` 是否只允许服务账号写入。
 6. SSE 是否被代理缓冲，WebSocket Upgrade 头是否保留。
-7. DashScope 或外部热点源是否发生超时/额度问题。
+7. DashScope、火山方舟、火山 AI 音乐或外部热点源是否发生超时/额度问题。
+8. 写歌失败时先看固定错误码：`ffmpeg_unavailable`（缺 ffmpeg/ffprobe）、`invalid_audio`（转码或 `AIGC` 回读失败）、`result_host`（结果域名不符）、`storage_error`（写歌目录不可写或权限错误）、`submit_unknown` / `uncertain`（上游结果不确定，已退款）。日志不应包含歌词、密钥、音频 URL 或上游响应正文；缺 AK/SK 时生成接口直接 409「写歌服务未配置」。
 
 ## 定时备份
 
 仓库 `deploy/fiona-backup.sh` 使用 SQLite `.backup` 在线生成一致数据库快照，转为独立的非 WAL 文件并要求 `PRAGMA integrity_check` 为 `ok`，再打包上传目录，并在工作室目录存在时生成第三个 `fiona-studio-*.tar.gz` 包；两个媒体包都排除隐藏文件、隐藏目录和 `.part` 文件。所有备份共用 UTC 时间戳和进程号，媒体 tar 分别固定带 `uploads/`、`studio/` 前缀；脚本全程 `umask 077`，成品权限 `0600`。数据库或 uploads 严重失败时非零退出并清理临时文件和未完成配对；uploads 的 tar 因文件变化返回 1 时会告警，保留已验证的数据库快照及已生成的 uploads 包，退出码为 1，此 uploads 包可能不完整，需重新备份。工作室打包的任何非零退出独立处理：告警并丢弃本次工作室临时包，照常发布数据库快照与 uploads 包，保留全部旧工作室包并暂停其轮转，最终以退出码 **1** 表示部分失败；下次工作室打包成功后恢复正常轮转。全部成功退出 0。默认仅清理备份目录第一层中本脚本命名的、达到 14 个完整 24 小时的旧备份，不递归删除子目录。`test_studio_backup.py` 以本地临时库和模拟 tar 退出码覆盖成功及工作室部分失败。
+
+**备份脚本尚未包含写歌目录（P2）**：`FIONA_SONG_DIR`（生产 `/var/lib/fiona/songs`）不在这三个包内，脚本也不会读取该变量或删除其旧文件。写歌启用后，完整备份必须额外按“日常发布”里的命令手工打包 `songs/`，并与同时间戳数据库快照配套保管；只有数据库和 uploads/studio 包不能声称写歌可完整恢复。
 
 备份必须以数据库属主账号 `fiona` 运行；脚本拒绝不同属主账号，避免在线库旁生成 root 属主的 `-wal`、`-shm`。备份目录设为 `fiona:fiona 0700`，不能由 Nginx 暴露。安装脚本和两个 unit：
 
@@ -593,13 +674,13 @@ systemctl list-timers fiona-backup.timer
 journalctl -u fiona-backup -n 100 --no-pager
 ```
 
-timer 每天北京时间 04:00 执行，`Persistent=true` 补跑错过的任务。systemd 读取 `/etc/fiona/fiona.env` 后以 `fiona` 执行；数据库、上传与备份目录分别由 `FIONA_DB_PATH`、`FIONA_UPLOADS_DIR`、`FIONA_BACKUP_DIR` 覆盖，`FIONA_BACKUP_RETENTION_DAYS` 覆盖保留天数。若改到默认目录以外，还须用 service drop-in 扩充 `ReadWritePaths`，确保目录属主和权限匹配。
+timer 每天北京时间 04:00 执行，`Persistent=true` 补跑错过的任务。systemd 读取 `/etc/fiona/fiona.env` 后以 `fiona` 执行；数据库、上传与备份目录分别由 `FIONA_DB_PATH`、`FIONA_UPLOADS_DIR`、`FIONA_BACKUP_DIR` 覆盖，`FIONA_BACKUP_RETENTION_DAYS` 覆盖保留天数。写歌目录当前不由脚本读取；若以后把 `FIONA_SONG_DIR` 纳入备份，还须同步扩充 service 的 `ReadWritePaths` 和保留策略。若改到默认目录以外，还须用 service drop-in 扩充 `ReadWritePaths`，确保目录属主和权限匹配。
 
-每次备份成功后，用受控运维账号通过 SSH 加密传输（`scp` 或 `rsync`）把同时间戳的数据库和媒体包一起拷到服务器以外；目的端目录和文件分别保持 `0700`、`0600`，另设异地保留策略并定期取回演练。不要把模型密钥、JWT Secret 或真实备份地址写进仓库。
+每次备份成功后，用受控运维账号通过 SSH 加密传输（`scp` 或 `rsync`）把同时间戳的数据库和媒体包一起拷到服务器以外；若已手工打包写歌目录，也要一起传输。目的端目录和文件分别保持 `0700`、`0600`，另设异地保留策略并定期取回演练。不要把模型密钥、JWT Secret 或真实备份地址写进仓库。
 
 ## 旧备份恢复演练
 
-全程只操作副本，不启动任何服务。绝不能拿唯一一份备份直接启动后端：启动不仅迁移，还会把进行中的交流改为停止、结算未决调用、恢复工作室任务并按清理队列删上传文件和工作室项目目录。以下先把同时间戳数据库与媒体包复制到演练目录；有工作室数据时必须同时取回第三个 studio 包；将时间戳替换成真实备份名：
+全程只操作副本，不启动任何服务。绝不能拿唯一一份备份直接启动后端：启动不仅迁移，还会把进行中的交流改为停止、结算未决调用、恢复工作室任务、按清理队列删上传文件和工作室项目目录；**写歌开关开启时还会 drain 写歌清理队列并做孤儿清扫**，删除 `FIONA_SONG_DIR` 下数据库未引用的音频。以下先把同时间戳数据库与媒体包复制到演练目录；有工作室数据时必须同时取回第三个 studio 包；写歌音频不在脚本包内，若该时间点已启用写歌，必须单独取回同一时间点手工打包的 `songs/` 包并先核对内容。将时间戳替换成真实备份名：
 
 ```bash
 backup_db=/var/backups/fiona/fiona-db-YYYYMMDDTHHMMSSZ-PID.sqlite3
@@ -651,14 +732,15 @@ sudo -u fiona sqlite3 -readonly "$rehearsal/fiona.db" 'PRAGMA integrity_check;'
 
 ## 监控与告警
 
-从服务器以外的拨测服务，或另一台机器上的 cron，定时用 **GET** 访问 `https://<域名>/api/health`，以便同时核对响应体。用 HTTP 非 2xx、连接失败或超时触发通知；例如 cron 每分钟执行 `curl --request GET --fail --silent --show-error --max-time 10 https://<域名>/api/health` 并把失败交给该机器已有的邮件/通知机制。应用不接入第三方监控服务，也不在 `/health` 中调用 DashScope、DeepSeek。
+从服务器以外的拨测服务，或另一台机器上的 cron，定时用 **GET** 访问 `https://<域名>/api/health`，以便同时核对响应体。用 HTTP 非 2xx、连接失败或超时触发通知；例如 cron 每分钟执行 `curl --request GET --fail --silent --show-error --max-time 10 https://<域名>/api/health` 并把失败交给该机器已有的邮件/通知机制。应用不接入第三方监控服务，也不在 `/health` 中调用 DashScope、DeepSeek 或火山接口；写歌表、写歌目录和火山凭据都不进入健康检查。
 
 ```bash
 journalctl -u fiona -u fiona-web -u fiona-backup -n 200 --no-pager
+journalctl -u fiona | grep '\[song\]' | tail -50
 systemctl --failed
 ```
 
-可在 `fiona.service`、`fiona-web.service` 和 `fiona-backup.service` 的 `[Unit]` drop-in 中设置 `OnFailure=fiona-alert@%n.service`，由作者配置对应的通知 oneshot unit；凭据放在受控环境文件，不写进仓库。后端启动失败退出 3、备份步骤失败非零退出，便于 systemd 记录 failed 并触发通知。发布前由作者手动在 **DashScope、DeepSeek 和火山引擎控制台设置消费告警**，并确认通知接收人和阈值。
+可在 `fiona.service`、`fiona-web.service` 和 `fiona-backup.service` 的 `[Unit]` drop-in 中设置 `OnFailure=fiona-alert@%n.service`，由作者配置对应的通知 oneshot unit；凭据放在受控环境文件，不写进仓库。后端启动失败退出 3、备份步骤失败非零退出，便于 systemd 记录 failed 并触发通知。发布前由作者手动在 **DashScope、DeepSeek、火山方舟和火山 AI 音乐控制台设置消费告警**，并确认通知接收人和阈值；写歌按秒后付费，需单独核对 AI 音乐账单、公共资源池 QPS 和应用层每日上限。
 
 systemd < 254 时，服务自动重启期间不会进入 failed 状态。仅设 `RestartSec=3` 可能一直重启，无法触发 `OnFailure`。在自动重启的后端和前端 unit 的 `[Unit]` 中配置 `StartLimitIntervalSec=300`、`StartLimitBurst=5`，限制 300 秒内最多启动 5 次，后续重试被拒绝后进入 failed；用 `systemctl daemon-reload` 应用配置，再在目标机验证启动失败通知。外部 GET 拨测仍须独立启用。
 
@@ -666,7 +748,7 @@ systemd < 254 时，服务自动重启期间不会进入 failed 状态。仅设 
 
 代码回滚应使用发布前记录的提交或正式发布标签，重新安装依赖、重新构建前端，再重启两个服务。不要只恢复 `.next` 目录。
 
-如果新版本已经改变 SQLite schema，应优先把备份恢复到 `/var/lib/fiona/fiona.db`，再启动旧代码；同时恢复匹配时间点的 `/var/lib/fiona/uploads/` 和 `/var/lib/fiona/studio/` 备份，避免消息记录和文件不一致。
+如果新版本已经改变 SQLite schema，应优先把备份恢复到 `/var/lib/fiona/fiona.db`，再启动旧代码；同时恢复匹配时间点的 `/var/lib/fiona/uploads/`、`/var/lib/fiona/studio/` 和写歌目录 `/var/lib/fiona/songs/` 备份，避免消息记录和文件不一致。写歌目录不在 `fiona-backup.sh` 的包里，必须使用同一时间点手工打包的 `songs/` 包；若只有数据库快照而缺少对应音频包，不能声称写歌已完整恢复。恢复旧数据库后，数据库可能不再引用较新的音频文件；若写歌开关会开启，启动时的孤儿清扫会删除这些未被引用的 `<32位hex>.mp3`。因此恢复前先把当前 `songs/` 另存，再按对齐的时间点恢复，或在停服状态核对音视频后再启动。
 
 恢复前先停后端：
 
@@ -715,18 +797,34 @@ sudo -u fiona env FIONA_UPLOADS_DIR=/var/lib/fiona/uploads \
     .venv/bin/python scripts/strip_upload_metadata.py --env-file /var/lib/fiona/restore-media.env --apply
 ```
 
-清理必须以服务账号对**生产**上传目录执行，并在启动服务前完成。此脚本仅需显式指定的上传目录，用临时的空环境文件避免服务账号读取仅 root 可读的密钥配置。核对 dry-run 盘点、apply 退出码以及失败数为 0；有失败就保持停服并处理。成功后删除 `/var/lib/fiona/restore-media.env`。旧上传权限会被保留，核对权限后以服务账号执行 `find /var/lib/fiona/uploads -type f -exec chmod 0600 {} +`，使恢复文件仅由后端提供静态访问。随后再启动服务、检查日志并跑完整冒烟测试。生产数据库恢复属于破坏性操作，不应在没有确认备份的情况下临时尝试。
+清理必须以服务账号对**生产**上传目录执行，并在启动服务前完成。此脚本仅需显式指定的上传目录，用临时的空环境文件避免服务账号读取仅 root 可读的密钥配置。核对 dry-run 盘点、apply 退出码以及失败数为 0；有失败就保持停服并处理。成功后删除 `/var/lib/fiona/restore-media.env`。旧上传权限会被保留，核对权限后以服务账号执行 `find /var/lib/fiona/uploads -type f -exec chmod 0600 {} +`，使恢复文件仅由后端提供静态访问。
+
+写歌音频的恢复也保持停服，并先另存当前目录。手工包若按“日常发布”命令生成，顶层是 `songs/`，用 `--strip-components=1` 落到 `/var/lib/fiona/songs`；`saved_songs` 必须是不存在的目录名：
+
+```bash
+backup_songs=/var/backups/fiona/fiona-songs-YYYYMMDDTHHMMSSZ.tar.gz
+saved_songs=/var/lib/fiona/songs-pre-restore-YYYYMMDDTHHMMSSZ
+tar -tzf "$backup_songs"
+mv /var/lib/fiona/songs "$saved_songs"
+install -d -o fiona -g fiona -m 0700 /var/lib/fiona/songs
+sudo -u fiona tar -xzf "$backup_songs" -C /var/lib/fiona/songs --strip-components=1
+chown -R fiona:fiona /var/lib/fiona/songs
+find /var/lib/fiona/songs -type f -exec chmod 0600 {} +
+```
+
+确认 `songs/` 包与数据库快照同一时间点后再启动；写歌开关开启时，启动会删除数据库未引用的音频，若数据库和音频包时间不一致，先不要启动并人工核对。随后再启动服务、检查日志并跑完整冒烟测试。生产数据库恢复属于破坏性操作，不应在没有确认备份的情况下临时尝试。
 
 ## 发布前安全检查
 
 - `DEV_MODE=0`，`JWT_SECRET` 不是开发默认值。
 - HTTPS 正常，登录响应的 `fiona_token` Cookie 带 `Secure`、`HttpOnly` 和 `SameSite=Lax`；HTTP/WebSocket URL 中没有 Token。
-- `/etc/fiona/fiona.env`、`/var/lib/fiona` 和备份目录不可被 Nginx 静态暴露。
+- `/etc/fiona/fiona.env`、`/var/lib/fiona` 和备份目录不可被 Nginx 静态暴露；`/var/lib/fiona/songs` 不在任何静态 `location` 中。
 - 未登录访问 `/api/docs`、`/api/openapi.json` 返回 404（`DEV_MODE=0` 时后端关闭 API 文档），`/api/hot/expand` 返回 401（后端始终要求登录）；无需 Nginx 额外配置。
+- 写歌若启用：`FIONA_SONG_AGENT=1`、`FIONA_SONG_USERS` 只含授权账号、`VOLC_MUSIC_ACCESS_KEY`/`VOLC_MUSIC_SECRET_KEY` 只在环境文件且权限受控、`FIONA_SONG_DIR=/var/lib/fiona/songs` 且目录属主为 `fiona`；关闭时确认 `/api/songs/*` 为 404。
 - Nginx 请求体、连接、速率和超时限制符合当前容量。
 - 已检查所有反代入口覆盖 X-Real-IP 并追加 X-Forwarded-For，`FIONA_TRUSTED_PROXIES` 只包含真实代理。
-- 已演练旧备份迁移和媒体恢复，启用定时备份与异地保存，确认外部 `/api/health` 拨测与 systemd 失败通知。
-- 作者已在 DashScope、DeepSeek 和火山引擎控制台手动设置消费告警，确认阈值和接收人。
+- 已演练旧备份迁移和媒体恢复，启用定时备份与异地保存，确认外部 `/api/health` 拨测与 systemd 失败通知；写歌启用时已额外手工备份 `/var/lib/fiona/songs`（脚本尚未包含，P2）。
+- 作者已在 DashScope、DeepSeek 和火山引擎控制台手动设置消费告警，确认阈值和接收人；写歌启用时特别核对 AI 音乐后付费账单和 QPS 限制。
 - 桌面端发布前已完成 Tauri capability、URL opener 和 CSP 整改。
 - 已处理 [PLAN.md](../PLAN.md) 中所有标为“发布阻断”的项目。
 - 已用一次性测试账号验证完整账户删除和失败文件清理重试。
@@ -768,6 +866,75 @@ sudo -u fiona env FIONA_UPLOADS_DIR=/var/lib/fiona/uploads \
 平台分别使用服务器环境中的 DASHSCOPE_API_KEY、DEEPSEEK_API_KEY、ARK_API_KEY；不提供平台 Claude。Claude 只能使用用户已启用的 BYOK；仅 anthropic/dashscope/deepseek 预设和引擎已知型号开放。发布前应告知作者：思路、圣经、正文与留言会发送给所选的阿里云百炼、DeepSeek、火山方舟或用户自带厂商（可能含 Anthropic）。小说表不存 Key 或完整提示词，日志只含运行元数据。
 
 启动以 CREATE TABLE IF NOT EXISTS 创建 novels、novel_bible_versions、novel_chapters、novel_steps、novel_notes，不增加迁移版本，该小说工坊变更不增加健康检查项。备份 SQLite 会包含私有小说正文与模型产物，应按私有数据管理。关闭时先取消小说任务并退款；重启时先退还未结算预扣、标为 interrupted，再按并发槽恢复 setup_running/running 任务。删书与删号删除五张表中的对应记录。
+
+## 写歌智能体（P0）部署
+
+写歌 P0 只对 **Claude 智能体模式** 开放：请求必须是普通 `chat`、危机级别为空、BYOK 已启用且 `provider == "anthropic"`、配置无错误，并且 `FIONA_SONG_AGENT=1`、当前用户名精确出现在 `FIONA_SONG_USERS` 中。开关默认 `0`，白名单默认空；两者任一不满足时 `/songs/*` 一律 404，Claude 请求体、system 提示词和消息逐字节不变。平台模型、非 Claude BYOK、镜子轮和危机轮都不开放写歌。
+
+### 开关、配额与计费
+
+- `FIONA_SONG_AGENT` 默认 `0`，只有字面 `1` 开启；`FIONA_SONG_USERS` 为逗号分隔的精确用户名，空白名单表示无人可用。
+- `FIONA_SONG_STRAWBERRIES` 默认 `30`（1–500），每次生成预扣；只能由主人在写歌卡片上点按钮并确认后触发，模型不能代扣或代生成。
+- `FIONA_DAILY_SONGS` 默认 `10`（1–100），按上海自然日按数据库计数；被拒版本不计入，但 `DEV_MODE=1` **不豁免**。
+- `FIONA_SONG_MAX_INFLIGHT` 默认 `2`（1–5），统计 `queued`、`submitting`、`submitted`、`running`、`downloading` 五种在途状态。
+- 失败、结果不确定、超时、`rejected`、`expired` 均自动退回且只退一次；`DEV_MODE=1` 不扣不退。余额不足 402，歌词过期/未通过自检 409，在途或当日超限 429，缺 AK/SK 返回 409「写歌服务未配置」且不发请求。
+- 每次生成 1 版；`GenSongForTime` 付费 POST 只发一次，超时、断连、5xx、坏 JSON 记 `uncertain` 并退款，不自动重试。`QuerySong` 只做只读轮询。
+
+### 火山引擎开通与子账号密钥
+
+1. 用主账号打开 **`https://console.volcengine.com/ai-music/product`**，开通「生成人声歌曲」后付费（标准版）。地域使用 `cn-beijing`，服务名 `imagination`；本项目固定 `ModelVersion=v4.3`，只调用 `GenSongForTime` 和 `QuerySong`。不要开通或复用方舟 `ARK_API_KEY`，写歌密钥与 Seedream/方舟不是同一套凭据。
+2. 登录火山引擎控制台，右上角账号 →「密钥管理」新建**子账号密钥**（AK/SK）。最小权限原则：只授予 AI 音乐（`imagination`）的 `GenSongForTime` / `QuerySong` 调用权限，不授予项目管理员、账单、IAM 或其他产品权限；若控制台只能按产品授权，只勾选 AI 音乐，不附加其他策略。不要使用主账号 AK/SK，也不要把密钥交给 Claude 或前端。
+3. 把 AK/SK 只写入 `/etc/fiona/fiona.env` 的 `VOLC_MUSIC_ACCESS_KEY` / `VOLC_MUSIC_SECRET_KEY`，文件保持 `root:root 0600` 或同等级受控权限。密钥只在请求期间从环境变量读取，不写数据库、日志、trace、异常文案或响应；轮换时更新环境文件并重启后端，不修改数据库。
+4. 价格按后付费标准版 **0.002 元/秒** 估算，时长范围 30–240 秒（200 秒约 0.4 元）；公共资源池 QPS ≤ 2，企业用户首次开通可能有 0 元 200 首试用包（1 个月，以控制台实时价格和活动为准）。应用层另有每用户每日 10 次、在途 2 次和生成路由 10 次/分钟的限制，这些都不能替代火山侧的额度与消费告警。发布前由作者在火山引擎控制台设置消费告警。
+
+### 四个 Claude 工具与提示词
+
+写歌开启的轮次按请求追加四个 Claude 客户端工具；写歌关闭时仍只有 `CLAUDE_CLIENT_TOOLS` 里的 5 个工具，请求、提示词和消息逐字节不变：
+
+- `song_save_brief`：新建或更新创作简报与结构蓝图，没有 `project_id` 时绑定本轮会话创建项目。
+- `song_save_lyrics`：提交整首歌词，使用 `base_revision` 乐观锁，过期时返回「歌词已被更新」而不覆盖。
+- `song_revise_section`：只替换指定段落，其余段落逐字保留；P0 不调用火山做局部编辑。
+- `song_get_status`：只读返回简报、结构、最新歌词、自检结果和最近版本。
+
+工具只读写本地 SQLite，不扣草莓、不调用火山；项目必须属于当前用户且属于本轮会话，否则返回「找不到这个写歌项目」。写歌开启时，把固定写歌模式提示词拼进系统提示（`_final_system_prompt` 的入参），基础安全规则仍在最后一条 system 消息末尾且恰好出现一次；本轮 user 消息中附本会话最近一个写歌项目摘要（标题、稿号、自检问题数、最近生成状态）；本轮最多 4 次客户端工具，写歌工具也计入。工具结果回传后，卡片摘要写入 assistant 正文，`messages.song_project_id` 保存本轮项目 id；刷新后前端按该项目重建卡片，同一项目在多条消息中出现时只有最后一条显示完整卡片。
+
+### 数据目录、标识与访问
+
+- 生产必须设置 `FIONA_SONG_DIR=/var/lib/fiona/songs`；本地默认 `backend/song_data`（相对 `backend/` 解析）。创建目录时使用 `install -d -o fiona -g fiona -m 0700 /var/lib/fiona/songs`。
+- systemd 的 `ProtectSystem=strict` 只允许写 `/var/lib/fiona`；写歌目录必须在该路径下，否则需同步扩充 `ReadWritePaths` 并由服务账号持有。写歌目录**不能**放在 `/opt/fiona`、`/var/www`、`uploads/` 或任何 Nginx 静态根内。
+- 音频只经后端 `/songs/versions/{id}/audio`（公网为 `/api/songs/versions/{id}/audio`）鉴权返回，支持 `Range`，带 `Cache-Control: private, no-store`；Nginx 不要为写歌目录配置 `root`、`alias` 或自动索引。文件名为 `<version_id>.mp3`，不是用户可控路径。
+- 生成完成后写入 ID3v2.4 `TXXX:AIGC` 隐式标识，至少包含 `ContentProducer`（`FIONA_AIGC_PRODUCER`，默认 `Fiona`）和 `ProduceID`（版本 id）；界面页眉常驻「AI 生成」。`FIONA_SONG_EXPLICIT_WATERMARK` 默认 `1`，只有字面 `0` 关闭火山显式水印；关闭显式水印不等于去掉隐式标识和界面提示。
+- 依赖系统 `ffmpeg`/`ffprobe` 和 `libmp3lame`：下载后统一转 mp3、写入标识并用 `ffprobe` 回读 `AIGC` 和时长；缺少 ffmpeg 或转码失败会标记失败并退款，不会静默降级或保存无标识音频。
+- 服务日志只允许写项目/版本 ID、状态和固定错误码，不写歌词正文、密钥、音频 URL、上游响应正文或本地绝对路径。
+
+### 删除、清理与重启恢复
+
+- 删号、删会话、清空历史都会在**原有事务内**删除对应的 `song_projects` / `song_lyrics` / `song_versions` 行，把 `audio_rel_path` 登记到 `song_cleanup_queue`，事务提交后才 drain。删号还会删除该用户全部写歌行。
+- 清理只删除 `FIONA_SONG_DIR` 根目录内的普通文件：`resolve()` 后必须在根内，拒绝符号链接、`..` 和根目录本身；根外路径、目录和其他错误保留队列等待下次。
+- 仅当 `FIONA_SONG_AGENT=1` 时，lifespan 才在启动时 drain 队列、执行孤儿清扫并启动轮询器。孤儿清扫删除数据库中没有任何 `song_versions.audio_rel_path` 指向的 `<32位hex>.mp3`，以及超过 1 小时的 `.part` 临时文件；开关关闭时完全不触碰写歌目录。轮询器在进程内每 5 秒轮询、每 60 秒 drain 一次。
+- 重启恢复：`submitting` → `uncertain` 并退款（不知道上游是否已建任务）；`queued` 重新调度提交；`downloading` → `running` 并立即重查；`submitted`/`running` 继续轮询。删号后迟到的轮询/下载写库影响 0 行，刚下载的文件会被删除，不能复活账号数据。
+- 备份脚本尚未包含写歌目录（P2）。当前 `deploy/fiona-backup.sh` 只打包数据库、`uploads` 和存在时的 `studio`；`/var/lib/fiona/songs` 不在任何包内。需要完整恢复写歌音频时，必须在同一维护窗口手工复制写歌目录并与数据库快照配套保管；只恢复数据库会留下无音频的版本行，或在新库启动孤儿清扫时删除未被引用的旧音频，见下文“定时备份”和“回滚与恢复”。
+
+### 健康检查与升级
+
+写歌不新增迁移版本：`messages.song_project_id` 和四张 `song_*` 表由 `init_db` 幂等补列/建表，`/health` 仍只校验五道迁移、数据库可写、上传目录和（工作室开启时的）工作室目录，不检查写歌目录或写歌表。老库升级按“老库升级步骤（messages.song_project_id + 写歌表）”执行；升级前必须停后端、用 `.backup` 备份并先在临时副本上演练。
+
+### 已知局限
+
+- 火山没有局部编辑：改一段词只能整首重新生成，旋律不保证延续；P0 只接火山，不做腾讯 MPS/MiniMax，也不做两版对比。
+- `Captions` 格式未文档化，P0 原样存 `captions_raw`，不解析、不生成 LRC 或时间轴。
+- 只对 Claude 智能体模式开放，平台模型和其他 BYOK 厂商不能写歌；每次生成 1 版。
+- 备份脚本尚未包含写歌目录（P2）；生产恢复必须单独处理音频。
+- 写歌目录不可写不会让 `/health` 失败，只会在生成保存阶段失败并退款；部署后应单独做一次真实生成冒烟。
+
+### 部署后冒烟
+
+1. 用一个已启用 Anthropic BYOK、在 `FIONA_SONG_USERS` 白名单内的账号，说「帮我写首歌」，确认 Claude 调用四个工具之一，回复末尾出现写歌卡片。
+2. 在卡片点「生成试听」并确认，核对预扣草莓、202 响应、进度从排队到完成；播放音频，并用 `curl -H 'Range: bytes=0-1'` 验证 206。
+3. 用 `ffprobe -v error -show_entries format_tags -of json <文件>` 确认 `format.tags.AIGC` 的 `ProduceID` 等于版本 id；界面页眉显示「AI 生成」。
+4. 制造一次失败或不确定（测试环境可用假供应商），确认只退回一次草莓，且余额与版本状态一致。
+5. 删除该会话或清空历史，确认对应 `song_*` 行为 0、音频文件被删除；再检查 `/health` 仍为 ok。
+6. 关掉 `FIONA_SONG_AGENT` 后重试 `/songs/*`，应全部 404，Claude 请求体与提示词恢复原样。
 
 ## 短片工作室 WO1 运维
 

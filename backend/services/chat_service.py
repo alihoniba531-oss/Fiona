@@ -771,6 +771,7 @@ class ChatState:
     crisis: bool = False
     crisis_level: str | None = None
     crisis_resource_sent: bool = False
+    song_project_id: str | None = None
 
 
 @dataclass
@@ -973,6 +974,7 @@ async def _save_response(ctx: ChatContext, state: ChatState, image_path: str | N
     """所有分支固定写入请求开始时的会话，删除后不重建也不扣费。"""
     state.response_saved = bool(await save_message(
         ctx.user, "assistant", state.full_response, image_path=image_path, conversation_id=ctx.conversation_id,
+        song_project_id=state.song_project_id,
     ))
     if not state.response_saved:
         raise RuntimeError("conversation no longer available")
