@@ -1,0 +1,82 @@
+id: scene-confrontation
+type: scene
+title: 争执对峙
+summary: 2 人或小群体围绕不相容要求互相施压，用距离、高低位和语气升级逼出选择。
+tags: [confrontation, conflict, standoff, two-person, dialogue-driven]
+sources:
+  - {name: 作者规则、P01 约 3.9 秒/镜与生成下限（经验值，待作者成片统计校准）, license: own, ref: docs/tasks/2026-10-18-studio-wo3e-director-kb/00-house-rules.md}
+  - {name: 分集拆镜规范, license: own, ref: ~/Desktop/视频生成/.claude/skills/shortfilm-pipeline/references/02-分集拆镜.md}
+  - {name: 声画时间轴规范, license: own, ref: ~/Desktop/视频生成/.claude/skills/shortfilm-pipeline/references/05-声画时间轴.md}
+  - {name: 台词停顿与重音, license: MIT, ref: ~/.claude/skills/ai-visual-director/knowledge/dialogue-rhythm.md}
+  - {name: 身体语言与姿态, license: MIT, ref: ~/.claude/skills/ai-visual-director/knowledge/body-language.md}
+  - {name: 微表情与视线路径, license: MIT, ref: ~/.claude/skills/ai-visual-director/knowledge/micro-expressions.md}
+  - {name: seedance-shot-design-scenarios, license: MIT-0, ref: references/scenarios.md}
+  - {name: seedance-shot-design-cinematography, license: MIT-0, ref: references/cinematography.md}
+version: 1
+scene_type: confrontation
+signals:
+  - 双方各自坚持明确诉求，解释已经无法让对方退让
+  - 距离缩短、身体前倾、抬高音量或压低语气，压力逐轮升级
+  - 出现最后通牒、拒绝、拍桌或离场威胁，但还没有持续的身体攻防
+  - 场面围绕谁先让步推进，而不是交换新信息
+beats:
+  - 摆出互不相容的要求，标出双方距离和中间阻挡物
+  - 首轮施压与顶回，试探对方底线
+  - 加入起身、逼近或拍桌，把风险抬高
+  - 最后通牒落下，逼出接受、拒绝或离场
+  - 用停顿或距离变化收束，留下未付的代价
+coverage:
+  - 双人中景，侧向平视：交代站位、距离和中间桌面或门框
+  - 过肩中近景，越过说话者肩部：把观众放在被质问的位置
+  - 近景正反打，固定机位：接住每句重话后的眼神与下颌变化
+  - 固定插入特写，桌面俯拍：拍手指、杯沿或推开又停住的物件
+  - 双人全景，侧向平视：展示起身、逼近或退开后的新距离
+  - 单人近景，侧后 45°：收住离场前的停顿
+pacing:
+  fast: {shots_per_min: [22, 32], shot_seconds: [1.8, 2.8]}
+  mid:  {shots_per_min: [13, 22], shot_seconds: [2.8, 4.6]}
+  slow: {shots_per_min: [8, 13],  shot_seconds: [4.6, 8.0]}
+camera:
+  - 先锁左右站位与轴线；正反打只在轴线同侧拍，人物视线落在对手眼睛或手上，不看镜头
+  - 压力升级：人脸镜头用固定机位；非人脸的双人中景可以轻推轨（镜头沿地面缓慢靠近），不做环绕
+  - 每镜只保留 1 条施压动作，主体与摄影机动作合计不超过 3 个；多余动作拆镜
+  - 人脸、手部、桌面小物件成为重点时固定机位，机位和焦段都不动
+  - 写实人物走 Seedance 时，中近景避开正脸首帧：用过肩、侧后 45°、逆光剪影、约 65° 俯拍加头发遮脸或背影；需要清楚口型时用万相
+  - 每条生成至少 4 秒；同框以 2 人为限，群组对峙拆成 2 人段落和单人反应镜
+sound:
+  - 台词按语义切开，重音落在要求、期限和拒绝上，句间留短停顿
+  - 拍桌、推杯、起身只在动作帧发 1 次声，后续镜头只留尾音
+  - 沉默段保留房间底噪；最后通牒前的空白明确写成无声，长度按停顿设计
+ai_risks:
+  - risk: 写实正脸在 Seedance 近景首帧被肖像闸拒绝
+    fallback: 口型镜改走万相；Seedance 用侧后、过肩、逆光剪影、头发遮脸、约 65° 俯拍或远景
+  - risk: 正反打换机位后左右站位或视线翻面，观众分不清谁在施压
+    fallback: 先画轴线并固定左右；每个反打首帧写明相对位置，生成后逐镜检查视线，翻面整条重做
+  - risk: 2 人同时说台词又做动作，模型把表情和手势糊在一起
+    fallback: 每镜只留 1 个主反应，台词和拍桌、起身分开生成；多余动作删掉或拆镜
+  - risk: 桌面物件在近景里变形，手指多指或杯沿缺口
+    fallback: 改固定插入特写，首帧锁手型、物件轮廓、材质和光向；复杂动作拆成伸手与停住 2 段
+  - risk: 情绪靠吼叫和夸张表情，画面变脏变吵
+    fallback: 用距离、呼吸、下颌和手指力度写压力，每镜保留 1 项瑕疵以内；写实人物保持干净、有精气神
+example: |-
+  原创示例（旧货仓办公室，夜；镜头时长按成片裁切计，每条生成至少 4 秒）：
+  1. 中景｜固定机位，侧向平视（机位固定）｜秦砚把租约推到桌中央，许澄双手撑着货架边缘｜4.0 秒
+  2. 中近景｜过肩，越过秦砚左肩看许澄（固定机位）｜许澄说：「月底之前搬空。」秦砚指尖压住纸角｜3.4 秒
+  3. 近景｜固定机位，侧后 40°（耳廓与下颌入画）｜秦砚说：「钥匙在我手里。」许澄往前半步｜3.8 秒
+  4. 特写｜固定机位，桌面俯拍（镜头与光不动）｜许澄的手掌拍在租约上，杯里的水晃出边缘｜2.4 秒
+  5. 双人全景｜固定机位，侧向平视（2 人入画）｜秦砚起身，许澄不退，2 人之间只隔半张桌｜4.2 秒
+  6. 近景｜固定机位，侧后平视（避开正脸）｜许澄解开袖扣，说：「那就法庭见。」｜3.1 秒
+  7. 中景｜固定机位，侧向平视（机位固定）｜秦砚收起租约，许澄抓起外套走向门口，脚步在门边停住｜4.6 秒
+related_grammar:
+  - grammar-shot-size
+  - grammar-camera-angle
+  - grammar-shot-reverse-shot
+  - grammar-axis-eyeline
+  - grammar-camera-movement
+  - grammar-insert-closeup
+related_negative:
+  - negative-looking-at-camera
+  - negative-bare-camera-term
+  - negative-too-many-actions
+  - negative-axis-jump
+  - negative-photoreal-face-seedance

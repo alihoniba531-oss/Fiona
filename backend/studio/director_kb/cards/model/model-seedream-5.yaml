@@ -1,0 +1,60 @@
+id: model-seedream-5
+type: model
+title: Seedream 5.0 出图
+summary: Seedream 5.0 的尺寸、参考图、提示词与定妆出图约束。
+tags: [seedream, seedream-5, image, text-to-image, reference-image]
+sources:
+  - {name: 作者规则与 P01 实测, license: own, ref: docs/tasks/2026-10-18-studio-wo3e-director-kb/00-house-rules.md}
+  - {name: 全局参数, license: own, ref: ~/Desktop/视频生成/.claude/skills/shortfilm-pipeline/references/00-全局参数.md}
+  - {name: 逐集生产规范, license: own, ref: ~/Desktop/视频生成/.claude/skills/shortfilm-pipeline/references/03-逐集生产.md}
+  - {name: 接口速查, license: own, ref: ~/Desktop/视频生成/.claude/skills/shortfilm-pipeline/references/04-接口速查.md}
+version: 1
+model: seedream-5.0
+style: any
+facts:
+  - 模型通道：分 pro 与 flash 2 档；pro 用于定妆和关键帧，flash 用于草稿与批量挑图（官方）
+  - 提示词长度：1–1500 字符，超出会被参数校验拒绝（实测）
+  - 参考图：1–10 张，pro 上限；超出会被参数校验拒绝（实测）
+  - 尺寸：支持预设 1K / 1.5K / 2K 或显式 宽x高；显式尺寸总像素 921,600–4,624,220，宽高比 1/16–16（实测）
+  - 16:9 贴上限的显式尺寸为 2864×1611，共 4,613,904 像素；竖屏为 1611×2864（官方参数推算）
+  - 计费：pro 约 0.6 元/张，flash 约 0.12 元/张；参考图另计，实际以接口返回和账本为准（官方参考价，待作者核实）
+  - background 有 opaque 和 transparent 两种；透明背景只限图生图，纯文生图会被参数校验挡下且不扣费（实测）
+  - output_format 支持 png 与 jpeg；定妆图和关键帧固定 png（官方）
+  - 出图很依赖提示词：镜头、光线、材质、边框没写到的不会画（实测）
+portrait_gate: 无（出图模型没有视频首帧的肖像闸；平台内容审核仍可能拦截真人肖像、公众人物与未授权 likeness，按官方政策处理）。
+copyright: 平台内容审核可能拦截知名 IP；不点名 IP 角色，不复刻标志性服饰与道具组合，先做美术方向差异化（作者规则）。§11 来源未给出 Seedream 的拦截时点，待作者实测核实。
+motion_risks:
+  - 把运镜、动作过程或时间戳写进首帧提示词，容易生成运动模糊、重影或重复肢体；出图只写静态瞬间（作者规则）
+  - 同图人物超过 2 人时，脸、手和道具容易互串；群像拆成多张 1 人或 2 人图（作者规则）
+  - 纯文生图要求透明背景会被接口拒绝；道具先纯白背景出图再抠像（实测）
+  - 没写到的光线、材质和边框不会被补出来，画面会落回模型默认值（实测）
+  - 参考图超过 10 张会被参数校验拒绝；超限时保留身份、关键道具和空间锚点（实测）
+prompt_syntax:
+  - prompt 按“用途 → 身份/构图 → 光线 → 材质 → 画幅 → 不要文字”分段写，控制在 1500 字符内（实测）
+  - size 用预设或显式 宽x高（小写 x）；显式尺寸先核对总像素与宽高比（实测）
+  - 参考图 1–10 张，每张只承担 1 个职责；写清“只取什么、不取什么”（作者规范）
+  - 纯文生图时不要要求透明底；先用纯白背景出图，再走抠像（实测）
+  - 不写运镜、动作过程和时间戳，只写静态首帧；运动留给视频模型（作者规范）
+  - 镜头、光线、材质、边框逐项写清；没写到的不会画（实测）
+max_characters: 2
+lint_rules:
+  - id: seedream-prompt-too-long
+    pattern: '(?s)^.{1501,}$'
+    level: warn
+    message: 'Seedream 提示词上限 1500 字符，超出会被参数校验拒绝；先删重复形容词和空泛画质词。'
+  - id: seedream-motion-words
+    pattern: '(?i)(镜头.{0,6}(推|拉|摇|移|跟|升|降)|运镜|dolly|crane|tracking shot|zoom in|zoom out|慢动作)'
+    level: warn
+    message: 'Seedream 只出静态首帧；运镜和动作留给视频模型，出图提示词只写静态瞬间。'
+  - id: seedream-empty-quality
+    pattern: '(?i)(杰作|masterpiece|8k|best quality|ultra[- ]?hd|最佳画质|电影感拉满)'
+    level: info
+    message: '空泛画质词不提供可执行信息；改写真切的镜头、光源、材质和边框。'
+  - id: seedream-transparent-t2i
+    pattern: '(?i)(background\s*[:=]\s*transparent|纯文生图.*透明背景)'
+    level: info
+    message: '纯文生图不要 transparent，接口会要求带透明通道的参考图；先纯白背景出图再抠像。'
+  - id: seedream-crowd
+    pattern: '(?i)(3\s*人同框|4\s*人同框|群像|人群)'
+    level: info
+    message: 'Seedream 同图人物越多越容易串脸、多指；同图压到 2 人，群像拆张。'

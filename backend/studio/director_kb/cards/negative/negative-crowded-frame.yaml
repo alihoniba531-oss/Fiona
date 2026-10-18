@@ -1,0 +1,15 @@
+id: negative-crowded-frame
+type: negative
+title: 同框超过 2 人
+summary: 1 条生成里塞 3 人以上，身份、手脚和攻防朝向会互相串位。
+tags: [crowd, fight, composition, character-count]
+sources:
+  - {name: 作者规则与 P01 返工记录, license: own, ref: docs/tasks/2026-10-18-studio-wo3e-director-kb/00-house-rules.md}
+  - {name: 分集拆镜规范, license: own, ref: ~/Desktop/视频生成/.claude/skills/shortfilm-pipeline/references/02-分集拆镜.md}
+  - {name: seedance-shot-design-failure-diagnosis, license: MIT-0, ref: references/failure-diagnosis.md}
+version: 1
+wrong: 全景，3 人同时围攻主角，镜头跟拍混战。
+right: 同框最多 2 人：先拍主角与第 1 个对手的攻防，再用单独反应镜交代第 2、3 人；群战靠剪辑重建空间。
+why: 多人同框时模型要同时维持多套身份和肢体，越打越容易换脸、多手、兵器错位；拆成双人段最稳。
+evidence: 作者确认的 scene-fight 样卡（2026-10-18）写明同框上限 2 人；Seedance 失败诊断第 2 节把多主体复杂互动列为低成功率。
+applies_to: {scene_type: [fight, ensemble, chase]}

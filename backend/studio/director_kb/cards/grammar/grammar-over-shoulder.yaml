@@ -1,0 +1,26 @@
+id: grammar-over-shoulder
+type: grammar
+title: 过肩镜头
+summary: 把前景 1 人的肩或后脑放在画框边缘，越过它看另 1 人，建立对话的压力位置。
+tags: [over-the-shoulder, dialogue, two-person, face-closeup, framing]
+sources:
+  - {name: 作者规则与 P01 实测, license: own, ref: docs/tasks/2026-10-18-studio-wo3e-director-kb/00-house-rules.md}
+  - {name: ai-visual-director 镜头语言, license: MIT, ref: ~/.claude/skills/ai-visual-director/knowledge/camera.md}
+  - {name: seedance-shot-design 运镜与焦段, license: MIT-0, ref: references/cinematography.md}
+  - {name: 分集拆镜规范, license: own, ref: ~/Desktop/视频生成/.claude/skills/shortfilm-pipeline/references/02-分集拆镜.md}
+version: 1
+definition: 过肩镜头把前景 1 人的肩部或后脑放在画框边缘，镜头越过它去拍另 1 人。前景是虚的，后景的人脸和反应是实的，观众被放在前景人物的一侧。
+narrative_use: 过肩让观众站到某一方，建立对话的距离与压力；前景肩部也是空间锚点，提示 2 人的站位和朝向。反打时交换过肩的一侧，就能完成正反打。写实人物走 Seedance 时，过肩还能避开正脸首帧，降低肖像闸概率。
+safe_prompt: 写“越过谁的哪一侧肩 + 看谁 + 前景虚化程度”，例如“过肩镜头（越过 A 的左肩看 B，A 的肩和后脑在画面左下角虚化）”“过肩反打（越过 B 的右肩看 A）”。再补 1 句 2 人视线落点，避免人物看镜头。
+avoid:
+  - 前景肩部占掉半张脸，或肩部比后景人物更抢眼
+  - 过肩却让 2 人都看镜头
+  - 前景人物和背景人物同一焦平面都清晰，空间压平
+  - 只写 OTS 不写越过谁的肩、看谁
+  - 反打时过肩方向跨轴，左右关系翻面
+related:
+  - grammar-axis-eyeline
+  - grammar-insert-closeup
+  - grammar-lens-focal
+  - grammar-shot-reverse-shot
+  - grammar-shot-size

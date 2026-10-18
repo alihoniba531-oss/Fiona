@@ -1,0 +1,27 @@
+id: grammar-lens-focal
+type: grammar
+title: 焦段与景深
+summary: 焦段决定视角与空间压缩，景深决定清晰范围；焦段有叙事理由才写。
+tags: [lens, focal-length, depth-of-field, face-closeup, insert]
+sources:
+  - {name: 作者规则与 P01 实测, license: own, ref: docs/tasks/2026-10-18-studio-wo3e-director-kb/00-house-rules.md}
+  - {name: ai-visual-director 镜头语言, license: MIT, ref: ~/.claude/skills/ai-visual-director/knowledge/camera.md}
+  - {name: seedance-shot-design 运镜与焦段, license: MIT-0, ref: references/cinematography.md}
+  - {name: 分集拆镜规范, license: own, ref: ~/Desktop/视频生成/.claude/skills/shortfilm-pipeline/references/02-分集拆镜.md}
+version: 1
+definition: 焦段是镜头的视角宽窄，通常用毫米数表示；景深是画面里从近到远仍然清晰的范围。它们一起决定空间被拉开还是压扁、人物与背景是分离还是贴在一起。
+narrative_use: 广角把前后景拉开，边缘容易变形，适合空间压迫或巨物；标准焦段接近人眼，适合平实叙事；中长焦压缩空间，让人物与背景贴在一起，适合孤立、窥视和情绪聚焦。浅景深把注意力压到主体，深焦让前后景同时参与叙事。焦段没有叙事理由就不要写，免得模型把透视关系带偏。
+safe_prompt: 写“焦段（视角效果）+ 景深（哪里清晰）”，例如“50mm 标准镜头（接近人眼，空间不变形）”“85mm 中长焦（背景压缩，人物与背景分开）”“浅景深（只有眼睛清晰，背景虚化）”“深焦（前景的手和后景的门同时清晰）”。
+avoid:
+  - 只写“电影镜头”“高级镜头”却不写焦段或景深
+  - 没有叙事理由就堆 14mm、200mm 这类极端焦段
+  - 把“背景虚化”当万能词，不说清哪里该清晰
+  - 同一镜同时要求浅景深与深焦
+  - 把焦段当作品质词，而不是空间和注意力的选择
+related:
+  - grammar-backlight-silhouette
+  - grammar-camera-angle
+  - grammar-establishing-shot
+  - grammar-insert-closeup
+  - grammar-over-shoulder
+  - grammar-shot-size

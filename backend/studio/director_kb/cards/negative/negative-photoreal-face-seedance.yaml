@@ -1,0 +1,14 @@
+id: negative-photoreal-face-seedance
+type: negative
+title: 写实正脸撞 Seedance 肖像闸
+summary: 写实人物的中景、近景、特写首帧露出正脸，Seedance 可能直接拒绝，不扣费但白等。
+tags: [seedance, portrait, photoreal, first-frame]
+sources:
+  - {name: 作者规则与 P01 返工记录, license: own, ref: docs/tasks/2026-10-18-studio-wo3e-director-kb/00-house-rules.md}
+  - {name: 分集拆镜规范, license: own, ref: ~/Desktop/视频生成/.claude/skills/shortfilm-pipeline/references/02-分集拆镜.md}
+version: 1
+wrong: Seedance 2.5，写实近景，男主脸部完整露出，目光平视前方。
+right: 这个镜头改用万相；非用 Seedance 不可时，把首帧做成逆光剪影，机位从约 65° 高处俯拍，让头发挡住脸，也可以拉开成远景或只拍背影；提交前再验一次首帧。
+why: 肖像闸拦的是可能对应真人的清晰正脸首帧；明确拒绝虽不计费，排队和返工仍要花时间。设计阶段先分流，比生成后再补更省事。
+evidence: 作者规则（2026-10-18）肖像闸条目：写实中景、近景、特写露正脸会被拒；作者确认的 2 张样卡把露脸镜改走万相，或用剪影与俯拍。
+applies_to: {scene_type: [dialogue, confrontation, intimacy, monologue, reveal, process-closeup], model: [seedance-2.5]}

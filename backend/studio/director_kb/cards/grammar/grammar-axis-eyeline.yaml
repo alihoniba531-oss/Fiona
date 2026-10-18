@@ -1,0 +1,26 @@
+id: grammar-axis-eyeline
+type: grammar
+title: 轴线与视线
+summary: 用 1 条假想轴线锁住左右关系，用明确视线落点让观众知道谁在看谁。
+tags: [axis, eyeline, dialogue, two-person, continuity, face-closeup]
+sources:
+  - {name: 作者规则与 P01 实测, license: own, ref: docs/tasks/2026-10-18-studio-wo3e-director-kb/00-house-rules.md}
+  - {name: ai-visual-director 剪辑理论, license: MIT, ref: ~/.claude/skills/ai-visual-director/knowledge/editing-theory.md}
+  - {name: ai-visual-director 镜头语言, license: MIT, ref: ~/.claude/skills/ai-visual-director/knowledge/camera.md}
+  - {name: 分集拆镜规范, license: own, ref: ~/Desktop/视频生成/.claude/skills/shortfilm-pipeline/references/02-分集拆镜.md}
+version: 1
+definition: 轴线是 2 个人或运动方向之间的 1 条假想连线；视线是角色在看哪里。机位保持在轴线同一侧，观众的左右关系才不会翻；视线落点明确，下一个镜头才知道该接什么。
+narrative_use: 守住轴线，观众始终知道谁在左、谁在右、谁看谁；越轴会让空间突然翻转，只在要制造失衡或明确过渡时使用。视线可以直接切到被看的人或物，也可以把观众的注意力提前送到下一镜。人物始终看对手、看物件或看出口，不看镜头，口型镜也只需要脸大致可见。
+safe_prompt: 写“谁在画面哪一侧 + 看向哪 + 机位在轴线哪一侧”，例如“A 在画面左、B 在画面右，A 看向画面右侧的 B”“机位保持在轴线左侧，反打从 B 的右肩后拍 A”“两人视线都落在对方身上，不看镜头”。
+avoid:
+  - 正反打两侧都从同一侧拍，人物左右位置翻面
+  - 人物看镜头，或看向画外却没有对应的下一个镜头
+  - 用“视线交流”“含情脉脉”代替具体视线落点
+  - 越轴不写过渡，观众突然失去方向
+  - 换机位后不重新推导世界坐标里的左右关系
+related:
+  - grammar-camera-angle
+  - grammar-continuity
+  - grammar-over-shoulder
+  - grammar-shot-reverse-shot
+  - grammar-transition

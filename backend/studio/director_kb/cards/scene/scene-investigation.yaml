@@ -1,0 +1,86 @@
+id: scene-investigation
+type: scene
+title: 调查 / 搜索
+summary: 角色在结论未定时搜索、核对和排除假设，用逐步缩小的范围逼近答案。
+tags: [investigation, search, clue, deduction, mystery]
+sources:
+  - {name: 作者规则、P01 约 3.9 秒/镜与生成下限（经验值，待作者成片统计校准）, license: own, ref: docs/tasks/2026-10-18-studio-wo3e-director-kb/00-house-rules.md}
+  - {name: 分集拆镜规范, license: own, ref: ~/Desktop/视频生成/.claude/skills/shortfilm-pipeline/references/02-分集拆镜.md}
+  - {name: 声画时间轴规范, license: own, ref: ~/Desktop/视频生成/.claude/skills/shortfilm-pipeline/references/05-声画时间轴.md}
+  - {name: 叙事结构与调查线, license: MIT, ref: ~/.claude/skills/ai-visual-director/knowledge/narrative-structures.md}
+  - {name: 视觉伏笔与证据排列, license: MIT, ref: ~/.claude/skills/ai-visual-director/knowledge/visual-subtext.md}
+  - {name: 镜头语言与插入特写, license: MIT, ref: ~/.claude/skills/ai-visual-director/knowledge/camera.md}
+  - {name: seedance-shot-design-failure-diagnosis, license: MIT-0, ref: references/failure-diagnosis.md}
+  - {name: seedance-shot-design-scenarios, license: MIT-0, ref: references/scenarios.md}
+version: 1
+scene_type: investigation
+signals:
+  - 角色主动搜检空间、物件、记录或证人，信息不完整
+  - 每得到 1 条信息只缩小范围，不直接给出答案
+  - 出现假设、验证、推翻或暂时搁置的判断链
+  - 场面停在答案确认之前，或只确认了部分事实
+beats:
+  - 明确要查的问题和已知线索，标出错误方向
+  - 第 1 轮搜索找到可用线索，同时暴露新的限制
+  - 核对线索，排除 1 个假设，压力上升
+  - 发现关键差异，接近答案但仍未确认
+  - 以确认部分事实、遭遇阻碍或决定继续追查收束
+coverage:
+  - 中景固定，侧向平视：交代查案空间、人物和已知线索的位置
+  - 全景固定，高位俯拍：把桌面、地面或墙面证据排成可读的关系图
+  - 固定插入特写，俯拍线索：只拍局部细节，如编号、折痕、灰尘缺口
+  - 近景固定，侧后 45°：拍角色比对、停顿和排除假设时的眼神
+  - 中景固定，过肩：把角色和证据放在同幅画面，交代两者距离
+  - 中近景固定，平视或轻微俯拍：拍角色决定继续查或停下的瞬间
+pacing:
+  fast: {shots_per_min: [18, 26], shot_seconds: [2.4, 3.6]}
+  mid:  {shots_per_min: [11, 18], shot_seconds: [3.6, 5.5]}
+  slow: {shots_per_min: [6, 11],  shot_seconds: [5.5, 9.0]}
+camera:
+  - 调查以固定机位为主；搜索移动用侧向跟拍（镜头平行随人移动），接触证据时切固定
+  - 每镜只推进 1 条线索，主体与摄影机动作合计不超过 3 个；比对和排除拆成独立镜头
+  - 人物视线落在证据或手上，不看镜头；推理用可见动作而不是对镜头说明
+  - 线索的形状、编号、材质和排列是敏感内容，固定机位，机位、焦段和光向不变
+  - 写实人物保持干净、有精气神，档案灰尘只留在纸面与柜面，瑕疵最多 1 项
+  - 用拉焦转移（焦点从人物移到证据）代替推近，减少模型编造画外内容
+  - 写实人物走 Seedance 时避开正脸首帧：用侧后、过肩、逆光剪影、头发遮脸、约 65° 俯拍或远景；露脸用万相
+  - 每条生成至少 4 秒；线索镜单独生成，不把 3 条以上信息塞进 1 条
+sound:
+  - 搜索段保留空间底噪和脚步、翻找、纸张、抽屉声；每类动作只发 1 次主音
+  - 线索出现时用 1 个轻点音效，不加爆炸式提示；确认或排除假设时留 0.3–0.8 秒停顿
+  - 画外说明只读结论，不重复画面里已经看见的细节
+ai_risks:
+  - risk: 线索文字、编号或图案在生成中变形，无法作为证据
+    fallback: 精确文字和数字全部后期；模型只拍形状、折痕、材质和排列，关键线索用固定插入特写
+  - risk: 角色在多个证据之间走动，空间关系错乱
+    fallback: 先拍高位俯拍定空间，再拍固定中景和插入特写；走动用中性全景过渡
+  - risk: 写实正脸在 Seedance 近景首帧被肖像闸拒绝
+    fallback: 用侧后、过肩、剪影、约 65° 俯拍加头发遮脸或远景；清楚表情用万相
+  - risk: 调查被演成讲解，人物对着镜头说明推理
+    fallback: 人物视线落在证据或对手身上，不看镜头；推理拆成看、比对、停住的可见动作
+  - risk: 线索太多，单镜信息过载
+    fallback: 每镜只给 1 条线索和 1 个判断；其余线索留到后续镜头，按排除顺序排列
+example: |-
+  原创示例（旧档案馆，馆员核查 1 份借阅记录；镜头时长按成片裁切计，每条生成至少 4 秒）：
+  1. 中景｜固定机位，侧向平视（机位固定）｜顾棠把 3 本登记册摊在长桌上，窗外天还没亮｜4.6 秒
+  2. 全景｜固定机位，高位俯拍｜册子、借阅条和 1 支铅笔排成 3 列，中间空出 1 格｜3.8 秒
+  3. 特写｜固定机位，俯拍纸面｜借阅条上的归还日期比登记册晚 2 天｜2.6 秒
+  4. 近景｜固定机位，侧后 45°｜顾棠用铅笔尖点住日期，视线在 2 张纸之间来回｜3.4 秒
+  5. 中景｜固定机位，过肩｜她抽出第 4 本册子，翻到同页，手指停住｜3.0 秒
+  6. 特写｜固定机位，俯拍手部｜铅笔在空白处画了 1 个问号，又划掉｜2.2 秒
+  7. 中近景｜固定机位，侧向（避开正脸）｜顾棠合上册子，抬头看向档案柜顶层｜4.2 秒
+related_grammar:
+  - grammar-shot-size
+  - grammar-camera-angle
+  - grammar-camera-movement
+  - grammar-insert-closeup
+  - grammar-lens-focal
+  - grammar-axis-eyeline
+  - grammar-continuity
+related_negative:
+  - negative-looking-at-camera
+  - negative-bare-camera-term
+  - negative-photoreal-face-seedance
+  - negative-nonfixed-structure-material
+  - negative-unwritten-detail-seedream
+  - negative-too-many-actions

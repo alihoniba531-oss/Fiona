@@ -1,0 +1,58 @@
+id: model-wan-3-anime
+type: model
+title: 万相 3.0 动漫
+summary: 万相 3.0 动漫通道的规格、风格约束、运镜风险和提示词写法。
+tags: [wan, wan-3, anime, video, first-frame, 480p]
+sources:
+  - {name: 作者规则与 P01 实测, license: own, ref: docs/tasks/2026-10-18-studio-wo3e-director-kb/00-house-rules.md}
+  - {name: 全局参数, license: own, ref: ~/Desktop/视频生成/.claude/skills/shortfilm-pipeline/references/00-全局参数.md}
+  - {name: 逐集生产规范, license: own, ref: ~/Desktop/视频生成/.claude/skills/shortfilm-pipeline/references/03-逐集生产.md}
+  - {name: 接口速查, license: own, ref: ~/Desktop/视频生成/.claude/skills/shortfilm-pipeline/references/04-接口速查.md}
+version: 1
+model: wan-3.0
+style: anime
+facts:
+  - 时长档位：厂商允许 2–30 秒或 -1 自动；短片工作室按 4–30 秒整数提交，低于 4 秒的镜头先生成再裁（官方）
+  - 输出分辨率：480P、720P、1080P 3 档，参数枚举用大写（官方）
+  - 竖屏 480P 的成片为 480×852、30fps；合成阶段统一到 24fps（实测）
+  - 帧率：30fps，P01 与 WO0 样片一致（实测）
+  - 原生音频：MCP 的 audio 参数默认 true，工作室每次显式传 false，台词与环境声后期制作（实测）
+  - 首帧按原图提交，不做缩放；MCP 会在本机先查图，要求文件不超过 20MB、边长落在 240–8000 之间、宽高比不超过 8；不合格就报错，不扣费（实测）
+  - 画幅：首帧模式由首帧比例决定，ratio 仍显式传并与首帧一致（实测）
+  - 参考价按档位约 0.3、0.6、1.2 元/秒（480P、720P、1080P）；落地价以 list_video_models 为准（官方参考价，待作者核实）
+  - 同时最多 3 条任务在跑；第 4 条会被 MCP 拒收，不扣费（实测）
+  - 工具没有 camera_fixed、return_last_frame、negative_prompt 这 3 个参数（实测）
+  - prompt_extend 不传时，MCP 会替你填 true，上游可能追加未经批准的运镜与内容；工作室每次显式传 false。万相 3.0 是否必须关闭尚无开关对比结论，待作者实测核实（实测）
+portrait_gate: 无（动漫风格不涉及真人肖像首帧，§11 来源未见同类固定拦截；平台内容审核与版权规则仍适用）。
+copyright: 动漫形象更容易与知名 IP 混淆；不点名角色，不复刻标志性发型、服装与道具组合，先做美术方向差异化（作者规则）。§11 来源未记录万相的版权拦截时点，待作者实测核实。
+motion_risks:
+  - 跟拍或拉远把画外区域带进画面时，模型会临场补出没写过的空间和物体；只露局部的主体改固定机位，并写明主体始终在画外（作者实测）
+  - 环绕运镜会让模型补结构细节，P01 出现丝杠穿进滚柱（作者实测）
+  - 下移镜头会让材质漂移，P01 的金属屑变成木刨花（作者实测）
+  - 动漫发丝、衣摆和披风在环绕或快速跟拍中容易穿模和跳变；这些部位成为重点时改固定机位
+  - 多人同框时武器容易换手，同框压到 2 人，群战拆成 2 人段和 1 人反应段（作者规则）
+prompt_syntax:
+  - 每镜只写 1 个主运镜，写成“中文术语 + 白话轨迹 + 速度 + 起止”，例如“推轨（镜头沿地面平稳靠近，从中景到中近景，约 3 秒）”（作者规则）
+  - 写明线条、上色与阴影层级；不要混入 photoreal、皮肤毛孔、实拍质感等写实真人词
+  - 固定机位在视频提示词里写明“镜头固定不动，机位不变”；工具没有 camera_fixed 参数（实测）
+  - 结构、材质、人脸成为画面重点时一律固定机位，并锁轮廓、基准色和光向（作者规则）
+  - prompt_extend 显式 false，避免上游自动改写提示词；音频显式关闭 audio:false（作者裁决）
+  - §11 来源未见万相的时间戳语法，不要套用 Seedance 的区间写法，待作者实测核实
+max_characters: 2
+lint_rules:
+  - id: wan-anime-photoreal-words
+    pattern: '(?i)(photorealistic|photoreal|真人写实|皮肤毛孔|实拍质感|写实皮肤)'
+    level: warn
+    message: '动漫卡里出现写实真人词会让线条和上色跳变；改用动漫材质、线条和阴影词。'
+  - id: wan-anime-prompt-extend
+    pattern: '(?i)prompt_extend\s*[:=]\s*true'
+    level: warn
+    message: '提交万相时把 prompt_extend 固定为 false；一旦为 true，上游会重写提示词。'
+  - id: wan-anime-camera-fixed
+    pattern: '(?i)camera_fixed'
+    level: info
+    message: '万相工具没有 camera_fixed，固定机位写进视频提示词。'
+  - id: wan-anime-short-generation
+    pattern: '(?i)(duration\s*[:=]\s*[23]\b|生成\s*[23]\s*秒)'
+    level: info
+    message: '工作室下限 4 秒；2–3 秒生成会迫使模型删动作或临场补全。'

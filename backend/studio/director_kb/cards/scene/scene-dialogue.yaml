@@ -1,0 +1,75 @@
+id: scene-dialogue
+type: scene
+title: 对话（两人静态）
+summary: 2 人在固定空间交换台词，用站位、反应和停顿推动信息或关系变化。
+tags: [dialogue, two-person, static, conversation]
+sources:
+  - {name: 作者规则、P01 约 3.9 秒/镜与生成下限（经验值，待作者成片统计校准）, license: own, ref: docs/tasks/2026-10-18-studio-wo3e-director-kb/00-house-rules.md}
+  - {name: 分集拆镜规范, license: own, ref: ~/Desktop/视频生成/.claude/skills/shortfilm-pipeline/references/02-分集拆镜.md}
+  - {name: 声画时间轴规范, license: own, ref: ~/Desktop/视频生成/.claude/skills/shortfilm-pipeline/references/05-声画时间轴.md}
+  - {name: 台词停顿与重音, license: MIT, ref: ~/.claude/skills/ai-visual-director/knowledge/dialogue-rhythm.md}
+  - {name: seedance-shot-design-scenarios, license: MIT-0, ref: references/scenarios.md}
+  - {name: seedance-shot-design-cinematography, license: MIT-0, ref: references/cinematography.md}
+version: 1
+scene_type: dialogue
+signals:
+  - 2 人处于同一空间，交流以有来有回的台词为主
+  - 双方位置基本不变，变化来自获知、判断、让步或拒绝
+  - 没有持续追跑、实质攻击或多人关系网争夺主导
+beats:
+  - 建立双方站位、距离和未说出口的诉求
+  - 首轮问答暴露信息差或立场差
+  - 听者以姿态、回避或追问作出可见反应
+  - 关键台词落地，触发关系或行动选择
+  - 留出停顿，以回答、沉默或离席收束
+coverage:
+  - 中景双人，侧向平视：交代左右站位、距离和中间阻挡物
+  - 中近景过肩（越过前肩看对方）：把观众放到说话者的压力位置
+  - 近景反打（从另一侧拍听者），固定机位：接住台词后的微反应
+  - 固定插入特写，桌侧俯拍：用手指、杯子、信件或页面承接关键信息
+  - 双人中景，固定机位或沿轴轻推轨（镜头平稳靠近）：交代关系变化后的新距离
+pacing:
+  fast: {shots_per_min: [20, 30], shot_seconds: [2.0, 3.0]}
+  mid:  {shots_per_min: [12, 20], shot_seconds: [3.0, 5.0]}
+  slow: {shots_per_min: [7, 12],  shot_seconds: [5.0, 9.0]}
+camera:
+  - 以轴线一侧的正反打为主，左右站位跨镜保持一致，人物视线落在对手身上或关键物件上
+  - 静态对话优先固定机位；非敏感镜头可沿轴线轻推轨（镜头平稳靠近），不要绕人
+  - 人脸、手部结构或承载信息的材质成为画面重点时，一律固定机位并锁定光向
+  - 写实人物走 Seedance 时，中景、近景和特写避开正面首帧：用过肩、逆光剪影、约 65° 俯拍加头发遮脸、远景或背影；需要清楚口型时改走万相
+  - 每条生成至少 4 秒，再按台词呼吸与反应点裁镜；不为一个短镜单独提交更短时长
+sound:
+  - 台词按语义呼吸切开，句间保留短停顿，重音落在改变判断的词上
+  - 换机位不重起环境声；同一次触碰或翻页只发一次声，下一镜只留尾音
+  - 沉默段保留房间底噪或远处声源，关键停顿留 0.3–0.8 秒；更长空白要明确写成无声
+ai_risks:
+  - risk: 写实正脸在 Seedance 的中近景首帧被肖像闸拒绝
+    fallback: 有口型需求时改走万相；坚持 Seedance 则改为过肩或侧后视角、逆光剪影、约 65° 俯拍且头发遮脸、远景或背影，并先验首帧
+  - risk: 正反打换了机位后，人物左右位置、视线方向或身体朝向翻面
+    fallback: 先画轴线并固定左右站位；每个反打镜头首帧标出 2 人相对位置，生成后逐镜检查视线是否仍朝对手，翻面镜头整条重做
+  - risk: 画外独白或配音时，画面人物错误地跟着动嘴
+    fallback: 先按语义切成独立音频 cue；非口型镜头在视频提示中写明嘴唇闭合、呼吸轻微，人物改用侧后或物件动作承载，真口型镜头单独走万相
+  - risk: 手部或小道具在近景里多指、变形，关键物件形状和材质漂移
+    fallback: 改为固定机位插入镜头，首帧锁手型、物件轮廓、表面基准色和光向；复杂交接拆成“伸向物件”和“握住物件”两条生成后再剪
+  - risk: 台词和动作同时加码，听者反应被动作淹没
+    fallback: 每镜只保留一个主反应，例如手指收紧、视线移开或呼吸变化；多余动作删掉或拆到下一镜，重音前后留停顿
+example: |-
+  原创示例（面包房夜班；下列为成片裁切时值，生成均按至少 4 秒提交）：
+  1. 中景｜固定机位，侧向平视（镜头不移动）｜叶岚把钥匙放在烤盘旁，周默隔着操作台看向钥匙｜3.8 秒
+  2. 中近景｜过肩侧后方，固定机位（越过叶岚左肩看周默）｜周默擦净围裙，说：“今晚我来收店。”｜3.2 秒
+  3. 近景｜固定机位，侧后 45°（只见耳廓与下颌线）｜叶岚没有碰钥匙，说：“车票买好了，不是吗？”｜4.1 秒
+  4. 特写｜固定机位，俯拍手部（镜头与光源不动）｜周默攥住手指遮住旧烫伤，目光落回钥匙｜2.6 秒
+  5. 中景｜双人侧后固定机位（2 人都在画内）｜叶岚把车票压到钥匙下，周默双臂仍撑在台边｜3.7 秒
+  6. 中近景｜过肩（越过周默右肩看叶岚），固定机位（镜头不移动）｜叶岚说：“留下不是欠我。”周默右肩一沉，按在台边的手停住｜4.0 秒
+  7. 中景｜固定机位，侧向平视（镜头不移动）｜周默收起车票，拿起钥匙；叶岚松开按在台面的手｜4.3 秒
+related_grammar:
+  - grammar-shot-size
+  - grammar-over-shoulder
+  - grammar-shot-reverse-shot
+  - grammar-axis-eyeline
+  - grammar-camera-movement
+related_negative:
+  - negative-looking-at-camera
+  - negative-bare-camera-term
+  - negative-voiceover-mouth-moves
+  - negative-photoreal-face-seedance

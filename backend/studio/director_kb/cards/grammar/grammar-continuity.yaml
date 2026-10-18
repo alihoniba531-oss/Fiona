@@ -1,0 +1,26 @@
+id: grammar-continuity
+type: grammar
+title: 连续性
+summary: 锁定跨镜不变的动作、道具、服装、光线与时间，让观众相信还是同一场戏。
+tags: [continuity, prop, costume, lighting, time, material, structure]
+sources:
+  - {name: 作者规则与 P01 实测, license: own, ref: docs/tasks/2026-10-18-studio-wo3e-director-kb/00-house-rules.md}
+  - {name: ai-visual-director 剪辑理论, license: MIT, ref: ~/.claude/skills/ai-visual-director/knowledge/editing-theory.md}
+  - {name: prop-asset 反面案例, license: Apache-2.0, ref: ~/.claude/skills/prop-asset/references/NEGATIVE-CASE-BOOK.md}
+  - {name: 声画时间轴规范, license: own, ref: ~/Desktop/视频生成/.claude/skills/shortfilm-pipeline/references/05-声画时间轴.md}
+version: 1
+definition: 连续性是对跨镜不变项的锁定，包括动作接得上、道具在谁手里、服装和伤妆不跳、光线方向不换、时间天气一致。它让观众相信这些镜头发生在同一空间、同一段时间里。
+narrative_use: 连续性断掉时，观众的注意力会从故事转到穿帮。AI 生成尤其如此：模型不会自动记住上一镜，提示词里要重复关键不变量。连续性也服务叙事，例如同 1 条围巾从整齐到松开，可以标示关系变化；但变化要有镜头交代，不能凭空发生。
+safe_prompt: 写“接上一镜的入镜状态 + 本镜要改变什么 + 出镜状态”，例如“接上一镜：A 仍站在桌左侧，右手持杯，杯口朝上；主光仍来自画面左上方的窗”“动作从上一镜的抬手继续，不重置姿态”。道具写明持手、朝向和状态；光线写明光源方向与色温。
+avoid:
+  - 只写“保持上一镜一致”，却不写要核对的人物位置、道具和光向
+  - 同一场戏里服装、伤妆或道具换手
+  - 换机位后光向反转，或时间天气突然变化
+  - 用“自然衔接”代替具体入镜状态和出镜状态
+  - 关键道具没有归属，谁拿着都行
+related:
+  - grammar-action-match
+  - grammar-axis-eyeline
+  - grammar-insert-closeup
+  - grammar-over-shoulder
+  - grammar-transition

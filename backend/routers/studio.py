@@ -7,7 +7,7 @@ from fastapi import APIRouter, Depends, HTTPException, Query, Request, UploadFil
 from fastapi.responses import Response
 from pydantic import BaseModel, ConfigDict, Field, StrictBool, StrictInt, field_validator
 
-from studio import brain_jobs, breakdown_plan, casting, pricing, sources, spend, storage, store
+from studio import brain_jobs, breakdown_plan, casting, kb_trial, pricing, sources, spend, storage, store
 from studio.config import get_settings
 from studio.gate import PRIVATE_HEADERS, studio_user
 
@@ -200,6 +200,66 @@ class BrainTrialBody(BaseModel):
     text: str = Field(min_length=1, max_length=20000)
     tasks: list[Literal["read_through", "style_proposals", "bible_extract"]] = Field(min_length=1, max_length=3)
     providers: Literal["current", "all"] = "current"
+
+
+class SceneTagsBody(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+    scene_type: Literal[
+        "dialogue", "confrontation", "fight", "chase", "reveal", "monologue", "flashback",
+        "ensemble", "montage", "establishing", "twist", "intimacy", "phone-call",
+        "process-closeup", "explainer", "scare", "investigation",
+    ]
+    position: Literal["opening", "body", "ending"] = "body"
+    pace: Literal["fast", "mid", "slow"] = "mid"
+    emotion: str = Field(default="", max_length=20)
+    cast_count: StrictInt = Field(default=1, ge=1, le=6)
+    realism: Literal["photoreal", "anime", "3d"] = "photoreal"
+    setting: Literal["interior", "exterior", "mixed"] = "interior"
+    sensitive: list[Literal["face_closeup", "structure", "material", "giant_offscreen", "ip_risk"]] = Field(
+        default_factory=list, max_length=5)
+
+    @field_validator("sensitive")
+    @classmethod
+    def unique_sensitive(cls, value):
+        if len(value) != len(set(value)):
+            raise ValueError("敏感标记不能重复")
+        return value
+
+
+class KbTrialQuoteBody(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+    scene_text: str = Field(min_length=1, max_length=3000)
+    tags: SceneTagsBody
+    target_seconds: StrictInt = Field(ge=10, le=120)
+    video_model: Literal["wan", "seedance"]
+    modes: list[Literal["with_kb", "without_kb"]] = Field(
+        default_factory=lambda: ["with_kb", "without_kb"], min_length=1, max_length=2)
+
+    @field_validator("scene_text")
+    @classmethod
+    def nonempty_scene_text(cls, value):
+        if not value.strip():
+            raise ValueError("试拆原文不能为空")
+        return value
+
+    @field_validator("modes")
+    @classmethod
+    def unique_modes(cls, value):
+        if len(value) != len(set(value)):
+            raise ValueError("模式不能重复")
+        return value
+
+
+class ReviewProviderBody(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+    review_provider: Literal["claude", "qwen", "deepseek", "off"]
+
+
+class ExemplarPatchBody(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+    kind: Literal["good", "bad"] | None = None
+    reason: str | None = Field(default=None, max_length=2000)
+    archived: StrictBool | None = None
 
 
 class CastingSetupBody(BaseModel):
@@ -441,6 +501,78 @@ async def trial_brain(pid: str, body: BrainTrialBody, user: str = Depends(studio
 async def brain_group(pid: str, group_id: str, user: str = Depends(studio_user)):
     result = await brain_jobs.group(pid, user, group_id)
     return {**result, "jobs": [_public_job(job) for job in result["jobs"]]}
+
+
+# ---------------------------------------------------------------------------
+# WO3e 导演知识库、试拆与交叉审核
+# ---------------------------------------------------------------------------
+
+@router.get("/kb/cards")
+async def kb_cards(type: str | None = Query(default=None, max_length=20),
+                   q: str | None = Query(default=None, max_length=200),
+                   user: str = Depends(studio_user)):
+    return await _guarded(kb_trial.list_cards, type=type, q=q)
+
+
+@router.get("/kb/cards/{card_id}")
+async def kb_card(card_id: str, user: str = Depends(studio_user)):
+    return await _guarded(kb_trial.get_card, card_id)
+
+
+@router.get("/kb/exemplars")
+async def kb_exemplars(scene_type: str | None = Query(default=None, max_length=100),
+                       kind: str | None = Query(default=None, max_length=10),
+                       user: str = Depends(studio_user)):
+    return await _guarded(kb_trial.list_exemplars, user, scene_type=scene_type, kind=kind)
+
+
+@router.patch("/kb/exemplars/{exemplar_id}")
+async def kb_patch_exemplar(exemplar_id: str, body: ExemplarPatchBody,
+                            user: str = Depends(studio_user)):
+    return await _guarded(kb_trial.patch_exemplar, user, exemplar_id,
+                          body.model_dump(exclude_unset=True, exclude_none=True))
+
+
+@router.get("/kb/stats")
+async def kb_stats(user: str = Depends(studio_user)):
+    return await _guarded(kb_trial.get_stats, user)
+
+
+@router.post("/projects/{pid}/kb/trial/quote")
+async def kb_trial_quote(pid: str, body: KbTrialQuoteBody, user: str = Depends(studio_user)):
+    return await _guarded(kb_trial.quote, pid, user, body.scene_text, body.tags.model_dump(),
+                          body.target_seconds, body.video_model, body.modes)
+
+
+@router.post("/projects/{pid}/kb/trial/start")
+async def kb_trial_start(pid: str, body: BreakdownStartBody, user: str = Depends(studio_user)):
+    return await _guarded(kb_trial.start, pid, user, body.quote_id)
+
+
+@router.get("/projects/{pid}/kb/trials/{trial_id}")
+async def kb_trial_detail(pid: str, trial_id: str, user: str = Depends(studio_user)):
+    return await _guarded(kb_trial.get_trial, pid, user, trial_id)
+
+
+@router.get("/projects/{pid}/review-provider")
+async def review_provider(pid: str, user: str = Depends(studio_user)):
+    async def read():
+        project = await store.get_project(pid, user)
+        value = await kb_trial.get_review_provider(pid, user)
+        return {"review_provider": value, "brain_provider": project["brain_provider"],
+                "same_as_director": value == project["brain_provider"]}
+    return await _guarded(read)
+
+
+@router.patch("/projects/{pid}/review-provider")
+async def patch_review_provider(pid: str, body: ReviewProviderBody,
+                                user: str = Depends(studio_user)):
+    async def write():
+        value = await kb_trial.set_review_provider(pid, user, body.review_provider)
+        project = await store.get_project(pid, user)
+        return {"review_provider": value, "brain_provider": project["brain_provider"],
+                "same_as_director": value == project["brain_provider"]}
+    return await _guarded(write)
 
 
 @router.get("/sources/novels")

@@ -1,0 +1,26 @@
+id: grammar-action-match
+type: grammar
+title: 动作匹配剪辑
+summary: 把 1 个完整动作拆到 2 个镜头里，在动作同一阶段切换，让观众自动补上中间过程。
+tags: [action-match, editing, fight, transition, continuity]
+sources:
+  - {name: 作者规则与 P01 实测, license: own, ref: docs/tasks/2026-10-18-studio-wo3e-director-kb/00-house-rules.md}
+  - {name: ai-visual-director 剪辑理论, license: MIT, ref: ~/.claude/skills/ai-visual-director/knowledge/editing-theory.md}
+  - {name: ai-visual-director 转场与蒙太奇, license: MIT, ref: ~/.claude/skills/ai-visual-director/knowledge/transitions.md}
+  - {name: 分集拆镜规范, license: own, ref: ~/Desktop/视频生成/.claude/skills/shortfilm-pipeline/references/02-分集拆镜.md}
+version: 1
+definition: 动作匹配剪辑是把 1 个完整动作拆成 2 个镜头，在动作的同一阶段切换，让观众自动补上中间过程。切点可以落在动作起点、接触点或终点，前后镜的运动方向、速度和构图要接得上。
+narrative_use: 动作匹配压缩时间、保持动作连贯、强化因果。打斗里常用“抬手到最高点 → 已经落下接触”，省略挥动过程；日常动作里可以“伸手向杯子 → 已经握住杯柄”。它也用于跨场景的相似动作，把 2 个时空缝在一起。
+safe_prompt: 写“前镜动作停在哪个阶段 + 后镜从哪个阶段接 + 2 个镜头共同的方向或速度”，例如“动作匹配剪：上一镜右手抬到最高点，下一镜手已落下并接触桌面”“匹配切点：2 个镜头都保持从左向右的挥动方向”。
+avoid:
+  - 切点落在动作开始前或结束后，观众看到重复动作
+  - 前后镜动作方向相反，接起来像折返
+  - 为了匹配而省略关键因果，观众不知道结果怎么发生
+  - 单条生成里塞多个动作再硬切，模型会把动作压扁
+  - 只写“动作匹配”不写前后镜各停在哪个阶段
+related:
+  - grammar-axis-eyeline
+  - grammar-camera-movement
+  - grammar-continuity
+  - grammar-insert-closeup
+  - grammar-transition

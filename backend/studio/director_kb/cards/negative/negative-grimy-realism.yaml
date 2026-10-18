@@ -1,0 +1,15 @@
+id: negative-grimy-realism
+type: negative
+title: 写实被写成脏乱
+summary: 用污垢、油泥和破布堆真实感，人物会显得邋遢，画面也失焦。
+tags: [realism, character, cleanliness]
+sources:
+  - {name: 作者规则与 P01 返工记录, license: own, ref: docs/tasks/2026-10-18-studio-wo3e-director-kb/00-house-rules.md}
+  - {name: 分集拆镜规范, license: own, ref: ~/Desktop/视频生成/.claude/skills/shortfilm-pipeline/references/02-分集拆镜.md}
+version: 1
+wrong: 写实近景，人物满脸污垢、蓬头垢面，衣服脏兮兮，像在垃圾堆里住了很久。
+right: 写实近景，人物干净有精神；衣服旧但洗得整洁、袖口磨白，指甲修短。贫穷靠款式朴素和旧痕体现，不靠脏。
+why: 写实不等于脏。污垢会盖住面部表演，也容易被模型放大成病态质感；道具可以做旧，人物保持基本整洁。
+evidence: 作者规则（2026-10-18）要求写实人物保持整洁、有精神，负面瑕疵只留 1 项；穷困用朴素且洗旧的衣着表达。
+applies_to: {scene_type: [dialogue, confrontation, intimacy, monologue, ensemble]}
+lint_pattern: '(?<![不要别])(?:脏兮兮|蓬头垢面|满脸(?:污垢|油污|泥污)|浑身(?:脏污|泥污|油污))'

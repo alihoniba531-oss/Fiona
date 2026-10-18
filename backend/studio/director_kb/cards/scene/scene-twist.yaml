@@ -1,0 +1,80 @@
+id: scene-twist
+type: scene
+title: 反转
+summary: 用新证据改写前文含义，迫使观众重新解释已经发生的动作、物件与关系。
+tags: [twist, reversal, reinterpretation, surprise, evidence]
+sources:
+  - {name: 作者规则与 P01 实测, license: own, ref: docs/tasks/2026-10-18-studio-wo3e-director-kb/00-house-rules.md}
+  - {name: 分集拆镜规范, license: own, ref: ~/Desktop/视频生成/.claude/skills/shortfilm-pipeline/references/02-分集拆镜.md}
+  - {name: 声画时间轴规范, license: own, ref: ~/Desktop/视频生成/.claude/skills/shortfilm-pipeline/references/05-声画时间轴.md}
+  - {name: 镜头语言参考, license: MIT, ref: ~/.claude/skills/ai-visual-director/knowledge/camera.md}
+  - {name: 转场与蒙太奇参考, license: MIT, ref: ~/.claude/skills/ai-visual-director/knowledge/transitions.md}
+  - {name: 剪辑理论, license: MIT, ref: ~/.claude/skills/ai-visual-director/knowledge/editing-theory.md}
+version: 1
+scene_type: twist
+signals:
+  - 前文已经给出可回看的误导、遗漏或错误前提
+  - 新信息不是补充事实，而是推翻或重排既有因果
+  - 揭示后人物目标、阵营或责任归属发生换位
+beats:
+  - 先让观众按旧解释看完 1 个熟悉动作，不提前暗示
+  - 给 1 个与旧解释不符的细节，但不解释
+  - 人物基于旧判断作出选择，把错误推到不可回头
+  - 用新证据完成重读，同 1 个物件或同 1 个构图换了含义
+  - 人物以反应确认新解释，收在新的目标或阵营上
+coverage:
+  - 中景｜固定机位，平视（镜头不动）：复现日常动作，先建立旧解释
+  - 特写｜固定机位，俯拍：给 1 个可被重读的细节，例如时间、编号、磨损或空缺
+  - 中近景｜固定机位，侧后或过肩：拍人物按旧判断作出的决定，避开正脸首帧
+  - 中景｜固定机位，平视：用与前面相同的构图，让新证据进入同一位置
+  - 特写｜固定机位，俯拍：新证据与旧细节同位置对照，完成含义替换
+  - 中近景｜固定机位，侧后方：人物反应落地，视线转向新的目标
+pacing:
+  fast: {shots_per_min: [22, 32], shot_seconds: [1.6, 2.6]}
+  mid:  {shots_per_min: [14, 22], shot_seconds: [2.6, 4.2]}
+  slow: {shots_per_min: [8, 14],  shot_seconds: [4.2, 6.5]}
+camera:
+  - 反转靠同构图重复和信息替换，不靠环绕或花式运镜；关键对照镜固定机位
+  - 旧解释段不做暗示性推近，不给关键物件停留特写，避免观众提前猜到
+  - 新证据段最多用 1 次推轨（镜头沿地面平稳靠近），推近后不上摇、不环绕
+  - 人物视线落在证据、对手或出口上，不看镜头；写实人物走 Seedance 时用侧后、逆光剪影或约 65° 俯拍加头发遮脸
+  - 票据、编号、屏幕和结构细节一律固定机位，机位与焦段不动；可读文字归后期
+  - 每条生成至少 4 秒，再按镜长裁切；反转点前后各留 1 个完整反应镜
+  - 写实人物要干净、有精神，旧衣整洁即可，不靠脏污做旧
+sound:
+  - 旧解释段用正常环境声，不加提示音，也不提前压低音乐
+  - 新证据出现时抽掉 1 层环境声，或让某个持续声源停止，留 0.3–0.8 秒空白
+  - 同 1 个物件在反转前后换音色或距离，提示含义已经改变
+  - 台词重音落在改写因果的词上，不在解释性长句上平均用力
+ai_risks:
+  - risk: 模型把反转演成又发现了 1 件新东西，旧事实没有被重读
+    fallback: 用同 1 个机位、同 1 个道具、同 1 个光位复现前镜；提示里写明与镜 X 构图一致，只替换证据
+  - risk: 关键证据上的文字、编号或日期生成错误
+    fallback: 固定特写拍空白载体，文字与数字后期贴回；不要让生成模型负责可读信息
+  - risk: 观众提前看懂，反转失去力度
+    fallback: 前段删掉推近、重音和特写停留；把线索藏进背景或动作，不单独给镜
+  - risk: 人物反应过火，变成喊叫或崩溃
+    fallback: 每镜只写 1 个身体反应，例如手指停住、呼吸变浅、视线移开；表情幅度收小
+  - risk: 前后道具归属或服装断开，观众误读成穿帮
+    fallback: 锁道具持手、服装和桌面陈设；反转前后各拍 1 张衔接首帧核对
+example: |-
+  原创示例（老裁缝店；按成片时值记，单条生成不短于 4 秒）：
+  1. 中景｜固定机位，平视（镜头不动）｜小满把灰西装从防尘袋里取出，老周在柜台后抬眼｜4.0 秒
+  2. 中近景｜固定机位，侧后方（避开正脸）｜老周说“挂回去，客人会来取”，手里继续磨剪刀｜3.6 秒
+  3. 特写｜固定机位，俯拍（镜头与光源不动）｜内袋口露出 1 张干洗票，日期印着上周三｜3.0 秒
+  4. 中景｜固定机位，平视（与镜 1 同构图）｜小满把票放到柜台上，老周的手停住｜3.4 秒
+  5. 特写｜固定机位，俯拍（锁袖口内侧）｜袖口有 1 圈新针脚，线色比原布深 1 度｜2.8 秒
+  6. 中近景｜固定机位，侧后方（避开正脸）｜老周卷起自己的袖子，露出同样的深色线头｜4.2 秒
+  7. 中景｜固定机位，平视（镜头不动）｜老周把西装搭在臂弯，说“明天穿”，小满让开门口｜4.6 秒
+related_grammar:
+  - grammar-insert-closeup
+  - grammar-shot-size
+  - grammar-camera-angle
+  - grammar-continuity
+  - grammar-transition
+related_negative:
+  - negative-looking-at-camera
+  - negative-bare-camera-term
+  - negative-prop-continuity-break
+  - negative-unwritten-detail-seedream
+  - negative-too-many-actions

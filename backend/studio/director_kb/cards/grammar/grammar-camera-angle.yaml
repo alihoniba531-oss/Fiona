@@ -1,0 +1,42 @@
+id: grammar-camera-angle
+type: grammar
+title: 机位角度
+summary: 用摄影机的高度与倾斜安排观众看角色的姿态，平视客观，俯仰带权力，倾斜带失衡。
+tags: [camera-angle, angle, face-closeup, establishing]
+sources:
+  - {name: 作者规则与 P01 实测, license: own, ref: docs/tasks/2026-10-18-studio-wo3e-director-kb/00-house-rules.md}
+  - {name: ai-visual-director 镜头语言, license: MIT, ref: ~/.claude/skills/ai-visual-director/knowledge/camera.md}
+  - {name: seedance-shot-design 运镜与焦段, license: MIT-0, ref: references/cinematography.md}
+  - {name: 分集拆镜规范, license: own, ref: ~/Desktop/视频生成/.claude/skills/shortfilm-pipeline/references/02-分集拆镜.md}
+version: 1
+definition: 机位角度是摄影机相对被摄主体的高度和倾斜，包括平视、俯拍、仰拍、荷兰角与顶拍；它决定观众以什么姿态看这个角色。
+narrative_use: 平视给平等和客观；俯拍压缩人物，给弱势、被审视或全知感；仰拍放大力量和压迫；荷兰角让画面失去水平，制造不安；顶拍把空间压成平面，适合调度关系和命运感。角度变化要和台词或动作的转折同时发生，不能为了花哨来回翻。
+safe_prompt: 写“角度名称（机位高度 + 看的方向 + 倾斜量）”，例如“平视（机位与人物眼睛同高，画面横平竖直）”“俯拍（机位高于人物，向下看）”“荷兰角（画面倾斜约 15°，地平线不水平）”。角度和景别分开写。
+avoid:
+  - 裸写 Low Angle、Dutch、Bird's-eye 等英文术语，不留中文解释
+  - 把角度和景别揉成 1 个词，例如“俯拍特写”却不说俯多少、拍多大
+  - 同一镜内角度来回翻转，观众失去方向
+  - 没有叙事理由就上荷兰角或顶拍
+entries:
+  - name: 平视
+    definition: 机位与人物眼睛同高，画面横平竖直，关系最中性。
+    safe_prompt: 平视（机位与人物眼睛同高，画面横平竖直）
+  - name: 俯拍
+    definition: 机位高于人物，向下看，人物显小，空间关系更清楚。
+    safe_prompt: 俯拍（机位高于人物，向下看，人物显小）
+  - name: 仰拍
+    definition: 机位低于人物胸口，向上看，人物显高，力量感增强。
+    safe_prompt: 仰拍（机位低于人物胸口，向上看，人物显高）
+  - name: 荷兰角
+    definition: 画面绕光轴倾斜，水平线歪斜，制造失衡和不安。
+    safe_prompt: 荷兰角（画面倾斜约 15°，地平线不水平）
+  - name: 顶拍
+    definition: 机位在人物正上方垂直向下，空间被压成平面，适合看调度。
+    safe_prompt: 顶拍（机位在人物正上方垂直向下，空间变平面）
+related:
+  - grammar-axis-eyeline
+  - grammar-backlight-silhouette
+  - grammar-camera-movement
+  - grammar-establishing-shot
+  - grammar-shot-reverse-shot
+  - grammar-shot-size

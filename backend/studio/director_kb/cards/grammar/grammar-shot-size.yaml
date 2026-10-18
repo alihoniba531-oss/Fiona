@@ -1,0 +1,55 @@
+id: grammar-shot-size
+type: grammar
+title: 景别
+summary: 用画框截取人物的范围控制信息密度与心理距离，同场靠景别变化带节奏。
+tags: [shot-size, framing, face-closeup, insert]
+sources:
+  - {name: 作者规则与 P01 实测, license: own, ref: docs/tasks/2026-10-18-studio-wo3e-director-kb/00-house-rules.md}
+  - {name: ai-visual-director 镜头语言, license: MIT, ref: ~/.claude/skills/ai-visual-director/knowledge/camera.md}
+  - {name: seedance-shot-design 运镜与焦段, license: MIT-0, ref: references/cinematography.md}
+  - {name: 分集拆镜规范, license: own, ref: ~/Desktop/视频生成/.claude/skills/shortfilm-pipeline/references/02-分集拆镜.md}
+version: 1
+definition: 景别是画框截取人物与环境的分量，决定观众能读到表情、肢体还是空间关系。它不只是把主体拍大拍小，还决定这一镜承担多少信息。
+narrative_use: 景别越近，观众越靠近角色的判断和情绪；越远，越先读环境、处境和人物关系。同一场戏连续使用同一景别，节奏会停；相邻镜头每次只跳 1 级，观众才跟得上。关键台词或反应可以逐级逼近，收束时拉回中景或全景交代新关系。
+safe_prompt: 写“景别名称（画面范围 + 观众该看清什么）”，例如“中近景（胸部以上，眼睛和嘴角在清晰区）”“特写（只拍手和钥匙，背景虚化）”。需要时再补人物在画框中的位置、留白方向和前景遮挡。
+avoid:
+  - 只写 ECU、CU、MCU 等英文缩写，不写中文范围
+  - 同一镜同时要求 2 个以上互相冲突的景别
+  - 用“电影感景别”“高级构图”这类没有画面范围的空词
+  - 把景别和机位或运镜揉成 1 个词，例如“环绕特写”
+entries:
+  - name: 大远景
+    definition: 人物只是环境里的小点，天空、地貌或建筑占绝大部分画面，尺度与方位是主要信息。
+    safe_prompt: 大远景（人物占画面高度不到 1/10，先让观众读地形和方位）
+  - name: 远景
+    definition: 人物全身可辨，但周围环境仍占主导，用来交代人与空间的距离。
+    safe_prompt: 远景（人物全身入画，环境留出约 2/3，交代他离出口有多远）
+  - name: 全景
+    definition: 人物从头到脚完整入画，动作、服装与站位都能读清。
+    safe_prompt: 全景（人物完整入画，脚不切，背景提供站位参照）
+  - name: 中远景
+    definition: 膝盖以上，保留肢体动作，也能看见部分空间与走位。
+    safe_prompt: 中远景（膝盖以上，走路、转身和手部动作都能看清）
+  - name: 中景
+    definition: 腰部以上，动作与表情并重，2 人关系和手势容易读。
+    safe_prompt: 中景（腰部以上，2 人的站位和手势同时入画）
+  - name: 中近景
+    definition: 胸部以上，表情清楚，环境退成背景，是对话与反应的常用档。
+    safe_prompt: 中近景（胸部以上，眼睛和嘴角在清晰区，背景柔化）
+  - name: 近景
+    definition: 面部占主要面积，背景明显虚化，用来看清情绪变化。
+    safe_prompt: 近景（面部占画面约 2/3，只留一点环境提示位置）
+  - name: 特写
+    definition: 单个五官、手部或物件填满画面，把注意力压到一个细节上。
+    safe_prompt: 特写（只拍眼睛与手指，物件放在画面中心）
+  - name: 大特写
+    definition: 瞳孔、指尖、刃口等局部占满画面，纹理和微动成为主体。
+    safe_prompt: 大特写（瞳孔或指尖占满画框，皮肤与金属纹理清楚）
+related:
+  - grammar-camera-angle
+  - grammar-camera-movement
+  - grammar-establishing-shot
+  - grammar-insert-closeup
+  - grammar-lens-focal
+  - grammar-over-shoulder
+  - grammar-shot-reverse-shot

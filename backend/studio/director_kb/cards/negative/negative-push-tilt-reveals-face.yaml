@@ -1,0 +1,14 @@
+id: negative-push-tilt-reveals-face
+type: negative
+title: 推近后上摇露出 AI 正脸
+summary: P01 第 2 次返工：推近再上摇，把画外的脸交给模型临场生成。
+tags: [tilt, face, p01, failure]
+sources:
+  - {name: 作者规则与 P01 返工记录, license: own, ref: docs/tasks/2026-10-18-studio-wo3e-director-kb/00-house-rules.md}
+  - {name: 分集拆镜规范, license: own, ref: ~/Desktop/视频生成/.claude/skills/shortfilm-pipeline/references/02-分集拆镜.md}
+version: 1
+wrong: 镜头从桌面样件缓慢推近，然后上摇到工程师的脸。
+right: 固定机位，保持首帧俯视构图。画面只留桌面、图纸、样件和工程师的手与前臂，头脸始终在画外。
+why: 上摇进入首帧没有的区域，模型只能临场编；在不露脸的项目里，就会冒出一张 AI 脸。要交代人物，另起 1 个设计好的固定镜头。
+evidence: P01 第 2 次返工：推近后上摇露出 AI 生成人物的正脸；改固定机位后通过（00-house-rules.md）。
+applies_to: {scene_type: [process-closeup, reveal]}

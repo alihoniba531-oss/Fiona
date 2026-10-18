@@ -86,6 +86,7 @@ class Settings:
     poll_timeout_min: float
     brain_monthly_usd: float
     brain_default: str
+    deepseek_model: str
     vision_model: str
 
     def inflight_limit(self, provider: str) -> int:
@@ -110,6 +111,7 @@ def get_settings() -> Settings:
         poll_timeout_min=_positive("FIONA_STUDIO_POLL_TIMEOUT_MIN", 30),
         brain_monthly_usd=_positive("FIONA_STUDIO_BRAIN_MONTHLY_USD", 40),
         brain_default=_brain_default(),
+        deepseek_model=_deepseek_model(),
         vision_model=_vision_model(),
     )
 
@@ -120,6 +122,14 @@ def _brain_default() -> str:
         return value
     _warn("FIONA_STUDIO_BRAIN_DEFAULT")
     return "claude"
+
+
+def _deepseek_model() -> str:
+    value = os.getenv("FIONA_STUDIO_DEEPSEEK_MODEL", "deepseek-flash")
+    if value in {"deepseek-flash", "deepseek-v4-pro"}:
+        return value
+    _warn("FIONA_STUDIO_DEEPSEEK_MODEL")
+    return "deepseek-flash"
 
 
 def _vision_model() -> str:

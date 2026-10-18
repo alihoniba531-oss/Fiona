@@ -1,0 +1,26 @@
+id: grammar-insert-closeup
+type: grammar
+title: 插入特写
+summary: 在主戏中切进 1 个局部物件或动作的短镜头，用细节承接信息、证据或选择。
+tags: [insert, closeup, prop, structure, material, face-closeup]
+sources:
+  - {name: 作者规则与 P01 实测, license: own, ref: docs/tasks/2026-10-18-studio-wo3e-director-kb/00-house-rules.md}
+  - {name: ai-visual-director 镜头语言, license: MIT, ref: ~/.claude/skills/ai-visual-director/knowledge/camera.md}
+  - {name: seedance-shot-design 运镜与焦段, license: MIT-0, ref: references/cinematography.md}
+  - {name: prop-asset 反面案例, license: Apache-2.0, ref: ~/.claude/skills/prop-asset/references/NEGATIVE-CASE-BOOK.md}
+version: 1
+definition: 插入特写是在主戏进行中切进 1 个局部物件、手部动作或短细节的镜头。它通常只有几秒，画面范围很紧，背景虚化或消失。
+narrative_use: 插入镜把关键证据、手部动作、时间或选择放大给观众，也可以作为转场和节奏停顿。它要回答主戏里的 1 个问题：谁拿了什么、锁有没有开、信上写了什么。没有信息作用的插入镜只是好看的空镜，会拖慢节奏。
+safe_prompt: 写“固定机位 + 视角 + 只拍什么 + 背景怎么处理”，例如“插入特写（固定机位，俯拍桌面，只拍右手把钥匙推到杯子旁）”“插入特写（手指按住信封封口，背景完全虚化）”。结构或材质是重点时，锁轮廓、连接点、基准色和光向。
+avoid:
+  - 插入镜没有信息，只是好看的空镜
+  - 插入镜里出现主戏没有的道具，或道具换手
+  - 手部或物件结构在插入镜里变形，却继续用在后面的镜头
+  - 用运动机位拍结构、材质或手部细节
+  - 插入镜的光向和主戏不一致
+related:
+  - grammar-action-match
+  - grammar-continuity
+  - grammar-lens-focal
+  - grammar-shot-size
+  - grammar-transition

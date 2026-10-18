@@ -1,0 +1,14 @@
+id: negative-focal-without-purpose
+type: negative
+title: 焦段没有叙事理由却写了
+summary: 每镜都填 50mm 和自然透视，只是占位，不帮助表演或空间。
+tags: [lens, focal-length, prompt-hygiene]
+sources:
+  - {name: 作者规则与 P01 返工记录, license: own, ref: docs/tasks/2026-10-18-studio-wo3e-director-kb/00-house-rules.md}
+  - {name: 分集拆镜规范, license: own, ref: ~/Desktop/视频生成/.claude/skills/shortfilm-pipeline/references/02-分集拆镜.md}
+  - {name: ai-visual-director 镜头与焦段, license: MIT, ref: ~/.claude/skills/ai-visual-director/knowledge/camera.md}
+version: 1
+wrong: 50mm 标准镜头，自然透视，浅景深，电影感。
+right: 没有明确意图时不写焦段；需要压迫感时写长焦从远处拍、背景被压缩；需要环境关系时写广角并说明人物占比。
+why: 焦段是叙事选择，不是必填装饰；无意义的数字会挤占提示词注意力，也可能和景别、机位打架。
+evidence: 作者规则（2026-10-18）：焦段有叙事意义才写；分集拆镜规范要求焦段、焦点没有叙事意义时填 inherit，不写自然透视这类填充词。

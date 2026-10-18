@@ -1,0 +1,14 @@
+id: negative-nonfixed-structure-material
+type: negative
+title: 结构、材质镜头用了运动机位
+summary: 人脸、结构、材质的敏感镜用推拉摇移，模型会在运动里重画零件和表面。
+tags: [static-camera, structure, material, face]
+sources:
+  - {name: 作者规则与 P01 返工记录, license: own, ref: docs/tasks/2026-10-18-studio-wo3e-director-kb/00-house-rules.md}
+  - {name: 分集拆镜规范, license: own, ref: ~/Desktop/视频生成/.claude/skills/shortfilm-pipeline/references/02-分集拆镜.md}
+version: 1
+wrong: 微距，镜头沿丝杠缓慢横移并推近，展示滚柱啮合。
+right: 微距，固定机位，机位和光向不变。让丝杠在原位缓慢旋转，滚柱保持独立、互不穿插。
+why: 运动机位会露出首帧没有的背面，模型必须补画；精密结构容易穿插，材质容易换样。敏感镜用固定机位，运动交给物体本身或剪辑。
+evidence: P01 的 3 次返工分别因环绕、推近上摇、下移让结构、人脸和材质出错；作者规则（2026-10-18）要求结构、材质、人脸敏感镜一律固定机位。
+applies_to: {scene_type: [process-closeup, fight, reveal]}

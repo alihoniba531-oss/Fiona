@@ -1,0 +1,26 @@
+id: grammar-shot-reverse-shot
+type: grammar
+title: 正反打
+summary: 在轴线同侧用 2 个相反机位交替拍对话双方，用景别与高度变化带出权力和情绪。
+tags: [shot-reverse-shot, dialogue, confrontation, two-person, axis, face-closeup]
+sources:
+  - {name: 作者规则与 P01 实测, license: own, ref: docs/tasks/2026-10-18-studio-wo3e-director-kb/00-house-rules.md}
+  - {name: ai-visual-director 镜头语言, license: MIT, ref: ~/.claude/skills/ai-visual-director/knowledge/camera.md}
+  - {name: ai-visual-director 剪辑理论, license: MIT, ref: ~/.claude/skills/ai-visual-director/knowledge/editing-theory.md}
+  - {name: 分集拆镜规范, license: own, ref: ~/Desktop/视频生成/.claude/skills/shortfilm-pipeline/references/02-分集拆镜.md}
+version: 1
+definition: 正反打是在轴线同一侧用 2 个相反方向的机位交替拍对话双方，通常配合过肩。正打从 A 的侧后方拍 B，反打从 B 的侧后方拍 A，观众的左右关系不翻。
+narrative_use: 正反打建立对话的来回、权力和情绪变化。每次反打可以调整景别和机位高度，暗示谁占上风；切点通常落在台词结束或反应发生时，不打断台词。双方距离、遮挡和背景也要随反打保持一致，观众才不会觉得换了空间。
+safe_prompt: 写“正打机位 + 反打机位 + 两侧同在轴线哪一侧 + 景别变化”，例如“正打（从 A 的右后方拍 B，中近景）→ 反打（从 B 的左后方拍 A，近景），两侧机位都在轴线同一侧”“反打景别比正打更近 1 档，接住 B 的沉默”。
+avoid:
+  - 正反打两侧机位跨轴，人物左右位置翻面
+  - 两边景别、角度完全一样，看起来像复制粘贴
+  - 反打时人物朝向、道具持手或背景陈设变了
+  - 在动作中间硬切，打断台词或反应
+  - 只写“正反打”不写机位在哪一侧
+related:
+  - grammar-axis-eyeline
+  - grammar-camera-angle
+  - grammar-continuity
+  - grammar-over-shoulder
+  - grammar-shot-size

@@ -1,0 +1,15 @@
+id: negative-unverified-model-syntax
+type: negative
+title: 把没核实过的模型写法当成定论
+summary: 把 1 个版本的时间戳、分辨率或文件上限套到另 1 个版本，会误导后续拆镜。
+tags: [model-spec, timestamp, verification, prompt-syntax]
+sources:
+  - {name: 作者规则与 P01 返工记录, license: own, ref: docs/tasks/2026-10-18-studio-wo3e-director-kb/00-house-rules.md}
+  - {name: seedance-shot-design-specs, license: MIT-0, ref: references/seedance-specs.md}
+  - {name: 分集拆镜规范, license: own, ref: ~/Desktop/视频生成/.claude/skills/shortfilm-pipeline/references/02-分集拆镜.md}
+version: 1
+wrong: Seedance 2.5 的时间戳一律按 24fps 逐帧写，2.0 也一样。
+right: 按模型版本分别记录，只写来源查得到的写法；来源没写清的标「待作者实测核实」，不把 1 个版本的规则外推到另 1 个版本。
+why: 2.5 与 2.0 的支持项并不相同，厂商手册也有未定项（720P+、CLI 命令、提示词长度上限）；把猜测写成定论，会让整批镜头按错误语法生成。
+evidence: 作者规则（2026-10-18）要求 Seedance 2.5 与 2.0 的时间戳按版本分开记录；seedance-specs 的「未核实与含糊项」一节列出 720P+、CLI 和提示词长度等未定内容。
+lint_pattern: '(?i)(?:seedance|万相|seedream)[^\n。；]{0,20}(?:时间戳|24\s*fps)[^\n。；]{0,8}(?:一律|统一|固定|必须)|(?:seedance|万相|seedream)[^\n。；]{0,20}(?:一律|统一|固定|必须)[^\n。；]{0,8}(?:时间戳|24\s*fps)'

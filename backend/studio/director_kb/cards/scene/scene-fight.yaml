@@ -1,0 +1,85 @@
+id: scene-fight
+type: scene
+title: 打斗
+summary: 近身攻防以目标、阻挡、受击和反制形成因果链；画面同框控制在 2 人以内。
+tags: [fight, action, close-combat, fast-cut, two-person]
+sources:
+  - {name: 作者规则、P01 约 3.9 秒/镜与生成下限（经验值，待作者成片统计校准）, license: own, ref: docs/tasks/2026-10-18-studio-wo3e-director-kb/00-house-rules.md}
+  - {name: 分集拆镜规范, license: own, ref: ~/Desktop/视频生成/.claude/skills/shortfilm-pipeline/references/02-分集拆镜.md}
+  - {name: 声画时间轴规范, license: own, ref: ~/Desktop/视频生成/.claude/skills/shortfilm-pipeline/references/05-声画时间轴.md}
+  - {name: 剪辑节奏与动作蒙太奇, license: MIT, ref: ~/.claude/skills/ai-visual-director/knowledge/editing-theory.md}
+  - {name: seedance-shot-design-scenarios, license: MIT-0, ref: references/scenarios.md}
+  - {name: seedance-shot-design-cinematography, license: MIT-0, ref: references/cinematography.md}
+  - {name: seedance-shot-design-failure-diagnosis, license: MIT-0, ref: references/failure-diagnosis.md}
+  - {name: seedance-shot-design-specs, license: MIT-0, ref: references/seedance-specs.md}
+version: 1
+scene_type: fight
+signals:
+  - 至少一方用身体或器械造成可见阻挡、击中、摔倒或逼退
+  - 攻防动作前后咬合，前一招直接改变下一招的条件
+  - 本场结束时，控制距离、身体状态或胜负关系发生变化
+beats:
+  - 亮出目标与距离，出现首个威胁动作
+  - 用一次试探和格挡交代攻击方向与力量差
+  - 一方抓住破绽施压，另一方以受击或失衡回应
+  - 地形、器械或反制改变主动权
+  - 以关键命中、失手、停手或逼退结束本场
+coverage:
+  - 远景固定，侧向平视：交代双方站位、出口和可利用物件，画面最多 2 人
+  - 中景侧向跟拍（镜头平行随人移动）：只拍无接触的走位、逼近或拉开距离；接触瞬间切到固定机位
+  - 固定插入特写，地面俯拍：只拍脚掌、手部或器械接触点，锁住结构和材质
+  - 中近景侧后方或过肩，固定机位：拍受击后的肩颈、呼吸与失衡，避免正面露脸
+  - 双人全景，侧向平视：用距离拉开或近身说明主动权变化，仍不超过 2 人同框
+  - 中景或全景固定，侧后方平视收束：交代胜负、伤势、出口与下一动作方向
+pacing:
+  fast: {shots_per_min: [26, 43], shot_seconds: [1.4, 2.3]}
+  mid:  {shots_per_min: [17, 26], shot_seconds: [2.3, 3.5]}
+  slow: {shots_per_min: [10, 17], shot_seconds: [3.5, 6.0]}
+camera:
+  - 快切段每条至少生成 4 秒，在一条视频里安排 2–3 个连续动作点，再裁成 1.4–2.3 秒多镜；生成时长 2–3 秒会迫使模型删动作或临场编补
+  - 每镜的主体动作与摄影机动作合计不超过 3 个，并按准备、施力或接触、反应、恢复排列因果
+  - 兵器、门框、器械结构、手部细节、人脸近景或关键材质一律固定机位；机位不动也不改焦
+  - 写实中景、近景、特写若走 Seedance，先排除正脸首帧：用逆光剪影、约 65° 俯拍加头发遮脸、远景或背影；必须清楚露脸时改走万相
+  - 同框上限为 2 人；人数更多时拆成双人冲突段和单人反应段，不用一条生成硬塞群战
+  - 人物始终看向对手、兵器接触点或逃出口，不把目光送进镜头；必要时先锁首帧视线
+  - 英文运镜词只作中文术语的补充；写成“侧向跟拍（镜头平行随人移动）”“轻推轨（镜头沿地面小幅靠近）”这类可执行短语
+sound:
+  - 每次命中只在接触帧触发一次冲击声，后续镜头沿用短尾音，不重复炸响
+  - 攻击前保留脚步、衣料、呼吸或器械蓄势声，命中后按需要抽空环境床 0.1–0.2 秒
+  - 剪辑点优先落在接触、格挡完成或重心改变的位置，让声音和动作共用同一切点
+ai_risks:
+  - risk: 3 人以上同框时，身份、手脚、兵器和攻防朝向容易互相串位
+    fallback: 每镜最多放 2 人；群战拆成一对一、背后受击和单独反应镜，再在剪辑中重建空间关系
+  - risk: 为 1.4–2.3 秒短镜单独生成时低于 4 秒下限，动作会被压缩或凭空补全
+    fallback: 每条先生成 4–6 秒，在连续动作段内预划 2–3 个切点，再按命中帧裁成短镜；生成内容不足 4 秒不提交
+  - risk: 写实人物的正脸中近景在 Seedance 首帧触发肖像闸
+    fallback: 有剧情价值的露脸镜改走万相；或者在首帧固定逆光剪影、约 65° 俯拍加头发遮脸、远景、侧背或背影，再验首帧通过后生成
+  - risk: 兵器、脚手架、门框或衣物材质在跟拍中弯折、穿模或换色
+    fallback: 将结构或材质镜改成固定插入镜头，首帧锁轮廓、连接点和基准色；关键接触拆成接触前后两段，必要处用局部特效或静态补镜
+  - risk: 短镜里堆叠多个动作，造成四肢粘连、击打悬空或攻守同时发生
+    fallback: 每镜只留一条因果链，动作单位超过 3 个就拆镜；先拍施力者，再拍受力点，最后拍反应
+  - risk: 受击或放狠话时人物把视线送进镜头，既破坏空间关系也增加肖像风险
+    fallback: 首帧和视频提示都指明视线落点；把目光写向对手、武器接触处或出口，回看生成后逐镜剔除看镜头帧
+example: |-
+  原创（写实、Seedance 2.5 规划；多镜头时间戳换机位，写法按模型版本查模型能力卡）：A=5s、B=6s、C=5s、D=5s；生成 21s／成片 15.8s；首尾约 0.5s。
+  1. 全景｜固定机位，侧向平视（镜头不动）｜罗川右手持短棍守门，韩策右手持钩杆踢袋｜1.8 秒（生成 A）
+  2. 中景｜固定机位，侧向平视（镜头不动）｜罗川抬腿避袋，短棍横挡钩杆｜1.6 秒（生成 A）
+  3. 特写｜固定机位，俯拍接触点（锁钩尖、棍身）｜钩尖咬棍，罗川左手移握中段｜1.5 秒（生成 B）
+  4. 中景｜固定机位，低机位侧拍（2 人侧身）｜韩策右手拉杆，罗川持棍以肩撞其胸口｜1.9 秒（生成 B）
+  5. 近景｜固定机位，逆光剪影（脸在暗处）｜韩策右臂挡棍、左手接杆，发梢遮脸｜1.4 秒（生成 B）
+  6. 中近景｜固定机位，侧面低拍（镜头不动）｜罗川绳圈绊膝，右手仍持棍，韩策持杆逼近｜1.7 秒（生成 C）
+  7. 全景｜固定机位，侧后方远拍（2 人入画）｜韩策钩杆压肩，罗川双手横棍顶住杆身｜2.0 秒（生成 C）
+  8. 中景｜固定机位，平视侧拍（避开正脸）｜韩策下压钩杆，罗川横棍顶回并挪向门边｜1.6 秒（生成 D）
+  9. 全景｜固定机位，侧向平视（镜头不动）｜罗川右手以棍尾顶开钩杆，韩策膝弯受击落地，钩杆仍在其左手｜2.3 秒（生成 D）
+related_grammar:
+  - grammar-shot-size
+  - grammar-camera-movement
+  - grammar-axis-eyeline
+  - grammar-action-match
+  - grammar-insert-closeup
+related_negative:
+  - negative-looking-at-camera
+  - negative-bare-camera-term
+  - negative-fight-sub-four-second-generation
+  - negative-photoreal-face-seedance
+  - negative-nonfixed-structure-material

@@ -1,0 +1,14 @@
+id: negative-bare-camera-term
+type: negative
+title: 英文运镜术语裸写
+summary: 只丢英文术语，模型可能当成专名或品牌，运镜不执行或乱走。
+tags: [camera, prompt-language, failure]
+sources:
+  - {name: 作者规则与 P01 返工记录, license: own, ref: docs/tasks/2026-10-18-studio-wo3e-director-kb/00-house-rules.md}
+  - {name: 分集拆镜规范, license: own, ref: ~/Desktop/视频生成/.claude/skills/shortfilm-pipeline/references/02-分集拆镜.md}
+  - {name: seedance-shot-design-failure-diagnosis, license: MIT-0, ref: references/failure-diagnosis.md}
+version: 1
+wrong: Dolly in，Crane up，Orbit。
+right: 推轨推进（镜头沿地面平稳靠近），摇臂升起（机位垂直升高并轻微俯拍），环绕（镜头绕主体转约 180°）。
+why: 裸写英文词可能被误判成姓名或品牌，指令直接失效；即使不拦，术语本身也没有方向、速度与起止，模型只能猜。写成术语加白话，轨迹才可执行。
+evidence: Seedance 失败诊断第 5 节把裸写 Dolly、Crane、Aerial 列为镜头指令失效的根因；作者规则（2026-10-18）要求术语后补中文白话。

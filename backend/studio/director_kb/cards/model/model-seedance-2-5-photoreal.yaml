@@ -1,0 +1,69 @@
+id: model-seedance-2-5-photoreal
+type: model
+title: Seedance 2.5 写实
+summary: Seedance 2.5 写实通道的规格、肖像闸与版权拦截、运镜风险和提示词语法。
+tags: [seedance, seedance-2-5, photoreal, video, first-frame, reference-images]
+sources:
+  - {name: 作者规则与 P01 实测, license: own, ref: docs/tasks/2026-10-18-studio-wo3e-director-kb/00-house-rules.md}
+  - {name: seedance-shot-design 官方规范整理, license: MIT-0, ref: references/seedance-specs.md}
+  - {name: seedance-shot-design 官方示例, license: MIT-0, ref: references/official-examples.md}
+  - {name: seedance-shot-design 失败诊断, license: MIT-0, ref: references/failure-diagnosis.md}
+  - {name: 逐集生产规范, license: own, ref: ~/Desktop/视频生成/.claude/skills/shortfilm-pipeline/references/03-逐集生产.md}
+  - {name: 接口速查, license: own, ref: ~/Desktop/视频生成/.claude/skills/shortfilm-pipeline/references/04-接口速查.md}
+version: 1
+model: seedance-2.5
+style: photoreal
+facts:
+  - 时长档位：标准生成 4–30 秒；超长视频 30–180 秒；延长源不超过 30 秒，新增 4–30 秒，结果不超过 60 秒（官方）
+  - duration=-1 可能表示平台自动时长；要求精确长度时不要假定（官方）
+  - 分辨率：官方手册参数为 480p 与 720p，不能据此手册声称官方支持 1080p（官方）
+  - MCP 通道额外提供 1080p；《侠客行》8 条 1080p 任务输出 1920×1080、24fps（实测）
+  - 480p 横幅输出 852×480、24fps（实测）
+  - 帧率：24fps（实测）
+  - 素材上限：图片 30 张、视频 10 段、音频 10 段；2.5 手册没有 12 个文件的混合上限（官方）
+  - 参考稳定性：图像不同主体 1–8 个较稳，9–12 个需要更多次；视频或音频主体 1–5 个较稳，6–10 个需要更多次（官方）
+  - 原生音频：支持音画联合（官方）
+  - MCP 里 generate_audio 的默认值可能已经打开，工作室提交时改传 false（实测）
+  - 首帧模式不要发送 camera_fixed，实测返回 HTTP 400；固定机位写进视频提示词（实测）
+  - 提示词上限：MCP 参数校验 2000 字符；官方手册未给字符上限（官方）
+  - 参考价：720p 约 2–2.6 元/秒，1080p 约 3.4 元/秒（实测参考价，以 list_video_models 为准）
+portrait_gate: 写实风格的中景、近景和特写，只要首帧出现可辨认正脸，就可能被拒；平台明确拒单时不计费（作者实测）。可用的规避路径有：背影或远景；航拍；强逆光做成剪影；约 65° 俯拍让头发遮住脸。必须让观众看清口型或正脸时，换万相。
+copyright: 形象近似知名 IP 时，常常要等生成完成后才被拦，不计费但白等约 6 分钟（作者实测）。对策：先做美术方向差异化；兜底把角色压成小剪影，不超过画高的 1/8；不点名 IP 角色，不描写标志性服饰和道具组合；过肩背影只露出标志性头饰也可能被拦。
+motion_risks:
+  - 跟拍或拉远会把画外区域带进画面，只露局部的巨物容易被编成别的生物并缩小体型（作者实测）
+  - 环绕会让模型补出不存在的结构连接，P01 出现丝杠穿进滚柱（作者实测）
+  - 推近后上摇会露出原本看不见的 AI 正脸（作者实测）
+  - 下移镜头会让材质漂移，P01 的金属屑变成木刨花（作者实测）
+  - 多主体复杂动作里身份、手脚、兵器容易串位；同框压到 2 人，群战拆成 2 人段和 1 人反应段（作者规则）
+  - 长提示词里运镜指令容易被忽略；主运镜放前面，每镜只留 1 个（官方失败诊断）
+prompt_syntax:
+  - 时间戳用有序区间，例如 [00.0-05.0s]、0-5秒、0:30-0:45；把动作、对白、音效和转场绑到明确区间（官方）
+  - 官方示例支持帧锚点；只有提示词或制作说明已确定 24fps 时才按 24fps 换算（官方）
+  - 复杂 30 秒按“多模态参考层 → 全局设定 → 时间戳剧本 → 全局连续性与负向约束”组织（官方）
+  - 素材令牌照界面原样写 @图片1、@视频1、@音频1，不要自行改编号（官方）
+  - 声音括号：() 背景音乐、<> 音效、{} 对白、【】字幕（官方）
+  - Seedance 2.0 与 2.5 的时间戳写法相反（作者规则）；2.0 的具体格式在 §11 来源中查不到，待作者实测核实，不能按 2.5 的区间格式反推
+  - 首帧模式不发送 camera_fixed，实测返回 HTTP 400；固定机位写进视频提示词
+  - 提示词控制在 2000 字符内；先删重复形容词和静态外观，只留动作、运镜和连续性（实测）
+max_characters: 2
+lint_rules:
+  - id: seedance-portrait-photoreal
+    when: {realism: photoreal, shot_size_in: [中景, 中近景, 近景, 特写], face_visible: true}
+    level: warn
+    message: '写实露脸的中景到特写走 Seedance，首帧可能被肖像闸拒绝；改用万相，或改成剪影、背影、远景，或用约 65° 俯拍让头发挡脸。'
+  - id: seedance-camera-fixed
+    pattern: '(?i)camera_fixed\s*[:=]\s*true'
+    level: warn
+    message: 'Seedance 2.5 首帧模式不要发送 camera_fixed，实测会返回 HTTP 400；固定机位写进视频提示词。'
+  - id: seedance-2-0-timestamp
+    pattern: '(?i)(seedance\s*2\.0|seedance20)'
+    level: warn
+    message: 'Seedance 2.0 的时间戳格式未在 §11 来源核实，不能按 2.5 的区间写法写成定论；待作者实测核实。'
+  - id: seedance-prompt-too-long
+    pattern: '(?s)^.{2001,}$'
+    level: warn
+    message: '提示词超过 2000 字符，MCP 可能拒收；先删重复形容词和静态外观，只留动作、运镜和连续性。'
+  - id: seedance-crowd
+    pattern: '(?i)(3\s*人同框|4\s*人同框|群战|混战|群像)'
+    level: info
+    message: '同框超过 2 人时身份、手脚和兵器容易串位；拆成 2 人段和 1 人反应段，再在剪辑里重建空间。'

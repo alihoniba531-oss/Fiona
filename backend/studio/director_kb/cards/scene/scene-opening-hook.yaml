@@ -1,0 +1,73 @@
+id: scene-opening-hook
+type: scene
+title: 开场钩子
+summary: 叠加在内容卡上的位置卡，在片头先用异常和问题抓住观众，再补空间与人物。
+tags: [opening, hook, cold-open, position-card, question]
+sources:
+  - {name: 作者规则与 P01 实测, license: own, ref: docs/tasks/2026-10-18-studio-wo3e-director-kb/00-house-rules.md}
+  - {name: 分集拆镜规范, license: own, ref: ~/Desktop/视频生成/.claude/skills/shortfilm-pipeline/references/02-分集拆镜.md}
+  - {name: 声画时间轴规范, license: own, ref: ~/Desktop/视频生成/.claude/skills/shortfilm-pipeline/references/05-声画时间轴.md}
+  - {name: 叙事结构, license: MIT, ref: ~/.claude/skills/ai-visual-director/knowledge/narrative-structures.md}
+  - {name: 转场与蒙太奇参考, license: MIT, ref: ~/.claude/skills/ai-visual-director/knowledge/transitions.md}
+  - {name: 镜头语言参考, license: MIT, ref: ~/.claude/skills/ai-visual-director/knowledge/camera.md}
+version: 1
+scene_type: opening-hook
+signals:
+  - 事件位于片头或集首的前几个镜头
+  - 画面或台词立即打破常态，先给异常再解释
+  - 留下明确但尚未回答的问题
+beats:
+  - 第 1 镜先给异常结果、损失或威胁，不先解释
+  - 前 3 个镜头内亮出最小冲突：谁要什么、谁在阻止
+  - 给观众 1 个具体问题，并在片头结束前不回答
+  - 留 1 个可回看的视觉证据，例如物件、伤痕或空位
+  - 钩子末端切到常态或标题，形成落差
+coverage:
+  - 特写｜固定机位，俯拍（镜头不动）：第 1 镜给异常结果，画面只放 1 个信息
+  - 全景｜固定机位，平视：第 2 镜补空间与出口，仍不解释异常来源
+  - 近景或插入特写｜固定机位：第 3 镜给 1 个可记住的证据，锁住形状或位置
+  - 中景｜固定机位，侧后方：收在人物反应或动作启动的瞬间，不补结果
+pacing:
+  fast: {shots_per_min: [26, 40], shot_seconds: [1.4, 2.4]}
+  mid:  {shots_per_min: [18, 26], shot_seconds: [2.4, 3.8]}
+  slow: {shots_per_min: [10, 16], shot_seconds: [3.8, 6.0]}
+camera:
+  - 第 1 镜优先固定机位加结果特写，不用航拍或拉远先交代环境；环境放到第 2 镜补
+  - 钩子的关键证据用固定插入镜，机位与焦段不动，锁光向与材质；文字归后期
+  - 开场若是打斗或追逐，按内容卡的拍法执行，但第 1 个动作点要在前 2 秒出现
+sound:
+  - 开场先给 1 个不属于常态的声音，或突然的静默，再补环境床
+  - 钩子的问题不用旁白解释，旁白最多 1 句悬念
+  - 第 1 次冲击声与画面异常同帧，后面不重复
+  - 切出前留 0.2–0.5 秒余音，把问题带进下 1 段
+ai_risks:
+  - risk: 第 1 镜信息太多，异常被拍成普通空镜
+    fallback: 1 镜只放 1 个异常；用首帧锁证据，其余信息留给第 2、3 镜
+  - risk: 用拉远或航拍补环境，把画外内容编出来
+    fallback: 改固定机位，异常保持在画框内；环境镜单独拍，不与异常同条生成
+  - risk: 观众不知道哪里不对
+    fallback: 给 1 个可对比的常态细节，例如整齐的桌面和 1 把倒下的椅子，再让异常打破它
+  - risk: 钩子拖太久，变成完整场景
+    fallback: 前 3 个镜头内抛出问题，然后交给内容卡继续；钩子不负责解决
+example: |-
+  原创示例（深夜书店，开场钩子；按成片时值记）：
+  1. 特写｜固定机位，俯拍收银机抽屉（镜头不动）｜抽屉弹开，里面码着 1 叠小票，最上面 1 张印着明天的日期｜3.0 秒
+  2. 中近景｜固定机位，侧后方（避开正脸）｜店主阿澄的手停在抽屉边，呼吸变浅｜3.4 秒
+  3. 全景｜固定机位，平视｜书店全貌：门已锁，书架整齐，只有收银台亮着 1 盏灯｜4.2 秒
+  4. 中景｜固定机位，侧向平视｜她绕出柜台检查后门，门链完好｜3.8 秒
+  5. 特写｜固定机位，俯拍票面｜小票背面有 1 行手写数字，和书架上 1 本书的编号相同｜2.8 秒
+  6. 中景｜固定机位，平视｜她抽出那本书，书页里夹着 1 把不属于店里的钥匙｜3.6 秒
+  7. 中近景｜固定机位，侧后方（镜头不动）｜她抬头看向监控死角，画面切黑｜4.0 秒
+related_grammar:
+  - grammar-establishing-shot
+  - grammar-insert-closeup
+  - grammar-transition
+  - grammar-shot-size
+  - grammar-camera-angle
+related_negative:
+  - negative-no-establishing-shot
+  - negative-too-many-actions
+  - negative-looking-at-camera
+  - negative-giant-offscreen-camera-move
+  - negative-bare-camera-term
+position: opening

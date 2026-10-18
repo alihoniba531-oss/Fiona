@@ -1,0 +1,87 @@
+id: scene-ensemble
+type: scene
+title: 群戏
+summary: 3 人以上在同一戏剧单元争夺注意力和决策权，关系网共同推动场面变化。
+tags: [ensemble, group, multi-character, power-shift, blocking]
+sources:
+  - {name: 作者规则、P01 约 3.9 秒/镜与生成下限（经验值，待作者成片统计校准）, license: own, ref: docs/tasks/2026-10-18-studio-wo3e-director-kb/00-house-rules.md}
+  - {name: 分集拆镜规范, license: own, ref: ~/Desktop/视频生成/.claude/skills/shortfilm-pipeline/references/02-分集拆镜.md}
+  - {name: 声画时间轴规范, license: own, ref: ~/Desktop/视频生成/.claude/skills/shortfilm-pipeline/references/05-声画时间轴.md}
+  - {name: 剪辑理论与平行剪辑, license: MIT, ref: ~/.claude/skills/ai-visual-director/knowledge/editing-theory.md}
+  - {name: 镜头语言与群像调度, license: MIT, ref: ~/.claude/skills/ai-visual-director/knowledge/camera.md}
+  - {name: 构图与多人站位, license: MIT, ref: ~/.claude/skills/ai-visual-director/knowledge/composition.md}
+  - {name: seedance-shot-design-failure-diagnosis, license: MIT-0, ref: references/failure-diagnosis.md}
+  - {name: seedance-shot-design-scenarios, license: MIT-0, ref: references/scenarios.md}
+version: 1
+scene_type: ensemble
+signals:
+  - 至少 3 人有各自立场或利益，互相牵制
+  - 台词、走位和反应在多人之间转移，不止 1 对人在交换信息
+  - 结盟、沉默、倒戈或群体决定改变场面结果
+  - 空间相对连续，不是跨时空碎片
+beats:
+  - 用双人段和画外人声交代会议规模、出入口和桌椅布局
+  - 先让 1 组 2 人发声，其他角色用单人镜或画外反应站队
+  - 新信息或要求进入，迫使中间人物选择
+  - 立场移动，出现结盟、沉默或倒戈
+  - 群体决定落下，用双人站位、空椅和画外人声收束
+coverage:
+  - 中景双人，侧向平视：交代会议桌一侧的 2 名主事者、桌面文件和出入口方向
+  - 中近景过肩，越过 1 人肩部：拍 2 人对峙，画外传来第 3 人的插话
+  - 单人近景，固定机位：拍中间人物的犹豫，背景人影虚化，不露第 3 张正脸
+  - 固定插入特写，桌面俯拍：拍手、文件、杯子或投票物件，交代多人参与
+  - 中景双人，侧向平视：拍结盟或倒戈后的 2 人新站位，空椅留在画面边缘
+  - 中景双人，侧向平视：收束会议结果，画外人声和脚步交代其他人离席
+pacing:
+  fast: {shots_per_min: [18, 27], shot_seconds: [2.2, 3.4]}
+  mid:  {shots_per_min: [11, 18], shot_seconds: [3.4, 5.4]}
+  slow: {shots_per_min: [6, 11],  shot_seconds: [5.4, 9.0]}
+camera:
+  - 群戏靠剪辑重建关系：每镜同框最多 2 人，用双人段、单人反应、空椅和画外人声交代 3 人以上的场面
+  - 人物视线落在对手或桌面，不看镜头；听者用侧脸、肩线和手部动作反应
+  - 每镜只保留 1 个主动作和 1 个反应，主体与摄影机动作合计不超过 3 个
+  - 需要群像规模时用远景、高位俯拍或背影，人物在画面中占小比例，可辨认正脸不超过 2 人；不做多人运动镜头
+  - 桌面、文件、手部或关键道具用固定插入特写；人脸近景固定机位
+  - 写实人物走 Seedance 时避开正脸首帧：用侧后、过肩、逆光剪影、头发遮脸、约 65° 俯拍或远景；群像露脸优先万相
+  - 写实人物保持干净、有精气神，灰尘和油污只留在桌面与道具，瑕疵最多 1 项
+  - 每条生成至少 4 秒；群戏按 2 人段落、单人反应、远景规模镜拆段
+sound:
+  - 先铺空间底噪和桌面声，再按发言顺序加台词；不要把所有声音压在同等音量
+  - 多人同时说话只保留 1 条主台词，其他处理成低语或环境声
+  - 椅子移动、杯子放下、文件翻动只在动作帧发 1 次声；群体沉默时保留房间底噪
+ai_risks:
+  - risk: 把 3 人以上塞进同 1 镜时，身份、服装和站位互相串位
+    fallback: 每镜同框最多 2 人；先用双人段和单人反应建立关系，再用远景或空椅交代规模；不用 1 条生成硬塞群戏
+  - risk: 多人对话时视线乱飞，人物看向镜头
+    fallback: 每镜只写 1 个主说话人和 1 个主听者，视线落点写到人；逐个镜头检查，看镜头帧整条重做
+  - risk: 写实群像正脸在 Seedance 首帧被肖像闸拒绝
+    fallback: 群像用远景、高位俯拍或背影；近景改侧后、过肩或剪影；必须露脸时用万相
+  - risk: 手部、文件、投票物件在多人传递中变形或归属错乱
+    fallback: 关键物件单独拍固定插入特写，写明持手和交接顺序；复杂传递拆成递出和接住 2 段
+  - risk: 多人同时动作，画面拥挤，观众找不到主信息
+    fallback: 每镜只给 1 个主动作和 1 个反应；其余角色留在画外或只给虚化人影，必要时拆镜
+  - risk: 群体制服、阵营配色或头饰组合接近知名 IP，Seedance 生成完才被版权拦截
+    fallback: 先做美术差异化，打散标志性配色与配饰组合；兜底把群像压成不超过画高 1/8 的小剪影，或改用万相
+example: |-
+  原创示例（社区活动室，业主会议表决停车位改造；镜头时长按成片裁切计，每条生成至少 4 秒）：
+  1. 中景双人｜固定机位，侧向平视（机位固定）｜老唐把改造图推到阿芮面前，阿芮没有接，桌边摆着 2 把空椅｜5.0 秒
+  2. 中近景｜固定机位，过肩（越过阿芮右肩看老唐）｜老唐说：「今天必须定。」阿芮的笔停在签名栏上方｜4.0 秒
+  3. 单人近景｜固定机位，侧后 45°｜阿芮看向桌面，背景只有虚化的人影和椅背，画外有人清嗓子｜3.2 秒
+  4. 特写｜固定机位，桌面俯拍｜阿芮把笔放下，笔尖压住图纸上的消防通道；画外传来低声议论｜2.4 秒
+  5. 中景双人｜固定机位，侧向平视｜年轻住户走到阿芮身侧，老唐把图纸往回抽｜3.6 秒
+  6. 中景双人｜固定机位，侧向平视｜老唐与年轻住户隔着桌角对视，画面边缘只剩空椅｜4.4 秒
+  7. 中景双人｜固定机位，侧向平视｜老唐收起图纸，阿芮把笔放进袋里，画外脚步散去｜4.8 秒
+related_grammar:
+  - grammar-shot-size
+  - grammar-camera-angle
+  - grammar-camera-movement
+  - grammar-axis-eyeline
+  - grammar-continuity
+  - grammar-establishing-shot
+related_negative:
+  - negative-looking-at-camera
+  - negative-bare-camera-term
+  - negative-photoreal-face-seedance
+  - negative-crowded-frame
+  - negative-axis-jump
+  - negative-prop-continuity-break

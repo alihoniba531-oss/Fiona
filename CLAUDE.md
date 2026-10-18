@@ -179,7 +179,7 @@ P2.1 建书可选 `drama_adaptation`（默认 false，建书后不可修改）�
 
 已知局限：火山没有局部编辑，改一段词只能整首重新生成、旋律不保证延续；`Captions` 未解析；只对 Claude 智能体模式开放；P0 只接火山、一次一版；备份脚本尚未包含写歌目录（P2）。
 
-## 短片工作室 WO1–WO3d
+## 短片工作室 WO1–WO3e
 
 `backend/studio/` 与 `routers/studio.py` 提供作者私用的首帧视频接口；`/studio`、`/studio/[id]` 提供项目列表与单镜试拍前端。全部 `/studio/*`（含文件）要求开关非字面 `0`、精确命中 `FIONA_STUDIO_OWNERS` 与 Bearer/Cookie JWT；不满足一律 404、`private, no-store`。中间件记录 `auth_method=jwt/dev`，其他路由鉴权保持原行为。
 
@@ -206,6 +206,8 @@ WO2：桌面侧栏仅在 `/studio/access` 返回 200 后运行时追加「工作
 
 WO3a：`studio.brain` 统一 Claude BYOK/千问/DeepSeek 适配，`brain_tasks` 和 prompts 定义四类任务，完整 schema 本地严格校验。`brain_jobs` 在 BEGIN IMMEDIATE 中预检/预留，create_background_task 执行，每提供方最多3个；queued重启后恢复，running重启转uncertain。首次模型请求不重试，只有 JSON/硬约束不合格可明确修正一次，分别建 job 与计费。千问/DeepSeek沿用全工作室人民币日额度，Claude按作者上海自然月美元额度，默认40，DEV_MODE不豁免。看图时非Claude统一交给 `FIONA_STUDIO_VISION_MODEL` 指定的千问视觉模型，默认 `qwen3-vl-plus`；DeepSeek永不接收图片。原文是不可信数据，日志仅写ID/状态/错误码。
 
+工作室 DeepSeek 导演模型由 `FIONA_STUDIO_DEEPSEEK_MODEL` 控制，取值 `deepseek-flash`（默认，V4.1 Flash）或 `deepseek-v4-pro`；非法值告警后回落 `deepseek-flash`，只作用于工作室，不影响聊天、BYOK 与小说工坊。
+
 工作室视觉模型每次调用时读取配置；允许空值，空值使用默认 `qwen3-vl-plus` 且不告警。非空值须匹配 `^[a-z0-9][a-z0-9.\-]{1,63}$`，非法值回落 `qwen3-vl-plus` 且只告警一次。`/studio/brain/providers` 的 `vision_via` 与「看图由千问视觉（实际模型）完成」警告均注明实际模型，手动评测报告同样记录。`qwen3-vl-plus` 默认输入/输出价为每百万 token ¥1/¥10（待核实），可用 `FIONA_STUDIO_PRICE_QWEN3_VL_PLUS` 覆盖；旧 `qwen-vl-max` 价目保留以兼容旧job。自定义视觉模型没有配置单价时返回409，不发模型请求。此配置只作用于工作室；聊天看图由 `FIONA_CHAT_VISION_MODEL` 单独配置（默认 `qwen3.8-omni-flash`）。
 
 新增补列由 `studio.store.migrate_schema` 执行。旧jobs.provider/status的CHECK原样保留：brain行原provider列使用兼容占位wan，新增brain_provider是权威提供方，所有数据库读取统一对外转为真实provider；invalid_output保存在既有failed状态加错误码并在读取时还原。视频调度查询明确kind=i2v。不得重建或删除老表以改变约束。
@@ -219,3 +221,7 @@ G1 定妆：总表里的人物/场景/道具逐条定妆或标「不需要定妆
 声线只针对人物：每角色最多 3 个试听方案（引擎、音色、语速、音高、表演指示、声线特效），用一句试听台词生成、作者选定一条定档。中文默认用豆包语音 2.0（付费，不弹报价框但先预留额度并受上限约束），CosyVoice 与 edge-tts 保留为备选；英文用 edge-tts（免费）。豆包方案可写最多 200 字的「表演指示」，用自然语言说明情绪、语气与场景；定档时填写可修改的「角色基调」，后续逐句配音会合并角色基调与每句表演指示。声线特效分机器人/巨兽/内心独白三档，特效之后做两遍 loudnorm 响度标准化，输出 48kHz 单声道 s16 WAV；`studio.audio.process_voice` 在系统没有 ffmpeg 时抛 `RuntimeError("ffmpeg unavailable")`，不静默降级，子进程超时会被 kill。
 
 出图与配音各有独立在途上限，`FIONA_STUDIO_MAX_INFLIGHT_IMAGE` 默认 3、`FIONA_STUDIO_MAX_INFLIGHT_TTS` 默认 2，合法 1–10，非法值回落默认并只告警一次。单价 `FIONA_STUDIO_PRICE_SEEDREAM_CNY` 默认 0.30 元/张（响应不含计费字段，按此价预留与结算）、`FIONA_STUDIO_PRICE_DOUBAO_TTS_CNY_PER_10K_CHARS` 默认 3.0 元/万字符、`FIONA_STUDIO_PRICE_COSYVOICE_CNY_PER_10K_CHARS` 默认 2.0 元/万字符（按字符数预留与结算，最低 0.01 元，表演指示不计费），均待核实、调用时读取。豆包 Key 取 `VOLC_SPEECH_API_KEY`，资源 ID 取 `VOLC_SPEECH_RESOURCE_ID`（默认 `seed-tts-2.0`）；在火山引擎「豆包语音」控制台开通「语音合成 2.0」，再到「API Key」页复制。出图与配音沿用付费只发一次：超时、断连、5xx 与坏 JSON 记 uncertain 并保留预留，完整 4xx/429 释放。唯一新增依赖 `edge-tts==7.3.1`，另需系统 ffmpeg；离线测试见 `test_studio_casting_prompts.py` 与各块 `test_studio_casting_*` / `test_studio_media_*`。本期不做导演看图质检、关键帧、视频与本集剧本。
+
+WO3e 导演知识库：`studio.director_kb` 读取 `backend/studio/director_kb/cards/` 下的本地 YAML，分语法 13 张、场景 19 张（17 张内容卡和 2 张位置卡）、模型能力 5 张、反例 21 张；按场景类型、位置、节奏、情绪、人数、写实度、内外景与敏感标记选取模板、语法、模型卡和最多 3 条反例，注入文本上限 8000 字，模板、位置与模型卡不裁。`lint_shots` 检查裸写运镜术语、看镜头、单镜动作超 3 个、敏感镜非固定机位、Seedance 写实露脸与生成不足 4 秒，并叠加模型卡和反例卡的数据驱动规则。案例库 `studio_exemplars` 与节奏统计 `studio_stats` 是本期新增的 2 张表，删号同事务清理；统计累计不足 5 集时只返回未就绪状态。
+
+知识库页面 `/studio/kb` 只有作者可进，7 个页签为语法、场景模板、模型能力、反例、案例库、节奏统计、试拆对比；试拆对同一场戏带与不带知识库各拆 1 次并排展示，报价 15 分钟内只确认 1 次。项目可设 `review_provider`，默认 `qwen`，可选 `claude/deepseek/off`，关闭时不发审核、也不计审核费；审核失败只写进结果，不影响试拆状态。卡片、案例和统计都在本地，运行时不访问任何外部资源；正式接入逐集拆镜留到 WO4。

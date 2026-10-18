@@ -1,0 +1,14 @@
+id: negative-transient-look-in-sheet
+type: negative
+title: 定妆图画了临时状态
+summary: 把风吹、淋湿、受伤画进定妆图，后续每镜都会被这套状态绑住。
+tags: [casting, continuity, transient-state]
+sources:
+  - {name: 作者规则与 P01 返工记录, license: own, ref: docs/tasks/2026-10-18-studio-wo3e-director-kb/00-house-rules.md}
+  - {name: 分集拆镜规范, license: own, ref: ~/Desktop/视频生成/.claude/skills/shortfilm-pipeline/references/02-分集拆镜.md}
+version: 1
+wrong: 定妆图：人物刚淋过雨，头发湿透，脸上带伤，衣服在风里飘。
+right: 定妆只画常态：干燥整洁的发型、无伤妆、自然垂落的衣料、中性表情；风雨、伤痕和凌乱留到具体镜头再写。
+why: 定妆是跨镜复用的身份锚点；临时状态一旦进图，模型会在不该出现的场景继续沿用，后续连戏也难改。
+evidence: 作者规则（2026-10-18）：定妆只画常态造型，风吹、淋湿、受伤属于具体镜头。
+lint_pattern: '(?:定妆)[^\n。；]{0,20}(?:淋湿|湿透|受伤|流血|风吹|大汗|雨淋)|(?:淋湿|湿透|受伤|流血|风吹|大汗|雨淋)[^\n。；]{0,20}(?:定妆)'

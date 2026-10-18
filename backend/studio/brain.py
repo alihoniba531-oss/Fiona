@@ -376,7 +376,9 @@ class QwenProvider:
         self.model = type(self).model if model is None else model
         self._vision_model_snapshot = get_settings().vision_model
         self._pinned_vision_model: str | None = None
-        if not isinstance(self.model, str) or not self.model or self.model not in {type(self).model, self._vision_model_snapshot}:
+        allowed_models = {type(self).model, self._vision_model_snapshot}
+        allowed_models.update(getattr(type(self), "allowed_models", ()))
+        if not isinstance(self.model, str) or not self.model or self.model not in allowed_models:
             raise BrainProviderError("rejected", "invalid_model", "导演模型配置不受支持")
         self.client_factory = client_factory
 
@@ -462,13 +464,16 @@ class QwenProvider:
 
 class DeepSeekProvider(QwenProvider):
     provider = "deepseek"
-    model = "deepseek-v4-pro"
+    model = "deepseek-flash"
+    allowed_models = ("deepseek-flash", "deepseek-v4-pro")
     key_name = "DEEPSEEK_API_KEY"
     base_url = DEEPSEEK_BASE_URL
 
-    def __init__(self, *, api_key=None, client_factory=None):
+    def __init__(self, *, api_key=None, model=None, client_factory=None):
         try:
-            super().__init__(api_key=api_key, client_factory=client_factory)
+            super().__init__(api_key=api_key,
+                             model=get_settings().deepseek_model if model is None else model,
+                             client_factory=client_factory)
         except BrainProviderError as exc:
             if exc.code == "missing_configuration":
                 raise BrainProviderError("rejected", exc.code, "DeepSeek 平台 Key 未配置，未发起导演调用") from None
@@ -498,11 +503,12 @@ async def provider_options(username: str) -> list[dict]:
         else:
             claude.update(available=True, model=config["model"])
     vision_model = get_settings().vision_model
+    deepseek_model = get_settings().deepseek_model
     return [claude, *[
         {"id": provider, "label": label, "available": bool(os.getenv(key, "").strip()), "model": model,
          "vision_via": vision_model, **({} if os.getenv(key, "").strip() else {"reason": label + "平台 Key 尚未配置"})}
         for provider, label, key, model in (("qwen", "千问", "DASHSCOPE_API_KEY", "qwen3.8-max"),
-                                          ("deepseek", "DeepSeek", "DEEPSEEK_API_KEY", "deepseek-v4-pro"))
+                                          ("deepseek", "DeepSeek", "DEEPSEEK_API_KEY", deepseek_model))
     ]]
 
 

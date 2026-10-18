@@ -18,6 +18,7 @@ import BrainTrial, { BrainProviderPicker } from "./BrainTrial";
 import SourcePanel from "./SourcePanel";
 import BreakdownStage from "./BreakdownStage";
 import CastingStage from "./CastingStage";
+import ReviewProviderPicker from "./kb/ReviewProviderPicker";
 
 const stages = ["①拆解", "②定妆", "③分镜", "④镜头", "⑤成片"] as const;
 
@@ -128,11 +129,13 @@ export function AccountStudioWorkbench({ id, owner, embedded }: { id: string; ow
   return <StudioShell embedded={embedded}>
     <header className="mb-5">
       <Link href={studioHref("/studio", embedded)} className="mb-2 inline-flex min-h-10 items-center gap-1 text-sm text-[color:var(--ink2)]"><ArrowLeft size={14} />全部项目</Link>
+      <Link href={studioHref("/studio/kb", embedded)} className="mb-2 ml-3 inline-flex min-h-10 items-center text-sm text-[color:var(--ink2)]">导演知识库</Link>
       <Glaze variant="panel" lens={false} backdrop={!embedded} className="min-w-0 rounded-2xl p-5">
         <div className="flex min-w-0 flex-wrap items-center justify-between gap-3"><h1 className="min-w-0 break-words text-[26px] tracking-[.24em]">{project?.title ?? "短片工作室"}</h1>{project && <span className="chip">{project.aspect}</span>}</div>
         {embedded && <a href={`/studio/${encodeURIComponent(id)}`} target="_blank" rel="noopener noreferrer" className="btn btn-quiet mt-3 min-h-10">在新页面打开</a>}
         {access && <StudioBudget access={access} />}
         {project && <BrainProviderPicker providers={providers} current={project.brain_provider ?? "claude"} busy={busy} onChange={changeProvider} />}
+        {project && <ReviewProviderPicker projectId={id} owner={owner} brainProvider={project.brain_provider ?? "claude"} busy={busy} />}
       </Glaze>
     </header>
     {!owner ? <EmptyState>请登录后打开工作室。</EmptyState> : loading ? <LoadingState>正在打开项目…</LoadingState> : unavailable ? <EmptyState>暂未开放</EmptyState> : <>
