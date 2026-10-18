@@ -1,0 +1,15 @@
+id: negative-ip-lookalike
+type: negative
+title: 形象近似知名 IP
+summary: 点名或照搬知名角色的标志性造型，Seedance 生成完才拦，不计费但白等。
+tags: [copyright, ip, seedance, character-design]
+sources:
+  - {name: 作者规则与 P01 返工记录, license: own, ref: docs/tasks/2026-10-18-studio-wo3e-director-kb/00-house-rules.md}
+  - {name: 分集拆镜规范, license: own, ref: ~/Desktop/视频生成/.claude/skills/shortfilm-pipeline/references/02-分集拆镜.md}
+version: 1
+wrong: 照着某部动画电影的角色造型写外形：标志性头饰、披风和专属武器，镜头推近到人物占画高 1/4。
+right: 做美术方向差异化：换轮廓、材质和配色，只保留功能相似的道具；不确定时把角色压成不超过画高 1/8 的小剪影，不点名、不写标志性服饰和道具组合。
+why: 版权拦截看的是造型组合，不只是名字；等生成完才拦会浪费整条排队时间。过肩背影只露标志性头饰，也可能被拦。
+evidence: 作者规则（2026-10-18）版权拦截条目：形象近似知名 IP 时要等生成完才拦，不计费但白等约 6 分钟；优先美术差异化，兜底压成小剪影。
+applies_to: {model: [seedance-2.5]}
+lint_pattern: '(?<!不)(?<!要)(?<!别)(?<!勿)(?:照着|照搬|复刻|还原)[^\n。；]{0,12}(?:动画|电影|游戏|动漫)[^\n。；]{0,8}(?:角色|造型|形象)'

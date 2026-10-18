@@ -1,0 +1,77 @@
+id: scene-intimacy
+type: scene
+title: 告白 / 亲密
+summary: 用距离、触碰、呼吸和视线让关系发生可观察的变化，压力来自暴露真心。
+tags: [intimacy, confession, romance, two-person, closeness]
+sources:
+  - {name: 作者规则与 P01 实测, license: own, ref: docs/tasks/2026-10-18-studio-wo3e-director-kb/00-house-rules.md}
+  - {name: 分集拆镜规范, license: own, ref: ~/Desktop/视频生成/.claude/skills/shortfilm-pipeline/references/02-分集拆镜.md}
+  - {name: 声画时间轴规范, license: own, ref: ~/Desktop/视频生成/.claude/skills/shortfilm-pipeline/references/05-声画时间轴.md}
+  - {name: 身体语言与姿态, license: MIT, ref: ~/.claude/skills/ai-visual-director/knowledge/body-language.md}
+  - {name: 微表情库, license: MIT, ref: ~/.claude/skills/ai-visual-director/knowledge/micro-expressions.md}
+  - {name: 台词节奏, license: MIT, ref: ~/.claude/skills/ai-visual-director/knowledge/dialogue-rhythm.md}
+version: 1
+scene_type: intimacy
+signals:
+  - 动作重点在距离、触碰、呼吸和眼神，台词可以很少
+  - 一方或双方承担被拒绝的风险
+  - 身体靠近或退开改变了关系的定义
+beats:
+  - 用日常动作维持距离，2 人各占画面一侧
+  - 一方主动缩短距离，递物、坐下或整理衣领，另一方没有退开
+  - 台词暴露真心，出现被拒绝的风险
+  - 触碰或几乎触碰，呼吸与视线发生变化
+  - 以接受、迟疑或退开给出关系的新状态
+coverage:
+  - 中景双人｜固定机位，侧向平视：交代距离、站位和 2 人之间的物件
+  - 中近景过肩｜固定机位（越过一方肩头看对方）：把观众放到被告白者一侧
+  - 近景｜固定机位，侧后方略低于视线（只带到耳廓与颈线）：接告白台词，不露正脸
+  - 插入特写｜固定机位，俯拍手部：手靠近、指尖停住或衣料被抓紧
+  - 中景双人｜固定机位，侧向平视：用新距离收束，靠肩或仍隔开都要看清
+pacing:
+  fast: {shots_per_min: [12, 18], shot_seconds: [2.2, 3.2]}
+  mid:  {shots_per_min: [8, 13],  shot_seconds: [3.5, 5.5]}
+  slow: {shots_per_min: [4, 8],   shot_seconds: [5.5, 9.0]}
+camera:
+  - 距离变化用固定机位和景别递进完成，不靠环绕；环绕只在非敏感、非接触镜里作为可选
+  - 人脸、手部和触碰点固定机位，机位与焦段不动，不用推近后上摇；光向跨镜保持一致
+  - 视线落在对方眼睛、手或肩上，不看镜头；口型镜用四分之三侧脸，脸大致可见即可
+  - 写实亲密镜走 Seedance 时用逆光剪影、侧后、约 65° 俯拍加头发遮脸；正脸近景改走万相
+  - 触碰前留 0.3–0.5 秒静止，给剪辑和观众呼吸；每条生成至少 4 秒，再按反应点裁切
+  - 写实不等于脏：人物干净、有精气神，旧衣服也要整洁，瑕疵词最多 1 项
+sound:
+  - 距离越近，环境声越低，呼吸、衣料和吞咽声越清楚
+  - 台词按语义呼吸切开，句间留气口，不把 2 人的台词叠在同 1 个镜头
+  - 触碰只发 1 次轻响，下一镜只留尾音，不重复
+  - 收束可留 1 段无音乐的环境声，让关系变化落地
+ai_risks:
+  - risk: 2 人靠近时脸、头发和手指融合，触碰点变形
+    fallback: 拆成单人反应加局部特写；触碰点固定机位，首帧锁手型与距离，不做长段 2 人纠缠
+  - risk: 模型自行加拥抱、亲吻或更越界的动作
+    fallback: 提示只写剧本已有的动作，例如指尖停住、额头相抵；不写“拥抱”“亲吻”作泛化指令，超出剧本的镜头重做
+  - risk: 写实正脸在 Seedance 中近景首帧被肖像闸拒绝
+    fallback: 改走万相；或首帧用逆光剪影、侧后 45°、约 65° 俯拍加头发遮脸，先验首帧
+  - risk: 情绪演得过火，变成油腻或苦情
+    fallback: 只写 1 个可见微动作，例如喉结动、呼吸变浅、视线躲开；删掉多余的表情词
+  - risk: 身高、站位或视线高度跨镜跳变
+    fallback: 锁 2 人站位与坐姿高度，反打镜头按世界坐标重新推导视线；翻面镜头整条重做
+example: |-
+  原创示例（修表店打烊前；按成片时值记，单条生成不短于 4 秒）：
+  1. 中景双人｜固定机位，侧向平视（镜头不动）｜阿棠把旧女表推过玻璃柜，陆迟没有接｜3.8 秒
+  2. 中近景｜过肩，固定机位（越过阿棠左肩看陆迟）｜陆迟用镊子夹起表盖，说“这表修过 3 次”｜3.4 秒
+  3. 近景｜固定机位，侧后方略低于视线（只带到耳廓与颈线）｜阿棠说“每次都是我拿来修”｜4.0 秒
+  4. 特写｜固定机位，俯拍表盖内侧（镜头与光源不动）｜盖内刻着 1 行小字，旁边有 1 道新划痕｜2.8 秒
+  5. 中近景｜固定机位，侧后方（避开正脸）｜陆迟的拇指在划痕上停住，呼吸放慢｜3.6 秒
+  6. 中景双人｜固定机位，侧向平视｜阿棠的手覆上他的手背，2 人之间只剩柜台的宽度｜4.2 秒
+  7. 中景｜固定机位，侧后方（镜头不动）｜陆迟合上表盖，把表推回，手指仍压着表链｜4.4 秒
+related_grammar:
+  - grammar-over-shoulder
+  - grammar-shot-reverse-shot
+  - grammar-axis-eyeline
+  - grammar-shot-size
+  - grammar-lens-focal
+related_negative:
+  - negative-looking-at-camera
+  - negative-photoreal-face-seedance
+  - negative-grimy-realism
+  - negative-too-many-actions

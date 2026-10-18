@@ -1,0 +1,14 @@
+id: negative-unwritten-detail-seedream
+type: negative
+title: Seedream 没写到的细节就不会画
+summary: 只写氛围，镜头、光线、材质和边框都会由模型自行发挥。
+tags: [seedream, image-prompt, detail]
+sources:
+  - {name: 作者规则与 P01 返工记录, license: own, ref: docs/tasks/2026-10-18-studio-wo3e-director-kb/00-house-rules.md}
+  - {name: 分集拆镜规范, license: own, ref: ~/Desktop/视频生成/.claude/skills/shortfilm-pipeline/references/02-分集拆镜.md}
+version: 1
+wrong: Seedream 出图：昏暗的工坊里有个老人，氛围压抑，细节和材质让模型自己补。
+right: 逐项写清：中景、低机位侧拍；左侧窗光加 1 盏台灯，光比 6:1；木质工作台、黄铜卡尺、棉麻围裙；画面无边框、无文字。
+why: Seedream 对提示词的覆盖很敏感，没写的项目不会被默认成正确结果；出图阶段省字，后面就要靠重绘补。
+evidence: 作者规则（2026-10-18）指出 Seedream 的画面内容受提示词覆盖范围决定；机位、布光、表面质感和画框边界都要逐项交代，漏掉哪项就没有哪项。
+lint_pattern: '让模型(?:自己)?(?:补|决定|发挥|猜)[^\n。；]{0,8}(?:细节|材质|光线|边框)|(?:细节|材质|光线|边框)[^\n。；]{0,8}让模型(?:自己)?(?:补|决定|发挥|猜)'

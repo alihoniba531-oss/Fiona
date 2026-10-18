@@ -1,0 +1,14 @@
+id: negative-orbit-invents-detail
+type: negative
+title: 环绕运镜让丝杠穿进滚柱
+summary: P01 第 1 次返工：环绕精密机构时模型补画背面，丝杠和滚柱长在一起。
+tags: [orbit, structure, p01, failure]
+sources:
+  - {name: 作者规则与 P01 返工记录, license: own, ref: docs/tasks/2026-10-18-studio-wo3e-director-kb/00-house-rules.md}
+  - {name: 分集拆镜规范, license: own, ref: ~/Desktop/视频生成/.claude/skills/shortfilm-pipeline/references/02-分集拆镜.md}
+version: 1
+wrong: 镜头缓慢环绕反向式滚柱丝杠，展示滚柱与丝杠的啮合。
+right: 固定机位，机位不变。丝杠在原位转动，滚柱各自绕自身轴自转并保持与丝杠平行，零件之间始终分开。
+why: 环绕要求模型生成首帧看不到的背面，精密配合关系超出它的几何理解，相邻零件容易被合成一体。需要展示全貌时，用固定机位的多角度剪辑。
+evidence: P01 第 1 次返工：环绕运镜时丝杠穿进滚柱；改固定机位并写死零件关系后通过（00-house-rules.md）。
+applies_to: {scene_type: [process-closeup]}

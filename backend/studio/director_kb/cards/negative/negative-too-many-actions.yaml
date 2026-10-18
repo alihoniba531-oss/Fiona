@@ -1,0 +1,15 @@
+id: negative-too-many-actions
+type: negative
+title: 单镜动作超过 3 个
+summary: 1 个镜头塞进 4 个以上动作，时间线被压缩，模型会吞动作或补动作。
+tags: [action, causality, timeline]
+sources:
+  - {name: 作者规则与 P01 返工记录, license: own, ref: docs/tasks/2026-10-18-studio-wo3e-director-kb/00-house-rules.md}
+  - {name: 分集拆镜规范, license: own, ref: ~/Desktop/视频生成/.claude/skills/shortfilm-pipeline/references/02-分集拆镜.md}
+  - {name: seedance-shot-design-failure-diagnosis, license: MIT-0, ref: references/failure-diagnosis.md}
+version: 1
+wrong: 她推开门，冲进房间，扔下包，拿起电话，拨号，又挂断，转身哭了。
+right: 拆成 3 镜：第 1 镜推门冲进；第 2 镜扔包、拿电话；第 3 镜拨号后挂断。哭放到第 4 镜的反应近景。
+why: 固定时长里每个动作只能分到很少帧，模型通常会漏掉中间步骤，或把动作糊在一起。打斗里连续同类交击可算 1 个动作单元，但仍不叠加多组。
+evidence: 作者规则（2026-10-18）：单镜只留 2–3 个有因果的动作；Seedance 失败诊断第 2、6 节把多动作并发列为肢体变形和时间线压缩的原因。
+applies_to: {scene_type: [fight, chase, process-closeup, ensemble]}

@@ -1,0 +1,14 @@
+id: negative-axis-jump
+type: negative
+title: 越轴
+summary: 正反打时把机位移到轴线对侧，人物左右和视线方向瞬间翻面。
+tags: [axis, 180-degree, continuity, eyeline]
+sources:
+  - {name: 分集拆镜规范, license: own, ref: ~/Desktop/视频生成/.claude/skills/shortfilm-pipeline/references/02-分集拆镜.md}
+  - {name: ai-visual-director 剪辑与轴线, license: MIT, ref: ~/.claude/skills/ai-visual-director/knowledge/editing-theory.md}
+version: 1
+wrong: 第 1 镜男方在画面左侧看向右，第 2 镜把机位移到轴线对面，男方仍看向右。
+right: 先画轴线，所有机位留在同侧；反打时男方仍在画面左侧、视线朝右。需要越轴时，用移动镜头或中性正面镜头过渡，并在剪辑上明确交代。
+why: 观众靠左右关系判断谁看谁；越轴会让双方像突然交换了位置，对话的空间感断掉。
+evidence: ai-visual-director editing-theory 的 180° 轴线；分集拆镜规范要求换机位后按世界坐标重新推导左右关系。
+applies_to: {scene_type: [dialogue, confrontation, intimacy, phone-call, ensemble]}

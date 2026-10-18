@@ -1,0 +1,16 @@
+id: negative-prop-continuity-break
+type: negative
+title: 道具归属前后断开
+summary: 只写保持上一镜一致，不写持手、朝向和状态，下一镜道具会换手或消失。
+tags: [prop, continuity, hand, eyeline]
+sources:
+  - {name: prop-asset 反面案例与改写账本, license: Apache-2.0, ref: ~/.claude/skills/prop-asset/references/NEGATIVE-CASE-BOOK.md}
+  - {name: 分集拆镜规范, license: own, ref: ~/Desktop/视频生成/.claude/skills/shortfilm-pipeline/references/02-分集拆镜.md}
+  - {name: 声画时间轴规范, license: own, ref: ~/Desktop/视频生成/.claude/skills/shortfilm-pipeline/references/05-声画时间轴.md}
+version: 1
+wrong: 提示词只写「保持上一镜一致」，没有写谁用哪只手拿钥匙、钥匙在口袋还是桌面。
+right: 写明：钥匙在第 1 镜由女方右手放上操作台，第 2 镜仍在台面左侧；男方用左手拿起后放进外套右袋。前一镜尾帧的状态要逐项列清。
+why: 道具的位置和持手是连戏的硬信息；提示词含糊时，模型会按画面平衡重新分配，观众能看到钥匙凭空换手。
+evidence: prop-asset NEGATIVE-CASE-BOOK 把「他把道具交给对方」列为无持有人、无朝向、无状态的错误写法；分集拆镜规范要求每镜写入镜/出镜状态与道具持手。
+applies_to: {scene_type: [dialogue, confrontation, fight, chase, process-closeup, reveal]}
+lint_pattern: '保持(?:与)?(?:上一镜|前一镜|上1镜)一致(?![^\n。；]{0,40}(?:位置|朝向|持手|光源|背景))'

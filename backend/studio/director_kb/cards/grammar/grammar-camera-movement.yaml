@@ -1,0 +1,52 @@
+id: grammar-camera-movement
+type: grammar
+title: 运镜
+summary: 用机位和镜头的运动组织空间与情绪，每镜只留 1 个主运镜，敏感镜头改固定机位。
+tags: [camera-movement, movement, structure, material, giant-offscreen, face-closeup]
+sources:
+  - {name: 作者规则与 P01 实测, license: own, ref: docs/tasks/2026-10-18-studio-wo3e-director-kb/00-house-rules.md}
+  - {name: ai-visual-director 镜头语言, license: MIT, ref: ~/.claude/skills/ai-visual-director/knowledge/camera.md}
+  - {name: seedance-shot-design 运镜与焦段, license: MIT-0, ref: references/cinematography.md}
+  - {name: 分集拆镜规范, license: own, ref: ~/Desktop/视频生成/.claude/skills/shortfilm-pipeline/references/02-分集拆镜.md}
+version: 1
+definition: 运镜是摄影机在空间里的运动方式与起止路径，包括机位移动、镜头转动和焦距变化；固定机位也是运镜的一种选择。
+narrative_use: 运动把静止的空间变成关系变化。靠近带来压迫或亲密，拉远带来孤立或揭示，横移带来伴随，升降重组权力与格局，环绕制造仪式或眩晕，手持带来纪实和不安。运镜要跟着动作因果走，起止都要有理由；没有叙事目的的运动只会让模型临场补内容。环绕和组合运镜只放在非敏感镜头里，作为可选项。
+safe_prompt: 写“中文术语（白话轨迹 + 速度 + 起止）”，例如“推轨（镜头沿地面平稳向前靠近，从中景到中近景，约 3 秒）”。每镜只留 1 个主运镜；需要组合时最多 2 个，并写清先后关系。固定机位写“镜头固定不动，机位不变”。
+avoid:
+  - 把英文运镜词直接裸写在提示里（Orbit、Truck、Crane、Aerial、Dolly、Pedestal 等），不给中文解释
+  - 只写“镜头移动”却不给方向、速度和起止
+  - 每镜叠 3 个以上运镜，或让运镜和主体动作互相打架
+  - 结构、材质、人脸等敏感镜头使用运动机位
+  - 只露局部的主体使用跟拍或拉远，把画外区域带进画面
+entries:
+  - name: 推
+    definition: 机位向前靠近主体，或机位不动、焦距向前推；画面范围变小，压力变大。
+    safe_prompt: 推轨（镜头沿地面平稳向前靠近）；变焦推进（机位不动，焦距向前推）
+  - name: 拉
+    definition: 机位向后离开主体，或机位不动、焦距向后拉；画面范围变大，常用于揭示或疏离。
+    safe_prompt: 拉轨（镜头沿地面平稳后退，逐渐露出周围空间）
+  - name: 摇
+    definition: 机位不动，镜头水平或垂直转动，用来跟随视线、扫过空间或建立高低关系。
+    safe_prompt: 水平摇摄（机位不动，镜头从左向右转）；上摇（机位不动，镜头向上转）
+  - name: 移
+    definition: 机位横向平移，镜头朝向基本不变，人物与背景发生相对位移。
+    safe_prompt: 横移（机位与人物平行，向左平移，人物保持在画面中）
+  - name: 跟
+    definition: 镜头跟随移动中的主体，保持一定距离和构图，把观众带进动作。
+    safe_prompt: 跟拍（镜头在人物侧后方同步移动，人物始终在画面中）
+  - name: 升降
+    definition: 机位整体垂直升高或降低，俯仰角可以不变；空间层次和权力关系随之变化。
+    safe_prompt: 摇臂升降（机位垂直升高，镜头保持平视，人物仍在画面中）
+  - name: 环绕
+    definition: 机位绕主体做弧线或整圈运动，主体保持在中心附近，背景连续变化。
+    safe_prompt: 弧形环绕（机位绕人物走约 180°，人脸始终在画框内）
+  - name: 手持
+    definition: 机身由人手持，带轻微不规则晃动，画面有呼吸感和临场感。
+    safe_prompt: 手持跟拍（镜头随步伐轻微晃动，晃动幅度小，主体保持清晰）
+related:
+  - grammar-action-match
+  - grammar-axis-eyeline
+  - grammar-backlight-silhouette
+  - grammar-camera-angle
+  - grammar-lens-focal
+  - grammar-shot-size

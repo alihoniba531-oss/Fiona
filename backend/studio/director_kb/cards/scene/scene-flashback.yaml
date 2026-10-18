@@ -1,0 +1,86 @@
+id: scene-flashback
+type: scene
+title: 回忆闪回
+summary: 叙事进入过去时空，用可演出的往事解释现在的选择、关系或创伤。
+tags: [flashback, memory, past, time-shift, emotional]
+sources:
+  - {name: 作者规则、P01 约 3.9 秒/镜与生成下限（经验值，待作者成片统计校准）, license: own, ref: docs/tasks/2026-10-18-studio-wo3e-director-kb/00-house-rules.md}
+  - {name: 分集拆镜规范, license: own, ref: ~/Desktop/视频生成/.claude/skills/shortfilm-pipeline/references/02-分集拆镜.md}
+  - {name: 声画时间轴规范, license: own, ref: ~/Desktop/视频生成/.claude/skills/shortfilm-pipeline/references/05-声画时间轴.md}
+  - {name: 转场与叠化, license: MIT, ref: ~/.claude/skills/ai-visual-director/knowledge/transitions.md}
+  - {name: 剪辑理论与双线叙事, license: MIT, ref: ~/.claude/skills/ai-visual-director/knowledge/editing-theory.md}
+  - {name: 镜头语言与记忆视角, license: MIT, ref: ~/.claude/skills/ai-visual-director/knowledge/camera.md}
+  - {name: 叙事结构与闪回, license: MIT, ref: ~/.claude/skills/ai-visual-director/knowledge/narrative-structures.md}
+  - {name: seedance-shot-design-failure-diagnosis, license: MIT-0, ref: references/failure-diagnosis.md}
+version: 1
+scene_type: flashback
+signals:
+  - 时间标记、造型、光线、画质或声音明显切换到过去
+  - 过去场景有连续人物行动，不是跨时空碎片的压缩
+  - 画面中的人物不知道后来发生的事，观众知道
+  - 回到现在后有认知或情绪回声
+beats:
+  - 用触发物或动作把现在和过去接上
+  - 进入过去时空，先交代时间、地点和人物关系
+  - 演出关键往事，让因果在场景内完成
+  - 往事出现裂缝或人物当时没有理解的细节
+  - 回到现在，用动作或表情承接新的理解
+coverage:
+  - 中景固定，侧向平视：拍现在时空的触发物和人物手部
+  - 特写固定，俯拍触发物：用物件完成时空缝合
+  - 全景固定，侧向平视：交代过去时空的地点、时间和人物位置
+  - 中景固定，侧后 45°：拍过去时空的关键行动
+  - 近景固定，侧向或过肩：拍过去人物不知道结局的表情
+  - 中景固定，平视：回到现在，人物姿态和刚才不同
+pacing:
+  fast: {shots_per_min: [16, 24], shot_seconds: [2.5, 3.8]}
+  mid:  {shots_per_min: [10, 16], shot_seconds: [3.8, 5.8]}
+  slow: {shots_per_min: [6, 10],  shot_seconds: [5.8, 9.0]}
+camera:
+  - 现在与过去用不同的光向、色温或画质区分；区分方式一旦确定就贯穿全段
+  - 闪回入口用固定机位或叠化，不靠甩镜和环绕；人物进入过去时保持轴线一致
+  - 每镜只保留 1 个时空信息，主体与摄影机动作合计不超过 3 个；往事按 1 个因果单元拆
+  - 过去与现在的人物都看对手或手中物件，不看镜头；重逢或告别用侧脸和背影
+  - 过去时空的关键物件、手部、面部近景用固定机位，锁材质与光向
+  - 写实人物走 Seedance 时避开正脸首帧：用侧后、逆光剪影、头发遮脸、约 65° 俯拍、远景或背影；露脸用万相
+  - 每条生成至少 4 秒；闪回总长按叙事需要控制，不为短闪回单独生成 2 秒
+sound:
+  - 用声音桥接时空，现在的环境声未落，过去的声音已经进入，或反过来
+  - 闪回段可保留 1 个持续主题声，但不要把所有声音都加混响
+  - 回到现在时抽掉过去的主题声，留 0.5 秒环境空白再恢复
+ai_risks:
+  - risk: 过去与现在的人物造型、年龄或光向混在一起，观众分不清时空
+    fallback: 先锁 2 套定妆和光向；首帧写明时空标记，闪回入口和出口各用 1 个固定物件镜缝合
+  - risk: 写实正脸在 Seedance 近景首帧被肖像闸拒绝
+    fallback: 用侧后、逆光剪影、头发遮脸、约 65° 俯拍、远景或背影；清楚露脸改走万相
+  - risk: 闪回被模型演成完整长戏，信息过密
+    fallback: 只保留 1 个因果单元，按触发、往事、回声 3 段生成；多余年代信息用道具和声音交代
+  - risk: 道具在时空切换后归属或磨损程度不一致
+    fallback: 给触发物和关键道具做首帧参考，写明新旧程度与持手；跨时空切点单独拍道具特写
+  - risk: 写实回忆被做成灰脏、过曝或强颗粒，人物失去精气神
+    fallback: 用色温、光比和声音区分时空，不用脏污和重滤镜；人物皮肤保持干净，颗粒最多 1 档
+  - risk: 戏班木偶、头饰或年代服装接近知名 IP 造型，Seedance 生成完才被版权拦截
+    fallback: 先改轮廓、配色和纹样做美术差异化，不点名、不复刻标志性服饰与道具组合；兜底把人物压成不超过画高 1/8 的小剪影，或改用万相先出首帧
+example: |-
+  原创示例（木偶戏班后台；镜头时长按成片裁切计，每条生成至少 4 秒）：
+  1. 中景｜固定机位，侧向平视（现在，冷光）｜周班主从箱底抽出 1 张戏单，手指停在褪色的名字上｜4.2 秒
+  2. 特写｜固定机位，俯拍戏单｜纸角有 1 道折痕，墨迹被水晕开｜2.6 秒
+  3. 全景｜固定机位，侧向平视（过去，暖光）｜12 年前的戏台，年轻的周班主在给木偶上弦｜5.0 秒
+  4. 中景｜固定机位，侧后 45°（过去）｜学徒把新刻的木偶手递给他，他顺手放进箱里｜4.0 秒
+  5. 近景｜固定机位，侧向（过去，避开正脸）｜周班主低头校弦，没看见学徒手上的伤口｜3.4 秒
+  6. 中景｜固定机位，平视（回到现在，冷光）｜周班主仍坐在箱边，戏单被攥出新的折痕｜4.6 秒
+  7. 全景｜固定机位，后方平视（现在）｜他把戏单放回箱底，台上传来木偶落地的轻响｜5.2 秒
+related_grammar:
+  - grammar-shot-size
+  - grammar-camera-angle
+  - grammar-camera-movement
+  - grammar-transition
+  - grammar-continuity
+  - grammar-lens-focal
+  - grammar-backlight-silhouette
+related_negative:
+  - negative-looking-at-camera
+  - negative-bare-camera-term
+  - negative-photoreal-face-seedance
+  - negative-prop-continuity-break
+  - negative-grimy-realism

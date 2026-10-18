@@ -38,6 +38,27 @@ def _look_warnings(output: dict, inputs: dict) -> list[str]:
     return warnings
 
 
+def _shot_plan_warnings(output: dict, inputs: dict) -> list[str]:
+    warnings = []
+    target = inputs.get("target_seconds")
+    total = sum(float(shot.get("duration_s") or 0) for shot in output.get("shots") or [])
+    if isinstance(target, (int, float)) and target > 0 and (
+            total < target * .8 or total > target * 1.2):
+        warnings.append(f"分镜时长合计约 {total:.1f} 秒，与目标 {target} 秒偏差超过 20%。")
+    if inputs.get("kb_text") and not output.get("template_id"):
+        warnings.append("带知识库时建议填写所用模板的卡片 id。")
+    return warnings
+
+
+def _cross_review_warnings(output: dict, inputs: dict) -> list[str]:
+    warnings = []
+    if output.get("verdict") == "ok" and output.get("issues"):
+        warnings.append("审核结论为 ok，但仍列出了问题；结论已原样保留。")
+    if len(output.get("issues") or []) > 20:
+        warnings.append("审核问题较多，建议优先处理 must 项。")
+    return warnings
+
+
 @dataclass(frozen=True)
 class BrainTask:
     name: str
@@ -68,12 +89,46 @@ BIBLE_EXTRACT_SCHEMA = _object({
 })
 FRAME_QC_SCHEMA = _object({name: _object({"passed": {"type": "boolean"}, "notes": _string()})
                            for name in ("structure", "materials", "physics", "realistic_frontal_face")})
+SHOT_PLAN_SCHEMA = _object({
+    "template_id": {"type": ["string", "null"]},
+    "deviations": _string(empty=True),
+    "shots": _array(_object({
+        "no": {"type": "integer", "minimum": 1},
+        "beat": _string(),
+        "shot_size": _string(),
+        "angle": _string(),
+        "camera": _string(),
+        "action": _string(),
+        "first_frame_prompt": _string(),
+        "video_prompt": _string(),
+        "dialogue": _string(empty=True),
+        "sound_intent": _string(empty=True),
+        "duration_s": {"type": "number", "exclusiveMinimum": 0, "maximum": 120},
+        "sensitive": _array({"type": "string", "enum": [
+            "face_closeup", "structure", "material", "giant_offscreen", "ip_risk"]}),
+        "basis": _array(_string()),
+    }), minItems=1, maxItems=60),
+})
+CROSS_REVIEW_SCHEMA = _object({
+    "verdict": {"type": "string", "enum": ["ok", "issues"]},
+    "summary": _string(),
+    "issues": _array(_object({
+        "severity": {"type": "string", "enum": ["must", "should"]},
+        "kind": {"type": "string", "enum": ["logic", "fidelity", "storyboard", "continuity"]},
+        "where": _string(),
+        "source_ref": {"type": ["string", "null"]},
+        "problem": _string(),
+        "suggestion": _string(),
+    }), maxItems=30),
+})
 
 TASKS = {
     "read_through": BrainTask("通读结论", "read_through.md", READ_THROUGH_SCHEMA, _no_warnings, 4096),
     "style_proposals": BrainTask("风格提案", "style_proposals.md", STYLE_PROPOSALS_SCHEMA, _style_warnings, 6144),
     "bible_extract": BrainTask("人物、场景、道具表", "bible_extract.md", BIBLE_EXTRACT_SCHEMA, _no_warnings, 12000),
     "frame_qc": BrainTask("看图质检", "frame_qc.md", FRAME_QC_SCHEMA, _no_warnings, 4096),
+    "shot_plan": BrainTask("导演拆镜", "shot_plan.md", SHOT_PLAN_SCHEMA, _shot_plan_warnings, 8192),
+    "cross_review": BrainTask("交叉审核", "cross_review.md", CROSS_REVIEW_SCHEMA, _cross_review_warnings, 4096),
 }
 TEXT_TASKS = ("read_through", "style_proposals", "bible_extract")
 
@@ -115,6 +170,18 @@ def task_hard_errors(task: str, output: dict, inputs: dict) -> list[str]:
                     or sum(first <= seq <= last for seq in units) != last - first + 1):
                 errors.append(f'$.episodes[{index}] 范围必须有序、非空、互不重叠且位于本段内')
             previous = last
+    elif task == 'shot_plan' and inputs.get('kb_text'):
+        # 带知识库时必须注明依据，否则无法做带/不带知识库的对照。
+        for index, shot in enumerate(output['shots']):
+            if not shot['basis']:
+                errors.append(f'$.shots[{index}].basis 带知识库时每镜必须至少引用一张卡片 id')
+    elif task == 'cross_review':
+        seen_should = False
+        for index, issue in enumerate(output['issues']):
+            if issue['severity'] == 'should':
+                seen_should = True
+            elif seen_should:
+                errors.append(f'$.issues[{index}] must 问题必须排在 should 之前')
     return errors
 
 # WO3c: the four tasks share scene units; timing is a computed soft constraint.

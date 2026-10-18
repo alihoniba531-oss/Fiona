@@ -50,3 +50,50 @@ Source and usage terms:
 
 - <https://images.nasa.gov/>
 - <https://www.nasa.gov/nasa-brand-center/images-and-media/>
+
+## Director knowledge base references
+
+The studio director knowledge base paraphrases rules from the following
+third-party works. Only short rule summaries are kept in the YAML cards; no
+upstream text, example prompts, videos, or images are redistributed.
+
+### ai-visual-director
+
+Source: <https://github.com/jijiutong/ai-visual-director>
+
+License: [MIT License](https://github.com/jijiutong/ai-visual-director/blob/main/LICENSE).
+
+Copyright (c) 2026 AI Visual Director Contributors.
+
+### prop-asset
+
+The director knowledge base paraphrases `references/NEGATIVE-CASE-BOOK.md`
+from the local `prop-asset` skill.
+
+License: [Apache License 2.0](https://www.apache.org/licenses/LICENSE-2.0).
+
+The installed copy does not contain a separate NOTICE file or an upstream
+repository URL, and its license text does not name a copyright holder.
+
+### CameraBench
+
+CameraBench is used only as a camera-motion label vocabulary; no dataset
+videos or annotations are redistributed.
+
+Sources:
+
+- <https://huggingface.co/datasets/syCen/CameraBench>
+- <https://linzhiqiu.github.io/papers/camerabench/>
+
+License: [Creative Commons Attribution 4.0 International](https://creativecommons.org/licenses/by/4.0/).
+
+Attribution: CameraBench dataset, Lin et al., NeurIPS 2025 Datasets and
+Benchmarks Track.
+
+### seedance-shot-design
+
+Source: <https://github.com/woodfantasy/Seedance-ShotDesign-Skills>
+
+License: MIT No Attribution (MIT-0).
+
+Copyright 2025 woodfantasy.

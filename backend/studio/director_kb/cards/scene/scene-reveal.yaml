@@ -1,0 +1,86 @@
+id: scene-reveal
+type: scene
+title: 悬疑揭示
+summary: 隐藏的人、物件、身份或因果被看见并确认，观众据此修正至少 1 个判断。
+tags: [reveal, mystery, clue, suspense, discovery]
+sources:
+  - {name: 作者规则、P01 约 3.9 秒/镜与生成下限（经验值，待作者成片统计校准）, license: own, ref: docs/tasks/2026-10-18-studio-wo3e-director-kb/00-house-rules.md}
+  - {name: 分集拆镜规范, license: own, ref: ~/Desktop/视频生成/.claude/skills/shortfilm-pipeline/references/02-分集拆镜.md}
+  - {name: 声画时间轴规范, license: own, ref: ~/Desktop/视频生成/.claude/skills/shortfilm-pipeline/references/05-声画时间轴.md}
+  - {name: 剪辑理论与匹配剪切, license: MIT, ref: ~/.claude/skills/ai-visual-director/knowledge/editing-theory.md}
+  - {name: 视觉伏笔与视觉潜台词, license: MIT, ref: ~/.claude/skills/ai-visual-director/knowledge/visual-subtext.md}
+  - {name: 镜头语言与拉焦, license: MIT, ref: ~/.claude/skills/ai-visual-director/knowledge/camera.md}
+  - {name: seedance-shot-design-failure-diagnosis, license: MIT-0, ref: references/failure-diagnosis.md}
+  - {name: seedance-shot-design-scenarios, license: MIT-0, ref: references/scenarios.md}
+version: 1
+scene_type: reveal
+signals:
+  - 此前埋过线索、遮挡或疑问，观众知道还有东西没看到
+  - 镜头通过打开、对焦、翻转、比对或证词把答案交出来
+  - 答案出现后，人物或观众对前文的判断发生变化
+  - 揭示本身是认知事件，不靠打斗或追逐完成
+beats:
+  - 先让观众意识到缺失，给出可疑的遮挡、空白或矛盾
+  - 角色接近证据，用动作或对焦建立快要看到的压力
+  - 答案进入画面，先给局部再给关系，控制释放顺序
+  - 角色确认答案，用反应镜交代认知变化
+  - 留 1 个余味，把答案带来的代价、误读或新问题交给后续
+coverage:
+  - 中景固定，侧向平视：交代角色与遮挡物的距离
+  - 近景固定，侧后 45°：拍角色发现前的呼吸和手部停顿
+  - 固定插入特写，俯拍证据：只给局部形状、文字或材质，不 1 次给全
+  - 近景固定，平视或轻微俯拍：拍角色确认时的眼神变化，视线落在证据上
+  - 全景固定，侧向或后方：把证据放回空间，交代它与人物、出口的关系
+  - 固定中近景，过肩：让观众和角色同时看到完整答案
+pacing:
+  fast: {shots_per_min: [18, 28], shot_seconds: [2.2, 3.4]}
+  mid:  {shots_per_min: [11, 18], shot_seconds: [3.4, 5.5]}
+  slow: {shots_per_min: [6, 11],  shot_seconds: [5.5, 9.0]}
+camera:
+  - 揭示前用固定机位积累压力；答案出现时最多用 1 次轻推轨（镜头沿地面缓慢靠近）或拉焦转移（焦点从前景移到证据）
+  - 每镜只推进 1 层揭示，主体与摄影机动作合计不超过 3 个；答案分镜释放
+  - 证据的形状、文字、材质是敏感内容，固定机位，机位、焦段和光向都不动
+  - 人物确认答案时视线落在证据或对手身上，不看镜头；反应镜保留 3/4 侧脸
+  - 写实人物保持干净、有精气神，灰尘和污渍只留在道具与墙面，瑕疵最多 1 项
+  - 写实人物走 Seedance 时避开正脸首帧：用侧后、逆光剪影、头发遮脸、约 65° 俯拍、远景或背影；清楚露脸用万相
+  - 每条生成至少 4 秒；关键揭示镜单独留 3–5 秒成片时间，不和其他信息挤在单条生成里
+sound:
+  - 揭示前压低环境床，保留 1 个持续声源；答案出现时只加 1 个点音效
+  - 翻页、开锁、掀布、对焦到位各只发 1 次声，后续镜头留尾音
+  - 确认后的沉默要具体，写清房间底噪、远处声源和持续时长
+ai_risks:
+  - risk: 关键证据在近景里变形，文字、图案或材质和首帧不一致
+    fallback: 证据镜改固定插入特写，首帧锁轮廓、基准色和纹样；精确文字留给后期，不让模型生成
+  - risk: 模型提前把答案给全，悬念被压平
+    fallback: 把揭示拆成遮挡、局部、关系 3 条生成；每条只增加 1 层信息，按顺序剪
+  - risk: 写实正脸在 Seedance 近景首帧被肖像闸拒绝
+    fallback: 反应镜用侧后或过肩；需要清楚表情时改走万相，或用逆光剪影、约 65° 俯拍加头发遮脸
+  - risk: 揭示镜头运镜过多，模型在运动里编出画外内容
+    fallback: 固定机位为主，最多保留 1 个推轨或拉焦；画外区域用遮挡或暗部封住
+  - risk: 证据与人物同框时比例失真，手和物件穿模
+    fallback: 先拍证据，再拍手进入，最后拍人物反应；3 段分开生成，剪辑点放在接触帧
+  - risk: 人物造型或关键道具接近知名 IP，Seedance 生成完才被版权拦截，白等约 6 分钟
+    fallback: 先做美术方向差异化，不点名、不复刻标志性服饰与道具组合；兜底把人物压成不超过画高 1/8 的小剪影，或改用万相
+example: |-
+  原创示例（山间气象站，夜班；镜头时长按成片裁切计，每条生成至少 4 秒）：
+  1. 中景｜固定机位，侧向平视（机位固定）｜程野把台灯转向铁柜，柜门虚掩，锁舌上有新划痕｜4.5 秒
+  2. 近景｜固定机位，侧后 45°｜程野伸手又停住，视线落在柜缝，不看镜头｜3.0 秒
+  3. 特写｜固定机位，俯拍纸页｜观测记录摊开，最上面 1 页的日期被涂改｜2.6 秒
+  4. 特写｜固定机位，平视锁孔｜钥匙转到底，柜门弹开 1 指宽｜2.0 秒
+  5. 近景｜固定机位，侧后平视（避开正脸）｜程野抽出记录，指腹擦过涂改处，呼吸停半拍｜3.4 秒
+  6. 全景｜固定机位，后方平视｜程野坐在铁柜前，桌上摊开的记录与墙上的值班表对不上｜4.8 秒
+  7. 中近景｜固定机位，过肩｜程野抬头看向门口，手里的记录没有放下｜3.2 秒
+related_grammar:
+  - grammar-shot-size
+  - grammar-camera-angle
+  - grammar-insert-closeup
+  - grammar-lens-focal
+  - grammar-camera-movement
+  - grammar-transition
+  - grammar-axis-eyeline
+related_negative:
+  - negative-looking-at-camera
+  - negative-bare-camera-term
+  - negative-photoreal-face-seedance
+  - negative-nonfixed-structure-material
+  - negative-unwritten-detail-seedream

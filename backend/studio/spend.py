@@ -96,7 +96,8 @@ async def brain_month_used(owner: str, *, now=None, db=None) -> Decimal:
         async with connection() as current:
             return await brain_month_used(owner, now=now, db=current)
     async with db.execute("""SELECT status,reserved_amount,actual_amount FROM studio_jobs
-        WHERE kind='brain' AND owner=? AND currency='USD' AND confirmed_month=?""",
+        WHERE kind IN ('brain','kb_shot','kb_review') AND owner=? AND currency='USD'
+        AND confirmed_month=?""",
                           (owner, shanghai_month(now))) as cursor:
         rows = await cursor.fetchall()
     amount = Decimal(0)

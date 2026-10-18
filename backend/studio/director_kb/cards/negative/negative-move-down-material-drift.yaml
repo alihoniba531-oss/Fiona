@@ -1,0 +1,14 @@
+id: negative-move-down-material-drift
+type: negative
+title: 下移镜头让金属屑变成木刨花
+summary: P01 第 3 次返工：下移进入新区域，金属切屑被模型改成木刨花。
+tags: [pedestal, material, p01, failure]
+sources:
+  - {name: 作者规则与 P01 返工记录, license: own, ref: docs/tasks/2026-10-18-studio-wo3e-director-kb/00-house-rules.md}
+  - {name: 分集拆镜规范, license: own, ref: ~/Desktop/视频生成/.claude/skills/shortfilm-pipeline/references/02-分集拆镜.md}
+version: 1
+wrong: 车刀精车丝杠，切屑飞出。镜头缓慢下移到料盘。
+right: 固定机位，机位和光向不变。车刀沿钢制丝杠进给，只出现少量银灰色金属螺旋切屑，落进下方料盘。
+why: 下移露出的料盘和切屑由模型补画；材质没锁死时，它会按常见印象选木头。运动镜头还会改变高光和表面质感。
+evidence: P01 第 3 次返工：下移镜头后金属屑变成木刨花；改固定机位并限定金属材质后通过（00-house-rules.md）。
+applies_to: {scene_type: [process-closeup]}

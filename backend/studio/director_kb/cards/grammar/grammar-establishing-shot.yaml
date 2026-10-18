@@ -1,0 +1,26 @@
+id: grammar-establishing-shot
+type: grammar
+title: 定场镜
+summary: 新场段开头用较远镜头交代地点、时间、尺度和入口，先给观众空间地图。
+tags: [establishing, opening, environment, space, transition]
+sources:
+  - {name: 作者规则与 P01 实测, license: own, ref: docs/tasks/2026-10-18-studio-wo3e-director-kb/00-house-rules.md}
+  - {name: ai-visual-director 镜头语言, license: MIT, ref: ~/.claude/skills/ai-visual-director/knowledge/camera.md}
+  - {name: ai-visual-director 构图参考, license: MIT, ref: ~/.claude/skills/ai-visual-director/knowledge/composition.md}
+  - {name: 分集拆镜规范, license: own, ref: ~/Desktop/视频生成/.claude/skills/shortfilm-pipeline/references/02-分集拆镜.md}
+version: 1
+definition: 定场镜是在新场段开头用较远景别交代地点、时间、尺度和入口的镜头。它让观众先认识空间，再进入人物和冲突；可以是 1 个镜头，也可以是 1 组连续的空间镜头。
+narrative_use: 没有定场镜，转场会生硬，观众不知道谁在哪里、门朝哪边、距离有多远。定场镜先给空间地图，后面的走位、追逐和调度才有参照。它也承担时间和气氛：雨、灯、季节和人群都能在定场镜里交代清楚。
+safe_prompt: 写“景别 + 先拍什么 + 再落到什么 + 入口或出口在哪”，例如“定场镜（大远景，先拍建筑入口和雨棚，再落到门口的人）”“定场镜（全景，交代摊位在街角、出口在画面右侧）”。用固定机位或慢速运镜，让观众有时间读空间。
+avoid:
+  - 新场段直接切人物特写，不交代空间
+  - 定场镜里塞入冲突或关键台词，观众顾不上读环境
+  - 定场镜运动过快，空间还没看清就切走
+  - 每个切场都重复同一个角度的定场镜
+  - 定场镜里出现后面不再出现的入口或通道，空间自相矛盾
+related:
+  - grammar-camera-angle
+  - grammar-camera-movement
+  - grammar-continuity
+  - grammar-shot-size
+  - grammar-transition

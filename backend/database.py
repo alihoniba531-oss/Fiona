@@ -915,7 +915,7 @@ async def delete_account_data(username: str) -> dict:
         await db.execute("DELETE FROM studio_units WHERE breakdown_id IN (SELECT id FROM studio_breakdowns WHERE owner=?)", (username,))
         for studio_table in ("studio_plan_revisions", "studio_episodes", "studio_bible", "studio_chunks", "studio_breakdowns",
                              "studio_snapshots", "studio_jobs", "studio_quotes", "studio_items",
-                             "studio_assets", "studio_projects"):
+                             "studio_assets", "studio_exemplars", "studio_stats", "studio_projects"):
             await db.execute(f"DELETE FROM {studio_table} WHERE owner = ?", (username,))
         await db.executemany(
             "INSERT OR IGNORE INTO upload_cleanup_queue (path) VALUES (?)",

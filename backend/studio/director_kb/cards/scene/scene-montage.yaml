@@ -1,0 +1,85 @@
+id: scene-montage
+type: scene
+title: 过场蒙太奇
+summary: 用多段短画面压缩时间、地点或状态变化，跳过重复过程并连接前后剧情。
+tags: [montage, time-jump, transition, compression, sequence]
+sources:
+  - {name: 作者规则、P01 约 3.9 秒/镜与生成下限（经验值，待作者成片统计校准）, license: own, ref: docs/tasks/2026-10-18-studio-wo3e-director-kb/00-house-rules.md}
+  - {name: 分集拆镜规范, license: own, ref: ~/Desktop/视频生成/.claude/skills/shortfilm-pipeline/references/02-分集拆镜.md}
+  - {name: 声画时间轴规范, license: own, ref: ~/Desktop/视频生成/.claude/skills/shortfilm-pipeline/references/05-声画时间轴.md}
+  - {name: 剪辑理论与蒙太奇, license: MIT, ref: ~/.claude/skills/ai-visual-director/knowledge/editing-theory.md}
+  - {name: 转场与蒙太奇, license: MIT, ref: ~/.claude/skills/ai-visual-director/knowledge/transitions.md}
+  - {name: 分镜节奏类型, license: MIT, ref: ~/.claude/skills/ai-visual-director/knowledge/pacing-types.md}
+  - {name: seedance-shot-design-failure-diagnosis, license: MIT-0, ref: references/failure-diagnosis.md}
+  - {name: seedance-shot-design-scenarios, license: MIT-0, ref: references/scenarios.md}
+version: 1
+scene_type: montage
+signals:
+  - 多次跳时或跳地，单镜不要求完整因果
+  - 镜头之间靠动作、形状、声音或主题连接
+  - 整组镜头必须产生清楚变化，观众能说出过去了多久或发生了什么
+  - 没有连续空间里的完整戏剧单元
+beats:
+  - 先定 1 个变化目标，如时间、地点、关系或状态
+  - 用 3–5 个关键节点代替重复过程
+  - 用动作、形状、颜色或声音把镜头串起来
+  - 在中段给 1 个变化标记，避免只是重复
+  - 用回到主线或新状态收束
+coverage:
+  - 全景固定，侧向平视：定下蒙太奇起点和空间基调
+  - 中景固定，侧向或侧后：拍第 1 个关键动作节点
+  - 特写固定，俯拍细节：用物件、手部或时间标记承接后续
+  - 中景固定，侧向：拍第 2 个节点，构图和前 1 镜形成呼应
+  - 全景固定，平视：拍状态已经改变的结果
+  - 中景固定，侧向平视：回到主线人物，交代蒙太奇后的新位置
+pacing:
+  fast: {shots_per_min: [30, 48], shot_seconds: [1.4, 2.2]}
+  mid:  {shots_per_min: [18, 30], shot_seconds: [2.2, 3.6]}
+  slow: {shots_per_min: [10, 18], shot_seconds: [3.6, 6.0]}
+camera:
+  - 每镜只承担 1 个信息点，主体与摄影机动作合计不超过 3 个；用固定机位或轻推轨（镜头沿地面缓慢靠近），不堆环绕和升降
+  - 同框不超过 2 人；需要人群规模时用远景、背影或虚化背景，不把多人塞进 1 条生成
+  - 人物视线落在手头动作或画外目标，不看镜头；露脸镜头优先侧后和过肩
+  - 写实人物保持干净、有精气神，油污和灰尘只留在工具与桌面，瑕疵最多 1 项
+  - 连接方式先定，动作匹配、形状匹配、声音桥或同方向运动；连接点写进镜头设计
+  - 钟表齿轮、工具、招牌和手部等结构或材质镜一律固定机位，锁轮廓、连接点和基准色
+  - 时间标记、文字、日历和屏幕内容交给后期，不让模型生成精确文字
+  - 写实人物走 Seedance 时避开正脸首帧：用侧后、背影、逆光剪影、头发遮脸、约 65° 俯拍或远景；露脸用万相
+  - 每条生成至少 4 秒，先排 3 个动作节点，再切成 1.4–2.2 秒短镜；不能为短镜提交 2 秒
+sound:
+  - 用 1 条持续声音或音乐动机把整组串起来，剪辑点落在节拍或动作完成处
+  - 每段只保留 1 个标志性音效，避免每镜都炸响；时间跳跃可用声音先行
+  - 结尾回到主线时抽掉蒙太奇主题声，留 0.3–0.5 秒环境空隙
+ai_risks:
+  - risk: 为 1.4–2.2 秒短镜单独生成，低于 4 秒下限，模型删动作或编内容
+    fallback: 每条先生成 4–6 秒，在连续动作里预划 2–3 个切点；生成不足 4 秒不提交
+  - risk: 镜头之间没有可读的连接，整组像随机快闪
+    fallback: 先写连接表，每 2 镜之间标 1 个匹配元素，如动作方向、形状、颜色或声音；没有连接的镜头删掉
+  - risk: 写实正脸在 Seedance 近景首帧被肖像闸拒绝
+    fallback: 蒙太奇里少用正脸近景；改侧后、背影、剪影或远景；必须露脸时用万相
+  - risk: 画面里出现日历、招牌、屏幕等精确文字，生成后糊成乱码
+    fallback: 文字信息全部后期；镜头只拍可辨认的图形、手势或环境变化
+  - risk: 每镜都塞新信息，观众来不及读，变化反而说不清
+    fallback: 整组只保留 1 个变化目标；单镜只给 1 个信息点，超过就拆成 2 组蒙太奇
+example: |-
+  原创示例（修表铺从小摊变成临街店，跨度 3 年；镜头时长按成片裁切计，每条生成至少 4 秒）：
+  1. 全景｜固定机位，侧向平视（机位固定）｜老陆在巷口支起折叠桌，工具箱只有 1 层｜3.0 秒
+  2. 特写｜固定机位，俯拍手部｜镊子夹起第 1 枚齿轮，放大镜压住表盘｜1.8 秒
+  3. 中景｜固定机位，侧后 45°｜雨季，老陆把塑料布往桌上拉，顾客撑着伞等｜2.2 秒
+  4. 特写｜固定机位，俯拍桌面｜桌面从木板换成玻璃，下面压着 3 张维修单｜1.6 秒
+  5. 中景｜固定机位，侧向｜老陆把修表木牌摘下来，换成新店的灯箱｜2.4 秒
+  6. 全景｜固定机位，平视｜临街小店开门，柜台后站着老陆和 1 名学徒｜3.2 秒
+  7. 中景｜固定机位，侧向平视｜老陆把旧折叠桌收进后间，门口的风铃响了 1 声｜2.8 秒
+related_grammar:
+  - grammar-shot-size
+  - grammar-camera-movement
+  - grammar-transition
+  - grammar-action-match
+  - grammar-lens-focal
+  - grammar-continuity
+related_negative:
+  - negative-looking-at-camera
+  - negative-bare-camera-term
+  - negative-photoreal-face-seedance
+  - negative-too-many-actions
+  - negative-fight-sub-four-second-generation

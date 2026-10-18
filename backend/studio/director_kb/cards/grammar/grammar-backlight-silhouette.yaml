@@ -1,0 +1,26 @@
+id: grammar-backlight-silhouette
+type: grammar
+title: 逆光与剪影
+summary: 主光从主体背后打来，正面压暗只剩轮廓；既能藏身份，也能绕开写实正脸首帧。
+tags: [backlight, silhouette, lighting, face-closeup, ip-risk]
+sources:
+  - {name: 作者规则与 P01 实测, license: own, ref: docs/tasks/2026-10-18-studio-wo3e-director-kb/00-house-rules.md}
+  - {name: ai-visual-director 灯光与色彩, license: MIT, ref: ~/.claude/skills/ai-visual-director/knowledge/lighting.md}
+  - {name: ai-visual-director 构图参考, license: MIT, ref: ~/.claude/skills/ai-visual-director/knowledge/composition.md}
+  - {name: 分集拆镜规范, license: own, ref: ~/Desktop/视频生成/.claude/skills/shortfilm-pipeline/references/02-分集拆镜.md}
+version: 1
+definition: 逆光是主光从主体背后射来，正面处在暗部；剪影是逆光的极端形式，主体正面几乎全暗，只剩轮廓和边缘光。两者都不是“画面很暗”，而是光源位置和曝光选择。
+narrative_use: 逆光把人物从背景里分离出来，制造层次；剪影藏住身份，留下悬念和威胁感，适合登场、告别、监视和匿名。写实人物走 Seedance 时，强逆光剪影也是绕开正脸首帧肖像闸的常用办法；需要看清表情或口型时，改走万相或补正面光。
+safe_prompt: 写“光源在人物背后 + 正面曝光 + 保留多少轮廓”，例如“强逆光剪影（主光在人物背后，正面压暗，只留轮廓和发丝边缘光）”“逆光半剪影（背光但保留少量面部层次，眼睛仍可见）”。再写清光源方向、色温和背景亮度。
+avoid:
+  - 逆光却把正面补亮到没有剪影，或剪影却要求看清表情和服装细节
+  - 把“逆光”当“背光”写，不说光源在哪里
+  - 剪影镜里让角色看镜头，轮廓和视线都失去控制
+  - 背景和主体一样亮，轮廓糊在一起
+  - 用“很暗很神秘”代替光源方向、光比和曝光选择
+related:
+  - grammar-camera-angle
+  - grammar-establishing-shot
+  - grammar-insert-closeup
+  - grammar-over-shoulder
+  - grammar-shot-size

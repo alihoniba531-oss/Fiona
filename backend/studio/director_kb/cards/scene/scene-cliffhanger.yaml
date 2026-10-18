@@ -1,0 +1,75 @@
+id: scene-cliffhanger
+type: scene
+title: 结尾悬念
+summary: 叠加在内容卡上的位置卡，在高风险结果出现前截断，把选择与威胁留到下一段。
+tags: [ending, cliffhanger, suspense, position-card, cutaway]
+sources:
+  - {name: 作者规则与 P01 实测, license: own, ref: docs/tasks/2026-10-18-studio-wo3e-director-kb/00-house-rules.md}
+  - {name: 分集拆镜规范, license: own, ref: ~/Desktop/视频生成/.claude/skills/shortfilm-pipeline/references/02-分集拆镜.md}
+  - {name: 声画时间轴规范, license: own, ref: ~/Desktop/视频生成/.claude/skills/shortfilm-pipeline/references/05-声画时间轴.md}
+  - {name: 叙事结构, license: MIT, ref: ~/.claude/skills/ai-visual-director/knowledge/narrative-structures.md}
+  - {name: 剪辑理论, license: MIT, ref: ~/.claude/skills/ai-visual-director/knowledge/editing-theory.md}
+  - {name: 声音设计参考, license: MIT, ref: ~/.claude/skills/ai-visual-director/knowledge/sound-design.md}
+version: 1
+scene_type: cliffhanger
+signals:
+  - 位于片尾或集尾，危险、选择或后果已经逼近
+  - 最后画面有意不给出结果
+  - 观众被留在问题或威胁尚未落地的时刻
+beats:
+  - 在结果即将出现前 1 个动作处停住，不给答案
+  - 把选择或威胁放到画面中心，让人物仍处在行动中
+  - 用 1 个未完成的动作或没说完的台词截断
+  - 最后 1 个镜头留 1 个只有观众看到的威胁细节
+  - 不总结、不解释、不用拉远收尾
+coverage:
+  - 中近景｜固定机位，侧后方：停在人物做出选择的手或脚上，不给结果
+  - 插入特写｜固定机位，俯拍：威胁或倒计时进入画面，仍不揭示后果
+  - 全景｜固定机位，平视：人物与威胁同框，距离仍在缩短
+  - 中景或全景空镜｜固定机位，平视：威胁留在画内或画外边缘，切黑
+pacing:
+  fast: {shots_per_min: [24, 36], shot_seconds: [1.4, 2.3]}
+  mid:  {shots_per_min: [16, 24], shot_seconds: [2.3, 3.8]}
+  slow: {shots_per_min: [9, 14],  shot_seconds: [3.8, 6.0]}
+camera:
+  - 最后 3 个镜头逐镜缩短距离或时间，但不用拉远、环绕或航拍收尾
+  - 截断点选在接触前、回答前或门开一半，不给结果；提示里写明动作停在什么之前
+  - 威胁只给局部，巨物保持在画外；结构、材质和接触点固定机位
+sound:
+  - 结尾前抽掉音乐，只留 1 层环境声与呼吸
+  - 在截断点切断 1 个声音，例如台词、脚步或提示音，让观众停在缺失上
+  - 最后 1 个冲击声只给前奏或半声，不落地
+  - 切黑后留 0.3–0.5 秒尾音，或彻底静默
+ai_risks:
+  - risk: 模型把结尾补完，门开了、人倒了或答案说出口
+    fallback: 生成在动作中点停住，提示写明动作停在什么之前；多生成 1 条备用，只取前半段
+  - risk: 拉远或环绕把威胁全貌编出来
+    fallback: 固定机位，巨物留在画外；加材质、比例与色调锁定句
+  - risk: 最后 1 镜信息不足，观众不知道在等什么
+    fallback: 给 1 个明确的倒计时、方向或选择项，只不给结果；不用纯黑或纯空镜代替
+  - risk: 切黑太早像播放故障
+    fallback: 先留 0.3 秒可读画面再切黑；最后 1 帧保留威胁的局部或人物的动作
+  - risk: 与内容卡结尾重复，本场变化被演完
+    fallback: 内容卡负责完成本场变化，位置卡只负责截断；删除重复的收束镜
+example: |-
+  原创示例（末班地铁站，结尾悬念；按成片时值记）：
+  1. 全景｜固定机位，平视（镜头不动）｜末班站台空着，只有 1 个女人背对镜头站在黄线外｜4.6 秒
+  2. 中景｜固定机位，侧向平视｜值班员老周从岗亭出来，抬手示意她退后｜3.6 秒
+  3. 插入特写｜固定机位，俯拍站台时钟｜时钟指向 23:59，隧道里出现车灯｜2.8 秒
+  4. 中近景｜固定机位，侧后方（避开正脸）｜老周加快脚步，视线锁住女人的脚｜3.2 秒
+  5. 全景｜固定机位，平视｜女人向前迈出 1 步，鞋尖压过黄线，列车风掀起她的衣角｜4.0 秒
+  6. 特写｜固定机位，俯拍手部｜老周的手伸到一半，指尖离她的袖口还有 1 掌距离｜2.4 秒
+  7. 中景｜固定机位，平视（镜头不动）｜列车灯扫过站台，画面在接触前切黑，只留 1 声刹车｜3.8 秒
+related_grammar:
+  - grammar-transition
+  - grammar-insert-closeup
+  - grammar-shot-size
+  - grammar-camera-angle
+  - grammar-axis-eyeline
+related_negative:
+  - negative-giant-offscreen-camera-move
+  - negative-ip-lookalike
+  - negative-looking-at-camera
+  - negative-too-many-actions
+  - negative-bare-camera-term
+position: ending

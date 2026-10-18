@@ -1,0 +1,26 @@
+id: grammar-transition
+type: grammar
+title: 转场
+summary: 用切、匹配、遮挡、叠化等方式连接相邻镜头，让时间连续、压缩或跳跃。
+tags: [transition, editing, montage, continuity]
+sources:
+  - {name: 作者规则与 P01 实测, license: own, ref: docs/tasks/2026-10-18-studio-wo3e-director-kb/00-house-rules.md}
+  - {name: ai-visual-director 转场与蒙太奇, license: MIT, ref: ~/.claude/skills/ai-visual-director/knowledge/transitions.md}
+  - {name: ai-visual-director 剪辑理论, license: MIT, ref: ~/.claude/skills/ai-visual-director/knowledge/editing-theory.md}
+  - {name: 分集拆镜规范, license: own, ref: ~/Desktop/视频生成/.claude/skills/shortfilm-pipeline/references/02-分集拆镜.md}
+version: 1
+definition: 转场是相邻 2 个镜头之间的连接方式，决定时间是连续、省略还是跳跃。常见做法有硬切、动作匹配、视线匹配、遮挡、甩镜、叠化和淡入淡出。
+narrative_use: 硬切保持现场感和节奏；动作匹配把 2 个动作缝成 1 个；视线匹配把看与被看接上；遮挡和甩镜可以跨空间；叠化与淡入淡出适合时间流逝或章节收束。转场要服务因果和节奏，不是给每个切点加特效。新场段开头先给定场镜，转场才不会生硬。
+safe_prompt: 写“转场名称（前后镜怎么接）”，例如“硬切（上一镜结束后直接进入下一镜）”“动作匹配剪（上一镜手伸向杯子，下一镜手已握住杯柄）”“遮挡转场（前景人物走过镜头，画面被遮住后切到新场景）”“叠化（前一镜渐隐，后一镜渐显）”。
+avoid:
+  - 为每个切点都加特效转场，节奏被装饰拖慢
+  - 用“炫酷转场”“无缝转场”代替具体连接方式
+  - 同一个切点叠 2 种转场，模型不知道以哪个为准
+  - 没有遮挡物却写遮挡转场，或遮挡前后主体位置对不上
+  - 新场段直接进人物特写，不给定场镜
+related:
+  - grammar-action-match
+  - grammar-axis-eyeline
+  - grammar-continuity
+  - grammar-establishing-shot
+  - grammar-insert-closeup

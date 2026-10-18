@@ -1,0 +1,75 @@
+id: scene-establishing
+type: scene
+title: 环境建立 / 定场
+summary: 用连续空间镜头交代地点、时间、尺度、入口与人物位置，为后文建立空间地图。
+tags: [establishing, environment, geography, space, spatial-map]
+sources:
+  - {name: 作者规则与 P01 实测, license: own, ref: docs/tasks/2026-10-18-studio-wo3e-director-kb/00-house-rules.md}
+  - {name: 分集拆镜规范, license: own, ref: ~/Desktop/视频生成/.claude/skills/shortfilm-pipeline/references/02-分集拆镜.md}
+  - {name: 声画时间轴规范, license: own, ref: ~/Desktop/视频生成/.claude/skills/shortfilm-pipeline/references/05-声画时间轴.md}
+  - {name: 环境与世界观设计, license: MIT, ref: ~/.claude/skills/ai-visual-director/knowledge/environments.md}
+  - {name: 镜头语言参考, license: MIT, ref: ~/.claude/skills/ai-visual-director/knowledge/camera.md}
+  - {name: seedance-shot-design-scenarios, license: MIT-0, ref: references/scenarios.md}
+version: 1
+scene_type: establishing
+signals:
+  - 先给大环境再落到人物，观众需要知道这是哪里、什么时候
+  - 画面强调空间布局、入口、通道和人物所占的位置
+  - 本场没有独立冲突或信息翻转，变化主要是空间认知
+beats:
+  - 远景交代地点、时间、天气与尺度
+  - 全景给入口、主通道和人物所在的区域
+  - 用 1–2 个细节镜留下使用痕迹或年代信息
+  - 镜头落到人物，交代站位、朝向和正在做的事
+  - 以人物起步或视线方向把空间交给下一场
+coverage:
+  - 大远景｜固定机位或无人机缓慢横移（镜头从高处水平移动）：交代地理、时间与尺度，先不靠近人物
+  - 全景｜固定机位，平视（镜头不动）：给入口、主通道和人物所在的区域，让观众记住可走路线
+  - 中景｜固定机位，侧向平视：人物与环境的关系，交代站位、朝向和手上的事
+  - 特写｜固定机位，俯拍（镜头与光源不动）：门锁、桌面、地面磨损等 1 个使用痕迹，补年代与生活感
+  - 全景或中景｜固定机位，侧后方平视：人物起步，行进方向指向下一场
+pacing:
+  fast: {shots_per_min: [14, 22], shot_seconds: [2.0, 3.2]}
+  mid:  {shots_per_min: [9, 14],  shot_seconds: [3.8, 5.5]}
+  slow: {shots_per_min: [5, 9],   shot_seconds: [5.5, 9.0]}
+camera:
+  - 首镜先稳：固定机位或很慢的横移，1 个镜头只交代 1 层空间信息，不堆叠运镜
+  - 无人机航拍（从高处俯拍）只在尺度或通行关系必须交代时使用，写清高度、方向和起止点
+  - 人物入画后视线落在门、路、器物或对手上，不看镜头；写实人物走 Seedance 时优先远景、背影或逆光剪影
+  - 建筑结构、招牌、门窗和承载信息的材质一律固定机位，机位与焦段不动；画面文字与门牌号归后期
+  - 写实不等于脏：空间可以旧，人物要干净、有精气神，瑕疵词最多 1 项
+  - 每条生成至少 4 秒，再按镜长裁切；定场镜通常 1 次生成覆盖 1–2 个成片镜
+sound:
+  - 先铺空间底噪，再叠 1 个有方位的点声源，例如右后方车流、近处滴水、穿堂风
+  - 环境声随镜头朝向变化，写清声源的距离与透视，不要只写“环境音”
+  - 不给每个镜头都起音乐；需要时只铺 1 层低音量底，让对白和点音效先站住
+  - 定场末留 0.2–0.5 秒尾音，或用声音桥提前带入下一场的声源
+ai_risks:
+  - risk: 航拍或拉远把画外区域带进画面，模型临时编出建筑、山体或人群
+    fallback: 改固定机位，限定只拍画框内元素；必须航拍时先出 1 张定妆图锁住地形与建筑轮廓
+  - risk: 招牌、门牌、路标上的文字生成成乱码
+    fallback: 画面不依赖可读文字；需要时固定机位拍空牌面，文字后期贴回
+  - risk: 远景里人物脸崩、比例不对
+    fallback: 人物只给背影、剪影或小比例远景；需要露脸时另拍中近景，不把脸压在远景里
+  - risk: 跨镜光线方向、天气和色温跳变
+    fallback: 先锁主光方向与色温，每镜首帧写同 1 个光源；天气只选 1 种，不在同场切换
+example: |-
+  原创示例（清晨的山城快递站；按成片时值记，单条生成不短于 4 秒）：
+  1. 大远景｜固定机位，高处俯拍（镜头不动）｜雾里的山城沿江排开，铁皮屋顶的快递站在画面右下｜4.6 秒
+  2. 远景｜固定机位，平视（镜头不动）｜三轮车从坡道拐进院门，卷帘门半开｜3.8 秒
+  3. 全景｜固定机位，侧向平视｜院里分出正门、后巷和装卸口 3 条通道，纸箱堆在雨棚下｜4.2 秒
+  4. 中景｜固定机位，门内侧平视｜阿岚背对镜头蹲下，把湿雨衣挂到门把上｜3.4 秒
+  5. 特写｜固定机位，俯拍（镜头与光源不动）｜地磅边缘磨出亮痕，秤面留着 1 个湿鞋印｜2.8 秒
+  6. 中景｜固定机位，侧向平视｜阿岚起身拿起扫码枪，视线落向后巷入口｜3.6 秒
+  7. 全景｜固定机位，侧后方平视｜她推门进后巷，院门在前景留出暗部｜4.0 秒
+related_grammar:
+  - grammar-establishing-shot
+  - grammar-shot-size
+  - grammar-camera-angle
+  - grammar-camera-movement
+  - grammar-continuity
+related_negative:
+  - negative-no-establishing-shot
+  - negative-bare-camera-term
+  - negative-photoreal-face-seedance
+  - negative-nonfixed-structure-material

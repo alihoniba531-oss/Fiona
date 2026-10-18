@@ -1,0 +1,14 @@
+id: negative-no-establishing-shot
+type: negative
+title: 新场段开头没有定场镜
+summary: 直接切进人物特写，观众不知道空间、入口和相对位置，转场会显得生硬。
+tags: [establishing, continuity, space]
+sources:
+  - {name: 作者规则与 P01 返工记录, license: own, ref: docs/tasks/2026-10-18-studio-wo3e-director-kb/00-house-rules.md}
+  - {name: 分集拆镜规范, license: own, ref: ~/Desktop/视频生成/.claude/skills/shortfilm-pipeline/references/02-分集拆镜.md}
+version: 1
+wrong: 新场段直接从 2 人争执的近景开始，没有交代地点和出入口。
+right: 先给 1 个固定定场镜：交代地点、时间、入口和 2 人站位，再切近景；定场镜可以很短，但必须先建立空间地图。
+why: 没有空间基准，后续正反打和走位都失去参照，观众要花力气猜位置；AI 换机位时也更容易翻面。
+evidence: 作者规则（2026-10-18）：新场段开头放定场镜，没有定场镜转场会生硬；前期定妆要为每个主要场景准备主视角、反打和陈设细节。
+applies_to: {scene_type: [confrontation, ensemble, chase, investigation]}

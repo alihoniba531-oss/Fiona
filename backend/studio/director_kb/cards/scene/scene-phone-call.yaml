@@ -1,0 +1,81 @@
+id: scene-phone-call
+type: scene
+title: 电话 / 远程对话
+summary: 2 端靠通信设备交换信息，用声音延迟、空间错位和未说出口的话推进关系。
+tags: [phone-call, remote, two-location, split-space, communication]
+sources:
+  - {name: 作者规则与 P01 实测, license: own, ref: docs/tasks/2026-10-18-studio-wo3e-director-kb/00-house-rules.md}
+  - {name: 分集拆镜规范, license: own, ref: ~/Desktop/视频生成/.claude/skills/shortfilm-pipeline/references/02-分集拆镜.md}
+  - {name: 声画时间轴规范, license: own, ref: ~/Desktop/视频生成/.claude/skills/shortfilm-pipeline/references/05-声画时间轴.md}
+  - {name: 声音设计参考, license: MIT, ref: ~/.claude/skills/ai-visual-director/knowledge/sound-design.md}
+  - {name: 剪辑理论, license: MIT, ref: ~/.claude/skills/ai-visual-director/knowledge/editing-theory.md}
+  - {name: seedance-shot-design-scenarios, license: MIT-0, ref: references/scenarios.md}
+version: 1
+scene_type: phone-call
+signals:
+  - 声音经电话、耳机或视频设备传来，双方不在同 1 个物理空间
+  - 挂断、信号中断、延迟或界面操作会影响信息
+  - 剪辑需要在 2 端空间和共同听感之间来回组织
+beats:
+  - 先交代呼叫端的空间与动作，说明为什么打这通电话
+  - 接通，声音先到，画面仍停在拨号者
+  - 切到另一端，交代其环境与正在做的事
+  - 信息出现偏差，例如延迟、信号、谎话，2 端反应不同
+  - 挂断或放下手机，留下只有观众知道的信息差
+coverage:
+  - 中景｜固定机位，平视：呼叫端拿起手机或戴上耳机，交代空间与动作
+  - 近景｜固定机位，侧后或过肩：拨号等待，听筒声先入，人物不看镜头
+  - 中景｜固定机位，平视：另 1 端的空间与正在做的事，光向和色温与本端分开
+  - 插入特写｜固定机位，俯拍：屏幕来电、录音键或信号格，界面与文字归后期
+  - 中近景｜固定机位，侧后方：关键信息之后 2 端各 1 个反应镜，不露正脸
+  - 中景｜固定机位，平视：挂断或放下手机，收在没说完的那句话上
+pacing:
+  fast: {shots_per_min: [22, 32], shot_seconds: [1.6, 2.6]}
+  mid:  {shots_per_min: [14, 22], shot_seconds: [2.6, 4.2]}
+  slow: {shots_per_min: [8, 13],  shot_seconds: [4.2, 6.5]}
+camera:
+  - 2 端各自先建立固定机位、光向和色温，跨切时保持各自轴线，不把 2 端剪成同 1 个空间
+  - 需要连接 2 端时用声音桥或同构图匹配，不用环绕把 2 个空间硬接成 1 个
+  - 手机、耳机、按键和屏幕用固定插入镜，机位与焦段不动；可读文字和界面后期制作
+  - 人物视线落在手机、桌面或窗外，不看镜头；只给真正说话的那 1 端出口型镜
+  - 写实人物走 Seedance 时用侧后、逆光剪影或约 65° 俯拍加头发遮脸；正脸近景改走万相
+  - 每条生成至少 4 秒，再按听筒气口裁切；同 1 次通话不因换机位重起环境声
+  - 2 端人物都保持干净、有精神，生活感靠陈设，不靠脏
+sound:
+  - 听筒声做窄带与轻微失真，与现场声分层；先入声，后切到另 1 端画面
+  - 2 端环境床不同，跨切时保留 1 层共同声，例如雨、电流或远处音乐，作为桥
+  - 挂断只发 1 次提示音；信号中断用短静默加底噪，不要用夸张的电子噪声
+  - 台词按线路延迟切气口，不要求 2 端台词严丝合缝对上
+ai_risks:
+  - risk: 2 端被生成成同 1 个空间，光向、色温和背景互相串味
+    fallback: 分开写 2 端的空间、主光和色温；跨切不共用首帧，剪辑点上保留各自环境床
+  - risk: 手机屏幕、来电号码或界面文字生成成乱码
+    fallback: 固定机位拍空白屏幕，文字与界面后期贴屏；不让模型生成可读信息
+  - risk: 画外音时人物跟着动嘴，或非说话端也出现口型
+    fallback: 视频提示写明嘴唇闭合、只留呼吸；只给说话端拍口型镜，其余用侧后或物件动作承载
+  - risk: 手机、耳机或手指结构在特写里变形
+    fallback: 固定俯拍，首帧锁手型、机身轮廓与持握；复杂操作拆成拿起、点按 2 条
+  - risk: 跨切后人物左右站位或持机手翻面
+    fallback: 每端单独锁站位与持机手，反打按各自空间重新推导；翻面镜头整条重做
+example: |-
+  原创示例（雨夜公交调度室与末班车；按成片时值记，单条生成不短于 4 秒）：
+  1. 中景｜固定机位，平视（调度室）｜苏姐把冷茶推开，拿起座机听筒｜4.0 秒
+  2. 近景｜固定机位，侧后方（避开正脸）｜她拨号，听筒里先传来雨声与电流｜3.2 秒
+  3. 中景｜固定机位，侧向平视（公交车驾驶座）｜老麦接起电话，前挡玻璃上雨刷来回｜3.8 秒
+  4. 特写｜固定机位，俯拍调度屏（界面后期）｜末班车状态显示 0 名乘客｜2.8 秒
+  5. 中近景｜固定机位，侧后方（车内）｜老麦看后视镜，说“最后一排有个孩子”｜4.2 秒
+  6. 中景｜固定机位，平视（调度室）｜苏姐站起来，手里的笔停在排班表上｜3.6 秒
+  7. 中景｜固定机位，侧向平视（车内）｜老麦拉开车厢灯，最后一排空着，座位上留着 1 把滴水的伞｜4.6 秒
+  8. 近景｜固定机位，侧后方（调度室）｜苏姐问“你车上现在几个人”，听筒里只剩雨声｜5.0 秒
+related_grammar:
+  - grammar-shot-reverse-shot
+  - grammar-axis-eyeline
+  - grammar-insert-closeup
+  - grammar-transition
+  - grammar-continuity
+related_negative:
+  - negative-voiceover-mouth-moves
+  - negative-axis-jump
+  - negative-looking-at-camera
+  - negative-bare-camera-term
+  - negative-photoreal-face-seedance

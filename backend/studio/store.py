@@ -25,6 +25,7 @@ STUDIO_TABLES_DDL = (
         aspect TEXT NOT NULL CHECK(aspect IN ('16:9','9:16')),
         created_at TEXT NOT NULL, updated_at TEXT NOT NULL,
         archived INTEGER NOT NULL DEFAULT 0, brain_provider TEXT NOT NULL DEFAULT 'claude',
+        review_provider TEXT NOT NULL DEFAULT 'qwen',
         source_kind TEXT CHECK(source_kind IN ('novel','upload','paste','exchange')),
         source_ref TEXT, snapshot_no INTEGER NOT NULL DEFAULT 0,
         episode_seconds_min INTEGER NOT NULL DEFAULT 180, episode_seconds_max INTEGER NOT NULL DEFAULT 240,
@@ -148,6 +149,19 @@ STUDIO_TABLES_DDL = (
         created_at TEXT NOT NULL, created_reason TEXT NOT NULL, PRIMARY KEY(project_id,revision),
         FOREIGN KEY(project_id,owner) REFERENCES studio_projects(id,owner)
     )""",
+    # WO3e 知识库：案例与按场景类型的节奏统计。不挂项目外键，删项目不删作者案例。
+    """CREATE TABLE IF NOT EXISTS studio_exemplars (
+        id TEXT PRIMARY KEY, owner TEXT, project_id TEXT, source TEXT,
+        scene_type TEXT, kind TEXT CHECK(kind IN ('good','bad')), reason TEXT,
+        shot_json TEXT, keyframe_asset_id TEXT, video_model TEXT, qc_json TEXT, cost_cny TEXT,
+        tags_json TEXT, created_at TEXT, archived INTEGER DEFAULT 0
+    )""",
+    """CREATE TABLE IF NOT EXISTS studio_stats (
+        owner TEXT, scene_type TEXT, episodes INTEGER, shots INTEGER,
+        avg_shot_s REAL, shot_size_json TEXT, camera_json TEXT, updated_at TEXT,
+        PRIMARY KEY(owner, scene_type)
+    )""",
+    "CREATE INDEX IF NOT EXISTS idx_studio_exemplars_owner_scene ON studio_exemplars(owner,scene_type,kind,created_at)",
     "CREATE INDEX IF NOT EXISTS idx_studio_breakdowns_project ON studio_breakdowns(owner,project_id,created_at)",
     "CREATE INDEX IF NOT EXISTS idx_studio_chunks_breakdown ON studio_chunks(breakdown_id,no)",
     "CREATE INDEX IF NOT EXISTS idx_studio_chunks_job ON studio_chunks(job_id)",
@@ -179,6 +193,8 @@ STUDIO_TABLES_DDL = (
 
 _JSON_FIELDS = {"params_json": "params", "items_json": "items", "usage_json": "usage", "meta_json": "meta",
                 "result_json": "output", "warnings_json": "warnings"}
+_EXEMPLAR_JSON_FIELDS = {"shot_json": "shot", "qc_json": "qc", "tags_json": "tags"}
+_STATS_JSON_FIELDS = {"shot_size_json": "shot_size", "camera_json": "camera"}
 _MONEY_FIELDS = {"total_min_cny", "total_max_cny", "est_min_cny", "est_max_cny", "reserved_cny", "actual_cny"}
 _JOB_UPDATE_FIELDS = {
     "status", "task_id", "run_token", "reserved_cny", "actual_cny", "usage_json", "result_host",
@@ -187,6 +203,8 @@ _JOB_UPDATE_FIELDS = {
 }
 # 定妆出图与声线的任务 kind；它们的结算口径与 i2v 不同（见 casting_jobs.transition）。
 CASTING_JOB_KINDS = ("image", "tts")
+# WO3e 交叉审核模型；off 表示不自动审核。
+REVIEW_PROVIDERS = ("claude", "qwen", "deepseek", "off")
 _TRANSITIONS = {
     "queued": {"submitting", "cancelled"},
     "submitting": {"submitted", "uncertain", "rejected", "failed"},
@@ -253,6 +271,7 @@ async def migrate_schema(db) -> None:
     """只补列：旧库 provider/status CHECK 保留，brain 使用新增的权威列。"""
     additions = {
         "studio_projects": {"brain_provider": "TEXT NOT NULL DEFAULT 'claude'",
+                            "review_provider": "TEXT NOT NULL DEFAULT 'qwen'",
                             "source_kind": "TEXT CHECK(source_kind IN ('novel','upload','paste','exchange'))",
                             "source_ref": "TEXT", "snapshot_no": "INTEGER NOT NULL DEFAULT 0",
                             "episode_seconds_min": "INTEGER NOT NULL DEFAULT 180",
@@ -321,6 +340,29 @@ async def _many(db, sql, params=()) -> list[dict]:
         return [_row(row) for row in await cursor.fetchall()]
 
 
+def _exemplar_row(row) -> dict | None:
+    """案例行：JSON 列同时给出解析后的 shot/qc/tags，便于接口直接返回。"""
+    if row is None:
+        return None
+    result = dict(row)
+    for key, target in _EXEMPLAR_JSON_FIELDS.items():
+        value = result.get(key)
+        result[target] = json.loads(value) if value else None
+    if result.get("archived") is not None:
+        result["archived"] = bool(result["archived"])
+    return result
+
+
+def _stats_row(row) -> dict | None:
+    if row is None:
+        return None
+    result = dict(row)
+    for key, target in _STATS_JSON_FIELDS.items():
+        value = result.get(key)
+        result[target] = json.loads(value) if value else {}
+    return result
+
+
 async def _project(db, project_id: str, owner: str) -> dict:
     project = await _one(db, "SELECT * FROM studio_projects WHERE id=? AND owner=? AND archived=0",
                          (project_id, owner))
@@ -370,6 +412,188 @@ async def list_projects(owner: str) -> list[dict]:
     async with connection() as db:
         return await _many(db, "SELECT * FROM studio_projects WHERE owner=? AND archived=0 ORDER BY updated_at DESC,id",
                            (owner,))
+
+
+async def get_review_provider(pid: str, owner: str) -> str:
+    """项目审核模型；PATCH 之外的读取都统一返回字符串。"""
+    async with connection() as db:
+        row = await _one(db, "SELECT review_provider FROM studio_projects "
+                             "WHERE id=? AND owner=? AND archived=0", (pid, owner))
+        if row is None:
+            raise HTTPException(404, "Not Found")
+        return row["review_provider"] or "qwen"
+
+
+async def set_review_provider(pid: str, owner: str, value: str) -> None:
+    if value not in REVIEW_PROVIDERS:
+        raise HTTPException(422, "审核模型只能为 claude、qwen、deepseek 或 off")
+    async with connection(transaction=True) as db:
+        async with db.execute(
+            "UPDATE studio_projects SET review_provider=? WHERE id=? AND owner=? AND archived=0",
+            (value, pid, owner),
+        ) as cursor:
+            if cursor.rowcount != 1:
+                raise HTTPException(404, "Not Found")
+
+
+def _json_column(value, field: str) -> str | None:
+    if value is None:
+        return None
+    if isinstance(value, str):
+        try:
+            json.loads(value)
+        except ValueError:
+            raise ValueError(f"{field} 必须是合法 JSON") from None
+        return value
+    return _json(value)
+
+
+def _exemplar_fields(fields: dict) -> dict:
+    unknown = set(fields) - {
+        "id", "project_id", "source", "scene_type", "kind", "reason", "shot", "shot_json",
+        "keyframe_asset_id", "video_model", "qc", "qc_json", "cost_cny", "tags", "tags_json",
+        "created_at", "archived",
+    }
+    if unknown:
+        raise ValueError("未知案例字段")
+    fields = dict(fields)
+    for alias, column in (("shot", "shot_json"), ("qc", "qc_json"), ("tags", "tags_json")):
+        if alias in fields:
+            fields[column] = _json_column(fields.pop(alias), alias)
+    return fields
+
+
+async def create_exemplar(owner: str, **fields) -> dict:
+    """导入或手工写入案例；shot 必填，kind 默认 good。"""
+    from .director_kb import schema as kb_schema
+
+    fields = _exemplar_fields(fields)
+    scene_type = fields.get("scene_type")
+    if scene_type not in kb_schema.SCENE_TYPES:
+        raise HTTPException(422, "场景类型不在知识库清单内")
+    if fields.get("shot_json") is None:
+        raise HTTPException(422, "案例必须带镜头数据")
+    kind = fields.get("kind", "good")
+    if kind not in ("good", "bad"):
+        raise HTTPException(422, "案例类型只能为 good 或 bad")
+    if "reason" in fields and not isinstance(fields["reason"], str):
+        raise HTTPException(422, "案例原因必须是文字")
+    identifier = fields.pop("id", None)
+    if identifier is not None and (not isinstance(identifier, str) or not identifier.strip()):
+        raise HTTPException(422, "案例 id 无效")
+    row = {
+        "id": identifier or str(uuid.uuid4()),
+        "owner": owner,
+        "project_id": fields.get("project_id"),
+        "source": fields.get("source") or "studio",
+        "scene_type": scene_type,
+        "kind": kind,
+        "reason": fields.get("reason") or "",
+        "shot_json": fields["shot_json"],
+        "keyframe_asset_id": fields.get("keyframe_asset_id"),
+        "video_model": fields.get("video_model"),
+        "qc_json": fields.get("qc_json"),
+        "cost_cny": None if fields.get("cost_cny") is None else str(fields["cost_cny"]),
+        "tags_json": fields.get("tags_json"),
+        "created_at": fields.get("created_at") or utcnow(),
+        "archived": int(bool(fields.get("archived", 0))),
+    }
+    async with connection(transaction=True) as db:
+        try:
+            await db.execute(
+                """INSERT INTO studio_exemplars(id,owner,project_id,source,scene_type,kind,reason,
+                   shot_json,keyframe_asset_id,video_model,qc_json,cost_cny,tags_json,created_at,archived)
+                   VALUES(:id,:owner,:project_id,:source,:scene_type,:kind,:reason,:shot_json,
+                   :keyframe_asset_id,:video_model,:qc_json,:cost_cny,:tags_json,:created_at,:archived)""",
+                row,
+            )
+        except sqlite3.IntegrityError:
+            raise HTTPException(409, "案例 id 已存在") from None
+        return _exemplar_row(await _one(db, "SELECT * FROM studio_exemplars WHERE id=?", (row["id"],)))
+
+
+async def list_exemplars(owner: str, *, scene_type: str | None = None,
+                         kind: str | None = None) -> list[dict]:
+    if kind is not None and kind not in ("good", "bad"):
+        raise HTTPException(422, "案例类型只能为 good 或 bad")
+    sql = "SELECT * FROM studio_exemplars WHERE owner=? AND archived=0"
+    args: list = [owner]
+    if scene_type is not None:
+        sql += " AND scene_type=?"
+        args.append(scene_type)
+    if kind is not None:
+        sql += " AND kind=?"
+        args.append(kind)
+    sql += " ORDER BY created_at DESC,id DESC"
+    async with connection() as db:
+        async with db.execute(sql, args) as cursor:
+            return [_exemplar_row(row) for row in await cursor.fetchall()]
+
+
+async def get_exemplar(owner: str, exemplar_id: str) -> dict:
+    async with connection() as db:
+        exemplar = _exemplar_row(await _one(
+            db, "SELECT * FROM studio_exemplars WHERE id=? AND owner=?", (exemplar_id, owner)))
+        if exemplar is None:
+            raise HTTPException(404, "Not Found")
+        return exemplar
+
+
+async def update_exemplar(owner: str, exemplar_id: str, *, kind: str | None = None,
+                          reason: str | None = None, archived: bool | int | None = None) -> dict:
+    """PATCH /kb/exemplars/{id} 的数据入口：只允许改 kind、reason、归档。"""
+    updates: dict = {}
+    if kind is not None:
+        if kind not in ("good", "bad"):
+            raise HTTPException(422, "案例类型只能为 good 或 bad")
+        updates["kind"] = kind
+    if reason is not None:
+        if not isinstance(reason, str) or len(reason) > 2000:
+            raise HTTPException(422, "案例原因不能超过 2000 字")
+        updates["reason"] = reason
+    if archived is not None:
+        if type(archived) not in (bool, int):
+            raise HTTPException(422, "归档标记必须是布尔值")
+        updates["archived"] = int(bool(archived))
+    async with connection(transaction=True) as db:
+        if await _one(db, "SELECT id FROM studio_exemplars WHERE id=? AND owner=?",
+                      (exemplar_id, owner)) is None:
+            raise HTTPException(404, "Not Found")
+        if updates:
+            assignments = ",".join(f"{key}=?" for key in updates)
+            await db.execute(f"UPDATE studio_exemplars SET {assignments} WHERE id=? AND owner=?",
+                             (*updates.values(), exemplar_id, owner))
+        return _exemplar_row(await _one(
+            db, "SELECT * FROM studio_exemplars WHERE id=? AND owner=?", (exemplar_id, owner)))
+
+
+def good_exemplars_for_retrieval(owner: str, scene_type: str, limit: int = 3) -> list[dict]:
+    """同步读接口：select_materials 可能在异步路由里被同步调用，不能 asyncio.run。"""
+    import database
+
+    limit = max(1, min(int(limit), 50))
+    connection = sqlite3.connect(database.DB_PATH, timeout=database.SQLITE_BUSY_TIMEOUT)
+    connection.row_factory = sqlite3.Row
+    try:
+        rows = connection.execute(
+            """SELECT * FROM studio_exemplars
+               WHERE owner=? AND scene_type=? AND kind='good' AND archived=0
+               ORDER BY created_at DESC,id DESC LIMIT ?""",
+            (owner, scene_type, limit),
+        ).fetchall()
+    finally:
+        connection.close()
+    return [_exemplar_row(row) for row in rows]
+
+
+async def list_stats(owner: str) -> list[dict]:
+    """节奏统计原始行；ready 判定与对外形状由 director_kb.stats 负责。"""
+    async with connection() as db:
+        async with db.execute(
+            "SELECT * FROM studio_stats WHERE owner=? ORDER BY scene_type", (owner,)
+        ) as cursor:
+            return [_stats_row(row) for row in await cursor.fetchall()]
+
 
 
 async def _create_asset(db, owner: str, project_id: str, fields: dict) -> dict:

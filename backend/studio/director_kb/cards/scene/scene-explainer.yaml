@@ -1,0 +1,80 @@
+id: scene-explainer
+type: scene
+title: 讲解科普（竖屏）
+summary: 用示意、对照或演示把机制、步骤或道理讲清楚，让观众获得可验证的理解。
+tags: [explainer, education, vertical, diagram, comparison]
+sources:
+  - {name: 作者规则与 P01 实测, license: own, ref: docs/tasks/2026-10-18-studio-wo3e-director-kb/00-house-rules.md}
+  - {name: 分集拆镜规范, license: own, ref: ~/Desktop/视频生成/.claude/skills/shortfilm-pipeline/references/02-分集拆镜.md}
+  - {name: 声画时间轴规范, license: own, ref: ~/Desktop/视频生成/.claude/skills/shortfilm-pipeline/references/05-声画时间轴.md}
+  - {name: 镜头语言参考, license: MIT, ref: ~/.claude/skills/ai-visual-director/knowledge/camera.md}
+  - {name: 转场与蒙太奇参考, license: MIT, ref: ~/.claude/skills/ai-visual-director/knowledge/transitions.md}
+  - {name: seedance-shot-design-scenarios, license: MIT-0, ref: references/scenarios.md}
+version: 1
+scene_type: explainer
+signals:
+  - 信息按问题、原理、例子或步骤组织，旁白或台词承担定义和因果
+  - 画面需要辅助说明关系，例如对照、剖面或演示
+  - 观众的主要回报是理解，不是人物情绪或冲突
+beats:
+  - 用 1 个问题或反常识结论开场，先说明为什么值得看
+  - 给整体示意或对照，让关系可见
+  - 拆成 2–3 个步骤或要素，逐条演示
+  - 用 1 个常见误解或边界条件收窄结论
+  - 回到结论，给 1 句可执行总结
+coverage:
+  - 中景｜固定机位，平视（竖屏中心构图）：讲解者侧身入画，先抛问题
+  - 全景｜固定机位，俯拍：桌面示意或模型全貌，建立部件关系
+  - 特写｜固定机位，俯拍：关键部件或对照物 A，锁形状与材质
+  - 特写｜固定机位，俯拍（与上 1 步同构图）：对照物 B 或动作演示，只换 1 个变量
+  - 中近景｜固定机位，平视（四分之三侧脸）：讲解者给结论，手势指向画面下方留白
+  - 中景｜固定机位，平视：总结动作或成品，收束
+pacing:
+  fast: {shots_per_min: [24, 36], shot_seconds: [1.6, 2.4]}
+  mid:  {shots_per_min: [15, 24], shot_seconds: [2.4, 4.0]}
+  slow: {shots_per_min: [9, 15],  shot_seconds: [4.0, 6.0]}
+camera:
+  - 竖屏构图：主体居中偏上，下方 1/3 留给字幕或示意，不用横向大航拍
+  - 讲解者侧身或四分之三侧对画面，视线落在道具、示意区或画外提词点，不看镜头；口播用四分之三侧脸
+  - 对照镜固定俯拍，同构图、同光位，只换 1 个变量；2 个对象分 2 条生成，后期并置
+  - 结构、材质和手部固定机位，机位与焦段不动；画面内的文字、数字、箭头和界面一律后期
+  - 写实人物中近景走 Seedance 时，首帧不要给正脸；改用侧后角度、逆光剪影，或约 65° 俯拍让头发遮住脸
+  - 每条生成至少 4 秒，再按旁白关键词裁切；不为 1 个短示意单独提交更短时长
+  - 讲解者干净、有精神，台面允许使用痕迹，人物不脏
+sound:
+  - 旁白为主，句间留 0.2–0.4 秒给画面理解，不把解说塞满
+  - 每个步骤给 1 个可区分的拟音或提示音，不堆叠音效
+  - 对照段沿用同 1 层底噪，只换被解释对象的声源
+  - 关键结论前留 0.3–0.5 秒静默，结论句不压音乐
+ai_risks:
+  - risk: 模型在画面里生成乱码文字、箭头或数字
+    fallback: 生成画面不写文字，全部后期；需要箭头时用空镜加后期图形，或让手部指向留白
+  - risk: 对照的 2 个对象被合并成 1 个，或互相污染外观
+    fallback: 分 2 条生成，固定同 1 构图和光位；后期并置或用遮挡转场切换
+  - risk: 讲解者手势与旁白不同步
+    fallback: 先定旁白 cue，再按关键词裁手势镜；手势镜单独生成，不在 1 条里排满动作
+  - risk: 竖屏裁切把关键信息切掉
+    fallback: 首帧按 9:16 构图，主体与示意区都放在安全框内；横屏素材不直接裁成竖屏
+  - risk: 写实正脸或口型在 Seedance 首帧被拒
+    fallback: 改走万相；或用四分之三侧脸、侧后、手部演示替代正脸口播
+example: |-
+  原创示例（竖屏修车讲解：刹车为什么越捏越松；按成片时值记，单条生成不短于 4 秒）：
+  1. 中景｜固定机位，平视（竖屏中心构图）｜阿哲侧身站在修车架旁，手里拎着 1 根松垮的刹车线｜4.0 秒
+  2. 全景｜固定机位，俯拍工作台｜线管、线芯和扳手排成 1 行，3 样东西各占 1 格｜3.6 秒
+  3. 特写｜固定机位，俯拍线管端口｜旧线管端口被压扁，内壁露出毛刺｜3.0 秒
+  4. 特写｜固定机位，俯拍（与上 1 步同构图）｜换上新线管，端口圆整，内壁光滑｜3.0 秒
+  5. 中近景｜固定机位，平视（四分之三侧脸）｜阿哲把线芯穿进线管，手势指向画面下方留白｜3.8 秒
+  6. 特写｜固定机位，俯拍固定点｜扳手收紧螺丝，线芯被拉直，刹车臂回到原位｜3.4 秒
+  7. 中景｜固定机位，平视｜阿哲捏住刹车把手，后轮停住，他抬手示意结束｜4.2 秒
+related_grammar:
+  - grammar-insert-closeup
+  - grammar-shot-size
+  - grammar-camera-angle
+  - grammar-transition
+  - grammar-continuity
+related_negative:
+  - negative-bare-camera-term
+  - negative-looking-at-camera
+  - negative-unwritten-detail-seedream
+  - negative-focal-without-purpose
+  - negative-too-many-actions

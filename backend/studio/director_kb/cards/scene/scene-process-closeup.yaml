@@ -1,0 +1,81 @@
+id: scene-process-closeup
+type: scene
+title: 工艺操作 / 动作特写（P01 类）
+summary: 用连续近距离镜头展示手艺、维修或精密操作的步骤、接触和完成结果。
+tags: [process, closeup, craft, repair, hands, material]
+sources:
+  - {name: 作者规则与 P01 实测, license: own, ref: docs/tasks/2026-10-18-studio-wo3e-director-kb/00-house-rules.md}
+  - {name: 分集拆镜规范, license: own, ref: ~/Desktop/视频生成/.claude/skills/shortfilm-pipeline/references/02-分集拆镜.md}
+  - {name: 声画时间轴规范, license: own, ref: ~/Desktop/视频生成/.claude/skills/shortfilm-pipeline/references/05-声画时间轴.md}
+  - {name: 材质与质感参考, license: MIT, ref: ~/.claude/skills/ai-visual-director/knowledge/materials.md}
+  - {name: 镜头语言参考, license: MIT, ref: ~/.claude/skills/ai-visual-director/knowledge/camera.md}
+  - {name: seedance-shot-design-scenarios, license: MIT-0, ref: references/scenarios.md}
+  - {name: seedance-shot-design-failure-diagnosis, license: MIT-0, ref: references/failure-diagnosis.md}
+version: 1
+scene_type: process-closeup
+signals:
+  - 手、工具和材料占画面主导，人物脸不是重点
+  - 步骤有先后和物理约束，观众能看见操作如何改变物件
+  - 本场变化是物件从初始状态到完成或失败
+beats:
+  - 交代工作台、工具排列和物件的初始状态
+  - 第 1 个动作：取工具或固定材料，建立握持与受力
+  - 关键接触：工具咬合、材料变形或去除，给出可验证的变化
+  - 检查或修正：停顿、吹屑或测量，确认结果
+  - 完成：成品与残料同框，交代下一步
+coverage:
+  - 中景｜固定机位，侧向俯拍：交代工作台、手的位置和工具排列
+  - 特写｜固定机位，俯拍接触点：工具与材料咬合，锁住结构和材质
+  - 微距特写｜固定机位，贴近表面：材料变化，例如切屑、纹理、液体或粉末
+  - 近景或中近景｜固定机位，侧后方：操作者的肩颈与呼吸，不露正脸
+  - 特写｜固定机位，俯拍：测量或检查动作，给观众 1 个可读结果
+  - 中景｜固定机位，侧面俯拍：成品与残料同框收束，保持与开场同 1 个工作台
+pacing:
+  fast: {shots_per_min: [18, 26], shot_seconds: [1.8, 2.8]}
+  mid:  {shots_per_min: [10, 16], shot_seconds: [3.2, 4.8]}
+  slow: {shots_per_min: [6, 10],  shot_seconds: [4.8, 7.5]}
+camera:
+  - 结构、材质、手部和工具接触一律固定机位，机位不动、焦段不变；不用环绕、下移或推近后上摇
+  - 每镜只写 1 条因果动作链：准备、接触、反应、恢复；主体与摄影机动作合计最多 3 个
+  - 微距镜锁基准色、光向和焦平面，写明焦点落在接触点或表面纹路上，不用景深漂移
+  - 人物只在侧后、肩颈或手部入画，不看镜头；写实人物走 Seedance 时避免正脸首帧
+  - 复杂交接拆成“伸向工具”和“握住工具”2 条生成，不在 1 条里塞满动作
+  - 每条生成至少 4 秒，再按步骤裁切；生成不足 4 秒会把动作压缩或让模型补编
+  - 手和人物保持干净，油污、粉尘只留在工具与工件上
+sound:
+  - 先铺工作台底噪，例如灯管、风机或窗外雨声，再叠工具接触声
+  - 不同材料给不同频段：金属偏高频、木头偏中频、液体偏低频；1 次接触只发 1 声
+  - 关键步骤之间留 0.2–0.4 秒操作间隙，让观众看清物件变化
+  - 完成镜可留 1 段只剩环境声的停顿，不急着上音乐
+ai_risks:
+  - risk: 环绕或下移让结构穿模、材质换种；P01 实测出现过丝杠穿进滚柱、金属屑变成木刨花
+    fallback: 改固定机位，加材质与色调锁定句；关键结构先出 1 张参考首帧，机位和光向照它复现
+  - risk: 手部多指、工具变形或握持方向反了
+    fallback: 固定俯拍，首帧锁手型与握持；复杂交接拆成 2 条，必要时用局部补镜
+  - risk: 步骤被压缩或跳过，观众看不懂怎么完成的
+    fallback: 每条生成只放 1 个主步骤，按至少 4 秒提交，再裁成成片时值；缺步骤就补拍
+  - risk: 微距里焦点漂移，接触点变糊
+    fallback: 固定焦平面与机位，写明焦点落点；对焦变化留到后期或单独拍 1 条
+  - risk: 成品与残料对不上，像换了 1 件东西
+    fallback: 完成镜沿用开场同 1 个工作台、同 1 个光位；成品和残料同框，不靠剪辑暗示
+example: |-
+  原创示例（金缮修补白瓷杯；按成片时值记，单条生成不短于 4 秒）：
+  1. 中景｜固定机位，侧向俯拍（镜头不动）｜工作台摊开 2 片白瓷碎片，镊子、漆刷、金粉罐排成 1 列｜4.0 秒
+  2. 特写｜固定机位，俯拍断口｜左手按住大碎片，右手用棉签清理旧胶｜3.4 秒
+  3. 特写｜固定机位，俯拍接触点｜漆刷蘸起深褐色漆，沿断口薄薄涂过 1 遍｜3.0 秒
+  4. 特写｜固定机位，俯拍接缝（镜头与光源不动）｜2 片瓷片合拢，断口挤出 1 条细漆线｜2.8 秒
+  5. 近景｜固定机位，侧后方（避开正脸）｜操作者肩颈保持不动，手指稳住接缝，呼吸放轻｜4.2 秒
+  6. 特写｜固定机位，俯拍漆线｜细竹管把金粉撒在漆线上，裂纹变成 1 条金线｜3.6 秒
+  7. 中景｜固定机位，侧面俯拍（与镜 1 同工作台）｜杯子立在灯下，杯口完整，旁边留着砂纸和金粉碟｜4.8 秒
+related_grammar:
+  - grammar-insert-closeup
+  - grammar-lens-focal
+  - grammar-camera-angle
+  - grammar-continuity
+  - grammar-action-match
+related_negative:
+  - negative-nonfixed-structure-material
+  - negative-orbit-invents-detail
+  - negative-move-down-material-drift
+  - negative-too-many-actions
+  - negative-unwritten-detail-seedream

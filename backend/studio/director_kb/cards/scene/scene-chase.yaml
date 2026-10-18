@@ -1,0 +1,85 @@
+id: scene-chase
+type: scene
+title: 追逐
+summary: 追方与逃方靠路线、拐角和距离变化推进叙事，结果通常是脱身、拦截或被迫接战。
+tags: [chase, pursuit, action, movement, fast-cut]
+sources:
+  - {name: 作者规则、P01 约 3.9 秒/镜与生成下限（经验值，待作者成片统计校准）, license: own, ref: docs/tasks/2026-10-18-studio-wo3e-director-kb/00-house-rules.md}
+  - {name: 分集拆镜规范, license: own, ref: ~/Desktop/视频生成/.claude/skills/shortfilm-pipeline/references/02-分集拆镜.md}
+  - {name: 声画时间轴规范, license: own, ref: ~/Desktop/视频生成/.claude/skills/shortfilm-pipeline/references/05-声画时间轴.md}
+  - {name: 剪辑理论与交叉剪辑, license: MIT, ref: ~/.claude/skills/ai-visual-director/knowledge/editing-theory.md}
+  - {name: 镜头语言与跟拍, license: MIT, ref: ~/.claude/skills/ai-visual-director/knowledge/camera.md}
+  - {name: 声音设计与空间混响, license: MIT, ref: ~/.claude/skills/ai-visual-director/knowledge/sound-design.md}
+  - {name: seedance-shot-design-failure-diagnosis, license: MIT-0, ref: references/failure-diagnosis.md}
+  - {name: seedance-shot-design-cinematography, license: MIT-0, ref: references/cinematography.md}
+version: 1
+scene_type: chase
+signals:
+  - 追方与逃方目标明确，场面由空间移动推动
+  - 路线不断切换，拐角、楼梯、门洞和障碍改变双方距离
+  - 大部分时间双方不接触，接触只发生在拦截或被迫接战
+  - 本场结束时的变化是拉开、甩脱、截住或换到新空间
+beats:
+  - 用定场镜交代起跑点、逃方路线和追方来向
+  - 首次加速，距离缩短或拉开，明确双方速度差
+  - 路线转入窄道、楼梯或障碍区，空间限制改变追逐条件
+  - 追方抄近路或逃方失误，双方逼近到可接触范围
+  - 以脱身、截停或被迫接战结束，留下新的位置关系
+coverage:
+  - 远景固定，侧向平视：交代街道、出口和双方起跑位置
+  - 中景侧向跟拍（镜头平行随人移动）：拍无接触的跑动、姿态和首次距离变化
+  - 全景固定，高处俯拍：展示拐角、捷径和路线分叉
+  - 近景侧后方跟拍（镜头贴住肩后随人移动）：拍呼吸、回头和手部动作，避开正脸
+  - 固定插入特写，地面或门把俯拍：拍脚掌落地、门槛、抓握和松手
+  - 全景固定，侧向平视：交代脱身、截停或被迫接战后的新距离
+pacing:
+  fast: {shots_per_min: [26, 40], shot_seconds: [1.5, 2.4]}
+  mid:  {shots_per_min: [16, 26], shot_seconds: [2.4, 4.0]}
+  slow: {shots_per_min: [9, 16],  shot_seconds: [4.0, 7.0]}
+camera:
+  - 追逃方向跨镜保持一致；先定逃跑方向，再让追方从反方向进入，换轴时用中性镜头过渡
+  - 人物视线落在逃跑路线、追方或手上，不看镜头；回头只给侧脸
+  - 跟拍只拍无接触的跑动；出现抓握、碰撞、翻越结构时切固定机位
+  - 每镜只保留 1 条追逐动作，主体与摄影机动作合计不超过 3 个；复杂路线拆镜
+  - 街道招牌、楼梯结构、车窗和手部道具是敏感内容，用固定机位并锁材质与连接点
+  - 写实人物在 Seedance 里避开正脸首帧：用侧后跟拍、逆光剪影、头发遮脸、约 65° 俯拍、远景或背影；必须露脸时用万相
+  - 每条生成至少 4 秒，在每条生成里安排 2–3 个连续动作点再裁切；同框不超过 2 人
+sound:
+  - 脚步、呼吸、衣料和轮胎声按距离变化调整远近与音量，换机位不重置环境床
+  - 碰撞、抓握、翻越只在接触帧发 1 次声，后续镜头留短尾音
+  - 拐角处让声音先到、画面后到制造预期；甩脱后用环境声拉开空间
+ai_risks:
+  - risk: 跟拍时人物正脸进入近景，Seedance 肖像闸拒绝首帧
+    fallback: 改成侧后方跟拍或背影；需要露脸时用万相，或改为固定远景加剪影
+  - risk: 跑动方向在镜头间翻转，追方和逃方看起来在互相追赶
+    fallback: 先画路线图并标出每镜的运动方向；切镜时保持同向，拐角用中性镜头或定场镜过渡
+  - risk: 街道招牌、楼梯、栏杆和车辆结构在运动中弯折或穿模
+    fallback: 结构镜改固定机位，首帧锁轮廓、连接点和材质；复杂翻越拆成起跳、接触、落地 3 段
+  - risk: 为 1.5–2.4 秒短镜单独生成，低于 4 秒下限，动作被压缩
+    fallback: 每条生成 4–6 秒，预划 2–3 个切点，按脚步或抓握帧裁切
+  - risk: 人群和车流同框过多，身份、方向和道具串位
+    fallback: 同框控制在 2 人；群演只作虚化背景，追逐主体单独拍，再用固定全景重建空间
+  - risk: 雨夜追逐被拍成满脸泥污、衣服破烂，写实变脏
+    fallback: 主要用雨水反光、湿发和衣料贴身的质感；人物脸和衣服保持干净，瑕疵最多 1 项
+example: |-
+  原创示例（雨夜旧城市场；镜头时长按成片裁切计，每条生成至少 4 秒）：
+  1. 远景｜固定机位，侧向平视（机位固定）｜苏禾抱着信封从鱼摊后冲出，陈放提灯从巷口转入｜4.2 秒
+  2. 中景｜侧向跟拍（镜头平行随人移动），无接触｜苏禾跨过水洼，陈放绕开推车，距离缩短半步｜3.0 秒
+  3. 全景｜固定机位，高处俯拍｜苏禾钻进窄巷，陈放改走卸货坡道抄近路｜2.8 秒
+  4. 特写｜固定机位，地面俯拍｜苏禾的鞋跟踩进排水缝，信封换到左手｜1.8 秒
+  5. 近景｜固定机位，侧后方（镜头不动）｜陈放伸手抓空，只碰到苏禾的袖口｜2.2 秒
+  6. 全景｜固定机位，侧向平视｜苏禾翻过矮闸，陈放在闸前刹住，灯影拉长｜3.6 秒
+  7. 中景｜固定机位，侧后 45°｜苏禾停在货梯口喘气，信封仍在左手，陈放从坡道尽头出现｜4.4 秒
+related_grammar:
+  - grammar-shot-size
+  - grammar-camera-movement
+  - grammar-camera-angle
+  - grammar-action-match
+  - grammar-continuity
+  - grammar-establishing-shot
+related_negative:
+  - negative-looking-at-camera
+  - negative-bare-camera-term
+  - negative-photoreal-face-seedance
+  - negative-fight-sub-four-second-generation
+  - negative-prop-continuity-break

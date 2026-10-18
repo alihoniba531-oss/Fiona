@@ -7,6 +7,38 @@ from .providers.base import UNCERTAIN_MESSAGE
 logger = logging.getLogger(__name__)
 
 
+async def _recover_kb_trials() -> None:
+    """续跑已确认但还没跑完的试拆；归档项目只清占位，不调度付费调用。"""
+    from . import kb_trial
+    from .config import get_settings
+
+    async with store.connection() as db:
+        for table in ("studio_quotes", "studio_projects"):
+            async with db.execute("SELECT 1 FROM sqlite_master WHERE type='table' AND name=?",
+                                  (table,)) as cursor:
+                if await cursor.fetchone() is None:
+                    return
+        rows = await store._many(db, """SELECT q.id,q.owner,q.items_json,q.project_id,
+                p.id AS project_exists,p.archived AS project_archived
+            FROM studio_quotes q
+            LEFT JOIN studio_projects p ON p.id=q.project_id AND p.owner=q.owner
+            WHERE q.status='confirmed' AND EXISTS (
+                SELECT 1 FROM studio_jobs j WHERE j.quote_id=q.id
+                AND j.kind IN ('kb_shot','kb_review') AND j.status='queued')
+            ORDER BY q.created_at,q.id""")
+    enabled = get_settings().enabled
+    for row in rows:
+        payload = row.get("items")
+        if not isinstance(payload, dict) or payload.get("kind") != "kb_trial":
+            continue
+        if row.get("project_exists") is None or row.get("project_archived"):
+            await kb_trial._cancel_quote_placeholders(row["id"])
+            continue
+        if not enabled:
+            continue
+        kb_trial._schedule(row["id"])
+
+
 async def recover_studio_jobs() -> None:
     # 部分既有启动测试会替换 init_db；尚未建表时和小说恢复保持一致。
     async with store.connection() as db:
@@ -66,3 +98,4 @@ async def recover_studio_jobs() -> None:
 
     from .breakdown import recover
     await recover()
+    await _recover_kb_trials()

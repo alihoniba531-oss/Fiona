@@ -1,0 +1,79 @@
+id: scene-scare
+type: scene
+title: 惊吓 / 恐怖
+summary: 用负空间、视听预兆和突然变化制造恐惧，威胁只露局部，答案可以暂时缺席。
+tags: [scare, horror, suspense, negative-space, threat]
+sources:
+  - {name: 作者规则与 P01 实测, license: own, ref: docs/tasks/2026-10-18-studio-wo3e-director-kb/00-house-rules.md}
+  - {name: 分集拆镜规范, license: own, ref: ~/Desktop/视频生成/.claude/skills/shortfilm-pipeline/references/02-分集拆镜.md}
+  - {name: 声画时间轴规范, license: own, ref: ~/Desktop/视频生成/.claude/skills/shortfilm-pipeline/references/05-声画时间轴.md}
+  - {name: 灯光与色彩参考, license: MIT, ref: ~/.claude/skills/ai-visual-director/knowledge/lighting.md}
+  - {name: 声音设计参考, license: MIT, ref: ~/.claude/skills/ai-visual-director/knowledge/sound-design.md}
+  - {name: seedance-shot-design-scenarios, license: MIT-0, ref: references/scenarios.md}
+version: 1
+scene_type: scare
+signals:
+  - 负空间、视听预兆和突然变化共同施压
+  - 威胁可能尚未被完全解释，只露出局部
+  - 本场后人物开始躲避、调查或逃离
+beats:
+  - 先用固定长镜交代正常空间和 1 个不该存在的细节
+  - 让日常声源先停 1 个，扩大负空间
+  - 威胁以局部出现，例如影子、门缝或手，不给全貌
+  - 用 1 次突然变化完成惊吓，灯灭、门响或入画只选 1 种
+  - 惊吓后留 2–3 秒余韵，让人物确认或逃离
+coverage:
+  - 全景｜固定机位，平视：空旷空间，暗部占画面 60% 以上，先给出口方向
+  - 中景｜固定机位，侧向平视：人物在空间中作业，背对威胁方向
+  - 插入特写｜固定机位，俯拍：异常细节，例如门缝、灯管或地面水迹
+  - 全景｜固定机位，平视：威胁局部入画或位置变化，仍不给全貌
+  - 近景或中近景｜固定机位，侧后方：人物察觉，呼吸与肩颈反应，不露正脸
+  - 中景或全景｜固定机位，平视：灯灭或空镜停留，收在威胁仍在的画面上
+pacing:
+  fast: {shots_per_min: [20, 30], shot_seconds: [1.6, 2.6]}
+  mid:  {shots_per_min: [10, 16], shot_seconds: [3.2, 4.8]}
+  slow: {shots_per_min: [4, 9],   shot_seconds: [5.0, 9.0]}
+camera:
+  - 惊吓段以固定机位为主；突然变化只用 1 次甩镜（快速横向甩动）或短促变焦，不叠加第 2 种
+  - 负空间写清楚：暗部比例、主光位置、出口方向；暗部保留 1 个可读细节，不靠全黑糊弄
+  - 威胁只给局部，不用拉远或跟拍把画外内容带进来；巨物始终在画外，并加材质与色调锁定句
+  - 人物视线落在威胁方向或出口，不看镜头；写实人物走 Seedance 时用侧后、逆光剪影或约 65° 俯拍加头发遮脸
+  - 结构、材质和惊吓接触点固定机位；恐怖妆效只做局部，人物本身保持干净
+  - 每条生成至少 4 秒，再按惊吓点裁切；惊吓前的等待镜可整条使用
+sound:
+  - 先做正常底噪，例如灯管、冰箱或远处车流，再逐个抽掉，留下 1 层
+  - 惊吓前留 1–2 秒接近无声，只留呼吸或心跳；静默比堆低频更有效
+  - 冲击声只发 1 次，随后立刻收小，留 0.5–1.0 秒余韵
+  - 威胁不发声时更可怕，用材质声或脚步方向暗示，不给完整音源
+ai_risks:
+  - risk: 拉远或跟拍把画外巨物编出来，体型、材质和颜色跑偏
+    fallback: 固定机位，写明巨物始终在画外；加材质、色调与比例锁定句，关键处用局部道具补镜
+  - risk: 惊吓点变成廉价 jump scare，怪物给出全貌
+    fallback: 只给局部和 1 次变化；不给正脸与全身，余韵镜保持空画面
+  - risk: 暗部噪点、糊动或主体看不清
+    fallback: 主光方向明确，暗部保留 1 个可读轮廓；不用过度欠曝，必要时补 1 盏动机光
+  - risk: 人物反应过火，变成尖叫乱跑
+    fallback: 每镜只写 1 个身体反应，例如呼吸停住、手指收紧、后退半步；不写抽象“惊恐”
+  - risk: 灯灭前后空间布局变化，观众看出穿帮
+    fallback: 同 1 个机位与首帧拍亮、暗 2 版，灯灭在后期做；陈设位置逐项核对
+example: |-
+  原创示例（深夜自助洗衣店；按成片时值记，单条生成不短于 4 秒）：
+  1. 全景｜固定机位，平视（镜头不动）｜深夜洗衣店，6 台机器只亮着最里面 1 台，暗部占画面 60% 以上｜5.0 秒
+  2. 中景｜固定机位，侧向平视｜阿澄背对门口，把衣服塞进滚筒，耳机线垂在胸前｜3.8 秒
+  3. 特写｜固定机位，俯拍排水口｜排水口边缘挂着 1 缕黑色长发，水还在流｜3.2 秒
+  4. 全景｜固定机位，平视（镜头不动）｜最里面那台机器的门自己弹开 1 条缝，里面没有衣服｜4.4 秒
+  5. 中近景｜固定机位，侧后方（避开正脸）｜阿澄停下手，肩膀慢慢绷紧，没有回头｜3.6 秒
+  6. 全景｜固定机位，平视｜门口感应灯灭了 1 下，再亮时烘干机前多了 1 双湿脚印｜2.8 秒
+  7. 中景｜固定机位，平视（镜头不动）｜阿澄抓起包退向门口，画面深处的机器门彻底打开，里面仍是空的｜5.2 秒
+related_grammar:
+  - grammar-camera-angle
+  - grammar-insert-closeup
+  - grammar-camera-movement
+  - grammar-continuity
+  - grammar-backlight-silhouette
+related_negative:
+  - negative-giant-offscreen-camera-move
+  - negative-nonfixed-structure-material
+  - negative-looking-at-camera
+  - negative-photoreal-face-seedance
+  - negative-ip-lookalike

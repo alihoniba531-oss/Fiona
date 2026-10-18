@@ -1,0 +1,16 @@
+id: negative-voiceover-mouth-moves
+type: negative
+title: 画外音时角色跟着动嘴
+summary: 旁白或内心独白下，人物嘴型跟着声音开合，后期叠上旁白就穿帮。
+tags: [voiceover, lip-sync, mouth, dialogue]
+sources:
+  - {name: seedance-shot-design-scenarios, license: MIT-0, ref: references/scenarios.md}
+  - {name: 声画时间轴规范, license: own, ref: ~/Desktop/视频生成/.claude/skills/shortfilm-pipeline/references/05-声画时间轴.md}
+  - {name: 分集拆镜规范, license: own, ref: ~/Desktop/视频生成/.claude/skills/shortfilm-pipeline/references/02-分集拆镜.md}
+version: 1
+wrong: 画外音覆盖全镜，人物跟着动嘴说话。
+right: 画外音：她想起那年的雨。近景固定，她望向窗外，嘴唇闭合，只有呼吸起伏。
+why: 模型看到可读的脸和声音语境，会把画外音当成台词去配口型；后期叠上旁白，就会出现不该有的说话动作。先把闭唇写清，情绪交给眼神、呼吸和停顿。
+evidence: Seedance 场景规范第 3.3 节要求画外音追加口型禁止；分集拆镜规范的口型自查要求真口型镜单独生产与验收。
+applies_to: {scene_type: [dialogue, monologue, phone-call, flashback]}
+lint_pattern: '(?:画外音|旁白|内心独白)[^\n。；]{0,30}(?<![不要别])(?:跟着动嘴|张嘴|动嘴|对口型)'

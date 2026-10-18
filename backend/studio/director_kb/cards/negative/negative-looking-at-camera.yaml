@@ -1,0 +1,14 @@
+id: negative-looking-at-camera
+type: negative
+title: 人物看镜头
+summary: 表演提示把视线送进镜头，会打断对手关系，也放大 AI 人脸漂移。
+tags: [eyeline, performance, face, fourth-wall]
+sources:
+  - {name: 作者规则与 P01 返工记录, license: own, ref: docs/tasks/2026-10-18-studio-wo3e-director-kb/00-house-rules.md}
+  - {name: 分集拆镜规范, license: own, ref: ~/Desktop/视频生成/.claude/skills/shortfilm-pipeline/references/02-分集拆镜.md}
+version: 1
+wrong: 近景，女主角抬眼看向镜头，含泪微笑。
+right: 近景，固定机位。女主角视线落在对面男主的眼睛上，不看镜头；嘴角先绷紧再松开。
+why: 模型容易把短暂回看放大成持续凝视，观众会从旁观者变成被凝视对象；正反打的左右关系也会乱。除非作者明确要演员直接对观众说话，否则不写看镜头。
+evidence: 作者规则（2026-10-18）要求人物不直视镜头、视线落在对手或关键物件上；2 张作者确认的样卡也把视线写在对手身上。
+applies_to: {scene_type: [dialogue, confrontation, intimacy, monologue, ensemble, phone-call]}

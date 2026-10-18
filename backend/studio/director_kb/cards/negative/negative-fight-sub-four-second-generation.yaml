@@ -1,0 +1,15 @@
+id: negative-fight-sub-four-second-generation
+type: negative
+title: 打斗短镜单独生成不足 4 秒
+summary: 打斗想切 1.4–2.3 秒就按短时长提交，模型会吞动作或临时补招。
+tags: [fight, generation-duration, editing]
+sources:
+  - {name: 作者规则与 P01 返工记录, license: own, ref: docs/tasks/2026-10-18-studio-wo3e-director-kb/00-house-rules.md}
+  - {name: seedance-shot-design-specs, license: MIT-0, ref: references/seedance-specs.md}
+  - {name: 逐集生产规范, license: own, ref: ~/Desktop/视频生成/.claude/skills/shortfilm-pipeline/references/03-逐集生产.md}
+version: 1
+wrong: 打斗第 5 镜只要 2 秒，就按 2 秒提交生成。
+right: 先提交 4–6 秒，把 2–3 个连续攻防放进同次生成，再按命中帧裁出 1.4–2.3 秒的短镜。
+why: 平台最短生成 4 秒；低于下限会压缩时间线，准备或反应被砍掉，甚至凭空补招。短镜靠裁，不靠缩短生成。
+evidence: 作者规则（2026-10-18）要求每条视频至少生成 4 秒再裁；seedance-specs 标准生成 4–30 秒；03-逐集生产规定本工作室最少 4 秒。
+applies_to: {scene_type: [fight, chase]}

@@ -1,0 +1,80 @@
+id: scene-monologue
+type: scene
+title: 情感独白 / 内心戏
+summary: 单个角色用言语、停顿和微动作说出内心判断，外部回应不是推进主力。
+tags: [monologue, inner-thought, solo, emotional, voiceover]
+sources:
+  - {name: 作者规则、P01 约 3.9 秒/镜与生成下限（经验值，待作者成片统计校准）, license: own, ref: docs/tasks/2026-10-18-studio-wo3e-director-kb/00-house-rules.md}
+  - {name: 分集拆镜规范, license: own, ref: ~/Desktop/视频生成/.claude/skills/shortfilm-pipeline/references/02-分集拆镜.md}
+  - {name: 声画时间轴规范, license: own, ref: ~/Desktop/视频生成/.claude/skills/shortfilm-pipeline/references/05-声画时间轴.md}
+  - {name: 台词停顿与留白, license: MIT, ref: ~/.claude/skills/ai-visual-director/knowledge/dialogue-rhythm.md}
+  - {name: 微表情与眼神变化, license: MIT, ref: ~/.claude/skills/ai-visual-director/knowledge/micro-expressions.md}
+  - {name: 身体语言与姿态, license: MIT, ref: ~/.claude/skills/ai-visual-director/knowledge/body-language.md}
+  - {name: 视觉潜台词与意识流, license: MIT, ref: ~/.claude/skills/ai-visual-director/knowledge/visual-subtext.md}
+  - {name: 声音设计与静默, license: MIT, ref: ~/.claude/skills/ai-visual-director/knowledge/sound-design.md}
+version: 1
+scene_type: monologue
+signals:
+  - 1 人主导言语或思绪，没有交替回应改变话语方向
+  - 画面可以用背影、空镜、物件和微动作承载情绪
+  - 重点是内在判断从压抑到松动、接受或决断
+  - 没有对面实时回应的人，也不是在讲清 1 个原理
+beats:
+  - 用环境或动作把角色压进独处状态
+  - 第 1 段话语暴露表面理由或自我辩解
+  - 1 个具体物件或身体感觉撬开真实情绪
+  - 停顿或动作打断话语，角色改口或承认
+  - 以决断、放下或继续忍耐收束
+coverage:
+  - 全景固定，侧向或后方：交代独处空间和人物与环境的比例
+  - 中景固定，侧后 45°：拍姿态、手部动作和呼吸
+  - 近景固定，侧向或过肩：拍眼神落点，不给正脸大特写
+  - 固定插入特写，俯拍物件：让承载情绪的物件占画面
+  - 空镜固定，平视：用环境变化承接情绪，不靠台词解释
+  - 中近景固定，逆光剪影：把最后的话或沉默留在轮廓里
+pacing:
+  fast: {shots_per_min: [15, 23], shot_seconds: [2.6, 4.0]}
+  mid:  {shots_per_min: [9, 15],  shot_seconds: [4.0, 6.5]}
+  slow: {shots_per_min: [5, 9],   shot_seconds: [6.5, 10.0]}
+camera:
+  - 以固定机位为主；情绪推进用轻推轨（镜头沿地面缓慢靠近）或极慢拉远，不要环绕
+  - 每镜只保留 1 个情绪动作，主体与摄影机动作合计不超过 3 个；长段独白按呼吸拆镜
+  - 人物不看镜头，视线落在物件、窗外或自己的手；写视线落点，不写面朝镜头
+  - 人脸、手部或承载情绪的物件成为重点时固定机位，光向和焦段不变
+  - 写实人物走 Seedance 时避开正脸首帧：用侧后、逆光剪影、头发遮脸、约 65° 俯拍、远景或背影；口型镜用万相
+  - 每条生成至少 4 秒；独白很长时按语义呼吸拆成多条生成，不靠单条长镜硬撑
+sound:
+  - 画外音或内心独白要单独标成声音轨；非口型镜头写明嘴唇闭合、呼吸轻微
+  - 保留房间底噪、远处声源或钟表声，让沉默有空间感
+  - 关键句前后留 0.3–0.8 秒气口；更长空白明确写成无声
+ai_risks:
+  - risk: 画外独白时人物跟着动嘴，观众误以为在说话
+    fallback: 先切独立音频 cue；非口型镜在视频提示写嘴唇闭合、呼吸轻微，人物改做手部或物件动作
+  - risk: 写实正脸特写触发 Seedance 肖像闸
+    fallback: 改侧后、逆光剪影、头发遮脸、约 65° 俯拍或远景；需要清楚口型与表情时用万相
+  - risk: 独白段落没有动作变化，模型输出静止或循环
+    fallback: 每 3–5 秒安排 1 个微动作，如呼吸、手指收紧、视线移动或窗外光影变化
+  - risk: 情绪靠流泪和皱眉堆叠，画面变脏
+    fallback: 每镜只留 1 个表情或身体信号；写实人物保持干净、有精气神，瑕疵不超过 1 项
+example: |-
+  原创示例（凌晨洗衣房；镜头时长按成片裁切计，每条生成至少 4 秒）：
+  1. 全景｜固定机位，后方平视（机位固定）｜林秋坐在滚筒机前，灯管忽明忽暗，洗衣机里只有 1 件白衬衫｜5.2 秒
+  2. 中景｜固定机位，侧后 45°｜她把衬衫袖口翻过来，线头已经磨散，视线落在针脚上｜4.0 秒
+  3. 近景｜固定机位，侧向（避开正脸）｜林秋说：「这件我补过 3 次。」手指停在线头处｜3.6 秒
+  4. 特写｜固定机位，俯拍手部｜针尖穿过布面，线拉紧，袖口补出 1 道新痕｜2.8 秒
+  5. 空镜｜固定机位，平视｜滚筒停转，白衬衫贴在玻璃上，水珠往下滑｜3.0 秒
+  6. 中近景｜固定机位，逆光剪影｜林秋把衬衫叠好，说：「这次不补了。」｜4.4 秒
+  7. 全景｜固定机位，后方平视｜她把衬衫放进捐赠箱，灯管稳定下来，洗衣机重新进水｜5.0 秒
+related_grammar:
+  - grammar-shot-size
+  - grammar-camera-angle
+  - grammar-camera-movement
+  - grammar-lens-focal
+  - grammar-backlight-silhouette
+  - grammar-transition
+related_negative:
+  - negative-looking-at-camera
+  - negative-bare-camera-term
+  - negative-voiceover-mouth-moves
+  - negative-photoreal-face-seedance
+  - negative-too-many-actions

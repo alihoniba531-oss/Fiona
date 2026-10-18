@@ -1,0 +1,14 @@
+id: negative-giant-offscreen-camera-move
+type: negative
+title: 画外巨物被跟拍或拉远编出来
+summary: 首帧只露巨物局部时，跟拍、拉远会把画外区域带进来，模型临场补出新的巨物身体。
+tags: [giant, offscreen, camera-move, p01]
+sources:
+  - {name: 作者规则与 P01 返工记录, license: own, ref: docs/tasks/2026-10-18-studio-wo3e-director-kb/00-house-rules.md}
+  - {name: 分集拆镜规范, license: own, ref: ~/Desktop/视频生成/.claude/skills/shortfilm-pipeline/references/02-分集拆镜.md}
+version: 1
+wrong: 只拍黑曜石巨龙的爪子，镜头跟拍它前进并逐渐拉远。
+right: 固定机位，只拍巨爪与地面。巨物始终在画外，画面不出现头、尾或全身；用材质与色调锁定句保持黑曜石质感。
+why: 跟拍或拉远会要求画面出现首帧没有的身体部分，模型只能猜体型和物种；P01 里黑曜石巨龙被编成灰色巨蜥，体型也缩了。需要全貌时另起 1 个设计好的远景，不靠运镜揭示。
+evidence: 作者规则（2026-10-18）P01 实测：只露局部的巨物在跟拍、拉远时被编成灰色巨蜥，体型缩小；改固定机位并写明巨物始终在画外后通过。
+applies_to: {scene_type: [reveal, scare, fight, establishing]}
