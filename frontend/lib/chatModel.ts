@@ -11,6 +11,17 @@ export const CHAT_MODEL_EFFORT_TITLES: Record<ChatModelEffort, string> = {
   high: "高：最周全，最慢、最费你的额度，单条最长约 3 分钟",
 };
 
+export function modelDisplayName(id: string): string {
+  const claude = /^claude-(opus|sonnet|haiku)-(\d+)-(\d+)$/.exec(id);
+  if (claude) {
+    const family = claude[1][0].toUpperCase() + claude[1].slice(1);
+    return `Claude ${family} ${claude[2]}.${claude[3]}`;
+  }
+  if (id === "deepseek-v4-pro") return "DeepSeek V4 Pro";
+  if (id === "deepseek-flash") return "DeepSeek Flash";
+  return id;
+}
+
 export interface ChatModelOptions {
   enabled?: boolean;
   effort?: ChatModelEffort;

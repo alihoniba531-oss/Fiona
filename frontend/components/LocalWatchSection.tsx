@@ -5,6 +5,7 @@ import { apiFetch } from "@/lib/auth";
 import { API_BASE as API } from "@/lib/config";
 import { useAccountRequest } from "@/lib/useAccountIdentity";
 import { CHAT_MODEL_REV_KEY, getChatModel } from "@/lib/chatModel";
+import { formatBeijingDateTime } from "@/lib/beijingTime";
 import {
   LocalWatchError, localWatchErrorMessage, localWatchRequest, localWatchNotificationsEnabled,
   setLocalWatchNotifications, localWatchDraft, localWatchRulePayload, localWatchCaptureMessage, type LocalWatchDevice, type LocalWatchWindow,
@@ -21,7 +22,7 @@ const tokenCommand = "mkdir -p ~/.fiona && umask 077 && pbpaste > ~/.fiona/watch
 function lastSeen(value: string | null): string {
   if (!value) return "尚未上线";
   const date = new Date(/[zZ]$|[+-]\d\d:\d\d$/.test(value) ? value : `${value.replace(" ", "T")}Z`);
-  return Number.isNaN(date.getTime()) ? "时间未知" : date.toLocaleString("zh-CN");
+  return Number.isNaN(date.getTime()) ? "时间未知" : formatBeijingDateTime(date, true);
 }
 
 export default function LocalWatchSection({ username, sectionClass, headingClass }: {

@@ -8,6 +8,7 @@ import InkLandscape from "@/components/InkLandscape";
 import StarChart from "@/components/StarChart";
 import { Plus, Heart, Video, X, Check, Flame, RefreshCw } from "lucide-react";
 import { cn } from "@/lib/utils";
+import { formatBeijingDateTime, formatBeijingTime } from "@/lib/beijingTime";
 import { apiFetch } from "@/lib/auth";
 import { useAccountIdentity } from "@/lib/useAccountIdentity";
 import { openExternal } from "@/lib/open";
@@ -150,7 +151,7 @@ function CategoryCard({
   const hasItems = items.length > 0;
   const updateDate = feed.updatedAt ? new Date(feed.updatedAt) : null;
   const updatedTime = updateDate && Number.isFinite(updateDate.getTime())
-    ? updateDate.toLocaleTimeString("zh-CN", { hour: "2-digit", minute: "2-digit", hour12: false })
+    ? formatBeijingTime(updateDate)
     : null;
   const notice = feed.error
     ? hasItems ? "更新失败，显示上次内容" : feed.error
@@ -207,7 +208,7 @@ function CategoryCard({
         )}
       </ol>
       {updatedTime && hasItems && (
-        <div className="mt-0.5 text-[11.5px] tabular-nums text-[color:var(--ink2)]" title={updateDate?.toLocaleString("zh-CN")}>
+        <div className="mt-0.5 text-[11.5px] tabular-nums text-[color:var(--ink2)]" title={updateDate ? formatBeijingDateTime(updateDate, true) : undefined}>
           {feed.loading ? "更新中 · " : ""}获取于 {updatedTime}
         </div>
       )}

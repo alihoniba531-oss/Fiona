@@ -106,7 +106,7 @@ function MyAgentEditor({ owner, embedded, onSaved }: { owner: string } & MyAgent
             <div className="flex items-end justify-between gap-4 border-b pb-[22px]" style={{ borderColor: "var(--rule)" }}>
               <div>
                 {!embedded && <Link href="/" className="mb-2 inline-flex min-h-10 items-center gap-1.5 text-xs text-[color:var(--ink2)] hover:text-[color:var(--ink)]"><ArrowLeft size={13} />回到对话</Link>}
-                <h1 className="text-[30px] font-medium tracking-[.24em]">分身</h1>
+                <h1 className={`text-[30px] font-medium tracking-[.24em]${embedded ? " sr-only" : ""}`}>分身</h1>
                 <p className="mt-2 text-[14px] leading-[1.85] tracking-[.04em] text-[color:var(--ink2)]">设置身份、介绍和交流方式。名片默认仅自己可见。</p>
               </div>
             </div>

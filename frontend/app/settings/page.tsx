@@ -147,7 +147,7 @@ function SettingsContent() {
         <main className="flex min-w-0 flex-1 justify-center overflow-x-hidden overflow-y-auto p-3 mobile:p-3">
           <Glaze variant="panel" fur className="relative z-[1] box-border min-h-full w-full max-w-[712px] self-start rounded-[18px] px-12 pb-8 pt-7 mobile:px-6 mobile:pb-6 mobile:pt-5">
             <header>
-              <h1 className="mt-[18px] text-[30px] font-medium tracking-[0.24em]">设置</h1>
+              <h1 className={`mt-[18px] text-[30px] font-medium tracking-[0.24em]${embedded ? " sr-only" : ""}`}>设置</h1>
               <p className="mt-2 text-sm tracking-[0.04em] text-[color:var(--ink2)]">账号、外观、模型与数据。</p>
             </header>
 
@@ -212,9 +212,9 @@ function SettingsContent() {
               </div>
             </section>
 
-            <ChatModelSection key={username} username={username} sectionClass={sectionClass} headingClass={headingClass} />
+            <ChatModelSection key={`chat-model:${username}`} username={username} sectionClass={sectionClass} headingClass={headingClass} />
 
-            <LocalWatchSection key={username} username={username} sectionClass={sectionClass} headingClass={headingClass} />
+            <LocalWatchSection key={`local-watch:${username}`} username={username} sectionClass={sectionClass} headingClass={headingClass} />
 
             <section className={sectionClass}>
               <h2 className={headingClass}>数据管理</h2>

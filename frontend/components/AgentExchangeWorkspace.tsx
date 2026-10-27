@@ -12,6 +12,7 @@ import { useAgentExchanges } from "@/lib/useAgentExchanges";
 import { useAccountIdentity, useAccountRequest } from "@/lib/useAccountIdentity";
 import { apiFetch } from "@/lib/auth";
 import { avatarGlyph } from "@/lib/avatarGlyph";
+import { beijingDayNumber, beijingParts, formatBeijingTime } from "@/lib/beijingTime";
 import { API_BASE as API } from "@/lib/config";
 
 const fieldClass = "ceramic-card w-full rounded-[10px] border-0 px-4 py-3 text-[16px] leading-[1.8] tracking-normal text-[color:var(--ink)] outline-none focus-visible:ring-1 focus-visible:ring-[color:var(--ink)] disabled:opacity-50";
@@ -71,7 +72,7 @@ function ExchangeWorkspace({ owner, embedded = false, onOpenMyAgent }: Workspace
             <div className="flex items-end justify-between gap-6 max-md:items-start max-md:gap-3">
               <div className="max-md:min-w-0">
                 {!embedded && <Link href="/" className="mb-1 inline-flex min-h-10 items-center gap-1 text-xs text-muted-foreground hover:text-foreground"><ArrowLeft size={13} />回到对话</Link>}
-                <h1 className="text-[30px] font-medium tracking-[.24em]">广场</h1>
+                <h1 className={`text-[30px] font-medium tracking-[.24em]${embedded ? " sr-only" : ""}`}>广场</h1>
                 <p className="mt-2 text-[14px] leading-[1.85] tracking-[.04em] text-[color:var(--ink2)]">让分身和官方搭档讨论一个话题，一个账号就能开始。也可以邀请其他用户的公开分身。 <span className="text-xs">{manageAgent}</span></p>
               </div>
               {owner && <button type="button" className="btn min-h-10 tracking-[.12em] max-md:shrink-0" disabled={data.loading || data.officialLoading} onClick={() => { void data.refreshDirectory().then(data.refreshRecords); void data.refreshOfficial(); }} aria-label="刷新分身与交流记录"><RefreshCw size={14} className={data.loading || data.officialLoading ? "animate-spin" : ""} />刷新</button>}
@@ -488,9 +489,9 @@ function formatDate(value: string) {
   const normalized = /^\d{4}-\d{2}-\d{2} \d{2}:\d{2}:\d{2}$/.test(value) ? `${value.replace(" ", "T")}Z` : value;
   const date = new Date(normalized);
   if (Number.isNaN(date.getTime())) return "";
-  const today = new Date();
-  if (date.getFullYear() === today.getFullYear() && date.getMonth() === today.getMonth() && date.getDate() === today.getDate()) return date.toLocaleTimeString("zh-CN", { hour: "2-digit", minute: "2-digit", hour12: false });
-  return `${String(date.getMonth() + 1).padStart(2, "0")}/${String(date.getDate()).padStart(2, "0")}`;
+  if (beijingDayNumber(date) === beijingDayNumber(new Date())) return formatBeijingTime(date);
+  const parts = beijingParts(date);
+  return `${String(parts.month).padStart(2, "0")}/${String(parts.day).padStart(2, "0")}`;
 }
 
 async function assertAccountAgent(owner: string, agentId: string, signal: AbortSignal) {

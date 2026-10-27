@@ -1,3 +1,5 @@
+import { beijingParts } from "@/lib/beijingTime";
+
 const digits = "零一二三四五六七八九";
 
 function chineseNumber(value: number): string {
@@ -6,6 +8,7 @@ function chineseNumber(value: number): string {
 }
 
 export function formatChineseDate(date: Date, includeYear = false): string {
-  const year = includeYear ? `${date.getFullYear()}年` : "";
-  return `${year}${chineseNumber(date.getMonth() + 1)}月${chineseNumber(date.getDate())}日`;
+  const parts = beijingParts(date);
+  const year = includeYear ? `${parts.year}年` : "";
+  return `${year}${chineseNumber(parts.month)}月${chineseNumber(parts.day)}日`;
 }

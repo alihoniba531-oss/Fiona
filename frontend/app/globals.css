@@ -543,16 +543,32 @@ html, * {
     .chat-header > .glaze-finish { box-shadow:inset 0 -1px 0 var(--lipdk),inset 0 -7px 9px -8px var(--pool); }
     .chat-header > .glaze-highlight,.chat-header > .glaze-bloom { left:20px; width:50%; }
     .chat-shell .mobile-tabbar { box-shadow:inset 0 1px 0 var(--etch); }
-    .image-model-segments { grid-area:models; flex-wrap:nowrap; border-bottom:1px solid var(--carve); padding-bottom:8px; box-shadow:0 1px 0 var(--etch); }
-    .image-model-segments .chip { min-width:0; padding-inline:8px; font-size:12px; }
-    .composer-inner { display:grid; grid-template-areas:"text" "tools" "actions"; background-image:radial-gradient(ellipse 70% 50% at 24% 0%,var(--sheen),transparent 70%); box-shadow:inset 0 0 0 1px var(--rim),inset 0 1px 0 var(--lip),inset 0 -1px 0 var(--lipdk),inset 0 -18px 24px -22px var(--pool),0 10px 22px -18px var(--drop); }
-    .composer-inner.composer-with-model { grid-template-columns:minmax(0,1fr) auto; grid-template-areas:"models models" "text text" "tools exit" "actions actions"; }
+    .image-model-segments { grid-area:models; flex-wrap:wrap; border-bottom:1px solid var(--carve); padding-bottom:8px; box-shadow:0 1px 0 var(--etch); }
+    .image-model-segments .chip { flex-shrink:0; padding-inline:8px; font-size:12px; }
+    .composer-inner { display:grid; grid-template-columns:minmax(0,1fr) auto; grid-template-areas:"text text" "tools actions"; background-image:radial-gradient(ellipse 70% 50% at 24% 0%,var(--sheen),transparent 70%); box-shadow:inset 0 0 0 1px var(--rim),inset 0 1px 0 var(--lip),inset 0 -1px 0 var(--lipdk),inset 0 -18px 24px -22px var(--pool),0 10px 22px -18px var(--drop); }
+    .composer-inner.composer-with-model { grid-template-columns:minmax(0,1fr) auto; grid-template-areas:"text text" "tools tools" "models models" "exit actions"; }
     .composer-toolbar,.composer-mode-tools { display:contents; }
     .composer-text { grid-area:text; }
     .composer-tools { grid-area:tools; }
-    .composer-mode-exit { grid-area:exit; justify-self:end; }
+    .composer-mode-exit { grid-area:exit; justify-self:start; }
     .composer-actions { grid-area:actions; justify-self:end; }
   }
+}
+
+/* 手机图片 / 改图模式最后一行：退出按钮靠左，抵消页面按钮上的 ml-auto（utilities 层优先于 components 层）。 */
+@media (width < 48rem) {
+  .composer-inner.composer-with-model .composer-mode-exit { margin-left:0; }
+}
+
+/* 抽屉贴着手机视口边缘：去掉边缘遮罩并压平透镜，避免两侧露出底下的页面。 */
+@media (width < 48rem) {
+  :root:not([data-shell=desktop]) .drawer-panel > .glaze-blur,
+  :root:not([data-shell=desktop]) .drawer-panel > .glaze-tint {
+    -webkit-mask-image:none;
+    mask-image:none;
+  }
+  :root:not([data-shell=desktop]) .drawer-panel > .glaze-lens { display:none; }
+  :root:not([data-shell=desktop]) .drawer-panel > .glaze-tint { background:var(--glass2); }
 }
 
 /* Accessibility and fallback overrides deliberately remain unlayered so they

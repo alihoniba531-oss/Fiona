@@ -6,11 +6,13 @@ import { Search, X, Download, Calendar, ChevronDown, ChevronRight } from "lucide
 import { cn } from "@/lib/utils";
 import { apiFetch } from "@/lib/auth";
 import GeneratedImage from "@/components/GeneratedImage";
+import MessageText from "@/components/MessageText";
 import Glaze from "@/components/Glaze";
 import InkLandscape from "@/components/InkLandscape";
 import { generatedImagePath, storedReferenceImagePaths } from "@/lib/generatedImages";
 import { useAccountIdentity, useAccountRequest } from "@/lib/useAccountIdentity";
 import { formatChineseDate } from "@/lib/chineseDate";
+import { beijingDateKey, beijingDayNumber, beijingDayStart, beijingParts, formatBeijingDateTime, formatBeijingTime } from "@/lib/beijingTime";
 
 import { API_BASE as API } from "@/lib/config";
 
@@ -24,13 +26,6 @@ interface Msg {
 }
 
 type QuickRange = "all" | "today" | "week" | "month";
-
-function toDateStr(d: Date) {
-  const year = d.getFullYear();
-  const month = String(d.getMonth() + 1).padStart(2, "0");
-  const day = String(d.getDate()).padStart(2, "0");
-  return `${year}-${month}-${day}`;
-}
 
 function parseUtcTimestamp(timestamp: string) {
   return new Date(timestamp.replace(" ", "T") + "Z");
@@ -61,7 +56,7 @@ function HistoryForAccount({ username }: { username: string }) {
   const dateStats = useMemo(() => {
     const map: Record<string, number> = {};
     allMsgs.forEach(m => {
-      const day = toDateStr(parseUtcTimestamp(m.created_at));
+      const day = beijingDateKey(parseUtcTimestamp(m.created_at));
       map[day] = (map[day] || 0) + 1;
     });
     return Object.entries(map).sort((a, b) => b[0].localeCompare(a[0]));
@@ -73,18 +68,17 @@ function HistoryForAccount({ username }: { username: string }) {
     setDateFrom("");
     setDateTo("");
     const now = new Date();
+    const today = beijingDateKey(now);
     if (range === "today") {
-      setDateFrom(toDateStr(now));
-      setDateTo(toDateStr(now));
+      setDateFrom(today);
+      setDateTo(today);
     } else if (range === "week") {
-      const start = new Date(now);
-      start.setDate(now.getDate() - 6);
-      setDateFrom(toDateStr(start));
-      setDateTo(toDateStr(now));
+      setDateFrom(beijingDateKey(new Date((beijingDayNumber(now) - 6) * 86_400_000)));
+      setDateTo(today);
     } else if (range === "month") {
-      const start = new Date(now.getFullYear(), now.getMonth(), 1);
-      setDateFrom(toDateStr(start));
-      setDateTo(toDateStr(now));
+      const { year, month } = beijingParts(now);
+      setDateFrom(`${year}-${String(month).padStart(2, "0")}-01`);
+      setDateTo(today);
     }
   };
 
@@ -98,7 +92,7 @@ function HistoryForAccount({ username }: { username: string }) {
   // 过滤消息
   const filtered = useMemo(() => {
     return allMsgs.filter(m => {
-      const day = toDateStr(parseUtcTimestamp(m.created_at));
+      const day = beijingDateKey(parseUtcTimestamp(m.created_at));
       if (dateFrom && day < dateFrom) return false;
       if (dateTo && day > dateTo) return false;
       if (query.trim() && !m.content.toLowerCase().includes(query.toLowerCase())) return false;
@@ -110,7 +104,7 @@ function HistoryForAccount({ username }: { username: string }) {
   const groups = useMemo(() => {
     const map: Record<string, Msg[]> = {};
     filtered.forEach(m => {
-      const day = toDateStr(parseUtcTimestamp(m.created_at));
+      const day = beijingDateKey(parseUtcTimestamp(m.created_at));
       if (!map[day]) map[day] = [];
       map[day].push(m);
     });
@@ -120,13 +114,13 @@ function HistoryForAccount({ username }: { username: string }) {
   const handleExport = () => {
     if (!isCurrentOwner()) return;
     const lines = filtered.map(m =>
-      `[${parseUtcTimestamp(m.created_at).toLocaleString("zh-CN", { hour12: false })}] ${m.role === "user" ? username : "Chloe"}: ${m.content}`
+      `[${formatBeijingDateTime(parseUtcTimestamp(m.created_at), true)}] ${m.role === "user" ? username : "Chloe"}: ${m.content}`
     );
     const blob = new Blob([lines.join("\n")], { type: "text/plain;charset=utf-8" });
     const url = URL.createObjectURL(blob);
     const a = document.createElement("a");
     a.href = url;
-    a.download = `Chloe_${username}_${toDateStr(new Date())}.txt`;
+    a.download = `Chloe_${username}_${beijingDateKey(new Date())}.txt`;
     a.click();
     URL.revokeObjectURL(url);
   };
@@ -150,6 +144,7 @@ function HistoryForAccount({ username }: { username: string }) {
             <p className="mt-0.5 text-xs text-muted-foreground max-md:truncate">
               {username} <span aria-hidden="true" className="mx-1 inline-block h-2.5 w-px bg-[color:var(--rule2)]" /> <span className="readout"><b>{loading ? "…" : allMsgs.length}</b> 条</span>
             </p>
+            <p className="mt-0.5 text-[11px] text-[color:var(--ink2)]">北京时间</p>
           </div>
         </div>
 
@@ -310,7 +305,7 @@ function HistoryForAccount({ username }: { username: string }) {
                     : <ChevronRight size={13} className="text-muted-foreground shrink-0" />
                   }
                   <span aria-hidden="true" className="h-px min-w-4 flex-1 bg-[color:var(--rule)]" />
-                  <span className="text-xs tracking-[0.2em] max-md:tracking-[0.08em]">{formatChineseDate(new Date(day + "T00:00:00"), true)}</span>
+                  <span className="text-xs tracking-[0.2em] max-md:tracking-[0.08em]">{formatChineseDate(beijingDayStart(day), true)}</span>
                   <span aria-hidden="true" className="h-px min-w-4 flex-1 bg-[color:var(--rule)]" />
                   <span className="readout text-xs">{msgs.length} 条</span>
                 </button>
@@ -321,9 +316,7 @@ function HistoryForAccount({ username }: { username: string }) {
                       const isUser = msg.role === "user";
                       const generatedPath = generatedImagePath(msg.image_path ?? undefined);
                       const referencePaths = isUser ? storedReferenceImagePaths(msg.reference_image_paths, msg.image_path) : [];
-                      const time = parseUtcTimestamp(msg.created_at).toLocaleTimeString("zh-CN", {
-                        hour: "2-digit", minute: "2-digit",
-                      });
+                      const time = formatBeijingTime(parseUtcTimestamp(msg.created_at));
                       // 高亮搜索词。query 是用户输入，必须 escape 才能塞进 RegExp，
                       // 否则输入 ( / [ / \ 等 regex 元字符会抛 SyntaxError 白屏整页。
                       const highlight = (text: string) => {
@@ -348,8 +341,8 @@ function HistoryForAccount({ username }: { username: string }) {
                             {referencePaths.length > 0 && <div className="flex max-w-full flex-wrap justify-end gap-2" aria-label="本次修改的参考图片">
                               {referencePaths.map((path, index) => <GeneratedImage key={`${username}:${path}`} imageUrl={`${API}${path}`} variant="reference" referenceIndex={index + 1} />)}
                             </div>}
-                            <div className={cn("max-w-full break-words whitespace-pre-wrap", isUser ? "bubble-user" : "bubble-ai")}>
-                              {highlight(msg.content)}
+                            <div className={cn("max-w-full break-words", isUser ? "bubble-user whitespace-pre-wrap" : "bubble-ai")}>
+                              {isUser ? highlight(msg.content) : <MessageText text={msg.content} highlight={query} />}
                             </div>
                             <span className="readout text-xs text-[color:var(--ink2)]">{time}</span>
                           </div>

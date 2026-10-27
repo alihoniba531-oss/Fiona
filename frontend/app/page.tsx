@@ -14,10 +14,13 @@ import MyAgentWorkspace from "@/components/MyAgentWorkspace";
 import AgentExchangeWorkspace from "@/components/AgentExchangeWorkspace";
 import { useConversations } from "@/lib/useConversations";
 import { formatChineseDate } from "@/lib/chineseDate";
+import { formatBeijingDateLong, formatBeijingDateTime, beijingDateKey } from "@/lib/beijingTime";
 import { DEFAULT_IMAGE_MODEL, FALLBACK_IMAGE_MODELS } from "@/lib/imageModels";
+import ComposerImageMenu from "@/components/ComposerImageMenu";
+import VoiceButton from "@/components/VoiceButton";
 import {
-  Mic, Volume2, VolumeX, ChevronDown, ChevronRight,
-  Trash2, ImagePlus, X, Clock, Sparkles, PencilLine, ArrowLeft, ArrowRight, PanelLeft, AudioLines,
+  Volume2, VolumeX, ChevronDown, ChevronRight,
+  Trash2, X, Clock, Sparkles, PencilLine, ArrowLeft, ArrowRight, PanelLeft, AudioLines,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { apiFetch, getUsername as readStoredUsername } from "@/lib/auth";
@@ -25,7 +28,7 @@ import { requestTtsTicket, type TtsBackoff } from "@/lib/ttsTicket";
 import { generatedImagePath, referenceImagePath, referencePreviewUrl, isLocalReferenceDataUrl, type ReferenceImageInput } from "@/lib/generatedImages";
 import { readLocalReferenceImage, MAX_REFERENCE_FILE_BYTES, REFERENCE_FILE_TYPES } from "@/lib/localReferenceImages";
 import { useAccountRequest } from "@/lib/useAccountIdentity";
-import { CHAT_MODEL_REV_KEY, CLAUDE_EFFORTS, CHAT_MODEL_EFFORT_LABELS, CHAT_MODEL_EFFORT_TITLES, chatModelErrorMessage, getChatModel, setChatModelEnabled, setChatModelOptions, publishChatModelRevision, parseReplyModel, type ChatModelEffort, type ChatModelSettings } from "@/lib/chatModel";
+import { CHAT_MODEL_REV_KEY, CLAUDE_EFFORTS, CHAT_MODEL_EFFORT_LABELS, CHAT_MODEL_EFFORT_TITLES, chatModelErrorMessage, getChatModel, modelDisplayName, setChatModelEnabled, setChatModelOptions, publishChatModelRevision, parseReplyModel, type ChatModelEffort, type ChatModelSettings } from "@/lib/chatModel";
 import { createLocalWatchPoller, appendLocalWatchMessages, localWatchNotificationsEnabled, type LocalWatchAlert } from "@/lib/localWatch";
 import { checkStudioAccess, createStudioNoticePoller, mergeStudioNotices, type StudioNotice } from "@/lib/studio";
 
@@ -275,11 +278,7 @@ function drawerStyle(open: boolean): React.CSSProperties {
 function groupByDate(msgs: Message[]) {
   const groups: Record<string, Message[]> = {};
   msgs.forEach((m) => {
-    const key = m.timestamp.toLocaleDateString("zh-CN", {
-      year: "numeric",
-      month: "long",
-      day: "numeric",
-    });
+    const key = formatBeijingDateLong(m.timestamp);
     if (!groups[key]) groups[key] = [];
     groups[key].push(m);
   });
@@ -400,13 +399,18 @@ function ChatModelFooter({ username, settingsOpen, chatMode, loading }: {
     }
   }, [busy, loading, config?.effort]);
   const label = config?.enabled
-        ? `聊天：${provider?.name ?? config.provider} · ${config.model}（不扣草莓）`
-        : "聊天：平台 · 每条 10 颗草莓";
-  return <div className="flex min-w-0 flex-col items-end gap-1 max-md:items-start xl:flex-1">
-    {chatMode && config ? <div className="flex max-w-full flex-wrap items-center justify-end gap-x-2 gap-y-1 max-md:justify-start xl:w-full xl:flex-nowrap">
-      <span className="min-w-0 break-all xl:truncate" title={label}>{label}</span>
+        ? `${modelDisplayName(config.model)} · 不扣草莓`
+        : "平台模型 · 每条 10 颗草莓";
+  const labelTitle = config?.enabled
+        ? `聊天：${provider?.name ?? config.provider} · ${config.model}（自带 Key，不扣草莓）`
+        : "平台模型 · 每条 10 颗草莓";
+  return <div className="flex min-w-0 flex-col items-end gap-1 max-md:w-full max-md:items-start xl:flex-1">
+    {chatMode && config ? <div className="flex min-w-0 max-w-full items-center justify-end gap-x-2 gap-y-1 max-md:w-full max-md:justify-start xl:w-full xl:flex-nowrap">
+      {config.enabled
+        ? <span className="min-w-0 truncate" title={labelTitle}>{modelDisplayName(config.model)}<span className="max-md:hidden"> · 不扣草莓</span></span>
+        : <span className="min-w-0 truncate" title={labelTitle}>{label}</span>}
       {config.enabled && config.provider === "anthropic" && config.status === "ok" && <div ref={effortGroup} role="radiogroup" aria-label="思考强度"
-        className="flex max-w-full flex-wrap items-center gap-1 xl:shrink-0 xl:flex-nowrap"
+        className="flex shrink-0 items-center gap-1"
         onKeyDown={event => {
           if (busy || loading || !settings.available) return;
           const index = CLAUDE_EFFORTS.indexOf(config.effort);
@@ -430,7 +434,7 @@ function ChatModelFooter({ username, settingsOpen, chatMode, loading }: {
         onClick={() => void toggle()} className="btn btn-quiet h-7 shrink-0 px-2 text-xs max-md:min-h-10">
         {busy === "toggle" ? "正在切换…" : config.enabled ? "改用平台" : "改用我的模型"}
       </button>
-    </div> : <span>每条消息消耗 <b className="readout">10</b> 颗草莓</span>}
+    </div> : <span>每条消息消耗 <span className="readout font-normal">10</span> 颗草莓</span>}
     {chatMode && error && <div className="flex items-center gap-2 text-[color:var(--seal)]">
       <span role="alert">{error}</span>
       {!settings && <button type="button" disabled={busy !== null || loading} onClick={refresh}
@@ -2442,7 +2446,7 @@ export default function ChatPage() {
                               <div key={`${msg.id}-${idx2}`} className="flex flex-col gap-0.5">
                                 <div className="flex items-center gap-1.5">
                                   <span className="text-[10px] font-medium text-muted-foreground">{msg.role === "assistant" ? agent?.display_name || "我的分身" : "我"}</span>
-                                  <span className="text-[9px] text-muted-foreground/50">{msg.timestamp.toLocaleString("zh-CN", { year: "numeric", month: "2-digit", day: "2-digit", hour: "2-digit", minute: "2-digit" })}</span>
+                                  <span className="text-[9px] text-muted-foreground/50">{formatBeijingDateTime(msg.timestamp)}</span>
                                 </div>
                                 <p className="text-[11px] text-foreground/70 leading-relaxed line-clamp-2">{msg.content}</p>
                               </div>
@@ -2528,9 +2532,9 @@ export default function ChatPage() {
                   <AudioLines size={13} className="md:hidden" /><span className="max-md:hidden">免提</span>
                 </button>
                 <span className="hidden shrink-0 flex-col items-end gap-0.5 whitespace-nowrap text-xs max-md:inline-flex" title="平台模型每条消息消耗 10 颗；自带模型聊天不扣">
-                  <b className="readout" style={{ color: strawberryBalance !== null && strawberryBalance < 30 ? "var(--rec)" : "var(--foreground)" }}>
+                  <span className="readout font-normal" style={{ color: strawberryBalance !== null && strawberryBalance < 30 ? "var(--rec)" : "var(--foreground)" }}>
                     {strawberryBalance === null ? "…" : strawberryBalance}
-                  </b>
+                  </span>
                   <span className="text-[10.5px] text-[var(--ink2)]">草莓</span>
                 </span>
               </div>
@@ -2568,7 +2572,7 @@ export default function ChatPage() {
                   )}
                   {messages.map((msg, index) => (
                     <div key={`${username}-${currentConversation?.id}-${msg.id}`}>
-                    {(index === 0 || msg.timestamp.toDateString() !== messages[index - 1].timestamp.toDateString()) && <div className="mb-7 flex items-center gap-[18px] text-xs tracking-[.32em] text-[var(--ink2)]"><span className="h-px flex-1 bg-[var(--rule)]" />{formatChineseDate(msg.timestamp)}<span className="h-px flex-1 bg-[var(--rule)]" /></div>}
+                    {(index === 0 || beijingDateKey(msg.timestamp) !== beijingDateKey(messages[index - 1].timestamp)) && <div className="mb-7 flex items-center gap-[18px] text-xs tracking-[.32em] text-[var(--ink2)]"><span className="h-px flex-1 bg-[var(--rule)]" />{formatChineseDate(msg.timestamp)}<span className="h-px flex-1 bg-[var(--rule)]" /></div>}
                     <ChatBubble key={`${username}-${currentConversation?.id}-${msg.id}`} message={msg} agentName={agent?.display_name} onDelete={isLoading ? undefined : handleDeleteMessage} onConfirmTts={handleConfirmTts} onDeclineTts={handleDeclineTts}
                       onRetryImage={request => { void handleSend(request.prompt, request); }} onEditImage={handleSelectReferenceImage}
                       selectedReferenceImagePaths={selectedReferenceImagePaths}
@@ -2644,14 +2648,36 @@ export default function ChatPage() {
                   <div className="composer-toolbar flex max-md:contents flex-wrap items-center justify-between gap-2">
                     <div className="composer-mode-tools flex max-md:contents flex-wrap items-center gap-2">
                     <div className="composer-tools flex flex-wrap items-center gap-2 text-[11px]">
+                      <ComposerImageMenu
+                        active={imageMode || hasReferenceImages}
+                        items={[
+                          {
+                            key: "see",
+                            label: "发图给 Chloe 看",
+                            description: "Chloe 看图后回答",
+                            disabled: imageMode || hasReferenceImages || isReadingImage || isReadingReferences || isLoading || conversationLoading || !currentConversation,
+                            title: hasReferenceImages ? "取消参考后可发送看图聊天附件" : imageMode ? "返回聊天后可发送看图聊天附件" : "发送看图聊天附件",
+                            onSelect: () => fileInputRef.current?.click(),
+                          },
+                          {
+                            key: "generate",
+                            label: "生成图片",
+                            description: "用文字描述画一张新图",
+                            disabled: !!pendingImage || isReadingImage || isReadingReferences || conversationLocked || conversationLoading || !currentConversation || imageMode || hasReferenceImages,
+                            title: pendingImage || isReadingImage ? "请先移除待发送图片，再切换到生成图片" : "用文字描述生成一张图片",
+                            onSelect: () => setImageMode(true),
+                          },
+                          {
+                            key: "edit",
+                            label: "改一张图",
+                            description: "上传 1–3 张参考图，再说明怎么改",
+                            disabled: conversationLocked || conversationLoading || !currentConversation || !!pendingImage || isReadingImage || isReadingReferences || selectedReferenceImages.length >= 3,
+                            title: pendingImage ? "请先移除普通待发送图片" : selectedReferenceImages.length >= 3 ? "最多3张参考图，请先移除一张" : "选择 PNG、JPEG 或 WebP；每张不超过5MB，发送修改要求时才上传",
+                            onSelect: () => referenceFileInputRef.current?.click(),
+                          },
+                        ]}
+                      />
                       <input ref={referenceFileInputRef} type="file" multiple accept="image/png,image/jpeg,image/webp" onChange={handlePickReferenceImages} className="hidden" />
-                      <button type="button" onClick={() => referenceFileInputRef.current?.click()}
-                        disabled={conversationLocked || conversationLoading || !currentConversation || !!pendingImage || isReadingImage || isReadingReferences || selectedReferenceImages.length >= 3}
-                        title={pendingImage ? "请先移除普通待发送图片" : selectedReferenceImages.length >= 3 ? "最多3张参考图，请先移除一张" : "选择 PNG、JPEG 或 WebP；每张不超过5MB，发送修改要求时才上传"}
-                        className={cn("btn btn-quiet px-2 max-md:h-10", hasReferenceImages && "text-[var(--ink)]")}>
-                        上传参考图
-                      </button>
-                      <span aria-hidden="true" className="h-3 border-l border-[var(--rule2)]" />
                       {isReadingReferences && <span role="status" className="text-muted-foreground">正在读取并检查参考图…</span>}
                       {hasReferenceImages ? <>
                         <span className="chip chip-on"><PencilLine size={12} />修改图片</span>
@@ -2666,11 +2692,6 @@ export default function ChatPage() {
                           </button>)}
                         </div>
                       </> : <>
-                        <button type="button" onClick={() => setImageMode(true)} disabled={!!pendingImage || isReadingImage || isReadingReferences || conversationLocked || conversationLoading || !currentConversation}
-                          title={pendingImage || isReadingImage ? "请先移除待发送图片，再切换到生成图片" : "用文字描述生成一张图片"}
-                          className="btn btn-quiet px-2 max-md:h-10">
-                          生成图片
-                        </button>
                         {pendingImage && <span className="text-muted-foreground">先移除待发送图片，即可切换生成模式</span>}
                         {isReadingImage && <span role="status" className="text-muted-foreground">正在读取图片…</span>}
                       </>}
@@ -2684,27 +2705,14 @@ export default function ChatPage() {
                     </div>
                     <div className="composer-actions flex items-center gap-0.5 ml-auto shrink-0">
                     <input ref={fileInputRef} type="file" accept="image/*" onChange={handlePickImage} className="hidden" />
-                    <button type="button" onClick={() => fileInputRef.current?.click()} disabled={imageMode || hasReferenceImages || isReadingImage || isReadingReferences || isLoading || conversationLoading || !currentConversation}
-                      className="btn btn-quiet h-8 w-8 px-0 max-md:h-10 max-md:w-10" title={hasReferenceImages ? "取消参考后可发送看图聊天附件" : imageMode ? "返回聊天后可发送看图聊天附件" : "发送看图聊天附件"}>
-                      <ImagePlus size={14} />
-                    </button>
-                    <button type="button" onClick={toggleInlineVoice}
+                    <VoiceButton
                       disabled={conversationLoading || !currentConversation || isLoading}
-                      className={cn("btn btn-quiet h-8 w-8 px-0 max-md:h-10 max-md:w-10", inlineRecording && "text-[color:var(--rec)] bg-[color:var(--rec-soft)]")}
-                      aria-label="语音转文字"
-                      title="语音转文字">
-                      <Mic size={14} />
-                    </button>
-                    <button
-                      type="button"
-                      onPointerDown={(e) => { e.preventDefault(); e.currentTarget.setPointerCapture(e.pointerId); setRecording(true); }}
-                      onPointerUp={(e) => { e.preventDefault(); if (e.currentTarget.hasPointerCapture(e.pointerId)) e.currentTarget.releasePointerCapture(e.pointerId); asrSessionRef.current += 1; setRecording(false); }}
-                      className={cn("btn btn-quiet h-8 px-2.5 text-xs max-md:h-10 max-md:w-10 max-md:px-0", recording && "text-[color:var(--rec)] bg-[color:var(--rec-soft)]")}
-                      aria-label="按住说话"
-                      disabled={conversationLoading || !currentConversation || isLoading}
-                    >
-                      <Mic size={14} /><span className="max-md:hidden">按住说话</span>
-                    </button>
+                      dictating={inlineRecording}
+                      holding={recording}
+                      onTap={toggleInlineVoice}
+                      onHoldStart={() => setRecording(true)}
+                      onHoldEnd={() => { asrSessionRef.current += 1; setRecording(false); }}
+                    />
                     <button onClick={() => handleSend()} aria-label={hasReferenceImages ? "修改图片" : imageMode ? "生成图片" : "发送消息"} disabled={isLoading || isReadingImage || isReadingReferences || conversationLoading || !currentConversation || (!input.trim() && !pendingImage)}
                       className="btn btn-primary h-9 px-4 tracking-[.2em] max-md:h-10"
                     >{hasReferenceImages ? "修改" : imageMode ? "生成" : "发送"}</button>
@@ -2736,7 +2744,7 @@ export default function ChatPage() {
             focusVisibleDrawerTrigger("agent-drawer");
           }
         }}
-        className="fixed top-3 bottom-3 right-3 z-[55] flex flex-col outline-none max-md:left-0 max-md:top-0 max-md:right-0 max-md:bottom-[calc(var(--tabbar-h)+env(safe-area-inset-bottom))]! max-md:w-screen! max-md:rounded-none max-md:pt-[env(safe-area-inset-top)]"
+        className="fixed top-3 bottom-3 right-3 z-[55] flex flex-col outline-none max-md:left-0 max-md:top-0 max-md:right-0 max-md:bottom-[calc(var(--tabbar-h)+env(safe-area-inset-bottom))]! max-md:w-screen! max-md:rounded-none max-md:pt-[env(safe-area-inset-top)] drawer-panel"
         style={{
           width: "min(960px, calc(100vw - var(--rail-w) - 12px))",
           borderLeft: "1px solid var(--glass-border)",
@@ -2765,7 +2773,7 @@ export default function ChatPage() {
             focusVisibleDrawerTrigger("exchange-drawer");
           }
         }}
-        className="fixed top-3 bottom-3 right-3 z-[55] flex flex-col outline-none max-md:left-0 max-md:top-0 max-md:right-0 max-md:bottom-[calc(var(--tabbar-h)+env(safe-area-inset-bottom))]! max-md:w-screen! max-md:rounded-none max-md:pt-[env(safe-area-inset-top)]"
+        className="fixed top-3 bottom-3 right-3 z-[55] flex flex-col outline-none max-md:left-0 max-md:top-0 max-md:right-0 max-md:bottom-[calc(var(--tabbar-h)+env(safe-area-inset-bottom))]! max-md:w-screen! max-md:rounded-none max-md:pt-[env(safe-area-inset-top)] drawer-panel"
         style={{
           width: "min(960px, calc(100vw - var(--rail-w) - 12px))",
           borderLeft: "1px solid var(--glass-border)",
@@ -2784,7 +2792,7 @@ export default function ChatPage() {
         id="plaza-drawer"
         lens={false}
         backdrop={false}
-        className="fixed top-3 bottom-3 right-3 z-[55] flex flex-col overflow-hidden max-md:left-0 max-md:top-0 max-md:right-0 max-md:bottom-[calc(var(--tabbar-h)+env(safe-area-inset-bottom))]! max-md:w-screen! max-md:rounded-none max-md:pt-[env(safe-area-inset-top)]"
+        className="fixed top-3 bottom-3 right-3 z-[55] flex flex-col overflow-hidden max-md:left-0 max-md:top-0 max-md:right-0 max-md:bottom-[calc(var(--tabbar-h)+env(safe-area-inset-bottom))]! max-md:w-screen! max-md:rounded-none max-md:pt-[env(safe-area-inset-top)] drawer-panel"
         style={{
           width: "calc((100vw - var(--rail-w) - 12px) * 2 / 3)",
           borderLeft: "1px solid var(--glass-border)",
@@ -2818,7 +2826,7 @@ export default function ChatPage() {
         id="settings-drawer"
         lens={false}
         backdrop={false}
-        className="fixed top-3 bottom-3 right-3 z-[55] flex flex-col overflow-hidden max-md:left-0 max-md:top-0 max-md:right-0 max-md:bottom-[calc(var(--tabbar-h)+env(safe-area-inset-bottom))]! max-md:w-screen! max-md:rounded-none max-md:pt-[env(safe-area-inset-top)]"
+        className="fixed top-3 bottom-3 right-3 z-[55] flex flex-col overflow-hidden max-md:left-0 max-md:top-0 max-md:right-0 max-md:bottom-[calc(var(--tabbar-h)+env(safe-area-inset-bottom))]! max-md:w-screen! max-md:rounded-none max-md:pt-[env(safe-area-inset-top)] drawer-panel"
         style={{
           width: "calc((100vw - var(--rail-w) - 12px) * 2 / 3)",
           borderLeft: "1px solid var(--glass-border)",
@@ -2860,7 +2868,7 @@ export default function ChatPage() {
         }}
         lens={false}
         backdrop={false}
-        className="fixed top-3 bottom-3 right-3 z-[55] flex flex-col overflow-hidden outline-none max-md:left-0 max-md:top-0 max-md:right-0 max-md:bottom-[calc(var(--tabbar-h)+env(safe-area-inset-bottom))]! max-md:w-screen! max-md:rounded-none max-md:pt-[env(safe-area-inset-top)]"
+        className="fixed top-3 bottom-3 right-3 z-[55] flex flex-col overflow-hidden outline-none max-md:left-0 max-md:top-0 max-md:right-0 max-md:bottom-[calc(var(--tabbar-h)+env(safe-area-inset-bottom))]! max-md:w-screen! max-md:rounded-none max-md:pt-[env(safe-area-inset-top)] drawer-panel"
         style={{
           width: "calc((100vw - var(--rail-w) - 12px) * 2 / 3)",
           borderLeft: "1px solid var(--glass-border)",
@@ -2891,7 +2899,7 @@ export default function ChatPage() {
         }}
         lens={false}
         backdrop={false}
-        className="fixed top-3 bottom-3 right-3 z-[55] flex flex-col overflow-hidden outline-none max-md:left-0 max-md:top-0 max-md:right-0 max-md:bottom-[calc(var(--tabbar-h)+env(safe-area-inset-bottom))]! max-md:w-screen! max-md:rounded-none max-md:pt-[env(safe-area-inset-top)]"
+        className="fixed top-3 bottom-3 right-3 z-[55] flex flex-col overflow-hidden outline-none max-md:left-0 max-md:top-0 max-md:right-0 max-md:bottom-[calc(var(--tabbar-h)+env(safe-area-inset-bottom))]! max-md:w-screen! max-md:rounded-none max-md:pt-[env(safe-area-inset-top)] drawer-panel"
         style={{
           width: "calc((100vw - var(--rail-w) - 12px) * 2 / 3)",
           borderLeft: "1px solid var(--glass-border)",

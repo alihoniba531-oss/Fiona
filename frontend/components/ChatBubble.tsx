@@ -8,6 +8,8 @@ import SongProjectCard from "@/components/SongProjectCard";
 import { generatedImagePath, referenceImagePath, storedReferenceImagePaths, isLocalReferenceDataUrl, type ReferenceImageInput } from "@/lib/generatedImages";
 import { API_BASE as API } from "@/lib/config";
 import { openExternal, toSafeExternalUrl } from "@/lib/open";
+import MessageText from "@/components/MessageText";
+import { formatBeijingTime } from "@/lib/beijingTime";
 
 // 打字机：把 target 按固定字符速率 (cps) 显示出来。
 // 历史消息首次渲染时 initial 即 target，不会重放；只有当 target 在生命周期内"增长"才动画。
@@ -292,10 +294,7 @@ function ChatBubble({ message, agentName = "Chloe", onDelete, onConfirmTts, onDe
   const shownContent = useTypewriter(message.content, !message.isDivider && !isUser);
   const stillTyping = !isUser && shownContent !== message.content;
   const timeStr = useMemo(
-    () => message.timestamp.toLocaleTimeString("zh-CN", {
-      hour: "2-digit",
-      minute: "2-digit",
-    }),
+    () => formatBeijingTime(message.timestamp),
     [message.timestamp],
   );
 
@@ -351,12 +350,12 @@ function ChatBubble({ message, agentName = "Chloe", onDelete, onConfirmTts, onDe
         {(message.content || (message.isTyping && !message.generationStatus)) && message.content !== "[发了一张图片]" && (
           <div
             className={cn(
-              "break-words whitespace-pre-wrap",
-              isUser ? "bubble-user max-w-full" : "bubble-ai w-full max-w-[600px] max-md:max-w-full",
-              (message.isTyping || stillTyping) && "typing-cursor"
+              "break-words",
+              isUser ? "whitespace-pre-wrap bubble-user max-w-full" : "bubble-ai w-full max-w-[600px] max-md:max-w-full",
+              isUser && (message.isTyping || stillTyping) && "typing-cursor"
             )}
           >
-            {isUser ? message.content : (shownContent || (message.isTyping ? "" : "…"))}
+            {isUser ? message.content : <MessageText text={shownContent || (message.isTyping ? "" : "…")} typing={!!(message.isTyping || stillTyping)} caret={!!(message.isTyping || stillTyping)} />}
           </div>
         )}
 

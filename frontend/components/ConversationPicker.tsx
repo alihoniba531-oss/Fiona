@@ -2,22 +2,22 @@
 
 import { Trash2 } from "lucide-react";
 import { type Conversation } from "@/lib/agents";
+import { beijingDayNumber, beijingParts, formatBeijingTime } from "@/lib/beijingTime";
 import Glaze from "@/components/Glaze";
 import { useTheme } from "@/lib/useTheme";
 
 function formatRelative(iso: string) {
   const date = new Date(/[zZ]$|[+-]\d{2}:?\d{2}$/.test(iso) ? iso : iso.replace(" ", "T") + "Z");
   const now = new Date();
-  const dateStart = new Date(date.getFullYear(), date.getMonth(), date.getDate());
-  const todayStart = new Date(now.getFullYear(), now.getMonth(), now.getDate());
-  const daysAgo = Math.round((todayStart.getTime() - dateStart.getTime()) / 86_400_000);
+  const daysAgo = beijingDayNumber(now) - beijingDayNumber(date);
+  const parts = beijingParts(date);
 
   if (daysAgo === 0) {
-    return date.toLocaleTimeString("zh-CN", { hour: "2-digit", minute: "2-digit", hour12: false });
+    return formatBeijingTime(date);
   }
   if (daysAgo === 1) return "昨天";
-  if (daysAgo > 1 && daysAgo < 7) return `周${"日一二三四五六"[date.getDay()]}`;
-  return `${String(date.getMonth() + 1).padStart(2, "0")}/${String(date.getDate()).padStart(2, "0")}`;
+  if (daysAgo > 1 && daysAgo < 7) return `周${"日一二三四五六"[parts.weekday]}`;
+  return `${String(parts.month).padStart(2, "0")}/${String(parts.day).padStart(2, "0")}`;
 }
 
 export default function ConversationPicker({
