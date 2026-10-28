@@ -959,7 +959,7 @@ export default function ChatPage() {
     else { stopNlsAsr(); }
   }, [recording, startNlsAsr, stopNlsAsr]);
 
-  // Inline voice-to-text: records, sends to ASR, puts text in input for review
+  // 轻点录音：再点一下停止，识别后直接发送（不填进输入框）
   const inlineMrRef = useRef<MediaRecorder | null>(null);
   const inlineChunksRef = useRef<Blob[]>([]);
   const toggleInlineVoice = useCallback(async () => {
@@ -1789,6 +1789,20 @@ export default function ChatPage() {
     focusChatInput();
   };
 
+  const startChatOpener = () => {
+    if (conversationLocked || conversationLoading || !currentConversation || imageMode || hasReferenceImages || !!input.trim()) return;
+    composeSongSection("聊聊今天");
+  };
+  const startDrawOpener = () => {
+    if (pendingImage || isReadingImage || isReadingReferences || conversationLocked || conversationLoading || !currentConversation || imageMode || hasReferenceImages) return;
+    setImageMode(true);
+    requestAnimationFrame(() => textareaRef.current?.focus());
+  };
+  const startPhotoOpener = () => {
+    if (imageMode || hasReferenceImages || isReadingImage || isReadingReferences || isLoading || conversationLoading || !currentConversation) return;
+    fileInputRef.current?.click();
+  };
+
   const handleSelectConversation = async (id: string) => {
     if (conversationLocked || conversationLoading || id === currentConversation?.id) return;
     resetConversationPresentation();
@@ -2223,6 +2237,7 @@ export default function ChatPage() {
     // Use ref for IME composing state — more reliable than e.nativeEvent.isComposing
     if (isComposingRef.current) return;
     e.preventDefault();
+    if (e.repeat) return;
     handleSend();
   };
 
@@ -2593,9 +2608,18 @@ export default function ChatPage() {
                       }}>有新的工作室提醒 · {notice.project_title}</button>)}
                   </div>}
                   {hasMoreMessages && <p className="text-xs text-muted-foreground text-center">当前显示最近 500 条消息；更早记录可在历史页查看。</p>}
-                  {messages.length === 0 && (
-                    <p className="text-xs text-muted-foreground text-center pt-8" role="status">{conversationLoading ? "正在加载对话…" : conversationError ? "对话加载失败，请在上方重试。" : currentConversation ? `和 ${agent?.display_name || "你的分身"} 开始新的交流。` : "点击上方“新对话”，开始和自己的分身交流。"}</p>
-                  )}
+                  {messages.length === 0 && (conversationLoading || conversationError || !currentConversation ? (
+                    <p className="text-xs text-muted-foreground text-center pt-8" role="status">{conversationLoading ? "正在加载对话…" : conversationError ? "对话加载失败，请在对话列表里重试。" : "在对话列表里点「新建」，开始和自己的分身交流。"}</p>
+                  ) : (
+                    <div data-chat-openers className="flex flex-col items-center gap-4 pt-8 text-center max-md:pt-4">
+                      <p className="text-[15px] leading-[1.85] text-[color:var(--ink2)]" role="status">{`和 ${agent?.display_name || "你的分身"} 开始新的交流。`}</p>
+                      <div role="group" aria-label="开场" className="flex flex-wrap justify-center gap-2">
+                        <button type="button" className="chip min-h-10" disabled={conversationLocked || conversationLoading || !currentConversation || imageMode || hasReferenceImages || !!input.trim()} onClick={startChatOpener}>聊聊今天</button>
+                        <button type="button" className="chip min-h-10" disabled={!!pendingImage || isReadingImage || isReadingReferences || conversationLocked || conversationLoading || !currentConversation || imageMode || hasReferenceImages} onClick={startDrawOpener}>帮我画一张…</button>
+                        <button type="button" className="chip min-h-10" disabled={imageMode || hasReferenceImages || isReadingImage || isReadingReferences || isLoading || conversationLoading || !currentConversation} onClick={startPhotoOpener}>看看我拍的这张图</button>
+                      </div>
+                    </div>
+                  ))}
                   {messages.map((msg, index) => (
                     <div key={`${username}-${currentConversation?.id}-${msg.id}`}>
                     {(index === 0 || beijingDateKey(msg.timestamp) !== beijingDateKey(messages[index - 1].timestamp)) && <div className="mb-7 flex items-center gap-[18px] text-xs tracking-[.32em] text-[var(--ink2)]"><span className="h-px flex-1 bg-[var(--rule)]" />{formatChineseDate(msg.timestamp)}<span className="h-px flex-1 bg-[var(--rule)]" /></div>}

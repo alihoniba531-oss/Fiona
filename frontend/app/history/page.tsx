@@ -12,7 +12,7 @@ import InkLandscape from "@/components/InkLandscape";
 import { generatedImagePath, storedReferenceImagePaths } from "@/lib/generatedImages";
 import { useAccountIdentity, useAccountRequest } from "@/lib/useAccountIdentity";
 import { formatChineseDate } from "@/lib/chineseDate";
-import { beijingDateKey, beijingDayNumber, beijingDayStart, beijingParts, formatBeijingDateTime, formatBeijingTime } from "@/lib/beijingTime";
+import { beijingDateKey, beijingDayNumber, beijingDayStart, beijingParts, formatBeijingDateLong, formatBeijingDateTime, formatBeijingTime } from "@/lib/beijingTime";
 
 import { API_BASE as API } from "@/lib/config";
 
@@ -81,6 +81,11 @@ function HistoryForAccount({ username }: { username: string }) {
       setDateTo(today);
     }
   };
+
+  const openDatePicker = (input: HTMLInputElement) => {
+    try { input.showPicker(); } catch { /* 浏览器不支持或拒绝时，沿用原生点按 */ }
+  };
+  const dayFace = (key: string) => (key ? formatBeijingDateLong(beijingDayStart(key)) || key : "不限");
 
   // 点击左侧某一天
   const selectDay = (day: string) => {
@@ -191,7 +196,7 @@ function HistoryForAccount({ username }: { username: string }) {
                   onClick={() => applyQuick(key)}
                   className={cn(
                     "chip h-auto min-h-10 w-full justify-start px-3 py-1.5 text-left max-md:justify-center max-md:px-1",
-                    quick === key && dateFrom === (key === "all" ? "" : dateFrom)
+                    quick === key && (key !== "all" || (!dateFrom && !dateTo))
                       ? "chip-on"
                       : ""
                   )}
@@ -208,22 +213,35 @@ function HistoryForAccount({ username }: { username: string }) {
               <Calendar size={12} style={{ color: "var(--ink)" }} />
               自定义区间
             </p>
-            <div className="space-y-1.5 max-md:grid max-md:grid-cols-1 max-md:gap-1.5 max-md:space-y-0">
-              <input
-                type="date"
-                aria-label="开始日期"
-                value={dateFrom}
-                onChange={e => { setDateFrom(e.target.value); setQuick("all"); }}
-                className="readout min-w-0 max-w-full rounded-[8px] border border-[color:var(--rule2)] bg-[color:var(--mount)] px-3 py-[9px] text-base text-[color:var(--ink)] outline-none focus:border-[color:var(--ink)] max-md:w-full max-md:px-1.5"
-              />
-              <div className="text-center text-[10px] text-muted-foreground">至</div>
-              <input
-                type="date"
-                aria-label="结束日期"
-                value={dateTo}
-                onChange={e => { setDateTo(e.target.value); setQuick("all"); }}
-                className="readout min-w-0 max-w-full rounded-[8px] border border-[color:var(--rule2)] bg-[color:var(--mount)] px-3 py-[9px] text-base text-[color:var(--ink)] outline-none focus:border-[color:var(--ink)] max-md:w-full max-md:px-1.5"
-              />
+            <div className="grid grid-cols-1 gap-1.5">
+              <label className={cn("chip relative h-auto min-h-10 w-full justify-between gap-2 px-3 py-1.5 has-[:focus-visible]:outline has-[:focus-visible]:outline-1 has-[:focus-visible]:outline-offset-2 has-[:focus-visible]:outline-[color:var(--ink)]", dateFrom && "chip-on")}>
+                <span aria-hidden="true">从</span>
+                <span aria-hidden="true" className="readout text-[13px] text-[color:var(--ink)]">{dayFace(dateFrom)}</span>
+                <input
+                  type="date"
+                  aria-label="从（开始日期）"
+                  value={dateFrom}
+                  max={dateTo || "9999-12-31"}
+                  onChange={e => { setDateFrom(e.target.value); setQuick("all"); }}
+                  onClick={e => openDatePicker(e.currentTarget)}
+                  onKeyDown={e => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); openDatePicker(e.currentTarget); } }}
+                  className="absolute inset-0 h-full w-full cursor-pointer opacity-0"
+                />
+              </label>
+              <label className={cn("chip relative h-auto min-h-10 w-full justify-between gap-2 px-3 py-1.5 has-[:focus-visible]:outline has-[:focus-visible]:outline-1 has-[:focus-visible]:outline-offset-2 has-[:focus-visible]:outline-[color:var(--ink)]", dateTo && "chip-on")}>
+                <span aria-hidden="true">到</span>
+                <span aria-hidden="true" className="readout text-[13px] text-[color:var(--ink)]">{dayFace(dateTo)}</span>
+                <input
+                  type="date"
+                  aria-label="到（结束日期）"
+                  value={dateTo}
+                  min={dateFrom || undefined} max="9999-12-31"
+                  onChange={e => { setDateTo(e.target.value); setQuick("all"); }}
+                  onClick={e => openDatePicker(e.currentTarget)}
+                  onKeyDown={e => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); openDatePicker(e.currentTarget); } }}
+                  className="absolute inset-0 h-full w-full cursor-pointer opacity-0"
+                />
+              </label>
               {(dateFrom || dateTo) && (
                 <button
                   onClick={() => { setDateFrom(""); setDateTo(""); setQuick("all"); }}
@@ -269,7 +287,7 @@ function HistoryForAccount({ username }: { username: string }) {
               {query && <span className="chip h-6 px-2 text-[11px] max-md:h-auto max-md:max-w-full max-md:break-all max-md:whitespace-normal">含「{query}」</span>}
               {(dateFrom || dateTo) && (
                 <span className="chip h-6 px-2 text-[11px]">
-                  {dateFrom || "—"} 至 {dateTo || "—"}
+                  {dayFace(dateFrom)} 至 {dayFace(dateTo)}
                 </span>
               )}
             </div>

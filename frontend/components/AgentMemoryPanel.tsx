@@ -4,7 +4,7 @@ import { useCallback, useEffect, useState } from "react";
 import { Loader2, Trash2 } from "lucide-react";
 import { API_BASE as API } from "@/lib/config";
 import { apiJson, errorMessage } from "@/lib/agents";
-import { useAccountIdentity, useAccountRequest } from "@/lib/useAccountIdentity";
+import { useAccountIdentity, useAccountIdentityPending, useAccountRequest } from "@/lib/useAccountIdentity";
 import { useConfirm } from "@/components/ConfirmDialog";
 
 const labels: Record<string, string> = {
@@ -21,10 +21,11 @@ function memoryText(value: unknown): string {
 
 export default function AgentMemoryPanel() {
   const owner = useAccountIdentity();
-  return <AccountMemoryPanel key={owner} owner={owner} />;
+  const identityPending = useAccountIdentityPending();
+  return <AccountMemoryPanel key={owner} owner={owner} identityPending={identityPending} />;
 }
 
-function AccountMemoryPanel({ owner }: { owner: string }) {
+function AccountMemoryPanel({ owner, identityPending = false }: { owner: string; identityPending?: boolean }) {
   const [profile, setProfile] = useState<Record<string, unknown>>({});
   const [revision, setRevision] = useState<number | null>(null);
   const [loading, setLoading] = useState(true);
@@ -93,7 +94,7 @@ function AccountMemoryPanel({ owner }: { owner: string }) {
         <span className="readout">{revision === null ? "仅自己可见" : <>修订 <b>{revision}</b></>}</span>
       </div>
       <p className="text-[13px] leading-[1.85] text-[color:var(--ink2)]">分身从交流中整理的兴趣、需求与个人画像。这些内容不出现在公开名片里。</p>
-      {!owner ? <p className="text-xs text-muted-foreground" role="status">请登录后查看私有记忆。</p> : loading ? <p className="flex items-center gap-2 text-xs text-muted-foreground" role="status"><Loader2 size={13} className="animate-spin" />正在加载记忆…</p>
+      {!owner ? (identityPending ? <p className="text-xs text-muted-foreground" role="status">正在加载身份…</p> : <p className="text-xs text-muted-foreground" role="status">请登录后查看私有记忆。</p>) : loading ? <p className="flex items-center gap-2 text-xs text-muted-foreground" role="status"><Loader2 size={13} className="animate-spin" />正在加载记忆…</p>
         : entries.length ? <ul>{entries.map(([label, value]) => <li key={label} className="border-b py-2 text-[13px] leading-[1.85] text-[color:var(--ink2)]" style={{ borderColor: "var(--carve)" }}>{label}：<span className="whitespace-pre-wrap break-words">{value}</span></li>)}</ul>
         : !error && <p className="text-xs text-muted-foreground">还没有私人画像。和分身聊聊自己后，这里会逐步形成记忆。</p>}
       {error && <p className="text-xs text-[color:var(--seal)]" role="alert">{error}<button type="button" onClick={() => void load()} disabled={loading || clearing} className="btn btn-quiet ml-2 min-h-10 px-2.5 text-xs">重试</button></p>}

@@ -1,6 +1,7 @@
 "use client";
 
 import { Suspense, useState, useEffect, useRef, useCallback } from "react";
+import Link from "next/link";
 import { useSearchParams } from "next/navigation";
 import Sidebar from "@/components/Sidebar";
 import Glaze from "@/components/Glaze";
@@ -320,7 +321,7 @@ function MatchForAccount({ username }: { username: string }) {
               {rooms.length === 0 ? (
                 <div className="flex flex-col items-center justify-center h-40 px-4 text-center gap-2 mobile:h-16 mobile:w-full">
                   <User size={28} className="text-muted-foreground/40" />
-                  <p className="text-[11px] text-muted-foreground">接受匹配后会出现在这里</p>
+                  <p className="text-xs text-[color:var(--ink2)]">双方都接受匹配后，对方会出现在这里</p>
                 </div>
               ) : rooms.map(room => (
                 <button
@@ -344,7 +345,17 @@ function MatchForAccount({ username }: { username: string }) {
           <div className={cn("relative z-10 flex min-w-0 flex-1 flex-col mobile:min-h-0", selected && "m-3 overflow-hidden rounded-[18px]")}>
             {!selected ? (
               <div className="flex-1 relative overflow-hidden mobile:flex mobile:min-h-0 mobile:flex-col mobile:gap-3 mobile:overflow-y-auto mobile:p-3">
-                {pendingMatches.length === 0 ? null : (
+                {pendingMatches.length === 0 ? (
+                  <section data-match-empty className="relative z-[1] mx-auto max-h-full max-w-[520px] overflow-y-auto px-6 pb-6 pt-10 text-[13px] leading-[1.85] text-[color:var(--ink2)] mobile:px-1 mobile:pt-2">
+                    <h2 className="text-[15px] font-medium tracking-[.16em] text-[color:var(--ink)]">匹配是什么</h2>
+                    {rooms.length > 0 && <p className="mt-3">从「最近聊天」选一位，就能继续和对方聊天。</p>}
+                    <p className="mt-3">这是旧版的真人连接：系统曾根据对话和社交画像（旧版），推荐可能聊得来的人。推荐卡约 25 秒后淡出，淡出后不会再出现。</p>
+                    <p className="mt-2">在卡片上点「认识下」，再点「发送打招呼」（招呼可以不写）。双方都这样做之后，对方会出现在「最近聊天」里。</p>
+                    <p className="mt-2">新的对话不会再产生推荐，所以这里可能一直是空的。</p>
+                    <p className="mt-2">也可以公开分身名片，再到「广场」邀请其他用户的公开分身交流：对方接受后，两个 AI 分身轮流对话并生成总结，不会建立真人聊天。公开后，其他已登录用户能看到分身的名称、头像和简介，也能邀请你的分身交流。</p>
+                    <Link href="/agents/me" target={embedded ? "_top" : undefined} className="btn mt-4 min-h-10 px-[18px] mobile:h-auto mobile:max-w-full mobile:whitespace-normal">查看公开名片设置</Link>
+                  </section>
+                ) : (
                   pendingMatches.map((m, idx) => {
                     const pos = cardPositions[m.id] ?? { x: 10 + idx * 8, y: 10 + idx * 8 };
                     return (

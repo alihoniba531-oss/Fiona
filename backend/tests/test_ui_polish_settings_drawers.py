@@ -80,7 +80,7 @@ def test_settings_heading_hides_when_embedded():
 
 
 def test_profile_heading_hides_when_embedded():
-    assert_heading_hides_when_embedded(PROFILE, "旧社交画像")
+    assert_heading_hides_when_embedded(PROFILE, "社交画像（旧版）")
 
 
 def test_my_agent_heading_hides_when_embedded():

@@ -21,7 +21,7 @@ import NovelSettingsDialog from "./NovelSettingsDialog";
 import { useNovelEmbedClose } from "./NovelShell";
 import { EmptyState, ErrorNotice, LoadingState } from "./NovelStates";
 import { ApiError } from "@/lib/agents";
-import { useAccountIdentity, useAccountRequest } from "@/lib/useAccountIdentity";
+import { useAccountIdentity, useAccountIdentityPending, useAccountRequest } from "@/lib/useAccountIdentity";
 import { useConfirm } from "@/components/ConfirmDialog";
 import { addNovelNote, novelApi, novelErrorMessage, novelHref, novelStatusLabel, updateNovelCharacter, updateNovelChapter, type NovelAction, type NovelBible, type NovelCatalog, type NovelChapter, type NovelCharacterEdit, type NovelDetail, type NovelNote, type NovelPatchInput } from "@/lib/novels";
 
@@ -32,10 +32,11 @@ type MutationOptions = RefreshOptions & { refresh?: boolean; errorTarget?: "page
 
 export default function NovelWorkbench({ id, embedded = false }: { id: string; embedded?: boolean }) {
   const owner = useAccountIdentity();
-  return <AccountWorkbench key={`${owner}:${id}`} owner={owner} id={id} embedded={embedded} />;
+  const identityPending = useAccountIdentityPending();
+  return <AccountWorkbench key={`${owner}:${id}`} owner={owner} identityPending={identityPending} id={id} embedded={embedded} />;
 }
 
-function AccountWorkbench({ owner, id, embedded }: { owner: string; id: string; embedded: boolean }) {
+function AccountWorkbench({ owner, id, embedded, identityPending = false }: { owner: string; id: string; embedded: boolean; identityPending?: boolean }) {
   useNovelEmbedClose(embedded);
   const router = useRouter();
   const [{ book, chapterRefreshes, notesRefresh }, setBookState] = useState<{ book: NovelDetail | null; chapterRefreshes: Record<number, number>; notesRefresh: number }>({ book: null, chapterRefreshes: {}, notesRefresh: 0 });
@@ -272,7 +273,7 @@ function AccountWorkbench({ owner, id, embedded }: { owner: string; id: string; 
       <main className={`min-w-0 flex-1 px-8 pb-10 pt-5 mobile:px-4 mobile:pt-3 ${embedded ? "mobile:pb-6" : "overflow-y-auto mobile:pb-[calc(var(--tabbar-h)+env(safe-area-inset-bottom)+24px)]"}`}>
         <div className="mx-auto max-w-[1560px] space-y-5">
           <Link href={novelHref("/novels", embedded)} className="inline-flex min-h-10 items-center gap-2 text-sm text-[color:var(--ink2)]"><ArrowLeft size={14} />回到书架</Link>
-          {!owner ? <EmptyState>请登录后打开你的书斋。<Link href="/login" className="ml-2 underline">前往登录</Link></EmptyState> : <>
+          {!owner ? (identityPending ? <LoadingState>正在加载身份…</LoadingState> : <EmptyState>请登录后打开你的书斋。<Link href="/login" target={embedded ? "_top" : undefined} className="ml-2 underline">前往登录</Link></EmptyState>) : <>
             {readError && <ErrorNotice message={readError} retry={() => void load()} />}
             {operationError && <div className="space-y-2"><ErrorNotice message={operationError} /><button type="button" className="btn btn-quiet min-h-10" onClick={() => setOperationError("")}>关闭提示</button></div>}
             {chapterError && <ErrorNotice message={chapterError} retry={() => void loadChapter()} />}

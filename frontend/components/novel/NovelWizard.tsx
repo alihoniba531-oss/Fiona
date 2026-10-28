@@ -11,7 +11,7 @@ import NovelModelFields, { novelFieldClass } from "@/components/novel/NovelModel
 import { EmptyState, ErrorNotice, LoadingState } from "@/components/novel/NovelStates";
 import { useNovelEmbedClose } from "@/components/novel/NovelShell";
 import { createNovel, estimateNovel, getNovelBalance, getNovelCatalog, novelErrorMessage, novelHref, novelModelLabel, novelModelOptions, type NovelAutomation, type NovelCatalog, type NovelCreateInput, type NovelEstimate, type NovelPanelMode } from "@/lib/novels";
-import { useAccountIdentity, useAccountRequest } from "@/lib/useAccountIdentity";
+import { useAccountIdentity, useAccountIdentityPending, useAccountRequest } from "@/lib/useAccountIdentity";
 
 type FieldErrors = Record<string, string>;
 const steps = ["思路与篇幅", "智能体与模型", "节奏与预算"];
@@ -40,9 +40,10 @@ export function defaultNovelAgents(catalog: NovelCatalog): Record<string, string
 export default function NovelWizard() {
   const embedded = useSearchParams().get("embed") === "1";
   const owner = useAccountIdentity();
-  return <Wizard key={owner} owner={owner} embedded={embedded} />;
+  const identityPending = useAccountIdentityPending();
+  return <Wizard key={owner} owner={owner} identityPending={identityPending} embedded={embedded} />;
 }
-function Wizard({ owner, embedded }: { owner: string; embedded: boolean }) {
+function Wizard({ owner, embedded, identityPending = false }: { owner: string; embedded: boolean; identityPending?: boolean }) {
   useNovelEmbedClose(embedded);
   const router = useRouter();
   const [step, setStep] = useState(0);
@@ -180,7 +181,7 @@ function Wizard({ owner, embedded }: { owner: string; embedded: boolean }) {
         <div className="mb-4 flex flex-wrap items-center justify-between gap-2"><Link href={novelHref("/novels", embedded)} className="inline-flex min-h-10 items-center gap-1 text-[13px] text-[color:var(--ink2)]"><ArrowLeft size={14} />回到书架</Link>{embedded && <a href="/novels/new" target="_blank" rel="noopener noreferrer" className="btn btn-quiet min-h-10 mobile:hidden">在新页面打开</a>}</div>
         <h1 className="text-[28px] tracking-[.24em]">新建一本</h1>
         <ol aria-label="建书步骤" className="my-6 grid grid-cols-3 gap-2 border-b border-[color:var(--carve)] pb-5 mobile:gap-1">{steps.map((label, index) => <li key={label} aria-current={index === step ? "step" : undefined} className={`flex min-w-0 flex-wrap items-center gap-2 text-[14px] mobile:gap-1 mobile:text-[12px] ${index === step ? "text-[color:var(--ink)]" : "text-[color:var(--ink2)]"}`}><span className={`chip readout ${index === step ? "chip-on" : ""}`}>{index < step ? <Check size={12} /> : index + 1}</span><span>{label}</span></li>)}</ol>
-        {!owner ? <EmptyState>请登录后新建小说。</EmptyState> : loading ? <LoadingState>正在加载智能体、模型和草莓余额…</LoadingState> : !catalog ? <ErrorNotice message={error || "模型目录暂不可用。"} retry={() => void load()} /> : <>
+        {!owner ? (identityPending ? <LoadingState>正在加载身份…</LoadingState> : <EmptyState>请登录后新建小说。</EmptyState>) : loading ? <LoadingState>正在加载智能体、模型和草莓余额…</LoadingState> : !catalog ? <ErrorNotice message={error || "模型目录暂不可用。"} retry={() => void load()} /> : <>
           {error && <div className="mb-4"><ErrorNotice message={error} /></div>}
           <Glaze variant="panel" lens={false} backdrop={!embedded} className="rounded-[18px] p-7 mobile:p-4">
             <form onSubmit={event => { event.preventDefault(); if (step < 2) nextStep(); else void submit(); }}>

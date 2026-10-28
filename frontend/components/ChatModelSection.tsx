@@ -342,6 +342,8 @@ function ChatModelForm({ initial, username }: { initial: ChatModelSettings; user
           className={cn(inputClass, !keyEditing && !needsKey && "hidden")} />
         {needsKey && <p className={noteClass}>{config?.status === "needs_reentry" ? "配置需要重新填写 Key，保存后才能启用。" : "首次配置或更换厂商、地址时，需要填写 Key。"}</p>}
       </div>
+      <p className={noteClass}>启用后，聊天回复会把分身设定、你的私有长期记忆、本会话最近 60 条消息（含平台看图生成的图片描述）和本条消息发送给你选择的厂商，账号名替换为「（账号已隐藏）」。</p>
+      {provider.id === "anthropic" && <p className={noteClass}>已选 Claude：你在聊天里发的图片和工具结果也会发送给 Anthropic，详见下方「更多隐私与计费说明」。</p>}
       <div className="border-t border-[color:var(--carve)] pt-3 shadow-[inset_0_1px_0_var(--etch)]">
         <div className="flex items-center justify-between gap-4">
           <span id="chat-model-enabled-name" className="text-sm tracking-[0.06em]">启用我的聊天模型</span>
@@ -355,7 +357,7 @@ function ChatModelForm({ initial, username }: { initial: ChatModelSettings; user
             </span>
           </button>
         </div>
-        <p id="chat-model-enabled-note" className={noteClass}>{!config ? "先保存配置，才能启用。" : config.status === "needs_reentry" ? "请重新填写并保存 Key。" : "开关使用已保存的配置；关闭后使用平台模型。"}</p>
+        <p id="chat-model-enabled-note" className={noteClass}>{!config ? "首次保存后会直接启用；之后可以用这个开关停用或重新启用。" : config.status === "needs_reentry" ? "请重新填写并保存 Key。" : "开关使用已保存的配置；关闭后使用平台模型。"}</p>
       </div>
       <div className="flex flex-wrap gap-2">
         <button type="button" disabled={!model || (needsKey && !keyEntered)} className="btn min-h-10 px-4" onClick={() => void test()}>{busy === "test" ? "正在测试…" : "测试连接"}</button>
@@ -365,16 +367,18 @@ function ChatModelForm({ initial, username }: { initial: ChatModelSettings; user
     {dirty && <p role="status" className={noteClass}>有未保存的修改。</p>}
     {error && <p role="alert" className="text-xs text-[color:var(--seal)]">{error}</p>}
     {success && <p role="status" className="text-xs text-[color:var(--ink)]">{success}</p>}
-    <div className={`${noteClass} space-y-2 border-t border-[color:var(--carve)] pt-3 shadow-[inset_0_1px_0_var(--etch)]`}>
-      <p>启用后，聊天回复会把分身设定、你的私有长期记忆、本会话最近 60 条消息（含平台看图生成的图片描述）和本条消息发送给你选择的厂商，账号名替换为「（账号已隐藏）」。</p>
-      <p>危机复核、平台工具执行、朗读和画像提取仍由平台处理并读取对话；Claude 智能体模式由 Claude 决定工具并直接看图，其他情况的意图识别、模式判定和看图仍由平台处理。画像提取会读到你的模型回复，明确危机轮也由平台回复。</p>
-      <p>生图：选 Claude 或 DeepSeek（deepseek-v4-pro、deepseek-flash）时，由你的模型决定何时生图并撰写画面描述；选其他厂商时，在你的消息或上一条回复涉及画图时，平台的生图判断器（阿里云 DashScope 千问 qwen3.8-flash）会读取最近 6 条对话来决定是否生图、撰写画面描述。生图由平台执行并扣草莓，默认使用 Seedream 5.0 Flash，画面描述会发送给字节跳动火山引擎（点名千问时发送给阿里云），可能包含对话中出现过的内容。</p>
-      <p>选 Claude 时，Claude 可以直接查看你本轮发送的图片，自行调用天气、旅行、路线、热榜和生图工具（工具由平台执行，天气只查询你亲口说过的城市，使用工具的回合按次扣草莓），并可使用 Anthropic 的联网搜索和网页读取（由 Anthropic 执行，按其价格计入你的 API 额度，搜索约每 1000 次 10 美元）。图片和工具结果会发送给 Anthropic。</p>
-      <p>自带模型文字聊天不扣草莓，零余额也可聊天；平台模型回复、工具和生图照常扣费，平台看图照常扣费，Claude 智能体直接看图使用你的 API 额度，自带模型失败时不会改用平台模型，聊天和连接测试均有每日上限。</p>
-      <p>Key 加密保存，删除 Key 或删号时删除，数据库备份中最多保留 14 天，无服务端密钥无法解密。</p>
-      <p>开启『聊天读小说』后，读到的章节原文会发送给当前聊天模型的厂商。</p>
-      <p>Claude 的接口不对中国大陆提供服务。</p>
-    </div>
+    <details className={`${noteClass} border-t border-[color:var(--carve)] pt-3 shadow-[inset_0_1px_0_var(--etch)]`}>
+      <summary className="min-h-10 cursor-pointer py-2 text-sm tracking-[0.06em] text-[color:var(--ink)]">更多隐私与计费说明</summary>
+      <div className="space-y-2 pt-1">
+        <p>危机复核、平台工具执行、朗读和画像提取仍由平台处理并读取对话；Claude 智能体模式由 Claude 决定工具并直接看图，其他情况的意图识别、模式判定和看图仍由平台处理。画像提取会读到你的模型回复，明确危机轮也由平台回复。</p>
+        <p>生图：选 Claude 或 DeepSeek（deepseek-v4-pro、deepseek-flash）时，由你的模型决定何时生图并撰写画面描述；选其他厂商时，在你的消息或上一条回复涉及画图时，平台的生图判断器（阿里云 DashScope 千问 qwen3.8-flash）会读取最近 6 条对话来决定是否生图、撰写画面描述。生图由平台执行并扣草莓，默认使用 Seedream 5.0 Flash，画面描述会发送给字节跳动火山引擎（点名千问时发送给阿里云），可能包含对话中出现过的内容。</p>
+        <p>选 Claude 时，Claude 可以直接查看你本轮发送的图片，自行调用天气、旅行、路线、热榜和生图工具（工具由平台执行，天气只查询你亲口说过的城市，使用工具的回合按次扣草莓），并可使用 Anthropic 的联网搜索和网页读取（由 Anthropic 执行，按其价格计入你的 API 额度，搜索约每 1000 次 10 美元）。图片和工具结果会发送给 Anthropic。</p>
+        <p>自带模型文字聊天不扣草莓，零余额也可聊天；平台模型回复、工具和生图照常扣费，平台看图照常扣费，Claude 智能体直接看图使用你的 API 额度，自带模型失败时不会改用平台模型，聊天和连接测试均有每日上限。</p>
+        <p>Key 加密保存，删除 Key 或删号时删除，数据库备份中最多保留 14 天，无服务端密钥无法解密。</p>
+        <p>开启『聊天读小说』后，读到的章节原文会发送给当前聊天模型的厂商。</p>
+        <p>Claude 的接口不对中国大陆提供服务。</p>
+      </div>
+    </details>
   </div>;
 }
 

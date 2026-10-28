@@ -95,7 +95,7 @@ function ProfileForAccount({ username }: { username: string }) {
         <main className="flex min-w-0 flex-1 justify-center overflow-x-hidden overflow-y-auto p-3">
           <Glaze variant="panel" fur className="relative z-[1] box-border min-h-full w-full max-w-[712px] self-start rounded-[18px] px-12 pb-8 pt-7 mobile:px-6 mobile:pb-6 mobile:pt-5">
             <header className="pb-7">
-              <h1 className={`mt-[18px] text-[30px] font-medium tracking-[0.16em] mobile:text-[26px]${embedded ? " sr-only" : ""}`}>旧社交画像</h1>
+              <h1 className={`mt-[18px] text-[30px] font-medium tracking-[0.16em] mobile:text-[26px]${embedded ? " sr-only" : ""}`}>社交画像（旧版）</h1>
               <p className="mt-2 text-[13px] leading-[1.85] tracking-[0.04em] text-[color:var(--ink2)]">此前用于社交匹配的画像；新会话记忆在“我的分身”中查看</p>
               <div className="mt-3 flex items-center gap-1.5 text-xs text-[color:var(--ink2)]"><Shield size={13} />本人查看</div>
             </header>
@@ -118,7 +118,7 @@ function ProfileForAccount({ username }: { username: string }) {
               </div>
             ) : isEmpty ? (
               <div className="border-t border-[color:var(--carve)] py-8 text-center">
-                <p className="mb-2 text-sm text-[color:var(--ink2)]">暂无旧社交画像</p>
+                <p className="mb-2 text-sm text-[color:var(--ink2)]">暂无社交画像（旧版）</p>
                 <p className="text-[13px] leading-[1.85] text-[color:var(--ink2)]">新会话形成的私有记忆已单独保存，<br />请前往“我的分身”查看和管理。</p>
               </div>
             ) : (
@@ -133,7 +133,7 @@ function ProfileForAccount({ username }: { username: string }) {
 
             <div className="flex items-start gap-2 border-t border-[color:var(--carve)] py-[22px] shadow-[inset_0_1px_0_var(--etch)]">
               <Shield size={13} className="mt-1 shrink-0 text-[color:var(--ink2)]" />
-              <p className="text-[13px] leading-[1.85] text-[color:var(--ink2)]">这里保留旧社交画像，不展示新会话的私有记忆。你可以在“我的分身”中查看新记忆，或清空分身记忆和已有个人画像；聊天记录会保留。</p>
+              <p className="text-[13px] leading-[1.85] text-[color:var(--ink2)]">这里保留社交画像（旧版），不展示新会话的私有记忆。你可以在“我的分身”中查看新记忆；那里的「清空记忆与个人画像」会一并清空这份社交画像（旧版），聊天记录会保留。</p>
             </div>
             <Link href="/agents/me" target={embedded ? "_top" : undefined} className="btn min-h-10 px-[18px] mobile:h-auto mobile:max-w-full mobile:whitespace-normal">
               <ArrowUpRight size={14} />前往我的分身管理记忆

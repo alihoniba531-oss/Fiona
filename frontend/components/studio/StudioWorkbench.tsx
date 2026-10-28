@@ -6,7 +6,7 @@ import { ArrowLeft } from "lucide-react";
 import Glaze from "@/components/Glaze";
 import { EmptyState, ErrorNotice, LoadingState } from "@/components/novel/NovelStates";
 import { ApiError } from "@/lib/agents";
-import { useAccountIdentity, useAccountRequest } from "@/lib/useAccountIdentity";
+import { useAccountIdentity, useAccountIdentityPending, useAccountRequest } from "@/lib/useAccountIdentity";
 import { useRovingTabs } from "@/lib/useRovingTabs";
 import { cancelStudioJob, confirmStudioQuote, getBrainProviders, getStudioAccess, getStudioProject, hasStudioInflightJobs, linkStudioTask, listStudioJobs, patchStudioProject, recheckStudioJob, releaseStudioJob, studioErrorMessage, studioHref, type BrainProvider, type BrainProviderId, type StudioAccess, type StudioClipParams, type StudioJob, type StudioProject, type StudioQuote } from "@/lib/studio";
 import StudioShell from "./StudioShell";
@@ -24,9 +24,10 @@ const stages = ["①拆解", "②定妆", "③分镜", "④镜头", "⑤成片"]
 
 export default function StudioWorkbench({ id, embedded = false }: { id: string; embedded?: boolean }) {
   const owner = useAccountIdentity();
-  return <AccountStudioWorkbench key={`${owner}:${id}`} id={id} owner={owner} embedded={embedded} />;
+  const identityPending = useAccountIdentityPending();
+  return <AccountStudioWorkbench key={`${owner}:${id}`} id={id} owner={owner} embedded={embedded} identityPending={identityPending} />;
 }
-export function AccountStudioWorkbench({ id, owner, embedded }: { id: string; owner: string; embedded: boolean }) {
+export function AccountStudioWorkbench({ id, owner, embedded, identityPending = false }: { id: string; owner: string; embedded: boolean; identityPending?: boolean }) {
   const [project, setProject] = useState<StudioProject | null>(null);
   const [access, setAccess] = useState<StudioAccess | null>(null);
   const [jobs, setJobs] = useState<StudioJob[]>([]);
@@ -138,7 +139,7 @@ export function AccountStudioWorkbench({ id, owner, embedded }: { id: string; ow
         {project && <ReviewProviderPicker projectId={id} owner={owner} brainProvider={project.brain_provider ?? "claude"} busy={busy} />}
       </Glaze>
     </header>
-    {!owner ? <EmptyState>请登录后打开工作室。</EmptyState> : loading ? <LoadingState>正在打开项目…</LoadingState> : unavailable ? <EmptyState>暂未开放</EmptyState> : <>
+    {!owner ? (identityPending ? <LoadingState>正在加载身份…</LoadingState> : <EmptyState>请登录后打开工作室。</EmptyState>) : loading ? <LoadingState>正在打开项目…</LoadingState> : unavailable ? <EmptyState>暂未开放</EmptyState> : <>
       {error && <ErrorNotice message={error} retry={() => void refresh()} />}
       {project && <>
         <nav role="tablist" aria-label="短片制作阶段" className="mb-5 flex min-w-0 border-b border-[color:var(--carve)]">{stages.map((label, index) => <button key={label} id={`studio-stage-${index}`} type="button" role="tab" aria-selected={stage === index} aria-controls={`studio-panel-${index}`} {...tabProps(index)} onClick={() => selectStage(index)} className={`min-h-10 min-w-0 flex-1 border-b px-1 py-3 text-[13px] @[640px]:text-base ${stage === index ? "border-[color:var(--ink)] text-[color:var(--ink)]" : "border-transparent text-[color:var(--ink2)]"}`}>{label}</button>)}</nav>

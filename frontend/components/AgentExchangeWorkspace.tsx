@@ -9,7 +9,7 @@ import InkLandscape from "@/components/InkLandscape";
 import { ApiError, apiJson, errorMessage, type Agent, type AgentCard } from "@/lib/agents";
 import { ExchangeIdentityError, exchangeBelongsTo, exchangeStatusLabel, isExchangeActive, isOfficialExchange, isDraftReviewExchange, isArtifactApproved, type AgentExchange, type ExchangeDetail, type ExchangeModelMetadata, type OfficialAgentCard } from "@/lib/agentExchanges";
 import { useAgentExchanges } from "@/lib/useAgentExchanges";
-import { useAccountIdentity, useAccountRequest } from "@/lib/useAccountIdentity";
+import { useAccountIdentity, useAccountIdentityPending, useAccountRequest } from "@/lib/useAccountIdentity";
 import { apiFetch } from "@/lib/auth";
 import { avatarGlyph } from "@/lib/avatarGlyph";
 import { beijingDayNumber, beijingParts, formatBeijingTime } from "@/lib/beijingTime";
@@ -24,10 +24,11 @@ interface WorkspaceProps {
 
 export default function AgentExchangeWorkspace(props: WorkspaceProps) {
   const owner = useAccountIdentity();
-  return <ExchangeWorkspace key={owner} owner={owner} {...props} />;
+  const identityPending = useAccountIdentityPending();
+  return <ExchangeWorkspace key={owner} owner={owner} identityPending={identityPending} {...props} />;
 }
 
-function ExchangeWorkspace({ owner, embedded = false, onOpenMyAgent }: WorkspaceProps & { owner: string }) {
+function ExchangeWorkspace({ owner, identityPending = false, embedded = false, onOpenMyAgent }: WorkspaceProps & { owner: string; identityPending?: boolean }) {
   const [tab, setTab] = useState<"official" | "experiences" | "gallery" | "received" | "sent">("official");
   const tabsRef = useRef<HTMLElement>(null);
   const [moreTabsRight, setMoreTabsRight] = useState(false);
@@ -80,7 +81,7 @@ function ExchangeWorkspace({ owner, embedded = false, onOpenMyAgent }: Workspace
           </header>
 
           <div className="mx-auto max-w-[1344px] px-12 pb-10 max-md:px-4 max-md:pb-6">
-            {!owner ? <EmptyState>请登录后查看分身和自己的交流记录。<Link href="/login" className="ml-2 text-[color:var(--ink)] underline">前往登录</Link></EmptyState> : <>
+            {!owner ? (identityPending ? <LoadingState>正在加载身份…</LoadingState> : <EmptyState>请登录后查看分身和自己的交流记录。<Link href="/login" className="ml-2 text-[color:var(--ink)] underline">前往登录</Link></EmptyState>) : <>
               {data.error && <ErrorNotice message={data.error} retry={() => void data.refreshDirectory()} />}
               <div className="relative mb-[34px]">
                 <nav ref={tabsRef} role="tablist" className="mobile-scrollbar-none flex gap-9 border-t max-md:gap-6 max-md:overflow-x-auto max-md:pr-7 max-md:whitespace-nowrap" style={{ borderColor: "var(--carve)", boxShadow: "inset 0 1px 0 var(--etch)" }} aria-label="分身广场分类">

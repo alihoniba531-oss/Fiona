@@ -147,6 +147,11 @@ export default function VoiceButton({ disabled, dictating, holding, onTap, onHol
           也可以按住说话，松开就发送
         </span>
       )}
+      {!showHint && (holding || dictating) && (
+        <span data-voice-status aria-hidden="true" className="ceramic-card pointer-events-none absolute bottom-full right-0 z-[60] mb-2 whitespace-nowrap px-3 py-2 text-xs leading-relaxed text-[color:var(--ink)] md:hidden">
+          {holding ? "松开发送" : "再点一下发送"}
+        </span>
+      )}
       <button
         type="button"
         disabled={disabled}

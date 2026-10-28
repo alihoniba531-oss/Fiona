@@ -9,7 +9,7 @@ import AgentIdentityCard from "@/components/AgentIdentityCard";
 import AgentMemoryPanel from "@/components/AgentMemoryPanel";
 import { API_BASE as API } from "@/lib/config";
 import { apiJson, errorMessage, type Agent } from "@/lib/agents";
-import { useAccountIdentity, useAccountRequest } from "@/lib/useAccountIdentity";
+import { useAccountIdentity, useAccountIdentityPending, useAccountRequest } from "@/lib/useAccountIdentity";
 
 const fieldClass = "ceramic-card w-full rounded-[10px] border-0 px-4 py-3 text-[16px] leading-[1.8] tracking-normal text-[color:var(--ink)] outline-none focus-visible:ring-1 focus-visible:ring-[color:var(--ink)] disabled:opacity-50";
 
@@ -20,11 +20,12 @@ interface MyAgentWorkspaceProps {
 
 export default function MyAgentWorkspace({ embedded = false, onSaved }: MyAgentWorkspaceProps) {
   const owner = useAccountIdentity();
+  const identityPending = useAccountIdentityPending();
   // Remount private state on account changes; no old form or memory survives.
-  return <MyAgentEditor key={owner} owner={owner} embedded={embedded} onSaved={onSaved} />;
+  return <MyAgentEditor key={owner} owner={owner} identityPending={identityPending} embedded={embedded} onSaved={onSaved} />;
 }
 
-function MyAgentEditor({ owner, embedded, onSaved }: { owner: string } & MyAgentWorkspaceProps) {
+function MyAgentEditor({ owner, identityPending = false, embedded, onSaved }: { owner: string; identityPending?: boolean } & MyAgentWorkspaceProps) {
   const publicCardDescriptionId = useId();
   const [agent, setAgent] = useState<Agent | null>(null);
   const [savedAgent, setSavedAgent] = useState<Agent | null>(null);
@@ -112,7 +113,7 @@ function MyAgentEditor({ owner, embedded, onSaved }: { owner: string } & MyAgent
             </div>
           </header>
           <div className="mx-auto max-w-[1236px] px-[72px] pb-10 pt-2 max-md:px-4 max-md:pb-6 max-md:pt-0">
-            {!owner ? <p className="text-sm text-muted-foreground" role="status">请登录后管理自己的分身。<Link href="/login" className="ml-2 text-[color:var(--ink)] underline">前往登录</Link></p> : loading ? <p className="flex items-center gap-2 text-sm text-muted-foreground" role="status"><Loader2 className="animate-spin" size={16} />正在加载你的分身…</p> : !agent ? (
+            {!owner ? (identityPending ? <p className="text-sm text-muted-foreground" role="status">正在加载身份…</p> : <p className="text-sm text-muted-foreground" role="status">请登录后管理自己的分身。<Link href="/login" className="ml-2 text-[color:var(--ink)] underline">前往登录</Link></p>) : loading ? <p className="flex items-center gap-2 text-sm text-muted-foreground" role="status"><Loader2 className="animate-spin" size={16} />正在加载你的分身…</p> : !agent ? (
               <div className="ceramic-card space-y-3 p-6">
                 <p role="alert" className="text-sm text-destructive">{error || "暂时无法加载分身。"}</p>
                 <button type="button" onClick={() => void loadAgent()} className="btn btn-quiet">重新加载</button>

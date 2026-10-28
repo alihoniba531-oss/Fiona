@@ -56,3 +56,32 @@ export function useAccountRequest(owner: string) {
 
   return { beginRequest, isCurrentOwner };
 }
+
+// 身份是否还没确认：服务端渲染与水合首帧为 true；本地没有用户名、且本页第一次身份检查（ensureAccountIdentity）还没结束时也为 true。
+// 第一次检查结束后不再回到确认中：另一个标签清掉本地用户名、而 Cookie 仍有效时，会先显示登录提示，等 auth.ts 用 Cookie 找回后再恢复。
+// 测试替身只提供 useEffect / useSyncExternalStore 与 getUsername / ensureAccountIdentity，这里不能用别的。
+let identityRecoverySettled = false;
+const identityPendingListeners = new Set<() => void>();
+
+function subscribeIdentityPending(onChange: () => void) {
+  identityPendingListeners.add(onChange);
+  const unsubscribeAccount = subscribeAccount(onChange);
+  return () => {
+    identityPendingListeners.delete(onChange);
+    unsubscribeAccount();
+  };
+}
+
+const clientIdentityPending = () => !getUsername() && !identityRecoverySettled;
+const serverIdentityPending = () => true;
+
+export function useAccountIdentityPending(): boolean {
+  useEffect(() => {
+    if (identityRecoverySettled) return;
+    void ensureAccountIdentity().finally(() => {
+      identityRecoverySettled = true;
+      identityPendingListeners.forEach(listener => listener());
+    });
+  }, []);
+  return useSyncExternalStore(subscribeIdentityPending, clientIdentityPending, serverIdentityPending);
+}

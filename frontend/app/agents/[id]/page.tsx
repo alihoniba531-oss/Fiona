@@ -9,15 +9,16 @@ import InkLandscape from "@/components/InkLandscape";
 import AgentIdentityCard from "@/components/AgentIdentityCard";
 import { API_BASE as API } from "@/lib/config";
 import { apiJson, errorMessage, type AgentCard } from "@/lib/agents";
-import { useAccountIdentity, useAccountRequest } from "@/lib/useAccountIdentity";
+import { useAccountIdentity, useAccountIdentityPending, useAccountRequest } from "@/lib/useAccountIdentity";
 
 function AgentPageContent() {
   const { id } = useParams<{ id: string }>();
   const owner = useAccountIdentity();
-  return <AccountAgentCard key={`${owner}:${id}`} id={id} owner={owner} />;
+  const identityPending = useAccountIdentityPending();
+  return <AccountAgentCard key={`${owner}:${id}`} id={id} owner={owner} identityPending={identityPending} />;
 }
 
-function AccountAgentCard({ id, owner }: { id: string; owner: string }) {
+function AccountAgentCard({ id, owner, identityPending = false }: { id: string; owner: string; identityPending?: boolean }) {
   const [result, setResult] = useState<{ id: string; agent?: AgentCard; error?: string } | null>(null);
   const [retry, setRetry] = useState(0);
   const { beginRequest } = useAccountRequest(owner);
@@ -43,7 +44,7 @@ function AccountAgentCard({ id, owner }: { id: string; owner: string }) {
             </div>
           </header>
           <div className="mx-auto max-w-[560px] space-y-5 px-8 pb-10 pt-3 max-md:px-4 max-md:pb-6 max-md:pt-0">
-            {!owner ? <p role="status" className="text-sm text-muted-foreground">请登录后查看分身名片。<Link href="/login" className="ml-2 text-[color:var(--ink)] underline">前往登录</Link></p> : !current ? <p role="status" className="flex items-center gap-2 text-sm text-muted-foreground"><Loader2 size={16} className="animate-spin" />正在加载名片…</p>
+            {!owner ? (identityPending ? <p role="status" className="text-sm text-muted-foreground">正在加载身份…</p> : <p role="status" className="text-sm text-muted-foreground">请登录后查看分身名片。<Link href="/login" className="ml-2 text-[color:var(--ink)] underline">前往登录</Link></p>) : !current ? <p role="status" className="flex items-center gap-2 text-sm text-muted-foreground"><Loader2 size={16} className="animate-spin" />正在加载名片…</p>
               : current.agent ? <AgentIdentityCard agent={current.agent} />
               : <div className="ceramic-card space-y-3 p-6"><p role="alert" className="text-sm text-[color:var(--seal)]">{current.error}</p><button type="button" onClick={() => { setResult(null); setRetry(value => value + 1); }} className="btn btn-quiet">重新加载</button></div>}
           </div>

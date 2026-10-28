@@ -88,7 +88,7 @@ export default function ConversationPicker({
       </ul>
 
       {locked && <p className="px-5 pb-2 text-[11px] text-muted-foreground" role="status">分身回复或语音进行中，结束后可以切换对话。</p>}
-      {!loading && !conversations.length && !error && <p className="px-5 pb-2 text-xs leading-relaxed text-muted-foreground">还没有对话。点「新对话」，开始和自己的分身交流。</p>}
+      {!loading && !conversations.length && !error && <p className="px-5 pb-2 text-xs leading-relaxed text-muted-foreground">还没有对话。点「新建」，开始和自己的分身交流。</p>}
       {error && <div className="flex flex-wrap items-center gap-1 px-5 pb-2 text-xs text-[color:var(--rec)]" role="alert">
         <span>{error}</span>
         <button type="button" onClick={onRetry} disabled={disabled} className="btn btn-quiet h-7 px-2.5 text-xs">重试加载</button>

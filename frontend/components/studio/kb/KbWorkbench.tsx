@@ -6,7 +6,7 @@ import { ArrowLeft } from "lucide-react";
 import Glaze from "@/components/Glaze";
 import { EmptyState, ErrorNotice, LoadingState } from "@/components/novel/NovelStates";
 import { ApiError } from "@/lib/agents";
-import { useAccountIdentity, useAccountRequest } from "@/lib/useAccountIdentity";
+import { useAccountIdentity, useAccountIdentityPending, useAccountRequest } from "@/lib/useAccountIdentity";
 import { useRovingTabs } from "@/lib/useRovingTabs";
 import { getStudioAccess, studioErrorMessage, studioHref } from "@/lib/studio";
 import type { KbCardType } from "@/lib/studio-kb";
@@ -29,10 +29,11 @@ const tabs: KbTab[] = [
 
 export default function KbWorkbench({ embedded = false }: { embedded?: boolean }) {
   const owner = useAccountIdentity();
-  return <AccountKbWorkbench key={owner} owner={owner} embedded={embedded} />;
+  const identityPending = useAccountIdentityPending();
+  return <AccountKbWorkbench key={owner} owner={owner} embedded={embedded} identityPending={identityPending} />;
 }
 
-export function AccountKbWorkbench({ owner, embedded }: { owner: string; embedded: boolean }) {
+export function AccountKbWorkbench({ owner, embedded, identityPending = false }: { owner: string; embedded: boolean; identityPending?: boolean }) {
   const [index, setIndex] = useState(0);
   const [loading, setLoading] = useState(true);
   const [unavailable, setUnavailable] = useState(false);
@@ -64,7 +65,7 @@ export function AccountKbWorkbench({ owner, embedded }: { owner: string; embedde
         <p className="mt-2 max-w-[760px] text-sm leading-relaxed text-[color:var(--ink2)]">卡片是仓库里的 YAML；案例和节奏统计只存在本机 SQLite。运行时不会访问外部资源。</p>
       </Glaze>
     </header>
-    {!owner ? <EmptyState>请登录后打开导演知识库。</EmptyState>
+    {!owner ? (identityPending ? <LoadingState>正在加载身份…</LoadingState> : <EmptyState>请登录后打开导演知识库。</EmptyState>)
       : loading ? <LoadingState>正在打开导演知识库…</LoadingState>
       : unavailable ? <EmptyState>暂未开放</EmptyState>
       : error ? <ErrorNotice message={error} retry={() => { void load(); }} />
