@@ -1,0 +1,252 @@
+{
+ "base": "HEAD 6410890 (next 16.4.3)",
+ "runs": [
+  {
+   "tag": "day-d1440",
+   "meta": {
+    "ai": 4,
+    "user": 5,
+    "speak": 0,
+    "speakVisible": 0,
+    "copy": 0,
+    "copyVisible": 0,
+    "del": 0,
+    "delVisible": 0,
+    "svgInMetaRows": 0,
+    "minHeight": 999,
+    "animated": 9,
+    "voicePressed": "false"
+   },
+   "speak": null,
+   "copy": null,
+   "delete": null,
+   "nativeDialogsThisRun": 3,
+   "flows": {
+    "deleteConversationDialog": 0,
+    "uploadNotice": null,
+    "animatedOnLoad": 9,
+    "animatedAfterSend": {
+     "total": 11,
+     "animatedIdx": [
+      0,
+      1,
+      2,
+      3,
+      4,
+      5,
+      6,
+      7,
+      8,
+      9,
+      10
+     ]
+    },
+    "focus": {
+     "stops": 28,
+     "bad": [
+      {
+       "tag": "BUTTON",
+       "text": "对话",
+       "type": "button",
+       "outlineStyle": "auto",
+       "outlineWidth": "1px",
+       "outlineColor": "oklab(0.270301 -0.0149502 0.00133267 / 0.5)",
+       "boxShadow": "none",
+       "ink": "#1f2926"
+      },
+      {
+       "tag": "BUTTON",
+       "text": "分身",
+       "type": "button",
+       "outlineStyle": "auto",
+       "outlineWidth": "1px",
+       "outlineColor": "oklab(0.270301 -0.0149502 0.00133267 / 0.5)",
+       "boxShadow": "none",
+       "ink": "#1f2926"
+      },
+      {
+       "tag": "BUTTON",
+       "text": "广场",
+       "type": "button",
+       "outlineStyle": "auto",
+       "outlineWidth": "1px",
+       "outlineColor": "oklab(0.270301 -0.0149502 0.00133267 / 0.5)",
+       "boxShadow": "none",
+       "ink": "#1f2926"
+      },
+      {
+       "tag": "BUTTON",
+       "text": "世界",
+       "type": "button",
+       "outlineStyle": "auto",
+       "outlineWidth": "1px",
+       "outlineColor": "oklab(0.270301 -0.0149502 0.00133267 / 0.5)",
+       "boxShadow": "none",
+       "ink": "#1f2926"
+      },
+      {
+       "tag": "BUTTON",
+       "text": "设置",
+       "type": "button",
+       "outlineStyle": "auto",
+       "outlineWidth": "1px",
+       "outlineColor": "oklab(0.270301 -0.0149502 0.00133267 / 0.5)",
+       "boxShadow": "none",
+       "ink": "#1f2926"
+      },
+      {
+       "tag": "BUTTON",
+       "text": "书斋",
+       "type": "button",
+       "outlineStyle": "auto",
+       "outlineWidth": "1px",
+       "outlineColor": "oklab(0.270301 -0.0149502 0.00133267 / 0.5)",
+       "boxShadow": "none",
+       "ink": "#1f2926"
+      },
+      {
+       "tag": "BUTTON",
+       "text": "工作室",
+       "type": "button",
+       "outlineStyle": "auto",
+       "outlineWidth": "1px",
+       "outlineColor": "oklab(0.270301 -0.0149502 0.00133267 / 0.5)",
+       "boxShadow": "none",
+       "ink": "#1f2926"
+      },
+      {
+       "tag": "BUTTON",
+       "text": "切换深色",
+       "type": "button",
+       "outlineStyle": "auto",
+       "outlineWidth": "1px",
+       "outlineColor": "oklab(0.270301 -0.0149502 0.00133267 / 0.5)",
+       "boxShadow": "none",
+       "ink": "#1f2926"
+      }
+     ],
+     "badCount": 20,
+     "styles": [
+      [
+       "auto",
+       "1px"
+      ],
+      [
+       "none",
+       "1px"
+      ],
+      [
+       "solid",
+       "1px"
+      ]
+     ]
+    },
+    "settingsClearDialog": 0,
+    "nativeDialogs": [
+     "删除这段对话及其中的消息？其他对话和分身设定会保留。此操作不可恢复。",
+     "只能上传图片",
+     "确定清空「tester」的所有聊天记录？此操作不可恢复。"
+    ],
+    "bold": {
+     "/settings": [],
+     "/agents": [],
+     "/agents/me": [],
+     "/plaza": [],
+     "/profile": [],
+     "/history": [],
+     "/novels": [],
+     "/ (history drawer open)": [
+      {
+       "tag": "SPAN",
+       "w": 600,
+       "text": "当前对话记录",
+       "cls": "text-xs font-semibold text-muted-foreground tracking-wide"
+      },
+      {
+       "tag": "SPAN",
+       "w": 600,
+       "text": "2026年10月29日",
+       "cls": "text-[11px] font-semibold text-muted-foreground truncate"
+      },
+      {
+       "tag": "SPAN",
+       "w": 600,
+       "text": "2026年10月28日",
+       "cls": "text-[11px] font-semibold text-muted-foreground truncate"
+      },
+      {
+       "tag": "SPAN",
+       "w": 600,
+       "text": "2026年10月27日",
+       "cls": "text-[11px] font-semibold text-muted-foreground truncate"
+      }
+     ]
+    },
+    "boldTotal": 4
+   }
+  },
+  {
+   "tag": "day-m390",
+   "meta": {
+    "ai": 4,
+    "user": 6,
+    "speak": 0,
+    "speakVisible": 0,
+    "copy": 0,
+    "copyVisible": 0,
+    "del": 0,
+    "delVisible": 0,
+    "svgInMetaRows": 0,
+    "minHeight": 999,
+    "animated": 10,
+    "voicePressed": "false"
+   },
+   "speak": null,
+   "copy": null,
+   "delete": null,
+   "nativeDialogsThisRun": 0
+  },
+  {
+   "tag": "night-d1440",
+   "meta": {
+    "ai": 4,
+    "user": 6,
+    "speak": 0,
+    "speakVisible": 0,
+    "copy": 0,
+    "copyVisible": 0,
+    "del": 0,
+    "delVisible": 0,
+    "svgInMetaRows": 0,
+    "minHeight": 999,
+    "animated": 10,
+    "voicePressed": "false"
+   },
+   "speak": null,
+   "copy": null,
+   "delete": null,
+   "nativeDialogsThisRun": 0
+  },
+  {
+   "tag": "night-m390",
+   "meta": {
+    "ai": 4,
+    "user": 6,
+    "speak": 0,
+    "speakVisible": 0,
+    "copy": 0,
+    "copyVisible": 0,
+    "del": 0,
+    "delVisible": 0,
+    "svgInMetaRows": 0,
+    "minHeight": 999,
+    "animated": 10,
+    "voicePressed": "false"
+   },
+   "speak": null,
+   "copy": null,
+   "delete": null,
+   "nativeDialogsThisRun": 0
+  }
+ ]
+}

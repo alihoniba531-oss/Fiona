@@ -1,0 +1,223 @@
+{
+ "base": "candidate feat/component-language after R1 (next 16.4.3)",
+ "runs": [
+  {
+   "tag": "day-d1440",
+   "meta": {
+    "ai": 4,
+    "user": 6,
+    "speak": 4,
+    "speakVisible": 4,
+    "copy": 10,
+    "copyVisible": 10,
+    "del": 10,
+    "delVisible": 10,
+    "svgInMetaRows": 0,
+    "minHeight": 28,
+    "animated": 0,
+    "voicePressed": "false"
+   },
+   "speak": {
+    "labelAfterClick": "朗读",
+    "stopButtons": 1,
+    "ticketRequests": 1,
+    "stopAfterStop": 0,
+    "voicePressedAfter": "false"
+   },
+   "copy": {
+    "copiedLabels": 1,
+    "hasStars": false,
+    "hasHeading": false,
+    "hasDashItem": false,
+    "len": 214,
+    "head": "本周读书计划\n\n按你说的分三天，每天一个主题：\n\n1. 周一：《东京梦华录》卷二"
+   },
+   "delete": {
+    "open": true,
+    "text": "删除这条消息？此操作不可恢复。取消删除",
+    "focus": "取消",
+    "role": "alertdialog",
+    "openAfterEsc": 0,
+    "countBefore": 10,
+    "countAfterEsc": 10,
+    "deleteReqsAfterEsc": 0,
+    "countAfterConfirm": 9,
+    "deleteReqsAfterConfirm": 1
+   },
+   "nativeDialogsThisRun": 0,
+   "flows": {
+    "deleteConversationDialog": 1,
+    "uploadNotice": "只能上传图片知道了",
+    "animatedOnLoad": 0,
+    "animatedAfterSend": {
+     "total": 11,
+     "animatedIdx": [
+      9,
+      10
+     ]
+    },
+    "focus": {
+     "stops": 30,
+     "bad": [],
+     "badCount": 0,
+     "styles": [
+      [
+       "none",
+       "1px"
+      ],
+      [
+       "solid",
+       "1px"
+      ],
+      [
+       "solid",
+       "2px"
+      ]
+     ]
+    },
+    "settingsClearDialog": 1,
+    "nativeDialogs": [],
+    "bold": {
+     "/settings": [],
+     "/agents": [],
+     "/agents/me": [],
+     "/plaza": [],
+     "/profile": [],
+     "/history": [],
+     "/novels": [],
+     "/ (history drawer open)": []
+    },
+    "boldTotal": 0
+   }
+  },
+  {
+   "tag": "day-m390",
+   "meta": {
+    "ai": 4,
+    "user": 6,
+    "speak": 4,
+    "speakVisible": 4,
+    "copy": 10,
+    "copyVisible": 10,
+    "del": 10,
+    "delVisible": 10,
+    "svgInMetaRows": 0,
+    "minHeight": 40,
+    "animated": 0,
+    "voicePressed": "false"
+   },
+   "speak": {
+    "labelAfterClick": "朗读",
+    "stopButtons": 1,
+    "ticketRequests": 1,
+    "stopAfterStop": 0,
+    "voicePressedAfter": "false"
+   },
+   "copy": {
+    "copiedLabels": 1,
+    "hasStars": false,
+    "hasHeading": false,
+    "hasDashItem": false,
+    "len": 214,
+    "head": "本周读书计划\n\n按你说的分三天，每天一个主题：\n\n1. 周一：《东京梦华录》卷二"
+   },
+   "delete": {
+    "open": true,
+    "text": "删除这条消息？此操作不可恢复。取消删除",
+    "focus": "取消",
+    "role": "alertdialog",
+    "openAfterEsc": 0,
+    "countBefore": 10,
+    "countAfterEsc": 10,
+    "deleteReqsAfterEsc": 0
+   },
+   "nativeDialogsThisRun": 0
+  },
+  {
+   "tag": "night-d1440",
+   "meta": {
+    "ai": 4,
+    "user": 6,
+    "speak": 4,
+    "speakVisible": 4,
+    "copy": 10,
+    "copyVisible": 10,
+    "del": 10,
+    "delVisible": 10,
+    "svgInMetaRows": 0,
+    "minHeight": 28,
+    "animated": 0,
+    "voicePressed": "false"
+   },
+   "speak": {
+    "labelAfterClick": "朗读",
+    "stopButtons": 1,
+    "ticketRequests": 1,
+    "stopAfterStop": 0,
+    "voicePressedAfter": "false"
+   },
+   "copy": {
+    "copiedLabels": 1,
+    "hasStars": false,
+    "hasHeading": false,
+    "hasDashItem": false,
+    "len": 214,
+    "head": "本周读书计划\n\n按你说的分三天，每天一个主题：\n\n1. 周一：《东京梦华录》卷二"
+   },
+   "delete": {
+    "open": true,
+    "text": "删除这条消息？此操作不可恢复。取消删除",
+    "focus": "取消",
+    "role": "alertdialog",
+    "openAfterEsc": 0,
+    "countBefore": 10,
+    "countAfterEsc": 10,
+    "deleteReqsAfterEsc": 0
+   },
+   "nativeDialogsThisRun": 0
+  },
+  {
+   "tag": "night-m390",
+   "meta": {
+    "ai": 4,
+    "user": 6,
+    "speak": 4,
+    "speakVisible": 4,
+    "copy": 10,
+    "copyVisible": 10,
+    "del": 10,
+    "delVisible": 10,
+    "svgInMetaRows": 0,
+    "minHeight": 40,
+    "animated": 0,
+    "voicePressed": "false"
+   },
+   "speak": {
+    "labelAfterClick": "朗读",
+    "stopButtons": 1,
+    "ticketRequests": 1,
+    "stopAfterStop": 0,
+    "voicePressedAfter": "false"
+   },
+   "copy": {
+    "copiedLabels": 1,
+    "hasStars": false,
+    "hasHeading": false,
+    "hasDashItem": false,
+    "len": 214,
+    "head": "本周读书计划\n\n按你说的分三天，每天一个主题：\n\n1. 周一：《东京梦华录》卷二"
+   },
+   "delete": {
+    "open": true,
+    "text": "删除这条消息？此操作不可恢复。取消删除",
+    "focus": "取消",
+    "role": "alertdialog",
+    "openAfterEsc": 0,
+    "countBefore": 10,
+    "countAfterEsc": 10,
+    "deleteReqsAfterEsc": 0
+   },
+   "nativeDialogsThisRun": 0
+  }
+ ]
+}

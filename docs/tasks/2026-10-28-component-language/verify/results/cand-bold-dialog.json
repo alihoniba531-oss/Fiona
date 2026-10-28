@@ -1,0 +1,32 @@
+{
+ "day-d1440": {
+  "dialogOpen": 1,
+  "role": "alertdialog",
+  "boldWithDialog": [],
+  "positiveControlHits": [
+   {
+    "tag": "P",
+    "w": 700,
+    "text": "删除这条消息？此操作不可恢复。",
+    "cls": "whitespace-pre-wrap text-[15px] leading-[1.85] text-[color:v"
+   }
+  ],
+  "openAfterEsc": 0,
+  "natives": []
+ },
+ "night-m390": {
+  "dialogOpen": 1,
+  "role": "alertdialog",
+  "boldWithDialog": [],
+  "positiveControlHits": [
+   {
+    "tag": "P",
+    "w": 700,
+    "text": "删除这条消息？此操作不可恢复。",
+    "cls": "whitespace-pre-wrap text-[15px] leading-[1.85] text-[color:v"
+   }
+  ],
+  "openAfterEsc": 0,
+  "natives": []
+ }
+}
