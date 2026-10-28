@@ -1,0 +1,476 @@
+{
+ "base": "candidate fix/mobile-chat-fix after R1 (next 16.4.3)",
+ "playwright": "1.63.0",
+ "byokSetup": [
+  {
+   "viewport": "m390",
+   "c_state_check": {
+    "radiogroup": true,
+    "toPlatform": true
+   }
+  },
+  {
+   "viewport": "d1440",
+   "c_state_check": {
+    "radiogroup": true,
+    "toPlatform": true
+   }
+  }
+ ],
+ "runs": [
+  {
+   "tag": "A-day-m390",
+   "composer": 133,
+   "headerTop": 0,
+   "foot": [
+    "每条消息消耗 10 颗草莓"
+   ],
+   "footerButtons": [],
+   "hscroll": false,
+   "shellScrollable": 0,
+   "pillScrollable": 2273,
+   "pillUnderMenu": {
+    "hit": "block text-xs text-[color:var(--ink2)]",
+    "inMenu": true,
+    "isPill": false,
+    "menuOpen": true
+   },
+   "modalGradient_740_to_782": -17.885999999999996,
+   "modalMaxStep_772_783": 0.7009999999999934,
+   "drawerMaxStep_772_783": 19.299000000000007,
+   "afterFocus": {
+    "headerTop": 0,
+    "shellTop": 0
+   },
+   "afterMenu": {
+    "headerTop": 0,
+    "shellTop": 0
+   },
+   "twoLines": 159,
+   "pill": {
+    "exists": true,
+    "inLayer": false,
+    "centerDiff": 0,
+    "gapToComposer": 12,
+    "opacity": "1",
+    "top": 599,
+    "bottom": 639,
+    "h": 40,
+    "left": 195,
+    "className": "chat-latest chip absolute left-1/2 z-[1] h-8 -translate-x-1/2 gap-1.5 px-3 text-xs bg-[var(--mount)] shadow-[0_1px_2px_var(--drop)] bottom-[calc(var(--composer-height)+34px)] max-md:bottom-[calc(var(--composer-height)+var(--tabbar-h)+env(safe-area-inset-bottom)+12px)]",
+    "text": "回到最新"
+   },
+   "modalStyles": {
+    "lens": {
+     "display": "none",
+     "maskImage": "none",
+     "background": "rgba(0, 0, 0, 0)",
+     "backgroundImage": "none",
+     "boxShadow": "none"
+    },
+    "tint": {
+     "display": "block",
+     "maskImage": "none",
+     "background": "rgba(243, 247, 244, 0.72)",
+     "backgroundImage": "none",
+     "boxShadow": "none"
+    },
+    "finish": {
+     "display": "block",
+     "maskImage": "none",
+     "background": "rgba(0, 0, 0, 0)",
+     "backgroundImage": "radial-gradient(90% 24% at 24% 0%, rgba(255, 255, 255, 0.55), rgba(0, 0, 0, 0) 70%)",
+     "boxShadow": "rgba(255, 255, 255, 0.25) 0px 1px 0px 0px inset"
+    }
+   },
+   "drawerFinish": {
+    "display": "block",
+    "maskImage": "none",
+    "background": "rgba(0, 0, 0, 0)",
+    "backgroundImage": "radial-gradient(90% 24% at 24% 0%, rgba(255, 255, 255, 0.55), rgba(0, 0, 0, 0) 70%)",
+    "boxShadow": "rgba(255, 255, 255, 0.25) 0px 1px 0px 0px inset"
+   }
+  },
+  {
+   "tag": "A-day-d1440",
+   "composer": 135,
+   "headerTop": 12,
+   "foot": [
+    "每条消息消耗 10 颗草莓"
+   ],
+   "footerButtons": [],
+   "hscroll": false,
+   "shellScrollable": 0,
+   "pillScrollable": 1705,
+   "pillUnderMenu": {
+    "hit": "chat-latest chip absolute left-1/2 z-[1] h-8 -translate-x-1/",
+    "inMenu": false,
+    "isPill": true,
+    "menuOpen": true
+   },
+   "afterFocus": {
+    "headerTop": 12,
+    "shellTop": 0
+   },
+   "afterMenu": {
+    "headerTop": 12,
+    "shellTop": 0
+   },
+   "twoLines": 135,
+   "pill": {
+    "exists": true,
+    "inLayer": false,
+    "centerDiff": 0,
+    "gapToComposer": 16,
+    "opacity": "1",
+    "top": 699,
+    "bottom": 731,
+    "h": 32,
+    "left": 906,
+    "className": "chat-latest chip absolute left-1/2 z-[1] h-8 -translate-x-1/2 gap-1.5 px-3 text-xs bg-[var(--mount)] shadow-[0_1px_2px_var(--drop)] bottom-[calc(var(--composer-height)+34px)] max-md:bottom-[calc(var(--composer-height)+var(--tabbar-h)+env(safe-area-inset-bottom)+12px)]",
+    "text": "回到最新"
+   }
+  },
+  {
+   "tag": "A-day-m360",
+   "composer": 133,
+   "headerTop": 0,
+   "foot": [
+    "每条消息消耗 10 颗草莓"
+   ],
+   "footerButtons": [],
+   "hscroll": false
+  },
+  {
+   "tag": "A-night-m390",
+   "composer": 133,
+   "headerTop": 0,
+   "foot": [
+    "每条消息消耗 10 颗草莓"
+   ],
+   "footerButtons": [],
+   "hscroll": false,
+   "shellScrollable": 0,
+   "pillScrollable": 2273,
+   "pillUnderMenu": {
+    "hit": "block text-xs text-[color:var(--ink2)]",
+    "inMenu": true,
+    "isPill": false,
+    "menuOpen": true
+   },
+   "modalGradient_740_to_782": 14.587000000000003,
+   "modalMaxStep_772_783": 0.0,
+   "drawerMaxStep_772_783": 17.0,
+   "afterFocus": {
+    "headerTop": 0,
+    "shellTop": 0
+   },
+   "afterMenu": {
+    "headerTop": 0,
+    "shellTop": 0
+   },
+   "twoLines": 159,
+   "pill": {
+    "exists": true,
+    "inLayer": false,
+    "centerDiff": 0,
+    "gapToComposer": 12,
+    "opacity": "1",
+    "top": 599,
+    "bottom": 639,
+    "h": 40,
+    "left": 195,
+    "className": "chat-latest chip absolute left-1/2 z-[1] h-8 -translate-x-1/2 gap-1.5 px-3 text-xs bg-[var(--mount)] shadow-[0_1px_2px_var(--drop)] bottom-[calc(var(--composer-height)+34px)] max-md:bottom-[calc(var(--composer-height)+var(--tabbar-h)+env(safe-area-inset-bottom)+12px)]",
+    "text": "回到最新"
+   },
+   "modalStyles": {
+    "lens": {
+     "display": "none",
+     "maskImage": "none",
+     "background": "rgba(0, 0, 0, 0)",
+     "backgroundImage": "none",
+     "boxShadow": "none"
+    },
+    "tint": {
+     "display": "block",
+     "maskImage": "none",
+     "background": "rgba(30, 27, 24, 0.74)",
+     "backgroundImage": "none",
+     "boxShadow": "none"
+    },
+    "finish": {
+     "display": "block",
+     "maskImage": "none",
+     "background": "rgba(0, 0, 0, 0)",
+     "backgroundImage": "radial-gradient(90% 24% at 24% 0%, rgba(255, 234, 210, 0.06), rgba(0, 0, 0, 0) 70%)",
+     "boxShadow": "rgba(214, 164, 116, 0.24) 0px 1px 0px 0px inset"
+    }
+   },
+   "drawerFinish": {
+    "display": "block",
+    "maskImage": "none",
+    "background": "rgba(0, 0, 0, 0)",
+    "backgroundImage": "radial-gradient(90% 24% at 24% 0%, rgba(255, 234, 210, 0.06), rgba(0, 0, 0, 0) 70%)",
+    "boxShadow": "rgba(214, 164, 116, 0.24) 0px 1px 0px 0px inset"
+   }
+  },
+  {
+   "tag": "A-night-d1440",
+   "composer": 135,
+   "headerTop": 12,
+   "foot": [
+    "每条消息消耗 10 颗草莓"
+   ],
+   "footerButtons": [],
+   "hscroll": false,
+   "shellScrollable": 0,
+   "pillScrollable": 1705,
+   "pillUnderMenu": {
+    "hit": "chat-latest chip absolute left-1/2 z-[1] h-8 -translate-x-1/",
+    "inMenu": false,
+    "isPill": true,
+    "menuOpen": true
+   },
+   "afterFocus": {
+    "headerTop": 12,
+    "shellTop": 0
+   },
+   "afterMenu": {
+    "headerTop": 12,
+    "shellTop": 0
+   },
+   "twoLines": 135,
+   "pill": {
+    "exists": true,
+    "inLayer": false,
+    "centerDiff": 0,
+    "gapToComposer": 16,
+    "opacity": "1",
+    "top": 699,
+    "bottom": 731,
+    "h": 32,
+    "left": 906,
+    "className": "chat-latest chip absolute left-1/2 z-[1] h-8 -translate-x-1/2 gap-1.5 px-3 text-xs bg-[var(--mount)] shadow-[0_1px_2px_var(--drop)] bottom-[calc(var(--composer-height)+34px)] max-md:bottom-[calc(var(--composer-height)+var(--tabbar-h)+env(safe-area-inset-bottom)+12px)]",
+    "text": "回到最新"
+   }
+  },
+  {
+   "tag": "A-night-m360",
+   "composer": 133,
+   "headerTop": 0,
+   "foot": [
+    "每条消息消耗 10 颗草莓"
+   ],
+   "footerButtons": [],
+   "hscroll": false
+  },
+  {
+   "tag": "C-day-m390",
+   "composer": 157,
+   "headerTop": 0,
+   "foot": [
+    "思考",
+    "改用平台"
+   ],
+   "footerButtons": [
+    [
+     "低",
+     40
+    ],
+    [
+     "中",
+     40
+    ],
+    [
+     "高",
+     40
+    ],
+    [
+     "改用平台",
+     40
+    ]
+   ],
+   "hscroll": false,
+   "shellScrollable": 0,
+   "pillScrollable": 0,
+   "modalGradient_740_to_782": 0.4130000000000109,
+   "modalMaxStep_772_783": 0.7009999999999934,
+   "drawerMaxStep_772_783": 19.114000000000004,
+   "afterFocus": {
+    "headerTop": 0,
+    "shellTop": 0
+   },
+   "afterMenu": {
+    "headerTop": 0,
+    "shellTop": 0
+   },
+   "twoLines": 183,
+   "pill": {
+    "exists": false
+   },
+   "modalStyles": {
+    "lens": {
+     "display": "none",
+     "maskImage": "none",
+     "background": "rgba(0, 0, 0, 0)",
+     "backgroundImage": "none",
+     "boxShadow": "none"
+    },
+    "tint": {
+     "display": "block",
+     "maskImage": "none",
+     "background": "rgba(243, 247, 244, 0.72)",
+     "backgroundImage": "none",
+     "boxShadow": "none"
+    },
+    "finish": {
+     "display": "block",
+     "maskImage": "none",
+     "background": "rgba(0, 0, 0, 0)",
+     "backgroundImage": "radial-gradient(90% 24% at 24% 0%, rgba(255, 255, 255, 0.55), rgba(0, 0, 0, 0) 70%)",
+     "boxShadow": "rgba(255, 255, 255, 0.25) 0px 1px 0px 0px inset"
+    }
+   },
+   "drawerFinish": {
+    "display": "block",
+    "maskImage": "none",
+    "background": "rgba(0, 0, 0, 0)",
+    "backgroundImage": "radial-gradient(90% 24% at 24% 0%, rgba(255, 255, 255, 0.55), rgba(0, 0, 0, 0) 70%)",
+    "boxShadow": "rgba(255, 255, 255, 0.25) 0px 1px 0px 0px inset"
+   }
+  },
+  {
+   "tag": "B-day-m390",
+   "composer": 157,
+   "headerTop": 0,
+   "foot": [
+    "改用我的模型"
+   ],
+   "footerButtons": [
+    [
+     "改用我的模型",
+     40
+    ]
+   ],
+   "hscroll": false,
+   "shellScrollable": 0,
+   "pillScrollable": 0,
+   "modalGradient_740_to_782": 0.0,
+   "modalMaxStep_772_783": 0.7009999999999934,
+   "drawerMaxStep_772_783": 19.114000000000004,
+   "afterFocus": {
+    "headerTop": 0,
+    "shellTop": 0
+   },
+   "afterMenu": {
+    "headerTop": 0,
+    "shellTop": 0
+   },
+   "twoLines": 183,
+   "pill": {
+    "exists": false
+   },
+   "modalStyles": {
+    "lens": {
+     "display": "none",
+     "maskImage": "none",
+     "background": "rgba(0, 0, 0, 0)",
+     "backgroundImage": "none",
+     "boxShadow": "none"
+    },
+    "tint": {
+     "display": "block",
+     "maskImage": "none",
+     "background": "rgba(243, 247, 244, 0.72)",
+     "backgroundImage": "none",
+     "boxShadow": "none"
+    },
+    "finish": {
+     "display": "block",
+     "maskImage": "none",
+     "background": "rgba(0, 0, 0, 0)",
+     "backgroundImage": "radial-gradient(90% 24% at 24% 0%, rgba(255, 255, 255, 0.55), rgba(0, 0, 0, 0) 70%)",
+     "boxShadow": "rgba(255, 255, 255, 0.25) 0px 1px 0px 0px inset"
+    }
+   },
+   "drawerFinish": {
+    "display": "block",
+    "maskImage": "none",
+    "background": "rgba(0, 0, 0, 0)",
+    "backgroundImage": "radial-gradient(90% 24% at 24% 0%, rgba(255, 255, 255, 0.55), rgba(0, 0, 0, 0) 70%)",
+    "boxShadow": "rgba(255, 255, 255, 0.25) 0px 1px 0px 0px inset"
+   }
+  },
+  {
+   "tag": "C-day-d1440",
+   "composer": 147,
+   "headerTop": 12,
+   "foot": [
+    "思考",
+    "改用平台"
+   ],
+   "footerButtons": [
+    [
+     "低",
+     28
+    ],
+    [
+     "中",
+     28
+    ],
+    [
+     "高",
+     28
+    ],
+    [
+     "改用平台",
+     28
+    ]
+   ],
+   "hscroll": false,
+   "shellScrollable": 0,
+   "pillScrollable": 0,
+   "afterFocus": {
+    "headerTop": 12,
+    "shellTop": 0
+   },
+   "afterMenu": {
+    "headerTop": 12,
+    "shellTop": 0
+   },
+   "twoLines": 147,
+   "pill": {
+    "exists": false
+   }
+  },
+  {
+   "tag": "B-day-d1440",
+   "composer": 147,
+   "headerTop": 12,
+   "foot": [
+    "改用我的模型"
+   ],
+   "footerButtons": [
+    [
+     "改用我的模型",
+     28
+    ]
+   ],
+   "hscroll": false,
+   "shellScrollable": 0,
+   "pillScrollable": 0,
+   "afterFocus": {
+    "headerTop": 12,
+    "shellTop": 0
+   },
+   "afterMenu": {
+    "headerTop": 12,
+    "shellTop": 0
+   },
+   "twoLines": 147,
+   "pill": {
+    "exists": false
+   }
+  }
+ ]
+}
