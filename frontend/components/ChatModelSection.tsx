@@ -3,6 +3,7 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import { cn } from "@/lib/utils";
 import { useAccountRequest } from "@/lib/useAccountIdentity";
+import { useConfirm } from "@/components/ConfirmDialog";
 import {
   CHAT_MODEL_REV_KEY, CLAUDE_EFFORTS, CHAT_MODEL_EFFORT_LABELS, CHAT_MODEL_EFFORT_TITLES, chatModelErrorMessage, deleteChatModel, getChatModel, publishChatModelRevision, saveChatModel, setChatModelEnabled, setChatModelOptions, testChatModel,
   type ChatModelDraft, type ChatModelEffort, type ChatModelProvider, type ChatModelSettings,
@@ -28,6 +29,7 @@ function ChatModelForm({ initial, username }: { initial: ChatModelSettings; user
   const keyInput = useRef<HTMLInputElement>(null);
   const { beginRequest } = useAccountRequest(username);
   const { beginRequest: beginRead } = useAccountRequest(username);
+  const confirm = useConfirm();
   const config = settings.config;
   const provider = settings.providers.find(item => item.id === providerId) ?? settings.providers[0];
   const custom = provider.id === "custom";
@@ -226,7 +228,14 @@ function ChatModelForm({ initial, username }: { initial: ChatModelSettings; user
   };
 
   const remove = async () => {
-    if (disabled || !config || !confirm("确定删除自带模型配置与 Key？之后聊天将使用平台模型。")) return;
+    if (disabled || !config) return;
+    if (!(await confirm({
+      body: "确定删除自带模型配置与 Key？之后聊天将使用平台模型。",
+      confirmLabel: "删除",
+      danger: true,
+    }))) return;
+    // The account can change while the confirmation dialog is open.
+    if (disabled || !config) return;
     const request = beginRequest();
     if (!request) return;
     errorOwner.current = null;

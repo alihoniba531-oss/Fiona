@@ -209,7 +209,7 @@ function CategoryCard({
       </ol>
       {updatedTime && hasItems && (
         <div className="mt-0.5 text-[11.5px] tabular-nums text-[color:var(--ink2)]" title={updateDate ? formatBeijingDateTime(updateDate, true) : undefined}>
-          {feed.loading ? "更新中 · " : ""}获取于 {updatedTime}
+          {feed.loading ? "更新中，" : ""}获取于 {updatedTime}
         </div>
       )}
     </section>
@@ -614,7 +614,7 @@ function PlazaContent() {
               />
 
               <div>
-                <p className="mb-2 text-xs font-medium text-muted-foreground">标签 · 最多 5</p>
+                <p className="mb-2 text-xs font-medium text-muted-foreground">标签（最多 5 个）</p>
                 <div className="flex flex-wrap gap-1.5">
                   {ALL_TAGS.map((tag) => {
                     const selected = selectedTags.includes(tag);

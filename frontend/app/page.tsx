@@ -6,6 +6,7 @@ import InkLandscape from "@/components/InkLandscape";
 import Seal from "@/components/Seal";
 import Sidebar from "@/components/Sidebar";
 import ChatBubble, { type Message, type CardData, type WeatherForecastDay, type ImageAspectRatio, type ImageModelId, type ImageGenerationRetry } from "@/components/ChatBubble";
+import { useConfirm, useNotice } from "@/components/ConfirmDialog";
 import GeneratedImage from "@/components/GeneratedImage";
 import ConversationPicker from "@/components/ConversationPicker";
 import ChatScrollArea, { type ChatScrollHandle } from "@/components/ChatScrollArea";
@@ -30,6 +31,8 @@ import { readLocalReferenceImage, MAX_REFERENCE_FILE_BYTES, REFERENCE_FILE_TYPES
 import { useAccountRequest } from "@/lib/useAccountIdentity";
 import { CHAT_MODEL_REV_KEY, CLAUDE_EFFORTS, CHAT_MODEL_EFFORT_LABELS, CHAT_MODEL_EFFORT_TITLES, chatModelErrorMessage, getChatModel, modelDisplayName, setChatModelEnabled, setChatModelOptions, publishChatModelRevision, parseReplyModel, type ChatModelEffort, type ChatModelSettings } from "@/lib/chatModel";
 import { createLocalWatchPoller, appendLocalWatchMessages, localWatchNotificationsEnabled, type LocalWatchAlert } from "@/lib/localWatch";
+import { stripMessageMarkdown } from "@/lib/messageMarkdown";
+import { splitTtsChunks } from "@/lib/ttsChunks";
 import { checkStudioAccess, createStudioNoticePoller, mergeStudioNotices, type StudioNotice } from "@/lib/studio";
 
 import { API_BASE as API, WS_BASE } from "@/lib/config";
@@ -214,7 +217,7 @@ function MiniCloudCard({
         </div>
         <div className="flex-1 min-w-0">
           <div className="flex items-center gap-1.5 mb-0.5">
-            <span className="font-semibold text-xs text-foreground/60">神秘好友</span>
+            <span className="text-xs text-foreground/60">神秘好友</span>
             <span className="tag tag-amber">
               {match.type}
             </span>
@@ -444,6 +447,8 @@ function ChatModelFooter({ username, settingsOpen, chatMode, loading }: {
 }
 
 export default function ChatPage() {
+  const confirm = useConfirm();
+  const notice = useNotice();
   // ---- core chat state ----
   const [collapsed, setCollapsed] = useState<Record<string, boolean>>({});
   const [input, setInput] = useState("");
@@ -631,6 +636,7 @@ export default function ChatPage() {
   const [referenceUploadError, setReferenceUploadError] = useState("");
   const [ttsWaitUntil, setTtsWaitUntil] = useState<number | null>(null);
   const [ttsWaitNow, setTtsWaitNow] = useState(0);
+  const [speakingMessageId, setSpeakingMessageId] = useState<string | null>(null);
   const imageReaderRef = useRef<FileReader | null>(null);
   const referenceReadControllerRef = useRef<AbortController | null>(null);
   const chatScrollRef = useRef<ChatScrollHandle>(null);
@@ -1300,6 +1306,7 @@ export default function ChatPage() {
     if (!prepared) {
       const next = ttsQueueRef.current[0];
       if (!next) {
+        setSpeakingMessageId(null);
         if (streamDoneRef.current && handsFreeRef.current) {
           startHandsFreeRecording();
         }
@@ -1398,6 +1405,7 @@ export default function ChatPage() {
       slot.audio.removeAttribute("src");
       slot.audio.load();
     }
+    setSpeakingMessageId(null);
   }, [releaseTtsAudio, getTtsAudioPool]);
 
   // 用户显式停止（不听了 / 关朗读）：同一条流式回复的后续分句不再入队；
@@ -1575,11 +1583,12 @@ export default function ChatPage() {
   // ── chat actions ──
 
   const handleDeleteMessage = useCallback(async (id: string, dbId?: number) => {
+    if (!(await confirm({ body: "删除这条消息？此操作不可恢复。", confirmLabel: "删除", danger: true }))) return;
     setMessages((prev) => prev.filter((m) => m.id !== id));
     if (dbId) {
       await apiFetch(`${API}/message/${dbId}`, { method: "DELETE" }).catch(() => {});
     }
-  }, [setMessages]);
+  }, [confirm, setMessages]);
 
   // 搜索类回复："帮我读" — 把搁置的 tip 文本送进 TTS 队列开始播放
   // 用户显式点击就是想听；即使朗读关闭也自动开启并播放（绕开 enqueueSpeech 的 voiceOn 守卫）
@@ -1606,8 +1615,23 @@ export default function ChatPage() {
     setMessages((prev) => prev.map((m) => (m.id === id ? { ...m, pendingTtsText: undefined } : m)));
   }, [setMessages]);
 
-  const handleClearChat = () => {
-    if (!confirm("清空当前聊天界面？（历史记录仍保留）")) return;
+  // 消息行"朗读" — 只读这一条，不打开后续回复的自动朗读。
+  const handleSpeakMessage = useCallback((id: string, text: string) => {
+    stopHandsFreeRecording({ discard: true });
+    clearTtsQueue();
+    primeTtsAudio();
+    ttsStoppedSessionRef.current = null;
+    ttsSessionRef.current += 1;
+    if (!chatAbortRef.current) streamDoneRef.current = true;
+    const chunks = splitTtsChunks(stripMessageMarkdown(text)).map(normalizeForTTS).filter(Boolean);
+    if (!chunks.length) return;
+    ttsQueueRef.current.push(...chunks);
+    setSpeakingMessageId(id);
+    playNextInQueue();
+  }, [stopHandsFreeRecording, clearTtsQueue, primeTtsAudio, normalizeForTTS, playNextInQueue]);
+
+  const handleClearChat = async () => {
+    if (!(await confirm({ body: "清空当前聊天界面？（历史记录仍保留）", confirmLabel: "清空", danger: false }))) return;
     setMessages([]);
   };
 
@@ -1773,7 +1797,8 @@ export default function ChatPage() {
 
   const handleDeleteConversation = async (id: string) => {
     if (conversationLocked || conversationLoading) return;
-    if (!confirm("删除这段对话及其中的消息？其他对话和分身设定会保留。此操作不可恢复。")) return;
+    if (!(await confirm({ body: "删除这段对话及其中的消息？其他对话和分身设定会保留。此操作不可恢复。", confirmLabel: "删除", danger: true }))) return;
+    if (conversationLocked || conversationLoading) return;
     resetConversationPresentation();
     await deleteConversation(id);
   };
@@ -2208,16 +2233,16 @@ export default function ChatPage() {
     el.style.height = Math.min(el.scrollHeight, 120) + "px";
   };
 
-  const handlePickImage = (e: React.ChangeEvent<HTMLInputElement>) => {
+  const handlePickImage = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     e.target.value = "";
     if (!username || !file || imageMode || hasReferenceImages || referenceReadControllerRef.current || isLoading || conversationLoading || !currentConversation) return;
     if (!file.type.startsWith("image/")) {
-      alert("只能上传图片");
+      await notice({ body: "只能上传图片" });
       return;
     }
     if (file.size > 5 * 1024 * 1024) {
-      alert("图片不能超过 5MB");
+      await notice({ body: "图片不能超过 5MB" });
       return;
     }
     const reader = new FileReader();
@@ -2418,7 +2443,7 @@ export default function ChatPage() {
               <div className="flex items-center justify-between px-4 py-3 border-b border-border">
                 <div className="flex items-center gap-1.5">
                   <Clock size={12} className="text-muted-foreground" />
-                  <span className="text-xs font-semibold text-muted-foreground tracking-wide">当前对话记录</span>
+                  <span className="text-xs text-muted-foreground tracking-wide">当前对话记录</span>
                 </div>
                 <div className="flex items-center gap-2">
                   <button disabled={!currentConversation || conversationLocked || conversationLoading} onClick={() => currentConversation && handleDeleteConversation(currentConversation.id)} className="flex items-center gap-1 text-[11px] text-muted-foreground hover:text-destructive transition-colors disabled:opacity-40" title="删除当前对话">
@@ -2438,7 +2463,7 @@ export default function ChatPage() {
                       <div key={date}>
                         <button onClick={() => setCollapsed((prev) => ({ ...prev, [date]: !prev[date] }))} className="w-full flex items-center gap-2 px-2 py-2 rounded-xl hover:bg-secondary transition-all text-left">
                           {isOpen ? <ChevronDown size={13} className="text-muted-foreground shrink-0" /> : <ChevronRight size={13} className="text-muted-foreground shrink-0" />}
-                          <span className="text-[11px] font-semibold text-muted-foreground truncate">{date}</span>
+                          <span className="text-[11px] text-muted-foreground truncate">{date}</span>
                           <span className="text-[10px] text-muted-foreground/50 ml-auto shrink-0">{msgs.length} 条</span>
                         </button>
                         {isOpen && (
@@ -2575,6 +2600,7 @@ export default function ChatPage() {
                     <div key={`${username}-${currentConversation?.id}-${msg.id}`}>
                     {(index === 0 || beijingDateKey(msg.timestamp) !== beijingDateKey(messages[index - 1].timestamp)) && <div className="mb-7 flex items-center gap-[18px] text-xs tracking-[.32em] text-[var(--ink2)]"><span className="h-px flex-1 bg-[var(--rule)]" />{formatChineseDate(msg.timestamp)}<span className="h-px flex-1 bg-[var(--rule)]" /></div>}
                     <ChatBubble key={`${username}-${currentConversation?.id}-${msg.id}`} message={msg} agentName={agent?.display_name} onDelete={isLoading ? undefined : handleDeleteMessage} onConfirmTts={handleConfirmTts} onDeclineTts={handleDeclineTts}
+                      onSpeak={handleSpeakMessage} onStopSpeak={stopTtsByUser} speaking={speakingMessageId === msg.id} speakDisabled={isLoading}
                       onRetryImage={request => { void handleSend(request.prompt, request); }} onEditImage={handleSelectReferenceImage}
                       selectedReferenceImagePaths={selectedReferenceImagePaths}
                       onCompose={composeSongSection}

@@ -22,6 +22,7 @@ import { useNovelEmbedClose } from "./NovelShell";
 import { EmptyState, ErrorNotice, LoadingState } from "./NovelStates";
 import { ApiError } from "@/lib/agents";
 import { useAccountIdentity, useAccountRequest } from "@/lib/useAccountIdentity";
+import { useConfirm } from "@/components/ConfirmDialog";
 import { addNovelNote, novelApi, novelErrorMessage, novelHref, novelStatusLabel, updateNovelCharacter, updateNovelChapter, type NovelAction, type NovelBible, type NovelCatalog, type NovelChapter, type NovelCharacterEdit, type NovelDetail, type NovelNote, type NovelPatchInput } from "@/lib/novels";
 
 const active = (status?: string) => status === "setup_running" || status === "running";
@@ -76,6 +77,7 @@ function AccountWorkbench({ owner, id, embedded }: { owner: string; id: string; 
   const { beginRequest: beginMutation, isCurrentOwner } = useAccountRequest(owner);
   const { beginRequest: beginCatalog } = useAccountRequest(owner);
   const { beginRequest: beginStudio } = useAccountRequest(owner);
+  const confirm = useConfirm();
   const completed = book?.status === "completed";
   useEffect(() => {
     if (!completed) return;
@@ -239,7 +241,14 @@ function AccountWorkbench({ owner, id, embedded }: { owner: string; id: string; 
     } catch { /* The common ErrorNotice shows the translated reason. */ }
   };
   const remove = async () => {
-    if (!confirm(`确定删除「${book?.title || "这本书"}」？章节、推演和留言都会删除，无法恢复。`)) return;
+    if (!isCurrentOwner()) return;
+    if (!(await confirm({
+      body: `确定删除「${book?.title || "这本书"}」？章节、推演和留言都会删除，无法恢复。`,
+      confirmLabel: "删除",
+      danger: true,
+    }))) return;
+    // The account can change while the confirmation dialog is open.
+    if (!isCurrentOwner()) return;
     try { const result = await mutate("delete", signal => novelApi.remove(id, { signal }), { refresh: false }); if (result && isCurrentOwner()) router.push(novelHref("/novels", embedded)); } catch { /* Shown above the workbench. */ }
   };
   const saveSettings = async (patch: NovelPatchInput, resume: boolean) => {

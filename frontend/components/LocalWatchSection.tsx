@@ -6,6 +6,7 @@ import { API_BASE as API } from "@/lib/config";
 import { useAccountRequest } from "@/lib/useAccountIdentity";
 import { CHAT_MODEL_REV_KEY, getChatModel } from "@/lib/chatModel";
 import { formatBeijingDateTime } from "@/lib/beijingTime";
+import { useConfirm } from "@/components/ConfirmDialog";
 import {
   LocalWatchError, localWatchErrorMessage, localWatchRequest, localWatchNotificationsEnabled,
   setLocalWatchNotifications, localWatchDraft, localWatchRulePayload, localWatchCaptureMessage, type LocalWatchDevice, type LocalWatchWindow,
@@ -53,6 +54,7 @@ export default function LocalWatchSection({ username, sectionClass, headingClass
   const { beginRequest } = useAccountRequest(username);
   const { beginRequest: beginRead } = useAccountRequest(username);
   const { beginRequest: beginRulesRead } = useAccountRequest(username);
+  const confirm = useConfirm();
   const disabled = loading || busy || !username || !available;
 
   const refresh = useCallback(async () => {
@@ -164,6 +166,30 @@ export default function LocalWatchSection({ username, sectionClass, headingClass
     }
   };
 
+  const revokeDevice = async (device: LocalWatchDevice) => {
+    if (disabled) return;
+    if (!(await confirm({
+      body: `吊销「${device.name || "未命名设备"}」的令牌？监控程序将停止。`,
+      confirmLabel: "吊销",
+      danger: true,
+    }))) return;
+    // The account can change while the confirmation dialog is open.
+    if (disabled) return;
+    setToken("");
+    await operate(async signal => { await localWatchRequest(`/devices/${device.id}`, { method: "DELETE", signal }); }, "设备已吊销");
+  };
+
+  const deleteRule = async (rule: LocalWatchRule) => {
+    if (disabled) return;
+    if (!(await confirm({
+      body: `删除规则「${rule.name}」？`,
+      confirmLabel: "删除",
+      danger: true,
+    }))) return;
+    if (disabled) return;
+    await operate(async signal => { await localWatchRequest(`/rules/${rule.id}`, { method: "DELETE", signal }); }, "规则已删除");
+  };
+
   const createDevice = () => {
     setToken("");
     void operate(async signal => {
@@ -261,11 +287,7 @@ export default function LocalWatchSection({ username, sectionClass, headingClass
         <ul className="space-y-2" aria-label="监控设备">
           {devices.filter(device => !device.revoked).map(device => <li key={device.id} className="flex flex-wrap items-center justify-between gap-2 border-t border-[color:var(--carve)] pt-2">
             <div className="min-w-0"><p className="break-all text-sm">{device.name || "未命名设备"}</p><p className={noteClass}>最后在线：{lastSeen(device.last_seen_at)}</p></div>
-            <button className={buttonClass} disabled={disabled} onClick={() => {
-              if (confirm(`吊销「${device.name || "未命名设备"}」的令牌？监控程序将停止。`)) {
-                setToken(""); void operate(async signal => { await localWatchRequest(`/devices/${device.id}`, { method: "DELETE", signal }); }, "设备已吊销");
-              }
-            }}>吊销</button>
+            <button className={buttonClass} disabled={disabled} onClick={() => void revokeDevice(device)}>吊销</button>
           </li>)}
         </ul>
       </div>
@@ -285,7 +307,7 @@ export default function LocalWatchSection({ username, sectionClass, headingClass
       <div className="space-y-3 border-t border-[color:var(--carve)] pt-4">
         <div className="flex flex-wrap items-center justify-between gap-2"><h3 className="text-sm font-medium">规则（{rules.length}/20）</h3><button className={buttonClass} disabled={disabled || rules.length >= 20} onClick={() => editRule()}>新建规则</button></div>
         <ul className="space-y-3" aria-label="本机监控规则">{rules.map(rule => <li key={rule.id} className="space-y-2 rounded-[8px] border border-[color:var(--rule2)] p-3">
-          <p className="break-all text-sm font-medium">{rule.name} <span className={noteClass}>· {typeLabels[rule.kind]} · {rule.enabled ? "已启用" : "已停用"}</span></p>
+          <p className="break-all text-sm font-medium">{rule.name} <span className={noteClass}>（{typeLabels[rule.kind]}，{rule.enabled ? "已启用" : "已停用"}）</span></p>
           <p className={`${noteClass} break-all`}>应用：{rule.app_match || "任意"}；标题：{rule.title_match || "任意"}</p>
           <p role="status" className={`break-all ${rule.capture?.ok || rule.capture?.neutral ? noteClass : "text-[13px] leading-[1.85] text-[color:var(--seal)]"}`}>{localWatchCaptureMessage(rule)}</p>
           <div className="flex flex-wrap gap-2">
@@ -293,9 +315,7 @@ export default function LocalWatchSection({ username, sectionClass, headingClass
               await localWatchRequest(`/rules/${rule.id}`, { method: "PATCH", signal, headers: { "Content-Type": "application/json" }, body: JSON.stringify({ enabled: !rule.enabled }) });
             }, rule.enabled ? "规则已停用" : "规则已启用")}>{rule.enabled ? "停用" : "启用"}</button>
             <button className={buttonClass} disabled={disabled} onClick={() => editRule(rule)}>编辑</button>
-            <button className={buttonClass} disabled={disabled} onClick={() => {
-              if (confirm(`删除规则「${rule.name}」？`)) void operate(async signal => { await localWatchRequest(`/rules/${rule.id}`, { method: "DELETE", signal }); }, "规则已删除");
-            }}>删除</button>
+            <button className={buttonClass} disabled={disabled} onClick={() => void deleteRule(rule)}>删除</button>
           </div>
         </li>)}</ul>
         {formOpen && <form onSubmit={saveRule} className="space-y-3 rounded-[8px] border border-[color:var(--rule2)] p-3">

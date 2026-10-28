@@ -7,10 +7,11 @@ import { Trash2, LogOut } from "lucide-react";
 import Glaze from "@/components/Glaze";
 import InkLandscape from "@/components/InkLandscape";
 import { useTheme } from "@/lib/useTheme";
-import { apiFetch, clearAuth, setAuth } from "@/lib/auth";
+import { apiFetch, clearAuth, getUsername, setAuth } from "@/lib/auth";
 import { useAccountIdentity } from "@/lib/useAccountIdentity";
 import ChatModelSection from "@/components/ChatModelSection";
 import LocalWatchSection from "@/components/LocalWatchSection";
+import { useConfirm, useNotice } from "@/components/ConfirmDialog";
 
 import { API_BASE as API } from "@/lib/config";
 
@@ -24,6 +25,8 @@ function SettingsContent() {
   const sp = useSearchParams();
   const embedded = sp?.get("embed") === "1";
   const username = useAccountIdentity();
+  const confirm = useConfirm();
+  const notice = useNotice();
   const { appearance, setAppearance, solid, effectiveSolid, systemSolid, setSolid } = useTheme();
   const [allUsers, setAllUsers] = useState<string[]>([]);
   const [cleared, setCleared] = useState(false);
@@ -54,7 +57,13 @@ function SettingsContent() {
 
   const clearHistory = async () => {
     if (!username) return;
-    if (!confirm(`确定清空「${username}」的所有聊天记录？此操作不可恢复。`)) return;
+    if (!(await confirm({
+      body: `确定清空「${username}」的所有聊天记录？此操作不可恢复。`,
+      confirmLabel: "清空",
+      danger: true,
+    }))) return;
+    // The account can change while the confirmation dialog is open.
+    if (getUsername() !== username) return;
     setClearError("");
     try {
       const response = await apiFetch(`${API}/history`, { method: "DELETE" });
@@ -110,7 +119,13 @@ function SettingsContent() {
 
   const deleteAccount = async () => {
     if (!username || deleteConfirmation !== username || deleting) return;
-    if (!confirm(`将永久删除「${username}」的账号、聊天、画像、匹配、帖子、上传文件、自带模型配置与 Key。确定继续？`)) return;
+    if (!(await confirm({
+      body: `将永久删除「${username}」的账号、聊天、画像、匹配、帖子、上传文件、自带模型配置与 Key。确定继续？`,
+      confirmLabel: "永久删除",
+      danger: true,
+    }))) return;
+    // The account can change while the confirmation dialog is open.
+    if (!username || getUsername() !== username || deleteConfirmation !== username || deleting) return;
     setDeleting(true);
     setDeleteError("");
     try {
@@ -125,7 +140,8 @@ function SettingsContent() {
         return;
       }
       if (!data.file_cleanup_complete) {
-        alert("账号数据已删除，但有媒体文件需要管理员继续清理。");
+        await notice({ body: "账号数据已删除，但有媒体文件需要管理员继续清理。" });
+        if (getUsername() !== username) return;
       }
       clearAuth();
       redirectTop("/login?reason=deleted");
@@ -245,7 +261,7 @@ function SettingsContent() {
             <section className={`${sectionClass} border-b`}>
               <h2 className={headingClass}>关于</h2>
               <div className="space-y-1 text-[13px] leading-[1.85] text-[color:var(--ink2)]">
-                <p>Chloe AI 助理 · 内测版</p>
+                <p>Chloe AI 助理（内测版）</p>
                 <p>账号数据保存在部署服务器的 SQLite 与 uploads 目录</p>
               </div>
             </section>

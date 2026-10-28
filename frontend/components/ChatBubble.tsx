@@ -1,7 +1,7 @@
 "use client";
 
 import { cn } from "@/lib/utils";
-import { Volume2, VolumeX, Trash2, Globe, LoaderCircle, RotateCcw, ArrowUpRight } from "lucide-react";
+import { Volume2, Globe, LoaderCircle, RotateCcw, ArrowUpRight } from "lucide-react";
 import { memo, useState, useEffect, useRef, useMemo } from "react";
 import GeneratedImage from "@/components/GeneratedImage";
 import SongProjectCard from "@/components/SongProjectCard";
@@ -10,6 +10,7 @@ import { API_BASE as API } from "@/lib/config";
 import { openExternal, toSafeExternalUrl } from "@/lib/open";
 import MessageText from "@/components/MessageText";
 import { formatBeijingTime } from "@/lib/beijingTime";
+import { stripMessageMarkdown } from "@/lib/messageMarkdown";
 
 // 打字机：把 target 按固定字符速率 (cps) 显示出来。
 // 历史消息首次渲染时 initial 即 target，不会重放；只有当 target 在生命周期内"增长"才动画。
@@ -259,6 +260,10 @@ interface ChatBubbleProps {
   message: Message;
   agentName?: string;
   onDelete?: (id: string, dbId?: number) => void;
+  onSpeak?: (id: string, text: string) => void;
+  onStopSpeak?: () => void;
+  speaking?: boolean;
+  speakDisabled?: boolean;
   onConfirmTts?: (id: string, text: string) => void;
   onDeclineTts?: (id: string) => void;
   onRetryImage?: (request: ImageGenerationRetry) => void;
@@ -269,7 +274,7 @@ interface ChatBubbleProps {
   songCardCompact?: (projectId: string) => boolean;
 }
 
-function ChatBubble({ message, agentName = "Chloe", onDelete, onConfirmTts, onDeclineTts, onRetryImage, imageRetryDisabled, onEditImage, selectedReferenceImagePaths = [], onCompose, songCardCompact }: ChatBubbleProps) {
+function ChatBubble({ message, agentName = "Chloe", onDelete, onSpeak, onStopSpeak, speaking = false, speakDisabled = false, onConfirmTts, onDeclineTts, onRetryImage, imageRetryDisabled, onEditImage, selectedReferenceImagePaths = [], onCompose, songCardCompact }: ChatBubbleProps) {
   const isUser = message.role === "user";
   const referenceUrls = useMemo(() => {
     if (!isUser) return [];
@@ -287,8 +292,9 @@ function ChatBubble({ message, agentName = "Chloe", onDelete, onConfirmTts, onDe
   const editLabel = selectedReferenceIndex ? `已选为图${selectedReferenceIndex}` : selectedReferenceImagePaths.length ? "加入参考" : "以此图修改";
   const editDisabledReason = selectedReferenceIndex ? `已选为图${selectedReferenceIndex}，可在输入区移除或调整顺序`
     : referenceLimitReached ? "最多选择3张参考图，请先在输入区移除一张" : undefined;
-  const [muted, setMuted] = useState(false);
-  const [hovered, setHovered] = useState(false);
+  const [copyStatus, setCopyStatus] = useState<"idle" | "copied" | "failed">("idle");
+  const copyTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const copyMountedRef = useRef(true);
 
   // AI 消息走打字机，用户消息和分隔线直出
   const shownContent = useTypewriter(message.content, !message.isDivider && !isUser);
@@ -297,6 +303,32 @@ function ChatBubble({ message, agentName = "Chloe", onDelete, onConfirmTts, onDe
     () => formatBeijingTime(message.timestamp),
     [message.timestamp],
   );
+
+  useEffect(() => {
+    copyMountedRef.current = true;
+    return () => {
+      copyMountedRef.current = false;
+      if (copyTimerRef.current) clearTimeout(copyTimerRef.current);
+    };
+  }, []);
+
+  const hasTextContent = message.content.trim().length > 0 && message.content !== "[发了一张图片]";
+  const copyButtonLabel = copyStatus === "copied" ? "已复制" : copyStatus === "failed" ? "复制失败" : "复制";
+
+  const handleCopy = async () => {
+    if (copyTimerRef.current) clearTimeout(copyTimerRef.current);
+    let nextStatus: "copied" | "failed" = "failed";
+    try {
+      if (!navigator.clipboard) throw new Error("clipboard unavailable");
+      await navigator.clipboard.writeText(isUser ? message.content : stripMessageMarkdown(message.content));
+      nextStatus = "copied";
+    } catch {
+      nextStatus = "failed";
+    }
+    if (!copyMountedRef.current) return;
+    setCopyStatus(nextStatus);
+    copyTimerRef.current = setTimeout(() => setCopyStatus("idle"), 1500);
+  };
 
   // 分隔线渲染
   if (message.isDivider) {
@@ -313,15 +345,17 @@ function ChatBubble({ message, agentName = "Chloe", onDelete, onConfirmTts, onDe
     <div
       className={cn(
         "group flex min-w-0 items-start",
-        isUser ? "ml-auto max-w-[72%] justify-end msg-in-right max-md:max-w-[82%]" : "w-full max-w-[600px] msg-in-left max-md:max-w-full"
+        !message.id.startsWith("db-") && (isUser ? "msg-in-right" : "msg-in-left"),
+        isUser ? "ml-auto max-w-[72%] justify-end max-md:max-w-[82%]" : "w-full max-w-[600px] max-md:max-w-full"
       )}
-      onMouseEnter={() => setHovered(true)}
-      onMouseLeave={() => setHovered(false)}
     >
       <div className={cn("flex min-w-0 flex-col gap-2", isUser ? "items-end" : "w-full")}>
-        {!isUser && <div className="text-[13px] tracking-[0.1em] text-[color:var(--ink2)]" title={`${agentName} · AI 分身`}>
+        {!isUser && <div className="flex items-center gap-2 text-[13px] tracking-[0.1em] text-[color:var(--ink2)]" title={`${agentName}（AI 分身）`}>
           {agentName}
-          {message.replyModelLabel && <span title={message.replyModelLabel}> · 由你的模型回复</span>}
+          {message.replyModelLabel && <>
+            <span aria-hidden="true" className="h-3 border-l border-[var(--rule2)]" />
+            <span title={message.replyModelLabel}>由你的模型回复</span>
+          </>}
         </div>}
 
         {/* 图片（如果有） */}
@@ -390,30 +424,34 @@ function ChatBubble({ message, agentName = "Chloe", onDelete, onConfirmTts, onDe
         )}
 
         {/* Meta row */}
-        <div
-          className={cn(
-            "flex min-h-8 items-center gap-3 text-xs text-[color:var(--ink2)] max-md:min-h-10",
-            isUser ? "flex-row-reverse" : "flex-row"
-          )}
-        >
+        <div className="flex min-h-8 items-center gap-3 text-xs text-[color:var(--ink2)] max-md:min-h-10">
           <span className="readout text-xs text-[color:var(--ink2)]">{timeStr}</span>
-          {!isUser && (
+          {!isUser && onSpeak && !message.isTyping && hasTextContent && (
             <button
-              onClick={() => setMuted(!muted)}
-              className="inline-flex min-h-8 min-w-8 items-center justify-center text-[color:var(--ink2)] transition-colors hover:text-[color:var(--ink)] max-md:min-h-10 max-md:min-w-10"
-              title={muted ? "播放语音" : "静音"}
+              type="button"
+              onClick={() => speaking ? onStopSpeak?.() : onSpeak(message.id, message.content)}
+              disabled={speakDisabled}
+              className="btn btn-quiet h-7 px-1.5 text-xs"
             >
-              {muted ? <VolumeX size={12} /> : <Volume2 size={12} />}
+              {speaking ? "停止" : "朗读"}
             </button>
           )}
-          {/* 逐条删除按钮 hover 显示 */}
-          {hovered && onDelete && !message.isTyping && (
+          {!message.isTyping && hasTextContent && (
             <button
-              onClick={() => onDelete(message.id, message.dbId)}
-              className="inline-flex min-h-8 min-w-8 items-center justify-center text-[color:var(--ink2)] transition-colors hover:text-[color:var(--seal)] max-md:min-h-10 max-md:min-w-10"
-              title="删除这条消息"
+              type="button"
+              onClick={() => void handleCopy()}
+              className="btn btn-quiet h-7 px-1.5 text-xs"
             >
-              <Trash2 size={11} />
+              {copyButtonLabel}
+            </button>
+          )}
+          {onDelete && !message.isTyping && (
+            <button
+              type="button"
+              onClick={() => onDelete(message.id, message.dbId)}
+              className="btn btn-quiet h-7 px-1.5 text-xs hover:text-[color:var(--seal)]"
+            >
+              {"删除"}
             </button>
           )}
         </div>

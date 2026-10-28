@@ -5,6 +5,7 @@ import { Loader2, Trash2 } from "lucide-react";
 import { API_BASE as API } from "@/lib/config";
 import { apiJson, errorMessage } from "@/lib/agents";
 import { useAccountIdentity, useAccountRequest } from "@/lib/useAccountIdentity";
+import { useConfirm } from "@/components/ConfirmDialog";
 
 const labels: Record<string, string> = {
   interests: "兴趣", values: "价值观", needs: "当前需求", skills: "可分享的经验",
@@ -31,6 +32,7 @@ function AccountMemoryPanel({ owner }: { owner: string }) {
   const [error, setError] = useState("");
   const [notice, setNotice] = useState("");
   const { beginRequest, isCurrentOwner } = useAccountRequest(owner);
+  const confirm = useConfirm();
 
   const load = useCallback(async () => {
     const request = beginRequest();
@@ -57,8 +59,14 @@ function AccountMemoryPanel({ owner }: { owner: string }) {
   }, [load]);
 
   const clear = async () => {
-    if (clearing || loading || !isCurrentOwner() || !confirm("清空分身记忆和已有个人画像？聊天记录与分身设定会保留，后续交流可形成新的记忆。")) return;
+    if (clearing || loading || !isCurrentOwner()) return;
+    if (!(await confirm({
+      body: "清空分身记忆和已有个人画像？聊天记录与分身设定会保留，后续交流可形成新的记忆。",
+      confirmLabel: "清空",
+      danger: true,
+    }))) return;
     // The account can change while the confirmation dialog is open.
+    if (clearing || loading || !isCurrentOwner()) return;
     const request = beginRequest();
     if (!request) return;
     setClearing(true);

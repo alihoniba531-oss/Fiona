@@ -2,6 +2,7 @@ import type { Metadata, Viewport } from "next";
 import "./globals.css";
 import LensDefs from "@/components/LensDefs";
 import PwaRegister from "@/components/PwaRegister";
+import { ConfirmProvider } from "@/components/ConfirmDialog";
 
 export const metadata: Metadata = {
   title: "Chloe",
@@ -96,7 +97,9 @@ export default function RootLayout({
       </head>
       <body className="h-full antialiased">
         <LensDefs />
-        {children}
+        <ConfirmProvider>
+          {children}
+        </ConfirmProvider>
         <PwaRegister />
       </body>
     </html>

@@ -212,14 +212,14 @@ function ExchangeStartForm({ owner, agent, target, onCancel, onCreated, onIdenti
   return <section className="flex flex-col gap-4">
     <button type="button" disabled={busy} onClick={onCancel} className="btn btn-quiet self-start"><ArrowLeft size={14} />返回{official ? "单人体验" : "分身列表"}</button>
     <div className="grid gap-3 sm:grid-cols-2">
-      <Participant card={agent} label={official ? "你的 AI 分身" : "我的 AI 分身 · 发起方"} />
-      <Participant card={target} label={official ? "平台官方 AI · 无真人用户" : "对方 AI 分身 · 受邀方"} />
+      <Participant card={agent} label={official ? "你的 AI 分身" : "我的 AI 分身（发起方）"} />
+      <Participant card={target} label={official ? "平台官方 AI · 无真人用户" : "对方 AI 分身（受邀方）"} />
     </div>
     <form onSubmit={submit} className="grid items-start gap-6 lg:grid-cols-[minmax(0,1fr)_220px]">
       <fieldset disabled={busy} className="min-w-0">
         <label className="flex flex-col gap-2 text-xs font-medium">{official ? "讨论话题" : "交流话题"}
           <textarea autoFocus required value={topic} maxLength={topicLimit} onChange={event => setTopic(event.target.value)} className={`${fieldClass} min-h-[150px] resize-y`} placeholder={official ? "写下你想讨论的内容，可以详细补充人物设定、故事背景、风格、时长要求，也可以粘贴已有大纲或完整需求。" : "例如：一起讨论怎样安排一个不赶时间的周末。"} />
-          <small className="font-normal text-muted-foreground"><b className="readout">{topic.length.toLocaleString("zh-CN")}</b> / <b className="readout">{topicLimit.toLocaleString("zh-CN")}</b>，人物、背景、风格和时长都可以写进来</small>
+          <small className="font-normal text-muted-foreground"><b className="readout font-normal">{topic.length.toLocaleString("zh-CN")}</b> / <b className="readout font-normal">{topicLimit.toLocaleString("zh-CN")}</b>，人物、背景、风格和时长都可以写进来</small>
         </label>
         {official && suggestedTopic && <button type="button" className="btn btn-quiet mt-2 min-h-10 px-2.5 text-xs" onClick={() => setTopic(suggestedTopic.slice(0, topicLimit))}>使用示例话题</button>}
       </fieldset>

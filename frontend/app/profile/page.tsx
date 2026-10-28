@@ -107,7 +107,7 @@ function ProfileForAccount({ username }: { username: string }) {
               <div className="min-w-0">
                 <p className="break-all text-xl tracking-[0.02em]">{username}</p>
                 <p className="mt-1 text-[13px] leading-[1.85] text-[color:var(--ink2)]">
-                  {[city, occupation, stage].filter(Boolean).join(" · ") || "（暂未提取到基本信息）"}
+                  {[city, occupation, stage].filter(Boolean).join("、") || "（暂未提取到基本信息）"}
                 </p>
               </div>
             </section>
