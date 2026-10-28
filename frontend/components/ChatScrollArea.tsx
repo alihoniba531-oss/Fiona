@@ -13,11 +13,13 @@ export interface ChatScrollHandle {
 interface Props {
   children: ReactNode;
   resetKey: string;
+  renderLatestButton?: boolean;
+  onLatestVisibilityChange?: (visible: boolean) => void;
 }
 
 const BOTTOM_TOLERANCE = 2;
 
-export default forwardRef<ChatScrollHandle, Props>(function ChatScrollArea({ children, resetKey }, ref) {
+export default forwardRef<ChatScrollHandle, Props>(function ChatScrollArea({ children, resetKey, renderLatestButton = true, onLatestVisibilityChange }, ref) {
   const viewportRef = useRef<HTMLDivElement>(null);
   const contentRef = useRef<HTMLDivElement>(null);
   const followingRef = useRef(true);
@@ -112,6 +114,8 @@ export default forwardRef<ChatScrollHandle, Props>(function ChatScrollArea({ chi
     updateButton();
   };
 
+  useEffect(() => { onLatestVisibilityChange?.(showLatest); }, [showLatest, onLatestVisibilityChange]);
+
   return (
     <div className="relative flex min-h-0 flex-1 flex-col" data-chat-scroll-area>
       <div ref={viewportRef} role="region" aria-label="聊天消息" tabIndex={0}
@@ -135,7 +139,7 @@ export default forwardRef<ChatScrollHandle, Props>(function ChatScrollArea({ chi
         }}>
         <div ref={contentRef} className="chat-scroll-content space-y-4" data-chat-scroll-content>{children}</div>
       </div>
-      {showLatest && <button type="button" onClick={scrollToLatest}
+      {renderLatestButton && showLatest && <button type="button" onClick={scrollToLatest}
         className="chat-latest absolute bottom-[calc(var(--chat-content-bottom)+96px)] left-1/2 z-20 flex -translate-x-1/2 items-center gap-1.5 rounded-full border border-border bg-background/95 px-3 py-1.5 text-xs text-muted-foreground shadow-sm hover:text-foreground focus-visible:outline-2 focus-visible:outline-primary">
         <ArrowDown size={12} />回到最新
       </button>}

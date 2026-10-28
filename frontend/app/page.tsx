@@ -20,7 +20,7 @@ import ComposerImageMenu from "@/components/ComposerImageMenu";
 import VoiceButton from "@/components/VoiceButton";
 import {
   Volume2, VolumeX, ChevronDown, ChevronRight,
-  Trash2, X, Clock, Sparkles, PencilLine, ArrowLeft, ArrowRight, PanelLeft, AudioLines,
+  Trash2, X, Clock, Sparkles, PencilLine, ArrowLeft, ArrowRight, PanelLeft, AudioLines, ArrowDown,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { apiFetch, getUsername as readStoredUsername } from "@/lib/auth";
@@ -636,6 +636,7 @@ export default function ChatPage() {
   const chatScrollRef = useRef<ChatScrollHandle>(null);
   const composerRef = useRef<HTMLElement>(null);
   const [composerHeight, setComposerHeight] = useState(172);
+  const [showLatestPill, setShowLatestPill] = useState(false);
   const peerWasNearBottomRef = useRef(true);
   const textareaRef = useRef<HTMLTextAreaElement>(null);
   const focusChatInput = useCallback(() => {
@@ -2384,7 +2385,7 @@ export default function ChatPage() {
   );
 
   return (
-    <div className="chat-shell relative flex flex-col h-dvh overflow-hidden">
+    <div className="chat-shell relative flex flex-col h-dvh overflow-clip">
       <InkLandscape variant="chat" />
       <Glaze variant="panel" fur className="chat-left-material fixed bottom-3 left-3 top-3 z-[1] w-[calc(var(--rail-w)+288px-12px)] max-lg:w-[calc(var(--rail-w)-12px)] max-md:hidden" />
       <div className="flex flex-1 min-h-0 relative">
@@ -2478,7 +2479,7 @@ export default function ChatPage() {
             </div>
           </>}
 
-          <div className="relative z-[1] flex-1 min-w-0" data-chat-panel>
+          <div className="relative z-[1] flex-1 min-w-0" data-chat-panel style={{ "--composer-height": `${composerHeight}px` } as React.CSSProperties}>
             <Glaze as="header" variant="strip"
               className="chat-header absolute left-3 right-3 top-3 z-[2] grid h-16 grid-cols-[minmax(0,auto)_minmax(48px,1fr)_auto] items-center gap-6 rounded-[16px] px-6 max-md:inset-x-0 max-md:top-0 max-md:h-[calc(94px+env(safe-area-inset-top))] max-md:grid-cols-[minmax(0,1fr)_auto] max-md:grid-rows-[50px_24px] max-md:gap-0 max-md:rounded-none max-md:px-2 max-md:pt-[calc(6px+env(safe-area-inset-top))] max-md:pb-3.5"
             >
@@ -2539,9 +2540,9 @@ export default function ChatPage() {
                 </span>
               </div>
             </Glaze>
-            <div className="chat-message-layer absolute inset-0 flex flex-col [mask-image:var(--chat-message-mask)]"
-              style={{ "--composer-height": `${composerHeight}px` } as React.CSSProperties}>
-              <ChatScrollArea ref={chatScrollRef} resetKey={`${username}:${currentConversation?.id ?? "loading"}`}>
+            <div className="chat-message-layer absolute inset-0 flex flex-col [mask-image:var(--chat-message-mask)]">
+              <ChatScrollArea ref={chatScrollRef} resetKey={`${username}:${currentConversation?.id ?? "loading"}`} renderLatestButton={false}
+                onLatestVisibilityChange={setShowLatestPill}>
                 <div className="mx-auto flex w-full max-w-[760px] flex-col gap-7">
                   {localWatchNotices.length > 0 && <div role="status" className="flex flex-wrap gap-2">
                     {localWatchNotices.map(alert => <button key={alert.conversation_id} type="button"
@@ -2584,7 +2585,11 @@ export default function ChatPage() {
                 </div>
               </ChatScrollArea>
             </div>
-            <Glaze as="footer" variant="slab" ref={composerRef} className="chat-composer absolute bottom-[18px] left-1/2 z-[2] w-[min(760px,calc(100%-48px))] -translate-x-1/2 rounded-[14px] px-[18px] pb-3 pt-3 max-md:inset-x-0 max-md:bottom-[calc(var(--tabbar-h)+env(safe-area-inset-bottom))] max-md:w-full max-md:translate-x-0 max-md:rounded-t-[18px] max-md:rounded-b-none max-md:px-2.5 max-md:pb-2">
+            {showLatestPill && <button type="button" onClick={() => chatScrollRef.current?.scrollToLatest()}
+              className="chat-latest chip absolute left-1/2 z-[1] h-8 -translate-x-1/2 gap-1.5 px-3 text-xs bg-[var(--mount)] shadow-[0_1px_2px_var(--drop)] bottom-[calc(var(--composer-height)+34px)] max-md:bottom-[calc(var(--composer-height)+var(--tabbar-h)+env(safe-area-inset-bottom)+12px)]">
+              <ArrowDown size={12} />回到最新
+            </button>}
+            <Glaze as="footer" variant="slab" ref={composerRef} className="chat-composer absolute bottom-[18px] left-1/2 z-[2] w-[min(760px,calc(100%-48px))] -translate-x-1/2 rounded-[14px] px-[18px] pb-3 pt-3 max-md:inset-x-0 max-md:bottom-[calc(var(--tabbar-h)+env(safe-area-inset-bottom))] max-md:w-full max-md:translate-x-0 max-md:rounded-t-[18px] max-md:rounded-b-none max-md:px-2.5 max-md:pb-1.5 max-md:pt-2">
               <div data-chat-composer className="mx-auto max-w-[760px]">
                 <div role="status" aria-live="polite">
                   {ttsPlaybackBlocked && <div className="mb-2 flex min-w-0 items-center gap-1 text-xs">
@@ -2627,7 +2632,7 @@ export default function ChatPage() {
                       : "输入修改要求，也可上传本地图片或加入已生成图片，最多3张。"}
                   </p>
                 </div>}
-                <div className={cn("composer-inner flex flex-col max-md:grid gap-2 rounded-lg px-0 py-0 max-md:bg-[var(--tile)] max-md:px-3 max-md:py-2", (imageMode || hasReferenceImages) && "composer-with-model")}>
+                <div className={cn("composer-inner flex flex-col max-md:grid gap-2 rounded-lg px-0 py-0 max-md:bg-[var(--tile)] max-md:px-3 max-md:py-1.5", (imageMode || hasReferenceImages) && "composer-with-model")}>
                   <div className="composer-text flex items-end gap-2">
                     {pendingImage && (
                       <div className="relative inline-block w-fit pt-1">
@@ -2720,7 +2725,7 @@ export default function ChatPage() {
                   </div>
                 </div>
                 {voiceText && <p className="mt-2 text-xs text-muted-foreground">{voiceText}</p>}
-                <div className="mt-2 flex min-w-0 items-center justify-between gap-3 border-t border-[var(--carve)] pt-2 text-xs text-muted-foreground shadow-[inset_0_1px_0_var(--etch)] xl:flex-nowrap">
+                <div className="mt-2 flex min-w-0 items-center justify-between gap-3 border-t border-[var(--carve)] pt-2 text-xs text-muted-foreground shadow-[inset_0_1px_0_var(--etch)] xl:flex-nowrap max-md:mt-1 max-md:pt-1 max-md:text-[11px]">
                   <span className="shrink-0 max-md:hidden">Enter 发送，Shift + Enter 换行</span>
                   <ChatModelFooter key={username} username={username} settingsOpen={settingsOpen} chatMode={!imageMode && !hasReferenceImages} loading={isLoading} />
                 </div>
