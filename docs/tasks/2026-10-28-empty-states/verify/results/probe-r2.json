@@ -1,0 +1,359 @@
+{
+ "raw": {
+  "head d1440 header": {
+   "novel-embed descTop": [
+    [
+     300,
+     80
+    ],
+    [
+     900,
+     80
+    ],
+    [
+     3500,
+     80
+    ],
+    [
+     "refresh+300",
+     80
+    ],
+    [
+     "refresh+2800",
+     80
+    ]
+   ],
+   "studio-embed openLinkTop": [
+    [
+     300,
+     131
+    ],
+    [
+     900,
+     131
+    ],
+    [
+     3500,
+     131
+    ]
+   ]
+  },
+  "head m390 header": {
+   "novel-embed descTop": [
+    [
+     300,
+     68
+    ],
+    [
+     900,
+     68
+    ],
+    [
+     3500,
+     68
+    ],
+    [
+     "refresh+300",
+     68
+    ],
+    [
+     "refresh+2800",
+     68
+    ]
+   ],
+   "studio-embed openLinkTop": [
+    [
+     300,
+     131
+    ],
+    [
+     900,
+     131
+    ],
+    [
+     3500,
+     131
+    ]
+   ]
+  },
+  "head holdEnterAfterTyping": {
+   "chatPosts": 1,
+   "valueAfter": ""
+  },
+  "head history zh-CN": {
+   "tabStops": [
+    "开始日期",
+    "开始日期",
+    "开始日期",
+    "开始日期",
+    "结束日期",
+    "结束日期",
+    "结束日期",
+    "结束日期"
+   ],
+   "typed": {
+    "value": "61027-02-02",
+    "opacity": "1",
+    "face": null,
+    "labelFrom": 0,
+    "labelTo": 0
+   }
+  },
+  "head history en-US": {
+   "tabStops": [
+    "开始日期",
+    "开始日期",
+    "开始日期",
+    "开始日期",
+    "结束日期",
+    "结束日期",
+    "结束日期",
+    "结束日期"
+   ],
+   "typed": {
+    "value": "61027-02-02",
+    "opacity": "1",
+    "face": null,
+    "labelFrom": 0,
+    "labelTo": 0
+   }
+  },
+  "head match 820x360": {
+   "section": false
+  },
+  "cand d1440 header": {
+   "novel-embed descTop": [
+    [
+     300,
+     80
+    ],
+    [
+     900,
+     80
+    ],
+    [
+     3500,
+     80
+    ],
+    [
+     "refresh+300",
+     80
+    ],
+    [
+     "refresh+2800",
+     80
+    ]
+   ],
+   "studio-embed openLinkTop": [
+    [
+     300,
+     129
+    ],
+    [
+     900,
+     129
+    ],
+    [
+     3500,
+     129
+    ]
+   ]
+  },
+  "cand m390 header": {
+   "novel-embed descTop": [
+    [
+     300,
+     68
+    ],
+    [
+     900,
+     68
+    ],
+    [
+     3500,
+     68
+    ],
+    [
+     "refresh+300",
+     68
+    ],
+    [
+     "refresh+2800",
+     68
+    ]
+   ],
+   "studio-embed openLinkTop": [
+    [
+     300,
+     129
+    ],
+    [
+     900,
+     129
+    ],
+    [
+     3500,
+     129
+    ]
+   ]
+  },
+  "cand holdEnterAfterTyping": {
+   "chatPosts": 1,
+   "valueAfter": ""
+  },
+  "cand history zh-CN": {
+   "tabStops": [
+    "从（开始日期）",
+    "从（开始日期）",
+    "从（开始日期）",
+    "从（开始日期）",
+    "到（结束日期）",
+    "到（结束日期）",
+    "到（结束日期）",
+    "到（结束日期）"
+   ],
+   "typed": {
+    "value": "1027-02-02",
+    "opacity": "0",
+    "face": [
+     "从",
+     "1027年2月2日"
+    ],
+    "labelFrom": 1,
+    "labelTo": 1
+   }
+  },
+  "cand history en-US": {
+   "tabStops": [
+    "从（开始日期）",
+    "从（开始日期）",
+    "从（开始日期）",
+    "从（开始日期）",
+    "到（结束日期）",
+    "到（结束日期）",
+    "到（结束日期）",
+    "到（结束日期）"
+   ],
+   "typed": {
+    "value": "1027-02-02",
+    "opacity": "0",
+    "face": [
+     "从",
+     "1027年2月2日"
+    ],
+    "labelFrom": 1,
+    "labelTo": 1
+   }
+  },
+  "cand match 820x360": {
+   "section": true,
+   "parentBottom": 287,
+   "sectionBottom": 287,
+   "ctaBottom": 263,
+   "scrollable": true,
+   "ctaFullyVisible": true
+  }
+ },
+ "judged": [
+  [
+   "d1440 书斋抽屉说明文字位置不随加载/刷新变化",
+   "head",
+   true
+  ],
+  [
+   "d1440 工作室抽屉「在新页面打开」位置不随权限到达变化",
+   "head",
+   true
+  ],
+  [
+   "m390 书斋抽屉说明文字位置不随加载/刷新变化",
+   "head",
+   true
+  ],
+  [
+   "m390 工作室抽屉「在新页面打开」位置不随权限到达变化",
+   "head",
+   true
+  ],
+  [
+   "打字后按住 Enter：只发 1 次，输入框为空",
+   "head",
+   true
+  ],
+  [
+   "zh-CN 日期框键入后有值时，日期面不显示「不限」",
+   "head",
+   null
+  ],
+  [
+   "zh-CN 可按可见标签「从」「到」找到日期框",
+   "head",
+   null
+  ],
+  [
+   "en-US 日期框键入后有值时，日期面不显示「不限」",
+   "head",
+   null
+  ],
+  [
+   "en-US 可按可见标签「从」「到」找到日期框",
+   "head",
+   null
+  ],
+  [
+   "820×360 匹配页滚到底后「查看公开名片设置」完整可见",
+   "head",
+   null
+  ],
+  [
+   "d1440 书斋抽屉说明文字位置不随加载/刷新变化",
+   "cand",
+   true
+  ],
+  [
+   "d1440 工作室抽屉「在新页面打开」位置不随权限到达变化",
+   "cand",
+   true
+  ],
+  [
+   "m390 书斋抽屉说明文字位置不随加载/刷新变化",
+   "cand",
+   true
+  ],
+  [
+   "m390 工作室抽屉「在新页面打开」位置不随权限到达变化",
+   "cand",
+   true
+  ],
+  [
+   "打字后按住 Enter：只发 1 次，输入框为空",
+   "cand",
+   true
+  ],
+  [
+   "zh-CN 日期框键入后有值时，日期面不显示「不限」",
+   "cand",
+   true
+  ],
+  [
+   "zh-CN 可按可见标签「从」「到」找到日期框",
+   "cand",
+   true
+  ],
+  [
+   "en-US 日期框键入后有值时，日期面不显示「不限」",
+   "cand",
+   true
+  ],
+  [
+   "en-US 可按可见标签「从」「到」找到日期框",
+   "cand",
+   true
+  ],
+  [
+   "820×360 匹配页滚到底后「查看公开名片设置」完整可见",
+   "cand",
+   true
+  ]
+ ]
+}

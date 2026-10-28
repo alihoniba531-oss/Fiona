@@ -1,0 +1,210 @@
+{
+ "head d1440 novel-off /novels/new": {
+  "小说工坊尚未开放": {
+   "all": 1,
+   "visible": 1
+  },
+  "正在加载身份…": {
+   "all": 0,
+   "visible": 0
+  },
+  "请登录后": {
+   "all": 0,
+   "visible": 0
+  }
+ },
+ "head d1440 novel-off /novels": {
+  "小说工坊尚未开放": {
+   "all": 1,
+   "visible": 1
+  },
+  "正在加载身份…": {
+   "all": 0,
+   "visible": 0
+  },
+  "请登录后": {
+   "all": 0,
+   "visible": 0
+  }
+ },
+ "head d1440 novel-off /novels?embed=1": {
+  "小说工坊尚未开放": {
+   "all": 1,
+   "visible": 1
+  },
+  "正在加载身份…": {
+   "all": 0,
+   "visible": 0
+  },
+  "请登录后": {
+   "all": 0,
+   "visible": 0
+  }
+ },
+ "head d1440 studio-embed h1": {
+  "roleCount": 1,
+  "box": {
+   "x": 16,
+   "y": 77,
+   "width": 173.609375,
+   "height": 42
+  },
+  "inAriaSnapshot": false
+ },
+ "head m390 novel-off /novels/new": {
+  "小说工坊尚未开放": {
+   "all": 1,
+   "visible": 1
+  },
+  "正在加载身份…": {
+   "all": 0,
+   "visible": 0
+  },
+  "请登录后": {
+   "all": 0,
+   "visible": 0
+  }
+ },
+ "head m390 novel-off /novels": {
+  "小说工坊尚未开放": {
+   "all": 1,
+   "visible": 1
+  },
+  "正在加载身份…": {
+   "all": 0,
+   "visible": 0
+  },
+  "请登录后": {
+   "all": 0,
+   "visible": 0
+  }
+ },
+ "head m390 novel-off /novels?embed=1": {
+  "小说工坊尚未开放": {
+   "all": 1,
+   "visible": 1
+  },
+  "正在加载身份…": {
+   "all": 0,
+   "visible": 0
+  },
+  "请登录后": {
+   "all": 0,
+   "visible": 0
+  }
+ },
+ "head m390 studio-embed h1": {
+  "roleCount": 1,
+  "box": {
+   "x": 16,
+   "y": 77,
+   "width": 173.609375,
+   "height": 42
+  },
+  "inAriaSnapshot": false
+ },
+ "cand d1440 novel-off /novels/new": {
+  "小说工坊尚未开放": {
+   "all": 1,
+   "visible": 1
+  },
+  "正在加载身份…": {
+   "all": 0,
+   "visible": 0
+  },
+  "请登录后": {
+   "all": 0,
+   "visible": 0
+  }
+ },
+ "cand d1440 novel-off /novels": {
+  "小说工坊尚未开放": {
+   "all": 1,
+   "visible": 1
+  },
+  "正在加载身份…": {
+   "all": 0,
+   "visible": 0
+  },
+  "请登录后": {
+   "all": 0,
+   "visible": 0
+  }
+ },
+ "cand d1440 novel-off /novels?embed=1": {
+  "小说工坊尚未开放": {
+   "all": 1,
+   "visible": 1
+  },
+  "正在加载身份…": {
+   "all": 0,
+   "visible": 0
+  },
+  "请登录后": {
+   "all": 0,
+   "visible": 0
+  }
+ },
+ "cand d1440 studio-embed h1": {
+  "roleCount": 1,
+  "box": {
+   "x": 15,
+   "y": 96.5,
+   "width": 1,
+   "height": 1
+  },
+  "inAriaSnapshot": false
+ },
+ "cand m390 novel-off /novels/new": {
+  "小说工坊尚未开放": {
+   "all": 1,
+   "visible": 1
+  },
+  "正在加载身份…": {
+   "all": 0,
+   "visible": 0
+  },
+  "请登录后": {
+   "all": 0,
+   "visible": 0
+  }
+ },
+ "cand m390 novel-off /novels": {
+  "小说工坊尚未开放": {
+   "all": 1,
+   "visible": 1
+  },
+  "正在加载身份…": {
+   "all": 0,
+   "visible": 0
+  },
+  "请登录后": {
+   "all": 0,
+   "visible": 0
+  }
+ },
+ "cand m390 novel-off /novels?embed=1": {
+  "小说工坊尚未开放": {
+   "all": 1,
+   "visible": 1
+  },
+  "正在加载身份…": {
+   "all": 0,
+   "visible": 0
+  },
+  "请登录后": {
+   "all": 0,
+   "visible": 0
+  }
+ },
+ "cand m390 studio-embed h1": {
+  "roleCount": 1,
+  "box": {
+   "x": 15,
+   "y": 96.5,
+   "width": 1,
+   "height": 1
+  },
+  "inAriaSnapshot": false
+ }
+}

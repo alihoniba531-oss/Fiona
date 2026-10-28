@@ -1,0 +1,1101 @@
+FFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFF                     [100%]
+=================================== FAILURES ===================================
+_________ test_my_agent_workspace_shows_pending_identity_before_login __________
+
+    def test_my_agent_workspace_shows_pending_identity_before_login():
+        source = _read("frontend/components/MyAgentWorkspace.tsx")
+>       assert "useAccountIdentityPending()" in source
+E       assert 'useAccountIdentityPending()' in '"use client";\n\nimport Link from "next/link";\nimport { useCallback, useEffect, useId, useState, type FormEvent } fr...</aside>\n              </div>\n            )}\n          </div>\n        </main>\n      </div>\n    </div>\n  );\n}\n'
+
+tests/test_empty_states_agents.py:87: AssertionError
+___ test_agent_exchange_workspace_pending_identity_uses_local_loading_state ____
+
+    def test_agent_exchange_workspace_pending_identity_uses_local_loading_state():
+        relative_path = "frontend/components/AgentExchangeWorkspace.tsx"
+        source = _read(relative_path)
+        # The pending branch must use the file's own LoadingState, not one borrowed
+        # from another module: exactly one local definition and no import of it.
+        assert source.count("function LoadingState(") == 1, (
+            f"{relative_path} must define its own LoadingState exactly once"
+        )
+        assert not any("LoadingState" in statement for statement in _import_statements(source)), (
+            f"{relative_path} must not import LoadingState from another module"
+        )
+>       assert "useAccountIdentityPending()" in source
+E       assert 'useAccountIdentityPending()' in '"use client";\n\nimport Link from "next/link";\nimport { useCallback, useEffect, useRef, useState, type FormEvent, ty...;\n  if (result.agent.owner_username !== owner || result.agent.id !== agentId) throw new ExchangeIdentityError();\n}\n'
+
+tests/test_empty_states_agents.py:107: AssertionError
+_________ test_agent_memory_panel_shows_pending_identity_before_login __________
+
+    def test_agent_memory_panel_shows_pending_identity_before_login():
+        relative_path = "frontend/components/AgentMemoryPanel.tsx"
+        source = _read(relative_path)
+>       assert "useAccountIdentityPending()" in source
+E       assert 'useAccountIdentityPending()' in '"use client";\n\nimport { useCallback, useEffect, useState } from "react";\nimport { Loader2, Trash2 } from "lucide-r...e="text-[11px] leading-relaxed text-muted-foreground">清空分身记忆和已有个人画像；聊天记录保留，后续交流可形成新的记忆。</p>\n    </section>\n  );\n}\n'
+
+tests/test_empty_states_agents.py:121: AssertionError
+___________ test_agent_card_page_shows_pending_identity_before_login ___________
+
+    def test_agent_card_page_shows_pending_identity_before_login():
+        relative_path = "frontend/app/agents/[id]/page.tsx"
+        source = _read(relative_path)
+>       assert "useAccountIdentityPending()" in source
+E       assert 'useAccountIdentityPending()' in '"use client";\n\nimport Link from "next/link";\nimport { useParams } from "next/navigation";\nimport { Suspense, useE...Suspense fallback={<p className="p-6 text-sm text-muted-foreground">正在加载名片…</p>}><AgentPageContent /></Suspense>;\n}\n'
+
+tests/test_empty_states_agents.py:138: AssertionError
+_______________ test_chat_openers_offer_three_draft_only_actions _______________
+
+    def test_chat_openers_offer_three_draft_only_actions():
+        source = _source()
+>       assert "data-chat-openers" in source
+E       assert 'data-chat-openers' in '\ufeff"use client";\n\nimport { useState, useRef, useEffect, useCallback } from "react";\nimport Glaze from "@/compon...nset-bottom))]"\n          onClick={closeDrawer}\n          aria-hidden\n        />\n      )}\n\n    </div>\n  );\n}\n'
+
+tests/test_empty_states_chat_openers.py:121: AssertionError
+_________________ test_chat_opener_guards_match_their_actions __________________
+
+    def test_chat_opener_guards_match_their_actions():
+        source = _source()
+>       chat = opener_body(source, "startChatOpener")
+               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+tests/test_empty_states_chat_openers.py:139: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+tests/test_empty_states_chat_openers.py:116: in opener_body
+    return "\n".join(opener_block(source, name))
+                     ^^^^^^^^^^^^^^^^^^^^^^^^^^
+tests/test_empty_states_chat_openers.py:112: in opener_block
+    return _slice_block(source, f"const {name} = () => {{", "};")
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+source = '\ufeff"use client";\n\nimport { useState, useRef, useEffect, useCallback } from "react";\nimport Glaze from "@/compon...nset-bottom))]"\n          onClick={closeDrawer}\n          aria-hidden\n        />\n      )}\n\n    </div>\n  );\n}\n'
+first_line = 'const startChatOpener = () => {', last_line = '};'
+
+    def _slice_block(source: str, first_line: str, last_line: str) -> list[str]:
+        """Slice from the unique ``first_line`` through the next ``last_line``.
+    
+        Both ends are included and compared by stripped content, so the source may
+        be re-indented without weakening the contract.
+        """
+        lines = source.splitlines()
+        starts = [index for index, line in enumerate(lines) if line.strip() == first_line]
+>       assert len(starts) == 1, f"expected exactly one line: {first_line!r}"
+E       AssertionError: expected exactly one line: 'const startChatOpener = () => {'
+E       assert 0 == 1
+E        +  where 0 = len([])
+
+tests/test_empty_states_chat_openers.py:98: AssertionError
+______________________ test_enter_key_ignores_auto_repeat ______________________
+
+    def test_enter_key_ignores_auto_repeat():
+        source = _source()
+        body = _slice_block(
+            source,
+            "const handleKeyDown = (e: React.KeyboardEvent) => {",
+            "};",
+        )
+>       assert [line.strip() for line in body] == HANDLE_KEY_DOWN_LINES
+E       AssertionError: assert ['const handl...Send();', ...] == ['const handl...return;', ...]
+E         
+E         At index 5 diff: 'handleSend();' != 'if (e.repeat) return;'
+E         Right contains one more item: '};'
+E         Use -v to get more diff
+
+tests/test_empty_states_chat_openers.py:160: AssertionError
+________________ test_chat_opener_bodies_match_the_spec_exactly ________________
+
+    def test_chat_opener_bodies_match_the_spec_exactly():
+        source = _source()
+        for name in OPENER_NAMES:
+>           assert _normalize(opener_block(source, name)) == OPENER_BODIES[name], name
+                              ^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+tests/test_empty_states_chat_openers.py:170: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+tests/test_empty_states_chat_openers.py:112: in opener_block
+    return _slice_block(source, f"const {name} = () => {{", "};")
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+source = '\ufeff"use client";\n\nimport { useState, useRef, useEffect, useCallback } from "react";\nimport Glaze from "@/compon...nset-bottom))]"\n          onClick={closeDrawer}\n          aria-hidden\n        />\n      )}\n\n    </div>\n  );\n}\n'
+first_line = 'const startChatOpener = () => {', last_line = '};'
+
+    def _slice_block(source: str, first_line: str, last_line: str) -> list[str]:
+        """Slice from the unique ``first_line`` through the next ``last_line``.
+    
+        Both ends are included and compared by stripped content, so the source may
+        be re-indented without weakening the contract.
+        """
+        lines = source.splitlines()
+        starts = [index for index, line in enumerate(lines) if line.strip() == first_line]
+>       assert len(starts) == 1, f"expected exactly one line: {first_line!r}"
+E       AssertionError: expected exactly one line: 'const startChatOpener = () => {'
+E       assert 0 == 1
+E        +  where 0 = len([])
+
+tests/test_empty_states_chat_openers.py:98: AssertionError
+_______________ test_chat_opener_buttons_match_the_spec_exactly ________________
+
+    def test_chat_opener_buttons_match_the_spec_exactly():
+        source = _source()
+        for name, label in zip(OPENER_NAMES, OPENER_LABELS):
+            buttons = re.findall(rf"<button\b[^>]*>{re.escape(label)}</button>", source)
+>           assert len(buttons) == 1, label
+E           AssertionError: 聊聊今天
+E           assert 0 == 1
+E            +  where 0 = len([])
+
+tests/test_empty_states_chat_openers.py:185: AssertionError
+___________ test_empty_chat_wording_points_at_the_conversation_list ____________
+
+    def test_empty_chat_wording_points_at_the_conversation_list():
+        page = _source()
+>       assert "在对话列表里点「新建」，开始和自己的分身交流。" in page
+E       assert '在对话列表里点「新建」，开始和自己的分身交流。' in '\ufeff"use client";\n\nimport { useState, useRef, useEffect, useCallback } from "react";\nimport Glaze from "@/compon...nset-bottom))]"\n          onClick={closeDrawer}\n          aria-hidden\n        />\n      )}\n\n    </div>\n  );\n}\n'
+
+tests/test_empty_states_chat_openers.py:191: AssertionError
+___________ test_date_chips_open_native_picker_and_bound_each_other ____________
+
+    def test_date_chips_open_native_picker_and_bound_each_other():
+        source = read_history()
+    
+        # HEAD-failing: HEAD has no picker wrapper at all.
+>       assert source.count("showPicker(") == 1, "showPicker() must appear exactly once"
+E       AssertionError: showPicker() must appear exactly once
+E       assert 0 == 1
+E        +  where 0 = <built-in method count of str object at 0x7a7d47c000>('showPicker(')
+E        +    where <built-in method count of str object at 0x7a7d47c000> = '"use client";\n\nimport { useState, useEffect, useRef, useMemo, Suspense } from "react";\nimport { useRouter, useSear...t-sm text-muted-foreground">\n        加载中…\n      </div>\n    }>\n      <HistoryContent />\n    </Suspense>\n  );\n}\n'.count
+
+tests/test_empty_states_history_dates.py:51: AssertionError
+_____ test_date_chips_render_chinese_day_faces_and_drop_native_placeholder _____
+
+    def test_date_chips_render_chinese_day_faces_and_drop_native_placeholder():
+        source = read_history()
+    
+>       assert "formatBeijingDateLong(" in source
+E       assert 'formatBeijingDateLong(' in '"use client";\n\nimport { useState, useEffect, useRef, useMemo, Suspense } from "react";\nimport { useRouter, useSear...t-sm text-muted-foreground">\n        加载中…\n      </div>\n    }>\n      <HistoryContent />\n    </Suspense>\n  );\n}\n'
+
+tests/test_empty_states_history_dates.py:84: AssertionError
+_______________ test_all_quick_filter_requires_empty_date_bounds _______________
+
+    def test_all_quick_filter_requires_empty_date_bounds():
+        source = read_history()
+    
+>       assert (
+            'quick === key && (key !== "all" || (!dateFrom && !dateTo))' in source
+        ), "「全部」must only highlight when neither date bound is set"
+E       AssertionError: 「全部」must only highlight when neither date bound is set
+E       assert 'quick === key && (key !== "all" || (!dateFrom && !dateTo))' in '"use client";\n\nimport { useState, useEffect, useRef, useMemo, Suspense } from "react";\nimport { useRouter, useSear...t-sm text-muted-foreground">\n        加载中…\n      </div>\n    }>\n      <HistoryContent />\n    </Suspense>\n  );\n}\n'
+
+tests/test_empty_states_history_dates.py:107: AssertionError
+___ test_date_labels_stay_accessible_and_existing_history_contracts_survive ____
+
+    def test_date_labels_stay_accessible_and_existing_history_contracts_survive():
+        source = read_history()
+    
+        # HEAD-failing: the visible 「从」/「到」 chip labels are aria-hidden, so the
+        # accessible name must still contain them (WCAG 2.5.3).
+>       assert source.count('aria-label="从（开始日期）"') == 1
+E       assert 0 == 1
+E        +  where 0 = <built-in method count of str object at 0x7a7d6a8000>('aria-label="从（开始日期）"')
+E        +    where <built-in method count of str object at 0x7a7d6a8000> = '"use client";\n\nimport { useState, useEffect, useRef, useMemo, Suspense } from "react";\nimport { useRouter, useSear...t-sm text-muted-foreground">\n        加载中…\n      </div>\n    }>\n      <HistoryContent />\n    </Suspense>\n  );\n}\n'.count
+
+tests/test_empty_states_history_dates.py:118: AssertionError
+__________ test_source_contract_keeps_pending_hook_and_original_code ___________
+
+    def test_source_contract_keeps_pending_hook_and_original_code():
+        source = SOURCE.read_text()
+        start = source.find(NEW_CODE_MARKER)
+        new_code = source[start:] if start >= 0 else source
+        failures = []
+        if start < 0:
+            failures.append("missing identity pending block")
+        if "export function useAccountIdentityPending(): boolean {" not in new_code:
+            failures.append("missing useAccountIdentityPending export")
+        for token in ("useId", "dispatchEvent", "location", "document"):
+            if re.search(rf"\b{token}\b", new_code):
+                failures.append(f"new code contains forbidden token: {token}")
+        if 'import { ensureAccountIdentity, getUsername } from "@/lib/auth";' not in source:
+            failures.append("original @/lib/auth import changed")
+        if "  return useSyncExternalStore(subscribeAccount, getUsername, serverIdentity);" not in source:
+            failures.append("original useAccountIdentity snapshot call changed")
+>       assert not failures, "\n".join(failures)
+E       AssertionError: missing identity pending block
+E         missing useAccountIdentityPending export
+E       assert not ['missing identity pending block', 'missing useAccountIdentityPending export']
+
+tests/test_empty_states_identity.py:263: AssertionError
+_______________________ test_server_snapshot_is_pending ________________________
+
+    def test_server_snapshot_is_pending():
+>       data = probe("server")
+               ^^^^^^^^^^^^^^^
+
+tests/test_empty_states_identity.py:267: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+mode = 'server', config = {}
+
+    def probe(mode, **config):
+        require_node_and_dependencies()
+        payload = {"mode": mode, **config}
+        result = subprocess.run(
+            ["node", "-e", NODE_RUNNER, str(SOURCE), json.dumps(payload, ensure_ascii=False)],
+            cwd=str(FRONTEND),
+            capture_output=True,
+            text=True,
+            timeout=60,
+        )
+        stdout = result.stdout.strip()
+        assert stdout, (
+            "identity hook probe produced no output "
+            f"(exit {result.returncode}): {result.stderr.strip()}"
+        )
+        try:
+            data = json.loads(stdout)
+        except json.JSONDecodeError:
+            raise AssertionError(
+                f"identity hook probe emitted invalid JSON: {stdout!r}\n{result.stderr.strip()}"
+            )
+>       assert data.get("ok") is True, data.get("error", "identity hook probe failed")
+E       AssertionError: Error: useAccountIdentityPending is not exported
+E             at [eval]:99:11
+E             at [eval]:149:3
+E             at runScriptInThisContext (node:internal/vm:219:10)
+E             at node:internal/process/execution:483:12
+E             at [eval]-wrapper:6:24
+E             at runScriptInContext (node:internal/process/execution:481:60)
+E             at evalFunction (node:internal/process/execution:315:30)
+E             at evalTypeScript (node:internal/process/execution:327:3)
+E             at node:internal/main/eval_string:71:3
+E       assert False is True
+E        +  where False = <built-in method get of dict object at 0x106c1a740>('ok')
+E        +    where <built-in method get of dict object at 0x106c1a740> = {'ok': False, 'error': 'Error: useAccountIdentityPending is not exported\n    at [eval]:99:11\n    at [eval]:149:3\n  ...on:315:30)\n    at evalTypeScript (node:internal/process/execution:327:3)\n    at node:internal/main/eval_string:71:3'}.get
+
+tests/test_empty_states_identity.py:243: AssertionError
+__________ test_client_without_username_stays_pending_until_recovery ___________
+
+    def test_client_without_username_stays_pending_until_recovery():
+>       data = probe("pending", username="")
+               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+tests/test_empty_states_identity.py:273: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+mode = 'pending', config = {'username': ''}
+
+    def probe(mode, **config):
+        require_node_and_dependencies()
+        payload = {"mode": mode, **config}
+        result = subprocess.run(
+            ["node", "-e", NODE_RUNNER, str(SOURCE), json.dumps(payload, ensure_ascii=False)],
+            cwd=str(FRONTEND),
+            capture_output=True,
+            text=True,
+            timeout=60,
+        )
+        stdout = result.stdout.strip()
+        assert stdout, (
+            "identity hook probe produced no output "
+            f"(exit {result.returncode}): {result.stderr.strip()}"
+        )
+        try:
+            data = json.loads(stdout)
+        except json.JSONDecodeError:
+            raise AssertionError(
+                f"identity hook probe emitted invalid JSON: {stdout!r}\n{result.stderr.strip()}"
+            )
+>       assert data.get("ok") is True, data.get("error", "identity hook probe failed")
+E       AssertionError: Error: useAccountIdentityPending is not exported
+E             at [eval]:99:11
+E             at [eval]:149:3
+E             at runScriptInThisContext (node:internal/vm:219:10)
+E             at node:internal/process/execution:483:12
+E             at [eval]-wrapper:6:24
+E             at runScriptInContext (node:internal/process/execution:481:60)
+E             at evalFunction (node:internal/process/execution:315:30)
+E             at evalTypeScript (node:internal/process/execution:327:3)
+E             at node:internal/main/eval_string:71:3
+E       assert False is True
+E        +  where False = <built-in method get of dict object at 0x106bdee80>('ok')
+E        +    where <built-in method get of dict object at 0x106bdee80> = {'ok': False, 'error': 'Error: useAccountIdentityPending is not exported\n    at [eval]:99:11\n    at [eval]:149:3\n  ...on:315:30)\n    at evalTypeScript (node:internal/process/execution:327:3)\n    at node:internal/main/eval_string:71:3'}.get
+
+tests/test_empty_states_identity.py:243: AssertionError
+_________ test_recovery_settle_flips_to_false_and_notifies_subscribers _________
+
+    def test_recovery_settle_flips_to_false_and_notifies_subscribers():
+>       data = probe("settled", username="")
+               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+tests/test_empty_states_identity.py:280: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+mode = 'settled', config = {'username': ''}
+
+    def probe(mode, **config):
+        require_node_and_dependencies()
+        payload = {"mode": mode, **config}
+        result = subprocess.run(
+            ["node", "-e", NODE_RUNNER, str(SOURCE), json.dumps(payload, ensure_ascii=False)],
+            cwd=str(FRONTEND),
+            capture_output=True,
+            text=True,
+            timeout=60,
+        )
+        stdout = result.stdout.strip()
+        assert stdout, (
+            "identity hook probe produced no output "
+            f"(exit {result.returncode}): {result.stderr.strip()}"
+        )
+        try:
+            data = json.loads(stdout)
+        except json.JSONDecodeError:
+            raise AssertionError(
+                f"identity hook probe emitted invalid JSON: {stdout!r}\n{result.stderr.strip()}"
+            )
+>       assert data.get("ok") is True, data.get("error", "identity hook probe failed")
+E       AssertionError: Error: useAccountIdentityPending is not exported
+E             at [eval]:99:11
+E             at [eval]:149:3
+E             at runScriptInThisContext (node:internal/vm:219:10)
+E             at node:internal/process/execution:483:12
+E             at [eval]-wrapper:6:24
+E             at runScriptInContext (node:internal/process/execution:481:60)
+E             at evalFunction (node:internal/process/execution:315:30)
+E             at evalTypeScript (node:internal/process/execution:327:3)
+E             at node:internal/main/eval_string:71:3
+E       assert False is True
+E        +  where False = <built-in method get of dict object at 0x1074b1c00>('ok')
+E        +    where <built-in method get of dict object at 0x1074b1c00> = {'ok': False, 'error': 'Error: useAccountIdentityPending is not exported\n    at [eval]:99:11\n    at [eval]:149:3\n  ...on:315:30)\n    at evalTypeScript (node:internal/process/execution:327:3)\n    at node:internal/main/eval_string:71:3'}.get
+
+tests/test_empty_states_identity.py:243: AssertionError
+________ test_failed_recovery_with_empty_username_never_reports_pending ________
+
+    def test_failed_recovery_with_empty_username_never_reports_pending():
+        # A failed recovery settles with an empty username. Every notification must
+        # already see the settled flag, and the snapshot stays false afterwards.
+>       data = probe("settled_empty", username="")
+               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+tests/test_empty_states_identity.py:289: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+mode = 'settled_empty', config = {'username': ''}
+
+    def probe(mode, **config):
+        require_node_and_dependencies()
+        payload = {"mode": mode, **config}
+        result = subprocess.run(
+            ["node", "-e", NODE_RUNNER, str(SOURCE), json.dumps(payload, ensure_ascii=False)],
+            cwd=str(FRONTEND),
+            capture_output=True,
+            text=True,
+            timeout=60,
+        )
+        stdout = result.stdout.strip()
+        assert stdout, (
+            "identity hook probe produced no output "
+            f"(exit {result.returncode}): {result.stderr.strip()}"
+        )
+        try:
+            data = json.loads(stdout)
+        except json.JSONDecodeError:
+            raise AssertionError(
+                f"identity hook probe emitted invalid JSON: {stdout!r}\n{result.stderr.strip()}"
+            )
+>       assert data.get("ok") is True, data.get("error", "identity hook probe failed")
+E       AssertionError: Error: useAccountIdentityPending is not exported
+E             at [eval]:99:11
+E             at [eval]:149:3
+E             at runScriptInThisContext (node:internal/vm:219:10)
+E             at node:internal/process/execution:483:12
+E             at [eval]-wrapper:6:24
+E             at runScriptInContext (node:internal/process/execution:481:60)
+E             at evalFunction (node:internal/process/execution:315:30)
+E             at evalTypeScript (node:internal/process/execution:327:3)
+E             at node:internal/main/eval_string:71:3
+E       assert False is True
+E        +  where False = <built-in method get of dict object at 0x1074aa780>('ok')
+E        +    where <built-in method get of dict object at 0x1074aa780> = {'ok': False, 'error': 'Error: useAccountIdentityPending is not exported\n    at [eval]:99:11\n    at [eval]:149:3\n  ...on:315:30)\n    at evalTypeScript (node:internal/process/execution:327:3)\n    at node:internal/main/eval_string:71:3'}.get
+
+tests/test_empty_states_identity.py:243: AssertionError
+______________________ test_known_username_is_not_pending ______________________
+
+    def test_known_username_is_not_pending():
+>       data = probe("username", username="alice")
+               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+tests/test_empty_states_identity.py:299: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+mode = 'username', config = {'username': 'alice'}
+
+    def probe(mode, **config):
+        require_node_and_dependencies()
+        payload = {"mode": mode, **config}
+        result = subprocess.run(
+            ["node", "-e", NODE_RUNNER, str(SOURCE), json.dumps(payload, ensure_ascii=False)],
+            cwd=str(FRONTEND),
+            capture_output=True,
+            text=True,
+            timeout=60,
+        )
+        stdout = result.stdout.strip()
+        assert stdout, (
+            "identity hook probe produced no output "
+            f"(exit {result.returncode}): {result.stderr.strip()}"
+        )
+        try:
+            data = json.loads(stdout)
+        except json.JSONDecodeError:
+            raise AssertionError(
+                f"identity hook probe emitted invalid JSON: {stdout!r}\n{result.stderr.strip()}"
+            )
+>       assert data.get("ok") is True, data.get("error", "identity hook probe failed")
+E       AssertionError: Error: useAccountIdentityPending is not exported
+E             at [eval]:99:11
+E             at [eval]:149:3
+E             at runScriptInThisContext (node:internal/vm:219:10)
+E             at node:internal/process/execution:483:12
+E             at [eval]-wrapper:6:24
+E             at runScriptInContext (node:internal/process/execution:481:60)
+E             at evalFunction (node:internal/process/execution:315:30)
+E             at evalTypeScript (node:internal/process/execution:327:3)
+E             at node:internal/main/eval_string:71:3
+E       assert False is True
+E        +  where False = <built-in method get of dict object at 0x107445ec0>('ok')
+E        +    where <built-in method get of dict object at 0x107445ec0> = {'ok': False, 'error': 'Error: useAccountIdentityPending is not exported\n    at [eval]:99:11\n    at [eval]:149:3\n  ...on:315:30)\n    at evalTypeScript (node:internal/process/execution:327:3)\n    at node:internal/main/eval_string:71:3'}.get
+
+tests/test_empty_states_identity.py:243: AssertionError
+__________ test_match_empty_section_explains_both_ways_to_meet_people __________
+
+    def test_match_empty_section_explains_both_ways_to_meet_people():
+        source = read(MATCH)
+        start = source.find("<section data-match-empty")
+>       assert start != -1, "match page must render a data-match-empty section"
+E       AssertionError: match page must render a data-match-empty section
+E       assert -1 != -1
+
+tests/test_empty_states_match_profile.py:62: AssertionError
+__ test_match_page_keeps_mobile_variant_and_replaces_the_tiny_anonymous_hint ___
+
+    def test_match_page_keeps_mobile_variant_and_replaces_the_tiny_anonymous_hint():
+        source = read(MATCH)
+        assert "max-md:" not in source, "embedded match page must use mobile: variants only"
+        assert bold_offenders(source) == [], "match page must not add bold styling"
+>       assert (
+            source.count(
+                '<p className="text-xs text-[color:var(--ink2)]">双方都接受匹配后，对方会出现在这里</p>'
+            )
+            == 1
+        ), "the recent-chat empty hint must appear exactly once with the v1.2 markup"
+E       AssertionError: the recent-chat empty hint must appear exactly once with the v1.2 markup
+E       assert 0 == 1
+E        +  where 0 = <built-in method count of str object at 0x7a7d690000>('<p className="text-xs text-[color:var(--ink2)]">双方都接受匹配后，对方会出现在这里</p>')
+E        +    where <built-in method count of str object at 0x7a7d690000> = '"use client";\n\nimport { Suspense, useState, useEffect, useRef, useCallback } from "react";\nimport { useSearchParam...-center justify-center text-sm text-muted-foreground">加载中…</div>}>\n      <MatchContent />\n    </Suspense>\n  );\n}\n'.count
+
+tests/test_empty_states_match_profile.py:84: AssertionError
+_____ test_match_empty_section_immediately_follows_the_zero_pending_branch _____
+
+    def test_match_empty_section_immediately_follows_the_zero_pending_branch():
+        source = read(MATCH)
+>       assert re.search(
+            r"\{pendingMatches\.length === 0 \? \(\s*<section data-match-empty",
+            source,
+        ), "the empty section must be the first child of the zero-pending branch"
+E       AssertionError: the empty section must be the first child of the zero-pending branch
+E       assert None
+E        +  where None = <function search at 0x1005a7480>('\\{pendingMatches\\.length === 0 \\? \\(\\s*<section data-match-empty', '"use client";\n\nimport { Suspense, useState, useEffect, useRef, useCallback } from "react";\nimport { useSearchParam...-center justify-center text-sm text-muted-foreground">加载中…</div>}>\n      <MatchContent />\n    </Suspense>\n  );\n}\n')
+E        +    where <function search at 0x1005a7480> = re.search
+
+tests/test_empty_states_match_profile.py:97: AssertionError
+______ test_match_empty_section_moves_top_spacing_from_margin_to_padding _______
+
+    def test_match_empty_section_moves_top_spacing_from_margin_to_padding():
+        source = read(MATCH)
+        open_tag = re.search(r"<section data-match-empty\b[^>]*>", source)
+>       assert open_tag is not None, "match page must render a data-match-empty section"
+E       AssertionError: match page must render a data-match-empty section
+E       assert None is not None
+
+tests/test_empty_states_match_profile.py:106: AssertionError
+________ test_profile_page_uses_the_new_social_profile_name_everywhere _________
+
+    def test_profile_page_uses_the_new_social_profile_name_everywhere():
+        source = read(PROFILE)
+>       assert OLD_NAME not in source
+E       assert '旧社交画像' not in '"use client...>\n  );\n}\n'
+E         
+E         '旧社交画像' is contained here:
+E           " : ""}`}>旧社交画像</h1>
+E         ?           +++++
+E                         <p className="mt-2 text-[13px] leading-[1.85] tracking-[0.04em] text-[color:var(--ink2)]">此前用于社交匹配的画像；新会话记忆在“我的分身”中查看</p>
+E                         <div className="mt-3 flex items-center gap-1.5 text-xs text-[color:var(--ink2)]"><Shield size={13} />本人查看</div>
+E                       </header>...
+E         
+E         ...Full output truncated (61 lines hidden), use '-vv' to show
+
+tests/test_empty_states_match_profile.py:119: AssertionError
+________________ test_profile_name_is_updated_in_each_document _________________
+
+    def test_profile_name_is_updated_in_each_document():
+        for path in DOCS:
+            source = read(path)
+>           assert OLD_NAME not in source, f"{path.name} still uses {OLD_NAME!r}"
+E           AssertionError: README.md still uses '旧社交画像'
+E           assert '旧社交画像' not in '# Fiona / C...集拆镜留到 WO4。\n'
+E             
+E             '旧社交画像' is contained here:
+E               - 私有记忆：独立于旧社交画像保存，可查看和清空；新私有会话不自动触发跨用户匹配。
+E             ?           +++++
+E               - 陪伴对话：流式回复、长期画像、成长阶段、人设与对话模式路由；每用户可在设置中接入自己的聊天模型（BYOK），普通与镜子回复不扣草莓。AI 回复按安全子集排版段落、列表、标题、引用和代码，强调用着重号而不加粗，不渲染 HTML、不生成链接；聊天、会话列表、历史、广场与本机提醒的时间统一按北京时间显示。
+E               - 模型与工具：Qwen 主力/轻量模型、用户图片理解、联网搜索、热点展开、旅行规划和中文天气预报；搜索与旅行卡片可点击真实搜索来源，天气使用阿里云百炼托管的高德地图 MCP（Amap Maps）。
+E               - 聊天生图：平台判断器或 BYOK 原生工具决定生图，默认 Seedream 5.0 Flash；面板可选 Qwen Image 3.0（面板默认）或 Seedream 5.0 Flash，文字生成图片、参考图编辑、方形/横版/竖版、对话内预览与下载，生成图随会话保存。...
+E             
+E             ...Full output truncated (386 lines hidden), use '-vv' to show
+
+tests/test_empty_states_match_profile.py:130: AssertionError
+_____________ test_shelf_empty_state_has_exactly_one_new_book_link _____________
+
+    def test_shelf_empty_state_has_exactly_one_new_book_link():
+>       assert probe(r"""
+    const o=agents.apiJson;
+    agents.apiJson=async(u,i)=>u==='/api/novels'?[]:o(u,i);
+    const shelf=await screen('components/novel/NovelShelf.tsx');
+    function plain(node){if(Array.isArray(node))return node.map(plain).join('');if(node==null||typeof node==='boolean')return '';if(typeof node!=='object')return String(node);return plain(node.props?.children);}
+    const links=all(shelf.tree,n=>typeof n.props?.href==='string'&&n.props.href.includes('/novels/new'));
+    assert.equal(links.length,1);
+    assert.equal(plain(links[0]),'新建一本');
+    assert(plain(shelf.tree).includes('开始你的第一本书'));
+    process.stdout.write(JSON.stringify(true));
+    """) is True
+
+tests/test_empty_states_novel.py:31: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+script = "\nconst o=agents.apiJson;\nagents.apiJson=async(u,i)=>u==='/api/novels'?[]:o(u,i);\nconst shelf=await screen('compone...ain(links[0]),'新建一本');\nassert(plain(shelf.tree).includes('开始你的第一本书'));\nprocess.stdout.write(JSON.stringify(true));\n"
+
+    def probe(script):
+        if not (ROOT / "frontend" / "node_modules" / "typescript").exists():
+            pytest.skip("frontend/node_modules/typescript is unavailable")
+        if not shutil.which("node"):
+            pytest.skip("node is unavailable")
+        result = subprocess.run(
+            ["node", "-e", DRIVER + "\n(async()=>{\n" + script + "\n})().catch(e=>{process.stderr.write(e.stack);process.exitCode=1;});", str(ROOT)],
+            cwd=ROOT, capture_output=True, text=True, check=False, timeout=30,
+        )
+>       assert result.returncode == 0, result.stderr
+E       AssertionError: AssertionError [ERR_ASSERTION]: Expected values to be strictly equal:
+E         
+E         2 !== 1
+E         
+E             at [eval]:119:8
+E       assert 1 == 0
+E        +  where 1 = CompletedProcess(args=['node', '-e', "\nconst fs = require('fs'), path = require('path'), assert = require('assert/str...t='', stderr='AssertionError [ERR_ASSERTION]: Expected values to be strictly equal:\n\n2 !== 1\n\n    at [eval]:119:8').returncode
+
+tests/test_novel_p2_r1.py:139: AssertionError
+_________ test_shelf_pending_identity_replaces_login_and_idles_refresh _________
+
+    def test_shelf_pending_identity_replaces_login_and_idles_refresh():
+        # A separate node process: useAccountIdentityPending's module-level settled
+        # flag may only flip from false to true, so the empty-username case must not
+        # run after a render that already had a username.
+>       assert probe(r"""
+    env.owner='';
+    // Same two layers as screen(), kept apart so the outer-to-inner prop is visible.
+    const outer=mount(load('components/novel/NovelShelf.tsx').default,{});
+    await flush();
+    const shelf=outer.tree;
+    assert.equal(shelf.props.owner,'');
+    assert.equal(shelf.props.identityPending,true);
+    const inner=mount(shelf.type,shelf.props);
+    await flush();
+    function plain(node){if(Array.isArray(node))return node.map(plain).join('');if(node==null||typeof node==='boolean')return '';if(typeof node!=='object')return String(node);return plain(node.props?.children);}
+    const text=plain(inner.tree);
+    assert(text.includes('正在加载身份…'));
+    assert(!text.includes('请登录后查看你的书架'));
+    assert(!text.includes('前往登录'));
+    const refresh=all(inner.tree,n=>n.type==='button'&&String(n.props?.className??'').includes('btn-quiet'));
+    assert.equal(refresh.length,1);
+    assert.equal(plain(refresh[0]),'刷新');
+    assert.equal(refresh[0].props.disabled,true);
+    process.stdout.write(JSON.stringify(true));
+    """) is True
+
+tests/test_empty_states_novel.py:48: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+script = "\nenv.owner='';\n// Same two layers as screen(), kept apart so the outer-to-inner prop is visible.\nconst outer=mount...plain(refresh[0]),'刷新');\nassert.equal(refresh[0].props.disabled,true);\nprocess.stdout.write(JSON.stringify(true));\n"
+
+    def probe(script):
+        if not (ROOT / "frontend" / "node_modules" / "typescript").exists():
+            pytest.skip("frontend/node_modules/typescript is unavailable")
+        if not shutil.which("node"):
+            pytest.skip("node is unavailable")
+        result = subprocess.run(
+            ["node", "-e", DRIVER + "\n(async()=>{\n" + script + "\n})().catch(e=>{process.stderr.write(e.stack);process.exitCode=1;});", str(ROOT)],
+            cwd=ROOT, capture_output=True, text=True, check=False, timeout=30,
+        )
+>       assert result.returncode == 0, result.stderr
+E       AssertionError: AssertionError [ERR_ASSERTION]: Expected values to be strictly equal:
+E         + actual - expected
+E         
+E         + undefined
+E         - true
+E         
+E             at [eval]:120:8
+E       assert 1 == 0
+E        +  where 1 = CompletedProcess(args=['node', '-e', "\nconst fs = require('fs'), path = require('path'), assert = require('assert/str..._ASSERTION]: Expected values to be strictly equal:\n+ actual - expected\n\n+ undefined\n- true\n\n    at [eval]:120:8').returncode
+
+tests/test_novel_p2_r1.py:139: AssertionError
+_____ test_novel_pages_wire_identity_pending_before_login[NovelWizard.tsx] _____
+
+filename = 'NovelWizard.tsx'
+
+    @pytest.mark.parametrize("filename", WIRING_FILES)
+    def test_novel_pages_wire_identity_pending_before_login(filename):
+        source = (NOVEL / filename).read_text(encoding="utf-8")
+        login = LOGIN_TEXT[filename]
+>       assert "useAccountIdentityPending()" in source
+E       assert 'useAccountIdentityPending()' in '"use client";\n\nimport Link from "next/link";\nimport { useRouter, useSearchParams } from "next/navigation";\nimport...         </fieldset>\n            </form>\n          </Glaze>\n        </>}\n      </div>\n    </main>\n  </div>;\n}\n'
+
+tests/test_empty_states_novel.py:75: AssertionError
+_____ test_novel_pages_wire_identity_pending_before_login[NovelShelf.tsx] ______
+
+filename = 'NovelShelf.tsx'
+
+    @pytest.mark.parametrize("filename", WIRING_FILES)
+    def test_novel_pages_wire_identity_pending_before_login(filename):
+        source = (NOVEL / filename).read_text(encoding="utf-8")
+        login = LOGIN_TEXT[filename]
+>       assert "useAccountIdentityPending()" in source
+E       assert 'useAccountIdentityPending()' in '"use client";\n\nimport Link from "next/link";\nimport { useSearchParams } from "next/navigation";\nimport { useCallb...formatNovelDate(book.updated_at)}</p>\n          </Link>)}\n        </div>}\n      </div>\n    </main>\n  </div>;\n}\n'
+
+tests/test_empty_states_novel.py:75: AssertionError
+___ test_novel_pages_wire_identity_pending_before_login[NovelWorkbench.tsx] ____
+
+filename = 'NovelWorkbench.tsx'
+
+    @pytest.mark.parametrize("filename", WIRING_FILES)
+    def test_novel_pages_wire_identity_pending_before_login(filename):
+        source = (NOVEL / filename).read_text(encoding="utf-8")
+        login = LOGIN_TEXT[filename]
+>       assert "useAccountIdentityPending()" in source
+E       assert 'useAccountIdentityPending()' in '"use client";\n\nimport Link from "next/link";\nimport { useRouter } from "next/navigation";\nimport { useCallback, u...=> setSettings(null)} />}\n            </>}\n          </>}\n        </div>\n      </main>\n    </div>\n  </div>;\n}\n'
+
+tests/test_empty_states_novel.py:75: AssertionError
+_______ test_novel_login_link_escapes_the_embedded_frame[NovelShelf.tsx] _______
+
+filename = 'NovelShelf.tsx'
+
+    @pytest.mark.parametrize("filename", ("NovelShelf.tsx", "NovelWorkbench.tsx"))
+    def test_novel_login_link_escapes_the_embedded_frame(filename):
+        source = (NOVEL / filename).read_text(encoding="utf-8")
+        login_line = next(line for line in source.splitlines() if "前往登录" in line)
+>       assert 'target={embedded ? "_top" : undefined}' in login_line
+E       assert 'target={embedded ? "_top" : undefined}' in '        {!owner ? <EmptyState>请登录后查看你的书架。<Link href="/login" className="ml-2 underline">前往登录</Link></EmptyState> : er... min-h-10">新建一本</Link></EmptyState></Glaze> : <div className="grid grid-cols-2 gap-5 mobile:grid-cols-1 mobile:gap-3">'
+
+tests/test_empty_states_novel.py:87: AssertionError
+_____ test_novel_login_link_escapes_the_embedded_frame[NovelWorkbench.tsx] _____
+
+filename = 'NovelWorkbench.tsx'
+
+    @pytest.mark.parametrize("filename", ("NovelShelf.tsx", "NovelWorkbench.tsx"))
+    def test_novel_login_link_escapes_the_embedded_frame(filename):
+        source = (NOVEL / filename).read_text(encoding="utf-8")
+        login_line = next(line for line in source.splitlines() if "前往登录" in line)
+>       assert 'target={embedded ? "_top" : undefined}' in login_line
+E       assert 'target={embedded ? "_top" : undefined}' in '          {!owner ? <EmptyState>请登录后打开你的书斋。<Link href="/login" className="ml-2 underline">前往登录</Link></EmptyState> : <>'
+
+tests/test_empty_states_novel.py:87: AssertionError
+_ test_novel_shelf_hides_header_entry_only_in_empty_state_and_waits_for_identity _
+
+    def test_novel_shelf_hides_header_entry_only_in_empty_state_and_waits_for_identity():
+        source = (NOVEL / "NovelShelf.tsx").read_text(encoding="utf-8")
+>       assert "!(owner && !error && !loading && books.length === 0)" in source
+E       assert '!(owner && !error && !loading && books.length === 0)' in '"use client";\n\nimport Link from "next/link";\nimport { useSearchParams } from "next/navigation";\nimport { useCallb...formatNovelDate(book.updated_at)}</p>\n          </Link>)}\n        </div>}\n      </div>\n    </main>\n  </div>;\n}\n'
+
+tests/test_empty_states_novel.py:94: AssertionError
+___ test_novel_shelf_new_book_entry_sits_in_header_unless_the_shelf_is_empty ___
+
+    def test_novel_shelf_new_book_entry_sits_in_header_unless_the_shelf_is_empty():
+        # Empty shelf: the only /novels/new entry belongs to the empty-state card,
+        # and the header has none at all.
+>       assert probe(r"""
+    const original=agents.apiJson;
+    agents.apiJson=async(u,i)=>u==='/api/novels'?[]:original(u,i);
+    const shelf=await screen('components/novel/NovelShelf.tsx');
+    const {EmptyState}=load('components/novel/NovelStates.tsx');
+    const header=all(shelf.tree,n=>n.type==='header')[0];
+    assert(header);
+    assert.equal(all(header,n=>typeof n.props?.href==='string'&&n.props.href.includes('/novels/new')).length,0);
+    const entries=[];
+    (function walk(node,ancestors){
+      if(Array.isArray(node)){node.forEach(child=>walk(child,ancestors));return;}
+      if(!node||typeof node!=='object')return;
+      if(typeof node.props?.href==='string'&&node.props.href.includes('/novels/new'))entries.push({node,ancestors});
+      walk(node.props?.children,[...ancestors,node]);
+    })(shelf.tree,[]);
+    assert.equal(entries.length,1);
+    assert(entries[0].ancestors.some(ancestor=>ancestor.type===EmptyState));
+    function plain(node){if(Array.isArray(node))return node.map(plain).join('');if(node==null||typeof node==='boolean')return '';if(typeof node!=='object')return String(node);return plain(node.props?.children);}
+    assert.equal(plain(entries[0].node),'新建一本');
+    assert(plain(shelf.tree).includes('开始你的第一本书'));
+    process.stdout.write(JSON.stringify(true));
+    """) is True
+
+tests/test_empty_states_novel.py:104: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+script = "\nconst original=agents.apiJson;\nagents.apiJson=async(u,i)=>u==='/api/novels'?[]:original(u,i);\nconst shelf=await s...ries[0].node),'新建一本');\nassert(plain(shelf.tree).includes('开始你的第一本书'));\nprocess.stdout.write(JSON.stringify(true));\n"
+
+    def probe(script):
+        if not (ROOT / "frontend" / "node_modules" / "typescript").exists():
+            pytest.skip("frontend/node_modules/typescript is unavailable")
+        if not shutil.which("node"):
+            pytest.skip("node is unavailable")
+        result = subprocess.run(
+            ["node", "-e", DRIVER + "\n(async()=>{\n" + script + "\n})().catch(e=>{process.stderr.write(e.stack);process.exitCode=1;});", str(ROOT)],
+            cwd=ROOT, capture_output=True, text=True, check=False, timeout=30,
+        )
+>       assert result.returncode == 0, result.stderr
+E       AssertionError: AssertionError [ERR_ASSERTION]: Expected values to be strictly equal:
+E         
+E         1 !== 0
+E         
+E             at [eval]:120:8
+E       assert 1 == 0
+E        +  where 1 = CompletedProcess(args=['node', '-e', "\nconst fs = require('fs'), path = require('path'), assert = require('assert/str...t='', stderr='AssertionError [ERR_ASSERTION]: Expected values to be strictly equal:\n\n1 !== 0\n\n    at [eval]:120:8').returncode
+
+tests/test_novel_p2_r1.py:139: AssertionError
+_______ test_novel_shelf_pending_identity_settles_to_embedded_login_link _______
+
+    def test_novel_shelf_pending_identity_settles_to_embedded_login_link():
+        # A fresh process starts without a settled identity recovery: the outer
+        # passes identityPending=true to the inner before the recovery resolves.
+>       assert probe(r"""
+    env.owner='';env.search='embed=1';
+    const NovelShelf=load('components/novel/NovelShelf.tsx').default;
+    const pending=mount(NovelShelf,{});
+    assert.equal(pending.tree.props.owner,'');
+    assert.equal(pending.tree.props.identityPending,true);
+    await flush();
+    const settled=mount(NovelShelf,{});
+    assert.equal(settled.tree.props.owner,'');
+    assert.equal(settled.tree.props.identityPending,false);
+    const inner=mount(settled.tree.type,settled.tree.props);
+    await flush();
+    function plain(node){if(Array.isArray(node))return node.map(plain).join('');if(node==null||typeof node==='boolean')return '';if(typeof node!=='object')return String(node);return plain(node.props?.children);}
+    const text=plain(inner.tree);
+    assert(text.includes('请登录后查看你的书架'));
+    assert(!text.includes('正在加载身份…'));
+    const login=all(inner.tree,n=>n.props?.href==='/login');
+    assert.equal(login.length,1);
+    assert.equal(login[0].props.target,'_top');
+    process.stdout.write(JSON.stringify(true));
+    """) is True
+
+tests/test_empty_states_novel.py:160: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+script = "\nenv.owner='';env.search='embed=1';\nconst NovelShelf=load('components/novel/NovelShelf.tsx').default;\nconst pendin...ert.equal(login.length,1);\nassert.equal(login[0].props.target,'_top');\nprocess.stdout.write(JSON.stringify(true));\n"
+
+    def probe(script):
+        if not (ROOT / "frontend" / "node_modules" / "typescript").exists():
+            pytest.skip("frontend/node_modules/typescript is unavailable")
+        if not shutil.which("node"):
+            pytest.skip("node is unavailable")
+        result = subprocess.run(
+            ["node", "-e", DRIVER + "\n(async()=>{\n" + script + "\n})().catch(e=>{process.stderr.write(e.stack);process.exitCode=1;});", str(ROOT)],
+            cwd=ROOT, capture_output=True, text=True, check=False, timeout=30,
+        )
+>       assert result.returncode == 0, result.stderr
+E       AssertionError: AssertionError [ERR_ASSERTION]: Expected values to be strictly equal:
+E         + actual - expected
+E         
+E         + undefined
+E         - true
+E         
+E             at [eval]:118:8
+E             at [eval]:134:3
+E             at runScriptInThisContext (node:internal/vm:219:10)
+E             at node:internal/process/execution:483:12
+E             at [eval]-wrapper:6:24
+E             at runScriptInContext (node:internal/process/execution:481:60)
+E             at evalFunction (node:internal/process/execution:315:30)
+E             at evalTypeScript (node:internal/process/execution:327:3)
+E             at node:internal/main/eval_string:71:3
+E       assert 1 == 0
+E        +  where 1 = CompletedProcess(args=['node', '-e', "\nconst fs = require('fs'), path = require('path'), assert = require('assert/str...on:315:30)\n    at evalTypeScript (node:internal/process/execution:327:3)\n    at node:internal/main/eval_string:71:3').returncode
+
+tests/test_novel_p2_r1.py:139: AssertionError
+_ test_novel_pages_wire_the_verbatim_pending_identity_branch[NovelWizard.tsx] __
+
+filename = 'NovelWizard.tsx'
+
+    @pytest.mark.parametrize("filename", WIRING_FILES)
+    def test_novel_pages_wire_the_verbatim_pending_identity_branch(filename):
+        source = (NOVEL / filename).read_text(encoding="utf-8")
+>       assert source.count(WIRING_BRANCHES[filename]) == 1
+E       assert 0 == 1
+E        +  where 0 = <built-in method count of str object at 0x7a7e400000>('!owner ? (identityPending ? <LoadingState>正在加载身份…</LoadingState> : <EmptyState>请登录后新建小说。</EmptyState>)')
+E        +    where <built-in method count of str object at 0x7a7e400000> = '"use client";\n\nimport Link from "next/link";\nimport { useRouter, useSearchParams } from "next/navigation";\nimport...         </fieldset>\n            </form>\n          </Glaze>\n        </>}\n      </div>\n    </main>\n  </div>;\n}\n'.count
+
+tests/test_empty_states_novel.py:186: AssertionError
+__ test_novel_pages_wire_the_verbatim_pending_identity_branch[NovelShelf.tsx] __
+
+filename = 'NovelShelf.tsx'
+
+    @pytest.mark.parametrize("filename", WIRING_FILES)
+    def test_novel_pages_wire_the_verbatim_pending_identity_branch(filename):
+        source = (NOVEL / filename).read_text(encoding="utf-8")
+>       assert source.count(WIRING_BRANCHES[filename]) == 1
+E       assert 0 == 1
+E        +  where 0 = <built-in method count of str object at 0x7a7cc5d800>('!owner ? (identityPending ? <LoadingState>正在加载身份…</LoadingState> : <EmptyState>请登录后查看你的书架。<Link href="/login" target={embedded ? "_top" : undefined} className="ml-2 underline">前往登录</Link></EmptyState>)')
+E        +    where <built-in method count of str object at 0x7a7cc5d800> = '"use client";\n\nimport Link from "next/link";\nimport { useSearchParams } from "next/navigation";\nimport { useCallb...formatNovelDate(book.updated_at)}</p>\n          </Link>)}\n        </div>}\n      </div>\n    </main>\n  </div>;\n}\n'.count
+
+tests/test_empty_states_novel.py:186: AssertionError
+_ test_novel_pages_wire_the_verbatim_pending_identity_branch[NovelWorkbench.tsx] _
+
+filename = 'NovelWorkbench.tsx'
+
+    @pytest.mark.parametrize("filename", WIRING_FILES)
+    def test_novel_pages_wire_the_verbatim_pending_identity_branch(filename):
+        source = (NOVEL / filename).read_text(encoding="utf-8")
+>       assert source.count(WIRING_BRANCHES[filename]) == 1
+E       assert 0 == 1
+E        +  where 0 = <built-in method count of str object at 0x7a7d47c000>('!owner ? (identityPending ? <LoadingState>正在加载身份…</LoadingState> : <EmptyState>请登录后打开你的书斋。<Link href="/login" target={embedded ? "_top" : undefined} className="ml-2 underline">前往登录</Link></EmptyState>)')
+E        +    where <built-in method count of str object at 0x7a7d47c000> = '"use client";\n\nimport Link from "next/link";\nimport { useRouter } from "next/navigation";\nimport { useCallback, u...=> setSettings(null)} />}\n            </>}\n          </>}\n        </div>\n      </main>\n    </div>\n  </div>;\n}\n'.count
+
+tests/test_empty_states_novel.py:186: AssertionError
+_______________ test_novel_shelf_header_row_reserves_min_height ________________
+
+    def test_novel_shelf_header_row_reserves_min_height():
+        source = (NOVEL / "NovelShelf.tsx").read_text(encoding="utf-8")
+>       assert source.count(HEADER_ROW) == 1
+E       assert 0 == 1
+E        +  where 0 = <built-in method count of str object at 0x7a7c12c000>('<div className="flex min-h-10 flex-wrap items-center justify-between gap-3">')
+E        +    where <built-in method count of str object at 0x7a7c12c000> = '"use client";\n\nimport Link from "next/link";\nimport { useSearchParams } from "next/navigation";\nimport { useCallb...formatNovelDate(book.updated_at)}</p>\n          </Link>)}\n        </div>}\n      </div>\n    </main>\n  </div>;\n}\n'.count
+
+tests/test_empty_states_novel.py:191: AssertionError
+____ test_privacy_fold_follows_second_fieldset_and_holds_locked_paragraphs _____
+
+    def test_privacy_fold_follows_second_fieldset_and_holds_locked_paragraphs():
+        source = SETTINGS.read_text(encoding="utf-8")
+        first_end = source.index("</fieldset>")
+        second_end = source.index("</fieldset>", first_end + len("</fieldset>"))
+>       assert source.count("<details") == 1
+E       assert 0 == 1
+E        +  where 0 = <built-in method count of str object at 0x7a7d690000>('<details')
+E        +    where <built-in method count of str object at 0x7a7d690000> = '"use client";\n\nimport { useCallback, useEffect, useRef, useState } from "react";\nimport { cn } from "@/lib/utils";...n          onClick={() => { setError(""); setLoading(true); load(); }}>重试</button>}\n      </div>}\n  </section>;\n}\n'.count
+
+tests/test_empty_states_settings_privacy.py:49: AssertionError
+_____ test_first_privacy_paragraph_is_outside_fold_before_switch_and_save ______
+
+    def test_first_privacy_paragraph_is_outside_fold_before_switch_and_save():
+        source = SETTINGS.read_text(encoding="utf-8")
+        lines = source.splitlines()
+        first_lines = [
+            index for index, line in enumerate(lines)
+            if line.strip().startswith("<p className={noteClass}>启用后，")
+        ]
+>       assert len(first_lines) == 1
+E       assert 0 == 1
+E        +  where 0 = len([])
+
+tests/test_empty_states_settings_privacy.py:78: AssertionError
+___________________ test_summary_claude_note_and_switch_copy ___________________
+
+    def test_summary_claude_note_and_switch_copy():
+        source = SETTINGS.read_text(encoding="utf-8")
+>       assert (
+            '<summary className="min-h-10 cursor-pointer py-2 text-sm tracking-[0.06em] '
+            'text-[color:var(--ink)]">更多隐私与计费说明</summary>'
+        ) in source
+E       assert '<summary className="min-h-10 cursor-pointer py-2 text-sm tracking-[0.06em] text-[color:var(--ink)]">更多隐私与计费说明</summary>' in '"use client";\n\nimport { useCallback, useEffect, useRef, useState } from "react";\nimport { cn } from "@/lib/utils";...n          onClick={() => { setError(""); setLoading(true); load(); }}>重试</button>}\n      </div>}\n  </section>;\n}\n'
+
+tests/test_empty_states_settings_privacy.py:104: AssertionError
+_________ test_eight_privacy_paragraphs_appear_once_and_stay_unadorned _________
+
+    def test_eight_privacy_paragraphs_appear_once_and_stay_unadorned():
+        source = SETTINGS.read_text(encoding="utf-8")
+>       assert source.count("<details") == 1
+E       assert 0 == 1
+E        +  where 0 = <built-in method count of str object at 0x7a7d69c000>('<details')
+E        +    where <built-in method count of str object at 0x7a7d69c000> = '"use client";\n\nimport { useCallback, useEffect, useRef, useState } from "react";\nimport { cn } from "@/lib/utils";...n          onClick={() => { setError(""); setLoading(true); load(); }}>重试</button>}\n      </div>}\n  </section>;\n}\n'.count
+
+tests/test_empty_states_settings_privacy.py:122: AssertionError
+___ test_embedded_shelf_hides_heading_and_keeps_create_button_right_aligned ____
+
+    def test_embedded_shelf_hides_heading_and_keeps_create_button_right_aligned():
+>       assert_heading_hides_when_embedded(SHELF, "短片工作室")
+
+tests/test_empty_states_studio.py:40: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+path = PosixPath('<HEAD 副本>/frontend/components/studio/StudioShelf.tsx')
+title = '短片工作室'
+
+    def assert_heading_hides_when_embedded(path, title):
+        source = read(path)
+        tag = h1_tag(source, title)
+>       assert "embedded" in tag, f"{path.name} h1 must key off the embedded flag"
+E       AssertionError: StudioShelf.tsx h1 must key off the embedded flag
+E       assert 'embedded' in '<h1 className="text-[28px] tracking-[.24em]">短片工作室</h1>'
+
+tests/test_ui_polish_settings_drawers.py:52: AssertionError
+_________ test_studio_page_ssr_shows_identity_loading_instead_of_login _________
+
+    def test_studio_page_ssr_shows_identity_loading_instead_of_login():
+        html = kb_probe(KB_SETUP + r"""
+    env.mode='ssr';cache.clear();
+    const Page=load('app/studio/page.tsx').default;
+    const html=renderToStaticMarkup(realReact.createElement(Page));
+    process.stdout.write(JSON.stringify(html));
+    """)
+>       assert "正在加载身份…" in html
+E       assert '正在加载身份…' in '<div class="flex h-dvh min-w-0 flex-col"><header class="shrink-0 border-b border-[color:var(--carve)]"><div class="mx...t-[color:var(--ink2)]">请登录后打开工作室。<a href="/login" class="ml-2 underline">前往登录</a></div></div></main></div></div></div>'
+
+tests/test_empty_states_studio.py:61: AssertionError
+________ test_studio_identity_pending_wiring_and_embedded_login_target _________
+
+    def test_studio_identity_pending_wiring_and_embedded_login_target():
+        sources = {
+            "StudioShelf": SHELF,
+            "StudioWorkbench": WORKBENCH,
+            "KbWorkbench": KB_WORKBENCH,
+        }
+        for name, path in sources.items():
+            source = read(path)
+>           assert source.count("useAccountIdentityPending()") == 1, name
+E           AssertionError: StudioShelf
+E           assert 0 == 1
+E            +  where 0 = <built-in method count of str object at 0x7a7ce67800>('useAccountIdentityPending()')
+E            +    where <built-in method count of str object at 0x7a7ce67800> = '"use client";\n\nimport Link from "next/link";\nimport { useRouter, useSearchParams } from "next/navigation";\nimport...wner} embedded={embedded} busy={busy} onCreate={create} onClose={() => setCreating(false)} />}\n  </StudioShell>;\n}\n'.count
+
+tests/test_empty_states_studio.py:73: AssertionError
+_ test_shelf_header_reserves_height_and_non_embedded_button_is_not_right_aligned _
+
+    def test_shelf_header_reserves_height_and_non_embedded_button_is_not_right_aligned():
+>       assert read(SHELF).count(SHELF_HEADER_ROW) == 1
+E       assert 0 == 1
+E        +  where 0 = <built-in method count of str object at 0x7a7c079000>('<div className="flex min-h-10 flex-wrap items-center justify-between gap-3">')
+E        +    where <built-in method count of str object at 0x7a7c079000> = '"use client";\n\nimport Link from "next/link";\nimport { useRouter, useSearchParams } from "next/navigation";\nimport...wner} embedded={embedded} busy={busy} onCreate={create} onClose={() => setCreating(false)} />}\n  </StudioShell>;\n}\n'.count
+E        +      where '"use client";\n\nimport Link from "next/link";\nimport { useRouter, useSearchParams } from "next/navigation";\nimport...wner} embedded={embedded} busy={busy} onCreate={create} onClose={() => setCreating(false)} />}\n  </StudioShell>;\n}\n' = read(PosixPath('<HEAD 副本>/frontend/components/studio/StudioShelf.tsx'))
+
+tests/test_empty_states_studio.py:84: AssertionError
+_______ test_identity_pending_workbenches_show_loading_instead_of_login ________
+
+    def test_identity_pending_workbenches_show_loading_instead_of_login():
+>       assert shell_probe(SETUP + r"""
+    const flat=n=>Array.isArray(n)?n.map(flat).join(''):n&&typeof n==='object'?flat(n.props?.children):n==null?'':String(n);
+    const page=mount(load('components/studio/StudioWorkbench.tsx').AccountStudioWorkbench,{id:'project',owner:'',embedded:false,identityPending:true});await flush();
+    const rendered=flat(page.tree);
+    assert(rendered.includes('正在加载身份…'),rendered);
+    assert(!rendered.includes('请登录后'),rendered);
+    page.close();process.stdout.write('true');
+    """) is True
+
+tests/test_empty_states_studio.py:97: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+script = "\nenv.access={enabled:true,caps:{daily_cny:100,max_quote_cny:20,inflight:{wan:1,seedance:1}},today:{committed_cny:2,r...udes('正在加载身份…'),rendered);\nassert(!rendered.includes('请登录后'),rendered);\npage.close();process.stdout.write('true');\n"
+
+    def probe(script):
+        if not (ROOT / "frontend/node_modules/typescript/lib/typescript.js").is_file():
+            pytest.skip("frontend dependencies unavailable: typescript")
+        if not shutil.which("node"):
+            pytest.skip("node is unavailable")
+        result = subprocess.run(
+            ["node", "-e", STUDIO_DRIVER + "\n(async()=>{\n" + script + "\n})().catch(e=>{process.stderr.write(e.stack);process.exitCode=1;});", str(ROOT)],
+            cwd=ROOT, capture_output=True, text=True, check=False, timeout=30,
+        )
+>       assert result.returncode == 0, result.stderr
+E       AssertionError: AssertionError [ERR_ASSERTION]: 全部项目导演知识库短片工作室false请登录后打开工作室。
+E             at [eval]:125:1
+E       assert 1 == 0
+E        +  where 1 = CompletedProcess(args=['node', '-e', "\nconst fs = require('fs'), path = require('path'), assert = require('assert/str..., returncode=1, stdout='', stderr='AssertionError [ERR_ASSERTION]: 全部项目导演知识库短片工作室false请登录后打开工作室。\n    at [eval]:125:1').returncode
+
+tests/test_studio_frontend_shell.py:28: AssertionError
+_____________________ test_voice_status_bubble_ssr_states ______________________
+
+    def test_voice_status_bubble_ssr_states():
+        holding = render_voice({"disabled": False, "dictating": False, "holding": True})
+        match = STATUS_SPAN.search(holding)
+>       assert match is not None
+E       assert None is not None
+
+tests/test_empty_states_voice_hint.py:122: AssertionError
+_______________ test_voice_status_bubble_respects_first_use_hint _______________
+
+    def test_voice_status_bubble_respects_first_use_hint():
+        require_rendering_dependencies()
+        result = json.loads(run_node(VOICE_HINT_RUNNER, str(VOICE)))
+        first_use = STATUS_SPAN.search(result["firstUse"])
+>       assert first_use is not None
+E       assert None is not None
+
+tests/test_empty_states_voice_hint.py:193: AssertionError
+___________________ test_voice_status_bubble_source_contract ___________________
+
+    def test_voice_status_bubble_source_contract():
+        source = VOICE.read_text(encoding="utf-8")
+        match = re.search(r"<span data-voice-status[^>]*>", source)
+>       assert match is not None
+E       assert None is not None
+
+tests/test_empty_states_voice_hint.py:202: AssertionError
+=========================== short test summary info ============================
+FAILED tests/test_empty_states_agents.py::test_my_agent_workspace_shows_pending_identity_before_login
+FAILED tests/test_empty_states_agents.py::test_agent_exchange_workspace_pending_identity_uses_local_loading_state
+FAILED tests/test_empty_states_agents.py::test_agent_memory_panel_shows_pending_identity_before_login
+FAILED tests/test_empty_states_agents.py::test_agent_card_page_shows_pending_identity_before_login
+FAILED tests/test_empty_states_chat_openers.py::test_chat_openers_offer_three_draft_only_actions
+FAILED tests/test_empty_states_chat_openers.py::test_chat_opener_guards_match_their_actions
+FAILED tests/test_empty_states_chat_openers.py::test_enter_key_ignores_auto_repeat
+FAILED tests/test_empty_states_chat_openers.py::test_chat_opener_bodies_match_the_spec_exactly
+FAILED tests/test_empty_states_chat_openers.py::test_chat_opener_buttons_match_the_spec_exactly
+FAILED tests/test_empty_states_chat_openers.py::test_empty_chat_wording_points_at_the_conversation_list
+FAILED tests/test_empty_states_history_dates.py::test_date_chips_open_native_picker_and_bound_each_other
+FAILED tests/test_empty_states_history_dates.py::test_date_chips_render_chinese_day_faces_and_drop_native_placeholder
+FAILED tests/test_empty_states_history_dates.py::test_all_quick_filter_requires_empty_date_bounds
+FAILED tests/test_empty_states_history_dates.py::test_date_labels_stay_accessible_and_existing_history_contracts_survive
+FAILED tests/test_empty_states_identity.py::test_source_contract_keeps_pending_hook_and_original_code
+FAILED tests/test_empty_states_identity.py::test_server_snapshot_is_pending
+FAILED tests/test_empty_states_identity.py::test_client_without_username_stays_pending_until_recovery
+FAILED tests/test_empty_states_identity.py::test_recovery_settle_flips_to_false_and_notifies_subscribers
+FAILED tests/test_empty_states_identity.py::test_failed_recovery_with_empty_username_never_reports_pending
+FAILED tests/test_empty_states_identity.py::test_known_username_is_not_pending
+FAILED tests/test_empty_states_match_profile.py::test_match_empty_section_explains_both_ways_to_meet_people
+FAILED tests/test_empty_states_match_profile.py::test_match_page_keeps_mobile_variant_and_replaces_the_tiny_anonymous_hint
+FAILED tests/test_empty_states_match_profile.py::test_match_empty_section_immediately_follows_the_zero_pending_branch
+FAILED tests/test_empty_states_match_profile.py::test_match_empty_section_moves_top_spacing_from_margin_to_padding
+FAILED tests/test_empty_states_match_profile.py::test_profile_page_uses_the_new_social_profile_name_everywhere
+FAILED tests/test_empty_states_match_profile.py::test_profile_name_is_updated_in_each_document
+FAILED tests/test_empty_states_novel.py::test_shelf_empty_state_has_exactly_one_new_book_link
+FAILED tests/test_empty_states_novel.py::test_shelf_pending_identity_replaces_login_and_idles_refresh
+FAILED tests/test_empty_states_novel.py::test_novel_pages_wire_identity_pending_before_login[NovelWizard.tsx]
+FAILED tests/test_empty_states_novel.py::test_novel_pages_wire_identity_pending_before_login[NovelShelf.tsx]
+FAILED tests/test_empty_states_novel.py::test_novel_pages_wire_identity_pending_before_login[NovelWorkbench.tsx]
+FAILED tests/test_empty_states_novel.py::test_novel_login_link_escapes_the_embedded_frame[NovelShelf.tsx]
+FAILED tests/test_empty_states_novel.py::test_novel_login_link_escapes_the_embedded_frame[NovelWorkbench.tsx]
+FAILED tests/test_empty_states_novel.py::test_novel_shelf_hides_header_entry_only_in_empty_state_and_waits_for_identity
+FAILED tests/test_empty_states_novel.py::test_novel_shelf_new_book_entry_sits_in_header_unless_the_shelf_is_empty
+FAILED tests/test_empty_states_novel.py::test_novel_shelf_pending_identity_settles_to_embedded_login_link
+FAILED tests/test_empty_states_novel.py::test_novel_pages_wire_the_verbatim_pending_identity_branch[NovelWizard.tsx]
+FAILED tests/test_empty_states_novel.py::test_novel_pages_wire_the_verbatim_pending_identity_branch[NovelShelf.tsx]
+FAILED tests/test_empty_states_novel.py::test_novel_pages_wire_the_verbatim_pending_identity_branch[NovelWorkbench.tsx]
+FAILED tests/test_empty_states_novel.py::test_novel_shelf_header_row_reserves_min_height
+FAILED tests/test_empty_states_settings_privacy.py::test_privacy_fold_follows_second_fieldset_and_holds_locked_paragraphs
+FAILED tests/test_empty_states_settings_privacy.py::test_first_privacy_paragraph_is_outside_fold_before_switch_and_save
+FAILED tests/test_empty_states_settings_privacy.py::test_summary_claude_note_and_switch_copy
+FAILED tests/test_empty_states_settings_privacy.py::test_eight_privacy_paragraphs_appear_once_and_stay_unadorned
+FAILED tests/test_empty_states_studio.py::test_embedded_shelf_hides_heading_and_keeps_create_button_right_aligned
+FAILED tests/test_empty_states_studio.py::test_studio_page_ssr_shows_identity_loading_instead_of_login
+FAILED tests/test_empty_states_studio.py::test_studio_identity_pending_wiring_and_embedded_login_target
+FAILED tests/test_empty_states_studio.py::test_shelf_header_reserves_height_and_non_embedded_button_is_not_right_aligned
+FAILED tests/test_empty_states_studio.py::test_identity_pending_workbenches_show_loading_instead_of_login
+FAILED tests/test_empty_states_voice_hint.py::test_voice_status_bubble_ssr_states
+FAILED tests/test_empty_states_voice_hint.py::test_voice_status_bubble_respects_first_use_hint
+FAILED tests/test_empty_states_voice_hint.py::test_voice_status_bubble_source_contract
+52 failed in 2.36s

@@ -1,0 +1,364 @@
+{
+ "ssrHtml /novels/new": {
+  "请登录后新建小说": true,
+  "请登录后查看你的书架": false,
+  "前往登录": false,
+  "正在加载": false,
+  "思路与篇幅": true,
+  "开始你的第一本书": false
+ },
+ "ssrHtml /novels": {
+  "请登录后新建小说": false,
+  "请登录后查看你的书架": true,
+  "前往登录": true,
+  "正在加载": false,
+  "思路与篇幅": false,
+  "开始你的第一本书": false
+ },
+ "runs": [
+  {
+   "scenario": "R0 正常",
+   "path": "/novels/new",
+   "profileRequests": 0,
+   "timeline": [
+    {
+     "ms": 1000,
+     "请登录后新建小说": false,
+     "请登录后查看你的书架": false,
+     "前往登录": false,
+     "正在加载": false,
+     "思路与篇幅": true,
+     "开始你的第一本书": false
+    },
+    {
+     "ms": 2500,
+     "请登录后新建小说": false,
+     "请登录后查看你的书架": false,
+     "前往登录": false,
+     "正在加载": false,
+     "思路与篇幅": true,
+     "开始你的第一本书": false
+    },
+    {
+     "ms": 5000,
+     "请登录后新建小说": false,
+     "请登录后查看你的书架": false,
+     "前往登录": false,
+     "正在加载": false,
+     "思路与篇幅": true,
+     "开始你的第一本书": false
+    },
+    {
+     "ms": 8000,
+     "请登录后新建小说": false,
+     "请登录后查看你的书架": false,
+     "前往登录": false,
+     "正在加载": false,
+     "思路与篇幅": true,
+     "开始你的第一本书": false
+    }
+   ]
+  },
+  {
+   "scenario": "R1 脚本晚到 3s",
+   "path": "/novels/new",
+   "profileRequests": 0,
+   "timeline": [
+    {
+     "ms": 1000,
+     "请登录后新建小说": true,
+     "请登录后查看你的书架": false,
+     "前往登录": false,
+     "正在加载": false,
+     "思路与篇幅": true,
+     "开始你的第一本书": false
+    },
+    {
+     "ms": 2500,
+     "请登录后新建小说": true,
+     "请登录后查看你的书架": false,
+     "前往登录": false,
+     "正在加载": false,
+     "思路与篇幅": true,
+     "开始你的第一本书": false
+    },
+    {
+     "ms": 5000,
+     "请登录后新建小说": false,
+     "请登录后查看你的书架": false,
+     "前往登录": false,
+     "正在加载": false,
+     "思路与篇幅": true,
+     "开始你的第一本书": false
+    },
+    {
+     "ms": 8000,
+     "请登录后新建小说": false,
+     "请登录后查看你的书架": false,
+     "前往登录": false,
+     "正在加载": false,
+     "思路与篇幅": true,
+     "开始你的第一本书": false
+    }
+   ]
+  },
+  {
+   "scenario": "R2 无本地用户名 + profile 慢 4s",
+   "path": "/novels/new",
+   "profileRequests": 1,
+   "timeline": [
+    {
+     "ms": 1000,
+     "请登录后新建小说": true,
+     "请登录后查看你的书架": false,
+     "前往登录": false,
+     "正在加载": false,
+     "思路与篇幅": true,
+     "开始你的第一本书": false
+    },
+    {
+     "ms": 2500,
+     "请登录后新建小说": true,
+     "请登录后查看你的书架": false,
+     "前往登录": false,
+     "正在加载": false,
+     "思路与篇幅": true,
+     "开始你的第一本书": false
+    },
+    {
+     "ms": 5000,
+     "请登录后新建小说": false,
+     "请登录后查看你的书架": false,
+     "前往登录": false,
+     "正在加载": false,
+     "思路与篇幅": true,
+     "开始你的第一本书": false
+    },
+    {
+     "ms": 8000,
+     "请登录后新建小说": false,
+     "请登录后查看你的书架": false,
+     "前往登录": false,
+     "正在加载": false,
+     "思路与篇幅": true,
+     "开始你的第一本书": false
+    }
+   ]
+  },
+  {
+   "scenario": "R3 无本地用户名 + profile 500",
+   "path": "/novels/new",
+   "profileRequests": 2,
+   "timeline": [
+    {
+     "ms": 1000,
+     "请登录后新建小说": true,
+     "请登录后查看你的书架": false,
+     "前往登录": false,
+     "正在加载": false,
+     "思路与篇幅": true,
+     "开始你的第一本书": false
+    },
+    {
+     "ms": 2500,
+     "请登录后新建小说": true,
+     "请登录后查看你的书架": false,
+     "前往登录": false,
+     "正在加载": false,
+     "思路与篇幅": true,
+     "开始你的第一本书": false
+    },
+    {
+     "ms": 5000,
+     "请登录后新建小说": true,
+     "请登录后查看你的书架": false,
+     "前往登录": false,
+     "正在加载": false,
+     "思路与篇幅": true,
+     "开始你的第一本书": false
+    },
+    {
+     "ms": 8000,
+     "请登录后新建小说": true,
+     "请登录后查看你的书架": false,
+     "前往登录": false,
+     "正在加载": false,
+     "思路与篇幅": true,
+     "开始你的第一本书": false
+    }
+   ]
+  },
+  {
+   "scenario": "R0 正常",
+   "path": "/novels",
+   "profileRequests": 0,
+   "timeline": [
+    {
+     "ms": 1000,
+     "请登录后新建小说": false,
+     "请登录后查看你的书架": false,
+     "前往登录": false,
+     "正在加载": false,
+     "思路与篇幅": false,
+     "开始你的第一本书": true
+    },
+    {
+     "ms": 2500,
+     "请登录后新建小说": false,
+     "请登录后查看你的书架": false,
+     "前往登录": false,
+     "正在加载": false,
+     "思路与篇幅": false,
+     "开始你的第一本书": true
+    },
+    {
+     "ms": 5000,
+     "请登录后新建小说": false,
+     "请登录后查看你的书架": false,
+     "前往登录": false,
+     "正在加载": false,
+     "思路与篇幅": false,
+     "开始你的第一本书": true
+    },
+    {
+     "ms": 8000,
+     "请登录后新建小说": false,
+     "请登录后查看你的书架": false,
+     "前往登录": false,
+     "正在加载": false,
+     "思路与篇幅": false,
+     "开始你的第一本书": true
+    }
+   ]
+  },
+  {
+   "scenario": "R1 脚本晚到 3s",
+   "path": "/novels",
+   "profileRequests": 0,
+   "timeline": [
+    {
+     "ms": 1000,
+     "请登录后新建小说": false,
+     "请登录后查看你的书架": true,
+     "前往登录": true,
+     "正在加载": false,
+     "思路与篇幅": false,
+     "开始你的第一本书": false
+    },
+    {
+     "ms": 2500,
+     "请登录后新建小说": false,
+     "请登录后查看你的书架": true,
+     "前往登录": true,
+     "正在加载": false,
+     "思路与篇幅": false,
+     "开始你的第一本书": false
+    },
+    {
+     "ms": 5000,
+     "请登录后新建小说": false,
+     "请登录后查看你的书架": false,
+     "前往登录": false,
+     "正在加载": false,
+     "思路与篇幅": false,
+     "开始你的第一本书": true
+    },
+    {
+     "ms": 8000,
+     "请登录后新建小说": false,
+     "请登录后查看你的书架": false,
+     "前往登录": false,
+     "正在加载": false,
+     "思路与篇幅": false,
+     "开始你的第一本书": true
+    }
+   ]
+  },
+  {
+   "scenario": "R2 无本地用户名 + profile 慢 4s",
+   "path": "/novels",
+   "profileRequests": 2,
+   "timeline": [
+    {
+     "ms": 1000,
+     "请登录后新建小说": false,
+     "请登录后查看你的书架": true,
+     "前往登录": true,
+     "正在加载": false,
+     "思路与篇幅": false,
+     "开始你的第一本书": false
+    },
+    {
+     "ms": 2500,
+     "请登录后新建小说": false,
+     "请登录后查看你的书架": true,
+     "前往登录": true,
+     "正在加载": false,
+     "思路与篇幅": false,
+     "开始你的第一本书": false
+    },
+    {
+     "ms": 5000,
+     "请登录后新建小说": false,
+     "请登录后查看你的书架": false,
+     "前往登录": false,
+     "正在加载": false,
+     "思路与篇幅": false,
+     "开始你的第一本书": true
+    },
+    {
+     "ms": 8000,
+     "请登录后新建小说": false,
+     "请登录后查看你的书架": false,
+     "前往登录": false,
+     "正在加载": false,
+     "思路与篇幅": false,
+     "开始你的第一本书": true
+    }
+   ]
+  },
+  {
+   "scenario": "R3 无本地用户名 + profile 500",
+   "path": "/novels",
+   "profileRequests": 2,
+   "timeline": [
+    {
+     "ms": 1000,
+     "请登录后新建小说": false,
+     "请登录后查看你的书架": true,
+     "前往登录": true,
+     "正在加载": false,
+     "思路与篇幅": false,
+     "开始你的第一本书": false
+    },
+    {
+     "ms": 2500,
+     "请登录后新建小说": false,
+     "请登录后查看你的书架": true,
+     "前往登录": true,
+     "正在加载": false,
+     "思路与篇幅": false,
+     "开始你的第一本书": false
+    },
+    {
+     "ms": 5000,
+     "请登录后新建小说": false,
+     "请登录后查看你的书架": true,
+     "前往登录": true,
+     "正在加载": false,
+     "思路与篇幅": false,
+     "开始你的第一本书": false
+    },
+    {
+     "ms": 8000,
+     "请登录后新建小说": false,
+     "请登录后查看你的书架": true,
+     "前往登录": true,
+     "正在加载": false,
+     "思路与篇幅": false,
+     "开始你的第一本书": false
+    }
+   ]
+  }
+ ]
+}
