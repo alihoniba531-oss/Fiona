@@ -5,7 +5,7 @@
 ## 当前架构
 
 - `backend/`：FastAPI + SQLite `fiona.db`，入口 `main.py`，通过 `run.py` 监听 `127.0.0.1:8000`。
-- `frontend/`：Next.js 16.2.6 App Router + React 19，开发端口 3000。
+- `frontend/`：Next.js 16.4.3 App Router + React 19，开发端口 3000。
 - `desktop/`：Tauri 2 Windows 壳；有配置时建 SSH 隧道，无配置时加载 `https://madchloechat.online`（线上服务已于 2026-09-25 下线，该地址当前不可用）。
 - 模型：DashScope/Qwen；主力 `qwen3.8-omni-flash`，轻量 `qwen3.8-flash`，看图 `qwen3.8-omni-flash`（`FIONA_CHAT_VISION_MODEL` 可改；原 `qwen-vl-max` 已不在账号可用模型列表），搜索、旅行规划、热点展开和卡片详情 `qwen-plus`，语音使用 Qwen ASR 和 DashScope TTS。这四项走 DashScope 原生接口并强制联网搜索，固定 30 秒 socket 超时、不重试，不受兼容客户端的 `DASHSCOPE_TIMEOUT_SECONDS` / `DASHSCOPE_MAX_RETRIES` 控制；卡片详情路由外层另有 45 秒总超时。热点分类使用 `qwen3.8-flash`，请求固定 8 秒超时、不重试。聊天生图工具默认火山方舟 Seedream 5.0 Flash；面板生图和修图默认 Qwen Image 3.0，也可选 Seedream；两者均扣 10 颗草莓，后者将描述和参考图发送给字节跳动火山引擎。
 - 天气：独立 `weather` 意图，使用阿里云百炼托管的高德地图 MCP（Amap Maps）；需在百炼控制台开通，复用 `DASHSCOPE_API_KEY`，目前限时免费，结束后按量计费，单价以控制台为准。每次只向该服务发送用户明确说出的城市名，不发送聊天历史、私有记忆或用户位置，不做 IP 定位、不默认城市。

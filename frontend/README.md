@@ -1,6 +1,6 @@
 # Fiona Web
 
-Fiona 的 Web/PWA 客户端，使用 Next.js 16.3.3、React 19、Tailwind CSS 4 和 React Three Fiber。它承载 Chloe 对话、语音、匹配、真人聊天、广场、社群、画像、历史和设置。
+Fiona 的 Web/PWA 客户端，使用 Next.js 16.4.3、React 19、Tailwind CSS 4 和 React Three Fiber。它承载 Chloe 对话、语音、匹配、真人聊天、广场、社群、画像、历史和设置。
 
 项目总览见 [根 README](../README.md)，后端与数据流见 [架构文档](../docs/ARCHITECTURE.md)。
 

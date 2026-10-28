@@ -495,3 +495,11 @@ Fiona 的目标已确认调整为“每个用户拥有自己的 AI 分身，分�
 P0 明确不做：腾讯云 MPS/MiniMax、一次两版与版本对比、偏好记忆、LRC 导出、歌词时间轴解析、纯音乐 BGM、平台模型/判断器/意图识别路径的写歌。已知局限：火山没有局部编辑，改一段词只能整首重新生成，旋律不保证延续；`Captions` 未解析；只对 Claude 智能体模式开放；P0 只接火山、一次一版；备份脚本尚未包含写歌目录。
 
 P1/P2 待办：同参数重生成与两版对比、改词后整首重生成的新旧对照、`Captions` 解析与 LRC 评估、偏好记忆见「P1：近期迭代 / 写歌」；备份纳入 `FIONA_SONG_DIR`、腾讯 MPS/MiniMax 第二供应商、纯音乐和平台模型写歌路径见「P2：工程治理」。
+
+## 2026-10-27：依赖安全升级（Next.js 16.4.3 与 Pillow 13.0.0）
+
+CI「Quality」的两个依赖审计步骤在 0c80323 上变红，因此把两项依赖升到修复版本，对规范的图片与页面行为不变（已知差异见下）：前端 `next` 与 `eslint-config-next` 升至 16.4.3（精确版本），修复 `npm audit` 报告的严重级漏洞（GHSA-2464-fhr4-w9xw、GHSA-p3m5-59mp-jv5r、GHSA-673q-mjm6-r5xr）；后端 `Pillow` 升至 13.0.0，修复 `pip-audit` 报告的 37 个已知漏洞。除这三项外没有改依赖版本，未改业务代码、测试代码和 CI 配置。
+
+验证结果（2026-10-27 主代理）：后端 `pytest -q -p no:cacheprovider` 为 7744 passed、0 skipped；`pip check`、`compileall`、`pip_audit` 均通过（0 个已知漏洞）。前端 `npm ci`、`npm run lint`（0 errors、25 warnings）、`npx tsc --noEmit`、`npm run build`、`npm audit --audit-level=high --omit=dev`（0 漏洞）均通过；升级前后的 15 条路由冒烟结果逐字节一致，Pillow 13 个图像用例的 13/13 对比一致、像素差为 0。全量 `npm audit --audit-level=high` 仍报告升级前已存在的开发依赖 `zod 4.4.3` high 告警（本任务未改该依赖）。
+
+已知差异：Pillow 13 解析 EXIF 时重复标签改为保留第一个值（12 保留最后一个），因此 EXIF 里带多个取值不同的 Orientation 标签的畸形 JPEG，上传与参考图处理后的旋转方向会与 12 相反；元数据照样清除，规范文件不受影响。独立复核（订阅 Opus 5.5，见 `docs/tasks/2026-10-27-deps-security/04-review.md`）通过，无必须修复项。

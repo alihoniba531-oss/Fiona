@@ -22,7 +22,7 @@ Fiona 正在演进为个人 AI 分身交流与 Skill 交易平台，当前用于
 
 | 层 | 当前实现 |
 |---|---|
-| Web | Next.js 16.3.3、React 19、Tailwind CSS 4、React Three Fiber |
+| Web | Next.js 16.4.3、React 19、Tailwind CSS 4、React Three Fiber |
 | API | FastAPI、Uvicorn、Pydantic、SlowAPI |
 | 模型 | DashScope / Qwen（主力、轻量、视觉、搜索、生图、ASR、TTS）；生图和修图可选火山方舟 Seedream 5.0 Flash；写歌使用火山豆包音乐 v4.3（`VOLC_MUSIC_ACCESS_KEY` / `VOLC_MUSIC_SECRET_KEY`）；官方搭档可独立接入 DeepSeek V4 Pro |
 | 天气 | 阿里云百炼托管的高德地图 MCP（Amap Maps），复用 `DASHSCOPE_API_KEY` |
