@@ -1,0 +1,12 @@
+PASS 1 改动集合 ⊆ 白名单  125 个路径
+PASS 2 02-spec.md 与 verify/** 未被改动  19 个文件
+PASS 3 与标准答案逐字节一致  88 个文件
+PASS 4 既有测试只改附件的 29 行  10 个文件
+PASS 5 没有新增粗体
+PASS 5 没有新增「·」
+PASS 6 源码规则 0 命中  == FAIL 0
+PASS 6 令牌对比度全部达标  不达标 0 条： 无
+PASS 6 生成 CSS 0 违规  scannedFiles=131 font-size/font 违规=0 令牌编译不符=0
+PASS 7 4 个新测试存在
+PASS 7 frontend/README.md 有「设计令牌与门禁」
+== FAIL 0 []

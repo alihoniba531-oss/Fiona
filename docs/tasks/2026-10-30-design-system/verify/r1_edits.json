@@ -1,0 +1,16 @@
+[
+ {
+  "n": 1,
+  "file": "frontend/app/globals.css",
+  "count": 1,
+  "old": "  .image-preview-dialog::backdrop { background:var(--scrim); }\n",
+  "new": "  /* Safari 17.4 之前，::backdrop 取不到 :root 上的变量：var() 带上原来的遮罩色作兜底 */\n  .image-preview-dialog::backdrop { background:var(--scrim, rgba(31,41,38,.18)); }\n  .dark .image-preview-dialog::backdrop { background:var(--scrim, rgba(0,0,0,.45)); }\n"
+ },
+ {
+  "n": 2,
+  "file": "frontend/app/globals.css",
+  "count": 1,
+  "old": "  .confirm-dialog::backdrop { background:var(--scrim); }\n",
+  "new": "  .confirm-dialog::backdrop { background:var(--scrim, rgba(31,41,38,.18)); }\n  .dark .confirm-dialog::backdrop { background:var(--scrim, rgba(0,0,0,.45)); }\n"
+ }
+]

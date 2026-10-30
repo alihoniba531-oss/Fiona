@@ -1,0 +1,198 @@
+[
+ {
+  "n": 1,
+  "file": "frontend/app/globals.css",
+  "count": 1,
+  "old": "  --color-sidebar-ring: var(--sidebar-ring);\n  --color-sidebar-border: var(--sidebar-border);\n  --color-sidebar-accent-foreground: var(--sidebar-accent-foreground);\n  --color-sidebar-accent: var(--sidebar-accent);\n  --color-sidebar-primary-foreground: var(--sidebar-primary-foreground);\n  --color-sidebar-primary: var(--sidebar-primary);\n  --color-sidebar-foreground: var(--sidebar-foreground);\n  --color-sidebar: var(--sidebar);\n",
+  "new": ""
+ },
+ {
+  "n": 2,
+  "file": "frontend/app/globals.css",
+  "count": 1,
+  "old": "  --radius-4xl: calc(var(--radius) * 2.6);\n}\n",
+  "new": "  --radius-4xl: calc(var(--radius) * 2.6);\n  --text-fs-11: var(--fs-11);\n  --text-fs-12: var(--fs-12);\n  --text-fs-12--line-height: calc(16 / 12);\n  --text-fs-13: var(--fs-13);\n  --text-fs-13--line-height: calc(20 / 13);\n  --text-fs-15: var(--fs-15);\n  --text-fs-15--line-height: 1.5;\n  --text-fs-16\\.5: var(--fs-16-5);\n  --text-fs-18: var(--fs-18);\n  --text-fs-22: var(--fs-22);\n  --text-fs-22--line-height: calc(28 / 22);\n  --text-fs-30: var(--fs-30);\n  --text-fs-46: var(--fs-46);\n  --text-fs-76: var(--fs-76);\n}\n"
+ },
+ {
+  "n": 3,
+  "file": "frontend/app/globals.css",
+  "count": 2,
+  "old": "  --ink3: #84918B;\n",
+  "new": "  --ink3: #6F7C76;\n"
+ },
+ {
+  "n": 4,
+  "file": "frontend/app/globals.css",
+  "count": 2,
+  "old": "  --seal: #A8322A;\n",
+  "new": "  --seal: #A8322A;\n  --stamp: #A8322A;\n"
+ },
+ {
+  "n": 5,
+  "file": "frontend/app/globals.css",
+  "count": 2,
+  "old": "  --seal: #BF4537;\n",
+  "new": "  --seal: #E56F5D;\n  --stamp: #BF4537;\n"
+ },
+ {
+  "n": 6,
+  "file": "frontend/app/globals.css",
+  "count": 1,
+  "old": "  --radius: 0.625rem;\n",
+  "new": "  --radius: 0.625rem;\n  --fs-11: 11px; --fs-12: 12px; --fs-13: 13px; --fs-15: 15px; --fs-16-5: 16.5px;\n  --fs-18: 18px; --fs-22: 22px; --fs-30: 30px; --fs-46: 46px; --fs-76: 76px;\n"
+ },
+ {
+  "n": 7,
+  "file": "frontend/app/globals.css",
+  "count": 1,
+  "old": "  --amber-ink: var(--ink); --dim: var(--ink3); --rec: var(--seal);\n",
+  "new": ""
+ },
+ {
+  "n": 8,
+  "file": "frontend/app/globals.css",
+  "count": 1,
+  "old": "  --rec-soft: color-mix(in srgb, var(--seal) 12%, transparent);\n",
+  "new": "  --seal-soft: color-mix(in srgb, var(--stamp) 12%, transparent);\n"
+ },
+ {
+  "n": 9,
+  "file": "frontend/app/globals.css",
+  "count": 1,
+  "old": "  --glass-border: var(--rule); --glass-strong: var(--glass2); --glass-hi: var(--rim);\n",
+  "new": ""
+ },
+ {
+  "n": 10,
+  "file": "frontend/app/globals.css",
+  "count": 1,
+  "old": "  --sidebar: var(--glass); --sidebar-foreground: var(--ink); --sidebar-primary: var(--btn);\n  --sidebar-primary-foreground: var(--btnink); --sidebar-accent: var(--slip);\n  --sidebar-accent-foreground: var(--ink); --sidebar-border: var(--rule); --sidebar-ring: var(--ink);\n",
+  "new": ""
+ },
+ {
+  "n": 11,
+  "file": "frontend/app/globals.css",
+  "count": 1,
+  "old": "  --fill: rgba(31,41,38,.03); --shadow: 0 1px 2px var(--drop);\n",
+  "new": "  --fill: rgba(31,41,38,.03);\n"
+ },
+ {
+  "n": 12,
+  "file": "frontend/app/globals.css",
+  "count": 1,
+  "old": "  * { @apply border-[color:var(--rule)] outline-[color:var(--ink)]/50; }\n",
+  "new": "  * { @apply border-[color:var(--rule)] outline-[color:var(--ink)]/50; }\n  ::placeholder { color: var(--ink2); }\n"
+ },
+ {
+  "n": 13,
+  "file": "frontend/app/globals.css",
+  "count": 1,
+  "old": "    font-family: var(--font-sans-stack); -webkit-font-smoothing: antialiased;\n",
+  "new": "    font-family: var(--font-sans-stack); font-size: var(--fs-16-5); -webkit-font-smoothing: antialiased;\n"
+ },
+ {
+  "n": 14,
+  "file": "frontend/app/globals.css",
+  "count": 1,
+  "old": "font-variant-numeric:tabular-nums; font-size:12px; color:var(--ink2); }",
+  "new": "font-variant-numeric:tabular-nums; font-size:var(--fs-12); color:var(--ink2); }"
+ },
+ {
+  "n": 15,
+  "file": "frontend/app/globals.css",
+  "count": 1,
+  "old": "color:var(--ink); font-size:13px; letter-spacing:.08em;",
+  "new": "color:var(--ink); font-size:var(--fs-13); letter-spacing:.08em;"
+ },
+ {
+  "n": 16,
+  "file": "frontend/app/globals.css",
+  "count": 1,
+  "old": ".btn-danger:hover { background:var(--rec-soft); border-color:transparent; }",
+  "new": ".btn-danger:hover { background:var(--seal-soft); border-color:transparent; }"
+ },
+ {
+  "n": 17,
+  "file": "frontend/app/globals.css",
+  "count": 1,
+  "old": "border:1px solid var(--rule2); color:var(--ink2); font-size:12px; white-space:nowrap; }",
+  "new": "border:1px solid var(--rule2); color:var(--ink2); font-size:var(--fs-12); white-space:nowrap; }"
+ },
+ {
+  "n": 18,
+  "file": "frontend/app/globals.css",
+  "count": 1,
+  "old": "border-radius:4px; font-size:11px; border:1px solid var(--rule2);",
+  "new": "border-radius:4px; font-size:var(--fs-11); border:1px solid var(--rule2);"
+ },
+ {
+  "n": 19,
+  "file": "frontend/app/globals.css",
+  "count": 1,
+  "old": "padding:10px 15px; font-size:16px; line-height:1.8;",
+  "new": "padding:10px 15px; font-size:var(--fs-16-5); line-height:1.8;"
+ },
+ {
+  "n": 20,
+  "file": "frontend/app/globals.css",
+  "count": 1,
+  "old": "padding:0; font-size:16.5px; line-height:1.95; }",
+  "new": "padding:0; font-size:var(--fs-16-5); line-height:1.95; }"
+ },
+ {
+  "n": 21,
+  "file": "frontend/app/globals.css",
+  "count": 1,
+  "old": "color:var(--seal); font-size:12px; animation:porcelain-like-pop",
+  "new": "color:var(--seal); font-size:var(--fs-12); animation:porcelain-like-pop"
+ },
+ {
+  "n": 22,
+  "file": "frontend/app/globals.css",
+  "count": 1,
+  "old": "  color: var(--amber-ink);\n",
+  "new": "  color: var(--ink);\n"
+ },
+ {
+  "n": 23,
+  "file": "frontend/app/globals.css",
+  "count": 1,
+  "old": "  .image-preview-dialog::backdrop { background:rgba(31,41,38,.18); }\n  .dark .image-preview-dialog::backdrop { background:rgba(0,0,0,.45); }\n",
+  "new": "  .image-preview-dialog::backdrop { background:var(--scrim); }\n"
+ },
+ {
+  "n": 24,
+  "file": "frontend/app/globals.css",
+  "count": 1,
+  "old": "  .confirm-dialog::backdrop { background:rgba(31,41,38,.18); }\n  .dark .confirm-dialog::backdrop { background:rgba(0,0,0,.45); }\n",
+  "new": "  .confirm-dialog::backdrop { background:var(--scrim); }\n"
+ },
+ {
+  "n": 25,
+  "file": "frontend/app/globals.css",
+  "count": 1,
+  "old": "    font-size: max(16px, 1em);\n",
+  "new": "    font-size: max(var(--fs-16-5), 1em);\n"
+ },
+ {
+  "n": 26,
+  "file": "frontend/app/globals.css",
+  "count": 1,
+  "old": ".image-model-segments .chip { flex-shrink:0; padding-inline:8px; font-size:12px; }",
+  "new": ".image-model-segments .chip { flex-shrink:0; padding-inline:8px; font-size:var(--fs-12); }"
+ },
+ {
+  "n": 27,
+  "file": "frontend/lib/utils.ts",
+  "count": 1,
+  "old": "import { twMerge } from \"tailwind-merge\"\n\nexport function cn",
+  "new": "import { extendTailwindMerge } from \"tailwind-merge\"\n\n// 字阶令牌 text-fs-*（见 app/globals.css）登记为字号组，否则 tailwind-merge 会把它们当成文字颜色，与颜色类互相吞掉。\nconst twMerge = extendTailwindMerge({\n  extend: { theme: { text: [\"fs-11\", \"fs-12\", \"fs-13\", \"fs-15\", \"fs-16.5\", \"fs-18\", \"fs-22\", \"fs-30\", \"fs-46\", \"fs-76\"] } },\n})\n\nexport function cn"
+ },
+ {
+  "n": 28,
+  "file": "frontend/components/Seal.tsx",
+  "count": 1,
+  "old": "<rect x=\"2\" y=\"2\" width=\"52\" height=\"52\" rx=\"1\" fill=\"var(--seal)\"/>",
+  "new": "<rect x=\"2\" y=\"2\" width=\"52\" height=\"52\" rx=\"1\" fill=\"var(--stamp)\"/>"
+ }
+]

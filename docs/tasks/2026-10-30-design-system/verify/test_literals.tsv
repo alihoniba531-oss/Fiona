@@ -1,0 +1,30 @@
+file	line	old	new
+test_empty_states_agents.py	24	text-sm text-muted-foreground	text-fs-13 text-[color:var(--ink2)]
+test_empty_states_agents.py	25	text-sm text-muted-foreground	text-fs-13 text-[color:var(--ink2)]
+test_empty_states_agents.py	36	text-xs text-muted-foreground	text-fs-12 text-[color:var(--ink2)]
+test_empty_states_agents.py	37	text-xs text-muted-foreground	text-fs-12 text-[color:var(--ink2)]
+test_empty_states_agents.py	41	text-sm text-muted-foreground	text-fs-13 text-[color:var(--ink2)]
+test_empty_states_agents.py	42	text-sm text-muted-foreground	text-fs-13 text-[color:var(--ink2)]
+test_empty_states_agents.py	92	text-sm text-muted-foreground	text-fs-13 text-[color:var(--ink2)]
+test_empty_states_agents.py	126	text-xs text-muted-foreground	text-fs-12 text-[color:var(--ink2)]
+test_empty_states_agents.py	143	text-sm text-muted-foreground	text-fs-13 text-[color:var(--ink2)]
+test_empty_states_match_profile.py	86	<p className="text-xs text-[color:var(--ink2)]">	<p className="text-fs-12 text-[color:var(--ink2)]">
+test_empty_states_settings_privacy.py	105	py-2 text-sm tracking-[0.06em]	py-2 text-fs-13 tracking-[0.06em]
+test_mobile_chat_fix.py	222	border-t border-[var(--carve)] pt-2	border-t border-[color:var(--carve)] pt-2
+test_mobile_chat_fix.py	226	"max-md:text-[11px]"	"max-md:text-fs-11"
+test_novel_p21_frontend.py	95	"text-[16px]"	"text-fs-16.5"
+test_novel_p21_frontend.py	158	className="text-[13px] text-[var(--ink2)]"	className="text-fs-13 text-[color:var(--ink2)]"
+test_novel_p2_frontend.py	32	whitespace-nowrap text-sm tracking-[.2em]	whitespace-nowrap text-fs-15 tracking-[.2em]
+test_song_frontend.py	39	tag shrink-0 text-xs	tag shrink-0 text-fs-12
+test_song_frontend.py	42	tag shrink-0 text-xs	tag shrink-0 text-fs-12
+test_ui_polish_beijing_time.py	247	text-[30px] font-medium tracking-[.24em]	text-fs-30 font-medium tracking-[.24em]
+test_ui_polish_composer_controls.py	49	h-8 px-2 text-xs max-md:h-10	h-8 px-2 text-fs-12 max-md:h-10
+test_ui_polish_composer_controls.py	63	"text-sm text-[color:var(--ink)]"	"text-fs-15 text-[color:var(--ink)]"
+test_ui_polish_composer_controls.py	64	"text-xs text-[color:var(--ink2)]"	"text-fs-12 text-[color:var(--ink2)]"
+test_ui_polish_composer_controls.py	100	h-8 px-2.5 text-xs max-md:h-10	h-8 px-2.5 text-fs-12 max-md:h-10
+test_ui_polish_composer_controls.py	101	text-[color:var(--rec)] bg-[color:var(--rec-soft)]	text-[color:var(--seal)] bg-[color:var(--seal-soft)]
+test_ui_polish_composer_controls.py	243	h-8 px-2 text-xs max-md:h-10	h-8 px-2 text-fs-12 max-md:h-10
+test_ui_polish_composer_controls.py	266	"text-[color:var(--rec)]"	"text-[color:var(--seal)]"
+test_ui_polish_composer_controls.py	271	text-[color:var(--rec)] bg-[color:var(--rec-soft)]	text-[color:var(--seal)] bg-[color:var(--seal-soft)]
+test_ui_polish_composer_controls.py	276	text-[color:var(--rec)] bg-[color:var(--rec-soft)]	text-[color:var(--seal)] bg-[color:var(--seal-soft)]
+test_ui_polish_markdown.py	337	text-[color:var(--amber-ink)]	text-[color:var(--ink)]

@@ -1,0 +1,1159 @@
+file	line	col	old	new	kind	note
+app/agents/[id]/page.tsx	41	129	hover:text-foreground	hover:text-[color:var(--ink)]	color	foreground → --ink
+app/agents/[id]/page.tsx	41	107	text-muted-foreground	text-[color:var(--ink2)]	color	muted-foreground → --ink2
+app/agents/[id]/page.tsx	41	99	text-xs	text-fs-12	size	R12·按钮
+app/agents/[id]/page.tsx	42	32	text-[30px]	text-fs-30	size	R30·标题层级
+app/agents/[id]/page.tsx	47	346	text-muted-foreground	text-[color:var(--ink2)]	color	muted-foreground → --ink2
+app/agents/[id]/page.tsx	47	338	text-sm	text-fs-13	size	R14-界面·辅助说明
+app/agents/[id]/page.tsx	47	151	text-muted-foreground	text-[color:var(--ink2)]	color	muted-foreground → --ink2
+app/agents/[id]/page.tsx	47	143	text-sm	text-fs-13	size	R14-界面·辅助说明
+app/agents/[id]/page.tsx	47	78	text-muted-foreground	text-[color:var(--ink2)]	color	muted-foreground → --ink2
+app/agents/[id]/page.tsx	47	70	text-sm	text-fs-13	size	R14-界面·辅助说明
+app/agents/[id]/page.tsx	49	88	text-sm	text-fs-13	size	R14-界面·辅助说明
+app/agents/[id]/page.tsx	58	56	text-muted-foreground	text-[color:var(--ink2)]	color	muted-foreground → --ink2
+app/agents/[id]/page.tsx	58	48	text-sm	text-fs-13	size	R14-界面·辅助说明
+app/community/page.tsx	20	32	text-[30px]	text-fs-30	size	R30·标题层级
+app/community/page.tsx	21	36	text-[14px]	text-fs-15	size	R14-显式·辅助说明
+app/community/page.tsx	27	37	text-muted-foreground	text-[color:var(--ink2)]	color	muted-foreground → --ink2
+app/community/page.tsx	27	29	text-sm	text-fs-13	size	R14-界面·辅助说明
+app/globals.css	300	28	outline-ring/50	outline-[color:var(--ink)]/50	color	ring → --ink
+app/globals.css	300	14	border-border	border-[color:var(--rule)]	color	border → --rule
+app/history/page.tsx	148	27	text-[18px]	text-fs-18	size	R18·标题层级
+app/history/page.tsx	149	42	text-muted-foreground	text-[color:var(--ink2)]	color	muted-foreground → --ink2
+app/history/page.tsx	149	34	text-xs	text-fs-12	size	R12·辅助说明
+app/history/page.tsx	152	34	text-[11px]	text-fs-11	size	R≤11·元信息
+app/history/page.tsx	158	40	text-muted-foreground	text-[color:var(--ink2)]	color	muted-foreground → --ink2
+app/history/page.tsx	165	54	text-base	text-fs-16.5	size	R-ctl16·输入框
+app/history/page.tsx	191	57	text-muted-foreground	text-[color:var(--ink2)]	color	muted-foreground → --ink2
+app/history/page.tsx	191	37	text-xs	text-fs-12	size	R12·辅助说明
+app/history/page.tsx	212	81	text-muted-foreground	text-[color:var(--ink2)]	color	muted-foreground → --ink2
+app/history/page.tsx	212	61	text-xs	text-fs-12	size	R12·辅助说明
+app/history/page.tsx	219	61	text-[13px]	text-fs-13	size	R13·元信息
+app/history/page.tsx	233	61	text-[13px]	text-fs-13	size	R13·元信息
+app/history/page.tsx	248	67	text-xs	text-fs-12	size	R12·按钮
+app/history/page.tsx	258	57	text-muted-foreground	text-[color:var(--ink2)]	color	muted-foreground → --ink2
+app/history/page.tsx	258	37	text-xs	text-fs-12	size	R12·辅助说明
+app/history/page.tsx	271	46	text-[11px]	text-fs-11	size	R≤11·元信息
+app/history/page.tsx	272	46	text-[10px]	text-fs-11	size	R≤11·元信息
+app/history/page.tsx	285	65	text-muted-foreground	text-[color:var(--ink2)]	color	muted-foreground → --ink2
+app/history/page.tsx	285	53	text-[11px]	text-fs-11	size	R≤11·元信息
+app/history/page.tsx	287	56	text-[11px]	text-fs-11	size	R≤11·chip
+app/history/page.tsx	289	48	text-[11px]	text-fs-11	size	R≤11·chip
+app/history/page.tsx	297	63	text-muted-foreground	text-[color:var(--ink2)]	color	muted-foreground → --ink2
+app/history/page.tsx	297	55	text-sm	text-fs-13	size	R14-界面·辅助说明
+app/history/page.tsx	300	37	text-muted-foreground	text-[color:var(--ink2)]	color	muted-foreground → --ink2
+app/history/page.tsx	300	29	text-sm	text-fs-13	size	R14-界面·辅助说明
+app/history/page.tsx	306	65	text-xs	text-fs-12	size	R12·按钮
+app/history/page.tsx	322	57	text-muted-foreground	text-[color:var(--ink2)]	color	muted-foreground → --ink2
+app/history/page.tsx	323	58	text-muted-foreground	text-[color:var(--ink2)]	color	muted-foreground → --ink2
+app/history/page.tsx	326	36	text-xs	text-fs-12	size	R12·正文
+app/history/page.tsx	328	44	text-xs	text-fs-12	size	R12·元信息
+app/history/page.tsx	346	81	text-foreground	text-[color:var(--ink)]	color	foreground → --ink
+app/history/page.tsx	346	66	var(--accent)	var(--slip)	legacy	--accent → --slip
+app/history/page.tsx	354	47	text-[13px]	text-fs-13	size	R13·辅助说明
+app/history/page.tsx	365	54	text-xs	text-fs-12	size	R12·元信息
+app/history/page.tsx	396	96	text-muted-foreground	text-[color:var(--ink2)]	color	muted-foreground → --ink2
+app/history/page.tsx	396	88	text-sm	text-fs-13	size	R14-界面·辅助说明
+app/history/page.tsx	405	91	text-muted-foreground	text-[color:var(--ink2)]	color	muted-foreground → --ink2
+app/history/page.tsx	405	83	text-sm	text-fs-13	size	R14-界面·辅助说明
+app/login/page.tsx	145	98	max-md:text-[64px]		size	删：品牌字手机也用 76（与桌面同档）
+app/login/page.tsx	145	32	text-[76px]	text-fs-76	size	R76·展示字
+app/login/page.tsx	146	104	max-md:text-[18px]	max-md:text-fs-18	size	R18·正文
+app/login/page.tsx	146	35	text-[20px]	text-fs-22	size	R20·登录页标语 20→22（用户 10-30 拍板）
+app/login/page.tsx	154	55	text-[13px]	text-fs-13	size	R13·标签
+app/login/page.tsx	162	134	text-[20px]	text-fs-22	size	R-ctl·输入框
+app/login/page.tsx	167	52	text-xs	text-fs-12	size	R12·辅助说明
+app/login/page.tsx	172	72	text-[15px]	text-fs-15	size	R15·按钮
+app/login/page.tsx	179	55	text-[13px]	text-fs-13	size	R13·标签
+app/login/page.tsx	181	46	text-muted-foreground	text-[color:var(--ink2)]	color	muted-foreground → --ink2
+app/login/page.tsx	181	38	text-sm	text-fs-15	size	R14-显式·辅助说明
+app/login/page.tsx	190	64	text-[20px]	text-fs-22	size	R-ctl·输入框
+app/login/page.tsx	196	52	text-xs	text-fs-12	size	R12·辅助说明
+app/login/page.tsx	201	72	text-[15px]	text-fs-15	size	R15·按钮
+app/login/page.tsx	208	55	text-[13px]	text-fs-13	size	R13·标签
+app/login/page.tsx	211	50	text-muted-foreground	text-[color:var(--ink2)]	color	muted-foreground → --ink2
+app/login/page.tsx	222	134	text-[20px]	text-fs-22	size	R-ctl·输入框
+app/login/page.tsx	227	52	text-xs	text-fs-12	size	R12·辅助说明
+app/login/page.tsx	232	72	text-[15px]	text-fs-15	size	R15·按钮
+app/login/page.tsx	246	33	text-[13px]	text-fs-13	size	R13·正文
+app/login/page.tsx	268	124	text-base	text-fs-16.5	size	R-ctl16·输入框
+app/match/page.tsx	81	30	text-[17px]	text-fs-18	size	R17·标题层级
+app/match/page.tsx	87	27	text-xs	text-fs-12	size	R12·辅助说明
+app/match/page.tsx	88	39	text-foreground/70	text-[color:var(--ink2)]	color	文字透明度 ink/70 吸附到 --ink2
+app/match/page.tsx	91	25	text-[15px]	text-fs-15	size	R15·正文
+app/match/page.tsx	99	29	text-[13px]	text-fs-13	size	R13·正文
+app/match/page.tsx	105	56	text-[10px]	text-fs-11	size	R≤11·chip
+app/match/page.tsx	122	130	text-base	text-fs-16.5	size	R-ctl16·输入框
+app/match/page.tsx	127	51	text-[13px]	text-fs-13	size	R13·按钮
+app/match/page.tsx	131	53	text-[13px]	text-fs-13	size	R13·按钮
+app/match/page.tsx	141	49	text-[13px]	text-fs-13	size	R13·按钮
+app/match/page.tsx	145	51	text-[13px]	text-fs-13	size	R13·按钮
+app/match/page.tsx	318	29	text-[18px]	text-fs-18	size	R18·标题层级
+app/match/page.tsx	323	46	text-muted-foreground/40	text-[color:var(--ink2)] opacity-40	color	装饰图标：ink2/40 → --ink2 + opacity-40，保持原来的淡色
+app/match/page.tsx	324	33	text-xs	text-fs-12	size	R12·辅助说明
+app/match/page.tsx	335	90	bg-secondary	bg-[color:var(--slip)]	color	secondary → --slip
+app/match/page.tsx	336	38	text-sm	text-fs-13	size	R14-界面·正文
+app/match/page.tsx	338	36	text-sm	text-fs-15	size	R14-显式·正文
+app/match/page.tsx	349	136	text-[13px]	text-fs-13	size	R13·正文
+app/match/page.tsx	350	36	text-[15px]	text-fs-15 leading-[inherit]	size	R15·标题层级；补 leading-[inherit] 保持原继承行高
+app/match/page.tsx	379	81	bg-secondary	bg-[color:var(--slip)]	color	secondary → --slip
+app/match/page.tsx	380	38	text-xs	text-fs-12	size	R12·正文
+app/match/page.tsx	382	33	text-[18px]	text-fs-18	size	R18·标题层级
+app/match/page.tsx	393	45	text-[13px]	text-fs-13	size	R13·辅助说明
+app/match/page.tsx	414	68	text-base	text-fs-16.5	size	R-ctl16·输入框
+app/match/page.tsx	420	76	text-[13px]	text-fs-13	size	R13·按钮
+app/match/page.tsx	466	89	text-muted-foreground	text-[color:var(--ink2)]	color	muted-foreground → --ink2
+app/match/page.tsx	466	81	text-sm	text-fs-13	size	R14-界面·辅助说明
+app/match/page.tsx	473	102	text-muted-foreground	text-[color:var(--ink2)]	color	muted-foreground → --ink2
+app/match/page.tsx	473	94	text-sm	text-fs-13	size	R14-界面·辅助说明
+app/page.tsx	215	89	bg-secondary	bg-[color:var(--slip)]	color	secondary → --slip
+app/page.tsx	216	48	var(--amber-ink)	var(--ink)	legacy	--amber-ink → --ink
+app/page.tsx	220	38	text-foreground/60	text-[color:var(--ink2)]	color	文字透明度 ink/60 吸附到 --ink2
+app/page.tsx	220	30	text-xs	text-fs-12	size	R12·正文
+app/page.tsx	226	38	text-muted-foreground	text-[color:var(--ink2)]	color	muted-foreground → --ink2
+app/page.tsx	226	27	text-[9px]	text-fs-11	size	R≤11·元信息
+app/page.tsx	228	32	text-foreground/70	text-[color:var(--ink2)]	color	文字透明度 ink/70 吸附到 --ink2
+app/page.tsx	231	37	text-foreground/80	text-[color:var(--ink2)]	color	文字透明度 ink/80 吸附到 --ink2
+app/page.tsx	231	25	text-[11px]	text-fs-11	size	R≤11·元信息
+app/page.tsx	235	65	bg-secondary/60	bg-[color:var(--slip)]/60	color	secondary → --slip
+app/page.tsx	235	39	text-foreground/70	text-[color:var(--ink2)]	color	文字透明度 ink/70 吸附到 --ink2
+app/page.tsx	235	27	text-[10px]	text-fs-11	size	R≤11·元信息
+app/page.tsx	244	81	hover:bg-secondary	hover:bg-[color:var(--slip)]	color	secondary → --slip
+app/page.tsx	244	59	text-muted-foreground	text-[color:var(--ink2)]	color	muted-foreground → --ink2
+app/page.tsx	244	22	text-[10px]	text-fs-11	size	R≤11·按钮
+app/page.tsx	250	70	text-primary-foreground	text-[color:var(--btnink)]	color	primary-foreground → --btnink
+app/page.tsx	250	59	bg-primary	bg-[color:var(--btn)]	color	primary → --btn
+app/page.tsx	250	22	text-[10px]	text-fs-11	size	R≤11·按钮
+app/page.tsx	431	54	text-xs	text-fs-12	size	R12·按钮
+app/page.tsx	437	82	text-xs	text-fs-12	size	R12·按钮
+app/page.tsx	444	52	text-xs	text-fs-12	size	R12·按钮
+app/page.tsx	2411	153	text-[var(--ink2)]	text-[color:var(--ink2)]	syntax	B 式 → A 式
+app/page.tsx	2411	145	text-xs	text-fs-12	size	R12·辅助说明
+app/page.tsx	2455	44	var(--glass-border)	var(--rule)	legacy	--glass-border → --rule
+app/page.tsx	2458	84	border-border	border-[color:var(--rule)]	color	border → --rule
+app/page.tsx	2460	47	text-muted-foreground	text-[color:var(--ink2)]	color	muted-foreground → --ink2
+app/page.tsx	2461	44	text-muted-foreground	text-[color:var(--ink2)]	color	muted-foreground → --ink2
+app/page.tsx	2461	36	text-xs	text-fs-12	size	R12·辅助说明
+app/page.tsx	2464	261	hover:text-destructive	hover:text-[color:var(--seal)]	color	destructive → --seal
+app/page.tsx	2464	239	text-muted-foreground	text-[color:var(--ink2)]	color	muted-foreground → --ink2
+app/page.tsx	2464	227	text-[11px]	text-fs-11	size	R≤11·按钮
+app/page.tsx	2467	148	hover:text-foreground	hover:text-[color:var(--ink)]	color	foreground → --ink
+app/page.tsx	2467	126	text-muted-foreground	text-[color:var(--ink2)]	color	muted-foreground → --ink2
+app/page.tsx	2473	73	text-muted-foreground	text-[color:var(--ink2)]	color	muted-foreground → --ink2
+app/page.tsx	2473	61	text-[11px]	text-fs-11	size	R≤11·元信息
+app/page.tsx	2479	171	hover:bg-secondary	hover:bg-[color:var(--slip)]	color	secondary → --slip
+app/page.tsx	2480	143	text-muted-foreground	text-[color:var(--ink2)]	color	muted-foreground → --ink2
+app/page.tsx	2480	71	text-muted-foreground	text-[color:var(--ink2)]	color	muted-foreground → --ink2
+app/page.tsx	2481	56	text-muted-foreground	text-[color:var(--ink2)]	color	muted-foreground → --ink2
+app/page.tsx	2481	44	text-[11px]	text-fs-11	size	R≤11·元信息
+app/page.tsx	2482	56	text-muted-foreground/50	text-[color:var(--ink2)]	color	文字透明度 ink2/50 吸附到 --ink2
+app/page.tsx	2482	44	text-[10px]	text-fs-11	size	R≤11·元信息
+app/page.tsx	2485	57	border-border	border-[color:var(--rule)]	color	border → --rule
+app/page.tsx	2489	76	text-muted-foreground	text-[color:var(--ink2)]	color	muted-foreground → --ink2
+app/page.tsx	2489	52	text-[10px]	text-fs-11	size	R≤11·元信息
+app/page.tsx	2490	63	text-muted-foreground/50	text-[color:var(--ink2)]	color	文字透明度 ink2/50 吸附到 --ink2
+app/page.tsx	2490	52	text-[9px]	text-fs-11	size	R≤11·元信息
+app/page.tsx	2492	59	text-foreground/70	text-[color:var(--ink2)]	color	文字透明度 ink/70 吸附到 --ink2
+app/page.tsx	2492	47	text-[11px]	text-fs-11	size	R≤11·正文
+app/page.tsx	2508	85	bg-[var(--scrim)]	bg-[color:var(--scrim)]	syntax	B 式 → A 式
+app/page.tsx	2515	86	bg-[var(--scrim)]	bg-[color:var(--scrim)]	syntax	B 式 → A 式
+app/page.tsx	2533	68	max-md:text-base	max-md:text-fs-16.5	size	R16·标题层级
+app/page.tsx	2533	44	text-[18px]	text-fs-18	size	R18·标题层级
+app/page.tsx	2534	176	border-[var(--rule2)]	border-[color:var(--rule2)]	syntax	B 式 → A 式
+app/page.tsx	2534	72	text-muted-foreground	text-[color:var(--ink2)]	color	muted-foreground → --ink2
+app/page.tsx	2534	64	text-xs	text-fs-12	size	R12·辅助说明
+app/page.tsx	2539	66	text-muted-foreground	text-[color:var(--ink2)]	color	muted-foreground → --ink2
+app/page.tsx	2539	58	text-xs	text-fs-12	size	R12·辅助说明
+app/page.tsx	2575	95	text-xs	text-fs-12	size	R12·正文
+app/page.tsx	2576	144	var(--foreground)	var(--ink)	legacy	--foreground → --ink
+app/page.tsx	2576	129	var(--rec)	var(--seal)	legacy	--rec → --seal
+app/page.tsx	2579	50	text-[var(--ink2)]	text-[color:var(--ink2)]	syntax	B 式 → A 式
+app/page.tsx	2579	36	text-[10.5px]	text-fs-11	size	R≤11·元信息
+app/page.tsx	2589	87	text-xs	text-fs-12	size	R12·chip
+app/page.tsx	2603	87	text-xs	text-fs-12	size	R12·chip
+app/page.tsx	2610	61	text-muted-foreground	text-[color:var(--ink2)]	color	muted-foreground → --ink2
+app/page.tsx	2610	53	text-xs	text-fs-12	size	R12·辅助说明
+app/page.tsx	2612	43	text-muted-foreground	text-[color:var(--ink2)]	color	muted-foreground → --ink2
+app/page.tsx	2612	35	text-xs	text-fs-12	size	R12·辅助说明
+app/page.tsx	2615	37	text-[15px]	text-fs-15	size	R15·辅助说明
+app/page.tsx	2625	329	bg-[var(--rule)]	bg-[color:var(--rule)]	syntax	B 式 → A 式
+app/page.tsx	2625	246	bg-[var(--rule)]	bg-[color:var(--rule)]	syntax	B 式 → A 式
+app/page.tsx	2625	197	text-[var(--ink2)]	text-[color:var(--ink2)]	syntax	B 式 → A 式
+app/page.tsx	2625	172	text-xs	text-fs-12	size	R12·辅助说明
+app/page.tsx	2639	109	bg-[var(--mount)]	bg-[color:var(--mount)]	syntax	B 式 → A 式
+app/page.tsx	2639	101	text-xs	text-fs-12	size	R12·chip
+app/page.tsx	2645	95	text-xs	text-fs-12	size	R12·正文
+app/page.tsx	2646	53	text-muted-foreground	text-[color:var(--ink2)]	color	muted-foreground → --ink2
+app/page.tsx	2647	115	text-xs	text-fs-12	size	R12·按钮
+app/page.tsx	2650	112	text-xs	text-fs-12	size	R12·按钮
+app/page.tsx	2652	98	text-xs	text-fs-12	size	R12·正文
+app/page.tsx	2653	53	text-muted-foreground	text-[color:var(--ink2)]	color	muted-foreground → --ink2
+app/page.tsx	2657	112	text-xs	text-fs-12	size	R12·按钮
+app/page.tsx	2659	86	text-xs	text-fs-12	size	R12·正文
+app/page.tsx	2660	53	text-muted-foreground	text-[color:var(--ink2)]	color	muted-foreground → --ink2
+app/page.tsx	2661	123	text-xs	text-fs-12	size	R12·按钮
+app/page.tsx	2664	82	text-destructive	text-[color:var(--seal)]	color	destructive → --seal
+app/page.tsx	2664	74	text-xs	text-fs-12	size	R12·辅助说明
+app/page.tsx	2665	76	bg-secondary/50	bg-[color:var(--slip)]/50	color	secondary → --slip
+app/page.tsx	2669	89	text-muted-foreground	text-[color:var(--ink2)]	color	muted-foreground → --ink2
+app/page.tsx	2671	118	hover:text-foreground	hover:text-[color:var(--ink)]	color	foreground → --ink
+app/page.tsx	2671	99	hover:bg-secondary	hover:bg-[color:var(--slip)]	color	secondary → --slip
+app/page.tsx	2673	117	hover:text-foreground	hover:text-[color:var(--ink)]	color	foreground → --ink
+app/page.tsx	2673	98	hover:bg-secondary	hover:bg-[color:var(--slip)]	color	secondary → --slip
+app/page.tsx	2675	129	hover:text-destructive	hover:text-[color:var(--seal)]	color	destructive → --seal
+app/page.tsx	2675	105	hover:bg-destructive/10	hover:bg-[color:var(--seal)]/10	color	destructive → --seal
+app/page.tsx	2679	66	text-muted-foreground	text-[color:var(--ink2)]	color	muted-foreground → --ink2
+app/page.tsx	2679	38	text-[10px]	text-fs-11	size	R≤11·正文
+app/page.tsx	2685	105	max-md:bg-[var(--tile)]	max-md:bg-[color:var(--tile)]	syntax	B 式 → A 式
+app/page.tsx	2689	124	border-border	border-[color:var(--rule)]	color	border → --rule
+app/page.tsx	2690	256	hover:text-[var(--btnink)]	hover:text-[color:var(--btnink)]	syntax	B 式 → A 式
+app/page.tsx	2690	235	hover:bg-destructive	hover:bg-[color:var(--seal)]	color	destructive → --seal
+app/page.tsx	2690	188	border-border	border-[color:var(--rule)]	color	border → --rule
+app/page.tsx	2690	167	bg-background	bg-[color:var(--paper)]	color	background → --paper
+app/page.tsx	2700	183	max-md:text-base	max-md:text-fs-16.5	size	R-ctl16·输入框
+app/page.tsx	2700	102	placeholder:text-muted-foreground	placeholder:text-[color:var(--ink2)]	color	muted-foreground → --ink2
+app/page.tsx	2700	86	text-foreground	text-[color:var(--ink)]	color	foreground → --ink
+app/page.tsx	2700	76	text-base	text-fs-16.5	size	R-ctl16·输入框
+app/page.tsx	2705	86	text-[11px]	text-fs-11	size	R≤11·元信息
+app/page.tsx	2736	78	text-muted-foreground	text-[color:var(--ink2)]	color	muted-foreground → --ink2
+app/page.tsx	2739	68	var(--amber-ink)	var(--ink)	legacy	--amber-ink → --ink
+app/page.tsx	2740	42	text-muted-foreground	text-[color:var(--ink2)]	color	muted-foreground → --ink2
+app/page.tsx	2750	59	text-muted-foreground	text-[color:var(--ink2)]	color	muted-foreground → --ink2
+app/page.tsx	2751	75	text-muted-foreground	text-[color:var(--ink2)]	color	muted-foreground → --ink2
+app/page.tsx	2756	248	hover:text-foreground	hover:text-[color:var(--ink)]	color	foreground → --ink
+app/page.tsx	2756	226	text-muted-foreground	text-[color:var(--ink2)]	color	muted-foreground → --ink2
+app/page.tsx	2756	214	text-[11px]	text-fs-11	size	R≤11·按钮
+app/page.tsx	2758	198	hover:text-foreground	hover:text-[color:var(--ink)]	color	foreground → --ink
+app/page.tsx	2758	176	text-muted-foreground	text-[color:var(--ink2)]	color	muted-foreground → --ink2
+app/page.tsx	2758	164	text-[11px]	text-fs-11	size	R≤11·按钮
+app/page.tsx	2777	58	text-muted-foreground	text-[color:var(--ink2)]	color	muted-foreground → --ink2
+app/page.tsx	2777	50	text-xs	text-fs-12	size	R12·辅助说明
+app/page.tsx	2778	226	max-md:text-[11px]	max-md:text-fs-11	size	R≤11·元信息
+app/page.tsx	2778	130	text-muted-foreground	text-[color:var(--ink2)]	color	muted-foreground → --ink2
+app/page.tsx	2778	122	text-xs	text-fs-12	size	R12·辅助说明
+app/page.tsx	2778	95	border-[var(--carve)]	border-[color:var(--carve)]	syntax	B 式 → A 式
+app/page.tsx	2805	34	var(--glass-border)	var(--rule)	legacy	--glass-border → --rule
+app/page.tsx	2809	111	var(--glass-border)	var(--rule)	legacy	--glass-border → --rule
+app/page.tsx	2810	48	text-muted-foreground	text-[color:var(--ink2)]	color	muted-foreground → --ink2
+app/page.tsx	2810	28	text-xs	text-fs-12	size	R12·辅助说明
+app/page.tsx	2811	176	hover:text-foreground	hover:text-[color:var(--ink)]	color	foreground → --ink
+app/page.tsx	2811	157	hover:bg-secondary	hover:bg-[color:var(--slip)]	color	secondary → --slip
+app/page.tsx	2811	135	text-muted-foreground	text-[color:var(--ink2)]	color	muted-foreground → --ink2
+app/page.tsx	2834	34	var(--glass-border)	var(--rule)	legacy	--glass-border → --rule
+app/page.tsx	2838	111	var(--glass-border)	var(--rule)	legacy	--glass-border → --rule
+app/page.tsx	2839	48	text-muted-foreground	text-[color:var(--ink2)]	color	muted-foreground → --ink2
+app/page.tsx	2839	28	text-xs	text-fs-12	size	R12·辅助说明
+app/page.tsx	2840	176	hover:text-foreground	hover:text-[color:var(--ink)]	color	foreground → --ink
+app/page.tsx	2840	157	hover:bg-secondary	hover:bg-[color:var(--slip)]	color	secondary → --slip
+app/page.tsx	2840	135	text-muted-foreground	text-[color:var(--ink2)]	color	muted-foreground → --ink2
+app/page.tsx	2853	34	var(--glass-border)	var(--rule)	legacy	--glass-border → --rule
+app/page.tsx	2858	136	var(--glass-border)	var(--rule)	legacy	--glass-border → --rule
+app/page.tsx	2859	48	text-muted-foreground	text-[color:var(--ink2)]	color	muted-foreground → --ink2
+app/page.tsx	2859	28	text-xs	text-fs-12	size	R12·辅助说明
+app/page.tsx	2865	116	hover:text-foreground	hover:text-[color:var(--ink)]	color	foreground → --ink
+app/page.tsx	2865	97	hover:bg-secondary	hover:bg-[color:var(--slip)]	color	secondary → --slip
+app/page.tsx	2865	75	text-muted-foreground	text-[color:var(--ink2)]	color	muted-foreground → --ink2
+app/page.tsx	2875	60	text-muted-foreground	text-[color:var(--ink2)]	color	muted-foreground → --ink2
+app/page.tsx	2875	52	text-sm	text-fs-13	size	R14-界面·辅助说明
+app/page.tsx	2887	34	var(--glass-border)	var(--rule)	legacy	--glass-border → --rule
+app/page.tsx	2892	136	var(--glass-border)	var(--rule)	legacy	--glass-border → --rule
+app/page.tsx	2893	48	text-muted-foreground	text-[color:var(--ink2)]	color	muted-foreground → --ink2
+app/page.tsx	2893	28	text-xs	text-fs-12	size	R12·辅助说明
+app/page.tsx	2899	116	hover:text-foreground	hover:text-[color:var(--ink)]	color	foreground → --ink
+app/page.tsx	2899	97	hover:bg-secondary	hover:bg-[color:var(--slip)]	color	secondary → --slip
+app/page.tsx	2899	75	text-muted-foreground	text-[color:var(--ink2)]	color	muted-foreground → --ink2
+app/page.tsx	2909	60	text-muted-foreground	text-[color:var(--ink2)]	color	muted-foreground → --ink2
+app/page.tsx	2909	52	text-sm	text-fs-13	size	R14-界面·辅助说明
+app/page.tsx	2929	34	var(--glass-border)	var(--rule)	legacy	--glass-border → --rule
+app/page.tsx	2934	136	var(--glass-border)	var(--rule)	legacy	--glass-border → --rule
+app/page.tsx	2935	48	text-muted-foreground	text-[color:var(--ink2)]	color	muted-foreground → --ink2
+app/page.tsx	2935	28	text-xs	text-fs-12	size	R12·辅助说明
+app/page.tsx	2937	114	hover:text-foreground	hover:text-[color:var(--ink)]	color	foreground → --ink
+app/page.tsx	2937	95	hover:bg-secondary	hover:bg-[color:var(--slip)]	color	secondary → --slip
+app/page.tsx	2937	73	text-muted-foreground	text-[color:var(--ink2)]	color	muted-foreground → --ink2
+app/page.tsx	2941	62	text-muted-foreground	text-[color:var(--ink2)]	color	muted-foreground → --ink2
+app/page.tsx	2941	54	text-sm	text-fs-13	size	R14-界面·辅助说明
+app/page.tsx	2960	34	var(--glass-border)	var(--rule)	legacy	--glass-border → --rule
+app/page.tsx	2965	136	var(--glass-border)	var(--rule)	legacy	--glass-border → --rule
+app/page.tsx	2966	65	text-muted-foreground	text-[color:var(--ink2)]	color	muted-foreground → --ink2
+app/page.tsx	2966	28	text-xs	text-fs-12	size	R12·辅助说明
+app/page.tsx	2968	116	hover:text-foreground	hover:text-[color:var(--ink)]	color	foreground → --ink
+app/page.tsx	2968	97	hover:bg-secondary	hover:bg-[color:var(--slip)]	color	secondary → --slip
+app/page.tsx	2968	75	text-muted-foreground	text-[color:var(--ink2)]	color	muted-foreground → --ink2
+app/page.tsx	2972	62	text-muted-foreground	text-[color:var(--ink2)]	color	muted-foreground → --ink2
+app/page.tsx	2972	54	text-sm	text-fs-13	size	R14-界面·辅助说明
+app/page.tsx	2979	77	bg-[var(--scrim)]	bg-[color:var(--scrim)]	syntax	B 式 → A 式
+app/plaza/page.tsx	98	75	text-[9px]	text-fs-11	size	R≤11·chip
+app/plaza/page.tsx	103	67	text-[9px]	text-fs-11	size	R≤11·chip
+app/plaza/page.tsx	114	37	text-foreground/85	text-[color:var(--ink)]	color	文字透明度 ink/85 吸附到 --ink
+app/plaza/page.tsx	114	25	text-[12px]	text-fs-12	size	R12·正文
+app/plaza/page.tsx	118	75	bg-secondary	bg-[color:var(--slip)]	color	secondary → --slip
+app/plaza/page.tsx	119	55	text-muted-foreground	text-[color:var(--ink2)]	color	muted-foreground → --ink2
+app/plaza/page.tsx	119	32	text-[9px]	text-fs-11	size	R≤11·元信息
+app/plaza/page.tsx	121	38	text-[10px]	text-fs-11	size	R≤11·元信息
+app/plaza/page.tsx	124	38	text-[10px]	text-fs-11	size	R≤11·元信息
+app/plaza/page.tsx	132	40	text-[11px]	text-fs-11	size	R≤11·元信息
+app/plaza/page.tsx	163	24	text-[15px]	text-fs-15	size	R15·标题层级
+app/plaza/page.tsx	170	86	text-xs	text-fs-12	size	R12·按钮
+app/plaza/page.tsx	177	44	text-[11.5px]	text-fs-12	size	R11.5·辅助说明
+app/plaza/page.tsx	183	56	text-xs	text-fs-12	size	R12·按钮
+app/plaza/page.tsx	189	41	text-[13.5px]	text-fs-13	size	R13·正文
+app/plaza/page.tsx	191	26	text-xs	text-fs-12	size	R12·辅助说明
+app/plaza/page.tsx	203	47	text-xs	text-fs-12	size	R12·辅助说明
+app/plaza/page.tsx	211	32	text-[11.5px]	text-fs-12	size	R11.5·辅助说明
+app/plaza/page.tsx	443	45	text-[13px]	text-fs-13	size	R13·正文
+app/plaza/page.tsx	454	64	text-sm	text-fs-15	size	R14-正文(行高)·正文
+app/plaza/page.tsx	456	67	text-muted-foreground	text-[color:var(--ink2)]	color	muted-foreground → --ink2
+app/plaza/page.tsx	456	59	text-xs	text-fs-12	size	R12·辅助说明
+app/plaza/page.tsx	461	35	text-xs	text-fs-12	size	R12·辅助说明
+app/plaza/page.tsx	464	54	text-[15px]	text-fs-15	size	R15·正文
+app/plaza/page.tsx	464	35	text-foreground/95	text-[color:var(--ink)]	color	文字透明度 ink/95 吸附到 --ink
+app/plaza/page.tsx	468	64	text-muted-foreground	text-[color:var(--ink2)]	color	muted-foreground → --ink2
+app/plaza/page.tsx	468	44	text-xs	text-fs-12	size	R12·辅助说明
+app/plaza/page.tsx	469	37	text-foreground/85	text-[color:var(--ink)]	color	文字透明度 ink/85 吸附到 --ink
+app/plaza/page.tsx	474	64	text-muted-foreground	text-[color:var(--ink2)]	color	muted-foreground → --ink2
+app/plaza/page.tsx	474	44	text-xs	text-fs-12	size	R12·辅助说明
+app/plaza/page.tsx	475	37	text-foreground/85	text-[color:var(--ink)]	color	文字透明度 ink/85 吸附到 --ink
+app/plaza/page.tsx	480	64	text-muted-foreground	text-[color:var(--ink2)]	color	muted-foreground → --ink2
+app/plaza/page.tsx	480	44	text-xs	text-fs-12	size	R12·辅助说明
+app/plaza/page.tsx	483	59	text-foreground/85	text-[color:var(--ink)]	color	文字透明度 ink/85 吸附到 --ink
+app/plaza/page.tsx	493	64	text-muted-foreground	text-[color:var(--ink2)]	color	muted-foreground → --ink2
+app/plaza/page.tsx	493	44	text-xs	text-fs-12	size	R12·辅助说明
+app/plaza/page.tsx	494	56	text-[13px]	text-fs-13	size	R13·正文
+app/plaza/page.tsx	494	37	text-foreground/75	text-[color:var(--ink2)]	color	文字透明度 ink/75 吸附到 --ink2
+app/plaza/page.tsx	499	62	text-muted-foreground	text-[color:var(--ink2)]	color	muted-foreground → --ink2
+app/plaza/page.tsx	499	42	text-xs	text-fs-12	size	R12·辅助说明
+app/plaza/page.tsx	506	105	text-[12px]	text-fs-12 leading-[inherit]	size	R12·按钮；补 leading-[inherit] 保持原继承行高
+app/plaza/page.tsx	513	64	text-[color:var(--ink)] opacity-40	text-[color:var(--ink2)]	contrast	失效链接 ink 40% → 不透明 --ink2
+app/plaza/page.tsx	513	52	text-[12px]	text-fs-12 leading-[inherit]	size	R12·正文；补 leading-[inherit] 保持原继承行高
+app/plaza/page.tsx	517	63	 opacity-60		contrast	去掉叠加的 60% 透明度，跟随父元素 --ink2
+app/plaza/page.tsx	517	53	text-[9px]	text-fs-11	size	R≤11·元信息
+app/plaza/page.tsx	539	41	text-[13px]	text-fs-13	size	R13·正文
+app/plaza/page.tsx	543	89	text-[11px]	text-fs-11	size	R≤11·chip
+app/plaza/page.tsx	546	36	text-xs	text-fs-12	size	R12·辅助说明
+app/plaza/page.tsx	555	48	text-[11px]	text-fs-11	size	R≤11·元信息
+app/plaza/page.tsx	556	40	text-xs	text-fs-12	size	R12·辅助说明
+app/plaza/page.tsx	561	64	text-xs	text-fs-12	size	R12·辅助说明
+app/plaza/page.tsx	567	70	text-[13px]	text-fs-13	size	R13·按钮
+app/plaza/page.tsx	590	55	text-sm	text-fs-15	size	R14-显式·正文
+app/plaza/page.tsx	613	213	mobile:text-base	mobile:text-fs-16.5	size	R-ctl16·输入框
+app/plaza/page.tsx	613	147	placeholder:text-muted-foreground	placeholder:text-[color:var(--ink2)]	color	muted-foreground → --ink2
+app/plaza/page.tsx	613	118	text-foreground	text-[color:var(--ink)]	color	foreground → --ink
+app/plaza/page.tsx	613	90	text-[13px]	text-fs-16.5	size	R-ctl<16·输入框
+app/plaza/page.tsx	613	68	bg-card	bg-[color:var(--hi)]	color	card → --hi
+app/plaza/page.tsx	617	56	text-muted-foreground	text-[color:var(--ink2)]	color	muted-foreground → --ink2
+app/plaza/page.tsx	617	36	text-xs	text-fs-12	size	R12·辅助说明
+app/plaza/page.tsx	635	58	text-xs	text-fs-12	size	R12·辅助说明
+app/profile/page.tsx	36	43	text-base	text-fs-16.5	size	R16·标题层级
+app/profile/page.tsx	55	17	text-xs	text-fs-12	size	R12·辅助说明
+app/profile/page.tsx	98	83	mobile:text-[26px]		size	删：紧贴 ${ 从未生成，手机端实为 30，保持现状
+app/profile/page.tsx	98	41	text-[30px]	text-fs-30	size	R30·标题层级
+app/profile/page.tsx	99	34	text-[13px]	text-fs-13	size	R13·正文
+app/profile/page.tsx	100	62	text-xs	text-fs-12	size	R12·辅助说明
+app/profile/page.tsx	105	34	text-[26px]	text-fs-30	size	R26·展示字
+app/profile/page.tsx	108	41	text-xl	text-fs-22	size	R20·标题层级
+app/profile/page.tsx	109	36	text-[13px]	text-fs-13	size	R13·正文
+app/profile/page.tsx	117	80	text-sm	text-fs-13	size	R14-界面·辅助说明
+app/profile/page.tsx	121	36	text-sm	text-fs-13	size	R14·状态说明→13（按规则改正）
+app/profile/page.tsx	122	31	text-[13px]	text-fs-13	size	R13·正文
+app/profile/page.tsx	136	29	text-[13px]	text-fs-13	size	R13·正文
+app/profile/page.tsx	151	89	text-muted-foreground	text-[color:var(--ink2)]	color	muted-foreground → --ink2
+app/profile/page.tsx	151	81	text-sm	text-fs-13	size	R14-界面·辅助说明
+app/profile/page.tsx	158	102	text-muted-foreground	text-[color:var(--ink2)]	color	muted-foreground → --ink2
+app/profile/page.tsx	158	94	text-sm	text-fs-13	size	R14-界面·辅助说明
+app/settings/page.tsx	156	25	text-base	text-fs-16.5	size	R16·标题层级
+app/settings/page.tsx	166	41	text-[30px]	text-fs-30	size	R30·标题层级
+app/settings/page.tsx	167	34	text-sm	text-fs-15	size	R14-显式·辅助说明
+app/settings/page.tsx	176	40	text-[18px]	text-fs-18	size	R18·chip
+app/settings/page.tsx	180	50	text-xs	text-fs-12	size	R12·辅助说明
+app/settings/page.tsx	182	31	text-[13px]	text-fs-13	size	R13·正文
+app/settings/page.tsx	187	60	text-xs	text-fs-12	size	R12·辅助说明
+app/settings/page.tsx	208	73	text-[13px]	text-fs-13	size	R13·按钮
+app/settings/page.tsx	213	38	text-[13px]	text-fs-13	size	R13·正文
+app/settings/page.tsx	216	54	text-sm	text-fs-15	size	R14·设置项标题→15（列表项标题，下有说明文字）
+app/settings/page.tsx	226	56	text-[13px]	text-fs-13	size	R13·正文
+app/settings/page.tsx	239	84	text-sm	text-fs-13	size	R14-界面·按钮
+app/settings/page.tsx	242	43	text-xs	text-fs-12	size	R12·辅助说明
+app/settings/page.tsx	243	59	text-xs	text-fs-12	size	R12·辅助说明
+app/settings/page.tsx	245	33	text-[15px]	text-fs-15	size	R15·辅助说明
+app/settings/page.tsx	246	73	text-[13px]	text-fs-13	size	R13·标签
+app/settings/page.tsx	251	140	text-base	text-fs-16.5	size	R-ctl16·输入框
+app/settings/page.tsx	256	62	text-xs	text-fs-12	size	R12·辅助说明
+app/settings/page.tsx	263	41	text-[13px]	text-fs-13	size	R13·正文
+components/AgentExchangeWorkspace.tsx	18	75	text-[16px]	text-fs-16.5	size	R-ctl16·输入框
+components/AgentExchangeWorkspace.tsx	75	132	hover:text-foreground	hover:text-[color:var(--ink)]	color	foreground → --ink
+components/AgentExchangeWorkspace.tsx	75	110	text-muted-foreground	text-[color:var(--ink2)]	color	muted-foreground → --ink2
+components/AgentExchangeWorkspace.tsx	75	102	text-xs	text-fs-12	size	R12·按钮
+components/AgentExchangeWorkspace.tsx	76	33	text-[30px]	text-fs-30	size	R30·标题层级
+components/AgentExchangeWorkspace.tsx	77	163	text-xs	text-fs-12	size	R12·正文
+components/AgentExchangeWorkspace.tsx	77	36	text-[14px]	text-fs-15	size	R14-显式·正文
+components/AgentExchangeWorkspace.tsx	89	533	text-[11px]	text-fs-11	size	R≤11·元信息
+components/AgentExchangeWorkspace.tsx	89	228	text-[15px]	text-fs-15	size	R15·按钮
+components/AgentExchangeWorkspace.tsx	92	190	text-muted-foreground	text-[color:var(--ink2)]	color	muted-foreground → --ink2
+components/AgentExchangeWorkspace.tsx	97	86	text-[14px]	text-fs-15	size	R14-显式·正文
+components/AgentExchangeWorkspace.tsx	102	36	text-[13px]	text-fs-13	size	R13·正文
+components/AgentExchangeWorkspace.tsx	109	117	text-[22px]	text-fs-22 leading-[inherit]	size	R22·标题层级；补 leading-[inherit] 保持原继承行高
+components/AgentExchangeWorkspace.tsx	110	81	text-[14.5px]	text-fs-15	size	R15·正文
+components/AgentExchangeWorkspace.tsx	113	132	text-[13px]	text-fs-13	size	R13·正文
+components/AgentExchangeWorkspace.tsx	120	46	text-muted-foreground	text-[color:var(--ink2)]	color	muted-foreground → --ink2
+components/AgentExchangeWorkspace.tsx	120	38	text-xs	text-fs-12	size	R12·辅助说明
+components/AgentExchangeWorkspace.tsx	123	130	text-[20px]	text-fs-22	size	R20·标题层级
+components/AgentExchangeWorkspace.tsx	124	101	text-muted-foreground	text-[color:var(--ink2)]	color	muted-foreground → --ink2
+components/AgentExchangeWorkspace.tsx	124	74	text-[13px]	text-fs-13	size	R13·正文
+components/AgentExchangeWorkspace.tsx	130	44	text-muted-foreground	text-[color:var(--ink2)]	color	muted-foreground → --ink2
+components/AgentExchangeWorkspace.tsx	130	36	text-xs	text-fs-12	size	R12·辅助说明
+components/AgentExchangeWorkspace.tsx	132	148	var(--ink3)	var(--ink2)	contrast	表头 11px 文字不得用 --ink3
+components/AgentExchangeWorkspace.tsx	132	104	text-[11px]	text-fs-11	size	R≤11·元信息
+components/AgentExchangeWorkspace.tsx	135	237	hover:bg-card	hover:bg-[color:var(--hi)]	color	card → --hi
+components/AgentExchangeWorkspace.tsx	135	225	text-[13px]	text-fs-13	size	R13·按钮
+components/AgentExchangeWorkspace.tsx	137	57	text-muted-foreground	text-[color:var(--ink2)]	color	muted-foreground → --ink2
+components/AgentExchangeWorkspace.tsx	137	49	text-xs	text-fs-12	size	R12·辅助说明
+components/AgentExchangeWorkspace.tsx	142	74	text-muted-foreground	text-[color:var(--ink2)]	color	muted-foreground → --ink2
+components/AgentExchangeWorkspace.tsx	142	66	text-xs	text-fs-12	size	R12·辅助说明
+components/AgentExchangeWorkspace.tsx	170	120	text-[20px]	text-fs-22	size	R20·展示字
+components/AgentExchangeWorkspace.tsx	221	47	text-xs	text-fs-12	size	R12·标签
+components/AgentExchangeWorkspace.tsx	223	41	text-muted-foreground	text-[color:var(--ink2)]	color	muted-foreground → --ink2
+components/AgentExchangeWorkspace.tsx	223	29		text-fs-11 	size	<small> 预检 80% 会落在字阶外，补显式 11
+components/AgentExchangeWorkspace.tsx	225	108	text-xs	text-fs-12	size	R12·按钮
+components/AgentExchangeWorkspace.tsx	229	49	text-xs	text-fs-12	size	R12·标签
+components/AgentExchangeWorkspace.tsx	231	108	text-muted-foreground	text-[color:var(--ink2)]	color	muted-foreground → --ink2
+components/AgentExchangeWorkspace.tsx	231	96		text-fs-11 	size	<small> 预检 80% 会落在字阶外，补显式 11
+components/AgentExchangeWorkspace.tsx	235	47	text-muted-foreground	text-[color:var(--ink2)]	color	muted-foreground → --ink2
+components/AgentExchangeWorkspace.tsx	235	23	text-xs	text-fs-12	size	R12·正文
+components/AgentExchangeWorkspace.tsx	326	36	text-lg	text-fs-18	size	R18·标题层级
+components/AgentExchangeWorkspace.tsx	327	76	text-muted-foreground	text-[color:var(--ink2)]	color	muted-foreground → --ink2
+components/AgentExchangeWorkspace.tsx	327	68	text-xs	text-fs-12	size	R12·辅助说明
+components/AgentExchangeWorkspace.tsx	338	256	text-muted-foreground	text-[color:var(--ink2)]	color	muted-foreground → --ink2
+components/AgentExchangeWorkspace.tsx	338	236	text-foreground	text-[color:var(--ink)]	color	foreground → --ink
+components/AgentExchangeWorkspace.tsx	338	90	text-xs	text-fs-12	size	R12·正文
+components/AgentExchangeWorkspace.tsx	342	55	text-muted-foreground	text-[color:var(--ink2)]	color	muted-foreground → --ink2
+components/AgentExchangeWorkspace.tsx	342	31	text-xs	text-fs-12	size	R12·正文
+components/AgentExchangeWorkspace.tsx	348	145	text-muted-foreground	text-[color:var(--ink2)]	color	muted-foreground → --ink2
+components/AgentExchangeWorkspace.tsx	348	137	text-xs	text-fs-12	size	R12·辅助说明
+components/AgentExchangeWorkspace.tsx	353	43	text-muted-foreground	text-[color:var(--ink2)]	color	muted-foreground → --ink2
+components/AgentExchangeWorkspace.tsx	353	19	text-xs	text-fs-12	size	R12·正文
+components/AgentExchangeWorkspace.tsx	358	94	text-muted-foreground	text-[color:var(--ink2)]	color	muted-foreground → --ink2
+components/AgentExchangeWorkspace.tsx	358	66	text-[13px]	text-fs-13	size	R13·辅助说明
+components/AgentExchangeWorkspace.tsx	359	59	text-[16.5px]	text-fs-16.5	size	R16.5·辅助说明
+components/AgentExchangeWorkspace.tsx	364	192	text-[16.5px]	text-fs-16.5	size	R16.5·正文
+components/AgentExchangeWorkspace.tsx	364	84	text-sm	text-fs-15	size	R14-标题·标题层级
+components/AgentExchangeWorkspace.tsx	369	197	text-muted-foreground	text-[color:var(--ink2)]	color	muted-foreground → --ink2
+components/AgentExchangeWorkspace.tsx	369	189	text-xs	text-fs-12	size	R12·辅助说明
+components/AgentExchangeWorkspace.tsx	390	48	text-muted-foreground	text-[color:var(--ink2)]	color	muted-foreground → --ink2
+components/AgentExchangeWorkspace.tsx	390	40	text-xs	text-fs-12	size	R12·辅助说明
+components/AgentExchangeWorkspace.tsx	391	347	text-muted-foreground	text-[color:var(--ink2)]	color	muted-foreground → --ink2
+components/AgentExchangeWorkspace.tsx	391	335	text-[13px]	text-fs-13	size	R13·辅助说明
+components/AgentExchangeWorkspace.tsx	391	275	var(--ring)	var(--ink)	legacy	--ring → --ink
+components/AgentExchangeWorkspace.tsx	391	163	text-[13px]	text-fs-13	size	R13·正文
+components/AgentExchangeWorkspace.tsx	446	43	text-muted-foreground	text-[color:var(--ink2)]	color	muted-foreground → --ink2
+components/AgentExchangeWorkspace.tsx	446	19	text-xs	text-fs-12	size	R12·正文
+components/AgentExchangeWorkspace.tsx	452	57	text-muted-foreground	text-[color:var(--ink2)]	color	muted-foreground → --ink2
+components/AgentExchangeWorkspace.tsx	452	49	text-xs	text-fs-12	size	R12·辅助说明
+components/AgentExchangeWorkspace.tsx	458	81	text-base	text-fs-16.5	size	R16·正文
+components/AgentExchangeWorkspace.tsx	460	64	text-base	text-fs-16.5	size	R16·正文
+components/AgentExchangeWorkspace.tsx	462	197	var(--ring)	var(--ink)	legacy	--ring → --ink
+components/AgentExchangeWorkspace.tsx	462	69	text-sm	text-fs-13	size	R14-界面·标签
+components/AgentExchangeWorkspace.tsx	463	263	var(--ring)	var(--ink)	legacy	--ring → --ink
+components/AgentExchangeWorkspace.tsx	463	137	text-sm	text-fs-15	size	R14-正文(行高)·正文
+components/AgentExchangeWorkspace.tsx	470	217	text-muted-foreground	text-[color:var(--ink2)]	color	muted-foreground → --ink2
+components/AgentExchangeWorkspace.tsx	470	209	text-xs	text-fs-12	size	R12·辅助说明
+components/AgentExchangeWorkspace.tsx	470	151	text-sm	text-fs-15	size	R14-显式·正文
+components/AgentExchangeWorkspace.tsx	478	135	text-destructive	text-[color:var(--seal)]	color	destructive → --seal
+components/AgentExchangeWorkspace.tsx	478	76	text-[13px]	text-fs-13	size	R13·辅助说明
+components/AgentExchangeWorkspace.tsx	482	57	text-muted-foreground	text-[color:var(--ink2)]	color	muted-foreground → --ink2
+components/AgentExchangeWorkspace.tsx	482	29	text-[13px]	text-fs-13	size	R13·正文
+components/AgentExchangeWorkspace.tsx	486	79	text-muted-foreground	text-[color:var(--ink2)]	color	muted-foreground → --ink2
+components/AgentExchangeWorkspace.tsx	486	67	text-[13px]	text-fs-13	size	R13·辅助说明
+components/AgentIdentityCard.tsx	12	76	text-xs	text-fs-12	size	R12·辅助说明
+components/AgentIdentityCard.tsx	15	49	text-[46px]	text-fs-46	size	R46·展示字
+components/AgentIdentityCard.tsx	16	67	text-[15px]	text-fs-15	size	R15·正文
+components/AgentIdentityCard.tsx	17	53	text-xs	text-fs-12	size	R12·辅助说明
+components/AgentIdentityCard.tsx	20	33	text-xs	text-fs-12	size	R12·辅助说明
+components/AgentMemoryPanel.tsx	93	50	text-[17px]	text-fs-18	size	R17·标题层级
+components/AgentMemoryPanel.tsx	96	21	text-[13px]	text-fs-13	size	R13·正文
+components/AgentMemoryPanel.tsx	97	243	text-muted-foreground	text-[color:var(--ink2)]	color	muted-foreground → --ink2
+components/AgentMemoryPanel.tsx	97	235	text-xs	text-fs-12	size	R12·辅助说明
+components/AgentMemoryPanel.tsx	97	131	text-muted-foreground	text-[color:var(--ink2)]	color	muted-foreground → --ink2
+components/AgentMemoryPanel.tsx	97	123	text-xs	text-fs-12	size	R12·辅助说明
+components/AgentMemoryPanel.tsx	97	58	text-muted-foreground	text-[color:var(--ink2)]	color	muted-foreground → --ink2
+components/AgentMemoryPanel.tsx	97	50	text-xs	text-fs-12	size	R12·辅助说明
+components/AgentMemoryPanel.tsx	98	106	text-[13px]	text-fs-13	size	R13·正文
+components/AgentMemoryPanel.tsx	99	43	text-muted-foreground	text-[color:var(--ink2)]	color	muted-foreground → --ink2
+components/AgentMemoryPanel.tsx	99	35	text-xs	text-fs-12	size	R12·辅助说明
+components/AgentMemoryPanel.tsx	100	212	text-xs	text-fs-12	size	R12·按钮
+components/AgentMemoryPanel.tsx	100	31	text-xs	text-fs-12	size	R12·辅助说明
+components/AgentMemoryPanel.tsx	101	40	text-muted-foreground	text-[color:var(--ink2)]	color	muted-foreground → --ink2
+components/AgentMemoryPanel.tsx	101	32	text-xs	text-fs-12	size	R12·辅助说明
+components/AgentMemoryPanel.tsx	108	49	text-muted-foreground	text-[color:var(--ink2)]	color	muted-foreground → --ink2
+components/AgentMemoryPanel.tsx	108	21	text-[11px]	text-fs-11	size	R≤11·正文
+components/ChatBubble.tsx	116	84	text-xs	text-fs-12	size	R12·辅助说明
+components/ChatBubble.tsx	123	95	text-sm	text-fs-13	size	R14-界面·辅助说明
+components/ChatBubble.tsx	126	42	text-sm	text-fs-15	size	R14-显式·正文
+components/ChatBubble.tsx	127	42	text-sm	text-fs-15	size	R14-显式·正文
+components/ChatBubble.tsx	139	82	text-xs	text-fs-12	size	R12·正文
+components/ChatBubble.tsx	141	30	text-muted-foreground	text-[color:var(--ink2)]	color	muted-foreground → --ink2
+components/ChatBubble.tsx	144	64	fontSize: 32	fontSize: "var(--fs-30)"	size	天气卡温度 32 → 30
+components/ChatBubble.tsx	146	39	text-muted-foreground	text-[color:var(--ink2)]	color	muted-foreground → --ink2
+components/ChatBubble.tsx	146	31	text-xs	text-fs-12	size	R12·辅助说明
+components/ChatBubble.tsx	148	57	text-muted-foreground	text-[color:var(--ink2)]	color	muted-foreground → --ink2
+components/ChatBubble.tsx	148	49	text-xs	text-fs-12	size	R12·辅助说明
+components/ChatBubble.tsx	153	81	text-muted-foreground	text-[color:var(--ink2)]	color	muted-foreground → --ink2
+components/ChatBubble.tsx	153	73	text-xs	text-fs-12	size	R12·辅助说明
+components/ChatBubble.tsx	185	54	text-muted-foreground	text-[color:var(--ink2)]	color	muted-foreground → --ink2
+components/ChatBubble.tsx	185	30	text-[11px]	text-fs-11	size	R≤11·元信息
+components/ChatBubble.tsx	189	44	text-muted-foreground/50	text-[color:var(--ink2)]	color	文字透明度 ink2/50 吸附到 --ink2
+components/ChatBubble.tsx	189	32	text-[10px]	text-fs-11	size	R≤11·元信息
+components/ChatBubble.tsx	196	46	text-foreground/90	text-[color:var(--ink)]	color	文字透明度 ink/90 吸附到 --ink
+components/ChatBubble.tsx	196	38	text-sm	text-fs-15	size	R14-正文(行高)·正文
+components/ChatBubble.tsx	204	89	text-muted-foreground	text-[color:var(--ink2)]	color	muted-foreground → --ink2
+components/ChatBubble.tsx	204	77	text-[11px]	text-fs-11	size	R≤11·元信息
+components/ChatBubble.tsx	210	79	text-[12px]	text-fs-12	size	R12·按钮
+components/ChatBubble.tsx	214	90	text-muted-foreground	text-[color:var(--ink2)]	color	muted-foreground → --ink2
+components/ChatBubble.tsx	214	78	text-[10px]	text-fs-11	size	R≤11·元信息
+components/ChatBubble.tsx	337	37	bg-border	bg-[color:var(--rule)]	color	border → --rule
+components/ChatBubble.tsx	338	35	text-xs	text-fs-12	size	R12·辅助说明
+components/ChatBubble.tsx	339	37	bg-border	bg-[color:var(--rule)]	color	border → --rule
+components/ChatBubble.tsx	353	61	text-[13px]	text-fs-13	size	R13·辅助说明
+components/ChatBubble.tsx	356	62	border-[var(--rule2)]	border-[color:var(--rule2)]	syntax	B 式 → A 式
+components/ChatBubble.tsx	379	115	text-sm	text-fs-13	size	R14-界面·辅助说明
+components/ChatBubble.tsx	403	46	text-xs	text-fs-12	size	R12·按钮
+components/ChatBubble.tsx	412	51	text-xs	text-fs-12	size	R12·按钮
+components/ChatBubble.tsx	419	51	text-xs	text-fs-12	size	R12·按钮
+components/ChatBubble.tsx	427	57	text-xs	text-fs-12	size	R12·辅助说明
+components/ChatBubble.tsx	428	36	text-xs	text-fs-12	size	R12·元信息
+components/ChatBubble.tsx	434	51	text-xs	text-fs-12	size	R12·按钮
+components/ChatBubble.tsx	443	51	text-xs	text-fs-12	size	R12·按钮
+components/ChatBubble.tsx	452	51	text-xs	text-fs-12	size	R12·按钮
+components/ChatModelSection.tsx	12	115	text-base	text-fs-16.5	size	R-ctl16·输入框
+components/ChatModelSection.tsx	13	20	text-[13px]	text-fs-13	size	R13·正文
+components/ChatModelSection.tsx	267	56	text-xs	text-fs-12	size	R12·辅助说明
+components/ChatModelSection.tsx	289	59	text-sm	text-fs-13	size	R14-界面·标签
+components/ChatModelSection.tsx	303	30	text-sm	text-fs-13	size	R14-界面·正文
+components/ChatModelSection.tsx	318	50	text-sm	text-fs-13	size	R14-界面·按钮
+components/ChatModelSection.tsx	327	58	text-sm	text-fs-13	size	R14-界面·标签
+components/ChatModelSection.tsx	333	58	text-sm	text-fs-13	size	R14-界面·标签
+components/ChatModelSection.tsx	335	36	text-sm	text-fs-13	size	R14-界面·元信息
+components/ChatModelSection.tsx	336	57	text-xs	text-fs-12	size	R12·按钮
+components/ChatModelSection.tsx	337	68	text-xs	text-fs-12	size	R12·按钮
+components/ChatModelSection.tsx	349	57	text-sm	text-fs-15	size	R14·设置项标题→15（列表项标题，下有说明文字）
+components/ChatModelSection.tsx	368	42	text-xs	text-fs-12	size	R12·辅助说明
+components/ChatModelSection.tsx	369	45	text-xs	text-fs-12	size	R12·辅助说明
+components/ChatModelSection.tsx	371	56	text-sm	text-fs-13	size	R14·展开开关→13（按规则改正）
+components/ChatModelSection.tsx	426	66	text-xs	text-fs-12	size	R12·辅助说明
+components/ChatScrollArea.tsx	123	131	focus-visible:ring-primary/40	focus-visible:ring-[color:var(--btn)]/40	color	primary → --btn
+components/ChatScrollArea.tsx	143	294	focus-visible:outline-primary	focus-visible:outline-[color:var(--btn)]	color	primary → --btn
+components/ChatScrollArea.tsx	143	248	hover:text-foreground	hover:text-[color:var(--ink)]	color	foreground → --ink
+components/ChatScrollArea.tsx	143	216	text-muted-foreground	text-[color:var(--ink2)]	color	muted-foreground → --ink2
+components/ChatScrollArea.tsx	143	208	text-xs	text-fs-12	size	R12·按钮
+components/ChatScrollArea.tsx	143	179	bg-background/95	bg-[color:var(--paper)]/95	color	background → --paper
+components/ChatScrollArea.tsx	143	165	border-border	border-[color:var(--rule)]	color	border → --rule
+components/ComposerImageMenu.tsx	93	47	text-xs	text-fs-12	size	R12·按钮
+components/ComposerImageMenu.tsx	119	38	text-sm	text-fs-15	size	R14-显式·正文
+components/ComposerImageMenu.tsx	120	38	text-xs	text-fs-12	size	R12·辅助说明
+components/ConfirmDialog.tsx	156	56	text-base	text-fs-16.5	size	R16·标题层级
+components/ConfirmDialog.tsx	157	57	text-[15px]	text-fs-15	size	R15·正文
+components/ConversationPicker.tsx	48	118	var(--glass-border)	var(--rule)	legacy	--glass-border → --rule
+components/ConversationPicker.tsx	49	24	text-[18px]	text-fs-18	size	R18·标题层级
+components/ConversationPicker.tsx	64	44	text-muted-foreground	text-[color:var(--ink2)]	color	muted-foreground → --ink2
+components/ConversationPicker.tsx	64	36	text-xs	text-fs-12	size	R12·辅助说明
+components/ConversationPicker.tsx	70	255	aria-selected:text-foreground	aria-selected:text-[color:var(--ink)]	color	foreground → --ink
+components/ConversationPicker.tsx	70	174	aria-selected:bg-[var(--chip)]	aria-selected:bg-[color:var(--chip)]	syntax	B 式 → A 式
+components/ConversationPicker.tsx	70	152	hover:text-foreground	hover:text-[color:var(--ink)]	color	foreground → --ink
+components/ConversationPicker.tsx	70	133	hover:bg-secondary	hover:bg-[color:var(--slip)]	color	secondary → --slip
+components/ConversationPicker.tsx	70	111	text-muted-foreground	text-[color:var(--ink2)]	color	muted-foreground → --ink2
+components/ConversationPicker.tsx	70	99	text-[15px]	text-fs-15	size	R15·辅助说明
+components/ConversationPicker.tsx	75	47	text-xs	text-fs-12	size	R12·元信息
+components/ConversationPicker.tsx	80	100	var(--rec)	var(--seal)	legacy	--rec → --seal
+components/ConversationPicker.tsx	80	26	text-muted-foreground	text-[color:var(--ink2)]	color	muted-foreground → --ink2
+components/ConversationPicker.tsx	90	54	text-muted-foreground	text-[color:var(--ink2)]	color	muted-foreground → --ink2
+components/ConversationPicker.tsx	90	42	text-[11px]	text-fs-11	size	R≤11·辅助说明
+components/ConversationPicker.tsx	91	103	text-muted-foreground	text-[color:var(--ink2)]	color	muted-foreground → --ink2
+components/ConversationPicker.tsx	91	79	text-xs	text-fs-12	size	R12·辅助说明
+components/ConversationPicker.tsx	92	97	var(--rec)	var(--seal)	legacy	--rec → --seal
+components/ConversationPicker.tsx	92	77	text-xs	text-fs-12	size	R12·辅助说明
+components/ConversationPicker.tsx	94	105	text-xs	text-fs-12	size	R12·按钮
+components/ConversationPicker.tsx	97	130	var(--glass-border)	var(--rule)	legacy	--glass-border → --rule
+components/ConversationPicker.tsx	97	84	text-muted-foreground	text-[color:var(--ink2)]	color	muted-foreground → --ink2
+components/ConversationPicker.tsx	97	76	text-xs	text-fs-12	size	R12·辅助说明
+components/ConversationPicker.tsx	99	75	hover:text-foreground	hover:text-[color:var(--ink)]	color	foreground → --ink
+components/ConversationPicker.tsx	101	115	var(--glass-border)	var(--rule)	legacy	--glass-border → --rule
+components/GeneratedImage.tsx	140	104	text-muted-foreground	text-[color:var(--ink2)]	color	muted-foreground → --ink2
+components/GeneratedImage.tsx	140	96	text-xs	text-fs-12	size	R12·辅助说明
+components/GeneratedImage.tsx	141	99	text-muted-foreground	text-[color:var(--ink2)]	color	muted-foreground → --ink2
+components/GeneratedImage.tsx	141	91	text-xs	text-fs-12	size	R12·辅助说明
+components/GeneratedImage.tsx	144	85	text-xs	text-fs-12	size	R12·按钮
+components/GeneratedImage.tsx	145	216	var(--ring)	var(--ink)	legacy	--ring → --ink
+components/GeneratedImage.tsx	152	94	text-[13px]	text-fs-13	size	R13·正文
+components/GeneratedImage.tsx	154	72	text-xs	text-fs-12	size	R12·辅助说明
+components/GeneratedImage.tsx	156	68	text-[11px]	text-fs-11	size	R≤11·元信息
+components/GeneratedImage.tsx	158	168	text-xs	text-fs-12	size	R12·按钮
+components/GeneratedImage.tsx	159	165	text-xs	text-fs-12	size	R12·按钮
+components/GeneratedImage.tsx	163	100	text-xs	text-fs-12	size	R12·按钮
+components/GeneratedImage.tsx	173	30	text-sm	text-fs-13	size	R14-界面·正文
+components/GeneratedImage.tsx	177	57	text-xs	text-fs-12	size	R12·按钮
+components/GeneratedImage.tsx	178	92	text-xs	text-fs-12	size	R12·按钮
+components/LocalWatchSection.tsx	16	115	text-base	text-fs-16.5	size	R-ctl16·输入框
+components/LocalWatchSection.tsx	17	20	text-[13px]	text-fs-13	size	R13·正文
+components/LocalWatchSection.tsx	18	40	text-[13px]	text-fs-13	size	R13·按钮
+components/LocalWatchSection.tsx	270	44	text-[13px]	text-fs-13	size	R13·辅助说明
+components/LocalWatchSection.tsx	274	24	text-sm	text-fs-15	size	R14-标题·标题层级
+components/LocalWatchSection.tsx	275	33	text-[13px]	text-fs-13	size	R13·标签
+components/LocalWatchSection.tsx	280	63	text-[13px]	text-fs-13	size	R13·标签
+components/LocalWatchSection.tsx	286	84	text-xs	text-fs-12	size	R12·正文
+components/LocalWatchSection.tsx	289	62	text-sm	text-fs-15	size	R14·列表标题→15（按规则改正）
+components/LocalWatchSection.tsx	296	91	text-sm	text-fs-15	size	R14-标题·标题层级
+components/LocalWatchSection.tsx	303	47	text-sm	text-fs-15	size	R14·列表标题→15（按规则改正）
+components/LocalWatchSection.tsx	308	91	text-sm	text-fs-15	size	R14-标题·标题层级
+components/LocalWatchSection.tsx	310	35	text-sm	text-fs-15	size	R14-显式·正文
+components/LocalWatchSection.tsx	312	109	text-[13px]	text-fs-13	size	R13·辅助说明
+components/LocalWatchSection.tsx	322	26	text-sm	text-fs-15	size	R14-标题·标题层级
+components/LocalWatchSection.tsx	323	45	text-[13px]	text-fs-13	size	R13·标签
+components/LocalWatchSection.tsx	324	45	text-[13px]	text-fs-13	size	R13·标签
+components/LocalWatchSection.tsx	325	45	text-[13px]	text-fs-13	size	R13·标签
+components/LocalWatchSection.tsx	326	45	text-[13px]	text-fs-13	size	R13·标签
+components/LocalWatchSection.tsx	327	74	text-[13px]	text-fs-13	size	R13·标签
+components/LocalWatchSection.tsx	329	47	text-[13px]	text-fs-13	size	R13·标签
+components/LocalWatchSection.tsx	330	47	text-[13px]	text-fs-13	size	R13·标签
+components/LocalWatchSection.tsx	331	47	text-[13px]	text-fs-13	size	R13·标签
+components/LocalWatchSection.tsx	335	47	text-[13px]	text-fs-13	size	R13·标签
+components/LocalWatchSection.tsx	336	47	text-[13px]	text-fs-13	size	R13·标签
+components/LocalWatchSection.tsx	341	47	text-[13px]	text-fs-13	size	R13·标签
+components/LocalWatchSection.tsx	342	47	text-[13px]	text-fs-13	size	R13·标签
+components/LocalWatchSection.tsx	344	45	text-[13px]	text-fs-13	size	R13·标签
+components/MessageText.tsx	5	57	var(--amber-ink)	var(--ink)	legacy	--amber-ink → --ink
+components/MessageText.tsx	8	46	text-foreground	text-[color:var(--ink)]	color	foreground → --ink
+components/MessageText.tsx	8	31	var(--accent)	var(--slip)	legacy	--accent → --slip
+components/MessageText.tsx	34	81	text-[.92em]	text-fs-15	size	行内代码 .92em 实算 15.18 → 15
+components/MessageText.tsx	66	14	text-[18.5px]	text-fs-18	size	R18·标题层级
+components/MessageText.tsx	68	16	text-[17.5px]	text-fs-18	size	R18·标题层级
+components/MessageText.tsx	69	16	text-[1em]		size	删：预检已让 h1–h6 继承字号，等价
+components/MessageText.tsx	153	121	text-[14px]	text-fs-15	size	R14-显式·正文
+components/MyAgentWorkspace.tsx	14	75	text-[16px]	text-fs-16.5	size	R-ctl16·输入框
+components/MyAgentWorkspace.tsx	109	104	text-xs	text-fs-12	size	R12·按钮
+components/MyAgentWorkspace.tsx	110	33	text-[30px]	text-fs-30	size	R30·标题层级
+components/MyAgentWorkspace.tsx	111	36	text-[14px]	text-fs-15 text-pretty	size	R14-显式·正文；补 text-pretty，手机上不留单字末行
+components/MyAgentWorkspace.tsx	116	332	text-muted-foreground	text-[color:var(--ink2)]	color	muted-foreground → --ink2
+components/MyAgentWorkspace.tsx	116	324	text-sm	text-fs-13	size	R14-界面·辅助说明
+components/MyAgentWorkspace.tsx	116	137	text-muted-foreground	text-[color:var(--ink2)]	color	muted-foreground → --ink2
+components/MyAgentWorkspace.tsx	116	129	text-sm	text-fs-13	size	R14-界面·辅助说明
+components/MyAgentWorkspace.tsx	116	64	text-muted-foreground	text-[color:var(--ink2)]	color	muted-foreground → --ink2
+components/MyAgentWorkspace.tsx	116	56	text-sm	text-fs-13	size	R14-界面·辅助说明
+components/MyAgentWorkspace.tsx	118	52	text-destructive	text-[color:var(--seal)]	color	destructive → --seal
+components/MyAgentWorkspace.tsx	118	44	text-sm	text-fs-13	size	R14-界面·辅助说明
+components/MyAgentWorkspace.tsx	126	41	text-[13px]	text-fs-13	size	R13·标签
+components/MyAgentWorkspace.tsx	127	282	text-[32px]!	text-fs-30!	size	R30·输入框
+components/MyAgentWorkspace.tsx	129	49	text-[13px]	text-fs-13	size	R13·标签
+components/MyAgentWorkspace.tsx	130	261	text-[22px]	text-fs-22 leading-[inherit]	size	R-ctl·输入框；补 leading-[inherit] 保持原继承行高
+components/MyAgentWorkspace.tsx	131	91	text-muted-foreground	text-[color:var(--ink2)]	color	muted-foreground → --ink2
+components/MyAgentWorkspace.tsx	131	55	text-xs	text-fs-12	size	R12·辅助说明
+components/MyAgentWorkspace.tsx	134	45	text-[13px]	text-fs-13	size	R13·标签
+components/MyAgentWorkspace.tsx	136	89	text-muted-foreground	text-[color:var(--ink2)]	color	muted-foreground → --ink2
+components/MyAgentWorkspace.tsx	136	53	text-xs	text-fs-12	size	R12·辅助说明
+components/MyAgentWorkspace.tsx	138	236	text-muted-foreground	text-[color:var(--ink2)]	color	muted-foreground → --ink2
+components/MyAgentWorkspace.tsx	138	189	text-xs	text-fs-12	size	R12·辅助说明
+components/MyAgentWorkspace.tsx	138	45	text-[13px]	text-fs-13	size	R13·标签
+components/MyAgentWorkspace.tsx	140	89	text-muted-foreground	text-[color:var(--ink2)]	color	muted-foreground → --ink2
+components/MyAgentWorkspace.tsx	140	53	text-xs	text-fs-12	size	R12·辅助说明
+components/MyAgentWorkspace.tsx	143	197	text-muted-foreground	text-[color:var(--ink2)]	color	muted-foreground → --ink2
+components/MyAgentWorkspace.tsx	143	170	text-[13px]	text-fs-13	size	R13·正文
+components/MyAgentWorkspace.tsx	143	68	text-[16px]	text-fs-16.5	size	R16·正文
+components/MyAgentWorkspace.tsx	150	64	text-destructive	text-[color:var(--seal)]	color	destructive → --seal
+components/MyAgentWorkspace.tsx	150	56	text-sm	text-fs-13	size	R14-界面·辅助说明
+components/MyAgentWorkspace.tsx	151	66	text-muted-foreground	text-[color:var(--ink2)]	color	muted-foreground → --ink2
+components/MyAgentWorkspace.tsx	151	58	text-sm	text-fs-13	size	R14-界面·辅助说明
+components/MyAgentWorkspace.tsx	156	56	text-muted-foreground	text-[color:var(--ink2)]	color	muted-foreground → --ink2
+components/MyAgentWorkspace.tsx	156	48	text-xs	text-fs-12	size	R12·辅助说明
+components/MyAgentWorkspace.tsx	161	158	text-xs	text-fs-12	size	R12·按钮
+components/MyAgentWorkspace.tsx	162	33	text-[13px]	text-fs-13	size	R13·正文
+components/NewsCardContent.tsx	117	48	text-muted-foreground	text-[color:var(--ink2)]	color	muted-foreground → --ink2
+components/NewsCardContent.tsx	117	28	text-xs	text-fs-12	size	R12·标题层级
+components/NewsCardContent.tsx	118	56	text-muted-foreground	text-[color:var(--ink2)]	color	muted-foreground → --ink2
+components/NewsCardContent.tsx	118	48	text-xs	text-fs-12	size	R12·辅助说明
+components/NewsCardContent.tsx	121	90	text-xs	text-fs-12	size	R12·按钮
+components/NewsCardContent.tsx	130	43	text-sm	text-fs-15	size	R14-正文(行高)·正文
+components/NewsCardContent.tsx	134	183	var(--ring)	var(--ink)	legacy	--ring → --ink
+components/NewsCardContent.tsx	134	111	hover:bg-secondary	hover:bg-[color:var(--slip)]	color	secondary → --slip
+components/NewsCardContent.tsx	136	60	text-[11px]	text-fs-11	size	R≤11·元信息
+components/NewsCardContent.tsx	137	63	text-[15px]	text-fs-15	size	R15·正文
+components/NewsCardContent.tsx	138	74	text-xs	text-fs-12	size	R12·正文
+components/NewsCardContent.tsx	143	41	text-muted-foreground	text-[color:var(--ink2)]	color	muted-foreground → --ink2
+components/NewsCardContent.tsx	143	33	text-sm	text-fs-13	size	R14-界面·辅助说明
+components/NewsCardContent.tsx	146	59	text-lg	text-fs-18	size	R18·标题层级
+components/NewsCardContent.tsx	149	85	text-muted-foreground	text-[color:var(--ink2)]	color	muted-foreground → --ink2
+components/NewsCardContent.tsx	149	77	text-sm	text-fs-13	size	R14-界面·辅助说明
+components/NewsCardContent.tsx	151	29	text-sm	text-fs-13	size	R14-显式13·辅助说明
+components/NewsCardContent.tsx	152	126	text-xs	text-fs-12	size	R12·按钮
+components/NewsCardContent.tsx	155	37	text-muted-foreground	text-[color:var(--ink2)]	color	muted-foreground → --ink2
+components/NewsCardContent.tsx	155	29	text-xs	text-fs-12	size	R12·辅助说明
+components/NewsCardContent.tsx	156	48	text-base	text-fs-16.5	size	R16·正文
+components/NewsCardContent.tsx	157	159	text-sm	text-fs-15	size	R14-正文(行高)·正文
+components/NewsCardContent.tsx	157	71	text-sm	text-fs-15	size	R14-标题·标题层级
+components/NewsCardContent.tsx	158	170	text-sm	text-fs-15	size	R14-正文(行高)·正文
+components/NewsCardContent.tsx	158	76	text-sm	text-fs-15	size	R14-标题·标题层级
+components/NewsCardContent.tsx	159	152	text-sm	text-fs-15	size	R14-正文(行高)·正文
+components/NewsCardContent.tsx	159	66	text-sm	text-fs-15	size	R14-标题·标题层级
+components/NewsCardContent.tsx	161	37	text-sm	text-fs-15	size	R14-标题·标题层级
+components/NewsCardContent.tsx	163	155	text-foreground/90	text-[color:var(--ink)]	color	文字透明度 ink/90 吸附到 --ink
+components/NewsCardContent.tsx	163	147	text-sm	text-fs-13	size	R14-界面·按钮
+components/NewsCardContent.tsx	164	247	text-muted-foreground	text-[color:var(--ink2)]	color	muted-foreground → --ink2
+components/NewsCardContent.tsx	164	239	text-xs	text-fs-12	size	R12·辅助说明
+components/NewsCardContent.tsx	173	110	text-xs	text-fs-12	size	R12·按钮
+components/Sidebar.tsx	121	166	border-[var(--carve)]	border-[color:var(--carve)]	syntax	B 式 → A 式
+components/Sidebar.tsx	125	277	hover:text-[var(--ink)]	hover:text-[color:var(--ink)]	syntax	B 式 → A 式
+components/Sidebar.tsx	125	258	text-[var(--ink2)]	text-[color:var(--ink2)]	syntax	B 式 → A 式
+components/Sidebar.tsx	125	219	text-[var(--ink)]	text-[color:var(--ink)]	syntax	B 式 → A 式
+components/Sidebar.tsx	125	187	border-[var(--ink)]	border-[color:var(--ink)]	syntax	B 式 → A 式
+components/Sidebar.tsx	125	120	text-[15px]	text-fs-15	size	R15·按钮
+components/Sidebar.tsx	132	165	hover:text-[var(--ink)]	hover:text-[color:var(--ink)]	syntax	B 式 → A 式
+components/Sidebar.tsx	132	146	text-[var(--ink2)]	text-[color:var(--ink2)]	syntax	B 式 → A 式
+components/Sidebar.tsx	132	138	text-sm	text-fs-13	size	R14·按钮→13（按规则改正）
+components/Sidebar.tsx	132	116	border-[var(--rule2)]	border-[color:var(--rule2)]	syntax	B 式 → A 式
+components/Sidebar.tsx	136	25	text-sm	text-fs-13	size	R14·读数→13（按规则改正）
+components/Sidebar.tsx	137	53	text-[var(--ink2)]	text-[color:var(--ink2)]	syntax	B 式 → A 式
+components/Sidebar.tsx	137	25	text-[11px]	text-fs-11	size	R≤11·元信息
+components/Sidebar.tsx	141	237	border-[var(--carve)]	border-[color:var(--carve)]	syntax	B 式 → A 式
+components/Sidebar.tsx	143	214	hover:text-[var(--ink)]	hover:text-[color:var(--ink)]	syntax	B 式 → A 式
+components/Sidebar.tsx	143	195	text-[var(--ink2)]	text-[color:var(--ink2)]	syntax	B 式 → A 式
+components/Sidebar.tsx	143	175	text-[var(--ink)]	text-[color:var(--ink)]	syntax	B 式 → A 式
+components/Sidebar.tsx	143	128	text-sm	text-fs-15	size	R14-显式·按钮
+components/Sidebar.tsx	144	88	bg-[var(--ink)]	bg-[color:var(--ink)]	syntax	B 式 → A 式
+components/SongProjectCard.tsx	34	46	text-sm	text-fs-15	size	R14-显式·正文
+components/SongProjectCard.tsx	37	39	text-xs	text-fs-12	size	R12·chip
+components/SongProjectCard.tsx	50	54	text-xs	text-fs-12	size	R12·chip
+components/SongProjectCard.tsx	103	40	text-sm	text-fs-15	size	R14-显式·正文
+components/SongProjectCard.tsx	106	44	text-xs	text-fs-12	size	R12·chip
+components/SongProjectCard.tsx	111	38	text-xs	text-fs-12	size	R12·chip
+components/SongProjectCard.tsx	120	28	text-xs	text-fs-12	size	R12·辅助说明
+components/SongProjectCard.tsx	130	78	text-sm	text-fs-15	size	R14-正文(行高)·正文
+components/SongProjectCard.tsx	133	61	text-xs	text-fs-12	size	R12·辅助说明
+components/SongProjectCard.tsx	153	26	text-xs	text-fs-12	size	R12·辅助说明
+components/SongProjectCard.tsx	158	78	text-xs	text-fs-12	size	R12·正文
+components/SongProjectCard.tsx	163	80	text-xs	text-fs-12	size	R12·正文
+components/SongProjectCard.tsx	209	38	text-sm	text-fs-15	size	R14-显式·正文
+components/SongProjectCard.tsx	212	47	text-xs	text-fs-12	size	R12·辅助说明
+components/SongProjectCard.tsx	215	55	text-xs	text-fs-12	size	R12·正文
+components/SongProjectCard.tsx	230	37	text-xs	text-fs-12	size	R12·按钮
+components/SongProjectCard.tsx	242	26	text-xs	text-fs-12	size	R12·辅助说明
+components/SongProjectCard.tsx	315	65	text-xs	text-fs-12	size	R12·按钮
+components/SongProjectCard.tsx	323	42	text-xs	text-fs-12	size	R12·辅助说明
+components/SongProjectCard.tsx	342	45	text-sm	text-fs-15	size	R14-正文(行高)·正文
+components/SongProjectCard.tsx	343	40	text-base	text-fs-16.5	size	R16·正文
+components/SongProjectCard.tsx	350	74	text-xs	text-fs-12	size	R12·辅助说明
+components/SongProjectCard.tsx	356	69	text-xs	text-fs-12	size	R12·按钮
+components/SongProjectCard.tsx	359	71	text-xs	text-fs-12	size	R12·按钮
+components/SongProjectCard.tsx	403	28	text-xs	text-fs-12	size	R12·辅助说明
+components/SongProjectCard.tsx	417	37	text-sm	text-fs-13	size	R14-界面·辅助说明
+components/SongProjectCard.tsx	425	23	text-sm	text-fs-13	size	R14-界面·辅助说明
+components/SongProjectCard.tsx	434	38	text-sm	text-fs-13	size	R14-界面·辅助说明
+components/SongProjectCard.tsx	435	72	text-xs	text-fs-12	size	R12·按钮
+components/SongProjectCard.tsx	440	62	text-xs	text-fs-12	size	R12·辅助说明
+components/SongProjectCard.tsx	449	23	text-sm	text-fs-13	size	R14-界面·辅助说明
+components/SongProjectCard.tsx	459	25	text-sm	text-fs-13	size	R14-界面·辅助说明
+components/StarChart.tsx	80	85	"fontSize": "13px"	"fontSize": "var(--fs-13)"	size	星图标签 13
+components/VoiceButton.tsx	146	122	text-xs	text-fs-12	size	R12·辅助说明
+components/VoiceButton.tsx	151	165	text-xs	text-fs-12	size	R12·正文
+components/VoiceButton.tsx	160	168	var(--rec-soft)	var(--seal-soft)	legacy	--rec-soft → --seal-soft
+components/VoiceButton.tsx	160	146	var(--rec)	var(--seal)	legacy	--rec → --seal
+components/VoiceButton.tsx	160	49	text-xs	text-fs-12	size	R12·按钮
+components/novel/BiblePanel.tsx	46	184	text-[var(--ink2)]	text-[color:var(--ink2)]	syntax	B 式 → A 式
+components/novel/BiblePanel.tsx	46	176	text-xs	text-fs-12	size	R12·元信息
+components/novel/BiblePanel.tsx	47	85	text-[var(--ink2)]	text-[color:var(--ink2)]	syntax	B 式 → A 式
+components/novel/BiblePanel.tsx	47	73	text-[13px]	text-fs-13	size	R13·辅助说明
+components/novel/BiblePanel.tsx	50	707	text-[var(--ink2)]	text-[color:var(--ink2)]	syntax	B 式 → A 式
+components/novel/BiblePanel.tsx	50	695	text-[13px]	text-fs-13	size	R13·元信息
+components/novel/BiblePanel.tsx	50	277	text-[16px]	text-fs-16.5	size	R16·标签
+components/novel/BiblePanel.tsx	55	56	text-[var(--ink2)]	text-[color:var(--ink2)]	syntax	B 式 → A 式
+components/novel/BiblePanel.tsx	55	44	text-[13px]	text-fs-13	size	R13·辅助说明
+components/novel/BiblePanel.tsx	56	32	text-[var(--ink2)]	text-[color:var(--ink2)]	syntax	B 式 → A 式
+components/novel/BiblePanel.tsx	56	24	text-xs	text-fs-12	size	R12·辅助说明
+components/novel/BiblePanel.tsx	61	59	border-[var(--carve)]	border-[color:var(--carve)]	syntax	B 式 → A 式
+components/novel/BiblePanel.tsx	72	46	text-sm	text-fs-15	size	R14-正文(行高)·正文
+components/novel/BiblePanel.tsx	76	494	text-[var(--ink2)]	text-[color:var(--ink2)]	syntax	B 式 → A 式
+components/novel/BiblePanel.tsx	76	486	text-xs	text-fs-12	size	R12·辅助说明
+components/novel/BiblePanel.tsx	76	364	border-[var(--carve)]	border-[color:var(--carve)]	syntax	B 式 → A 式
+components/novel/ChapterList.tsx	26	184	text-[var(--ink2)]	text-[color:var(--ink2)]	syntax	B 式 → A 式
+components/novel/ChapterList.tsx	26	143	text-[var(--ink)]	text-[color:var(--ink)]	syntax	B 式 → A 式
+components/novel/ChapterList.tsx	26	123	border-[var(--ink)]	border-[color:var(--ink)]	syntax	B 式 → A 式
+components/novel/ChapterList.tsx	26	74	text-sm	text-fs-15	size	R14-显式·按钮
+components/novel/ChapterList.tsx	30	164	text-xs	text-fs-12	size	R12·正文
+components/novel/ChapterList.tsx	34	85	text-[var(--ink2)]	text-[color:var(--ink2)]	syntax	B 式 → A 式
+components/novel/ChapterList.tsx	34	77	text-sm	text-fs-13	size	R14-界面·辅助说明
+components/novel/ChapterReader.tsx	33	69	text-[var(--ink)]	text-[color:var(--ink)]	syntax	B 式 → A 式
+components/novel/ChapterReader.tsx	34	109	text-xl	text-fs-22	size	R20·标题层级
+components/novel/ChapterReader.tsx	37	62	text-sm	text-fs-13	size	R14-显式13·辅助说明
+components/novel/ChapterReader.tsx	38	88	text-sm	text-fs-13	size	R14-界面·标签
+components/novel/ChapterReader.tsx	39	283	focus:border-[var(--ink2)]	focus:border-[color:var(--ink2)]	syntax	B 式 → A 式
+components/novel/ChapterReader.tsx	39	245	text-base	text-fs-16.5	size	R-ctl16·输入框
+components/novel/ChapterReader.tsx	39	204	border-[var(--carve)]	border-[color:var(--carve)]	syntax	B 式 → A 式
+components/novel/ChapterReader.tsx	40	48	text-[var(--ink2)]	text-[color:var(--ink2)]	syntax	B 式 → A 式
+components/novel/ChapterReader.tsx	40	40	text-xs	text-fs-12	size	R12·元信息
+components/novel/ChapterReader.tsx	42	57	text-base	text-fs-16.5	size	R16·正文
+components/novel/ChapterReader.tsx	43	60	text-sm	text-fs-13	size	R14-显式13·正文
+components/novel/ChapterReader.tsx	43	33	border-[var(--carve)]	border-[color:var(--carve)]	syntax	B 式 → A 式
+components/novel/ChapterReader.tsx	44	322	text-[var(--ink2)]	text-[color:var(--ink2)]	syntax	B 式 → A 式
+components/novel/ChapterReader.tsx	44	249	text-[var(--ink2)]	text-[color:var(--ink2)]	syntax	B 式 → A 式
+components/novel/DeliberationTimeline.tsx	10	227	text-[var(--ink2)]	text-[color:var(--ink2)]	syntax	B 式 → A 式
+components/novel/DeliberationTimeline.tsx	10	219	text-xs	text-fs-12	size	R12·标签
+components/novel/DeliberationTimeline.tsx	41	56	text-sm	text-fs-15	size	R14-正文(行高)·正文
+components/novel/DeliberationTimeline.tsx	47	92	border-[var(--carve)]	border-[color:var(--carve)]	syntax	B 式 → A 式
+components/novel/DeliberationTimeline.tsx	48	327	text-[var(--ink2)]	text-[color:var(--ink2)]	syntax	B 式 → A 式
+components/novel/DeliberationTimeline.tsx	50	26	text-[var(--ink2)]	text-[color:var(--ink2)]	syntax	B 式 → A 式
+components/novel/DeliberationTimeline.tsx	61	83	text-[var(--ink2)]	text-[color:var(--ink2)]	syntax	B 式 → A 式
+components/novel/DeliberationTimeline.tsx	61	75	text-xs	text-fs-12	size	R12·辅助说明
+components/novel/DeliberationTimeline.tsx	62	26	text-[var(--ink2)]	text-[color:var(--ink2)]	syntax	B 式 → A 式
+components/novel/DeliberationTimeline.tsx	65	170	text-[var(--ink2)]	text-[color:var(--ink2)]	syntax	B 式 → A 式
+components/novel/DeliberationTimeline.tsx	66	44	text-[var(--ink2)]	text-[color:var(--ink2)]	syntax	B 式 → A 式
+components/novel/DeliberationTimeline.tsx	67	132	text-[var(--ink2)]	text-[color:var(--ink2)]	syntax	B 式 → A 式
+components/novel/DeliberationTimeline.tsx	67	124	text-xs	text-fs-12	size	R12·辅助说明
+components/novel/DeliberationTimeline.tsx	68	209	text-[var(--ink2)]	text-[color:var(--ink2)]	syntax	B 式 → A 式
+components/novel/DeliberationTimeline.tsx	72	113	text-[var(--ink2)]	text-[color:var(--ink2)]	syntax	B 式 → A 式
+components/novel/GateBanner.tsx	27	718	text-[16px]	text-fs-16.5	size	R-ctl16·输入框
+components/novel/GateBanner.tsx	27	549	text-sm	text-fs-13	size	R14-界面·标签
+components/novel/GateBanner.tsx	27	416	text-[16px]	text-fs-16.5	size	R-ctl16·输入框
+components/novel/GateBanner.tsx	27	229	text-sm	text-fs-13	size	R14-界面·标签
+components/novel/GateBanner.tsx	36	211	text-sm	text-fs-15	size	R14-正文(pre-wrap)·正文
+components/novel/GateBanner.tsx	44	132	text-[15px]	text-fs-15	size	R15·正文
+components/novel/NotesPanel.tsx	22	44	text-sm	text-fs-15	size	R14-正文(行高)·正文
+components/novel/NotesPanel.tsx	24	317	focus:border-[var(--ink2)]	focus:border-[color:var(--ink2)]	syntax	B 式 → A 式
+components/novel/NotesPanel.tsx	24	294	text-base	text-fs-16.5	size	R-ctl16·输入框
+components/novel/NotesPanel.tsx	24	253	border-[var(--carve)]	border-[color:var(--carve)]	syntax	B 式 → A 式
+components/novel/NotesPanel.tsx	25	107	text-[var(--ink2)]	text-[color:var(--ink2)]	syntax	B 式 → A 式
+components/novel/NotesPanel.tsx	25	99	text-xs	text-fs-12	size	R12·元信息
+components/novel/NotesPanel.tsx	26	52	text-[var(--ink2)]	text-[color:var(--ink2)]	syntax	B 式 → A 式
+components/novel/NotesPanel.tsx	30	396	text-[var(--ink2)]	text-[color:var(--ink2)]	syntax	B 式 → A 式
+components/novel/NotesPanel.tsx	30	388	text-xs	text-fs-12	size	R12·元信息
+components/novel/NotesPanel.tsx	32	74	border-[var(--carve)]	border-[color:var(--carve)]	syntax	B 式 → A 式
+components/novel/NovelContent.tsx	28	86	text-[var(--ink2)]	text-[color:var(--ink2)]	syntax	B 式 → A 式
+components/novel/NovelContent.tsx	29	174	text-[var(--ink2)]	text-[color:var(--ink2)]	syntax	B 式 → A 式
+components/novel/NovelContent.tsx	30	209	text-[var(--ink2)]	text-[color:var(--ink2)]	syntax	B 式 → A 式
+components/novel/NovelContent.tsx	30	201	text-xs	text-fs-12	size	R12·标签
+components/novel/NovelContent.tsx	37	57	border-[var(--carve)]	border-[color:var(--carve)]	syntax	B 式 → A 式
+components/novel/NovelFilmDialog.tsx	45	47	text-xl	text-fs-22	size	R20·标题层级
+components/novel/NovelFilmDialog.tsx	48	186	text-sm	text-fs-13	size	R14-界面·辅助说明
+components/novel/NovelFilmDialog.tsx	51	24	text-sm	text-fs-13	size	R14-界面·辅助说明
+components/novel/NovelModelFields.tsx	5	95	text-[16px]	text-fs-16.5	size	R-ctl16·输入框
+components/novel/NovelModelFields.tsx	27	151	text-[16px]	text-fs-16.5	size	R16·标签
+components/novel/NovelModelFields.tsx	27	65	text-[16px]	text-fs-16.5	size	R16·正文
+components/novel/NovelModelFields.tsx	30	26	text-[13px]	text-fs-13	size	R13·正文
+components/novel/NovelModelFields.tsx	32	71	text-[13px]	text-fs-13	size	R13·正文
+components/novel/NovelModelFields.tsx	33	52	text-[13px]	text-fs-13	size	R13·正文
+components/novel/NovelModelFields.tsx	39	84	text-[13px]	text-fs-13	size	R13·元信息
+components/novel/NovelModelFields.tsx	39	26	text-[16px]	text-fs-16.5	size	R16·标签
+components/novel/NovelModelFields.tsx	40	51	text-[13px]	text-fs-13	size	R13·正文
+components/novel/NovelSettingsDialog.tsx	8	83	text-[16px]	text-fs-16.5	size	R-ctl16·输入框
+components/novel/NovelSettingsDialog.tsx	43	106	text-xl	text-fs-22	size	R20·标题层级
+components/novel/NovelSettingsDialog.tsx	45	435	text-sm	text-fs-13	size	R14-界面·辅助说明
+components/novel/NovelSettingsDialog.tsx	45	59	text-sm	text-fs-13	size	R14-界面·辅助说明
+components/novel/NovelSettingsDialog.tsx	46	59	text-sm	text-fs-13	size	R14-界面·正文
+components/novel/NovelSettingsDialog.tsx	47	455	text-sm	text-fs-13	size	R14-界面·辅助说明
+components/novel/NovelSettingsDialog.tsx	47	90	text-sm	text-fs-13	size	R14-界面·辅助说明
+components/novel/NovelSettingsDialog.tsx	48	416	text-sm	text-fs-15	size	R14-正文(行高)·正文
+components/novel/NovelShelf.tsx	59	94	text-[13px]	text-fs-13	size	R13·按钮
+components/novel/NovelShelf.tsx	60	100	text-[30px]	text-fs-30	size	R30·标题层级
+components/novel/NovelShelf.tsx	61	28	text-[14px]	text-fs-15 text-pretty	size	R14-显式·正文；补 text-pretty，手机上不留单字末行
+components/novel/NovelShelf.tsx	65	569	text-[14px]	text-fs-15 text-pretty	size	R14-显式·正文；补 text-pretty，手机上不留单字末行
+components/novel/NovelShelf.tsx	65	483	text-[22px]	text-fs-22 leading-[inherit]	size	R22·标题层级；补 leading-[inherit] 保持原继承行高
+components/novel/NovelShelf.tsx	67	114	text-[22px]	text-fs-22 leading-[inherit]	size	R22·标题层级；补 leading-[inherit] 保持原继承行高
+components/novel/NovelShelf.tsx	68	177	text-[15px]	text-fs-15	size	R15·正文
+components/novel/NovelShelf.tsx	69	44	text-[14px]	text-fs-13	size	R14·进度状态→13（按规则改正）
+components/novel/NovelShelf.tsx	70	52	text-[12px]	text-fs-12	size	R12·元信息
+components/novel/NovelStates.tsx	5	76	text-[13px]	text-fs-13	size	R13·辅助说明
+components/novel/NovelStates.tsx	8	31	text-[13px]	text-fs-13	size	R13·正文
+components/novel/NovelStates.tsx	11	67	text-[13px]	text-fs-13	size	R13·辅助说明
+components/novel/NovelWizard.tsx	175	117	text-[13px]	text-fs-13	size	R13·辅助说明
+components/novel/NovelWizard.tsx	176	202	text-[14px]	text-fs-13	size	R14·表单标签→13（按规则改正）
+components/novel/NovelWizard.tsx	181	176	text-[13px]	text-fs-13	size	R13·按钮
+components/novel/NovelWizard.tsx	182	24	text-[28px]	text-fs-30	size	R30·标题层级
+components/novel/NovelWizard.tsx	183	301	mobile:text-[12px]	mobile:text-fs-12	size	R12·标签
+components/novel/NovelWizard.tsx	183	276	text-[14px]	text-fs-15	size	R14-显式·正文
+components/novel/NovelWizard.tsx	190	507	text-[12px]	text-fs-12	size	R12·元信息
+components/novel/NovelWizard.tsx	190	74	text-[16px]	text-fs-16.5	size	R16·标签
+components/novel/NovelWizard.tsx	192	377	text-[13px]	text-fs-13	size	R13·正文
+components/novel/NovelWizard.tsx	192	105	text-[16px]	text-fs-16.5	size	R16·标签
+components/novel/NovelWizard.tsx	193	176	text-[14px]	text-fs-13	size	R14·展开开关→13（按规则改正）
+components/novel/NovelWizard.tsx	196	303	text-[14px]	text-fs-13	size	R14·单选标签→13（按规则改正）
+components/novel/NovelWizard.tsx	196	73	text-[16px]	text-fs-16.5	size	R16·标签
+components/novel/NovelWizard.tsx	200	338	text-[14px]	text-fs-13	size	R14·单选标签→13（按规则改正）
+components/novel/NovelWizard.tsx	200	53	text-[16px]	text-fs-16.5	size	R16·标签
+components/novel/NovelWizard.tsx	202	727	text-[12px]	text-fs-12 leading-[inherit]	size	R12·辅助说明；补 leading-[inherit] 保持原继承行高
+components/novel/NovelWizard.tsx	202	174	text-[14px]	text-fs-13	size	R14·读数→13（按规则改正）
+components/novel/NovelWizard.tsx	203	188	text-[14px]	text-fs-15	size	R14-显式·正文
+components/novel/NovelWizard.tsx	203	123	text-[18px]	text-fs-18	size	R18·标题层级
+components/novel/NovelWorkbench.tsx	275	106	text-sm	text-fs-13	size	R14-界面·按钮
+components/novel/NovelWorkbench.tsx	284	185	mobile:text-[23px]	mobile:text-fs-22	size	R22·标题层级
+components/novel/NovelWorkbench.tsx	284	144	text-[26px]	text-fs-30	size	R30·标题层级
+components/novel/NovelWorkbench.tsx	285	96	text-sm	text-fs-15	size	R14-正文(行高)·正文
+components/novel/NovelWorkbench.tsx	286	46	text-sm	text-fs-13	size	R14-显式13·元信息
+components/novel/NovelWorkbench.tsx	287	77	text-sm	text-fs-13	size	R14-界面·元信息
+components/novel/NovelWorkbench.tsx	299	84	text-sm	text-fs-13	size	R14-界面·辅助说明
+components/novel/NovelWorkbench.tsx	302	513	text-[13px]	text-fs-13	size	R13·按钮
+components/novel/NovelWorkbench.tsx	315	500	text-sm	text-fs-15	size	R14·标签页导航→15（按规则改正）
+components/novel/PlanEditor.tsx	7	83	text-[16px]	text-fs-16.5	size	R-ctl16·输入框
+components/novel/PlanEditor.tsx	21	162	text-sm	text-fs-13	size	R14-界面·辅助说明
+components/novel/PlanEditor.tsx	23	20	text-xl	text-fs-22	size	R20·标题层级
+components/novel/PlanEditor.tsx	26	77	text-sm	text-fs-13	size	R14-界面·标签
+components/novel/PlanEditor.tsx	28	61	text-sm	text-fs-13	size	R14-界面·正文
+components/novel/PlanEditor.tsx	29	61	text-sm	text-fs-13	size	R14-界面·正文
+components/novel/PlanEditor.tsx	34	57	text-sm	text-fs-13	size	R14-界面·辅助说明
+components/novel/PlanEditor.tsx	37	321	text-sm	text-fs-15	size	R14-正文(行高)·正文
+components/novel/PlanEditor.tsx	37	138	text-sm	text-fs-13	size	R14-界面·正文
+components/novel/SetupEditor.tsx	8	83	text-[16px]	text-fs-16.5	size	R-ctl16·输入框
+components/novel/SetupEditor.tsx	82	22	text-sm	text-fs-13	size	R14-界面·辅助说明
+components/novel/SetupEditor.tsx	84	79	text-sm	text-fs-13	size	R14-界面·辅助说明
+components/novel/SetupEditor.tsx	114	90	text-sm	text-fs-15	size	R14-正文(行高)·正文
+components/novel/SetupEditor.tsx	114	25	text-xl	text-fs-22	size	R20·标题层级
+components/novel/SetupEditor.tsx	120	66	text-sm	text-fs-13	size	R14-界面·辅助说明
+components/novel/SetupEditor.tsx	122	61	text-sm	text-fs-13	size	R14-界面·辅助说明
+components/studio/BibleTable.tsx	17	1142	text-sm	text-fs-13	size	R14-界面·标签
+components/studio/BibleTable.tsx	17	816	text-sm	text-fs-13	size	R14-界面·标签
+components/studio/BibleTable.tsx	17	314	text-sm	text-fs-13	size	R14-界面·标签
+components/studio/BibleTable.tsx	37	357	text-sm	text-fs-13	size	R14-界面·辅助说明
+components/studio/BibleTable.tsx	38	709		text-fs-11 	size	<small> 预检 80% 会落在字阶外，补显式 11
+components/studio/BibleTable.tsx	38	351		text-fs-11 	size	<small> 预检 80% 会落在字阶外，补显式 11
+components/studio/BibleTable.tsx	56	25	text-xl	text-fs-22	size	R20·标题层级
+components/studio/BibleTable.tsx	57	120	text-sm	text-fs-13	size	R14-界面·标签
+components/studio/BibleTable.tsx	58	298	text-sm	text-fs-13	size	R14-显式13·正文
+components/studio/BrainTrial.tsx	14	85	text-sm	text-fs-13	size	R14-界面·标签
+components/studio/BrainTrial.tsx	19	104	text-xs	text-fs-12	size	R12·正文
+components/studio/BrainTrial.tsx	137	19	text-sm	text-fs-15	size	R14-正文(行高)·正文
+components/studio/BrainTrial.tsx	139	22	text-xl	text-fs-22	size	R20·标题层级
+components/studio/BrainTrial.tsx	140	48	text-sm	text-fs-13	size	R14-界面·标签
+components/studio/BrainTrial.tsx	143	219	text-sm	text-fs-13	size	R14-界面·标签
+components/studio/BrainTrial.tsx	143	61	text-sm	text-fs-13	size	R14-界面·标签
+components/studio/BrainTrial.tsx	147	70	text-sm	text-fs-13	size	R14-界面·正文
+components/studio/BrainTrial.tsx	169	38	text-xl	text-fs-22	size	R20·标题层级
+components/studio/BrainTrial.tsx	170	19	text-sm	text-fs-15	size	R14-正文(行高)·正文
+components/studio/BrainTrial.tsx	172	30	text-sm	text-fs-13	size	R14-界面·正文
+components/studio/BrainTrial.tsx	183	92	text-sm	text-fs-15	size	R14-正文(行高)·正文
+components/studio/BrainTrial.tsx	183	33	text-xl	text-fs-22	size	R20·标题层级
+components/studio/BrainTrial.tsx	192	20	text-lg	text-fs-18	size	R18·标题层级
+components/studio/BrainTrial.tsx	200	71	text-base	text-fs-16.5	size	R16·标题层级
+components/studio/BrainTrial.tsx	201	77	text-xs	text-fs-12	size	R12·正文
+components/studio/BrainTrial.tsx	203	124	text-xs	text-fs-12	size	R12·正文
+components/studio/BrainTrial.tsx	224	65	text-sm	text-fs-15	size	R14-正文(行高)·正文
+components/studio/BrainTrial.tsx	225	185	text-sm	text-fs-15	size	R14-正文(行高)·正文
+components/studio/BrainTrial.tsx	226	306	text-xs	text-fs-12	size	R12·正文
+components/studio/BrainTrial.tsx	226	205	text-sm	text-fs-15	size	R14-标题·标题层级
+components/studio/BreakdownDialog.tsx	8	126	text-sm	text-fs-16.5	size	R-ctl<16·输入框
+components/studio/BreakdownDialog.tsx	25	38	text-xl	text-fs-22	size	R20·标题层级
+components/studio/BreakdownPanel.tsx	17	54	text-sm	text-fs-13	size	R14-界面·标签
+components/studio/BreakdownPanel.tsx	18	44	text-sm	text-fs-13	size	R14-界面·正文
+components/studio/BreakdownPanel.tsx	45	25	text-xl	text-fs-22	size	R20·标题层级
+components/studio/BreakdownPanel.tsx	48	31	text-sm	text-fs-13	size	R14-界面·标签
+components/studio/BreakdownPanel.tsx	49	872	text-sm	text-fs-13	size	R14-界面·元信息
+components/studio/BreakdownPanel.tsx	49	616	text-sm	text-fs-13	size	R14-界面·标签
+components/studio/BreakdownPanel.tsx	49	363	text-sm	text-fs-13	size	R14-界面·标签
+components/studio/BreakdownPanel.tsx	49	110	text-sm	text-fs-13	size	R14-界面·标签
+components/studio/BreakdownPanel.tsx	50	21	text-sm	text-fs-13	size	R14-界面·辅助说明
+components/studio/BreakdownPanel.tsx	52	21	text-sm	text-fs-13	size	R14-界面·正文
+components/studio/BreakdownPanel.tsx	53	46	text-sm	text-fs-13	size	R14-界面·辅助说明
+components/studio/BreakdownPanel.tsx	57	70	text-sm	text-fs-13	size	R14-界面·辅助说明
+components/studio/BreakdownPanel.tsx	58	50	text-sm	text-fs-13	size	R14-界面·元信息
+components/studio/BreakdownStage.tsx	95	86	text-sm	text-fs-13	size	R14-界面·辅助说明
+components/studio/CastingItemCard.tsx	68	46	text-sm	text-fs-15	size	R14-显式·正文
+components/studio/CastingItemCard.tsx	73	21	text-sm	text-fs-13	size	R14-界面·正文
+components/studio/CastingItemCard.tsx	76	87	text-sm	text-fs-13	size	R14-界面·标签
+components/studio/CastingItemCard.tsx	79	68	text-sm	text-fs-15	size	R14-正文(pre-wrap)·正文
+components/studio/CastingItemCard.tsx	80	54	text-sm	text-fs-13	size	R14-界面·正文
+components/studio/CastingItemCard.tsx	104	39	text-sm	text-fs-13	size	R14-界面·正文
+components/studio/CastingItemCard.tsx	109	39	text-sm	text-fs-13	size	R14-界面·正文
+components/studio/CastingItemCard.tsx	115	21	text-sm	text-fs-13	size	R14-界面·辅助说明
+components/studio/CastingItemCard.tsx	122	21	text-sm	text-fs-13	size	R14-界面·辅助说明
+components/studio/CastingItemCard.tsx	123	82	text-sm	text-fs-13	size	R14-界面·辅助说明
+components/studio/CastingItemCard.tsx	138	43	text-sm	text-fs-13	size	R14-界面·辅助说明
+components/studio/CastingItemCard.tsx	139	113	text-sm	text-fs-13	size	R14-界面·辅助说明
+components/studio/CastingItemCard.tsx	142	49	text-sm	text-fs-13	size	R14-界面·辅助说明
+components/studio/CastingItemCard.tsx	146	42	text-sm	text-fs-13	size	R14-界面·辅助说明
+components/studio/CastingItems.tsx	72	25	text-xl	text-fs-22	size	R20·标题层级
+components/studio/CastingItems.tsx	75	37	text-sm	text-fs-13	size	R14-界面·辅助说明
+components/studio/CastingItems.tsx	82	23	text-sm	text-fs-13	size	R14-界面·正文
+components/studio/CastingItems.tsx	85	73	text-sm	text-fs-13	size	R14-界面·辅助说明
+components/studio/CastingItems.tsx	87	37	text-sm	text-fs-13	size	R14-界面·辅助说明
+components/studio/CastingItems.tsx	96	21	text-sm	text-fs-13	size	R14-界面·正文
+components/studio/CastingItems.tsx	98	56	text-sm	text-fs-13	size	R14-界面·标签
+components/studio/CastingItems.tsx	99	60	text-sm	text-fs-13	size	R14-界面·标签
+components/studio/CastingItems.tsx	100	58	text-sm	text-fs-13	size	R14-界面·标签
+components/studio/CastingItems.tsx	102	53	text-sm	text-fs-13	size	R14-界面·辅助说明
+components/studio/CastingItems.tsx	103	49	text-sm	text-fs-13	size	R14-界面·标签
+components/studio/CastingItems.tsx	105	62	text-sm	text-fs-13	size	R14-界面·辅助说明
+components/studio/CastingItems.tsx	106	49	text-sm	text-fs-13	size	R14-界面·辅助说明
+components/studio/CastingItems.tsx	107	35	text-sm	text-fs-13	size	R14-界面·辅助说明
+components/studio/CastingItems.tsx	108	52	text-sm	text-fs-13	size	R14-界面·辅助说明
+components/studio/CastingItems.tsx	109	53	text-sm	text-fs-13	size	R14-界面·辅助说明
+components/studio/CastingItems.tsx	110	53	text-sm	text-fs-13	size	R14-界面·辅助说明
+components/studio/CastingQuoteDialog.tsx	26	30	text-sm	text-fs-13	size	R14-界面·辅助说明
+components/studio/CastingQuoteDialog.tsx	27	29	text-sm	text-fs-13	size	R14-界面·辅助说明
+components/studio/CastingStage.tsx	90	129	text-sm	text-fs-13	size	R14-界面·辅助说明
+components/studio/CastingStage.tsx	96	44	text-sm	text-fs-13	size	R14-界面·辅助说明
+components/studio/CastingStage.tsx	98	45	text-sm	text-fs-13	size	R14-界面·辅助说明
+components/studio/CastingStage.tsx	103	122	text-sm	text-fs-13	size	R14-界面·辅助说明
+components/studio/ClipComposer.tsx	106	52	text-xl	text-fs-22	size	R20·标题层级
+components/studio/ClipComposer.tsx	107	49	text-[13px]	text-fs-13	size	R13·辅助说明
+components/studio/ClipComposer.tsx	111	34	text-[16px]	text-fs-16.5	size	R16·正文
+components/studio/ClipComposer.tsx	115	25	text-[13px]	text-fs-13	size	R13·正文
+components/studio/ClipComposer.tsx	117	87	text-[16px]	text-fs-16.5	size	R16·标签
+components/studio/ClipComposer.tsx	119	81	text-[16px]	text-fs-16.5	size	R16·标签
+components/studio/ClipComposer.tsx	121	83	text-[16px]	text-fs-16.5	size	R16·标签
+components/studio/ClipComposer.tsx	122	370	text-[13px]	text-fs-13	size	R13·正文
+components/studio/ClipComposer.tsx	122	89	text-[16px]	text-fs-16.5	size	R16·标签
+components/studio/ClipComposer.tsx	124	64	text-[16px]	text-fs-16.5	size	R16·标签
+components/studio/CreateProjectDialog.tsx	64	50	text-xl	text-fs-22	size	R20·标题层级
+components/studio/CreateProjectDialog.tsx	70	459	text-sm	text-fs-13	size	R14-显式13·正文
+components/studio/CreateProjectDialog.tsx	70	236	text-sm	text-fs-13	size	R14-显式13·输入框
+components/studio/CreateProjectDialog.tsx	71	384	text-sm	text-fs-13	size	R14-界面·辅助说明
+components/studio/CreateProjectDialog.tsx	71	266	text-sm	text-fs-13	size	R14-界面·元信息
+components/studio/CreateProjectDialog.tsx	72	512	text-sm	text-fs-13	size	R14-界面·元信息
+components/studio/EpisodePlan.tsx	26	40	text-xl	text-fs-22	size	R20·标题层级
+components/studio/EpisodePlan.tsx	45	253	text-sm	text-fs-13	size	R14-界面·标签
+components/studio/EpisodePlan.tsx	46	584	text-sm	text-fs-13	size	R14-界面·辅助说明
+components/studio/EpisodePlan.tsx	46	305	text-sm	text-fs-13	size	R14-界面·标签
+components/studio/EpisodePlan.tsx	46	19	text-sm	text-fs-13	size	R14-界面·辅助说明
+components/studio/EpisodePlan.tsx	66	170		text-fs-11 	size	<small> 预检 80% 会落在字阶外，补显式 11
+components/studio/EpisodePlan.tsx	69	115	text-xl	text-fs-22	size	R20·标题层级
+components/studio/EpisodePlan.tsx	70	262	text-sm	text-fs-13	size	R14-界面·元信息
+components/studio/EpisodePlan.tsx	71	311	text-sm	text-fs-13	size	R14-界面·辅助说明
+components/studio/EpisodePlan.tsx	71	199	text-sm	text-fs-13	size	R14-界面·辅助说明
+components/studio/EpisodePlan.tsx	71	66	text-sm	text-fs-13	size	R14-界面·辅助说明
+components/studio/EpisodePlan.tsx	73	1720		text-fs-11 	size	<small> 预检 80% 会落在字阶外，补显式 11
+components/studio/EpisodePlan.tsx	73	1033		text-fs-11 	size	<small> 预检 80% 会落在字阶外，补显式 11
+components/studio/EpisodePlan.tsx	73	221	text-sm	text-fs-13	size	R14-显式13·正文
+components/studio/EpisodePlan.tsx	74	312		text-fs-15 	size	分集卡片标题原先继承父元素 14，按规则→15
+components/studio/EpisodePlan.tsx	74	288	text-sm	text-fs-13	size	R14-界面·正文
+components/studio/EpisodePlan.tsx	76	292	text-sm	text-fs-13	size	R14-界面·辅助说明
+components/studio/EpisodePlan.tsx	76	89	text-sm	text-fs-15	size	R14-标题·标题层级
+components/studio/EpisodePlan.tsx	78	344	text-sm	text-fs-13	size	R14-界面·标签
+components/studio/EpisodePlan.tsx	80	450	text-sm	text-fs-13	size	R14-界面·标签
+components/studio/QuoteDialog.tsx	46	38	text-xl	text-fs-22	size	R20·标题层级
+components/studio/QuoteDialog.tsx	47	31	text-[14px]	text-fs-15	size	R14-显式·正文
+components/studio/SetupCard.tsx	25	25	text-xl	text-fs-22	size	R20·标题层级
+components/studio/SetupCard.tsx	34	29	text-sm	text-fs-13	size	R14-界面·元信息
+components/studio/SetupCard.tsx	37	41	text-sm	text-fs-13	size	R14-界面·正文
+components/studio/SetupCard.tsx	41	41	text-sm	text-fs-13	size	R14-界面·正文
+components/studio/SetupCard.tsx	46	41	text-sm	text-fs-13	size	R14-界面·正文
+components/studio/SetupCard.tsx	50	41	text-sm	text-fs-13	size	R14-界面·正文
+components/studio/SetupCard.tsx	55	41	text-sm	text-fs-13	size	R14-界面·正文
+components/studio/SetupCard.tsx	59	44	text-sm	text-fs-13	size	R14-界面·辅助说明
+components/studio/ShotCard.tsx	44	19	text-[14px]	text-fs-13	size	R14·读数→13（按规则改正）
+components/studio/ShotCard.tsx	48	52	text-[13px]	text-fs-13	size	R13·辅助说明
+components/studio/ShotCard.tsx	54	232	text-[14px]	text-fs-13	size	R14-界面·标签
+components/studio/ShotCard.tsx	66	33	text-xl	text-fs-22	size	R20·标题层级
+components/studio/ShotCard.tsx	67	24	text-[14px]	text-fs-15	size	R14-显式·正文
+components/studio/ShotWall.tsx	9	48	text-xl	text-fs-22	size	R20·标题层级
+components/studio/SourceChoices.tsx	9	50	text-sm	text-fs-13	size	R14-界面·辅助说明
+components/studio/SourceChoices.tsx	21	41	text-sm	text-fs-13	size	R14-界面·正文
+components/studio/SourceChoices.tsx	26	32	text-sm	text-fs-13	size	R14-界面·元信息
+components/studio/SourceChoices.tsx	27	24	text-sm	text-fs-13	size	R14-界面·正文
+components/studio/SourcePanel.tsx	47	92	text-xl	text-fs-22	size	R20·标题层级
+components/studio/SourcePanel.tsx	51	200	text-lg	text-fs-18	size	R18·标题层级
+components/studio/SourcePanel.tsx	52	161	text-sm	text-fs-13	size	R14-界面·元信息
+components/studio/SourcePanel.tsx	52	51	text-sm	text-fs-13	size	R14-界面·元信息
+components/studio/SourcePanel.tsx	54	68	text-sm	text-fs-13	size	R14-界面·辅助说明
+components/studio/SourcePanel.tsx	55	70	text-sm	text-fs-13	size	R14-界面·辅助说明
+components/studio/SourcePanel.tsx	57	98	text-sm	text-fs-13	size	R14-界面·辅助说明
+components/studio/SourcePanel.tsx	66	48	text-xl	text-fs-22	size	R20·标题层级
+components/studio/StudioAssetAudio.tsx	39	39	text-sm	text-fs-13	size	R14-界面·元信息
+components/studio/StudioBudget.tsx	4	111	text-sm	text-fs-13	size	R14·读数→13（按规则改正）
+components/studio/StudioShelf.tsx	69	92	text-sm	text-fs-13	size	R14-界面·按钮
+components/studio/StudioShelf.tsx	70	99	text-[28px]	text-fs-30	size	R30·标题层级
+components/studio/StudioShelf.tsx	82	36	text-xl	text-fs-22	size	R20·标题层级
+components/studio/StudioShelf.tsx	83	36	text-xs	text-fs-12	size	R12·元信息
+components/studio/StudioWorkbench.tsx	132	108	text-sm	text-fs-13	size	R14-界面·按钮
+components/studio/StudioWorkbench.tsx	133	110	text-sm	text-fs-13	size	R14-界面·按钮
+components/studio/StudioWorkbench.tsx	135	119	text-[26px]	text-fs-30	size	R30·标题层级
+components/studio/StudioWorkbench.tsx	145	415	@[640px]:text-base	@[640px]:text-fs-16.5	size	R16·按钮
+components/studio/StudioWorkbench.tsx	145	403	text-[13px]	text-fs-13	size	R13·按钮
+components/studio/StyleCard.tsx	40	22	text-xl	text-fs-22	size	R20·标题层级
+components/studio/StyleCard.tsx	43	48	text-sm	text-fs-13	size	R14-界面·辅助说明
+components/studio/StyleCard.tsx	46	101	text-sm	text-fs-13	size	R14-界面·辅助说明
+components/studio/StyleCard.tsx	52	41	text-sm	text-fs-13	size	R14-界面·辅助说明
+components/studio/StyleCard.tsx	55	21	text-sm	text-fs-13	size	R14-界面·辅助说明
+components/studio/StyleCard.tsx	56	452	text-sm	text-fs-16.5	size	R-ctl<16·输入框
+components/studio/StyleCard.tsx	56	201	text-sm	text-fs-13	size	R14-界面·标签
+components/studio/StyleCard.tsx	57	276	text-sm	text-fs-13	size	R14-界面·标签
+components/studio/StyleCard.tsx	57	85	text-sm	text-fs-13	size	R14-界面·标签
+components/studio/StyleCard.tsx	58	44	text-sm	text-fs-13	size	R14-界面·辅助说明
+components/studio/StyleCard.tsx	59	50	text-sm	text-fs-13	size	R14-界面·辅助说明
+components/studio/SynopsisPanel.tsx	97	187	text-xl	text-fs-22	size	R20·标题层级
+components/studio/SynopsisPanel.tsx	98	1285	text-sm	text-fs-15	size	R14-正文(行高)·辅助说明
+components/studio/SynopsisPanel.tsx	98	284	text-sm	text-fs-13	size	R14-界面·标签
+components/studio/VoicePanel.tsx	80	25	text-xl	text-fs-22	size	R20·标题层级
+components/studio/VoicePanel.tsx	81	24	text-[13px]	text-fs-13	size	R13·正文
+components/studio/VoicePanel.tsx	188	44	text-lg	text-fs-18	size	R18·标题层级
+components/studio/VoicePanel.tsx	198	81	text-sm	text-fs-13	size	R14-界面·标签
+components/studio/VoicePanel.tsx	209	98	text-sm	text-fs-13	size	R14-界面·标签
+components/studio/VoicePanel.tsx	215	96	text-sm	text-fs-13	size	R14-界面·标签
+components/studio/VoicePanel.tsx	222	96	text-sm	text-fs-13	size	R14-界面·标签
+components/studio/VoicePanel.tsx	226	97	text-sm	text-fs-13	size	R14-界面·标签
+components/studio/VoicePanel.tsx	230	94	text-sm	text-fs-13	size	R14-界面·标签
+components/studio/VoicePanel.tsx	237	96	text-sm	text-fs-13	size	R14-界面·标签
+components/studio/VoicePanel.tsx	245	101	text-sm	text-fs-13	size	R14-界面·标签
+components/studio/VoicePanel.tsx	249	25	text-[12px]	text-fs-12	size	R12·正文
+components/studio/VoicePanel.tsx	250	25	text-[12px]	text-fs-12	size	R12·正文
+components/studio/VoicePanel.tsx	259	60	text-sm	text-fs-13	size	R14-界面·辅助说明
+components/studio/VoicePanel.tsx	264	39	text-sm	text-fs-13	size	R14-界面·辅助说明
+components/studio/VoicePanel.tsx	265	127	text-sm	text-fs-13	size	R14-界面·辅助说明
+components/studio/VoicePanel.tsx	268	45	text-sm	text-fs-13	size	R14-界面·正文
+components/studio/VoicePanel.tsx	289	102	text-sm	text-fs-13	size	R14-界面·标签
+components/studio/VoicePanel.tsx	300	43	text-[13px]	text-fs-13	size	R13·辅助说明
+components/studio/kb/KbCardBrowser.tsx	61	262	text-[16px]	text-fs-16.5	size	R-ctl16·输入框
+components/studio/kb/KbCardBrowser.tsx	73	48	text-sm	text-fs-15	size	R14-显式·正文
+components/studio/kb/KbCardBrowser.tsx	75	53	text-xs	text-fs-12	size	R12·正文
+components/studio/kb/KbCardDetail.tsx	13	156	text-sm	text-fs-15	size	R14-正文(行高)·正文
+components/studio/kb/KbCardDetail.tsx	13	50	text-xs	text-fs-12	size	R12·标签
+components/studio/kb/KbCardDetail.tsx	41	34	text-xl	text-fs-22	size	R20·标题层级
+components/studio/kb/KbCardDetail.tsx	43	33	text-sm	text-fs-15	size	R14-正文(行高)·正文
+components/studio/kb/KbExemplars.tsx	53	40	text-sm	text-fs-15	size	R14-正文(行高)·正文
+components/studio/kb/KbExemplars.tsx	54	66	text-xs	text-fs-12	size	R12·辅助说明
+components/studio/kb/KbExemplars.tsx	58	48	text-sm	text-fs-13	size	R14-界面·辅助说明
+components/studio/kb/KbExemplars.tsx	107	33	text-sm	text-fs-13	size	R14-界面·标签
+components/studio/kb/KbExemplars.tsx	108	33	text-sm	text-fs-13	size	R14-界面·标签
+components/studio/kb/KbStatsPanel.tsx	58	38	text-base	text-fs-16.5	size	R16·标题层级
+components/studio/kb/KbStatsPanel.tsx	60	56	text-xs	text-fs-12	size	R12·辅助说明
+components/studio/kb/KbStatsPanel.tsx	61	58	text-xs	text-fs-12	size	R12·辅助说明
+components/studio/kb/KbTrialPanel.tsx	28	76	text-xs	text-fs-12	size	R12·正文
+components/studio/kb/KbTrialPanel.tsx	49	182	text-sm	text-fs-15	size	R14-正文(行高)·正文
+components/studio/kb/KbTrialPanel.tsx	52	47	text-xs	text-fs-12	size	R12·标签
+components/studio/kb/KbTrialPanel.tsx	53	47	text-xs	text-fs-12	size	R12·标签
+components/studio/kb/KbTrialPanel.tsx	54	47	text-xs	text-fs-12	size	R12·标签
+components/studio/kb/KbTrialPanel.tsx	55	47	text-xs	text-fs-12	size	R12·标签
+components/studio/kb/KbTrialPanel.tsx	62	20	text-base	text-fs-16.5	size	R16·标题层级
+components/studio/kb/KbTrialPanel.tsx	67	37	text-sm	text-fs-15	size	R14-正文(行高)·正文
+components/studio/kb/KbTrialPanel.tsx	70	183	text-sm	text-fs-15	size	R14-正文(行高)·正文
+components/studio/kb/KbTrialPanel.tsx	70	61	text-sm	text-fs-15	size	R14-正文(行高)·正文
+components/studio/kb/KbTrialPanel.tsx	79	50	text-sm	text-fs-15	size	R14-正文(行高)·正文
+components/studio/kb/KbTrialPanel.tsx	80	168	text-sm	text-fs-15	size	R14-正文(行高)·正文
+components/studio/kb/KbTrialPanel.tsx	88	59	text-xs	text-fs-12	size	R12·辅助说明
+components/studio/kb/KbTrialPanel.tsx	100	22	text-lg	text-fs-18	size	R18·标题层级
+components/studio/kb/KbTrialPanel.tsx	103	71	text-sm	text-fs-15	size	R14-正文(行高)·正文
+components/studio/kb/KbTrialPanel.tsx	104	54	text-sm	text-fs-15	size	R14-正文(行高)·正文
+components/studio/kb/KbTrialPanel.tsx	113	22	text-base	text-fs-16.5	size	R16·标题层级
+components/studio/kb/KbTrialPanel.tsx	256	22	text-lg	text-fs-18	size	R18·标题层级
+components/studio/kb/KbTrialPanel.tsx	257	39	text-sm	text-fs-13	size	R14-界面·标签
+components/studio/kb/KbTrialPanel.tsx	259	22	text-lg	text-fs-18	size	R18·标题层级
+components/studio/kb/KbTrialPanel.tsx	263	22	text-lg	text-fs-18	size	R18·标题层级
+components/studio/kb/KbTrialPanel.tsx	265	35	text-sm	text-fs-13	size	R14-界面·标签
+components/studio/kb/KbTrialPanel.tsx	266	35	text-sm	text-fs-13	size	R14-界面·标签
+components/studio/kb/KbTrialPanel.tsx	267	35	text-sm	text-fs-13	size	R14-界面·标签
+components/studio/kb/KbTrialPanel.tsx	268	35	text-sm	text-fs-13	size	R14-界面·标签
+components/studio/kb/KbTrialPanel.tsx	269	35	text-sm	text-fs-13	size	R14-界面·标签
+components/studio/kb/KbTrialPanel.tsx	270	35	text-sm	text-fs-13	size	R14-界面·标签
+components/studio/kb/KbTrialPanel.tsx	271	35	text-sm	text-fs-13	size	R14-界面·标签
+components/studio/kb/KbTrialPanel.tsx	272	35	text-sm	text-fs-13	size	R14-界面·标签
+components/studio/kb/KbTrialPanel.tsx	273	35	text-sm	text-fs-13	size	R14-界面·标签
+components/studio/kb/KbTrialPanel.tsx	275	272	text-sm	text-fs-13	size	R14-界面·标签
+components/studio/kb/KbTrialPanel.tsx	275	61	text-sm	text-fs-13	size	R14-界面·标签
+components/studio/kb/KbTrialPanel.tsx	277	22	text-lg	text-fs-18	size	R18·标题层级
+components/studio/kb/KbTrialPanel.tsx	278	21	text-sm	text-fs-15	size	R14-正文(行高)·正文
+components/studio/kb/KbTrialPanel.tsx	279	56	text-sm	text-fs-13	size	R14-界面·辅助说明
+components/studio/kb/KbTrialPanel.tsx	281	21	text-xs	text-fs-12	size	R12·正文
+components/studio/kb/KbTrialPanel.tsx	288	83	text-lg	text-fs-18	size	R18·标题层级
+components/studio/kb/KbWorkbench.tsx	62	108	text-sm	text-fs-13	size	R14-界面·按钮
+components/studio/kb/KbWorkbench.tsx	64	36	text-[26px]	text-fs-30	size	R30·标题层级
+components/studio/kb/KbWorkbench.tsx	65	42	text-sm	text-fs-15	size	R14-正文(行高)·正文
+components/studio/kb/KbWorkbench.tsx	73	413	@[640px]:text-sm	@[640px]:text-fs-15	size	R14-显式·按钮
+components/studio/kb/KbWorkbench.tsx	73	401	text-[13px]	text-fs-13	size	R13·按钮
+components/studio/kb/ReviewProviderPicker.tsx	50	29	text-sm	text-fs-13	size	R14-界面·标签
+components/studio/kb/ReviewProviderPicker.tsx	51	38	text-xs	text-fs-12	size	R12·正文
+components/studio/kb/ReviewProviderPicker.tsx	52	64	text-sm	text-fs-13	size	R14-界面·辅助说明
+components/studio/kb/ReviewProviderPicker.tsx	54	45	text-sm	text-fs-13	size	R14-界面·辅助说明
+components/studio/kb/ReviewProviderPicker.tsx	55	33	text-sm	text-fs-13	size	R14-界面·辅助说明
