@@ -59,10 +59,10 @@ export function AccountKbWorkbench({ owner, embedded, identityPending = false }:
   const tab = tabs[index];
   return <StudioShell embedded={embedded}>
     <header className="mb-5">
-      <Link href={studioHref("/studio", embedded)} className="mb-2 inline-flex min-h-10 items-center gap-1 text-sm text-[color:var(--ink2)]"><ArrowLeft size={14} />短片工作室</Link>
+      <Link href={studioHref("/studio", embedded)} className="mb-2 inline-flex min-h-10 items-center gap-1 text-fs-13 text-[color:var(--ink2)]"><ArrowLeft size={14} />短片工作室</Link>
       <Glaze variant="panel" lens={false} backdrop={!embedded} className="min-w-0 rounded-2xl p-5">
-        <h1 className="break-words text-[26px] tracking-[.24em]">导演知识库</h1>
-        <p className="mt-2 max-w-[760px] text-sm leading-relaxed text-[color:var(--ink2)]">卡片是仓库里的 YAML；案例和节奏统计只存在本机 SQLite。运行时不会访问外部资源。</p>
+        <h1 className="break-words text-fs-30 tracking-[.24em]">导演知识库</h1>
+        <p className="mt-2 max-w-[760px] text-fs-15 leading-relaxed text-[color:var(--ink2)]">卡片是仓库里的 YAML；案例和节奏统计只存在本机 SQLite。运行时不会访问外部资源。</p>
       </Glaze>
     </header>
     {!owner ? (identityPending ? <LoadingState>正在加载身份…</LoadingState> : <EmptyState>请登录后打开导演知识库。</EmptyState>)
@@ -70,7 +70,7 @@ export function AccountKbWorkbench({ owner, embedded, identityPending = false }:
       : unavailable ? <EmptyState>暂未开放</EmptyState>
       : error ? <ErrorNotice message={error} retry={() => { void load(); }} />
       : <>
-        <nav role="tablist" aria-label="导演知识库页签" className="mb-5 flex min-w-0 flex-wrap border-b border-[color:var(--carve)]">{tabs.map((item, tabIndex) => <button key={item.id} id={`kb-tab-${item.id}`} type="button" role="tab" aria-selected={index === tabIndex} aria-controls={`kb-panel-${item.id}`} {...tabProps(tabIndex)} onClick={() => setIndex(tabIndex)} className={`min-h-10 border-b px-3 py-3 text-[13px] @[640px]:text-sm ${index === tabIndex ? "border-[color:var(--ink)] text-[color:var(--ink)]" : "border-transparent text-[color:var(--ink2)]"}`}>{item.label}</button>)}</nav>
+        <nav role="tablist" aria-label="导演知识库页签" className="mb-5 flex min-w-0 flex-wrap border-b border-[color:var(--carve)]">{tabs.map((item, tabIndex) => <button key={item.id} id={`kb-tab-${item.id}`} type="button" role="tab" aria-selected={index === tabIndex} aria-controls={`kb-panel-${item.id}`} {...tabProps(tabIndex)} onClick={() => setIndex(tabIndex)} className={`min-h-10 border-b px-3 py-3 text-fs-13 @[640px]:text-fs-15 ${index === tabIndex ? "border-[color:var(--ink)] text-[color:var(--ink)]" : "border-transparent text-[color:var(--ink2)]"}`}>{item.label}</button>)}</nav>
         <section role="tabpanel" id={`kb-panel-${tab.id}`} aria-labelledby={`kb-tab-${tab.id}`} className="min-w-0">
           {tab.cardType ? <KbCardBrowser key={tab.id} type={tab.cardType} owner={owner} />
             : tab.id === "exemplars" ? <KbExemplars owner={owner} />

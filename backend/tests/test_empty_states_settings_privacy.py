@@ -102,7 +102,7 @@ def test_first_privacy_paragraph_is_outside_fold_before_switch_and_save():
 def test_summary_claude_note_and_switch_copy():
     source = SETTINGS.read_text(encoding="utf-8")
     assert (
-        '<summary className="min-h-10 cursor-pointer py-2 text-sm tracking-[0.06em] '
+        '<summary className="min-h-10 cursor-pointer py-2 text-fs-13 tracking-[0.06em] '
         'text-[color:var(--ink)]">更多隐私与计费说明</summary>'
     ) in source
     assert source.count(CLAUDE_NOTE) == 1

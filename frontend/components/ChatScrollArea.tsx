@@ -120,7 +120,7 @@ export default forwardRef<ChatScrollHandle, Props>(function ChatScrollArea({ chi
     <div className="relative flex min-h-0 flex-1 flex-col" data-chat-scroll-area>
       <div ref={viewportRef} role="region" aria-label="聊天消息" tabIndex={0}
         data-chat-scroll-viewport
-        className="chat-scroll-viewport min-h-0 flex-1 overflow-y-auto outline-none focus-visible:ring-1 focus-visible:ring-inset focus-visible:ring-primary/40"
+        className="chat-scroll-viewport min-h-0 flex-1 overflow-y-auto outline-none focus-visible:ring-1 focus-visible:ring-inset focus-visible:ring-[color:var(--btn)]/40"
         style={{ overflowAnchor: "none", scrollBehavior: "auto" }}
         onScroll={onScroll}
         onWheel={event => { if (!event.ctrlKey) noteScrollIntent(event.deltaY); }}
@@ -140,7 +140,7 @@ export default forwardRef<ChatScrollHandle, Props>(function ChatScrollArea({ chi
         <div ref={contentRef} className="chat-scroll-content space-y-4" data-chat-scroll-content>{children}</div>
       </div>
       {renderLatestButton && showLatest && <button type="button" onClick={scrollToLatest}
-        className="chat-latest absolute bottom-[calc(var(--chat-content-bottom)+96px)] left-1/2 z-20 flex -translate-x-1/2 items-center gap-1.5 rounded-full border border-border bg-background/95 px-3 py-1.5 text-xs text-muted-foreground shadow-sm hover:text-foreground focus-visible:outline-2 focus-visible:outline-primary">
+        className="chat-latest absolute bottom-[calc(var(--chat-content-bottom)+96px)] left-1/2 z-20 flex -translate-x-1/2 items-center gap-1.5 rounded-full border border-[color:var(--rule)] bg-[color:var(--paper)]/95 px-3 py-1.5 text-fs-12 text-[color:var(--ink2)] shadow-sm hover:text-[color:var(--ink)] focus-visible:outline-2 focus-visible:outline-[color:var(--btn)]">
         <ArrowDown size={12} />回到最新
       </button>}
     </div>

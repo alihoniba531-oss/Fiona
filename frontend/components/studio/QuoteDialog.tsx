@@ -43,8 +43,8 @@ export default function QuoteDialog({ quote, busy = false, onConfirm, onClose }:
   };
 
   return <dialog ref={ref} aria-labelledby={titleId} onCancel={event => { if (disabled) event.preventDefault(); else onClose(); }} className="m-auto max-h-[85dvh] w-[min(620px,calc(100vw-32px))] max-w-full overflow-y-auto rounded-2xl border border-[color:var(--carve)] bg-[color:var(--paper)] p-6 text-[color:var(--ink)] backdrop:bg-[color:var(--scrim)] mobile:p-4">
-    <h2 id={titleId} className="mb-5 text-xl tracking-[.24em]">确认试拍报价</h2>
-    <div className="space-y-4 text-[14px] leading-[1.9]">
+    <h2 id={titleId} className="mb-5 text-fs-22 tracking-[.24em]">确认试拍报价</h2>
+    <div className="space-y-4 text-fs-15 leading-[1.9]">
       {quote.items.map((item, index) => <div key={item.id ?? index} className="ceramic-card flex min-w-0 flex-wrap gap-2 p-3"><span className="chip">{studioModelLabel(item.params.model ?? item.params.provider)}</span><span className="chip">{item.params.resolution.toUpperCase()}</span><span className="chip">{item.params.duration === -1 ? `${item.params.duration_min_s}–${item.params.duration_max_s}` : item.params.duration} 秒</span><span className="chip">音频{item.params.audio ? "开" : "关"}</span></div>)}
       <p>预估区间 <span className="readout">¥{quote.total_min_cny.toFixed(2)}–¥{quote.total_max_cny.toFixed(2)}</span></p>
       <p>今日剩余额度 <span className="readout">¥{quote.today.remaining_cny.toFixed(2)}</span></p>

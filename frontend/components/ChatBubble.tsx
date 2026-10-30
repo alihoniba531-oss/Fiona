@@ -113,18 +113,18 @@ export function ChatCard(props: ChatCardProps) {
     if (songCardCompact?.(projectId)) {
       const firstPoint = typeof card.points?.[0] === "string" ? card.points[0] : "";
       const title = firstPoint.match(/《([^》]+)》/)?.[1]?.trim();
-      return <p className="ceramic-card w-full max-w-[600px] break-words px-4 py-3 text-xs text-[color:var(--ink2)]">
+      return <p className="ceramic-card w-full max-w-[600px] break-words px-4 py-3 text-fs-12 text-[color:var(--ink2)]">
         {title ? `写歌《${title}》已更新，见下方最新卡片` : "写歌已更新，见下方最新卡片"}
       </p>;
     }
     return <SongProjectCard projectId={projectId} onCompose={onCompose} />;
   }
   if (card.subtype === "studio_project") {
-    if (card.error) return <p role="alert" className="ceramic-card max-w-full break-words p-4 text-sm text-[color:var(--seal)]">{typeof card.error === "string" ? card.error : card.points.join("\n") || "工作室项目建立失败。"}</p>;
+    if (card.error) return <p role="alert" className="ceramic-card max-w-full break-words p-4 text-fs-13 text-[color:var(--seal)]">{typeof card.error === "string" ? card.error : card.points.join("\n") || "工作室项目建立失败。"}</p>;
     const safeUrl = typeof card.url === "string" && card.url.startsWith("/studio/") && card.url.length > 8 && !/[^A-Za-z0-9/_-]/.test(card.url) ? card.url : null;
     return <div className="ceramic-card w-[340px] max-w-full overflow-hidden">
-      <div className="border-b px-4 py-3 text-sm font-medium" style={{ borderColor: "var(--carve)" }}>{card.source || "短片工作室"}</div>
-      <ul className="space-y-2 px-4 py-3 text-sm">{card.points.map((point, index) => <li key={index} className="break-words">{point}</li>)}</ul>
+      <div className="border-b px-4 py-3 text-fs-15 font-medium" style={{ borderColor: "var(--carve)" }}>{card.source || "短片工作室"}</div>
+      <ul className="space-y-2 px-4 py-3 text-fs-15">{card.points.map((point, index) => <li key={index} className="break-words">{point}</li>)}</ul>
       {safeUrl && <div className="px-4 pb-4"><a href={safeUrl} className="btn btn-primary min-h-10">打开工作室</a></div>}
     </div>;
   }
@@ -136,21 +136,21 @@ export function ChatCard(props: ChatCardProps) {
       const temperature = weatherTemperature(first);
       return (
         <div className="ceramic-card w-[320px] max-w-full overflow-hidden">
-          <div className="flex items-center justify-between border-b px-3.5 py-2 text-xs" style={{ borderColor: "var(--carve)" }}>
+          <div className="flex items-center justify-between border-b px-3.5 py-2 text-fs-12" style={{ borderColor: "var(--carve)" }}>
             <b className="font-medium">天气</b>
-            <span className="text-muted-foreground">{w.location}</span>
+            <span className="text-[color:var(--ink2)]">{w.location}</span>
           </div>
           <div className="flex items-center gap-3.5 px-3.5 py-3">
-            {temperature && <span className="readout" style={{ fontSize: 32, color: "var(--ink)" }}>{temperature}</span>}
+            {temperature && <span className="readout" style={{ fontSize: "var(--fs-30)", color: "var(--ink)" }}>{temperature}</span>}
             <div>
-              <div className="text-xs text-muted-foreground">{weatherDayLabel(first)}</div>
+              <div className="text-fs-12 text-[color:var(--ink2)]">{weatherDayLabel(first)}</div>
               <div>{weatherCondition(first)}</div>
-              {first.dayWind && <div className="text-xs text-muted-foreground">{first.dayWind}</div>}
+              {first.dayWind && <div className="text-fs-12 text-[color:var(--ink2)]">{first.dayWind}</div>}
             </div>
           </div>
           {w.forecast.length > 1 && <div className="grid grid-cols-3 border-t" style={{ borderColor: "var(--carve)" }}>
             {w.forecast.slice(1, 4).map((f, i) => (
-              <div key={i} className="flex flex-col gap-0.5 px-3.5 py-2 text-xs text-muted-foreground" style={{ borderLeft: i > 0 ? "1px solid var(--carve)" : undefined }}>
+              <div key={i} className="flex flex-col gap-0.5 px-3.5 py-2 text-fs-12 text-[color:var(--ink2)]" style={{ borderLeft: i > 0 ? "1px solid var(--carve)" : undefined }}>
                 <span>{weatherDayLabel(f)}</span>
                 <span>{weatherCondition(f)}</span>
                 {weatherTemperature(f) && <span className="readout" style={{ color: "var(--ink)" }}>{weatherTemperature(f)}</span>}
@@ -182,18 +182,18 @@ export function ChatCard(props: ChatCardProps) {
         >
           <div className="flex items-center gap-1.5 border-b px-4 pb-2 pt-3" style={{ borderColor: "var(--carve)" }}>
             <Globe size={12} style={{ color: "var(--ink)" }} />
-            <span className="text-[11px] font-medium text-muted-foreground">
+            <span className="text-fs-11 font-medium text-[color:var(--ink2)]">
               {cardData.subtype === "web_sources" ? "联网搜索" : cardData.source || "网页"}
             </span>
             {cardData.subtype !== "web_sources" && safeSources.length === 0 && cardData.url && (
-              <span className="text-[10px] text-muted-foreground/50 truncate flex-1 ml-1">
+              <span className="text-fs-11 text-[color:var(--ink2)] truncate flex-1 ml-1">
                 {cardData.url.replace(/^https?:\/\//, "").slice(0, 40)}
               </span>
             )}
           </div>
           {cardData.subtype !== "web_sources" && <ul className="px-4 py-3 space-y-1.5">
             {cardData.points.map((point, i) => (
-              <li key={i} className="text-sm text-foreground/90 leading-relaxed flex gap-2">
+              <li key={i} className="text-fs-15 text-[color:var(--ink)] leading-relaxed flex gap-2">
                 <span className="mt-1 shrink-0" style={{ color: "var(--ink)" }}>•</span>
                 <span className="max-md:min-w-0 max-md:break-words">{point}</span>
               </li>
@@ -201,17 +201,17 @@ export function ChatCard(props: ChatCardProps) {
           </ul>}
           {safeSources.length > 0 && (
             <div className="border-t px-4 py-3" style={{ borderColor: "var(--carve)" }}>
-              {cardData.subtype !== "web_sources" && <div className="mb-1.5 text-[11px] text-muted-foreground">来源</div>}
+              {cardData.subtype !== "web_sources" && <div className="mb-1.5 text-fs-11 text-[color:var(--ink2)]">来源</div>}
               <div className="space-y-1">
                 {safeSources.map(({ url, label, siteName }, i) => (
                   <button key={`${i}:${url}`} type="button"
                     onClick={() => void openExternal(url)}
                     aria-label={`打开来源：${label}`}
-                    className="flex w-full items-start gap-1.5 py-1 text-left text-[12px] text-[color:var(--ink2)] hover:text-[color:var(--ink)] hover:underline max-md:min-h-10">
+                    className="flex w-full items-start gap-1.5 py-1 text-left text-fs-12 text-[color:var(--ink2)] hover:text-[color:var(--ink)] hover:underline max-md:min-h-10">
                     <ArrowUpRight size={12} className="mt-0.5 shrink-0" aria-hidden="true" />
                     <span className="min-w-0 flex-1">
                       <span className="block truncate">{label}</span>
-                      {siteName !== label && <span className="block truncate text-[10px] text-muted-foreground">{siteName}</span>}
+                      {siteName !== label && <span className="block truncate text-fs-11 text-[color:var(--ink2)]">{siteName}</span>}
                     </span>
                   </button>
                 ))}
@@ -334,9 +334,9 @@ function ChatBubble({ message, agentName = "Chloe", onDelete, onSpeak, onStopSpe
   if (message.isDivider) {
     return (
       <div className="flex items-center gap-[18px] py-2">
-        <div className="flex-1 h-px bg-border" />
-        <span className="shrink-0 text-xs tracking-[0.32em] text-[color:var(--ink2)]">{message.content}</span>
-        <div className="flex-1 h-px bg-border" />
+        <div className="flex-1 h-px bg-[color:var(--rule)]" />
+        <span className="shrink-0 text-fs-12 tracking-[0.32em] text-[color:var(--ink2)]">{message.content}</span>
+        <div className="flex-1 h-px bg-[color:var(--rule)]" />
       </div>
     );
   }
@@ -350,10 +350,10 @@ function ChatBubble({ message, agentName = "Chloe", onDelete, onSpeak, onStopSpe
       )}
     >
       <div className={cn("flex min-w-0 flex-col gap-2", isUser ? "items-end" : "w-full")}>
-        {!isUser && <div className="flex items-center gap-2 text-[13px] tracking-[0.1em] text-[color:var(--ink2)]" title={`${agentName}（AI 分身）`}>
+        {!isUser && <div className="flex items-center gap-2 text-fs-13 tracking-[0.1em] text-[color:var(--ink2)]" title={`${agentName}（AI 分身）`}>
           {agentName}
           {message.replyModelLabel && <>
-            <span aria-hidden="true" className="h-3 border-l border-[var(--rule2)]" />
+            <span aria-hidden="true" className="h-3 border-l border-[color:var(--rule2)]" />
             <span title={message.replyModelLabel}>由你的模型回复</span>
           </>}
         </div>}
@@ -376,7 +376,7 @@ function ChatBubble({ message, agentName = "Chloe", onDelete, onSpeak, onStopSpe
           />
         )}
 
-        {message.generationStatus && <div role="status" className="ceramic-card flex items-center gap-2 px-4 py-3 text-sm text-[color:var(--ink2)]">
+        {message.generationStatus && <div role="status" className="ceramic-card flex items-center gap-2 px-4 py-3 text-fs-13 text-[color:var(--ink2)]">
           <LoaderCircle size={16} className="shrink-0 animate-spin" />{message.generationStatus}
         </div>}
 
@@ -400,7 +400,7 @@ function ChatBubble({ message, agentName = "Chloe", onDelete, onSpeak, onStopSpe
           disabled={imageRetryDisabled}
           title={imageRetryDisabled ? "请等待当前操作完成，并移除待发送的图片后重试" : message.imageGenerationRetry.referenceImages?.length ? "使用原参考图顺序和修改要求，以当前选择的模型重新修改" : "使用相同的描述和比例，以当前选择的模型重新生成"}
           onClick={() => onRetryImage(message.imageGenerationRetry!)}
-          className="btn h-8 self-start px-3 text-xs max-md:min-h-10">
+          className="btn h-8 self-start px-3 text-fs-12 max-md:min-h-10">
           <RotateCcw size={12} />{message.imageGenerationRetry.referenceImages?.length ? "重新修改" : "重新生成"}
         </button>}
 
@@ -409,14 +409,14 @@ function ChatBubble({ message, agentName = "Chloe", onDelete, onSpeak, onStopSpe
           <div className="flex gap-2 mt-1">
             <button
               onClick={() => onConfirmTts?.(message.id, message.pendingTtsText!)}
-              className="btn btn-quiet h-8 px-2.5 text-xs max-md:min-h-10"
+              className="btn btn-quiet h-8 px-2.5 text-fs-12 max-md:min-h-10"
             >
               <Volume2 size={11} />
               <span>帮我读</span>
             </button>
             <button
               onClick={() => onDeclineTts?.(message.id)}
-              className="btn btn-quiet h-8 px-2.5 text-xs max-md:min-h-10"
+              className="btn btn-quiet h-8 px-2.5 text-fs-12 max-md:min-h-10"
             >
               不用
             </button>
@@ -424,14 +424,14 @@ function ChatBubble({ message, agentName = "Chloe", onDelete, onSpeak, onStopSpe
         )}
 
         {/* Meta row */}
-        <div className="flex min-h-8 items-center gap-3 text-xs text-[color:var(--ink2)] max-md:min-h-10">
-          <span className="readout text-xs text-[color:var(--ink2)]">{timeStr}</span>
+        <div className="flex min-h-8 items-center gap-3 text-fs-12 text-[color:var(--ink2)] max-md:min-h-10">
+          <span className="readout text-fs-12 text-[color:var(--ink2)]">{timeStr}</span>
           {!isUser && onSpeak && !message.isTyping && hasTextContent && (
             <button
               type="button"
               onClick={() => speaking ? onStopSpeak?.() : onSpeak(message.id, message.content)}
               disabled={speakDisabled}
-              className="btn btn-quiet h-7 px-1.5 text-xs"
+              className="btn btn-quiet h-7 px-1.5 text-fs-12"
             >
               {speaking ? "停止" : "朗读"}
             </button>
@@ -440,7 +440,7 @@ function ChatBubble({ message, agentName = "Chloe", onDelete, onSpeak, onStopSpe
             <button
               type="button"
               onClick={() => void handleCopy()}
-              className="btn btn-quiet h-7 px-1.5 text-xs"
+              className="btn btn-quiet h-7 px-1.5 text-fs-12"
             >
               {copyButtonLabel}
             </button>
@@ -449,7 +449,7 @@ function ChatBubble({ message, agentName = "Chloe", onDelete, onSpeak, onStopSpe
             <button
               type="button"
               onClick={() => onDelete(message.id, message.dbId)}
-              className="btn btn-quiet h-7 px-1.5 text-xs hover:text-[color:var(--seal)]"
+              className="btn btn-quiet h-7 px-1.5 text-fs-12 hover:text-[color:var(--seal)]"
             >
               {"删除"}
             </button>

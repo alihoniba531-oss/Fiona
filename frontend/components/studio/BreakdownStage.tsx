@@ -92,7 +92,7 @@ export default function BreakdownStage({ project, owner, providers, busy: outerB
   return <div className="min-w-0 space-y-5">
     {loading && <LoadingState>正在读取拆解与分集…</LoadingState>}
     {readError && <ErrorNotice message={readError} retry={() => void refresh(true)} />}
-    {error && <ErrorNotice message={error} />}{notice && <p role="status" className="text-sm text-[color:var(--ink2)]">{notice}</p>}
+    {error && <ErrorNotice message={error} />}{notice && <p role="status" className="text-fs-13 text-[color:var(--ink2)]">{notice}</p>}
     <BreakdownPanel key={id} project={project} breakdown={breakdown} providers={providers} busy={disabled || loading} onQuote={requestQuote} onSettings={requestSettings} onRetry={requestRetry} onRelease={chunk => chunk.job_id ? mutate(signal => releaseStudioJob(chunk.job_id!, signal), "已释放预留，可以重新报价重跑。") : Promise.resolve()} onCancel={() => breakdown ? mutate(signal => cancelStudioBreakdown(breakdown.id, signal), "拆解已取消，正在执行的批次仍将结算。") : Promise.resolve()} />
     {breakdown && <>
       {breakdown.synopsis && <SynopsisPanel key={`${breakdown.id}:synopsis`} synopsis={breakdown.synopsis} novel={project.source_kind === "novel"} busy={disabled} onSave={value => mutate(signal => patchStudioSynopsis(id, value, signal), "梗概已保存。")} />}

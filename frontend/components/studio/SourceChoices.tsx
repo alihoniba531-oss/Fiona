@@ -6,7 +6,7 @@ import { studioHref, studioSourceFlagLabel, type StudioFlaggedChapter, type Stud
 
 export function SourceFlags({ chapters }: { chapters: StudioFlaggedChapter[] }) {
   if (!chapters.length) return null;
-  return <details className="min-w-0 break-words text-sm text-[color:var(--ink2)]"><summary className="min-h-10 cursor-pointer py-2">{chapters.length} 章带有标记</summary><ul className="space-y-2 pl-4">{chapters.map(item => <li key={item.chapter}>第 {item.chapter} 章 {item.title}：{item.flags.map(studioSourceFlagLabel).join("、")}</li>)}</ul></details>;
+  return <details className="min-w-0 break-words text-fs-13 text-[color:var(--ink2)]"><summary className="min-h-10 cursor-pointer py-2">{chapters.length} 章带有标记</summary><ul className="space-y-2 pl-4">{chapters.map(item => <li key={item.chapter}>第 {item.chapter} 章 {item.title}：{item.flags.map(studioSourceFlagLabel).join("、")}</li>)}</ul></details>;
 }
 export function sourceProjectCreatedDate(value: string): string {
   const normalized = /[zZ]$|[+-]\d\d:\d\d$/.test(value) ? value : `${value.replace(" ", "T")}Z`;
@@ -18,13 +18,13 @@ export function sourceProjectCreatedDate(value: string): string {
 export function ExistingSourceProjects({ projects, embedded, primary = false }: { projects: StudioNovelCandidate["projects"]; embedded: boolean; primary?: boolean }) {
   if (!projects.length) return null;
   const ordered = [...projects].sort((left, right) => right.created_at.localeCompare(left.created_at));
-  return <div className="mt-2 space-y-2 text-sm"><p className="text-[color:var(--ink2)]">已有工作室项目</p>{ordered.map((project, index) => <div key={project.id} className="flex min-w-0 flex-wrap items-center gap-2"><span className="min-w-0 break-words">{project.title} · <time dateTime={project.created_at} suppressHydrationWarning>{sourceProjectCreatedDate(project.created_at)}</time> · 快照第 {project.snapshot_no ?? 0} 版</span><Link className={`btn ${primary && index === 0 ? "btn-primary" : "btn-quiet"} min-h-10`} href={studioHref(`/studio/${encodeURIComponent(project.id)}`, embedded)}>打开</Link></div>)}</div>;
+  return <div className="mt-2 space-y-2 text-fs-13"><p className="text-[color:var(--ink2)]">已有工作室项目</p>{ordered.map((project, index) => <div key={project.id} className="flex min-w-0 flex-wrap items-center gap-2"><span className="min-w-0 break-words">{project.title} · <time dateTime={project.created_at} suppressHydrationWarning>{sourceProjectCreatedDate(project.created_at)}</time> · 快照第 {project.snapshot_no ?? 0} 版</span><Link className={`btn ${primary && index === 0 ? "btn-primary" : "btn-quiet"} min-h-10`} href={studioHref(`/studio/${encodeURIComponent(project.id)}`, embedded)}>打开</Link></div>)}</div>;
 }
 export function NovelSourceChoice({ book, selected = false, disabled = false, embedded, onSelect }: { book: StudioNovelCandidate; selected?: boolean; disabled?: boolean; embedded: boolean; onSelect?: () => void }) {
   return <article className={`ceramic-card min-w-0 rounded-xl p-3 ${book.eligible ? "" : "text-[color:var(--ink2)]"} ${selected ? "ring-1 ring-[color:var(--ink)]" : ""}`}>
     <div className="flex min-w-0 flex-wrap items-start gap-2"><button type="button" className={`chip h-auto min-h-10 max-w-full whitespace-normal break-words py-2 text-left leading-relaxed ${selected ? "chip-on" : ""}`} aria-pressed={selected} disabled={disabled || !book.eligible || !onSelect} onClick={onSelect}>{book.title}</button>{book.drama_adaptation && <span className="tag">改编短剧</span>}</div>
-    <p className="readout mt-2 text-sm">{novelStatusLabel({ status: book.status as NovelDetail["status"], pause_reason: null })} · {book.chapters_done} 章 · {book.words_done.toLocaleString()} 字</p>
-    <p className="mt-2 text-sm">{book.eligible ? "可以建立快照" : book.reason || "暂时不能导入"}</p>
+    <p className="readout mt-2 text-fs-13">{novelStatusLabel({ status: book.status as NovelDetail["status"], pause_reason: null })} · {book.chapters_done} 章 · {book.words_done.toLocaleString()} 字</p>
+    <p className="mt-2 text-fs-13">{book.eligible ? "可以建立快照" : book.reason || "暂时不能导入"}</p>
     <SourceFlags chapters={book.flagged} /><ExistingSourceProjects projects={book.projects} embedded={embedded} />
   </article>;
 }

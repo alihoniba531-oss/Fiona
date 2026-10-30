@@ -8,6 +8,14 @@ Fiona 的 Web/PWA 客户端，使用 Next.js 16.4.3、React 19、Tailwind CSS 4 
 
 本项目使用的 Next.js 16 与旧版本存在 API、约定和文件结构差异。修改前端代码前，先阅读 [AGENTS.md](./AGENTS.md)，再查阅本地安装版本对应的 `node_modules/next/dist/docs/`，不要直接套用旧版 Next.js 示例。
 
+## 设计令牌与门禁
+
+- 字号只用 10 个 `text-fs-11 / 12 / 13 / 15 / 16.5 / 18 / 22 / 30 / 46 / 76`；CSS 与行内样式只用对应的 `var(--fs-*)`。
+- 颜色只用 `text-/bg-/border-[color:var(--令牌)]`；令牌名见 `app/globals.css` 的四套主题块：`:root`、`.dark`、`:root[data-solid]`、`.dark[data-solid]`。
+- `--ink3` 只当装饰，`--stamp` 只给朱印，朱字用 `--seal`。
+- 新写法会被 `backend/tests/test_design_system_*.py` 与 `test_design_tokens_contrast.py` 拦下。
+- `components/ui/*` 是未使用的 shadcn 原件，豁免。
+
 ## 页面
 
 | 路由 | 功能 |

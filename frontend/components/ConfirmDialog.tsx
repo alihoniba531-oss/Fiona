@@ -153,8 +153,8 @@ export function ConfirmProvider({ children }: { children: ReactNode }): ReactEle
     >
       {active && (
         <div className="px-6 pt-6 pb-5">
-          {active.title && <h2 id={titleId} className="text-base tracking-[.06em] mb-3">{active.title}</h2>}
-          <p id={bodyId} className="whitespace-pre-wrap text-[15px] leading-[1.85] text-[color:var(--ink)]">{active.body}</p>
+          {active.title && <h2 id={titleId} className="text-fs-16.5 tracking-[.06em] mb-3">{active.title}</h2>}
+          <p id={bodyId} className="whitespace-pre-wrap text-fs-15 leading-[1.85] text-[color:var(--ink)]">{active.body}</p>
           <div className="mt-6 flex justify-end gap-2">
             {active.kind === "confirm" ? (
               <>

@@ -47,12 +47,12 @@ export default function ReviewProviderPicker({ projectId, owner, brainProvider, 
   const same = provider != null && provider !== "off" && provider === brainProvider;
   const blocked = busy || saving;
   return <fieldset disabled={blocked} className="mt-4 min-w-0">
-    <legend className="mb-2 text-sm">审核模型</legend>
-    <p className="mb-2 max-w-[520px] text-xs leading-relaxed text-[color:var(--ink2)]">审核会把原文发给所选厂商。</p>
-    {loading && provider == null ? <p role="status" className="text-sm text-[color:var(--ink2)]">正在读取审核模型…</p> : null}
+    <legend className="mb-2 text-fs-13">审核模型</legend>
+    <p className="mb-2 max-w-[520px] text-fs-12 leading-relaxed text-[color:var(--ink2)]">审核会把原文发给所选厂商。</p>
+    {loading && provider == null ? <p role="status" className="text-fs-13 text-[color:var(--ink2)]">正在读取审核模型…</p> : null}
     {provider != null && <label className="block max-w-[320px] min-w-0"><span className="sr-only">审核模型</span><select value={provider} disabled={blocked} onChange={event => { void change(event.target.value as KbReviewProvider); }} className={`${novelFieldClass} min-h-10 py-2`}>{kbReviewProviderOptions.map(option => <option key={option.id} value={option.id}>{option.label}</option>)}</select></label>}
-    {provider != null && <p className="mt-2 text-sm text-[color:var(--ink2)]">当前：{kbReviewProviderLabel(provider)}</p>}
-    {same && <p className="mt-1 text-sm text-[color:var(--seal)]">同一模型自审，效果有限</p>}
+    {provider != null && <p className="mt-2 text-fs-13 text-[color:var(--ink2)]">当前：{kbReviewProviderLabel(provider)}</p>}
+    {same && <p className="mt-1 text-fs-13 text-[color:var(--seal)]">同一模型自审，效果有限</p>}
     {error && <div className="mt-2"><ErrorNotice message={error} retry={() => { void load(); }} /></div>}
   </fieldset>;
 }

@@ -46,7 +46,7 @@ def test_composer_image_menu_source_contract():
     assert 'aria-label="图片：发图给 Chloe 看、生成图片或改一张图"' in source
     assert source.count("<ImagePlus") == 1
     assert "<span>图片</span>" in source
-    assert "btn btn-quiet h-8 px-2 text-xs max-md:h-10" in source
+    assert "btn btn-quiet h-8 px-2 text-fs-12 max-md:h-10" in source
     assert "active && \"text-[color:var(--ink)]\"" in source
     assert "const allDisabled = items.every((item) => item.disabled);" in source
     assert "const triggerDisabled = disabled || allDisabled;" in source
@@ -60,8 +60,8 @@ def test_composer_image_menu_source_contract():
     assert "min-h-11 w-full rounded-[8px] px-3 py-2 text-left" in source
     assert "hover:bg-[color:var(--fill)]" in source
     assert "disabled:opacity-45 disabled:cursor-not-allowed" in source
-    assert "text-sm text-[color:var(--ink)]" in source
-    assert "text-xs text-[color:var(--ink2)]" in source
+    assert "text-fs-15 text-[color:var(--ink)]" in source
+    assert "text-fs-12 text-[color:var(--ink2)]" in source
     assert "disabled={item.disabled}" in source
     assert "title={item.title}" in source
 
@@ -97,8 +97,8 @@ def test_voice_button_source_contract():
     assert 'role="status"' in source
     assert "也可以按住说话，松开就发送" in source
     assert "ceramic-card absolute bottom-full" in source
-    assert "btn btn-quiet h-8 px-2.5 text-xs max-md:h-10 max-md:w-10 max-md:px-0 select-none" in source
-    assert "text-[color:var(--rec)] bg-[color:var(--rec-soft)]" in source
+    assert "btn btn-quiet h-8 px-2.5 text-fs-12 max-md:h-10 max-md:w-10 max-md:px-0 select-none" in source
+    assert "text-[color:var(--seal)] bg-[color:var(--seal-soft)]" in source
     assert "语音：轻点开始录音，再点一下发送；按住说话，松开发送" in source
     assert "正在录音，轻点发送" in source
     assert "正在录音，松开发送" in source
@@ -240,7 +240,7 @@ def test_image_menu_ssr_trigger_state():
     assert 'aria-expanded="false"' in html
     assert 'aria-label="图片：发图给 Chloe 看、生成图片或改一张图"' in html
     assert ">图片</span>" in html
-    assert 'class="btn btn-quiet h-8 px-2 text-xs max-md:h-10"' in html
+    assert 'class="btn btn-quiet h-8 px-2 text-fs-12 max-md:h-10"' in html
     assert 'role="menu"' not in html
     assert "用文字描述画一张新图" not in html
     assert "Chloe 看图后回答" not in html
@@ -263,17 +263,17 @@ def test_voice_button_ssr_states():
     assert ">语音</span>" in idle
     assert ">点此发送</span>" not in idle
     assert ">松开发送</span>" not in idle
-    assert "text-[color:var(--rec)]" not in idle
+    assert "text-[color:var(--seal)]" not in idle
 
     dictating = render_control(VOICE, {"disabled": False, "dictating": True, "holding": False})
     assert 'aria-label="正在录音，轻点发送"' in dictating
     assert ">点此发送</span>" in dictating
-    assert "text-[color:var(--rec)] bg-[color:var(--rec-soft)]" in dictating
+    assert "text-[color:var(--seal)] bg-[color:var(--seal-soft)]" in dictating
 
     holding = render_control(VOICE, {"disabled": False, "dictating": False, "holding": True})
     assert 'aria-label="正在录音，松开发送"' in holding
     assert ">松开发送</span>" in holding
-    assert "text-[color:var(--rec)] bg-[color:var(--rec-soft)]" in holding
+    assert "text-[color:var(--seal)] bg-[color:var(--seal-soft)]" in holding
 
 
 VOICE_STATE_RUNNER = r"""

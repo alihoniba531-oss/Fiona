@@ -31,10 +31,10 @@ function SongCardShell({ title, children }: { title: string; children: ReactNode
         className="flex min-w-0 flex-wrap items-center justify-between gap-2 border-b px-4 py-3"
         style={{ borderColor: "var(--carve)" }}
       >
-        <span className="min-w-0 break-words text-sm text-[color:var(--ink)]">
+        <span className="min-w-0 break-words text-fs-15 text-[color:var(--ink)]">
           {title ? `写歌 ·《${title}》` : "写歌"}
         </span>
-        <span className="tag shrink-0 text-xs">AI 生成</span>
+        <span className="tag shrink-0 text-fs-12">AI 生成</span>
       </div>
       <div className="min-w-0 px-4 py-3">{children}</div>
     </div>
@@ -47,7 +47,7 @@ function BriefTags({ brief }: { brief: SongBrief | null | undefined }) {
   return (
     <div className="flex min-w-0 flex-wrap gap-1.5">
       {tags.map((tag, index) => (
-        <span key={`${index}:${tag}`} className="tag text-xs">
+        <span key={`${index}:${tag}`} className="tag text-fs-12">
           {tag}
         </span>
       ))}
@@ -100,15 +100,15 @@ function SongLyricsSection({
     <section className="min-w-0">
       <div className="flex min-w-0 flex-wrap items-center justify-between gap-2">
         <div className="flex min-w-0 flex-wrap items-center gap-2">
-          <span className="break-words text-sm text-[color:var(--ink)]">
+          <span className="break-words text-fs-15 text-[color:var(--ink)]">
             {typeLabel} · {section.id}
           </span>
-          {changed && <span className="tag text-xs">本稿修改</span>}
+          {changed && <span className="tag text-fs-12">本稿修改</span>}
         </div>
         {!instrumental && (
           <button
             type="button"
-            className="chip shrink-0 text-xs"
+            className="chip shrink-0 text-fs-12"
             disabled={!onCompose}
             onClick={() => onCompose?.(composeText)}
           >
@@ -117,7 +117,7 @@ function SongLyricsSection({
         )}
       </div>
       {instrumental ? (
-        <p className="mt-1 text-xs text-[color:var(--ink2)]">（器乐）</p>
+        <p className="mt-1 text-fs-12 text-[color:var(--ink2)]">（器乐）</p>
       ) : (
         <div className="mt-1 space-y-1">
           {section.lines.map((line, index) => {
@@ -127,10 +127,10 @@ function SongLyricsSection({
               : countDisplayChars(line, lang);
             return (
               <div key={index} className="flex min-w-0 items-start justify-between gap-2">
-                <p className="min-w-0 flex-1 whitespace-pre-wrap break-words text-sm leading-6 text-[color:var(--ink)]">
+                <p className="min-w-0 flex-1 whitespace-pre-wrap break-words text-fs-15 leading-6 text-[color:var(--ink)]">
                   {line || " "}
                 </p>
-                <span className="shrink-0 whitespace-nowrap text-xs text-[color:var(--ink2)]">
+                <span className="shrink-0 whitespace-nowrap text-fs-12 text-[color:var(--ink2)]">
                   <span>{chars} 字</span>
                   {lineCheck?.rhyme_ok === true && <span className="ml-1">押</span>}
                   {lineCheck?.rhyme_ok === false && (
@@ -150,17 +150,17 @@ function SongCheckSummary({ check }: { check: SongCheck | null | undefined }) {
   const errors = check?.errors ?? [];
   const warnings = check?.warnings ?? [];
   if (!errors.length && !warnings.length) {
-    return <p className="text-xs text-[color:var(--ink2)]">字数与押韵检查通过</p>;
+    return <p className="text-fs-12 text-[color:var(--ink2)]">字数与押韵检查通过</p>;
   }
   return (
     <div className="min-w-0 space-y-1">
       {errors.map((issue, index) => (
-        <p key={`error-${index}`} className="whitespace-pre-wrap break-words text-xs" style={{ color: "var(--seal)" }}>
+        <p key={`error-${index}`} className="whitespace-pre-wrap break-words text-fs-12" style={{ color: "var(--seal)" }}>
           {issue.message || issue.code}
         </p>
       ))}
       {warnings.map((issue, index) => (
-        <p key={`warning-${index}`} className="whitespace-pre-wrap break-words text-xs" style={{ color: "var(--ink2)" }}>
+        <p key={`warning-${index}`} className="whitespace-pre-wrap break-words text-fs-12" style={{ color: "var(--ink2)" }}>
           {issue.message || issue.code}
         </p>
       ))}
@@ -206,13 +206,13 @@ function SongVersionRow({ version }: { version: SongVersion }) {
   return (
     <div className="min-w-0 space-y-1">
       <div className="flex min-w-0 flex-wrap items-baseline justify-between gap-x-3 gap-y-1">
-        <span className="break-words text-sm text-[color:var(--ink)]">
+        <span className="break-words text-fs-15 text-[color:var(--ink)]">
           第 {version.lyrics_revision} 稿 · {statusText}
         </span>
-        {elapsed && <span className="shrink-0 text-xs text-[color:var(--ink2)]">{elapsed}</span>}
+        {elapsed && <span className="shrink-0 text-fs-12 text-[color:var(--ink2)]">{elapsed}</span>}
       </div>
       {failed && (
-        <p className="whitespace-pre-wrap break-words text-xs" style={{ color: "var(--seal)" }}>
+        <p className="whitespace-pre-wrap break-words text-fs-12" style={{ color: "var(--seal)" }}>
           {version.failure_message || "生成失败，请稍后再试"}
         </p>
       )}
@@ -227,7 +227,7 @@ function SongVersionRow({ version }: { version: SongVersion }) {
           />
           <a
             href={`${audioUrl}?download=1`}
-            className="inline-block text-xs text-[color:var(--ink2)] underline underline-offset-2 hover:text-[color:var(--ink)]"
+            className="inline-block text-fs-12 text-[color:var(--ink2)] underline underline-offset-2 hover:text-[color:var(--ink)]"
           >
             下载
           </a>
@@ -239,7 +239,7 @@ function SongVersionRow({ version }: { version: SongVersion }) {
 
 function SongVersionList({ versions }: { versions: SongVersion[] }) {
   if (!versions.length) {
-    return <p className="text-xs text-[color:var(--ink2)]">还没有生成试听。</p>;
+    return <p className="text-fs-12 text-[color:var(--ink2)]">还没有生成试听。</p>;
   }
   const ordered = versions
     .map((version, index) => ({ version, index, time: parseSongTimestamp(version.created_at) }))
@@ -312,7 +312,7 @@ function GenerateAction({ project, refresh }: { project: SongProject; refresh: (
     <div className="min-w-0">
       <button
         type="button"
-        className="btn btn-primary max-w-full whitespace-normal text-xs"
+        className="btn btn-primary max-w-full whitespace-normal text-fs-12"
         disabled={!project.can_generate || busy}
         title={!project.can_generate ? project.generate_blocked_reason ?? undefined : undefined}
         onClick={openDialog}
@@ -320,7 +320,7 @@ function GenerateAction({ project, refresh }: { project: SongProject; refresh: (
         生成试听（{price} 草莓）
       </button>
       {!project.can_generate && project.generate_blocked_reason && (
-        <p role="status" className="mt-1 text-xs text-[color:var(--ink2)]">
+        <p role="status" className="mt-1 text-fs-12 text-[color:var(--ink2)]">
           {project.generate_blocked_reason}
         </p>
       )}
@@ -339,24 +339,24 @@ function GenerateAction({ project, refresh }: { project: SongProject; refresh: (
           }}
           className="m-auto max-h-[85dvh] w-[min(560px,calc(100vw-32px))] max-w-full overflow-y-auto rounded-[10px] border border-[color:var(--carve)] bg-[color:var(--paper)] p-5 text-[color:var(--ink)] backdrop:bg-[color:var(--scrim)]"
         >
-          <div className="min-w-0 space-y-2 text-sm leading-6">
-            <p id={titleId} className="text-base">确认生成试听</p>
+          <div className="min-w-0 space-y-2 text-fs-15 leading-6">
+            <p id={titleId} className="text-fs-16.5">确认生成试听</p>
             <p>
               将用第 {lyricsRevision} 稿歌词生成一首约 {durationSeconds} 秒的试听，预扣 {price} 颗草莓，失败自动退回。
             </p>
             <p>歌词与曲风参数会发送给字节跳动火山引擎生成音乐。</p>
             <p>生成的音频带有 AI 生成标识。</p>
             {failure && (
-              <p role="alert" className="whitespace-pre-wrap break-words text-xs" style={{ color: "var(--seal)" }}>
+              <p role="alert" className="whitespace-pre-wrap break-words text-fs-12" style={{ color: "var(--seal)" }}>
                 {failure}
               </p>
             )}
           </div>
           <div className="mt-4 flex flex-wrap justify-end gap-2">
-            <button type="button" className="btn btn-quiet min-h-10 text-xs" disabled={busy} onClick={closeDialog}>
+            <button type="button" className="btn btn-quiet min-h-10 text-fs-12" disabled={busy} onClick={closeDialog}>
               取消
             </button>
-            <button type="button" className="btn btn-primary min-h-10 text-xs" disabled={busy} onClick={() => void confirm()}>
+            <button type="button" className="btn btn-primary min-h-10 text-fs-12" disabled={busy} onClick={() => void confirm()}>
               {busy ? "正在提交…" : "确认生成"}
             </button>
           </div>
@@ -400,7 +400,7 @@ function SongProjectBody({
       <SongCheckSummary check={lyrics.check} />
       <GenerateAction project={project} refresh={refresh} />
       <div className="min-w-0 border-t pt-3" style={{ borderColor: "var(--carve)" }}>
-        <p className="mb-2 text-xs text-[color:var(--ink2)]">生成记录</p>
+        <p className="mb-2 text-fs-12 text-[color:var(--ink2)]">生成记录</p>
         <SongVersionList versions={project.versions ?? []} />
       </div>
     </div>
@@ -414,7 +414,7 @@ export default function SongProjectCard({ projectId, onCompose }: SongProjectCar
   if (loading) {
     return (
       <SongCardShell title={title}>
-        <p role="status" className="text-sm text-[color:var(--ink2)]">正在读取写歌项目…</p>
+        <p role="status" className="text-fs-13 text-[color:var(--ink2)]">正在读取写歌项目…</p>
       </SongCardShell>
     );
   }
@@ -422,7 +422,7 @@ export default function SongProjectCard({ projectId, onCompose }: SongProjectCar
   if (notFound) {
     return (
       <SongCardShell title={title}>
-        <p className="text-sm text-[color:var(--ink2)]">这个写歌项目已删除</p>
+        <p className="text-fs-13 text-[color:var(--ink2)]">这个写歌项目已删除</p>
       </SongCardShell>
     );
   }
@@ -431,13 +431,13 @@ export default function SongProjectCard({ projectId, onCompose }: SongProjectCar
     return (
       <SongCardShell title={title}>
         <div className="flex min-w-0 flex-wrap items-center gap-3">
-          <p role="alert" className="text-sm" style={{ color: "var(--seal)" }}>写歌项目读取失败</p>
-          <button type="button" className="btn btn-quiet min-h-10 px-3 text-xs" onClick={refresh}>
+          <p role="alert" className="text-fs-13" style={{ color: "var(--seal)" }}>写歌项目读取失败</p>
+          <button type="button" className="btn btn-quiet min-h-10 px-3 text-fs-12" onClick={refresh}>
             重试
           </button>
         </div>
         {error !== "写歌项目读取失败" && (
-          <p className="mt-1 whitespace-pre-wrap break-words text-xs text-[color:var(--ink2)]">{error}</p>
+          <p className="mt-1 whitespace-pre-wrap break-words text-fs-12 text-[color:var(--ink2)]">{error}</p>
         )}
       </SongCardShell>
     );
@@ -446,7 +446,7 @@ export default function SongProjectCard({ projectId, onCompose }: SongProjectCar
   if (!project) {
     return (
       <SongCardShell title={title}>
-        <p className="text-sm text-[color:var(--ink2)]">写歌项目读取失败</p>
+        <p className="text-fs-13 text-[color:var(--ink2)]">写歌项目读取失败</p>
       </SongCardShell>
     );
   }
@@ -456,7 +456,7 @@ export default function SongProjectCard({ projectId, onCompose }: SongProjectCar
       <SongCardShell title={title}>
         <div className="min-w-0 space-y-3">
           <BriefTags brief={project.brief} />
-          <p className="text-sm text-[color:var(--ink2)]">歌词还在写，Claude 提交后会显示在这里</p>
+          <p className="text-fs-13 text-[color:var(--ink2)]">歌词还在写，Claude 提交后会显示在这里</p>
         </div>
       </SongCardShell>
     );

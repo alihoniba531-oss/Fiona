@@ -65,19 +65,19 @@ export default function CastingItemCard({ item, jobs, selected, busy, onSelect, 
     <div className="flex min-w-0 flex-wrap items-start justify-between gap-2">
       <label className="flex min-h-10 min-w-0 items-start gap-2">
         <input type="checkbox" aria-label={`选择${item.name}`} className="mt-1" checked={selected} disabled={blocked} onChange={event => onSelect(event.target.checked)} />
-        <span className="min-w-0 break-words text-sm">{item.name}{item.orphaned && <span className="tag ml-2">已不在当前总表</span>}{!!item.needs_author && <span className="tag ml-2">待作者补充</span>}</span>
+        <span className="min-w-0 break-words text-fs-15">{item.name}{item.orphaned && <span className="tag ml-2">已不在当前总表</span>}{!!item.needs_author && <span className="tag ml-2">待作者补充</span>}</span>
       </label>
       <span className="tag">{castingItemStatusLabel(item.status)}</span>
     </div>
     {item.needs_author ? <div className="ceramic-card min-w-0 space-y-2 p-3">
-      <p className="text-sm">原文没有外形描述，先补外形才能出图。</p>
+      <p className="text-fs-13">原文没有外形描述，先补外形才能出图。</p>
       {appearanceDraft === null ? <button type="button" className="btn btn-quiet min-h-10" disabled={blocked} onClick={() => { setAppearanceDraft(item.appearance); setError(""); }}>先补外形</button>
         : <form className="min-w-0 space-y-2" onSubmit={event => { event.preventDefault(); void saveAppearance(); }}>
-          <label htmlFor={`appearance-${item.id}`} className="block min-w-0 space-y-1 text-sm"><span>外形（面部、发型、体型、服装）</span><textarea id={`appearance-${item.id}`} rows={3} disabled={busy || saving} value={appearanceDraft} className={breakdownFieldClass} onChange={event => setAppearanceDraft(event.target.value)} /></label>
+          <label htmlFor={`appearance-${item.id}`} className="block min-w-0 space-y-1 text-fs-13"><span>外形（面部、发型、体型、服装）</span><textarea id={`appearance-${item.id}`} rows={3} disabled={busy || saving} value={appearanceDraft} className={breakdownFieldClass} onChange={event => setAppearanceDraft(event.target.value)} /></label>
           <div className="flex flex-wrap gap-2"><button type="submit" className="btn btn-primary min-h-10" disabled={busy || saving || !appearanceDraft.trim()}>{saving ? "保存中…" : "保存外形"}</button><button type="button" className="btn btn-quiet min-h-10" disabled={busy || saving} onClick={() => { setAppearanceDraft(null); setError(""); }}>取消</button></div>
         </form>}
-    </div> : <p className="min-w-0 whitespace-pre-wrap break-words text-sm">{item.appearance || item.description || "—"}</p>}
-    {lookFields && <div className="min-w-0 space-y-2 text-sm">
+    </div> : <p className="min-w-0 whitespace-pre-wrap break-words text-fs-15">{item.appearance || item.description || "—"}</p>}
+    {lookFields && <div className="min-w-0 space-y-2 text-fs-13">
       <div className="flex min-w-0 flex-wrap items-center gap-2">
         <p className="text-[color:var(--ink2)]">造型说明</p>
         {lookSource && <span className="tag">{lookSource}</span>}
@@ -101,26 +101,26 @@ export default function CastingItemCard({ item, jobs, selected, busy, onSelect, 
           </div>
         </div>}
     </div>}
-    <div className="min-w-0 space-y-2 text-sm">
+    <div className="min-w-0 space-y-2 text-fs-13">
       <label htmlFor={`locked-${item.id}`} className="block text-[color:var(--ink2)]">锁定特征（出图提示词会带上，之后不得改动）</label>
       <textarea id={`locked-${item.id}`} rows={2} disabled={blocked} value={lockedDraft ?? item.locked_features} className={breakdownFieldClass} onChange={event => setLockedDraft(event.target.value)} />
       <button type="button" className="btn btn-quiet min-h-10" disabled={blocked || lockedDraft === null || lockedDraft === item.locked_features} onClick={() => void saveLocked()}>保存锁定特征</button>
     </div>
-    <div className="min-w-0 space-y-2 text-sm">
+    <div className="min-w-0 space-y-2 text-fs-13">
       <label htmlFor={`extra-${item.id}`} className="block text-[color:var(--ink2)]">补充提示词（之后每次出图都会带上）</label>
       <textarea id={`extra-${item.id}`} rows={2} maxLength={500} disabled={blocked} value={extraDraft ?? item.extra_prompt} className={breakdownFieldClass} onChange={event => setExtraDraft(event.target.value)} />
       <button type="button" className="btn btn-quiet min-h-10" disabled={blocked || extraDraft === null || extraDraft === item.extra_prompt} onClick={() => void saveExtra()}>保存补充提示词</button>
     </div>
     {!!item.reference_asset_ids.length && <div className="min-w-0 space-y-2">
-      <p className="text-sm text-[color:var(--ink2)]">参考图</p>
+      <p className="text-fs-13 text-[color:var(--ink2)]">参考图</p>
       <ul className="flex min-w-0 flex-wrap gap-2">{item.reference_asset_ids.map(assetId => <li key={assetId} className="w-24 min-w-0 space-y-1">
         <StudioAssetImage assetId={assetId} alt={`${item.name} 参考图`} loading="lazy" decoding="async" />
         <button type="button" className="btn btn-quiet min-h-10 w-full" disabled={blocked} onClick={() => void run(async () => { await onPatch({ reference_asset_ids: item.reference_asset_ids.filter(value => value !== assetId) }); })}>移除</button>
       </li>)}</ul>
     </div>}
     <div className="min-w-0 space-y-2">
-      <p className="text-sm text-[color:var(--ink2)]">版本（{versions.length}）</p>
-      {!versions.length && !inflight.length && !problems.length && <p className="text-sm text-[color:var(--ink2)]">还没有版本，勾选条目后「报价出图」。</p>}
+      <p className="text-fs-13 text-[color:var(--ink2)]">版本（{versions.length}）</p>
+      {!versions.length && !inflight.length && !problems.length && <p className="text-fs-13 text-[color:var(--ink2)]">还没有版本，勾选条目后「报价出图」。</p>}
       <ul className="grid min-w-0 grid-cols-1 gap-2 @[480px]:grid-cols-2">
         {versions.map(version => <li key={version.asset_id} className="ceramic-card min-w-0 space-y-2 p-2">
           <button type="button" className="block w-full min-w-0" aria-label={`查看${item.name}第 ${version.version_no} 版大图`} onClick={() => setPreview(version)}><StudioAssetImage assetId={version.asset_id} alt={`${item.name} 第 ${version.version_no} 版`} loading="lazy" decoding="async" /></button>
@@ -135,15 +135,15 @@ export default function CastingItemCard({ item, jobs, selected, busy, onSelect, 
           <span className="tag">{castingJobStatusLabel(job.status)}</span>
           {job.status === "uncertain"
             ? <div className="min-w-0 space-y-2">
-              <p role="status" className="text-sm">可能已扣费，请勿直接重试，去控制台核对</p>
-              {!!job.error_message && !job.error_message.includes("可能已扣费") && <p className="min-w-0 break-words text-sm text-[color:var(--ink2)]">{job.error_message}</p>}
+              <p role="status" className="text-fs-13">可能已扣费，请勿直接重试，去控制台核对</p>
+              {!!job.error_message && !job.error_message.includes("可能已扣费") && <p className="min-w-0 break-words text-fs-13 text-[color:var(--ink2)]">{job.error_message}</p>}
               <button type="button" className="btn btn-quiet min-h-10" disabled={busy} onClick={() => void run(async () => { await onRelease(job.id); })}>释放</button>
             </div>
-            : <p className="min-w-0 break-words text-sm">{job.error_message ?? "这一张没有出图成功。"}</p>}
+            : <p className="min-w-0 break-words text-fs-13">{job.error_message ?? "这一张没有出图成功。"}</p>}
         </li>)}
       </ul>
     </div>
-    {error && <p role="alert" className="text-sm">{error}</p>}
+    {error && <p role="alert" className="text-fs-13">{error}</p>}
     <div className="flex min-w-0 flex-wrap gap-1">
       {item.approved_asset_id && item.status !== "approved" && <button type="button" className="btn btn-quiet min-h-10" disabled={blocked} onClick={() => void run(async () => { await onApprove(item.approved_asset_id!); })}>确认此条</button>}
       {item.status !== "skipped" && <button type="button" className="btn btn-quiet min-h-10" disabled={blocked} onClick={() => void run(async () => { await onSkip(); })}>标为不需要</button>}

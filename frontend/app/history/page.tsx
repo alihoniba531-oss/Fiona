@@ -145,24 +145,24 @@ function HistoryForAccount({ username }: { username: string }) {
       <Glaze as="header" variant="strip" className="sticky top-3 z-20 m-3 flex items-center gap-4 rounded-[16px] px-[22px] py-3 max-md:flex-wrap max-md:gap-2 max-md:px-4">
         <div className="flex shrink-0 items-center gap-2 max-md:min-w-0 max-md:max-w-[60vw]">
           <div className="max-md:min-w-0">
-            <p className="text-[18px] font-medium leading-tight tracking-[0.08em]">历史记录</p>
-            <p className="mt-0.5 text-xs text-muted-foreground max-md:truncate">
+            <p className="text-fs-18 font-medium leading-tight tracking-[0.08em]">历史记录</p>
+            <p className="mt-0.5 text-fs-12 text-[color:var(--ink2)] max-md:truncate">
               {username} <span aria-hidden="true" className="mx-1 inline-block h-2.5 w-px bg-[color:var(--rule2)]" /> <span className="readout"><b>{loading ? "…" : allMsgs.length}</b> 条</span>
             </p>
-            <p className="mt-0.5 text-[11px] text-[color:var(--ink2)]">北京时间</p>
+            <p className="mt-0.5 text-fs-11 text-[color:var(--ink2)]">北京时间</p>
           </div>
         </div>
 
         {/* 搜索 */}
         <div className="flex min-w-0 flex-1 items-center gap-2 rounded-[8px] border border-[color:var(--rule2)] bg-[color:var(--mount)] px-3 py-[9px] focus-within:border-[color:var(--ink)] max-md:order-3 max-md:basis-full">
-          <Search size={13} className="text-muted-foreground shrink-0" />
+          <Search size={13} className="text-[color:var(--ink2)] shrink-0" />
           <input
             ref={searchRef}
             value={query}
             onChange={e => setQuery(e.target.value)}
             placeholder="搜索消息内容…"
             aria-label="搜索消息内容"
-            className="min-w-0 flex-1 bg-transparent text-base text-[color:var(--ink)] outline-none placeholder:text-[color:var(--ink2)]"
+            className="min-w-0 flex-1 bg-transparent text-fs-16.5 text-[color:var(--ink)] outline-none placeholder:text-[color:var(--ink2)]"
           />
           {query && (
             <button aria-label="清除搜索内容" onClick={() => setQuery("")} className="btn btn-quiet h-8 w-8 shrink-0 px-0 max-md:h-10 max-md:w-10">
@@ -188,7 +188,7 @@ function HistoryForAccount({ username }: { username: string }) {
         <Glaze as="aside" variant="panel" fur className="mb-3 ml-3 flex w-56 shrink-0 flex-col rounded-[18px] max-md:mr-3 max-md:w-auto">
           {/* 快捷筛选 */}
           <div className="px-3 pt-4 pb-2 max-md:pt-3">
-            <p className="mb-2 px-1 text-xs font-medium text-muted-foreground">快捷筛选</p>
+            <p className="mb-2 px-1 text-fs-12 font-medium text-[color:var(--ink2)]">快捷筛选</p>
             <div className="flex flex-col gap-0.5 max-md:grid max-md:grid-cols-4 max-md:gap-1">
               {quickLabels.map(({ key, label }) => (
                 <button
@@ -209,14 +209,14 @@ function HistoryForAccount({ username }: { username: string }) {
 
           {/* 日期区间 */}
           <div className="border-t px-3 py-3 max-md:py-2" style={{ borderColor: "var(--carve)" }}>
-            <p className="mb-2 flex items-center gap-1 px-1 text-xs font-medium text-muted-foreground">
+            <p className="mb-2 flex items-center gap-1 px-1 text-fs-12 font-medium text-[color:var(--ink2)]">
               <Calendar size={12} style={{ color: "var(--ink)" }} />
               自定义区间
             </p>
             <div className="grid grid-cols-1 gap-1.5">
               <label className={cn("chip relative h-auto min-h-10 w-full justify-between gap-2 px-3 py-1.5 has-[:focus-visible]:outline has-[:focus-visible]:outline-1 has-[:focus-visible]:outline-offset-2 has-[:focus-visible]:outline-[color:var(--ink)]", dateFrom && "chip-on")}>
                 <span aria-hidden="true">从</span>
-                <span aria-hidden="true" className="readout text-[13px] text-[color:var(--ink)]">{dayFace(dateFrom)}</span>
+                <span aria-hidden="true" className="readout text-fs-13 text-[color:var(--ink)]">{dayFace(dateFrom)}</span>
                 <input
                   type="date"
                   aria-label="从（开始日期）"
@@ -230,7 +230,7 @@ function HistoryForAccount({ username }: { username: string }) {
               </label>
               <label className={cn("chip relative h-auto min-h-10 w-full justify-between gap-2 px-3 py-1.5 has-[:focus-visible]:outline has-[:focus-visible]:outline-1 has-[:focus-visible]:outline-offset-2 has-[:focus-visible]:outline-[color:var(--ink)]", dateTo && "chip-on")}>
                 <span aria-hidden="true">到</span>
-                <span aria-hidden="true" className="readout text-[13px] text-[color:var(--ink)]">{dayFace(dateTo)}</span>
+                <span aria-hidden="true" className="readout text-fs-13 text-[color:var(--ink)]">{dayFace(dateTo)}</span>
                 <input
                   type="date"
                   aria-label="到（结束日期）"
@@ -245,7 +245,7 @@ function HistoryForAccount({ username }: { username: string }) {
               {(dateFrom || dateTo) && (
                 <button
                   onClick={() => { setDateFrom(""); setDateTo(""); setQuick("all"); }}
-                  className="btn btn-quiet min-h-10 w-full px-2.5 text-xs"
+                  className="btn btn-quiet min-h-10 w-full px-2.5 text-fs-12"
                 >
                   清除筛选
                 </button>
@@ -255,7 +255,7 @@ function HistoryForAccount({ username }: { username: string }) {
 
           {/* 日期列表 */}
           <div className="flex-1 overflow-y-auto border-t px-3 pb-4 pt-3 max-md:flex-none max-md:overflow-x-auto max-md:overflow-y-hidden max-md:pb-2 max-md:pt-2 mobile-scrollbar-none" style={{ borderColor: "var(--carve)" }}>
-            <p className="mb-2 px-1 text-xs font-medium text-muted-foreground">按日期跳转</p>
+            <p className="mb-2 px-1 text-fs-12 font-medium text-[color:var(--ink2)]">按日期跳转</p>
             <div className="flex flex-col gap-0.5 max-md:flex-row max-md:gap-1">
               {dateStats.map(([day, count]) => {
                 const isActive = dateFrom === day && dateTo === day;
@@ -268,8 +268,8 @@ function HistoryForAccount({ username }: { username: string }) {
                       isActive && "chip-on"
                     )}
                   >
-                    <span className="readout text-[11px]">{day.slice(5)}</span>
-                    <span className="readout text-[10px]">{count}</span>
+                    <span className="readout text-fs-11">{day.slice(5)}</span>
+                    <span className="readout text-fs-11">{count}</span>
                   </button>
                 );
               })}
@@ -282,11 +282,11 @@ function HistoryForAccount({ username }: { username: string }) {
           <div className="mx-auto w-full max-w-[760px] space-y-7">
           {/* 筛选结果摘要 */}
           {(query || dateFrom || dateTo) && (
-            <div className="flex items-center gap-2 text-[11px] text-muted-foreground pb-1 max-md:flex-wrap">
+            <div className="flex items-center gap-2 text-fs-11 text-[color:var(--ink2)] pb-1 max-md:flex-wrap">
               <span>筛选结果：<span className="readout"><b>{filtered.length}</b> 条</span></span>
-              {query && <span className="chip h-6 px-2 text-[11px] max-md:h-auto max-md:max-w-full max-md:break-all max-md:whitespace-normal">含「{query}」</span>}
+              {query && <span className="chip h-6 px-2 text-fs-11 max-md:h-auto max-md:max-w-full max-md:break-all max-md:whitespace-normal">含「{query}」</span>}
               {(dateFrom || dateTo) && (
-                <span className="chip h-6 px-2 text-[11px]">
+                <span className="chip h-6 px-2 text-fs-11">
                   {dayFace(dateFrom)} 至 {dayFace(dateTo)}
                 </span>
               )}
@@ -294,16 +294,16 @@ function HistoryForAccount({ username }: { username: string }) {
           )}
 
           {loading ? (
-            <div className="flex justify-center pt-20 text-sm text-muted-foreground">加载中…</div>
+            <div className="flex justify-center pt-20 text-fs-13 text-[color:var(--ink2)]">加载中…</div>
           ) : groups.length === 0 ? (
             <div className="flex flex-col items-center pt-24 gap-2 text-center">
-              <p className="text-sm text-muted-foreground">
+              <p className="text-fs-13 text-[color:var(--ink2)]">
                 {query || dateFrom || dateTo ? "没有符合条件的记录" : "还没有聊天记录"}
               </p>
               {(query || dateFrom || dateTo) && (
                 <button
                   onClick={() => { setQuery(""); setDateFrom(""); setDateTo(""); setQuick("all"); }}
-                  className="btn btn-quiet mt-1 min-h-10 px-2.5 text-xs"
+                  className="btn btn-quiet mt-1 min-h-10 px-2.5 text-fs-12"
                 >
                   清除所有筛选
                 </button>
@@ -319,13 +319,13 @@ function HistoryForAccount({ username }: { username: string }) {
                   className="flex min-h-10 w-full items-center gap-[18px] py-3 text-left text-[color:var(--ink2)]"
                 >
                   {open
-                    ? <ChevronDown size={13} className="text-muted-foreground shrink-0" />
-                    : <ChevronRight size={13} className="text-muted-foreground shrink-0" />
+                    ? <ChevronDown size={13} className="text-[color:var(--ink2)] shrink-0" />
+                    : <ChevronRight size={13} className="text-[color:var(--ink2)] shrink-0" />
                   }
                   <span aria-hidden="true" className="h-px min-w-4 flex-1 bg-[color:var(--rule)]" />
-                  <span className="text-xs tracking-[0.2em] max-md:tracking-[0.08em]">{formatChineseDate(beijingDayStart(day), true)}</span>
+                  <span className="text-fs-12 tracking-[0.2em] max-md:tracking-[0.08em]">{formatChineseDate(beijingDayStart(day), true)}</span>
                   <span aria-hidden="true" className="h-px min-w-4 flex-1 bg-[color:var(--rule)]" />
-                  <span className="readout text-xs">{msgs.length} 条</span>
+                  <span className="readout text-fs-12">{msgs.length} 条</span>
                 </button>
 
                 {open && (
@@ -343,7 +343,7 @@ function HistoryForAccount({ username }: { username: string }) {
                         const parts = text.split(new RegExp(`(${escaped})`, "gi"));
                         return parts.map((p, i) =>
                           p.toLowerCase() === query.toLowerCase()
-                            ? <mark key={i} className="bg-[color:var(--accent)] text-foreground rounded-[3px] px-0.5">{p}</mark>
+                            ? <mark key={i} className="bg-[color:var(--slip)] text-[color:var(--ink)] rounded-[3px] px-0.5">{p}</mark>
                             : p
                         );
                       };
@@ -351,7 +351,7 @@ function HistoryForAccount({ username }: { username: string }) {
                         <div key={msg.id} className={cn("flex min-w-0", isUser ? "justify-end" : "justify-start")}>
                           <div className={cn("flex min-w-0 flex-col gap-2", isUser ? "max-w-[72%] items-end max-md:max-w-[82%]" : "w-full max-w-[600px] items-start")}>
                             {!isUser && (
-                              <div className="text-[13px] tracking-[0.1em] text-[color:var(--ink2)]">
+                              <div className="text-fs-13 tracking-[0.1em] text-[color:var(--ink2)]">
                                 Chloe
                               </div>
                             )}
@@ -362,7 +362,7 @@ function HistoryForAccount({ username }: { username: string }) {
                             <div className={cn("max-w-full break-words", isUser ? "bubble-user whitespace-pre-wrap" : "bubble-ai")}>
                               {isUser ? highlight(msg.content) : <MessageText text={msg.content} highlight={query} />}
                             </div>
-                            <span className="readout text-xs text-[color:var(--ink2)]">{time}</span>
+                            <span className="readout text-fs-12 text-[color:var(--ink2)]">{time}</span>
                           </div>
                         </div>
                       );
@@ -393,7 +393,7 @@ function HistoryContent() {
   }, [identity, requestedUser, router]);
 
   if (!identity) {
-    return <div role="status" className="flex min-h-screen items-center justify-center text-sm text-muted-foreground">加载中…</div>;
+    return <div role="status" className="flex min-h-screen items-center justify-center text-fs-13 text-[color:var(--ink2)]">加载中…</div>;
   }
   const username = requestedUser === identity ? requestedUser : identity;
   return <HistoryForAccount key={username} username={username} />;
@@ -402,7 +402,7 @@ function HistoryContent() {
 export default function HistoryPage() {
   return (
     <Suspense fallback={
-      <div role="status" className="flex min-h-screen items-center justify-center text-sm text-muted-foreground">
+      <div role="status" className="flex min-h-screen items-center justify-center text-fs-13 text-[color:var(--ink2)]">
         加载中…
       </div>
     }>

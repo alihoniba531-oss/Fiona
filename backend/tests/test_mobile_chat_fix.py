@@ -219,11 +219,11 @@ def test_mobile_composer_uses_shorter_spacing():
 
     row_lines = [
         line for line in source.splitlines()
-        if "border-t border-[var(--carve)] pt-2" in line
+        if "border-t border-[color:var(--carve)] pt-2" in line
     ]
     assert len(row_lines) == 1
     row = row_lines[0]
-    for token in ("max-md:mt-1", "max-md:pt-1", "max-md:text-[11px]"):
+    for token in ("max-md:mt-1", "max-md:pt-1", "max-md:text-fs-11"):
         assert token in row, token
 
     inner_lines = [line for line in source.splitlines() if "composer-inner" in line]

@@ -33,7 +33,7 @@ const Section = ({
   children: React.ReactNode;
 }) => (
   <section className="grid min-w-0 grid-cols-[160px_minmax(0,1fr)] gap-6 border-t border-[color:var(--carve)] py-[22px] shadow-[inset_0_1px_0_var(--etch)] mobile:grid-cols-1 mobile:gap-3">
-    <h3 className="flex items-start gap-2 text-base font-medium leading-[1.8] tracking-[0.08em]">
+    <h3 className="flex items-start gap-2 text-fs-16.5 font-medium leading-[1.8] tracking-[0.08em]">
       <Icon size={14} className="mt-[7px] shrink-0" style={{ color: "var(--ink2)" }} />
       {title}
     </h3>
@@ -52,7 +52,7 @@ const TagList = ({ items }: { items: string[] }) => (
 );
 
 const Empty = ({ hint }: { hint: string }) => (
-  <p className="text-xs text-[color:var(--ink2)]">{hint}</p>
+  <p className="text-fs-12 text-[color:var(--ink2)]">{hint}</p>
 );
 
 function ProfileForAccount({ username }: { username: string }) {
@@ -95,18 +95,18 @@ function ProfileForAccount({ username }: { username: string }) {
         <main className="flex min-w-0 flex-1 justify-center overflow-x-hidden overflow-y-auto p-3">
           <Glaze variant="panel" fur className="relative z-[1] box-border min-h-full w-full max-w-[712px] self-start rounded-[18px] px-12 pb-8 pt-7 mobile:px-6 mobile:pb-6 mobile:pt-5">
             <header className="pb-7">
-              <h1 className={`mt-[18px] text-[30px] font-medium tracking-[0.16em] mobile:text-[26px]${embedded ? " sr-only" : ""}`}>社交画像（旧版）</h1>
-              <p className="mt-2 text-[13px] leading-[1.85] tracking-[0.04em] text-[color:var(--ink2)]">此前用于社交匹配的画像；新会话记忆在“我的分身”中查看</p>
-              <div className="mt-3 flex items-center gap-1.5 text-xs text-[color:var(--ink2)]"><Shield size={13} />本人查看</div>
+              <h1 className={`mt-[18px] text-fs-30 font-medium tracking-[0.16em] ${embedded ? " sr-only" : ""}`}>社交画像（旧版）</h1>
+              <p className="mt-2 text-fs-13 leading-[1.85] tracking-[0.04em] text-[color:var(--ink2)]">此前用于社交匹配的画像；新会话记忆在“我的分身”中查看</p>
+              <div className="mt-3 flex items-center gap-1.5 text-fs-12 text-[color:var(--ink2)]"><Shield size={13} />本人查看</div>
             </header>
 
             <section className="flex min-w-0 items-center gap-4 border-t border-[color:var(--carve)] py-[22px] shadow-[inset_0_1px_0_var(--etch)]">
               <div className="grid h-14 w-14 shrink-0 place-items-center rounded-[8px] border border-[color:var(--rule2)] bg-[color:var(--mount)]">
-                <span className="text-[26px] font-light">{Array.from(username)[0]}</span>
+                <span className="text-fs-30 font-light">{Array.from(username)[0]}</span>
               </div>
               <div className="min-w-0">
-                <p className="break-all text-xl tracking-[0.02em]">{username}</p>
-                <p className="mt-1 text-[13px] leading-[1.85] text-[color:var(--ink2)]">
+                <p className="break-all text-fs-22 tracking-[0.02em]">{username}</p>
+                <p className="mt-1 text-fs-13 leading-[1.85] text-[color:var(--ink2)]">
                   {[city, occupation, stage].filter(Boolean).join("、") || "（暂未提取到基本信息）"}
                 </p>
               </div>
@@ -114,12 +114,12 @@ function ProfileForAccount({ username }: { username: string }) {
 
             {loading ? (
               <div role="status" className="flex items-center justify-center gap-2 py-12 text-[color:var(--ink2)]">
-                <Loader2 size={16} className="animate-spin" /><span className="text-sm">加载中…</span>
+                <Loader2 size={16} className="animate-spin" /><span className="text-fs-13">加载中…</span>
               </div>
             ) : isEmpty ? (
               <div className="border-t border-[color:var(--carve)] py-8 text-center">
-                <p className="mb-2 text-sm text-[color:var(--ink2)]">暂无社交画像（旧版）</p>
-                <p className="text-[13px] leading-[1.85] text-[color:var(--ink2)]">新会话形成的私有记忆已单独保存，<br />请前往“我的分身”查看和管理。</p>
+                <p className="mb-2 text-fs-13 text-[color:var(--ink2)]">暂无社交画像（旧版）</p>
+                <p className="text-fs-13 leading-[1.85] text-[color:var(--ink2)]">新会话形成的私有记忆已单独保存，<br />请前往“我的分身”查看和管理。</p>
               </div>
             ) : (
               <>
@@ -133,7 +133,7 @@ function ProfileForAccount({ username }: { username: string }) {
 
             <div className="flex items-start gap-2 border-t border-[color:var(--carve)] py-[22px] shadow-[inset_0_1px_0_var(--etch)]">
               <Shield size={13} className="mt-1 shrink-0 text-[color:var(--ink2)]" />
-              <p className="text-[13px] leading-[1.85] text-[color:var(--ink2)]">这里保留社交画像（旧版），不展示新会话的私有记忆。你可以在“我的分身”中查看新记忆；那里的「清空记忆与个人画像」会一并清空这份社交画像（旧版），聊天记录会保留。</p>
+              <p className="text-fs-13 leading-[1.85] text-[color:var(--ink2)]">这里保留社交画像（旧版），不展示新会话的私有记忆。你可以在“我的分身”中查看新记忆；那里的「清空记忆与个人画像」会一并清空这份社交画像（旧版），聊天记录会保留。</p>
             </div>
             <Link href="/agents/me" target={embedded ? "_top" : undefined} className="btn min-h-10 px-[18px] mobile:h-auto mobile:max-w-full mobile:whitespace-normal">
               <ArrowUpRight size={14} />前往我的分身管理记忆
@@ -148,14 +148,14 @@ function ProfileForAccount({ username }: { username: string }) {
 function ProfileContent() {
   const username = useAccountIdentity();
   if (!username) {
-    return <div role="status" className="flex h-dvh items-center justify-center text-sm text-muted-foreground">加载中…</div>;
+    return <div role="status" className="flex h-dvh items-center justify-center text-fs-13 text-[color:var(--ink2)]">加载中…</div>;
   }
   return <ProfileForAccount key={username} username={username} />;
 }
 
 export default function ProfilePage() {
   return (
-    <Suspense fallback={<div role="status" className="flex h-dvh items-center justify-center text-sm text-muted-foreground">加载中…</div>}>
+    <Suspense fallback={<div role="status" className="flex h-dvh items-center justify-center text-fs-13 text-[color:var(--ink2)]">加载中…</div>}>
       <ProfileContent />
     </Suspense>
   );

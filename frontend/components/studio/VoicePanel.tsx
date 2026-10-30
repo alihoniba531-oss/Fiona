@@ -77,8 +77,8 @@ export default function VoicePanel({ projectId, items, language, prices, catalog
     return () => { stopped = true; clearTimeout(timer); };
   }, [projectId, items]);
   return <Glaze variant="panel" lens={false} className="min-w-0 rounded-2xl p-4 @[640px]:p-5">
-    <h2 className="mb-2 text-xl tracking-[.2em]">声线</h2>
-    <p className="mb-4 text-[13px] leading-relaxed text-[color:var(--ink2)]">中文默认用豆包语音 2.0（付费），英文用 edge-tts（免费）；CosyVoice 保留为备选。</p>
+    <h2 className="mb-2 text-fs-22 tracking-[.2em]">声线</h2>
+    <p className="mb-4 text-fs-13 leading-relaxed text-[color:var(--ink2)]">中文默认用豆包语音 2.0（付费），英文用 edge-tts（免费）；CosyVoice 保留为备选。</p>
     {catalogError ? <ErrorNotice message={catalogError} /> : !catalog ? <LoadingState>正在读取音色…</LoadingState> : !characters.length ? <EmptyState>暂无可配置声线的人物。</EmptyState> : <div className="min-w-0 space-y-4">
       {characters.map(item => <VoiceCard key={item.id} projectId={projectId} item={item} language={language} prices={prices} catalog={catalog} jobs={jobs} busy={busy} mutate={mutate} onChanged={onChanged} />)}
     </div>}
@@ -185,7 +185,7 @@ function VoiceCard({ projectId, item, language, prices, catalog, jobs, busy, mut
   return <div className="ceramic-card min-w-0 space-y-3 p-4">
     <div className="min-w-0 space-y-1">
       <div className="flex min-w-0 flex-wrap items-center gap-2">
-        <h3 className="min-w-0 break-words text-lg tracking-[.12em]">{item.name}</h3>
+        <h3 className="min-w-0 break-words text-fs-18 tracking-[.12em]">{item.name}</h3>
         <span className="tag">{castingItemStatusLabel(item.status)}</span>
         {item.orphaned && <span className="tag">已不在当前总表</span>}
         {approvedId && <span className="tag">已定档</span>}
@@ -195,7 +195,7 @@ function VoiceCard({ projectId, item, language, prices, catalog, jobs, busy, mut
         {item.voice.spec.baseline?.trim() && <p className="readout break-words">角色基调：{item.voice.spec.baseline}</p>}
       </>}
     </div>
-    <label htmlFor={`voice-text-${item.id}`} className="block min-w-0 space-y-1 text-sm">
+    <label htmlFor={`voice-text-${item.id}`} className="block min-w-0 space-y-1 text-fs-13">
       <span>试听台词</span>
       <textarea id={`voice-text-${item.id}`} rows={2} maxLength={120} value={text} disabled={blocked} className={breakdownFieldClass} onChange={event => { setText(event.target.value); setLocalError(""); }} />
     </label>
@@ -206,35 +206,35 @@ function VoiceCard({ projectId, item, language, prices, catalog, jobs, busy, mut
           {rows.length > 1 && <button type="button" className="btn btn-quiet min-h-10" disabled={blocked} onClick={() => removeRow(index)}>移除</button>}
         </div>
         <div className="grid min-w-0 gap-2 @[640px]:grid-cols-2">
-          <label htmlFor={`voice-engine-${item.id}-${index}`} className="block min-w-0 space-y-1 text-sm">
+          <label htmlFor={`voice-engine-${item.id}-${index}`} className="block min-w-0 space-y-1 text-fs-13">
             <span>引擎</span>
             <select id={`voice-engine-${item.id}-${index}`} value={row.engine} disabled={blocked} className={breakdownFieldClass} onChange={event => changeEngine(index, event.target.value as CastingVoiceEngine)}>
               {engines.map(engine => <option key={engine} value={engine}>{engine === "doubao" ? `${castingVoiceEngineLabel(engine)}（推荐）` : castingVoiceEngineLabel(engine)}</option>)}
             </select>
           </label>
-          <label htmlFor={`voice-name-${item.id}-${index}`} className="block min-w-0 space-y-1 text-sm">
+          <label htmlFor={`voice-name-${item.id}-${index}`} className="block min-w-0 space-y-1 text-fs-13">
             <span>音色</span>
             <select id={`voice-name-${item.id}-${index}`} value={row.voice} disabled={blocked} className={breakdownFieldClass} onChange={event => updateRow(index, { voice: event.target.value })}>
               {row.voice === "" && <option value="">请选择音色</option>}
               {catalog.voices.filter(voice => voice.engine === row.engine).map(voice => <option key={voice.voice} value={voice.voice}>{voice.label}{voice.note ? ` · ${Array.from(voice.note).slice(0, 12).join("")}` : ""}</option>)}
             </select>
           </label>
-          <label htmlFor={`voice-rate-${item.id}-${index}`} className="block min-w-0 space-y-1 text-sm">
+          <label htmlFor={`voice-rate-${item.id}-${index}`} className="block min-w-0 space-y-1 text-fs-13">
             <span>语速（{row.engine === "doubao" || row.engine === "cosyvoice" ? "0.5–2.0" : "-50% 到 +50%"}）</span>
             <input id={`voice-rate-${item.id}-${index}`} value={row.rate} disabled={blocked} className={breakdownFieldClass} onChange={event => updateRow(index, { rate: event.target.value })} />
           </label>
-          <label htmlFor={`voice-pitch-${item.id}-${index}`} className="block min-w-0 space-y-1 text-sm">
+          <label htmlFor={`voice-pitch-${item.id}-${index}`} className="block min-w-0 space-y-1 text-fs-13">
             <span>音高（{row.engine === "doubao" ? "-12 到 12 的整数" : row.engine === "cosyvoice" ? "0.5–2.0" : "-50Hz 到 +50Hz"}）</span>
             <input id={`voice-pitch-${item.id}-${index}`} value={row.pitch} disabled={blocked} type={row.engine === "doubao" ? "number" : "text"} min={row.engine === "doubao" ? -12 : undefined} max={row.engine === "doubao" ? 12 : undefined} step={row.engine === "doubao" ? 1 : undefined} className={breakdownFieldClass} onChange={event => updateRow(index, { pitch: event.target.value })} />
           </label>
-          <label htmlFor={`voice-fx-${item.id}-${index}`} className="block min-w-0 space-y-1 text-sm">
+          <label htmlFor={`voice-fx-${item.id}-${index}`} className="block min-w-0 space-y-1 text-fs-13">
             <span>声线特效</span>
             <select id={`voice-fx-${item.id}-${index}`} value={row.fx} disabled={blocked} className={breakdownFieldClass} onChange={event => updateRow(index, { fx: event.target.value })}>
               <option value="">无特效</option>
               {options.map(fx => <option key={fx} value={fx}>{castingFxLabel(fx)}</option>)}
             </select>
           </label>
-          <label htmlFor={`voice-role-${item.id}-${index}`} className="block min-w-0 space-y-1 text-sm">
+          <label htmlFor={`voice-role-${item.id}-${index}`} className="block min-w-0 space-y-1 text-fs-13">
             <span>角色类型</span>
             <select id={`voice-role-${item.id}-${index}`} value={row.role} disabled={blocked} className={breakdownFieldClass} onChange={event => updateRow(index, { role: event.target.value as CastingVoiceRole })}>
               {roles.map(role => <option key={role} value={role}>{castingVoiceRoleLabel(role)}</option>)}
@@ -242,12 +242,12 @@ function VoiceCard({ projectId, item, language, prices, catalog, jobs, busy, mut
           </label>
         </div>
         {row.engine === "doubao" && <div className="min-w-0 space-y-1">
-          <label htmlFor={`voice-direction-${item.id}-${index}`} className="block min-w-0 space-y-1 text-sm">
+          <label htmlFor={`voice-direction-${item.id}-${index}`} className="block min-w-0 space-y-1 text-fs-13">
             <span>表演指示（{Array.from(row.direction).length}/200）</span>
             <textarea id={`voice-direction-${item.id}-${index}`} rows={3} maxLength={200} value={row.direction} disabled={blocked} className={breakdownFieldClass} placeholder="例如：压低声音，不安里带着一点倔强，像在问自己" onChange={event => updateRow(index, { direction: event.target.value })} />
           </label>
-          <p className="text-[12px] leading-relaxed text-[color:var(--ink2)]">写清情绪、语气、场景，比只换音色更能去掉 AI 味。</p>
-          <p className="text-[12px] leading-relaxed text-[color:var(--ink2)]">台词里的省略号和指示里的『慢慢地』『像在问自己』会明显拖慢语速；想要自然语速，在指示里加『语速自然』，或把语速调到 1.1。</p>
+          <p className="text-fs-12 leading-relaxed text-[color:var(--ink2)]">写清情绪、语气、场景，比只换音色更能去掉 AI 味。</p>
+          <p className="text-fs-12 leading-relaxed text-[color:var(--ink2)]">台词里的省略号和指示里的『慢慢地』『像在问自己』会明显拖慢语速；想要自然语速，在指示里加『语速自然』，或把语速调到 1.1。</p>
         </div>}
       </div>)}
       <button type="button" className="btn btn-quiet min-h-10" disabled={blocked || rows.length >= 3} onClick={addRow}>再加一个方案</button>
@@ -256,16 +256,16 @@ function VoiceCard({ projectId, item, language, prices, catalog, jobs, busy, mut
       <button type="button" className="btn btn-primary min-h-10" disabled={blocked} onClick={() => void generate()}>生成试听</button>
       <span className="readout">{castingAuditionCostLabel(text, rows.map(row => row.engine), prices)}</span>
     </div>
-    {localError && <p role="status" className="break-words text-sm text-[color:var(--seal)]">{localError}</p>}
+    {localError && <p role="status" className="break-words text-fs-13 text-[color:var(--seal)]">{localError}</p>}
     {voiceProblem && <div className="min-w-0 space-y-2 rounded-lg border border-[color:var(--carve)] p-3">
       <span className="tag">{castingJobStatusLabel(voiceProblem.status)}</span>
       {voiceProblem.status === "uncertain"
         ? <div className="min-w-0 space-y-2">
-          <p role="status" className="text-sm">可能已扣费，请勿直接重试，去控制台核对</p>
-          {!!voiceProblem.error_message && !voiceProblem.error_message.includes("可能已扣费") && <p className="min-w-0 break-words text-sm text-[color:var(--ink2)]">{voiceProblem.error_message}</p>}
+          <p role="status" className="text-fs-13">可能已扣费，请勿直接重试，去控制台核对</p>
+          {!!voiceProblem.error_message && !voiceProblem.error_message.includes("可能已扣费") && <p className="min-w-0 break-words text-fs-13 text-[color:var(--ink2)]">{voiceProblem.error_message}</p>}
           <button type="button" className="btn btn-quiet min-h-10" disabled={blocked} onClick={() => void release(voiceProblem.id)}>释放</button>
         </div>
-        : <p className="min-w-0 break-words text-sm">{voiceProblem.error_message ?? voiceProblem.error_code ?? "语音任务未完成。"}</p>}
+        : <p className="min-w-0 break-words text-fs-13">{voiceProblem.error_message ?? voiceProblem.error_code ?? "语音任务未完成。"}</p>}
     </div>}
     {item.voice && <div className="min-w-0 space-y-3">
       {auditions.map((audition, index) => {
@@ -286,7 +286,7 @@ function VoiceCard({ projectId, item, language, prices, catalog, jobs, busy, mut
             {approved && <span className="tag">已定档</span>}
           </div>
           {pendingBaseline?.assetId === audition.asset_id && <div className="min-w-0 space-y-2 rounded-lg border border-[color:var(--carve)] p-2">
-            <label htmlFor={`voice-baseline-${item.id}-${index}`} className="block min-w-0 space-y-1 text-sm">
+            <label htmlFor={`voice-baseline-${item.id}-${index}`} className="block min-w-0 space-y-1 text-fs-13">
               <span>角色基调</span>
               <input id={`voice-baseline-${item.id}-${index}`} maxLength={200} value={pendingBaseline.value} disabled={blocked} className={breakdownFieldClass} onChange={event => { setPendingBaseline({ assetId: audition.asset_id, value: event.target.value }); setLocalError(""); }} />
             </label>
@@ -297,7 +297,7 @@ function VoiceCard({ projectId, item, language, prices, catalog, jobs, busy, mut
           </div>}
         </div>;
       })}
-      {!auditions.length && <p className="text-[13px] leading-relaxed text-[color:var(--ink2)]">还没有试听，先生成一条方案。</p>}
+      {!auditions.length && <p className="text-fs-13 leading-relaxed text-[color:var(--ink2)]">还没有试听，先生成一条方案。</p>}
     </div>}
   </div>;
 }

@@ -334,7 +334,7 @@ def test_message_text_source_is_safe_and_uses_parser():
     assert "<blockquote" in source and "<pre" in source and "<hr" in source
     assert "whitespace-pre-wrap" in source
     assert "font-mono" in source
-    assert "text-[color:var(--amber-ink)]" in source
+    assert "text-[color:var(--ink)]" in source
     assert "animate-[blink_1.4s_infinite]" in source
     assert 'aria-hidden="true"' in source
     assert "text-emphasis:filled_dot_var(--ink2)" in source

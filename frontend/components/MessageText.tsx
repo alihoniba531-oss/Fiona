@@ -2,10 +2,10 @@ import { Fragment, type JSX } from "react";
 import { parseMessageMarkdown, type MdBlock, type MdInline } from "@/lib/messageMarkdown";
 
 const CARET = (
-  <span aria-hidden="true" className="ml-px text-[color:var(--amber-ink)] animate-[blink_1.4s_infinite]">▌</span>
+  <span aria-hidden="true" className="ml-px text-[color:var(--ink)] animate-[blink_1.4s_infinite]">▌</span>
 );
 
-const MARK_CLASS = "bg-[color:var(--accent)] text-foreground rounded-[3px] px-0.5";
+const MARK_CLASS = "bg-[color:var(--slip)] text-[color:var(--ink)] rounded-[3px] px-0.5";
 
 function renderHighlighted(text: string, highlight?: string) {
   if (!highlight?.trim()) return text;
@@ -31,7 +31,7 @@ function renderInline(inline: MdInline, key: number, highlight?: string) {
   }
   if (inline.kind === "code") {
     return (
-      <code key={key} className="rounded-[4px] bg-[color:var(--chip)] px-[.3em] text-[.92em]">
+      <code key={key} className="rounded-[4px] bg-[color:var(--chip)] px-[.3em] text-fs-15">
         {renderHighlighted(inline.text, highlight)}
       </code>
     );
@@ -63,10 +63,10 @@ function renderBlock(block: MdBlock, index: number, first: boolean, caret: boole
     case "heading": {
       const style =
         block.level === 1
-          ? "text-[18.5px] leading-[1.7] tracking-[.04em] text-[color:var(--ink)]"
+          ? "text-fs-18 leading-[1.7] tracking-[.04em] text-[color:var(--ink)]"
           : block.level === 2
-            ? "text-[17.5px] leading-[1.75] tracking-[.04em] text-[color:var(--ink)]"
-            : "text-[1em] tracking-[.08em] text-[color:var(--ink2)]";
+            ? "text-fs-18 leading-[1.75] tracking-[.04em] text-[color:var(--ink)]"
+            : "tracking-[.08em] text-[color:var(--ink2)]";
       const className = `md-block font-normal ${style}${spacing(first, "mt-[1.1em]")}`;
       const inlines = renderInlines(block.inlines, caret, highlight);
       if (block.level === 1) {
@@ -150,7 +150,7 @@ function renderBlock(block: MdBlock, index: number, first: boolean, caret: boole
         <pre
           key={index}
           className={
-            "md-block overflow-x-auto whitespace-pre rounded-[8px] bg-[color:var(--chip)] px-[1em] py-[.75em] font-mono text-[14px] leading-[1.7]" +
+            "md-block overflow-x-auto whitespace-pre rounded-[8px] bg-[color:var(--chip)] px-[1em] py-[.75em] font-mono text-fs-15 leading-[1.7]" +
             spacing(first)
           }
         >

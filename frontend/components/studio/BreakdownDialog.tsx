@@ -5,7 +5,7 @@ import { ErrorNotice } from "@/components/novel/NovelStates";
 import { studioErrorMessage } from "@/lib/studio";
 import { sourceDialogClass } from "./SourceChoices";
 
-export const breakdownFieldClass = "w-full min-w-0 rounded-lg border border-[color:var(--carve)] bg-[color:var(--paper)] p-2 text-sm text-[color:var(--ink)]";
+export const breakdownFieldClass = "w-full min-w-0 rounded-lg border border-[color:var(--carve)] bg-[color:var(--paper)] p-2 text-fs-16.5 text-[color:var(--ink)]";
 export default function BreakdownDialog({ title, children, confirmLabel = "确认", busy = false, disabled = false, onConfirm, onClose }: { title: string; children: ReactNode; confirmLabel?: string; busy?: boolean; disabled?: boolean; onConfirm: () => Promise<void>; onClose: () => void }) {
   const ref = useRef<HTMLDialogElement>(null);
   const titleId = useId();
@@ -22,7 +22,7 @@ export default function BreakdownDialog({ title, children, confirmLabel = "确�
     finally { locked.current = false; setSaving(false); }
   };
   return <dialog ref={ref} aria-labelledby={titleId} className={sourceDialogClass} onCancel={event => { if (blocked) event.preventDefault(); else onClose(); }}>
-    <h3 id={titleId} className="mb-4 text-xl tracking-[.16em]">{title}</h3>
+    <h3 id={titleId} className="mb-4 text-fs-22 tracking-[.16em]">{title}</h3>
     <form className="min-w-0 space-y-4" onSubmit={event => { event.preventDefault(); void confirm(); }}>
       <fieldset disabled={blocked} className="min-w-0 space-y-3">{children}</fieldset>
       {error && <ErrorNotice message={error} />}

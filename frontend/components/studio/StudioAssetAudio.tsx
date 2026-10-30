@@ -36,7 +36,7 @@ function AccountAssetAudio({ owner, assetId, label, className }: { owner: string
   return <div className="min-w-0 space-y-2">
     {error ? <ErrorNotice message={error} retry={() => { setError(""); setSource(""); setAttempt(value => value + 1); }} /> : source ? <>
       <audio controls preload="metadata" src={source} aria-label={label ?? "试听音频"} className={`block w-full ${className}`} />
-      {label && <p className="readout text-sm">{label}</p>}
+      {label && <p className="readout text-fs-13">{label}</p>}
     </> : <LoadingState>正在加载试听音频…</LoadingState>}
   </div>;
 }

@@ -87,20 +87,20 @@ export default function CastingStage({ project, owner, busy: outerBusy = false, 
     await mutate(async signal => { const value = await quoteCastingLooks(id, itemIds, signal); if (!signal.aborted) setQuote({ value, kind: "looks", requests: [] }); }, "报价已就绪，请核对后确认。");
   };
   const disabled = busy || outerBusy;
-  const gate = <Glaze variant="panel" lens={false} className="min-w-0 rounded-2xl p-4 @[640px]:p-5"><p role="status" className="text-sm">请先在①拆解批准分集方案。</p></Glaze>;
+  const gate = <Glaze variant="panel" lens={false} className="min-w-0 rounded-2xl p-4 @[640px]:p-5"><p role="status" className="text-fs-13">请先在①拆解批准分集方案。</p></Glaze>;
   if (state && !state.g0_approved) return <div className="min-w-0 space-y-5">{loading && <LoadingState>正在读取定妆设置…</LoadingState>}{readError && <ErrorNotice message={readError} retry={() => void refresh(true)} />}{gate}</div>;
   return <div className="min-w-0 space-y-5">
     {loading && <LoadingState>正在读取定妆设置…</LoadingState>}
     {readError && <ErrorNotice message={readError} retry={() => void refresh(true)} />}
     {error && <ErrorNotice message={error} />}
-    {notice && <p role="status" className="text-sm text-[color:var(--ink2)]">{notice}</p>}
+    {notice && <p role="status" className="text-fs-13 text-[color:var(--ink2)]">{notice}</p>}
     {!state && !loading && !readError && <ErrorNotice message="定妆数据尚未就绪，请重新加载。" retry={() => void refresh(true)} />}
-    {state && !state.setup && <p className="text-sm text-[color:var(--ink2)]">开工确认之后，才能生成风格提案、出定妆图和试听声线。</p>}
+    {state && !state.setup && <p className="text-fs-13 text-[color:var(--ink2)]">开工确认之后，才能生成风格提案、出定妆图和试听声线。</p>}
     {state && <SetupCard aspect={project.aspect} setup={state.setup} busy={disabled} onSave={input => mutate(signal => putStudioCastingSetup(id, input, signal), "开工设置已保存。")} />}
     {state?.setup && <StyleCard state={state} busy={disabled} onQuote={requestStyleQuote} onSave={(update: CastingStyleUpdate) => mutate(signal => putStudioCastingStyle(id, update, signal), "风格已保存。")} onRelease={jobId => mutate(signal => releaseStudioJob(jobId, signal), "已释放预留。")} />}
     {state?.setup && (state.style.chosen
       ? <CastingItems projectId={id} items={state.items} jobs={state.jobs} g1={state.g1} busy={disabled} styleChosen={!!state.style.chosen} mutate={mutate} onQuoteSheets={requestSheetsQuote} onQuoteLooks={requestLooksQuote} />
-      : <Glaze variant="panel" lens={false} className="min-w-0 rounded-2xl p-4 @[640px]:p-5"><p role="status" className="text-sm">选定风格之后，才能报价出定妆图。</p></Glaze>)}
+      : <Glaze variant="panel" lens={false} className="min-w-0 rounded-2xl p-4 @[640px]:p-5"><p role="status" className="text-fs-13">选定风格之后，才能报价出定妆图。</p></Glaze>)}
     {state?.setup && state.items.some(item => item.kind === "character") && <VoicePanel projectId={id} items={state.items.filter(item => item.kind === "character")} language={state.setup.language} prices={state.prices} catalog={catalog} catalogError={catalogError} busy={disabled} mutate={mutate} onChanged={onChanged} />}
     {quote && <CastingQuoteDialog quote={quote.value} model={quote.kind === "sheets" ? "Seedream 5.0 · 2560×1440" : brainProviderName(project.brain_provider)} busy={disabled} onClose={() => setQuote(null)} onConfirm={async () => { const chosen = quote; await mutate(signal => chosen.kind === "style" ? startStudioCastingStyle(id, chosen.value.id, signal) : chosen.kind === "sheets" ? startCastingSheets(id, chosen.value.id, signal) : startCastingLooks(id, chosen.value.id, signal), chosen.kind === "style" ? "风格提案已开始生成。" : chosen.kind === "sheets" ? "定妆图已开始生成。" : "造型说明补全已开始。"); setQuote(null); }} />}
   </div>;

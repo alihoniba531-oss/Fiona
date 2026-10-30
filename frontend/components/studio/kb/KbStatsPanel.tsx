@@ -55,10 +55,10 @@ export default function KbStatsPanel({ owner }: { owner: string }) {
         const sizes = distribution(row.shot_size ?? parseKbJson<Record<string, number>>(row.shot_size_json, {}));
         const cameras = distribution(row.camera ?? parseKbJson<Record<string, number>>(row.camera_json, {}));
         return <article key={row.scene_type} className="ceramic-card min-w-0 space-y-2 rounded-2xl p-4">
-          <h3 className="break-words text-base">{kbSceneTypeLabel(row.scene_type)}</h3>
+          <h3 className="break-words text-fs-16.5">{kbSceneTypeLabel(row.scene_type)}</h3>
           <p className="readout break-words">{row.episodes ?? 0} 集 · {row.shots ?? 0} 镜{typeof row.avg_shot_s === "number" ? ` · 平均 ${row.avg_shot_s.toFixed(2)} 秒/镜` : ""}</p>
-          {sizes.length > 0 && <div><p className="mb-1 text-xs text-[color:var(--ink2)]">景别</p><div className="flex flex-wrap gap-1">{sizes.map(item => <span key={item.label} className="tag whitespace-normal break-words">{item.label} {item.count}</span>)}</div></div>}
-          {cameras.length > 0 && <div><p className="mb-1 text-xs text-[color:var(--ink2)]">运镜</p><div className="flex flex-wrap gap-1">{cameras.map(item => <span key={item.label} className="tag whitespace-normal break-words">{item.label} {item.count}</span>)}</div></div>}
+          {sizes.length > 0 && <div><p className="mb-1 text-fs-12 text-[color:var(--ink2)]">景别</p><div className="flex flex-wrap gap-1">{sizes.map(item => <span key={item.label} className="tag whitespace-normal break-words">{item.label} {item.count}</span>)}</div></div>}
+          {cameras.length > 0 && <div><p className="mb-1 text-fs-12 text-[color:var(--ink2)]">运镜</p><div className="flex flex-wrap gap-1">{cameras.map(item => <span key={item.label} className="tag whitespace-normal break-words">{item.label} {item.count}</span>)}</div></div>}
           {row.updated_at && <p className="readout break-words">更新于 {formatStudioDate(row.updated_at)}</p>}
         </article>;
       })}</div>}

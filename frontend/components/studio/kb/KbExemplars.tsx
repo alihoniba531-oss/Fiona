@@ -50,12 +50,12 @@ export function KbExemplarRow({ exemplar, busy, onSave, onArchive }: {
       {archived && <span className="tag">已归档</span>}
       <span className="readout break-words">{exemplar.source} · {formatStudioDate(exemplar.created_at)}</span>
     </div>
-    {shot && <p className="break-words text-sm leading-relaxed">{shot}</p>}
-    <label className="block min-w-0"><span className="mb-1 block text-xs text-[color:var(--ink2)]">原因</span><textarea value={reason} rows={2} disabled={busy || archived} onChange={event => { setReason(event.target.value); setSaved(false); }} className={`${novelFieldClass} min-h-16 resize-y`} /></label>
+    {shot && <p className="break-words text-fs-15 leading-relaxed">{shot}</p>}
+    <label className="block min-w-0"><span className="mb-1 block text-fs-12 text-[color:var(--ink2)]">原因</span><textarea value={reason} rows={2} disabled={busy || archived} onChange={event => { setReason(event.target.value); setSaved(false); }} className={`${novelFieldClass} min-h-16 resize-y`} /></label>
     <div className="flex min-w-0 flex-wrap items-center gap-2">
       <button type="button" className="btn btn-primary min-h-10" disabled={busy || archived} onClick={() => { void save(); }}>{busy ? "保存中…" : "保存"}</button>
       <button type="button" className="btn btn-quiet min-h-10" disabled={busy || archived} onClick={() => { void archive(); }}>{archived ? "已归档" : "归档"}</button>
-      {saved && <span role="status" className="text-sm text-[color:var(--ink2)]">已保存</span>}
+      {saved && <span role="status" className="text-fs-13 text-[color:var(--ink2)]">已保存</span>}
     </div>
   </article>;
 }
@@ -104,8 +104,8 @@ export default function KbExemplars({ owner }: { owner: string }) {
 
   return <div className="min-w-0 space-y-4">
     <div className="flex min-w-0 flex-wrap items-end gap-3">
-      <label className="min-w-0 text-sm"><span className="mb-1 block text-[color:var(--ink2)]">场景类型</span><select value={sceneType} onChange={event => setSceneType(event.target.value)} className={`${novelFieldClass} min-h-10 py-2`}><option value="">全部场景</option>{kbSceneTypeOptions.map(option => <option key={option.id} value={option.id}>{option.label}</option>)}</select></label>
-      <label className="min-w-0 text-sm"><span className="mb-1 block text-[color:var(--ink2)]">类型</span><select value={kind} onChange={event => setKind(event.target.value as KbExemplarKind | "")} className={`${novelFieldClass} min-h-10 py-2`}><option value="">全部案例</option>{kbExemplarKindOptions.map(value => <option key={value} value={value}>{kbExemplarKindLabel(value)}</option>)}</select></label>
+      <label className="min-w-0 text-fs-13"><span className="mb-1 block text-[color:var(--ink2)]">场景类型</span><select value={sceneType} onChange={event => setSceneType(event.target.value)} className={`${novelFieldClass} min-h-10 py-2`}><option value="">全部场景</option>{kbSceneTypeOptions.map(option => <option key={option.id} value={option.id}>{option.label}</option>)}</select></label>
+      <label className="min-w-0 text-fs-13"><span className="mb-1 block text-[color:var(--ink2)]">类型</span><select value={kind} onChange={event => setKind(event.target.value as KbExemplarKind | "")} className={`${novelFieldClass} min-h-10 py-2`}><option value="">全部案例</option>{kbExemplarKindOptions.map(value => <option key={value} value={value}>{kbExemplarKindLabel(value)}</option>)}</select></label>
     </div>
     {actionError && <ErrorNotice message={actionError} />}
     {loading ? <LoadingState>正在读取案例…</LoadingState>

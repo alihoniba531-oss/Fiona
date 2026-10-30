@@ -90,7 +90,7 @@ export default function ComposerImageMenu({ items, disabled = false, active = fa
         aria-haspopup="menu"
         aria-expanded={isOpen}
         aria-label="图片：发图给 Chloe 看、生成图片或改一张图"
-        className={cn("btn btn-quiet h-8 px-2 text-xs max-md:h-10", active && "text-[color:var(--ink)]")}
+        className={cn("btn btn-quiet h-8 px-2 text-fs-12 max-md:h-10", active && "text-[color:var(--ink)]")}
         onClick={() => setOpen((previous) => !previous)}
       >
         <ImagePlus size={14} aria-hidden="true" />
@@ -116,8 +116,8 @@ export default function ComposerImageMenu({ items, disabled = false, active = fa
               className="min-h-11 w-full rounded-[8px] px-3 py-2 text-left hover:bg-[color:var(--fill)] disabled:opacity-45 disabled:cursor-not-allowed"
               onClick={() => handleSelect(item)}
             >
-              <span className="block text-sm text-[color:var(--ink)]">{item.label}</span>
-              <span className="block text-xs text-[color:var(--ink2)]">{item.description}</span>
+              <span className="block text-fs-15 text-[color:var(--ink)]">{item.label}</span>
+              <span className="block text-fs-12 text-[color:var(--ink2)]">{item.description}</span>
             </button>
           ))}
         </div>

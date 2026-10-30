@@ -143,12 +143,12 @@ export default function VoiceButton({ disabled, dictating, holding, onTap, onHol
   return (
     <div className="relative inline-flex">
       {showHint && (
-        <span role="status" className="ceramic-card absolute bottom-full right-0 z-[60] mb-2 whitespace-nowrap px-3 py-2 text-xs leading-relaxed text-[color:var(--ink2)]">
+        <span role="status" className="ceramic-card absolute bottom-full right-0 z-[60] mb-2 whitespace-nowrap px-3 py-2 text-fs-12 leading-relaxed text-[color:var(--ink2)]">
           也可以按住说话，松开就发送
         </span>
       )}
       {!showHint && (holding || dictating) && (
-        <span data-voice-status aria-hidden="true" className="ceramic-card pointer-events-none absolute bottom-full right-0 z-[60] mb-2 whitespace-nowrap px-3 py-2 text-xs leading-relaxed text-[color:var(--ink)] md:hidden">
+        <span data-voice-status aria-hidden="true" className="ceramic-card pointer-events-none absolute bottom-full right-0 z-[60] mb-2 whitespace-nowrap px-3 py-2 text-fs-12 leading-relaxed text-[color:var(--ink)] md:hidden">
           {holding ? "松开发送" : "再点一下发送"}
         </span>
       )}
@@ -157,7 +157,7 @@ export default function VoiceButton({ disabled, dictating, holding, onTap, onHol
         disabled={disabled}
         aria-label={stateLabel}
         title={stateLabel}
-        className={cn("btn btn-quiet h-8 px-2.5 text-xs max-md:h-10 max-md:w-10 max-md:px-0 select-none", (dictating || holding) && "text-[color:var(--rec)] bg-[color:var(--rec-soft)]")}
+        className={cn("btn btn-quiet h-8 px-2.5 text-fs-12 max-md:h-10 max-md:w-10 max-md:px-0 select-none", (dictating || holding) && "text-[color:var(--seal)] bg-[color:var(--seal-soft)]")}
         onPointerDown={handlePointerDown}
         onPointerUp={handlePointerUp}
         onPointerCancel={handlePointerCancel}

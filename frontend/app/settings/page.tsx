@@ -153,7 +153,7 @@ function SettingsContent() {
   };
 
   const sectionClass = "grid min-w-0 grid-cols-[160px_minmax(0,1fr)] gap-6 border-t border-[color:var(--carve)] py-[22px] shadow-[inset_0_1px_0_var(--etch)] mobile:grid-cols-1 mobile:gap-3";
-  const headingClass = "text-base font-medium tracking-[0.14em]";
+  const headingClass = "text-fs-16.5 font-medium tracking-[0.14em]";
 
   return (
     <div className={`relative flex h-dvh flex-col overflow-hidden ${!embedded ? "mobile:pb-[calc(var(--tabbar-h)+env(safe-area-inset-bottom))]" : ""}`}>
@@ -163,8 +163,8 @@ function SettingsContent() {
         <main className="flex min-w-0 flex-1 justify-center overflow-x-hidden overflow-y-auto p-3 mobile:p-3">
           <Glaze variant="panel" fur className="relative z-[1] box-border min-h-full w-full max-w-[712px] self-start rounded-[18px] px-12 pb-8 pt-7 mobile:px-6 mobile:pb-6 mobile:pt-5">
             <header>
-              <h1 className={`mt-[18px] text-[30px] font-medium tracking-[0.24em]${embedded ? " sr-only" : ""}`}>设置</h1>
-              <p className="mt-2 text-sm tracking-[0.04em] text-[color:var(--ink2)]">账号、外观、模型与数据。</p>
+              <h1 className={`mt-[18px] text-fs-30 font-medium tracking-[0.24em]${embedded ? " sr-only" : ""}`}>设置</h1>
+              <p className="mt-2 text-fs-15 tracking-[0.04em] text-[color:var(--ink2)]">账号、外观、模型与数据。</p>
             </header>
 
             <section className={`${sectionClass} mt-7`}>
@@ -173,18 +173,18 @@ function SettingsContent() {
                 <div className="flex flex-wrap gap-2">
                   {(allUsers.length ? allUsers : username ? [username] : []).map(u => (
                     <button key={u} onClick={() => switchUser(u)}
-                      className={`chip text-[18px] mobile:h-auto mobile:min-h-10 mobile:max-w-full mobile:break-all mobile:whitespace-normal ${u === username ? "chip-on" : ""}`}>
+                      className={`chip text-fs-18 mobile:h-auto mobile:min-h-10 mobile:max-w-full mobile:break-all mobile:whitespace-normal ${u === username ? "chip-on" : ""}`}>
                       {u}
                     </button>
                   ))}
-                  {!username && <span className="text-xs text-[color:var(--ink2)]">正在加载身份…</span>}
+                  {!username && <span className="text-fs-12 text-[color:var(--ink2)]">正在加载身份…</span>}
                 </div>
-                <p className="text-[13px] leading-[1.85] text-[color:var(--ink2)]">当前使用服务端 HttpOnly 会话；开发环境仍可切换测试身份。</p>
+                <p className="text-fs-13 leading-[1.85] text-[color:var(--ink2)]">当前使用服务端 HttpOnly 会话；开发环境仍可切换测试身份。</p>
                 <button onClick={logout} disabled={loggingOut}
                   className="btn h-[38px] px-[18px] mobile:h-auto mobile:min-h-10 mobile:max-w-full mobile:break-all mobile:whitespace-normal">
                   <LogOut size={14} />{loggingOut ? "正在退出…" : "退出登录并撤销现有会话"}
                 </button>
-                {logoutError && <p role="alert" className="text-xs text-[color:var(--seal)]">{logoutError}</p>}
+                {logoutError && <p role="alert" className="text-fs-12 text-[color:var(--seal)]">{logoutError}</p>}
               </div>
             </section>
 
@@ -205,15 +205,15 @@ function SettingsContent() {
                   {appearanceOptions.map((option, index) => <button key={option.value} type="button" role="radio"
                     aria-checked={appearance === option.value} tabIndex={appearance === option.value ? 0 : -1}
                     onClick={() => setAppearance(option.value)}
-                    className="min-h-[38px] whitespace-nowrap px-[18px] text-[13px] tracking-[0.08em] outline-offset-[-3px] mobile:min-h-10 mobile:px-2 mobile:tracking-normal"
+                    className="min-h-[38px] whitespace-nowrap px-[18px] text-fs-13 tracking-[0.08em] outline-offset-[-3px] mobile:min-h-10 mobile:px-2 mobile:tracking-normal"
                     style={{ borderLeft: index ? "1px solid var(--rule2)" : undefined, background: appearance === option.value ? "var(--chip)" : "transparent", color: appearance === option.value ? "var(--ink)" : "var(--ink2)", boxShadow: appearance === option.value ? "inset 0 1px 0 var(--lip), inset 0 -1px 0 var(--lipdk)" : undefined }}>
                     {option.label}
                   </button>)}
                 </div>
-                <p className="mt-2.5 text-[13px] leading-[1.85] text-[color:var(--ink2)]">白天是汝窑的天青，夜里是建盏的黑釉。选择会记在这台设备上。</p>
+                <p className="mt-2.5 text-fs-13 leading-[1.85] text-[color:var(--ink2)]">白天是汝窑的天青，夜里是建盏的黑釉。选择会记在这台设备上。</p>
                 <div className="mt-3.5 border-t border-[color:var(--carve)] pt-3.5 shadow-[inset_0_1px_0_var(--etch)]">
                   <div className="flex items-center justify-between gap-4">
-                    <span id="solid-name" className="text-sm tracking-[0.06em]">素瓷（减少透明度）</span>
+                    <span id="solid-name" className="text-fs-15 tracking-[0.06em]">素瓷（减少透明度）</span>
                     <button type="button" role="switch" aria-checked={effectiveSolid} aria-labelledby="solid-name" aria-describedby="solid-note" disabled={systemSolid}
                       onClick={() => setSolid(!solid)} className="relative flex h-10 w-11 shrink-0 items-center justify-center rounded-[12px] disabled:cursor-default">
                       <span aria-hidden="true" className="relative block h-6 w-11 rounded-full border border-[color:var(--rule2)] shadow-[inset_0_1px_2px_var(--pool)]"
@@ -223,7 +223,7 @@ function SettingsContent() {
                       </span>
                     </button>
                   </div>
-                  <p id="solid-note" className="mt-1.5 text-[13px] leading-[1.85] text-[color:var(--ink2)]">关掉透明与模糊，界面改用不透明的底色，文字看得更清楚。{systemSolid && "系统已开启减少透明度或增强对比度，素瓷由系统接管。"}</p>
+                  <p id="solid-note" className="mt-1.5 text-fs-13 leading-[1.85] text-[color:var(--ink2)]">关掉透明与模糊，界面改用不透明的底色，文字看得更清楚。{systemSolid && "系统已开启减少透明度或增强对比度，素瓷由系统接管。"}</p>
                 </div>
               </div>
             </section>
@@ -236,31 +236,31 @@ function SettingsContent() {
               <h2 className={headingClass}>数据管理</h2>
               <div className="min-w-0">
                 <button onClick={clearHistory} disabled={!username}
-                  className="btn btn-danger min-h-10 max-w-full justify-start px-0 text-sm mobile:h-auto mobile:break-all mobile:whitespace-normal">
+                  className="btn btn-danger min-h-10 max-w-full justify-start px-0 text-fs-13 mobile:h-auto mobile:break-all mobile:whitespace-normal">
                   <Trash2 size={14} />{username ? `清空「${username}」的所有聊天记录` : "正在加载身份…"}
                 </button>
-                {cleared && <p className="text-xs text-[color:var(--ink)]">已清空</p>}
-                {clearError && <p role="alert" className="text-xs text-[color:var(--seal)]">{clearError}</p>}
+                {cleared && <p className="text-fs-12 text-[color:var(--ink)]">已清空</p>}
+                {clearError && <p role="alert" className="text-fs-12 text-[color:var(--seal)]">{clearError}</p>}
                 <div className="mt-[22px] space-y-2 border-t border-[color:var(--carve)] pt-[18px] shadow-[inset_0_1px_0_var(--etch)]">
-                  <p className="text-[15px] tracking-[0.06em] text-[color:var(--seal)]">永久删除账号</p>
-                  <label htmlFor="delete-confirmation" className="block text-[13px] leading-[1.85] text-[color:var(--ink2)]">
+                  <p className="text-fs-15 tracking-[0.06em] text-[color:var(--seal)]">永久删除账号</p>
+                  <label htmlFor="delete-confirmation" className="block text-fs-13 leading-[1.85] text-[color:var(--ink2)]">
                     {username ? <>输入当前用户名 <span className="readout break-all text-[color:var(--ink)]">{username}</span> 确认。此操作不可恢复。</> : "正在加载身份，加载完成后才能删除账号。"}
                   </label>
                   <input id="delete-confirmation" value={deleteConfirmation} onChange={event => setDeleteConfirmation(event.target.value)}
                     placeholder={username || "正在加载身份…"} disabled={!username}
-                    className="h-[42px] w-full max-w-[360px] rounded-[8px] border border-[color:var(--rule2)] bg-[color:var(--mount)] px-3 text-base shadow-[inset_0_1px_2px_var(--pool)] outline-none placeholder:text-[color:var(--ink2)] focus:border-[color:var(--ink)]" />
+                    className="h-[42px] w-full max-w-[360px] rounded-[8px] border border-[color:var(--rule2)] bg-[color:var(--mount)] px-3 text-fs-16.5 shadow-[inset_0_1px_2px_var(--pool)] outline-none placeholder:text-[color:var(--ink2)] focus:border-[color:var(--ink)]" />
                   <button onClick={deleteAccount} disabled={!username || deleteConfirmation !== username || deleting}
                     className="btn btn-danger min-h-10 max-w-full px-0 mobile:h-auto mobile:whitespace-normal">
                     <Trash2 size={14} />{deleting ? "正在删除…" : "永久删除账号及全部数据"}
                   </button>
-                  {deleteError && <p role="alert" className="text-xs text-[color:var(--seal)]">{deleteError}</p>}
+                  {deleteError && <p role="alert" className="text-fs-12 text-[color:var(--seal)]">{deleteError}</p>}
                 </div>
               </div>
             </section>
 
             <section className={`${sectionClass} border-b`}>
               <h2 className={headingClass}>关于</h2>
-              <div className="space-y-1 text-[13px] leading-[1.85] text-[color:var(--ink2)]">
+              <div className="space-y-1 text-fs-13 leading-[1.85] text-[color:var(--ink2)]">
                 <p>Chloe AI 助理（内测版）</p>
                 <p>账号数据保存在部署服务器的 SQLite 与 uploads 目录</p>
               </div>

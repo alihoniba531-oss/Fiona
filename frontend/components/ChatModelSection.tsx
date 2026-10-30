@@ -9,8 +9,8 @@ import {
   type ChatModelDraft, type ChatModelEffort, type ChatModelProvider, type ChatModelSettings,
 } from "@/lib/chatModel";
 
-const inputClass = "h-[42px] w-full rounded-[8px] border border-[color:var(--rule2)] bg-[color:var(--mount)] px-3 text-base shadow-[inset_0_1px_2px_var(--pool)] outline-none placeholder:text-[color:var(--ink2)] focus:border-[color:var(--ink)] disabled:opacity-50";
-const noteClass = "text-[13px] leading-[1.85] text-[color:var(--ink2)]";
+const inputClass = "h-[42px] w-full rounded-[8px] border border-[color:var(--rule2)] bg-[color:var(--mount)] px-3 text-fs-16.5 shadow-[inset_0_1px_2px_var(--pool)] outline-none placeholder:text-[color:var(--ink2)] focus:border-[color:var(--ink)] disabled:opacity-50";
+const noteClass = "text-fs-13 leading-[1.85] text-[color:var(--ink2)]";
 
 function providerModel(provider: ChatModelProvider): string {
   return provider.default_model ?? provider.recommended_models[0] ?? "";
@@ -264,7 +264,7 @@ function ChatModelForm({ initial, username }: { initial: ChatModelSettings; user
   };
 
   return <div className="min-w-0 space-y-3">
-    {!settings.available && <p role="alert" className="text-xs text-[color:var(--seal)]">{settings.unavailable_reason}</p>}
+    {!settings.available && <p role="alert" className="text-fs-12 text-[color:var(--seal)]">{settings.unavailable_reason}</p>}
     <fieldset disabled={disabled} className="min-w-0 space-y-3 disabled:opacity-60">
       <legend className="sr-only">聊天模型接入配置</legend>
       <div role="radiogroup" aria-label="模型厂商" className="flex flex-wrap gap-2"
@@ -286,7 +286,7 @@ function ChatModelForm({ initial, username }: { initial: ChatModelSettings; user
         </button>)}
       </div>
       <div className="space-y-2">
-        <label htmlFor="chat-model-name" className="block text-sm">模型名</label>
+        <label htmlFor="chat-model-name" className="block text-fs-13">模型名</label>
         <input id="chat-model-name" value={model} onChange={event => { setModel(event.target.value); setSuccess(""); }}
           readOnly={provider.allowed_models !== null} autoComplete="off" spellCheck={false} autoCapitalize="none"
           aria-describedby={provider.allowed_models ? "chat-model-whitelist-note" : undefined} maxLength={100} className={inputClass} />
@@ -300,7 +300,7 @@ function ChatModelForm({ initial, username }: { initial: ChatModelSettings; user
       </div>
     </fieldset>
     {provider.id === "anthropic" && (config?.provider === "anthropic" ? <div className="space-y-2">
-      <span className="block text-sm">思考强度</span>
+      <span className="block text-fs-13">思考强度</span>
       <div ref={effortGroup} role="radiogroup" aria-label="思考强度" className="flex max-w-full flex-wrap items-center gap-2"
         onKeyDown={event => {
           if (disabled) return;
@@ -315,7 +315,7 @@ function ChatModelForm({ initial, username }: { initial: ChatModelSettings; user
         {CLAUDE_EFFORTS.map(effort => <button key={effort} type="button" role="radio" aria-checked={config.effort === effort}
           tabIndex={config.effort === effort ? 0 : -1} title={CHAT_MODEL_EFFORT_TITLES[effort]} aria-disabled={disabled}
           onClick={() => void changeEffort(effort)}
-          className="btn btn-quiet min-h-10 px-3 text-sm aria-checked:bg-[color:var(--btn)] aria-checked:text-[color:var(--btnink)] aria-checked:hover:bg-[color:var(--btn)] aria-checked:hover:text-[color:var(--btnink)] aria-disabled:opacity-50 aria-disabled:cursor-default">
+          className="btn btn-quiet min-h-10 px-3 text-fs-13 aria-checked:bg-[color:var(--btn)] aria-checked:text-[color:var(--btnink)] aria-checked:hover:bg-[color:var(--btn)] aria-checked:hover:text-[color:var(--btnink)] aria-disabled:opacity-50 aria-disabled:cursor-default">
           {CHAT_MODEL_EFFORT_LABELS[effort]}
         </button>)}
       </div>
@@ -324,17 +324,17 @@ function ChatModelForm({ initial, username }: { initial: ChatModelSettings; user
     <fieldset disabled={disabled} className="min-w-0 space-y-3 disabled:opacity-60">
       <legend className="sr-only">聊天模型密钥与启用选项</legend>
       {custom && <div className="space-y-2">
-        <label htmlFor="chat-model-url" className="block text-sm">API 地址</label>
+        <label htmlFor="chat-model-url" className="block text-fs-13">API 地址</label>
         <input id="chat-model-url" type="url" inputMode="url" placeholder="https://…/v1" autoComplete="off" spellCheck={false}
           autoCapitalize="none" value={baseUrl} onChange={event => { setBaseUrl(event.target.value); setSuccess(""); }} maxLength={512} className={inputClass} />
         <p className={noteClass}>仅支持可公网访问的 HTTPS 地址；更换地址需要重新填写 Key。</p>
       </div>}
       <div className="space-y-2">
-        <label htmlFor="chat-model-key" className="block text-sm">API Key</label>
+        <label htmlFor="chat-model-key" className="block text-fs-13">API Key</label>
         {config && <div className="flex flex-wrap items-center gap-3">
-          <span className="readout text-sm">已保存：••••{config.key_last4}</span>
-          <button type="button" className="btn h-8 px-2 text-xs mobile:min-h-10" onClick={() => { setKeyEditing(true); requestAnimationFrame(() => keyInput.current?.focus()); }}>更换 Key</button>
-          <button type="button" className="btn btn-danger h-8 px-2 text-xs mobile:min-h-10" onClick={() => void remove()}>{busy === "delete" ? "正在删除…" : "删除"}</button>
+          <span className="readout text-fs-13">已保存：••••{config.key_last4}</span>
+          <button type="button" className="btn h-8 px-2 text-fs-12 mobile:min-h-10" onClick={() => { setKeyEditing(true); requestAnimationFrame(() => keyInput.current?.focus()); }}>更换 Key</button>
+          <button type="button" className="btn btn-danger h-8 px-2 text-fs-12 mobile:min-h-10" onClick={() => void remove()}>{busy === "delete" ? "正在删除…" : "删除"}</button>
         </div>}
         <input ref={keyInput} id="chat-model-key" type="password" autoComplete="off" spellCheck={false} autoCapitalize="none"
           aria-label="API Key" placeholder={needsKey ? "填写 API Key" : "留空保留已保存的 Key"} maxLength={512}
@@ -346,7 +346,7 @@ function ChatModelForm({ initial, username }: { initial: ChatModelSettings; user
       {provider.id === "anthropic" && <p className={noteClass}>已选 Claude：你在聊天里发的图片和工具结果也会发送给 Anthropic，详见下方「更多隐私与计费说明」。</p>}
       <div className="border-t border-[color:var(--carve)] pt-3 shadow-[inset_0_1px_0_var(--etch)]">
         <div className="flex items-center justify-between gap-4">
-          <span id="chat-model-enabled-name" className="text-sm tracking-[0.06em]">启用我的聊天模型</span>
+          <span id="chat-model-enabled-name" className="text-fs-15 tracking-[0.06em]">启用我的聊天模型</span>
           <button type="button" role="switch" aria-checked={config?.enabled ?? false} aria-labelledby="chat-model-enabled-name"
             aria-describedby="chat-model-enabled-note" disabled={switchDisabled} onClick={() => void toggle()}
             className="relative flex h-10 w-11 shrink-0 items-center justify-center rounded-[12px] disabled:cursor-default disabled:opacity-50">
@@ -365,10 +365,10 @@ function ChatModelForm({ initial, username }: { initial: ChatModelSettings; user
       </div>
     </fieldset>
     {dirty && <p role="status" className={noteClass}>有未保存的修改。</p>}
-    {error && <p role="alert" className="text-xs text-[color:var(--seal)]">{error}</p>}
-    {success && <p role="status" className="text-xs text-[color:var(--ink)]">{success}</p>}
+    {error && <p role="alert" className="text-fs-12 text-[color:var(--seal)]">{error}</p>}
+    {success && <p role="status" className="text-fs-12 text-[color:var(--ink)]">{success}</p>}
     <details className={`${noteClass} border-t border-[color:var(--carve)] pt-3 shadow-[inset_0_1px_0_var(--etch)]`}>
-      <summary className="min-h-10 cursor-pointer py-2 text-sm tracking-[0.06em] text-[color:var(--ink)]">更多隐私与计费说明</summary>
+      <summary className="min-h-10 cursor-pointer py-2 text-fs-13 tracking-[0.06em] text-[color:var(--ink)]">更多隐私与计费说明</summary>
       <div className="space-y-2 pt-1">
         <p>危机复核、平台工具执行、朗读和画像提取仍由平台处理并读取对话；Claude 智能体模式由 Claude 决定工具并直接看图，其他情况的意图识别、模式判定和看图仍由平台处理。画像提取会读到你的模型回复，明确危机轮也由平台回复。</p>
         <p>生图：选 Claude 或 DeepSeek（deepseek-v4-pro、deepseek-flash）时，由你的模型决定何时生图并撰写画面描述；选其他厂商时，在你的消息或上一条回复涉及画图时，平台的生图判断器（阿里云 DashScope 千问 qwen3.8-flash）会读取最近 6 条对话来决定是否生图、撰写画面描述。生图由平台执行并扣草莓，默认使用 Seedream 5.0 Flash，画面描述会发送给字节跳动火山引擎（点名千问时发送给阿里云），可能包含对话中出现过的内容。</p>
@@ -423,7 +423,7 @@ export default function ChatModelSection({ username, sectionClass, headingClass 
     <h2 className={headingClass}>聊天模型</h2>
     {settings ? <ChatModelForm initial={settings} username={username} />
       : <div className="space-y-2">
-        <p role={error ? "alert" : "status"} className={error ? "text-xs text-[color:var(--seal)]" : noteClass}>{error || "正在加载聊天模型…"}</p>
+        <p role={error ? "alert" : "status"} className={error ? "text-fs-12 text-[color:var(--seal)]" : noteClass}>{error || "正在加载聊天模型…"}</p>
         {error && <button type="button" disabled={loading} className="btn min-h-10 px-4"
           onClick={() => { setError(""); setLoading(true); load(); }}>重试</button>}
       </div>}

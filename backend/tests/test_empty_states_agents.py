@@ -21,8 +21,8 @@ ACCOUNT_IMPORT = (
 # the confirmation branch, the untouched original login copy and their order
 # together, so a rewrite that only leaves the words in place cannot pass.
 MY_AGENT_WIRING = (
-    '!owner ? (identityPending ? <p className="text-sm text-muted-foreground" role="status">正在加载身份…</p>'
-    ' : <p className="text-sm text-muted-foreground" role="status">请登录后管理自己的分身。'
+    '!owner ? (identityPending ? <p className="text-fs-13 text-[color:var(--ink2)]" role="status">正在加载身份…</p>'
+    ' : <p className="text-fs-13 text-[color:var(--ink2)]" role="status">请登录后管理自己的分身。'
     '<Link href="/login" className="ml-2 text-[color:var(--ink)] underline">前往登录</Link></p>)'
 )
 
@@ -33,13 +33,13 @@ EXCHANGE_WIRING = (
 )
 
 MEMORY_WIRING = (
-    '!owner ? (identityPending ? <p className="text-xs text-muted-foreground" role="status">正在加载身份…</p>'
-    ' : <p className="text-xs text-muted-foreground" role="status">请登录后查看私有记忆。</p>)'
+    '!owner ? (identityPending ? <p className="text-fs-12 text-[color:var(--ink2)]" role="status">正在加载身份…</p>'
+    ' : <p className="text-fs-12 text-[color:var(--ink2)]" role="status">请登录后查看私有记忆。</p>)'
 )
 
 AGENT_CARD_WIRING = (
-    '!owner ? (identityPending ? <p role="status" className="text-sm text-muted-foreground">正在加载身份…</p>'
-    ' : <p role="status" className="text-sm text-muted-foreground">请登录后查看分身名片。'
+    '!owner ? (identityPending ? <p role="status" className="text-fs-13 text-[color:var(--ink2)]">正在加载身份…</p>'
+    ' : <p role="status" className="text-fs-13 text-[color:var(--ink2)]">请登录后查看分身名片。'
     '<Link href="/login" className="ml-2 text-[color:var(--ink)] underline">前往登录</Link></p>)'
 )
 
@@ -89,7 +89,7 @@ def test_my_agent_workspace_shows_pending_identity_before_login():
         "frontend/components/MyAgentWorkspace.tsx",
         MY_AGENT_WIRING,
         "请登录后管理自己的分身。",
-        '<p className="text-sm text-muted-foreground" role="status">正在加载身份…</p>',
+        '<p className="text-fs-13 text-[color:var(--ink2)]" role="status">正在加载身份…</p>',
     )
 
 
@@ -123,7 +123,7 @@ def test_agent_memory_panel_shows_pending_identity_before_login():
         relative_path,
         MEMORY_WIRING,
         "请登录后查看私有记忆。",
-        '<p className="text-xs text-muted-foreground" role="status">正在加载身份…</p>',
+        '<p className="text-fs-12 text-[color:var(--ink2)]" role="status">正在加载身份…</p>',
     )
     assert source.count(
         "清空分身记忆和已有个人画像？聊天记录与分身设定会保留，后续交流可形成新的记忆。"
@@ -140,5 +140,5 @@ def test_agent_card_page_shows_pending_identity_before_login():
         relative_path,
         AGENT_CARD_WIRING,
         "请登录后查看分身名片。",
-        '<p role="status" className="text-sm text-muted-foreground">正在加载身份…</p>',
+        '<p role="status" className="text-fs-13 text-[color:var(--ink2)]">正在加载身份…</p>',
     )

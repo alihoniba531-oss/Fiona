@@ -103,25 +103,25 @@ function Composer({ projectId, owner, busy = false, refill, onQuote, onBusyChang
   };
 
   return <Glaze as="section" variant="panel" lens={false} className="@container min-w-0 rounded-[18px] p-5 mobile:p-4" aria-labelledby="studio-composer-title">
-    <h2 id="studio-composer-title" className="mb-4 text-xl tracking-[.24em]">单镜试拍</h2>
-    {refill && <p role="status" className="mb-4 text-[13px] leading-relaxed text-[color:var(--ink2)]">已回填同样参数，检查后可重新报价。</p>}
+    <h2 id="studio-composer-title" className="mb-4 text-fs-22 tracking-[.24em]">单镜试拍</h2>
+    {refill && <p role="status" className="mb-4 text-fs-13 leading-relaxed text-[color:var(--ink2)]">已回填同样参数，检查后可重新报价。</p>}
     <form onSubmit={event => void quote(event)} className="min-w-0 space-y-5">
       <div className="grid min-w-0 gap-5 @[620px]:grid-cols-[minmax(0,1fr)_minmax(0,2fr)]">
         <div className="min-w-0 space-y-3">
-          <span className="block text-[16px]">首帧</span>
+          <span className="block text-fs-16.5">首帧</span>
           <input ref={input} type="file" accept="image/png,image/jpeg,image/webp" className="hidden" aria-label="选择首帧图片" disabled={disabled} onChange={event => void upload(event)} />
           {assetId && <div className="mount-frame overflow-hidden rounded-[10px] p-2"><StudioAssetImage assetId={assetId} alt="试拍首帧" className="max-h-56" /></div>}
           <button type="button" disabled={disabled} className="btn btn-quiet min-h-10" onClick={() => input.current?.click()}>{working === "upload" ? "上传中…" : assetId ? "更换首帧" : "上传首帧"}</button>
-          <p className="text-[13px] leading-relaxed text-[color:var(--ink2)]">PNG、JPEG、WebP，不超过 20MB。</p>
+          <p className="text-fs-13 leading-relaxed text-[color:var(--ink2)]">PNG、JPEG、WebP，不超过 20MB。</p>
         </div>
-        <div className="min-w-0"><label htmlFor="studio-prompt" className="mb-2 block text-[16px]">提示词</label><textarea id="studio-prompt" rows={6} maxLength={2000} value={prompt} disabled={disabled} onChange={event => setPrompt(event.target.value)} className={`${novelFieldClass} resize-y`} aria-describedby="studio-prompt-count" placeholder="描述这一镜的主体、动作与画面。" /><p id="studio-prompt-count" className="readout mt-1 text-right">{promptLength} / 2000 字</p></div>
+        <div className="min-w-0"><label htmlFor="studio-prompt" className="mb-2 block text-fs-16.5">提示词</label><textarea id="studio-prompt" rows={6} maxLength={2000} value={prompt} disabled={disabled} onChange={event => setPrompt(event.target.value)} className={`${novelFieldClass} resize-y`} aria-describedby="studio-prompt-count" placeholder="描述这一镜的主体、动作与画面。" /><p id="studio-prompt-count" className="readout mt-1 text-right">{promptLength} / 2000 字</p></div>
       </div>
-      <fieldset disabled={disabled} className="min-w-0"><legend className="mb-2 text-[16px]">模型</legend><div className="flex flex-wrap gap-2" role="group" aria-label="视频模型">{([{ value: "wan", label: "万相 3.0" }, { value: "seedance", label: "Seedance 2.5" }] as const).map(option => <button key={option.value} type="button" aria-pressed={provider === option.value} className={`chip min-h-10 px-3 ${provider === option.value ? "chip-on" : ""}`} onClick={() => { setProvider(option.value); setModel(undefined); setDurationRange(null); }}>{option.label}</button>)}</div></fieldset>
+      <fieldset disabled={disabled} className="min-w-0"><legend className="mb-2 text-fs-16.5">模型</legend><div className="flex flex-wrap gap-2" role="group" aria-label="视频模型">{([{ value: "wan", label: "万相 3.0" }, { value: "seedance", label: "Seedance 2.5" }] as const).map(option => <button key={option.value} type="button" aria-pressed={provider === option.value} className={`chip min-h-10 px-3 ${provider === option.value ? "chip-on" : ""}`} onClick={() => { setProvider(option.value); setModel(undefined); setDurationRange(null); }}>{option.label}</button>)}</div></fieldset>
       <div className="grid min-w-0 gap-5 @[620px]:grid-cols-2">
-        <fieldset disabled={disabled} className="min-w-0"><legend className="mb-2 text-[16px]">分辨率</legend><div className="flex flex-wrap gap-2" role="group" aria-label="分辨率">{["480P", "720P", "1080P"].map(value => <button key={value} type="button" aria-pressed={resolution === value} className={`chip min-h-10 px-3 ${resolution === value ? "chip-on" : ""}`} onClick={() => setResolution(value)}>{value}</button>)}</div></fieldset>
-        <div className="min-w-0"><label htmlFor="studio-duration" className="mb-2 block text-[16px]">时长（秒）</label><input id="studio-duration" type="number" step={1} value={duration} disabled={disabled} className={novelFieldClass} onChange={event => setDuration(event.target.value)} aria-describedby="studio-duration-hint" /><p id="studio-duration-hint" className="mt-2 text-[13px] leading-relaxed text-[color:var(--ink2)]">{durationRange ? <>本次报价时长范围 <span className="readout">{durationRange.min}–{durationRange.max}</span> 秒。</> : "输入整数秒；报价后显示后端校验的时长范围。"}</p></div>
+        <fieldset disabled={disabled} className="min-w-0"><legend className="mb-2 text-fs-16.5">分辨率</legend><div className="flex flex-wrap gap-2" role="group" aria-label="分辨率">{["480P", "720P", "1080P"].map(value => <button key={value} type="button" aria-pressed={resolution === value} className={`chip min-h-10 px-3 ${resolution === value ? "chip-on" : ""}`} onClick={() => setResolution(value)}>{value}</button>)}</div></fieldset>
+        <div className="min-w-0"><label htmlFor="studio-duration" className="mb-2 block text-fs-16.5">时长（秒）</label><input id="studio-duration" type="number" step={1} value={duration} disabled={disabled} className={novelFieldClass} onChange={event => setDuration(event.target.value)} aria-describedby="studio-duration-hint" /><p id="studio-duration-hint" className="mt-2 text-fs-13 leading-relaxed text-[color:var(--ink2)]">{durationRange ? <>本次报价时长范围 <span className="readout">{durationRange.min}–{durationRange.max}</span> 秒。</> : "输入整数秒；报价后显示后端校验的时长范围。"}</p></div>
       </div>
-      <label className="flex min-h-10 w-fit items-center gap-3 text-[16px]"><input type="checkbox" role="switch" checked={audio} disabled={disabled} onChange={event => setAudio(event.target.checked)} className="h-5 w-5 accent-[color:var(--ink)]" />生成音频</label>
+      <label className="flex min-h-10 w-fit items-center gap-3 text-fs-16.5"><input type="checkbox" role="switch" checked={audio} disabled={disabled} onChange={event => setAudio(event.target.checked)} className="h-5 w-5 accent-[color:var(--ink)]" />生成音频</label>
       {error && <ErrorNotice message={error} />}
       {working === "upload" && <LoadingState>正在上传首帧…</LoadingState>}
       <button type="submit" className="btn btn-primary min-h-10" disabled={disabled || !assetId || !prompt.trim() || promptLength > 2000}>{working === "quote" ? "报价中…" : "报价"}</button>

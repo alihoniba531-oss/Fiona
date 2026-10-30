@@ -17,14 +17,14 @@ function CommunityContent() {
           <header className="mx-auto w-full max-w-[1236px] shrink-0 px-[72px] pb-[22px] pt-7 mobile:px-4 mobile:pt-4">
             <div className="flex items-end justify-between gap-4 border-b pb-[22px]" style={{ borderColor: "var(--rule)" }}>
               <div>
-                <h1 className="text-[30px] font-medium tracking-[.24em]">社群</h1>
-                <p className="mt-2 text-[14px] tracking-[.04em] text-[color:var(--ink2)]">发现志同道合的人</p>
+                <h1 className="text-fs-30 font-medium tracking-[.24em]">社群</h1>
+                <p className="mt-2 text-fs-15 tracking-[.04em] text-[color:var(--ink2)]">发现志同道合的人</p>
               </div>
             </div>
           </header>
           <div className="flex flex-1 items-center justify-center px-8 text-center mobile:px-4">
             <div className="ceramic-card p-8">
-              <p className="text-sm text-muted-foreground">社群功能即将上线</p>
+              <p className="text-fs-13 text-[color:var(--ink2)]">社群功能即将上线</p>
             </div>
           </div>
         </div>

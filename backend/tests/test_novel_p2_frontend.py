@@ -29,7 +29,7 @@ def test_sidebar_has_six_bookmarks_and_novel_drawer_mapping():
         assert contract in source
     # Preserve existing six equal slots and two-character labels at 360 px.
     assert "min-w-0 flex-1" in source
-    assert "whitespace-nowrap text-sm tracking-[.2em]" in source
+    assert "whitespace-nowrap text-fs-15 tracking-[.2em]" in source
 
 
 def test_home_keeps_novel_iframe_mounted_when_drawer_closes():

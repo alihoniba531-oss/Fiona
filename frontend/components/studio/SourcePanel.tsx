@@ -44,17 +44,17 @@ export default function SourcePanel({ projectId, owner, busy: externalBusy = fal
   const drift = source?.drift;
   const busy = externalBusy || syncing;
   return <section aria-label="作品来源" className="ceramic-card mb-5 min-w-0 rounded-2xl p-5">
-    <div className="mb-4 flex flex-wrap items-center justify-between gap-3"><h2 className="text-xl tracking-[.16em]">作品来源</h2><button type="button" className="btn btn-quiet min-h-10" disabled={loading || busy} onClick={() => void load()}>重新检查</button></div>
+    <div className="mb-4 flex flex-wrap items-center justify-between gap-3"><h2 className="text-fs-22 tracking-[.16em]">作品来源</h2><button type="button" className="btn btn-quiet min-h-10" disabled={loading || busy} onClick={() => void load()}>重新检查</button></div>
     {loading && <LoadingState>正在检查作品来源…</LoadingState>}
     {error && <ErrorNotice message={error} retry={() => void load()} />}
     {source?.kind === null && <EmptyState>这个项目没有关联作品</EmptyState>}
-    {source?.kind && <div className="min-w-0 space-y-3 break-words"><div className="flex flex-wrap items-center gap-2"><span className="tag">{studioSourceKindLabel(source.kind)}</span><h3 className="text-lg">{source.title || source.snapshot?.title}</h3></div>
-      {source.snapshot && <><p className="readout text-sm">快照第 {source.snapshot.no} 版 · {formatStudioDate(source.snapshot.created_at)}</p><p className="readout text-sm">{source.snapshot.chapters} {source.kind === "novel" ? "章" : "块"} · {source.snapshot.chars.toLocaleString()} 字</p></>}
+    {source?.kind && <div className="min-w-0 space-y-3 break-words"><div className="flex flex-wrap items-center gap-2"><span className="tag">{studioSourceKindLabel(source.kind)}</span><h3 className="text-fs-18">{source.title || source.snapshot?.title}</h3></div>
+      {source.snapshot && <><p className="readout text-fs-13">快照第 {source.snapshot.no} 版 · {formatStudioDate(source.snapshot.created_at)}</p><p className="readout text-fs-13">{source.snapshot.chapters} {source.kind === "novel" ? "章" : "块"} · {source.snapshot.chars.toLocaleString()} 字</p></>}
       {source.kind === "novel" && <SourceFlags chapters={source.snapshot?.flagged ?? source.flagged ?? []} />}
-      {drift?.state === "unchanged" && <p role="status" className="text-sm text-[color:var(--ink2)]">原作与快照一致。</p>}
-      {drift?.state === "unavailable" && <p role="status" className="text-sm text-[color:var(--ink2)]">原作已无法访问，快照仍可正常使用</p>}
+      {drift?.state === "unchanged" && <p role="status" className="text-fs-13 text-[color:var(--ink2)]">原作与快照一致。</p>}
+      {drift?.state === "unavailable" && <p role="status" className="text-fs-13 text-[color:var(--ink2)]">原作已无法访问，快照仍可正常使用</p>}
       {drift?.state === "changed" && <div className="ceramic-card space-y-3 rounded-xl p-3"><p role="status">{studioDriftSummary(drift)}</p><button type="button" className="btn min-h-10" disabled={busy || drift.eligible === false} onClick={() => setConfirm(true)}>同步</button></div>}
-      {drift?.eligible === false && drift.state !== "unavailable" && <p role="status" className="text-sm text-[color:var(--seal)]">原作当前不能同步：{drift.reason || "暂不满足导入条件"}</p>}
+      {drift?.eligible === false && drift.state !== "unavailable" && <p role="status" className="text-fs-13 text-[color:var(--seal)]">原作当前不能同步：{drift.reason || "暂不满足导入条件"}</p>}
     </div>}
     {confirm && <SyncSourceDialog busy={syncing} onClose={() => setConfirm(false)} onConfirm={sync} />}
   </section>;
@@ -63,7 +63,7 @@ export function SyncSourceDialog({ busy, onClose, onConfirm }: { busy: boolean; 
   const ref = useRef<HTMLDialogElement>(null);
   useEffect(() => { const dialog = ref.current; dialog?.showModal(); return () => dialog?.close(); }, []);
   return <dialog ref={ref} aria-labelledby="studio-sync-title" onCancel={event => { if (busy) event.preventDefault(); else onClose(); }} className={sourceDialogClass}>
-    <h2 id="studio-sync-title" className="mb-4 text-xl">同步原作</h2><p className="mb-5 leading-relaxed">同步将重新快照；旧快照归档保留；后续拆解、分集以新快照为准。</p>
+    <h2 id="studio-sync-title" className="mb-4 text-fs-22">同步原作</h2><p className="mb-5 leading-relaxed">同步将重新快照；旧快照归档保留；后续拆解、分集以新快照为准。</p>
     <div className="flex flex-wrap gap-3"><button type="button" className="btn btn-primary min-h-10" disabled={busy} onClick={() => void onConfirm()}>{busy ? "正在建立快照…" : "确认同步"}</button><button type="button" className="btn btn-quiet min-h-10" disabled={busy} onClick={onClose}>取消</button></div>
   </dialog>;
 }

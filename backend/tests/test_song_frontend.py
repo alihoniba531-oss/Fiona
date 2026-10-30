@@ -36,10 +36,10 @@ def test_ai_generated_badge_lives_in_shared_shell_before_all_state_branches():
     source = read(CARD)
     shell_start = source.index("function SongCardShell(")
     component_start = source.index("export default function SongProjectCard(")
-    badge = source.index('<span className="tag shrink-0 text-xs">AI 生成</span>')
+    badge = source.index('<span className="tag shrink-0 text-fs-12">AI 生成</span>')
     # 页眉在组件和所有 return 分支之前定义，任何状态都复用它。
     assert shell_start < badge < component_start
-    assert source.count('<span className="tag shrink-0 text-xs">AI 生成</span>') == 1
+    assert source.count('<span className="tag shrink-0 text-fs-12">AI 生成</span>') == 1
     assert "写歌 ·《" in source and "写歌" in source
 
     # 每个状态都在自己的 SongCardShell 实例内，公共页眉一定被渲染。

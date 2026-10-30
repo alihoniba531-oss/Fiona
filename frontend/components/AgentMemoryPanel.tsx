@@ -90,22 +90,22 @@ function AccountMemoryPanel({ owner, identityPending = false }: { owner: string;
   return (
     <section className="mt-3.5 flex min-w-0 flex-col gap-3 border-t pt-[22px]" style={{ borderColor: "var(--rule)" }} aria-labelledby="private-memory-title">
       <div className="flex items-center justify-between gap-3">
-        <h3 id="private-memory-title" className="text-[17px] font-medium tracking-[.12em]">私有记忆</h3>
+        <h3 id="private-memory-title" className="text-fs-18 font-medium tracking-[.12em]">私有记忆</h3>
         <span className="readout">{revision === null ? "仅自己可见" : <>修订 <b>{revision}</b></>}</span>
       </div>
-      <p className="text-[13px] leading-[1.85] text-[color:var(--ink2)]">分身从交流中整理的兴趣、需求与个人画像。这些内容不出现在公开名片里。</p>
-      {!owner ? (identityPending ? <p className="text-xs text-muted-foreground" role="status">正在加载身份…</p> : <p className="text-xs text-muted-foreground" role="status">请登录后查看私有记忆。</p>) : loading ? <p className="flex items-center gap-2 text-xs text-muted-foreground" role="status"><Loader2 size={13} className="animate-spin" />正在加载记忆…</p>
-        : entries.length ? <ul>{entries.map(([label, value]) => <li key={label} className="border-b py-2 text-[13px] leading-[1.85] text-[color:var(--ink2)]" style={{ borderColor: "var(--carve)" }}>{label}：<span className="whitespace-pre-wrap break-words">{value}</span></li>)}</ul>
-        : !error && <p className="text-xs text-muted-foreground">还没有私人画像。和分身聊聊自己后，这里会逐步形成记忆。</p>}
-      {error && <p className="text-xs text-[color:var(--seal)]" role="alert">{error}<button type="button" onClick={() => void load()} disabled={loading || clearing} className="btn btn-quiet ml-2 min-h-10 px-2.5 text-xs">重试</button></p>}
-      {notice && <p className="text-xs text-muted-foreground" role="status">{notice}</p>}
+      <p className="text-fs-13 leading-[1.85] text-[color:var(--ink2)]">分身从交流中整理的兴趣、需求与个人画像。这些内容不出现在公开名片里。</p>
+      {!owner ? (identityPending ? <p className="text-fs-12 text-[color:var(--ink2)]" role="status">正在加载身份…</p> : <p className="text-fs-12 text-[color:var(--ink2)]" role="status">请登录后查看私有记忆。</p>) : loading ? <p className="flex items-center gap-2 text-fs-12 text-[color:var(--ink2)]" role="status"><Loader2 size={13} className="animate-spin" />正在加载记忆…</p>
+        : entries.length ? <ul>{entries.map(([label, value]) => <li key={label} className="border-b py-2 text-fs-13 leading-[1.85] text-[color:var(--ink2)]" style={{ borderColor: "var(--carve)" }}>{label}：<span className="whitespace-pre-wrap break-words">{value}</span></li>)}</ul>
+        : !error && <p className="text-fs-12 text-[color:var(--ink2)]">还没有私人画像。和分身聊聊自己后，这里会逐步形成记忆。</p>}
+      {error && <p className="text-fs-12 text-[color:var(--seal)]" role="alert">{error}<button type="button" onClick={() => void load()} disabled={loading || clearing} className="btn btn-quiet ml-2 min-h-10 px-2.5 text-fs-12">重试</button></p>}
+      {notice && <p className="text-fs-12 text-[color:var(--ink2)]" role="status">{notice}</p>}
       <footer className="flex flex-wrap items-center gap-x-[22px] gap-y-1.5">
         <button type="button" onClick={() => void load()} disabled={!owner || loading || clearing} className="btn btn-quiet">刷新</button>
         <button type="button" onClick={() => void clear()} disabled={!owner || loading || clearing} className="btn btn-danger min-h-10">
           {clearing ? <Loader2 size={13} className="animate-spin" /> : <Trash2 size={13} />}{clearing ? "正在清空…" : "清空记忆与个人画像"}
         </button>
       </footer>
-      <p className="text-[11px] leading-relaxed text-muted-foreground">清空分身记忆和已有个人画像；聊天记录保留，后续交流可形成新的记忆。</p>
+      <p className="text-fs-11 leading-relaxed text-[color:var(--ink2)]">清空分身记忆和已有个人画像；聊天记录保留，后续交流可形成新的记忆。</p>
     </section>
   );
 }

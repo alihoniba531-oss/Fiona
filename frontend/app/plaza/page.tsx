@@ -95,12 +95,12 @@ function PostCard({ post }: { post: Post }) {
         {post.tags.length > 0 && (
           <div className="absolute bottom-2 left-2 flex flex-wrap gap-1 max-w-[80%]">
             {post.tags.slice(0, 2).map((t) => (
-              <span key={t} className="tag border bg-[color:var(--mount)] text-[9px] text-[color:var(--ink)]" style={{ borderColor: "var(--rule)" }}>
+              <span key={t} className="tag border bg-[color:var(--mount)] text-fs-11 text-[color:var(--ink)]" style={{ borderColor: "var(--rule)" }}>
                 #{t}
               </span>
             ))}
             {post.tags.length > 2 && (
-              <span className="tag border bg-[color:var(--mount)] text-[9px] text-[color:var(--ink2)]" style={{ borderColor: "var(--rule)" }}>
+              <span className="tag border bg-[color:var(--mount)] text-fs-11 text-[color:var(--ink2)]" style={{ borderColor: "var(--rule)" }}>
                 +{post.tags.length - 2}
               </span>
             )}
@@ -111,17 +111,17 @@ function PostCard({ post }: { post: Post }) {
 
       <div className="px-3 py-2.5">
         {post.caption && (
-          <p className="text-[12px] text-foreground/85 leading-relaxed mb-1.5 line-clamp-2">{post.caption}</p>
+          <p className="text-fs-12 text-[color:var(--ink)] leading-relaxed mb-1.5 line-clamp-2">{post.caption}</p>
         )}
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-1.5 mobile:min-w-0">
-            <div className="grid h-6 w-6 place-items-center rounded-[6px] bg-secondary">
-              <span className="text-[9px] font-medium text-muted-foreground">{(post.anon_id || "?")[0].toUpperCase()}</span>
+            <div className="grid h-6 w-6 place-items-center rounded-[6px] bg-[color:var(--slip)]">
+              <span className="text-fs-11 font-medium text-[color:var(--ink2)]">{(post.anon_id || "?")[0].toUpperCase()}</span>
             </div>
-            <span className="readout text-[10px] mobile:truncate">{post.anon_id}</span>
+            <span className="readout text-fs-11 mobile:truncate">{post.anon_id}</span>
           </div>
           <div className="flex items-center gap-3">
-            <span className="readout text-[10px]">{timeAgo(post.created_at)}</span>
+            <span className="readout text-fs-11">{timeAgo(post.created_at)}</span>
             <button
               onClick={handleLike}
               aria-label="点赞"
@@ -129,7 +129,7 @@ function PostCard({ post }: { post: Post }) {
               className={cn("relative flex items-center gap-1 transition-colors mobile:min-h-10 mobile:min-w-10 mobile:justify-center", liked ? "text-[color:var(--seal)]" : "text-[color:var(--ink2)] hover:text-[color:var(--seal)]")}
             >
               <Heart size={13} fill={liked ? "currentColor" : "none"} className={burst ? "porcelain-like-burst" : undefined} />
-              <span className="readout text-[11px]" style={liked ? { color: "var(--seal)" } : undefined}>{likes}</span>
+              <span className="readout text-fs-11" style={liked ? { color: "var(--seal)" } : undefined}>{likes}</span>
               {burst > 0 && <span key={burst} className="porcelain-like-pop">+1</span>}
             </button>
           </div>
@@ -160,35 +160,35 @@ function CategoryCard({
   return (
     <section className="min-w-0 pointer-events-auto">
       <div className="flex items-baseline justify-between gap-2 border-b border-[color:var(--carve)] pb-2 shadow-[0_1px_0_var(--etch)]">
-        <h2 className="text-[15px] font-medium tracking-[.16em]">{title}</h2>
+        <h2 className="text-fs-15 font-medium tracking-[.16em]">{title}</h2>
         <button
           type="button"
           onClick={() => void feed.refresh()}
           disabled={feed.loading}
           aria-label={`刷新${title}`}
           title={feed.loading ? "更新中" : "刷新热点"}
-          className="inline-flex shrink-0 items-center gap-1 border-0 bg-transparent text-xs text-[color:var(--ink2)] disabled:opacity-45 mobile:min-h-10 mobile:min-w-10 mobile:justify-center"
+          className="inline-flex shrink-0 items-center gap-1 border-0 bg-transparent text-fs-12 text-[color:var(--ink2)] disabled:opacity-45 mobile:min-h-10 mobile:min-w-10 mobile:justify-center"
         >
           {feed.loading && <RefreshCw size={12} aria-hidden="true" className="animate-spin" />}
           刷新
         </button>
       </div>
       {notice && (
-        <div role="status" className="mt-2 text-[11.5px] leading-relaxed text-[color:var(--seal)]">
+        <div role="status" className="mt-2 text-fs-12 leading-relaxed text-[color:var(--seal)]">
           {notice}
           <button
             type="button"
             onClick={() => void feed.refresh()}
             disabled={feed.loading}
-            className="btn btn-quiet ml-1.5 h-7 px-2.5 text-xs mobile:min-h-10"
+            className="btn btn-quiet ml-1.5 h-7 px-2.5 text-fs-12 mobile:min-h-10"
           >
             {feed.loading ? "重试中…" : "重试"}
           </button>
         </div>
       )}
-      <ol className="mt-2 list-none p-0 text-[13.5px] leading-7">
+      <ol className="mt-2 list-none p-0 text-fs-13 leading-7">
         {!hasItems ? (
-          <li className="text-xs text-[color:var(--ink2)]">
+          <li className="text-fs-12 text-[color:var(--ink2)]">
             {feed.loading ? "拉取中…" : notice ? "暂无可显示的热点" : "暂时没有相关热点"}
           </li>
         ) : (
@@ -200,7 +200,7 @@ function CategoryCard({
                 onClick={() => onItemClick?.(it)}
                 title="点开查看详情"
               >
-                <span className="w-3 shrink-0 text-xs tabular-nums text-[color:var(--ink2)]">{i + 1}</span>
+                <span className="w-3 shrink-0 text-fs-12 tabular-nums text-[color:var(--ink2)]">{i + 1}</span>
                 <span className="truncate">{it}</span>
               </button>
             </li>
@@ -208,7 +208,7 @@ function CategoryCard({
         )}
       </ol>
       {updatedTime && hasItems && (
-        <div className="mt-0.5 text-[11.5px] tabular-nums text-[color:var(--ink2)]" title={updateDate ? formatBeijingDateTime(updateDate, true) : undefined}>
+        <div className="mt-0.5 text-fs-12 tabular-nums text-[color:var(--ink2)]" title={updateDate ? formatBeijingDateTime(updateDate, true) : undefined}>
           {feed.loading ? "更新中，" : ""}获取于 {updatedTime}
         </div>
       )}
@@ -440,7 +440,7 @@ function PlazaContent() {
               <div className="flex shrink-0 items-center justify-between border-b px-5 py-3" style={{ borderColor: "var(--rule)" }}>
                 <div className="flex items-center gap-2 min-w-0">
                   <Flame size={14} className="shrink-0" style={{ color: "var(--ink)" }} />
-                  <span className="truncate text-[13px] font-medium">{expanded.title}</span>
+                  <span className="truncate text-fs-13 font-medium">{expanded.title}</span>
                 </div>
                 <button
                   onClick={() => setExpanded(null)}
@@ -451,36 +451,36 @@ function PlazaContent() {
               </div>
 
               {/* 内容区 */}
-              <div className="flex-1 overflow-y-auto px-6 py-5 text-sm leading-relaxed space-y-4 mobile:px-4">
+              <div className="flex-1 overflow-y-auto px-6 py-5 text-fs-15 leading-relaxed space-y-4 mobile:px-4">
                 {expanding && (
-                  <div className="flex items-center gap-2 text-xs text-muted-foreground">
+                  <div className="flex items-center gap-2 text-fs-12 text-[color:var(--ink2)]">
                     加载中…
                   </div>
                 )}
                 {expanded.error && (
-                  <div className="text-xs text-[color:var(--seal)]">拉取失败：{expanded.error}</div>
+                  <div className="text-fs-12 text-[color:var(--seal)]">拉取失败：{expanded.error}</div>
                 )}
                 {expanded.summary && (
-                  <div className="text-foreground/95 text-[15px] leading-relaxed">{expanded.summary}</div>
+                  <div className="text-[color:var(--ink)] text-fs-15 leading-relaxed">{expanded.summary}</div>
                 )}
                 {expanded.whats_happening && (
                   <div>
-                    <div className="mb-1.5 text-xs font-medium text-muted-foreground">发生了什么</div>
-                    <div className="text-foreground/85">{expanded.whats_happening}</div>
+                    <div className="mb-1.5 text-fs-12 font-medium text-[color:var(--ink2)]">发生了什么</div>
+                    <div className="text-[color:var(--ink)]">{expanded.whats_happening}</div>
                   </div>
                 )}
                 {expanded.why_trending && (
                   <div>
-                    <div className="mb-1.5 text-xs font-medium text-muted-foreground">为什么上热搜</div>
-                    <div className="text-foreground/85">{expanded.why_trending}</div>
+                    <div className="mb-1.5 text-fs-12 font-medium text-[color:var(--ink2)]">为什么上热搜</div>
+                    <div className="text-[color:var(--ink)]">{expanded.why_trending}</div>
                   </div>
                 )}
                 {expanded.key_facts && expanded.key_facts.length > 0 && (
                   <div>
-                    <div className="mb-1.5 text-xs font-medium text-muted-foreground">关键事实</div>
+                    <div className="mb-1.5 text-fs-12 font-medium text-[color:var(--ink2)]">关键事实</div>
                     <ul className="space-y-1.5">
                       {expanded.key_facts.map((f, i) => (
-                        <li key={i} className="flex gap-2 text-foreground/85">
+                        <li key={i} className="flex gap-2 text-[color:var(--ink)]">
                           <span className="mt-2 h-1.5 w-1.5 shrink-0" style={{ background: "var(--ink)" }} />
                           <span>{f}</span>
                         </li>
@@ -490,31 +490,31 @@ function PlazaContent() {
                 )}
                 {expanded.background && (
                   <div>
-                    <div className="mb-1.5 text-xs font-medium text-muted-foreground">背景</div>
-                    <div className="text-foreground/75 text-[13px]">{expanded.background}</div>
+                    <div className="mb-1.5 text-fs-12 font-medium text-[color:var(--ink2)]">背景</div>
+                    <div className="text-[color:var(--ink2)] text-fs-13">{expanded.background}</div>
                   </div>
                 )}
                 {expanded.sources && expanded.sources.length > 0 && (
                   <div className="border-t pt-2" style={{ borderColor: "var(--rule)" }}>
-                    <div className="mb-2 text-xs font-medium text-muted-foreground">来源</div>
+                    <div className="mb-2 text-fs-12 font-medium text-[color:var(--ink2)]">来源</div>
                     <ul className="space-y-1">
                       {expanded.sources.map((s, i) => (
                         <li key={i}>
                           {s.url ? (
                             <button
                               onClick={() => openExternal(s.url)}
-                              className="cursor-pointer break-all border-0 bg-transparent p-0 text-left text-[12px] text-[color:var(--ink)] opacity-80 hover:opacity-100 mobile:min-h-10 mobile:py-2"
+                              className="cursor-pointer break-all border-0 bg-transparent p-0 text-left text-fs-12 leading-[inherit] text-[color:var(--ink)] opacity-80 hover:opacity-100 mobile:min-h-10 mobile:py-2"
                             >
                               {s.title || s.url}
                             </button>
                           ) : (
                             // 链接死了（AI 编的）时只显示标题，加灰并标注
                             <span
-                              className="break-all text-[12px] text-[color:var(--ink)] opacity-40"
+                              className="break-all text-fs-12 leading-[inherit] text-[color:var(--ink2)]"
                               title="AI 整理时未能确认此来源原链接"
                             >
                               {s.title || "来源"}
-                              <span className="ml-1 text-[9px] opacity-60">（链接失效）</span>
+                              <span className="ml-1 text-fs-11">（链接失效）</span>
                             </span>
                           )}
                         </li>
@@ -536,14 +536,14 @@ function PlazaContent() {
             style={{ "--glaze-lens-filter": "url(#yqw-lens-bar)" } as CSSProperties}
           >
             <div className="flex min-w-0 shrink items-center gap-3 mobile:w-full">
-              <span className="shrink-0 text-[13px] tracking-[.1em]">我的兴趣</span>
+              <span className="shrink-0 text-fs-13 tracking-[.1em]">我的兴趣</span>
               {interests.length > 0 ? (
                 <div className="flex min-w-0 gap-1 overflow-x-auto">
                   {interests.map((tag) => (
-                    <span key={tag} className="chip h-6 shrink-0 whitespace-nowrap px-2 text-[11px]">{tag}</span>
+                    <span key={tag} className="chip h-6 shrink-0 whitespace-nowrap px-2 text-fs-11">{tag}</span>
                   ))}
                 </div>
-              ) : <span className="text-xs text-[color:var(--ink2)]">点赞后出现</span>}
+              ) : <span className="text-fs-12 text-[color:var(--ink2)]">点赞后出现</span>}
             </div>
 
             <div className="h-3 w-px shrink-0 mobile:hidden" style={{ background: "var(--rule2)" }} />
@@ -552,19 +552,19 @@ function PlazaContent() {
                 <div className="ticker-track gap-5 items-center">
                   {[...communityItems, ...communityItems].map((item, i) => (
                     <span key={i} className="inline-flex items-center gap-1 shrink-0 mr-5">
-                      <span className="readout text-[11px]">{item.user}</span>
-                      <span className="text-xs text-[color:var(--ink2)]">{item.tag}</span>
+                      <span className="readout text-fs-11">{item.user}</span>
+                      <span className="text-fs-12 text-[color:var(--ink2)]">{item.tag}</span>
                     </span>
                   ))}
                 </div>
               )}
-              {communityItems.length === 0 && <span className="text-xs text-[color:var(--ink2)]">暂无其他用户兴趣数据</span>}
+              {communityItems.length === 0 && <span className="text-fs-12 text-[color:var(--ink2)]">暂无其他用户兴趣数据</span>}
             </div>
 
             <button
               type="button"
               onClick={() => fileRef.current?.click()}
-              className="btn btn-primary h-[34px] shrink-0 px-[18px] text-[13px] tracking-[.16em] mobile:h-10 mobile:ml-auto"
+              className="btn btn-primary h-[34px] shrink-0 px-[18px] text-fs-13 tracking-[.16em] mobile:h-10 mobile:ml-auto"
               title="发布到我的世界"
             >发布照片</button>
           </Glaze>
@@ -587,7 +587,7 @@ function PlazaContent() {
             }}
           >
             <div className="flex items-center justify-between border-b px-4 py-3" style={{ borderColor: "var(--rule)" }}>
-              <div className="flex items-center gap-2 text-sm font-medium">
+              <div className="flex items-center gap-2 text-fs-15 font-medium">
                 <Plus size={14} style={{ color: "var(--ink)" }} />
                 发布到世界
               </div>
@@ -610,11 +610,11 @@ function PlazaContent() {
                 onChange={(e) => setCaption(e.target.value.slice(0, 100))}
                 placeholder="说点什么…（可选，100字以内）"
                 rows={2}
-                className="w-full resize-none rounded-[6px] border bg-card px-3 py-[9px] text-[13px] leading-relaxed text-foreground outline-none placeholder:text-muted-foreground focus:border-[color:var(--ink)] mobile:text-base"
+                className="w-full resize-none rounded-[6px] border bg-[color:var(--hi)] px-3 py-[9px] text-fs-16.5 leading-relaxed text-[color:var(--ink)] outline-none placeholder:text-[color:var(--ink2)] focus:border-[color:var(--ink)] mobile:text-fs-16.5"
               />
 
               <div>
-                <p className="mb-2 text-xs font-medium text-muted-foreground">标签（最多 5 个）</p>
+                <p className="mb-2 text-fs-12 font-medium text-[color:var(--ink2)]">标签（最多 5 个）</p>
                 <div className="flex flex-wrap gap-1.5">
                   {ALL_TAGS.map((tag) => {
                     const selected = selectedTags.includes(tag);
@@ -632,7 +632,7 @@ function PlazaContent() {
                 </div>
               </div>
 
-              {submitError && <p role="alert" className="text-xs text-[color:var(--seal)]">{submitError}</p>}
+              {submitError && <p role="alert" className="text-fs-12 text-[color:var(--seal)]">{submitError}</p>}
               <button
                 onClick={handleSubmit}
                 disabled={uploading || !username}

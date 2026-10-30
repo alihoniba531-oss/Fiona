@@ -83,7 +83,7 @@ def test_match_page_keeps_mobile_variant_and_replaces_the_tiny_anonymous_hint():
     assert bold_offenders(source) == [], "match page must not add bold styling"
     assert (
         source.count(
-            '<p className="text-xs text-[color:var(--ink2)]">双方都接受匹配后，对方会出现在这里</p>'
+            '<p className="text-fs-12 text-[color:var(--ink2)]">双方都接受匹配后，对方会出现在这里</p>'
         )
         == 1
     ), "the recent-chat empty hint must appear exactly once with the v1.2 markup"

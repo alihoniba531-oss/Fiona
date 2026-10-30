@@ -45,8 +45,8 @@ export default function ConversationPicker({
       className={`flex h-full w-[288px] shrink-0 flex-col max-md:w-full ${className}`}
       aria-label="对话列表"
     >
-      <div className="flex h-[76px] shrink-0 items-center justify-between border-b pl-5 pr-3" style={{ borderColor: "var(--glass-border)" }}>
-        <h2 className="text-[18px] font-medium tracking-[.18em]">对话</h2>
+      <div className="flex h-[76px] shrink-0 items-center justify-between border-b pl-5 pr-3" style={{ borderColor: "var(--rule)" }}>
+        <h2 className="text-fs-18 font-medium tracking-[.18em]">对话</h2>
         <div className="flex items-center gap-1">
           {onHistory && (
             <button type="button" className="btn btn-quiet px-2 max-md:h-10" title="当前对话记录" aria-label="历史：当前对话记录" onClick={onHistory}>
@@ -61,23 +61,23 @@ export default function ConversationPicker({
 
       <ul className="flex-1 overflow-y-auto p-2" role="listbox" aria-label="对话">
         {loading ? (
-          <li className="px-3 py-2 text-xs text-muted-foreground" role="status">正在加载对话…</li>
+          <li className="px-3 py-2 text-fs-12 text-[color:var(--ink2)]" role="status">正在加载对话…</li>
         ) : conversations.map(conversation => (
           <li
             key={conversation.id}
             role="option"
             aria-selected={conversation.id === selectedId}
-            className="group flex cursor-pointer items-baseline gap-2 rounded-lg px-[18px] py-3.5 text-[15px] text-muted-foreground hover:bg-secondary hover:text-foreground aria-selected:bg-[var(--chip)] aria-selected:shadow-[inset_0_0_0_1px_var(--rim)] aria-selected:text-foreground"
+            className="group flex cursor-pointer items-baseline gap-2 rounded-lg px-[18px] py-3.5 text-fs-15 text-[color:var(--ink2)] hover:bg-[color:var(--slip)] hover:text-[color:var(--ink)] aria-selected:bg-[color:var(--chip)] aria-selected:shadow-[inset_0_0_0_1px_var(--rim)] aria-selected:text-[color:var(--ink)]"
           >
             <button type="button" className="min-w-0 flex-1 truncate text-left" onClick={() => onSelect(conversation.id)} disabled={disabled}>
               {conversation.title || "新对话"}
             </button>
-            <span className="readout shrink-0 text-xs">{formatRelative(conversation.updated_at)}</span>
+            <span className="readout shrink-0 text-fs-12">{formatRelative(conversation.updated_at)}</span>
             <button
               type="button"
               aria-label="删除对话"
               title="删除对话"
-              className="text-muted-foreground opacity-0 group-hover:opacity-100 hover:text-[color:var(--rec)] focus-visible:opacity-100 disabled:opacity-40 max-md:grid max-md:h-10 max-md:w-10 max-md:place-items-center max-md:opacity-100"
+              className="text-[color:var(--ink2)] opacity-0 group-hover:opacity-100 hover:text-[color:var(--seal)] focus-visible:opacity-100 disabled:opacity-40 max-md:grid max-md:h-10 max-md:w-10 max-md:place-items-center max-md:opacity-100"
               onClick={() => onDelete(conversation.id)}
               disabled={disabled}
             >
@@ -87,18 +87,18 @@ export default function ConversationPicker({
         ))}
       </ul>
 
-      {locked && <p className="px-5 pb-2 text-[11px] text-muted-foreground" role="status">分身回复或语音进行中，结束后可以切换对话。</p>}
-      {!loading && !conversations.length && !error && <p className="px-5 pb-2 text-xs leading-relaxed text-muted-foreground">还没有对话。点「新建」，开始和自己的分身交流。</p>}
-      {error && <div className="flex flex-wrap items-center gap-1 px-5 pb-2 text-xs text-[color:var(--rec)]" role="alert">
+      {locked && <p className="px-5 pb-2 text-fs-11 text-[color:var(--ink2)]" role="status">分身回复或语音进行中，结束后可以切换对话。</p>}
+      {!loading && !conversations.length && !error && <p className="px-5 pb-2 text-fs-12 leading-relaxed text-[color:var(--ink2)]">还没有对话。点「新建」，开始和自己的分身交流。</p>}
+      {error && <div className="flex flex-wrap items-center gap-1 px-5 pb-2 text-fs-12 text-[color:var(--seal)]" role="alert">
         <span>{error}</span>
-        <button type="button" onClick={onRetry} disabled={disabled} className="btn btn-quiet h-7 px-2.5 text-xs">重试加载</button>
+        <button type="button" onClick={onRetry} disabled={disabled} className="btn btn-quiet h-7 px-2.5 text-fs-12">重试加载</button>
       </div>}
 
-      <div className="flex items-center justify-between border-t px-5 py-3 text-xs text-muted-foreground" style={{ borderColor: "var(--glass-border)" }}>
+      <div className="flex items-center justify-between border-t px-5 py-3 text-fs-12 text-[color:var(--ink2)]" style={{ borderColor: "var(--rule)" }}>
         <span>对话仅你可见</span>
-        <button type="button" onClick={onFullHistory} className="min-h-10 hover:text-foreground">完整历史</button>
+        <button type="button" onClick={onFullHistory} className="min-h-10 hover:text-[color:var(--ink)]">完整历史</button>
       </div>
-      <div className="flex shrink-0 items-center justify-end border-t px-5 py-2 md:hidden" style={{ borderColor: "var(--glass-border)" }}>
+      <div className="flex shrink-0 items-center justify-end border-t px-5 py-2 md:hidden" style={{ borderColor: "var(--rule)" }}>
         <button type="button" onClick={toggleTheme} className="btn btn-quiet h-10 px-2.5" title={dark ? "切换浅色" : "切换深色"} aria-label={dark ? "切换浅色" : "切换深色"}>
           <span className="theme-day">夜</span><span className="theme-night">昼</span>
           <span>主题</span>

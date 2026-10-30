@@ -92,7 +92,7 @@ def test_character_editing_is_local_and_only_available_in_permitted_states():
     assert "appearanceLength(draft.appearance)" in panel
     assert '<ErrorNotice message={error}' in panel
     assert "min-h-10" in panel and "novelFieldClass" in panel
-    assert "text-[16px]" in source("components/novel/NovelModelFields.tsx")
+    assert "text-fs-16.5" in source("components/novel/NovelModelFields.tsx")
 
 
 @pytest.mark.parametrize("appearance", [
@@ -155,7 +155,7 @@ def test_character_patch_validates_only_fields_the_user_changes(changes, expecte
         assert result["calls"] == 0
         assert result["prevented"] is True
         assert result["notice"] == "没有改动"
-        assert result["notice_markup"] == '<p role="status" className="text-[13px] text-[var(--ink2)]">没有改动</p>'
+        assert result["notice_markup"] == '<p role="status" className="text-fs-13 text-[color:var(--ink2)]">没有改动</p>'
 
 
 def test_character_api_returns_full_bible_and_workbench_cancels_old_reads():

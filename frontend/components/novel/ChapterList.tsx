@@ -23,14 +23,14 @@ export default function ChapterList({ chapters, selectedChapter, writingChapter,
       if (chapter.status === "stale") flags.add("stale");
       if (chapter.edited_by_user) flags.add("edited_by_user");
       return <li key={chapter.chapter}><button type="button" onClick={() => onSelect(chapter.chapter)} aria-current={selectedChapter === chapter.chapter ? "true" : undefined}
-        className={`min-h-10 w-full min-w-0 border-l px-3 py-3 text-left text-sm ${selectedChapter === chapter.chapter ? "border-[var(--ink)] text-[var(--ink)]" : "border-transparent text-[var(--ink2)]"}`}>
+        className={`min-h-10 w-full min-w-0 border-l px-3 py-3 text-left text-fs-15 ${selectedChapter === chapter.chapter ? "border-[color:var(--ink)] text-[color:var(--ink)]" : "border-transparent text-[color:var(--ink2)]"}`}>
         <span className="block break-words"><span className="readout">第 {chapter.chapter} 章</span>　{displayNovelChapterTitle(chapter.title) || "待定章名"}</span>
         {flags.size > 0 && <span className="mt-1 flex flex-wrap gap-2">{[...flags].filter(flag => flagLabels[flag]).map(flag => {
           const Icon = flagLabels[flag].icon;
-          return <span key={flag} title={flagLabels[flag].label} aria-label={flagLabels[flag].label} className="inline-flex min-w-0 items-center gap-1 break-words text-xs"><Icon aria-hidden="true" size={13} className="shrink-0" /><span>{flagLabels[flag].label}</span></span>;
+          return <span key={flag} title={flagLabels[flag].label} aria-label={flagLabels[flag].label} className="inline-flex min-w-0 items-center gap-1 break-words text-fs-12"><Icon aria-hidden="true" size={13} className="shrink-0" /><span>{flagLabels[flag].label}</span></span>;
         })}</span>}
       </button></li>;
     })}</ol>
-    {writingChapter != null && <p role="status" className="mt-4 break-words text-sm text-[var(--ink2)]">正在写第 <span className="readout">{writingChapter}</span> 章…</p>}
+    {writingChapter != null && <p role="status" className="mt-4 break-words text-fs-13 text-[color:var(--ink2)]">正在写第 <span className="readout">{writingChapter}</span> 章…</p>}
   </div>;
 }

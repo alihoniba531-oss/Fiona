@@ -25,14 +25,14 @@ const fieldLabels: Record<string, string> = {
 
 // Render provider JSON as text and structured lists, never HTML or Markdown.
 export function ContentValue({ value }: { value: unknown }) {
-  if (value === null || value === undefined || value === "") return <span className="text-[var(--ink2)]">暂无</span>;
-  if (Array.isArray(value)) return value.length ? <ul className="space-y-2">{value.map((item, i) => <li key={i}><ContentValue value={item} /></li>)}</ul> : <span className="text-[var(--ink2)]">暂无</span>;
-  if (typeof value === "object") return <dl className="space-y-2">{Object.entries(record(value)).filter(([key]) => key !== "id").map(([key, item]) => <div key={key} className="min-w-0"><dt className="text-xs text-[var(--ink2)]">{fieldLabels[key] ?? key}</dt><dd className="whitespace-pre-wrap break-words"><ContentValue value={item} /></dd></div>)}</dl>;
+  if (value === null || value === undefined || value === "") return <span className="text-[color:var(--ink2)]">暂无</span>;
+  if (Array.isArray(value)) return value.length ? <ul className="space-y-2">{value.map((item, i) => <li key={i}><ContentValue value={item} /></li>)}</ul> : <span className="text-[color:var(--ink2)]">暂无</span>;
+  if (typeof value === "object") return <dl className="space-y-2">{Object.entries(record(value)).filter(([key]) => key !== "id").map(([key, item]) => <div key={key} className="min-w-0"><dt className="text-fs-12 text-[color:var(--ink2)]">{fieldLabels[key] ?? key}</dt><dd className="whitespace-pre-wrap break-words"><ContentValue value={item} /></dd></div>)}</dl>;
   if (typeof value === "boolean") return <>{value ? "是" : "否"}</>;
   const labels: Record<string, string> = { main: "主要人物", supporting: "配角", major: "重要", minor: "次要", open: "未回收", resolved: "已回收" };
   return <>{labels[String(value)] ?? String(value)}</>;
 }
 
 export function ContentSection({ title, children }: { title: string; children: ReactNode }) {
-  return <section className="min-w-0 space-y-3 border-b border-[var(--carve)] pb-5 last:border-0"><h3 className="font-medium tracking-[.12em]">{title}</h3>{children}</section>;
+  return <section className="min-w-0 space-y-3 border-b border-[color:var(--carve)] pb-5 last:border-0"><h3 className="font-medium tracking-[.12em]">{title}</h3>{children}</section>;
 }

@@ -5,7 +5,7 @@ import { ApiError } from "@/lib/agents";
 import type { NovelBible, NovelSetupPatch } from "@/lib/novels";
 import { ErrorNotice } from "@/components/novel/NovelStates";
 
-const fieldClass = "ceramic-card w-full min-w-0 rounded-[10px] border-0 px-4 py-3 text-[16px] leading-[1.9] text-[color:var(--ink)] outline-none focus-visible:ring-1 focus-visible:ring-[color:var(--ink)] disabled:opacity-50";
+const fieldClass = "ceramic-card w-full min-w-0 rounded-[10px] border-0 px-4 py-3 text-fs-16.5 leading-[1.9] text-[color:var(--ink)] outline-none focus-visible:ring-1 focus-visible:ring-[color:var(--ink)] disabled:opacity-50";
 type RecordValue = Record<string, unknown>;
 const record = (value: unknown): RecordValue => value && typeof value === "object" && !Array.isArray(value) ? value as RecordValue : {};
 const items = (value: unknown): RecordValue[] => Array.isArray(value) ? value.map(record) : [];
@@ -79,9 +79,9 @@ export default function SetupEditor({ bible, busy, onApprove }: { bible: NovelBi
     if (isLocked) changeLocked(field, updated); else changeCompass(field, updated);
   };
   const field = (label: string, path: string, value: string, onChange: (value: string) => void, rows = 3) => <label className="block space-y-2" key={path}>
-    <span className="text-sm text-[color:var(--ink2)]">{label}</span>
+    <span className="text-fs-13 text-[color:var(--ink2)]">{label}</span>
     <textarea className={fieldClass} rows={rows} value={value} onChange={event => onChange(event.target.value)} disabled={busy} aria-invalid={!!errors[path]} aria-describedby={errors[path] ? `setup-${path}` : undefined} />
-    {errors[path] && <span id={`setup-${path}`} role="alert" className="block text-sm text-[color:var(--ink2)]">{errors[path]}</span>}
+    {errors[path] && <span id={`setup-${path}`} role="alert" className="block text-fs-13 text-[color:var(--ink2)]">{errors[path]}</span>}
   </label>;
 
   const approve = async () => {
@@ -111,15 +111,15 @@ export default function SetupEditor({ bible, busy, onApprove }: { bible: NovelBi
   };
 
   return <section className="min-w-0 space-y-6" aria-label="立项卡编辑器">
-    <div><h2 className="text-xl font-medium tracking-[.24em]">立项卡</h2><p className="mt-2 text-sm leading-[1.9] text-[color:var(--ink2)]">可以修改以下设定。确认后，智能体会以这份设定开始写作。</p></div>
+    <div><h2 className="text-fs-22 font-medium tracking-[.24em]">立项卡</h2><p className="mt-2 text-fs-15 leading-[1.9] text-[color:var(--ink2)]">可以修改以下设定。确认后，智能体会以这份设定开始写作。</p></div>
     {error && <ErrorNotice message={error} />}
     <fieldset className="space-y-4" disabled={busy}><legend className="mb-3 tracking-[.12em]">罗盘</legend>
       {field("书名", "title", text(compass.title), value => changeCompass("title", value), 1)}
       {field("一句话梗概", "logline", text(compass.logline), value => changeCompass("logline", value))}
       {field("主题", "theme", text(compass.theme), value => changeCompass("theme", value), 2)}
-      {errors["candidate-endings"] && <p role="alert" className="text-sm">{errors["candidate-endings"]}</p>}
+      {errors["candidate-endings"] && <p role="alert" className="text-fs-13">{errors["candidate-endings"]}</p>}
       {items(compass.candidate_endings).map((ending, index) => field(`候选结局 ${index + 1}`, `ending-${index}`, text(ending.summary), value => changeItem("candidate_endings", index, "summary", value)))}
-      {errors["main-threads"] && <p role="alert" className="text-sm">{errors["main-threads"]}</p>}
+      {errors["main-threads"] && <p role="alert" className="text-fs-13">{errors["main-threads"]}</p>}
       {items(compass.main_threads).map((thread, index) => <div key={text(thread.id) || index} className="space-y-3 border-t pt-4" style={{ borderColor: "var(--carve)" }}>
         {field(`主线 ${index + 1} 名称`, `thread-${index}-name`, text(thread.name), value => changeItem("main_threads", index, "name", value), 1)}
         {field("主线说明", `thread-${index}-description`, text(thread.description), value => changeItem("main_threads", index, "description", value))}

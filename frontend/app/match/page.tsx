@@ -78,17 +78,17 @@ function CloudCard({
         </div>
         <div className="flex-1 min-w-0">
           <div className="flex items-center gap-2 mb-1">
-            <span className="text-[17px] font-medium tracking-[.12em] text-[color:var(--ink)]">神秘好友</span>
+            <span className="text-fs-18 font-medium tracking-[.12em] text-[color:var(--ink)]">神秘好友</span>
             <span className="tag tag-amber">
               {match.type}
             </span>
           </div>
           {match.interest_topic && (
-            <p className="text-xs text-[color:var(--ink2)] mb-1.5">
-              因为你聊到了 <span className="text-foreground/70 font-medium">「{match.interest_topic}」</span>
+            <p className="text-fs-12 text-[color:var(--ink2)] mb-1.5">
+              因为你聊到了 <span className="text-[color:var(--ink2)] font-medium">「{match.interest_topic}」</span>
             </p>
           )}
-          <p className="text-[15px] text-[color:var(--ink)] leading-[1.8]">{match.reason}</p>
+          <p className="text-fs-15 text-[color:var(--ink)] leading-[1.8]">{match.reason}</p>
           {/* 对方的招呼 */}
           {match.peer_greeting && (
             <div
@@ -96,13 +96,13 @@ function CloudCard({
               style={{ borderColor: "var(--carve)" }}
             >
               <MessageCircle size={11} className="mt-0.5 shrink-0" style={{ color: "var(--ink)" }} />
-              <p className="text-[13px] text-[color:var(--ink2)] leading-[1.8]">「{match.peer_greeting}」</p>
+              <p className="text-fs-13 text-[color:var(--ink2)] leading-[1.8]">「{match.peer_greeting}」</p>
             </div>
           )}
           {match.tags.length > 0 && (
             <div className="flex flex-wrap gap-1.5 mt-2">
               {match.tags.map((t, i) => (
-                <span key={i} className="chip h-6 px-2 text-[10px] mobile:h-auto mobile:max-w-full mobile:break-all mobile:whitespace-normal">
+                <span key={i} className="chip h-6 px-2 text-fs-11 mobile:h-auto mobile:max-w-full mobile:break-all mobile:whitespace-normal">
                   {t}
                 </span>
               ))}
@@ -119,16 +119,16 @@ function CloudCard({
             onChange={e => setGreetingText(e.target.value.slice(0, 50))}
             placeholder="说点什么吧（可选，50字以内）"
             rows={2}
-            className="w-full resize-none rounded-[10px] border border-[color:var(--carve)] bg-[color:var(--tile)] px-3 py-[9px] text-base leading-relaxed text-[color:var(--ink)] outline-none placeholder:text-[color:var(--ink2)] focus:border-[color:var(--ink)]"
+            className="w-full resize-none rounded-[10px] border border-[color:var(--carve)] bg-[color:var(--tile)] px-3 py-[9px] text-fs-16.5 leading-relaxed text-[color:var(--ink)] outline-none placeholder:text-[color:var(--ink2)] focus:border-[color:var(--ink)]"
           />
           <div className="flex gap-2 mt-2 justify-end">
             <button
               onClick={() => setShowGreeting(false)}
-              className="btn btn-quiet h-8 px-2.5 text-[13px] mobile:h-10"
+              className="btn btn-quiet h-8 px-2.5 text-fs-13 mobile:h-10"
             >跳过</button>
             <button
               onClick={() => onAccept(match, greetingText)}
-              className="btn btn-primary h-8 px-3.5 text-[13px] mobile:h-10"
+              className="btn btn-primary h-8 px-3.5 text-fs-13 mobile:h-10"
             >发送打招呼</button>
           </div>
         </div>
@@ -138,11 +138,11 @@ function CloudCard({
         <div className="flex gap-2 mt-3 justify-end">
           <button
             onClick={() => onSkip(match.id)}
-            className="btn btn-quiet h-8 px-2.5 text-[13px] mobile:h-10"
+            className="btn btn-quiet h-8 px-2.5 text-fs-13 mobile:h-10"
           >算了</button>
           <button
             onClick={() => setShowGreeting(true)}
-            className="btn btn-primary h-8 px-3.5 text-[13px] mobile:h-10"
+            className="btn btn-primary h-8 px-3.5 text-fs-13 mobile:h-10"
           >认识下</button>
         </div>
       )}
@@ -315,13 +315,13 @@ function MatchForAccount({ username }: { username: string }) {
           {/* 最近聊天釉片；联系人用刻线与清釉选中片。 */}
           <Glaze as="aside" variant="panel" lens={false} fur className="relative z-10 m-3 mr-0 flex w-[min(16rem,30%)] shrink-0 flex-col rounded-[18px] mobile:mb-0 mobile:w-auto">
             <div className="mx-5 border-b py-5" style={{ borderColor: "var(--carve)", boxShadow: "0 1px 0 var(--etch)" }}>
-              <p className="text-[18px] font-medium tracking-[.18em]">最近聊天</p>
+              <p className="text-fs-18 font-medium tracking-[.18em]">最近聊天</p>
             </div>
             <div className="flex-1 min-h-0 overflow-y-auto p-2 mobile:flex mobile:flex-none mobile:overflow-x-auto mobile:overflow-y-hidden">
               {rooms.length === 0 ? (
                 <div className="flex flex-col items-center justify-center h-40 px-4 text-center gap-2 mobile:h-16 mobile:w-full">
-                  <User size={28} className="text-muted-foreground/40" />
-                  <p className="text-xs text-[color:var(--ink2)]">双方都接受匹配后，对方会出现在这里</p>
+                  <User size={28} className="text-[color:var(--ink2)] opacity-40" />
+                  <p className="text-fs-12 text-[color:var(--ink2)]">双方都接受匹配后，对方会出现在这里</p>
                 </div>
               ) : rooms.map(room => (
                 <button
@@ -332,10 +332,10 @@ function MatchForAccount({ username }: { username: string }) {
                     selected?.room_id === room.room_id && "chip-on"
                   )}
                 >
-                  <div className="grid h-9 w-9 shrink-0 place-items-center rounded-[6px] bg-secondary">
-                    <span className="text-sm font-medium" style={{ color: "var(--ink)" }}>{room.peer[0]}</span>
+                  <div className="grid h-9 w-9 shrink-0 place-items-center rounded-[6px] bg-[color:var(--slip)]">
+                    <span className="text-fs-13 font-medium" style={{ color: "var(--ink)" }}>{room.peer[0]}</span>
                   </div>
-                  <span className="text-sm font-medium truncate">{room.peer}</span>
+                  <span className="text-fs-15 font-medium truncate">{room.peer}</span>
                 </button>
               ))}
             </div>
@@ -346,8 +346,8 @@ function MatchForAccount({ username }: { username: string }) {
             {!selected ? (
               <div className="flex-1 relative overflow-hidden mobile:flex mobile:min-h-0 mobile:flex-col mobile:gap-3 mobile:overflow-y-auto mobile:p-3">
                 {pendingMatches.length === 0 ? (
-                  <section data-match-empty className="relative z-[1] mx-auto max-h-full max-w-[520px] overflow-y-auto px-6 pb-6 pt-10 text-[13px] leading-[1.85] text-[color:var(--ink2)] mobile:px-1 mobile:pt-2">
-                    <h2 className="text-[15px] font-medium tracking-[.16em] text-[color:var(--ink)]">匹配是什么</h2>
+                  <section data-match-empty className="relative z-[1] mx-auto max-h-full max-w-[520px] overflow-y-auto px-6 pb-6 pt-10 text-fs-13 leading-[1.85] text-[color:var(--ink2)] mobile:px-1 mobile:pt-2">
+                    <h2 className="text-fs-15 leading-[inherit] font-medium tracking-[.16em] text-[color:var(--ink)]">匹配是什么</h2>
                     {rooms.length > 0 && <p className="mt-3">从「最近聊天」选一位，就能继续和对方聊天。</p>}
                     <p className="mt-3">这是旧版的真人连接：系统曾根据对话和社交画像（旧版），推荐可能聊得来的人。推荐卡约 25 秒后淡出，淡出后不会再出现。</p>
                     <p className="mt-2">在卡片上点「认识下」，再点「发送打招呼」（招呼可以不写）。双方都这样做之后，对方会出现在「最近聊天」里。</p>
@@ -376,10 +376,10 @@ function MatchForAccount({ username }: { username: string }) {
               <>
                 {/* header */}
                 <Glaze as="header" variant="strip" lens className="relative z-[2] flex shrink-0 items-center gap-3 rounded-[16px] px-5 py-4 mobile:px-4">
-                  <div className="grid h-7 w-7 place-items-center rounded-[6px] bg-secondary">
-                    <span className="text-xs font-medium" style={{ color: "var(--ink)" }}>{selected.peer[0]}</span>
+                  <div className="grid h-7 w-7 place-items-center rounded-[6px] bg-[color:var(--slip)]">
+                    <span className="text-fs-12 font-medium" style={{ color: "var(--ink)" }}>{selected.peer[0]}</span>
                   </div>
-                  <p className="text-[18px] font-medium tracking-[.1em] mobile:min-w-0 mobile:truncate">{selected.peer}</p>
+                  <p className="text-fs-18 font-medium tracking-[.1em] mobile:min-w-0 mobile:truncate">{selected.peer}</p>
                 </Glaze>
 
                 {/* 消息列表 */}
@@ -390,7 +390,7 @@ function MatchForAccount({ username }: { username: string }) {
                       <div key={i} className={cn("flex", isSelf ? "justify-end" : "justify-start")}>
                         <div className={cn("flex flex-col gap-1.5 mobile:max-w-[80vw] mobile:min-w-0", isSelf ? "max-w-[520px] items-end" : "max-w-[640px] items-start")}>
                           {!isSelf && (
-                            <div className="text-[13px] tracking-[.1em] text-[color:var(--ink2)]">{m.sender}</div>
+                            <div className="text-fs-13 tracking-[.1em] text-[color:var(--ink2)]">{m.sender}</div>
                           )}
                           <div className={cn("mobile:max-w-full mobile:break-words", isSelf ? "bubble-user" : "bubble-ai")}>
                             {m.content}
@@ -411,13 +411,13 @@ function MatchForAccount({ username }: { username: string }) {
                       onKeyDown={handleKey}
                       placeholder="发消息…"
                       rows={1}
-                      className="flex-1 resize-none bg-transparent text-base outline-none py-1.5 leading-[1.8] max-h-[100px] text-[color:var(--ink)] placeholder:text-[color:var(--ink2)] mobile:min-w-0"
+                      className="flex-1 resize-none bg-transparent text-fs-16.5 outline-none py-1.5 leading-[1.8] max-h-[100px] text-[color:var(--ink)] placeholder:text-[color:var(--ink2)] mobile:min-w-0"
                     />
                     <button
                       onClick={handleSend}
                       disabled={!input.trim()}
                       aria-label="发送消息"
-                      className="btn btn-primary mb-0.5 h-10 shrink-0 px-4 text-[13px] tracking-[.2em]"
+                      className="btn btn-primary mb-0.5 h-10 shrink-0 px-4 text-fs-13 tracking-[.2em]"
                     >
                       发送
                     </button>
@@ -463,14 +463,14 @@ function MatchForAccount({ username }: { username: string }) {
 function MatchContent() {
   const username = useAccountIdentity();
   if (!username) {
-    return <div role="status" className="flex h-dvh items-center justify-center text-sm text-muted-foreground">加载中…</div>;
+    return <div role="status" className="flex h-dvh items-center justify-center text-fs-13 text-[color:var(--ink2)]">加载中…</div>;
   }
   return <MatchForAccount key={username} username={username} />;
 }
 
 export default function MatchPage() {
   return (
-    <Suspense fallback={<div role="status" className="flex h-dvh items-center justify-center text-sm text-muted-foreground">加载中…</div>}>
+    <Suspense fallback={<div role="status" className="flex h-dvh items-center justify-center text-fs-13 text-[color:var(--ink2)]">加载中…</div>}>
       <MatchContent />
     </Suspense>
   );

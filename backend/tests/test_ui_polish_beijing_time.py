@@ -244,6 +244,6 @@ def test_agent_exchange_page_heading_is_hidden_only_when_embedded():
     assert len(headings) == 1, "广场 page must keep exactly one <h1>"
     heading = headings[0]
     assert "embedded" in heading and "sr-only" in heading
-    assert "text-[30px] font-medium tracking-[.24em]" in heading
+    assert "text-fs-30 font-medium tracking-[.24em]" in heading
     assert 'aria-label="刷新分身与交流记录"' in source
     assert not re.search(r"\{!embedded\b[^}]*aria-label=\"刷新分身与交流记录\"", source)

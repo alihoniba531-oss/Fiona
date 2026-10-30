@@ -10,7 +10,7 @@ function empty<T>(value: T[] | undefined): value is T[] {
   return Array.isArray(value) && value.length > 0;
 }
 function Field({ label, children }: { label: string; children: ReactNode }) {
-  return <div className="min-w-0"><dt className="text-xs text-[color:var(--ink2)]">{label}</dt><dd className="mt-1 min-w-0 whitespace-pre-wrap break-words text-sm leading-relaxed">{children}</dd></div>;
+  return <div className="min-w-0"><dt className="text-fs-12 text-[color:var(--ink2)]">{label}</dt><dd className="mt-1 min-w-0 whitespace-pre-wrap break-words text-fs-15 leading-relaxed">{children}</dd></div>;
 }
 function Tags({ values, label }: { values: string[] | undefined; label: string }) {
   if (!empty(values)) return null;
@@ -38,9 +38,9 @@ export default function KbCardDetail({ card }: { card: KbCard }) {
         {card.scene_type && <span className="tag">{kbSceneTypeLabel(card.scene_type)}</span>}
         {card.position && <span className="tag">{card.position === "opening" ? "开场钩子" : "结尾悬念"}</span>}
       </div>
-      <h2 className="break-words text-xl tracking-[.16em]">{card.title}</h2>
+      <h2 className="break-words text-fs-22 tracking-[.16em]">{card.title}</h2>
       <p className="readout break-words">{card.id}{card.version != null ? ` · 第 ${card.version} 版` : ""}</p>
-      <p className="break-words text-sm leading-relaxed text-[color:var(--ink2)]">{card.summary}</p>
+      <p className="break-words text-fs-15 leading-relaxed text-[color:var(--ink2)]">{card.summary}</p>
     </header>
 
     <dl className="grid min-w-0 grid-cols-1 gap-4 @[720px]:grid-cols-2">

@@ -77,7 +77,7 @@ export default function StarChart({ className }: { className?: string }) {
             <line x1="320" y1="258" x2="320" y2="20" transform="rotate(340.3 320 320)"></line>
             <line x1="320" y1="258" x2="320" y2="20" transform="rotate(358 320 320)"></line>
           </g>
-          <g style={{"fill": "var(--ink2)", "fontFamily": "'Noto Serif SC', serif", "fontSize": "13px"}} textAnchor="middle" dominantBaseline="middle">
+          <g style={{"fill": "var(--ink2)", "fontFamily": "'Noto Serif SC', serif", "fontSize": "var(--fs-13)"}} textAnchor="middle" dominantBaseline="middle">
             <text x="320" y="2" transform="rotate(20.9 320 320)">角</text>
             <text x="320" y="2" transform="rotate(31.3 320 320)">亢</text>
             <text x="320" y="2" transform="rotate(43.1 320 320)">氐</text>

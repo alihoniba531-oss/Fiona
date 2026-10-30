@@ -212,27 +212,27 @@ function MiniCloudCard({
       }}
     >
       <div className="flex items-start gap-2">
-        <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-[6px] bg-secondary">
-          <Sparkles size={13} style={{ color: "var(--amber-ink)" }} />
+        <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-[6px] bg-[color:var(--slip)]">
+          <Sparkles size={13} style={{ color: "var(--ink)" }} />
         </div>
         <div className="flex-1 min-w-0">
           <div className="flex items-center gap-1.5 mb-0.5">
-            <span className="text-xs text-foreground/60">神秘好友</span>
+            <span className="text-fs-12 text-[color:var(--ink2)]">神秘好友</span>
             <span className="tag tag-amber">
               {match.type}
             </span>
           </div>
           {match.interest_topic && (
-            <p className="text-[9px] text-muted-foreground mb-1">
+            <p className="text-fs-11 text-[color:var(--ink2)] mb-1">
               因为聊到{" "}
-              <span className="text-foreground/70 font-medium">「{match.interest_topic}」</span>
+              <span className="text-[color:var(--ink2)] font-medium">「{match.interest_topic}」</span>
             </p>
           )}
-          <p className="text-[11px] text-foreground/80 leading-snug line-clamp-2">
+          <p className="text-fs-11 text-[color:var(--ink2)] leading-snug line-clamp-2">
             {match.reason}
           </p>
           {match.peer_greeting && (
-            <p className="text-[10px] text-foreground/70 mt-1.5 bg-secondary/60 rounded-lg px-2 py-1">
+            <p className="text-fs-11 text-[color:var(--ink2)] mt-1.5 bg-[color:var(--slip)]/60 rounded-lg px-2 py-1">
               「{match.peer_greeting}」
             </p>
           )}
@@ -241,13 +241,13 @@ function MiniCloudCard({
       <div className="flex gap-1.5 mt-2.5 justify-end">
         <button
           onClick={() => onSkip(match.id)}
-          className="text-[10px] px-2.5 py-1 rounded-full text-muted-foreground hover:bg-secondary transition-colors"
+          className="text-fs-11 px-2.5 py-1 rounded-full text-[color:var(--ink2)] hover:bg-[color:var(--slip)] transition-colors"
         >
           算了
         </button>
         <button
           onClick={() => onAccept(match)}
-          className="text-[10px] px-2.5 py-1 rounded-full bg-primary text-primary-foreground hover:opacity-90 transition-opacity"
+          className="text-fs-11 px-2.5 py-1 rounded-full bg-[color:var(--btn)] text-[color:var(--btnink)] hover:opacity-90 transition-opacity"
         >
           认识下
         </button>
@@ -428,20 +428,20 @@ function ChatModelFooter({ username, settingsOpen, chatMode, loading }: {
         {CLAUDE_EFFORTS.map(effort => <button key={effort} type="button" role="radio" aria-checked={config.effort === effort}
           tabIndex={config.effort === effort ? 0 : -1} title={CHAT_MODEL_EFFORT_TITLES[effort]} aria-disabled={busy !== null || loading || !settings.available}
           onClick={() => void changeEffort(effort)}
-          className="btn btn-quiet h-7 shrink-0 px-2 text-xs aria-checked:bg-[color:var(--btn)] aria-checked:text-[color:var(--btnink)] aria-checked:hover:bg-[color:var(--btn)] aria-checked:hover:text-[color:var(--btnink)] aria-disabled:opacity-50 aria-disabled:cursor-default max-md:min-h-10">
+          className="btn btn-quiet h-7 shrink-0 px-2 text-fs-12 aria-checked:bg-[color:var(--btn)] aria-checked:text-[color:var(--btnink)] aria-checked:hover:bg-[color:var(--btn)] aria-checked:hover:text-[color:var(--btnink)] aria-disabled:opacity-50 aria-disabled:cursor-default max-md:min-h-10">
           {CHAT_MODEL_EFFORT_LABELS[effort]}
         </button>)}
       </div>}
       <button type="button" disabled={busy !== null || loading || (!config.enabled && (config.status !== "ok" || !settings.available))}
         title={!config.enabled && config.status !== "ok" ? "请在设置中重新填写 Key" : undefined}
-        onClick={() => void toggle()} className="btn btn-quiet h-7 shrink-0 px-2 text-xs max-md:min-h-10">
+        onClick={() => void toggle()} className="btn btn-quiet h-7 shrink-0 px-2 text-fs-12 max-md:min-h-10">
         {busy === "toggle" ? "正在切换…" : config.enabled ? "改用平台" : "改用我的模型"}
       </button>
     </div> : <span>每条消息消耗 <span className="readout font-normal">10</span> 颗草莓</span>}
     {chatMode && error && <div className="flex items-center gap-2 text-[color:var(--seal)]">
       <span role="alert">{error}</span>
       {!settings && <button type="button" disabled={busy !== null || loading} onClick={refresh}
-        className="btn btn-quiet h-7 shrink-0 px-2 text-xs max-md:min-h-10">重试</button>}
+        className="btn btn-quiet h-7 shrink-0 px-2 text-fs-12 max-md:min-h-10">重试</button>}
     </div>}
   </div>;
 }
@@ -2408,7 +2408,7 @@ export default function ChatPage() {
   const lastSongCardMessageId = lastSongCardMessageIds(messages);
 
   const imageModelGroup = (
-    <div role="group" aria-label="图片模型" className="image-model-segments flex items-center gap-1 max-md:w-full"><span className="hidden shrink-0 text-xs text-[var(--ink2)] max-md:inline">模型</span>
+    <div role="group" aria-label="图片模型" className="image-model-segments flex items-center gap-1 max-md:w-full"><span className="hidden shrink-0 text-fs-12 text-[color:var(--ink2)] max-md:inline">模型</span>
       {imageModels.map(model => <button key={model.id} type="button" aria-pressed={imageModel === model.id} disabled={isLoading || !model.available}
         title={model.available ? model.label : "管理员尚未配置此模型"} onClick={() => {
           setPreferredImageModel(model.id);
@@ -2452,44 +2452,44 @@ export default function ChatPage() {
         {showHistory && (
         <Glaze variant="panel"
           className="absolute left-[calc(var(--rail-w)+12px)] top-3 bottom-3 w-64 z-50 flex flex-col glaze-slide-in max-md:left-0 max-md:top-0 max-md:bottom-[calc(var(--tabbar-h)+env(safe-area-inset-bottom))] max-md:w-[min(85vw,320px)] max-md:rounded-none max-md:pt-[env(safe-area-inset-top)]"
-          style={{ borderRight: "1px solid var(--glass-border)", boxShadow: "8px 0 32px var(--drop)" }}
+          style={{ borderRight: "1px solid var(--rule)", boxShadow: "8px 0 32px var(--drop)" }}
         >
           <>
-              <div className="flex items-center justify-between px-4 py-3 border-b border-border">
+              <div className="flex items-center justify-between px-4 py-3 border-b border-[color:var(--rule)]">
                 <div className="flex items-center gap-1.5">
-                  <Clock size={12} className="text-muted-foreground" />
-                  <span className="text-xs text-muted-foreground tracking-wide">当前对话记录</span>
+                  <Clock size={12} className="text-[color:var(--ink2)]" />
+                  <span className="text-fs-12 text-[color:var(--ink2)] tracking-wide">当前对话记录</span>
                 </div>
                 <div className="flex items-center gap-2">
-                  <button disabled={!currentConversation || conversationLocked || conversationLoading} onClick={() => currentConversation && handleDeleteConversation(currentConversation.id)} className="flex items-center gap-1 text-[11px] text-muted-foreground hover:text-destructive transition-colors disabled:opacity-40" title="删除当前对话">
+                  <button disabled={!currentConversation || conversationLocked || conversationLoading} onClick={() => currentConversation && handleDeleteConversation(currentConversation.id)} className="flex items-center gap-1 text-fs-11 text-[color:var(--ink2)] hover:text-[color:var(--seal)] transition-colors disabled:opacity-40" title="删除当前对话">
                     <Trash2 size={11} />删除
                   </button>
-                  <button ref={historyCloseButtonRef} onClick={() => setShowHistory(false)} aria-label="关闭当前对话记录" className="text-muted-foreground hover:text-foreground max-md:grid max-md:h-10 max-md:w-10 max-md:place-items-center">
+                  <button ref={historyCloseButtonRef} onClick={() => setShowHistory(false)} aria-label="关闭当前对话记录" className="text-[color:var(--ink2)] hover:text-[color:var(--ink)] max-md:grid max-md:h-10 max-md:w-10 max-md:place-items-center">
                     <X size={14} />
                   </button>
                 </div>
               </div>
               <div className="flex-1 overflow-y-auto py-3 px-3">
-                {hasMoreMessages && <p className="px-2 pb-3 text-[11px] text-muted-foreground">当前显示最近 500 条消息，完整记录可在历史页查看。</p>}
+                {hasMoreMessages && <p className="px-2 pb-3 text-fs-11 text-[color:var(--ink2)]">当前显示最近 500 条消息，完整记录可在历史页查看。</p>}
                 <div className="space-y-1">
                   {groupByDate(messages).map(([date, msgs]) => {
                     const isOpen = !collapsed[date];
                     return (
                       <div key={date}>
-                        <button onClick={() => setCollapsed((prev) => ({ ...prev, [date]: !prev[date] }))} className="w-full flex items-center gap-2 px-2 py-2 rounded-xl hover:bg-secondary transition-all text-left">
-                          {isOpen ? <ChevronDown size={13} className="text-muted-foreground shrink-0" /> : <ChevronRight size={13} className="text-muted-foreground shrink-0" />}
-                          <span className="text-[11px] text-muted-foreground truncate">{date}</span>
-                          <span className="text-[10px] text-muted-foreground/50 ml-auto shrink-0">{msgs.length} 条</span>
+                        <button onClick={() => setCollapsed((prev) => ({ ...prev, [date]: !prev[date] }))} className="w-full flex items-center gap-2 px-2 py-2 rounded-xl hover:bg-[color:var(--slip)] transition-all text-left">
+                          {isOpen ? <ChevronDown size={13} className="text-[color:var(--ink2)] shrink-0" /> : <ChevronRight size={13} className="text-[color:var(--ink2)] shrink-0" />}
+                          <span className="text-fs-11 text-[color:var(--ink2)] truncate">{date}</span>
+                          <span className="text-fs-11 text-[color:var(--ink2)] ml-auto shrink-0">{msgs.length} 条</span>
                         </button>
                         {isOpen && (
-                          <div className="ml-5 border-l border-border pl-3 pb-2 space-y-2.5 mt-1">
+                          <div className="ml-5 border-l border-[color:var(--rule)] pl-3 pb-2 space-y-2.5 mt-1">
                             {msgs.map((msg, idx2) => (
                               <div key={`${msg.id}-${idx2}`} className="flex flex-col gap-0.5">
                                 <div className="flex items-center gap-1.5">
-                                  <span className="text-[10px] font-medium text-muted-foreground">{msg.role === "assistant" ? agent?.display_name || "我的分身" : "我"}</span>
-                                  <span className="text-[9px] text-muted-foreground/50">{formatBeijingDateTime(msg.timestamp)}</span>
+                                  <span className="text-fs-11 font-medium text-[color:var(--ink2)]">{msg.role === "assistant" ? agent?.display_name || "我的分身" : "我"}</span>
+                                  <span className="text-fs-11 text-[color:var(--ink2)]">{formatBeijingDateTime(msg.timestamp)}</span>
                                 </div>
-                                <p className="text-[11px] text-foreground/70 leading-relaxed line-clamp-2">{msg.content}</p>
+                                <p className="text-fs-11 text-[color:var(--ink2)] leading-relaxed line-clamp-2">{msg.content}</p>
                               </div>
                             ))}
                           </div>
@@ -2505,14 +2505,14 @@ export default function ChatPage() {
 
         {/* ── subtle backdrop behind drawer (does NOT cover sidebar) */}
         {showHistory && (
-          <div className="absolute left-[var(--rail-w)] top-0 bottom-0 right-0 z-40 bg-[var(--scrim)] transition-opacity max-md:left-0 max-md:bottom-[calc(var(--tabbar-h)+env(safe-area-inset-bottom))]" onClick={() => setShowHistory(false)} />
+          <div className="absolute left-[var(--rail-w)] top-0 bottom-0 right-0 z-40 bg-[color:var(--scrim)] transition-opacity max-md:left-0 max-md:bottom-[calc(var(--tabbar-h)+env(safe-area-inset-bottom))]" onClick={() => setShowHistory(false)} />
         )}
 
         <div className="flex flex-1 min-w-0 min-h-0">
           <ConversationPicker {...conversationPickerProps} glazed={false} className="relative z-[2] my-3 h-[calc(100%-24px)]! max-lg:hidden" />
 
           {conversationPickerOpen && <>
-            <div className="fixed left-[var(--rail-w)] right-0 top-0 bottom-0 z-[61] bg-[var(--scrim)] lg:hidden max-md:left-0 max-md:bottom-[calc(var(--tabbar-h)+env(safe-area-inset-bottom))]" onClick={() => setConversationPickerOpen(false)} aria-hidden="true" />
+            <div className="fixed left-[var(--rail-w)] right-0 top-0 bottom-0 z-[61] bg-[color:var(--scrim)] lg:hidden max-md:left-0 max-md:bottom-[calc(var(--tabbar-h)+env(safe-area-inset-bottom))]" onClick={() => setConversationPickerOpen(false)} aria-hidden="true" />
             <div id="conversation-picker-dialog" ref={conversationDialogRef} role="dialog" aria-modal="true" aria-label="对话列表" tabIndex={-1}
               className="chat-conversation-modal fixed left-[calc(var(--rail-w)+12px)] top-3 bottom-3 z-[62] w-[min(85vw,320px)] glaze-slide-in outline-none lg:hidden max-md:left-0 max-md:top-0 max-md:bottom-[calc(var(--tabbar-h)+env(safe-area-inset-bottom))] max-md:rounded-none max-md:pt-[env(safe-area-inset-top)]">
               <ConversationPicker {...conversationPickerProps} />
@@ -2530,13 +2530,13 @@ export default function ChatPage() {
                 </button>
                 {!anyDrawerOpen && <Seal variant="agent" avatar={agent?.avatar_emoji} size={36} className="max-md:w-7 max-md:h-7" />}
                 <div className="min-w-0">
-                  <div className="truncate text-[18px] font-medium max-md:text-base">{agent?.display_name || "我的分身"}</div>
-                  <div className="flex gap-2 whitespace-nowrap text-xs text-muted-foreground max-lg:hidden"><span>AI 分身</span><span aria-hidden="true" className="h-3 border-l border-[var(--rule2)]" /><span>仅你可见</span></div>
+                  <div className="truncate text-fs-18 font-medium max-md:text-fs-16.5">{agent?.display_name || "我的分身"}</div>
+                  <div className="flex gap-2 whitespace-nowrap text-fs-12 text-[color:var(--ink2)] max-lg:hidden"><span>AI 分身</span><span aria-hidden="true" className="h-3 border-l border-[color:var(--rule2)]" /><span>仅你可见</span></div>
                 </div>
               </div>
               <Signal mode={signalMode} className="max-md:col-span-2 max-md:row-start-2 max-md:h-6" />
               <div className="flex items-center gap-2 max-md:col-start-2 max-md:row-start-1 max-md:shrink-0 max-md:gap-1">
-                <span className="flex items-center gap-2 text-xs text-muted-foreground">
+                <span className="flex items-center gap-2 text-fs-12 text-[color:var(--ink2)]">
                   <span className="whitespace-nowrap max-md:hidden">{signalMode === "listening" ? "正在听" : signalMode === "speaking" ? "正在说" : "待命"}</span>
                 </span>
                 <button type="button" className={cn("chip max-md:h-10 max-md:w-10 max-md:justify-center max-md:px-0", voiceOn && "chip-on")}
@@ -2572,11 +2572,11 @@ export default function ChatPage() {
                 >
                   <AudioLines size={13} className="md:hidden" /><span className="max-md:hidden">免提</span>
                 </button>
-                <span className="hidden shrink-0 flex-col items-end gap-0.5 whitespace-nowrap text-xs max-md:inline-flex" title="平台模型每条消息消耗 10 颗；自带模型聊天不扣">
-                  <span className="readout font-normal" style={{ color: strawberryBalance !== null && strawberryBalance < 30 ? "var(--rec)" : "var(--foreground)" }}>
+                <span className="hidden shrink-0 flex-col items-end gap-0.5 whitespace-nowrap text-fs-12 max-md:inline-flex" title="平台模型每条消息消耗 10 颗；自带模型聊天不扣">
+                  <span className="readout font-normal" style={{ color: strawberryBalance !== null && strawberryBalance < 30 ? "var(--seal)" : "var(--ink)" }}>
                     {strawberryBalance === null ? "…" : strawberryBalance}
                   </span>
-                  <span className="text-[10.5px] text-[var(--ink2)]">草莓</span>
+                  <span className="text-fs-11 text-[color:var(--ink2)]">草莓</span>
                 </span>
               </div>
             </Glaze>
@@ -2586,7 +2586,7 @@ export default function ChatPage() {
                 <div className="mx-auto flex w-full max-w-[760px] flex-col gap-7">
                   {localWatchNotices.length > 0 && <div role="status" className="flex flex-wrap gap-2">
                     {localWatchNotices.map(alert => <button key={alert.conversation_id} type="button"
-                      className="chip min-h-10 max-w-full whitespace-normal text-left text-xs disabled:opacity-50"
+                      className="chip min-h-10 max-w-full whitespace-normal text-left text-fs-12 disabled:opacity-50"
                       disabled={conversationLocked || conversationLoading}
                       onClick={() => {
                         if (chatAbortRef.current || conversationLocked || conversationLoading) return;
@@ -2600,19 +2600,19 @@ export default function ChatPage() {
                   </div>}
                   {studioNotices.length > 0 && <div role="status" className="flex flex-wrap gap-2">
                     {studioNotices.map(notice => <button key={notice.conversation_id} type="button"
-                      className="chip min-h-10 max-w-full whitespace-normal text-left text-xs disabled:opacity-50"
+                      className="chip min-h-10 max-w-full whitespace-normal text-left text-fs-12 disabled:opacity-50"
                       disabled={conversationLocked || conversationLoading}
                       onClick={() => {
                         if (chatAbortRef.current || conversationLocked || conversationLoading) return;
                         void handleSelectConversation(notice.conversation_id);
                       }}>有新的工作室提醒 · {notice.project_title}</button>)}
                   </div>}
-                  {hasMoreMessages && <p className="text-xs text-muted-foreground text-center">当前显示最近 500 条消息；更早记录可在历史页查看。</p>}
+                  {hasMoreMessages && <p className="text-fs-12 text-[color:var(--ink2)] text-center">当前显示最近 500 条消息；更早记录可在历史页查看。</p>}
                   {messages.length === 0 && (conversationLoading || conversationError || !currentConversation ? (
-                    <p className="text-xs text-muted-foreground text-center pt-8" role="status">{conversationLoading ? "正在加载对话…" : conversationError ? "对话加载失败，请在对话列表里重试。" : "在对话列表里点「新建」，开始和自己的分身交流。"}</p>
+                    <p className="text-fs-12 text-[color:var(--ink2)] text-center pt-8" role="status">{conversationLoading ? "正在加载对话…" : conversationError ? "对话加载失败，请在对话列表里重试。" : "在对话列表里点「新建」，开始和自己的分身交流。"}</p>
                   ) : (
                     <div data-chat-openers className="flex flex-col items-center gap-4 pt-8 text-center max-md:pt-4">
-                      <p className="text-[15px] leading-[1.85] text-[color:var(--ink2)]" role="status">{`和 ${agent?.display_name || "你的分身"} 开始新的交流。`}</p>
+                      <p className="text-fs-15 leading-[1.85] text-[color:var(--ink2)]" role="status">{`和 ${agent?.display_name || "你的分身"} 开始新的交流。`}</p>
                       <div role="group" aria-label="开场" className="flex flex-wrap justify-center gap-2">
                         <button type="button" className="chip min-h-10" disabled={conversationLocked || conversationLoading || !currentConversation || imageMode || hasReferenceImages || !!input.trim()} onClick={startChatOpener}>聊聊今天</button>
                         <button type="button" className="chip min-h-10" disabled={!!pendingImage || isReadingImage || isReadingReferences || conversationLocked || conversationLoading || !currentConversation || imageMode || hasReferenceImages} onClick={startDrawOpener}>帮我画一张…</button>
@@ -2622,7 +2622,7 @@ export default function ChatPage() {
                   ))}
                   {messages.map((msg, index) => (
                     <div key={`${username}-${currentConversation?.id}-${msg.id}`}>
-                    {(index === 0 || beijingDateKey(msg.timestamp) !== beijingDateKey(messages[index - 1].timestamp)) && <div className="mb-7 flex items-center gap-[18px] text-xs tracking-[.32em] text-[var(--ink2)]"><span className="h-px flex-1 bg-[var(--rule)]" />{formatChineseDate(msg.timestamp)}<span className="h-px flex-1 bg-[var(--rule)]" /></div>}
+                    {(index === 0 || beijingDateKey(msg.timestamp) !== beijingDateKey(messages[index - 1].timestamp)) && <div className="mb-7 flex items-center gap-[18px] text-fs-12 tracking-[.32em] text-[color:var(--ink2)]"><span className="h-px flex-1 bg-[color:var(--rule)]" />{formatChineseDate(msg.timestamp)}<span className="h-px flex-1 bg-[color:var(--rule)]" /></div>}
                     <ChatBubble key={`${username}-${currentConversation?.id}-${msg.id}`} message={msg} agentName={agent?.display_name} onDelete={isLoading ? undefined : handleDeleteMessage} onConfirmTts={handleConfirmTts} onDeclineTts={handleDeclineTts}
                       onSpeak={handleSpeakMessage} onStopSpeak={stopTtsByUser} speaking={speakingMessageId === msg.id} speakDisabled={isLoading}
                       onRetryImage={request => { void handleSend(request.prompt, request); }} onEditImage={handleSelectReferenceImage}
@@ -2636,58 +2636,58 @@ export default function ChatPage() {
               </ChatScrollArea>
             </div>
             {showLatestPill && <button type="button" onClick={() => chatScrollRef.current?.scrollToLatest()}
-              className="chat-latest chip absolute left-1/2 z-[1] h-8 -translate-x-1/2 gap-1.5 px-3 text-xs bg-[var(--mount)] shadow-[0_1px_2px_var(--drop)] bottom-[calc(var(--composer-height)+34px)] max-md:bottom-[calc(var(--composer-height)+var(--tabbar-h)+env(safe-area-inset-bottom)+12px)]">
+              className="chat-latest chip absolute left-1/2 z-[1] h-8 -translate-x-1/2 gap-1.5 px-3 text-fs-12 bg-[color:var(--mount)] shadow-[0_1px_2px_var(--drop)] bottom-[calc(var(--composer-height)+34px)] max-md:bottom-[calc(var(--composer-height)+var(--tabbar-h)+env(safe-area-inset-bottom)+12px)]">
               <ArrowDown size={12} />回到最新
             </button>}
             <Glaze as="footer" variant="slab" ref={composerRef} className="chat-composer absolute bottom-[18px] left-1/2 z-[2] w-[min(760px,calc(100%-48px))] -translate-x-1/2 rounded-[14px] px-[18px] pb-3 pt-3 max-md:inset-x-0 max-md:bottom-[calc(var(--tabbar-h)+env(safe-area-inset-bottom))] max-md:w-full max-md:translate-x-0 max-md:rounded-t-[18px] max-md:rounded-b-none max-md:px-2.5 max-md:pb-1.5 max-md:pt-2">
               <div data-chat-composer className="mx-auto max-w-[760px]">
                 <div role="status" aria-live="polite">
-                  {ttsPlaybackBlocked && <div className="mb-2 flex min-w-0 items-center gap-1 text-xs">
-                    <span className="min-w-0 flex-1 text-muted-foreground">浏览器拦下了自动朗读</span>
-                    <button type="button" onClick={resumeBlockedTts} className="btn btn-quiet h-7 shrink-0 px-2.5 text-xs max-md:h-9">
+                  {ttsPlaybackBlocked && <div className="mb-2 flex min-w-0 items-center gap-1 text-fs-12">
+                    <span className="min-w-0 flex-1 text-[color:var(--ink2)]">浏览器拦下了自动朗读</span>
+                    <button type="button" onClick={resumeBlockedTts} className="btn btn-quiet h-7 shrink-0 px-2.5 text-fs-12 max-md:h-9">
                       <Volume2 size={13} />点此播放
                     </button>
-                    <button type="button" onClick={stopTtsByUser} className="btn btn-quiet h-7 shrink-0 px-2.5 text-xs max-md:h-9">不听了</button>
+                    <button type="button" onClick={stopTtsByUser} className="btn btn-quiet h-7 shrink-0 px-2.5 text-fs-12 max-md:h-9">不听了</button>
                   </div>}
-                  {ttsWaitUntil !== null && <div className="mb-2 flex min-w-0 items-center gap-1 text-xs">
-                    <span className="min-w-0 flex-1 text-muted-foreground">
+                  {ttsWaitUntil !== null && <div className="mb-2 flex min-w-0 items-center gap-1 text-fs-12">
+                    <span className="min-w-0 flex-1 text-[color:var(--ink2)]">
                       <span aria-hidden="true">朗读限速中，{Math.max(1, Math.ceil((ttsWaitUntil - ttsWaitNow) / 1000))} 秒后接着读</span>
                       <span className="sr-only">朗读限速中，稍后自动接着读</span>
                     </span>
-                    <button type="button" onClick={stopTtsByUser} className="btn btn-quiet h-7 shrink-0 px-2.5 text-xs max-md:h-9">不听了</button>
+                    <button type="button" onClick={stopTtsByUser} className="btn btn-quiet h-7 shrink-0 px-2.5 text-fs-12 max-md:h-9">不听了</button>
                   </div>}
-                  {micNotice && <div className="mb-2 flex min-w-0 items-center gap-1 text-xs">
-                    <span className="min-w-0 flex-1 text-muted-foreground">{micNotice}</span>
-                    <button type="button" onClick={() => setMicNotice(null)} className="btn btn-quiet h-7 shrink-0 px-2.5 text-xs max-md:h-9">知道了</button>
+                  {micNotice && <div className="mb-2 flex min-w-0 items-center gap-1 text-fs-12">
+                    <span className="min-w-0 flex-1 text-[color:var(--ink2)]">{micNotice}</span>
+                    <button type="button" onClick={() => setMicNotice(null)} className="btn btn-quiet h-7 shrink-0 px-2.5 text-fs-12 max-md:h-9">知道了</button>
                   </div>}
                 </div>
-                {referenceUploadError && <p role="alert" className="mb-2 text-xs text-destructive">{referenceUploadError}</p>}
-                {hasReferenceImages && <div className="mb-2 rounded-[10px] bg-secondary/50 p-2">
+                {referenceUploadError && <p role="alert" className="mb-2 text-fs-12 text-[color:var(--seal)]">{referenceUploadError}</p>}
+                {hasReferenceImages && <div className="mb-2 rounded-[10px] bg-[color:var(--slip)]/50 p-2">
                   <div className="flex max-h-[144px] items-start gap-2 overflow-auto pb-1" aria-label="已选参考图，按编号顺序发送">
                     {selectedReferenceImages.map((image, index) => <div key={`${username}:${currentConversation?.id}:${image.id}`} className="w-[120px] shrink-0">
                       <GeneratedImage imageUrl={referencePreviewUrl(image.source)} variant="reference" referenceIndex={index + 1} compact localPreview={!!image.source.image_base64} />
-                      <div className="mt-1 flex items-center justify-between gap-1 px-1 text-muted-foreground max-md:gap-0 max-md:px-0">
+                      <div className="mt-1 flex items-center justify-between gap-1 px-1 text-[color:var(--ink2)] max-md:gap-0 max-md:px-0">
                         <button type="button" aria-label={`将图${index + 1}前移`} title="前移" disabled={conversationLocked || conversationLoading || isReadingReferences || index === 0}
-                          onClick={() => moveReferenceImage(image.id, -1)} className="rounded p-1 hover:bg-secondary hover:text-foreground disabled:opacity-30 max-md:grid max-md:h-10 max-md:w-10 max-md:place-items-center max-md:p-0"><ArrowLeft size={12} /></button>
+                          onClick={() => moveReferenceImage(image.id, -1)} className="rounded p-1 hover:bg-[color:var(--slip)] hover:text-[color:var(--ink)] disabled:opacity-30 max-md:grid max-md:h-10 max-md:w-10 max-md:place-items-center max-md:p-0"><ArrowLeft size={12} /></button>
                         <button type="button" aria-label={`将图${index + 1}后移`} title="后移" disabled={conversationLocked || conversationLoading || isReadingReferences || index === selectedReferenceImages.length - 1}
-                          onClick={() => moveReferenceImage(image.id, 1)} className="rounded p-1 hover:bg-secondary hover:text-foreground disabled:opacity-30 max-md:grid max-md:h-10 max-md:w-10 max-md:place-items-center max-md:p-0"><ArrowRight size={12} /></button>
+                          onClick={() => moveReferenceImage(image.id, 1)} className="rounded p-1 hover:bg-[color:var(--slip)] hover:text-[color:var(--ink)] disabled:opacity-30 max-md:grid max-md:h-10 max-md:w-10 max-md:place-items-center max-md:p-0"><ArrowRight size={12} /></button>
                         <button type="button" aria-label={`移除参考图${index + 1}`} title="移除这张参考图" disabled={conversationLocked || conversationLoading || isReadingReferences}
-                          onClick={() => removeReferenceImage(image.id)} className="ml-auto rounded p-1 hover:bg-destructive/10 hover:text-destructive disabled:opacity-30 max-md:grid max-md:h-10 max-md:w-10 max-md:place-items-center max-md:p-0"><X size={12} /></button>
+                          onClick={() => removeReferenceImage(image.id)} className="ml-auto rounded p-1 hover:bg-[color:var(--seal)]/10 hover:text-[color:var(--seal)] disabled:opacity-30 max-md:grid max-md:h-10 max-md:w-10 max-md:place-items-center max-md:p-0"><X size={12} /></button>
                       </div>
                     </div>)}
                   </div>
-                  <p className="mt-1 text-[10px] leading-relaxed text-muted-foreground">
+                  <p className="mt-1 text-fs-11 leading-relaxed text-[color:var(--ink2)]">
                     {selectedReferenceImagePaths.length === 3 ? "已选满3张。例：用图1的人物、图2的场景、图3的色调。"
                       : selectedReferenceImagePaths.length === 2 ? "例：用图1的人物、图2的场景。还可加入1张参考图。"
                       : "输入修改要求，也可上传本地图片或加入已生成图片，最多3张。"}
                   </p>
                 </div>}
-                <div className={cn("composer-inner flex flex-col max-md:grid gap-2 rounded-lg px-0 py-0 max-md:bg-[var(--tile)] max-md:px-3 max-md:py-1.5", (imageMode || hasReferenceImages) && "composer-with-model")}>
+                <div className={cn("composer-inner flex flex-col max-md:grid gap-2 rounded-lg px-0 py-0 max-md:bg-[color:var(--tile)] max-md:px-3 max-md:py-1.5", (imageMode || hasReferenceImages) && "composer-with-model")}>
                   <div className="composer-text flex items-end gap-2">
                     {pendingImage && (
                       <div className="relative inline-block w-fit pt-1">
-                        <img src={pendingImage} alt="待发送" className="rounded-xl max-h-20 max-w-[120px] object-cover border border-border" />
-                        <button type="button" aria-label="移除待发送图片" onClick={() => setPendingImage(null)} className="absolute -top-0.5 -right-0.5 w-4 h-4 rounded-full bg-background border border-border flex items-center justify-center hover:bg-destructive hover:text-[var(--btnink)] transition-colors max-md:-right-4 max-md:h-10 max-md:w-10">
+                        <img src={pendingImage} alt="待发送" className="rounded-xl max-h-20 max-w-[120px] object-cover border border-[color:var(--rule)]" />
+                        <button type="button" aria-label="移除待发送图片" onClick={() => setPendingImage(null)} className="absolute -top-0.5 -right-0.5 w-4 h-4 rounded-full bg-[color:var(--paper)] border border-[color:var(--rule)] flex items-center justify-center hover:bg-[color:var(--seal)] hover:text-[color:var(--btnink)] transition-colors max-md:-right-4 max-md:h-10 max-md:w-10">
                           <X size={10} />
                         </button>
                       </div>
@@ -2697,12 +2697,12 @@ export default function ChatPage() {
                       onCompositionStart={() => { isComposingRef.current = true; }}
                       onCompositionEnd={() => { isComposingRef.current = false; }}
                       placeholder={hasReferenceImages ? "描述修改要求，可用图1、图2、图3指定各图用途…" : imageMode ? "描述想生成的画面、风格和细节…" : pendingImage ? "说点什么…（可选）" : "说点什么…"} rows={1}
-                      className="min-w-0 flex-1 resize-none bg-transparent text-base text-foreground placeholder:text-muted-foreground outline-none py-1 leading-relaxed max-h-[80px] max-md:text-base"
+                      className="min-w-0 flex-1 resize-none bg-transparent text-fs-16.5 text-[color:var(--ink)] placeholder:text-[color:var(--ink2)] outline-none py-1 leading-relaxed max-h-[80px] max-md:text-fs-16.5"
                     />
                   </div>
                   <div className="composer-toolbar flex max-md:contents flex-wrap items-center justify-between gap-2">
                     <div className="composer-mode-tools flex max-md:contents flex-wrap items-center gap-2">
-                    <div className="composer-tools flex flex-wrap items-center gap-2 text-[11px]">
+                    <div className="composer-tools flex flex-wrap items-center gap-2 text-fs-11">
                       <ComposerImageMenu
                         active={imageMode || hasReferenceImages}
                         items={[
@@ -2733,11 +2733,11 @@ export default function ChatPage() {
                         ]}
                       />
                       <input ref={referenceFileInputRef} type="file" multiple accept="image/png,image/jpeg,image/webp" onChange={handlePickReferenceImages} className="hidden" />
-                      {isReadingReferences && <span role="status" className="text-muted-foreground">正在读取并检查参考图…</span>}
+                      {isReadingReferences && <span role="status" className="text-[color:var(--ink2)]">正在读取并检查参考图…</span>}
                       {hasReferenceImages ? <>
                         <span className="chip chip-on"><PencilLine size={12} />修改图片</span>
-                        <span role="status" className="text-[color:var(--amber-ink)]">参考图 {selectedReferenceImagePaths.length}/3</span>
-                        <span className="text-muted-foreground">尺寸跟随图1</span>
+                        <span role="status" className="text-[color:var(--ink)]">参考图 {selectedReferenceImagePaths.length}/3</span>
+                        <span className="text-[color:var(--ink2)]">尺寸跟随图1</span>
                       </> : imageMode ? <>
                         <span className="chip chip-on">生成图片</span>
                         <div role="group" aria-label="图片比例" className="flex items-center gap-1">
@@ -2747,15 +2747,15 @@ export default function ChatPage() {
                           </button>)}
                         </div>
                       </> : <>
-                        {pendingImage && <span className="text-muted-foreground">先移除待发送图片，即可切换生成模式</span>}
-                        {isReadingImage && <span role="status" className="text-muted-foreground">正在读取图片…</span>}
+                        {pendingImage && <span className="text-[color:var(--ink2)]">先移除待发送图片，即可切换生成模式</span>}
+                        {isReadingImage && <span role="status" className="text-[color:var(--ink2)]">正在读取图片…</span>}
                       </>}
                     </div>
                     {(imageMode || hasReferenceImages) && imageModelGroup}
                     {hasReferenceImages ? (
-                      <button type="button" disabled={conversationLocked || conversationLoading || isReadingReferences} onClick={clearReferenceImages} className="composer-mode-exit ml-auto flex items-center gap-1 text-[11px] text-muted-foreground hover:text-foreground disabled:opacity-40 max-md:min-h-10"><X size={11} />全部取消</button>
+                      <button type="button" disabled={conversationLocked || conversationLoading || isReadingReferences} onClick={clearReferenceImages} className="composer-mode-exit ml-auto flex items-center gap-1 text-fs-11 text-[color:var(--ink2)] hover:text-[color:var(--ink)] disabled:opacity-40 max-md:min-h-10"><X size={11} />全部取消</button>
                     ) : imageMode && (
-                      <button type="button" disabled={isLoading} onClick={() => setImageMode(false)} className="composer-mode-exit ml-auto flex items-center gap-1 text-[11px] text-muted-foreground hover:text-foreground disabled:opacity-40 max-md:min-h-10"><X size={11} />返回聊天</button>
+                      <button type="button" disabled={isLoading} onClick={() => setImageMode(false)} className="composer-mode-exit ml-auto flex items-center gap-1 text-fs-11 text-[color:var(--ink2)] hover:text-[color:var(--ink)] disabled:opacity-40 max-md:min-h-10"><X size={11} />返回聊天</button>
                     )}
                     </div>
                     <div className="composer-actions flex items-center gap-0.5 ml-auto shrink-0">
@@ -2774,8 +2774,8 @@ export default function ChatPage() {
                     </div>
                   </div>
                 </div>
-                {voiceText && <p className="mt-2 text-xs text-muted-foreground">{voiceText}</p>}
-                <div className="mt-2 flex min-w-0 items-center justify-between gap-3 border-t border-[var(--carve)] pt-2 text-xs text-muted-foreground shadow-[inset_0_1px_0_var(--etch)] xl:flex-nowrap max-md:mt-1 max-md:pt-1 max-md:text-[11px]">
+                {voiceText && <p className="mt-2 text-fs-12 text-[color:var(--ink2)]">{voiceText}</p>}
+                <div className="mt-2 flex min-w-0 items-center justify-between gap-3 border-t border-[color:var(--carve)] pt-2 text-fs-12 text-[color:var(--ink2)] shadow-[inset_0_1px_0_var(--etch)] xl:flex-nowrap max-md:mt-1 max-md:pt-1 max-md:text-fs-11">
                   <span className="shrink-0 max-md:hidden">Enter 发送，Shift + Enter 换行</span>
                   <ChatModelFooter key={username} username={username} settingsOpen={settingsOpen} chatMode={!imageMode && !hasReferenceImages} loading={isLoading} />
                 </div>
@@ -2802,13 +2802,13 @@ export default function ChatPage() {
         className="fixed top-3 bottom-3 right-3 z-[55] flex flex-col outline-none max-md:left-0 max-md:top-0 max-md:right-0 max-md:bottom-[calc(var(--tabbar-h)+env(safe-area-inset-bottom))]! max-md:w-screen! max-md:rounded-none max-md:pt-[env(safe-area-inset-top)] drawer-panel"
         style={{
           width: "min(960px, calc(100vw - var(--rail-w) - 12px))",
-          borderLeft: "1px solid var(--glass-border)",
+          borderLeft: "1px solid var(--rule)",
           ...drawerStyle(agentOpen),
         }}
       >
-        <div className="flex shrink-0 items-center justify-between border-b px-4 py-2" style={{ borderColor: "var(--glass-border)" }}>
-          <span className="text-xs font-medium text-muted-foreground">分身</span>
-          <button type="button" onClick={closeDrawer} aria-label="收起分身面板" className="flex h-6 w-6 items-center justify-center rounded text-muted-foreground hover:bg-secondary hover:text-foreground max-md:h-10 max-md:w-10">
+        <div className="flex shrink-0 items-center justify-between border-b px-4 py-2" style={{ borderColor: "var(--rule)" }}>
+          <span className="text-fs-12 font-medium text-[color:var(--ink2)]">分身</span>
+          <button type="button" onClick={closeDrawer} aria-label="收起分身面板" className="flex h-6 w-6 items-center justify-center rounded text-[color:var(--ink2)] hover:bg-[color:var(--slip)] hover:text-[color:var(--ink)] max-md:h-10 max-md:w-10">
             <X size={14} />
           </button>
         </div>
@@ -2831,13 +2831,13 @@ export default function ChatPage() {
         className="fixed top-3 bottom-3 right-3 z-[55] flex flex-col outline-none max-md:left-0 max-md:top-0 max-md:right-0 max-md:bottom-[calc(var(--tabbar-h)+env(safe-area-inset-bottom))]! max-md:w-screen! max-md:rounded-none max-md:pt-[env(safe-area-inset-top)] drawer-panel"
         style={{
           width: "min(960px, calc(100vw - var(--rail-w) - 12px))",
-          borderLeft: "1px solid var(--glass-border)",
+          borderLeft: "1px solid var(--rule)",
           ...drawerStyle(exchangeOpen),
         }}
       >
-        <div className="flex shrink-0 items-center justify-between border-b px-4 py-2" style={{ borderColor: "var(--glass-border)" }}>
-          <span className="text-xs font-medium text-muted-foreground">分身广场</span>
-          <button type="button" onClick={closeDrawer} aria-label="收起分身广场" className="flex h-6 w-6 items-center justify-center rounded text-muted-foreground hover:bg-secondary hover:text-foreground max-md:h-10 max-md:w-10"><X size={14} /></button>
+        <div className="flex shrink-0 items-center justify-between border-b px-4 py-2" style={{ borderColor: "var(--rule)" }}>
+          <span className="text-fs-12 font-medium text-[color:var(--ink2)]">分身广场</span>
+          <button type="button" onClick={closeDrawer} aria-label="收起分身广场" className="flex h-6 w-6 items-center justify-center rounded text-[color:var(--ink2)] hover:bg-[color:var(--slip)] hover:text-[color:var(--ink)] max-md:h-10 max-md:w-10"><X size={14} /></button>
         </div>
         {exchangeOpen && <AgentExchangeWorkspace embedded onOpenMyAgent={() => setDrawer("agent")} />}
       </Glaze>
@@ -2850,19 +2850,19 @@ export default function ChatPage() {
         className="fixed top-3 bottom-3 right-3 z-[55] flex flex-col overflow-hidden max-md:left-0 max-md:top-0 max-md:right-0 max-md:bottom-[calc(var(--tabbar-h)+env(safe-area-inset-bottom))]! max-md:w-screen! max-md:rounded-none max-md:pt-[env(safe-area-inset-top)] drawer-panel"
         style={{
           width: "calc((100vw - var(--rail-w) - 12px) * 2 / 3)",
-          borderLeft: "1px solid var(--glass-border)",
+          borderLeft: "1px solid var(--rule)",
           ...drawerStyle(plazaOpen),
           willChange: "transform",
         }}
       >
-        <div className="flex shrink-0 items-center justify-between border-b px-4 py-2" style={{ background: "var(--hi)", borderColor: "var(--glass-border)" }}>
-          <span className="text-xs font-medium text-muted-foreground">世界</span>
+        <div className="flex shrink-0 items-center justify-between border-b px-4 py-2" style={{ background: "var(--hi)", borderColor: "var(--rule)" }}>
+          <span className="text-fs-12 font-medium text-[color:var(--ink2)]">世界</span>
           <div className="flex items-center gap-1 max-md:[&>button]:min-h-10">
             <button type="button" onClick={() => setWorldTab("plaza")} className={cn("chip", worldTab === "plaza" && "chip-on")}>热点与帖子</button>
             <button type="button" onClick={() => setWorldTab("match")} className={cn("chip", worldTab === "match" && "chip-on")}>匹配</button>
             <button
               onClick={closeDrawer}
-              className="w-6 h-6 flex items-center justify-center rounded text-muted-foreground hover:bg-secondary hover:text-foreground max-md:h-10 max-md:w-10"
+              className="w-6 h-6 flex items-center justify-center rounded text-[color:var(--ink2)] hover:bg-[color:var(--slip)] hover:text-[color:var(--ink)] max-md:h-10 max-md:w-10"
               title="收起" aria-label="收起"
             >
               <X size={14} />
@@ -2872,7 +2872,7 @@ export default function ChatPage() {
         {username ? (
           <iframe src={worldTab === "plaza" ? "/plaza?embed=1" : "/match?embed=1"} className="flex-1 w-full border-0" />
         ) : (
-          <div role="status" className="flex-1 p-5 text-sm text-muted-foreground">正在加载身份…</div>
+          <div role="status" className="flex-1 p-5 text-fs-13 text-[color:var(--ink2)]">正在加载身份…</div>
         )}
       </Glaze>
 
@@ -2884,19 +2884,19 @@ export default function ChatPage() {
         className="fixed top-3 bottom-3 right-3 z-[55] flex flex-col overflow-hidden max-md:left-0 max-md:top-0 max-md:right-0 max-md:bottom-[calc(var(--tabbar-h)+env(safe-area-inset-bottom))]! max-md:w-screen! max-md:rounded-none max-md:pt-[env(safe-area-inset-top)] drawer-panel"
         style={{
           width: "calc((100vw - var(--rail-w) - 12px) * 2 / 3)",
-          borderLeft: "1px solid var(--glass-border)",
+          borderLeft: "1px solid var(--rule)",
           ...drawerStyle(settingsOpen),
           willChange: "transform",
         }}
       >
-        <div className="flex shrink-0 items-center justify-between border-b px-4 py-2" style={{ background: "var(--hi)", borderColor: "var(--glass-border)" }}>
-          <span className="text-xs font-medium text-muted-foreground">设置</span>
+        <div className="flex shrink-0 items-center justify-between border-b px-4 py-2" style={{ background: "var(--hi)", borderColor: "var(--rule)" }}>
+          <span className="text-fs-12 font-medium text-[color:var(--ink2)]">设置</span>
           <div className="flex items-center gap-1 max-md:[&>button]:min-h-10">
             <button type="button" onClick={() => setSettingsTab("settings")} className={cn("chip", settingsTab === "settings" && "chip-on")}>设置</button>
             <button type="button" onClick={() => setSettingsTab("profile")} className={cn("chip", settingsTab === "profile" && "chip-on")}>账户</button>
             <button
               onClick={closeDrawer}
-              className="w-6 h-6 flex items-center justify-center rounded text-muted-foreground hover:bg-secondary hover:text-foreground max-md:h-10 max-md:w-10"
+              className="w-6 h-6 flex items-center justify-center rounded text-[color:var(--ink2)] hover:bg-[color:var(--slip)] hover:text-[color:var(--ink)] max-md:h-10 max-md:w-10"
               title="收起" aria-label="收起"
             >
               <X size={14} />
@@ -2906,7 +2906,7 @@ export default function ChatPage() {
         {username ? (
           <iframe src={settingsTab === "settings" ? "/settings?embed=1" : "/profile?embed=1"} className="flex-1 w-full border-0" />
         ) : (
-          <div role="status" className="flex-1 p-5 text-sm text-muted-foreground">正在加载身份…</div>
+          <div role="status" className="flex-1 p-5 text-fs-13 text-[color:var(--ink2)]">正在加载身份…</div>
         )}
       </Glaze>
 
@@ -2926,19 +2926,19 @@ export default function ChatPage() {
         className="fixed top-3 bottom-3 right-3 z-[55] flex flex-col overflow-hidden outline-none max-md:left-0 max-md:top-0 max-md:right-0 max-md:bottom-[calc(var(--tabbar-h)+env(safe-area-inset-bottom))]! max-md:w-screen! max-md:rounded-none max-md:pt-[env(safe-area-inset-top)] drawer-panel"
         style={{
           width: "calc((100vw - var(--rail-w) - 12px) * 2 / 3)",
-          borderLeft: "1px solid var(--glass-border)",
+          borderLeft: "1px solid var(--rule)",
           ...drawerStyle(novelOpen),
           willChange: "transform",
         }}
       >
-        <div className="flex shrink-0 items-center justify-between border-b px-4 py-2" style={{ background: "var(--hi)", borderColor: "var(--glass-border)" }}>
-          <span className="text-xs font-medium text-muted-foreground">书斋</span>
+        <div className="flex shrink-0 items-center justify-between border-b px-4 py-2" style={{ background: "var(--hi)", borderColor: "var(--rule)" }}>
+          <span className="text-fs-12 font-medium text-[color:var(--ink2)]">书斋</span>
           <button type="button" onClick={() => { closeDrawer(); focusVisibleDrawerTrigger("novel-drawer"); }}
-            className="w-6 h-6 flex items-center justify-center rounded text-muted-foreground hover:bg-secondary hover:text-foreground max-md:h-10 max-md:w-10"
+            className="w-6 h-6 flex items-center justify-center rounded text-[color:var(--ink2)] hover:bg-[color:var(--slip)] hover:text-[color:var(--ink)] max-md:h-10 max-md:w-10"
             title="收起书斋" aria-label="收起书斋"><X size={14} /></button>
         </div>
         {username ? <iframe ref={novelFrameRef} title="书斋工作区" src="/novels?embed=1" className="min-h-0 w-full flex-1 border-0" />
-          : <div role="status" className="flex-1 p-5 text-sm text-muted-foreground">正在加载身份…</div>}
+          : <div role="status" className="flex-1 p-5 text-fs-13 text-[color:var(--ink2)]">正在加载身份…</div>}
       </Glaze>
 
       {/* 工作室仅在当前账号通过访问检查后挂载，关闭后保留工作区状态。 */}
@@ -2957,26 +2957,26 @@ export default function ChatPage() {
         className="fixed top-3 bottom-3 right-3 z-[55] flex flex-col overflow-hidden outline-none max-md:left-0 max-md:top-0 max-md:right-0 max-md:bottom-[calc(var(--tabbar-h)+env(safe-area-inset-bottom))]! max-md:w-screen! max-md:rounded-none max-md:pt-[env(safe-area-inset-top)] drawer-panel"
         style={{
           width: "calc((100vw - var(--rail-w) - 12px) * 2 / 3)",
-          borderLeft: "1px solid var(--glass-border)",
+          borderLeft: "1px solid var(--rule)",
           ...drawerStyle(studioOpen),
           willChange: "transform",
         }}
       >
-        <div className="flex shrink-0 items-center justify-between border-b px-4 py-2" style={{ background: "var(--hi)", borderColor: "var(--glass-border)" }}>
-          <span className="text-xs font-medium tracking-[.24em] text-muted-foreground">工作室</span>
+        <div className="flex shrink-0 items-center justify-between border-b px-4 py-2" style={{ background: "var(--hi)", borderColor: "var(--rule)" }}>
+          <span className="text-fs-12 font-medium tracking-[.24em] text-[color:var(--ink2)]">工作室</span>
           <button type="button" onClick={() => { closeDrawer(); focusVisibleDrawerTrigger("studio-drawer"); }}
-            className="flex h-10 w-10 items-center justify-center rounded text-muted-foreground hover:bg-secondary hover:text-foreground"
+            className="flex h-10 w-10 items-center justify-center rounded text-[color:var(--ink2)] hover:bg-[color:var(--slip)] hover:text-[color:var(--ink)]"
             title="收起工作室" aria-label="收起工作室"><X size={14} /></button>
         </div>
         {studioAllowed ? <iframe key={username} ref={studioFrameRef} title="短片工作室工作区" src="/studio?embed=1" className="min-h-0 w-full flex-1 border-0" />
-          : <div role="status" className="flex-1 p-5 text-sm text-muted-foreground">暂未开放</div>}
+          : <div role="status" className="flex-1 p-5 text-fs-13 text-[color:var(--ink2)]">暂未开放</div>}
       </Glaze>
 
       {/* 抽屉外部点击关闭 — 任一右侧抽屉打开时铺一层透明背板，盖在抽屉之下、聊天区之上。
           z-50 < 抽屉 z-55；left-[var(--rail-w)] 避开 sidebar 让侧栏始终可点切换抽屉 */}
       {anyDrawerOpen && (
         <div
-          className="fixed left-[var(--rail-w)] top-0 right-0 bottom-0 z-50 bg-[var(--scrim)] max-md:left-0 max-md:bottom-[calc(var(--tabbar-h)+env(safe-area-inset-bottom))]"
+          className="fixed left-[var(--rail-w)] top-0 right-0 bottom-0 z-50 bg-[color:var(--scrim)] max-md:left-0 max-md:bottom-[calc(var(--tabbar-h)+env(safe-area-inset-bottom))]"
           onClick={closeDrawer}
           aria-hidden
         />

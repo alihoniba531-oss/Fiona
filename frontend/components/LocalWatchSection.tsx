@@ -13,9 +13,9 @@ import {
   type LocalWatchRule, type LocalWatchRuleDraft, type LocalWatchKind,
 } from "@/lib/localWatch";
 
-const inputClass = "h-[42px] w-full rounded-[8px] border border-[color:var(--rule2)] bg-[color:var(--mount)] px-3 text-base shadow-[inset_0_1px_2px_var(--pool)] outline-none placeholder:text-[color:var(--ink2)] focus:border-[color:var(--ink)] disabled:opacity-50";
-const noteClass = "text-[13px] leading-[1.85] text-[color:var(--ink2)]";
-const buttonClass = "btn min-h-10 px-3 text-[13px] disabled:opacity-50";
+const inputClass = "h-[42px] w-full rounded-[8px] border border-[color:var(--rule2)] bg-[color:var(--mount)] px-3 text-fs-16.5 shadow-[inset_0_1px_2px_var(--pool)] outline-none placeholder:text-[color:var(--ink2)] focus:border-[color:var(--ink)] disabled:opacity-50";
+const noteClass = "text-fs-13 leading-[1.85] text-[color:var(--ink2)]";
+const buttonClass = "btn min-h-10 px-3 text-fs-13 disabled:opacity-50";
 const typeLabels: Record<LocalWatchKind, string> = { keyword: "关键词", number: "数值", ai: "AI" };
 const emptyRule = () => localWatchDraft();
 const tokenCommand = "mkdir -p ~/.fiona && umask 077 && pbpaste > ~/.fiona/watcher.token";
@@ -267,49 +267,49 @@ export default function LocalWatchSection({ username, sectionClass, headingClass
       <p className={noteClass}>屏幕锁定或显示器休眠时 macOS 不允许截取窗口，期间无法监控。如果需要离开电脑时也能监控，可以在 系统设置 → 锁定屏幕 中延长自动锁定时间，但要自行权衡安全。</p>
       {loading && <p className={noteClass}>正在加载本机监控…</p>}
       {!available && <p className={noteClass}>本机监控暂未开启，请联系管理员。</p>}
-      {error && <p role="alert" className="text-[13px] text-[color:var(--seal)]">{error}</p>}
+      {error && <p role="alert" className="text-fs-13 text-[color:var(--seal)]">{error}</p>}
       {success && <p role="status" className={noteClass}>{success}</p>}
 
       <div className="space-y-2">
-        <h3 className="text-sm font-medium">设备</h3>
-        <label className="block text-[13px]" htmlFor="local-watch-device-name">设备名称</label>
+        <h3 className="text-fs-15 font-medium">设备</h3>
+        <label className="block text-fs-13" htmlFor="local-watch-device-name">设备名称</label>
         <input id="local-watch-device-name" className={inputClass} value={deviceName} maxLength={60} disabled={disabled} onChange={event => setDeviceName(event.target.value)} />
         <button className={buttonClass} disabled={disabled || devices.filter(device => !device.revoked).length >= 3} onClick={createDevice}>生成设备令牌</button>
         <p className={noteClass}>每个账号最多 3 台有效设备。令牌只显示一次，请立即复制；不要发给他人或保存到公开仓库。</p>
         {token && <div className="space-y-2 rounded-[8px] border border-[color:var(--rule2)] p-3">
-          <label htmlFor="local-watch-token" className="block text-[13px]">一次性显示的设备令牌</label>
+          <label htmlFor="local-watch-token" className="block text-fs-13">一次性显示的设备令牌</label>
           <textarea id="local-watch-token" className={`${inputClass} h-auto break-all py-2`} readOnly rows={3} value={token} />
           <div className="flex flex-wrap gap-2"><button className={buttonClass} onClick={() => void copyToken()}>复制令牌</button>
             <button className={buttonClass} onClick={() => setToken("")}>我已保存，隐藏令牌</button></div>
         </div>}
         <p className={noteClass}>复制后在 Mac 终端运行以下命令。令牌文件必须保持 600 权限：</p>
-        <code className="block break-all rounded-[8px] bg-[color:var(--mount)] p-3 text-xs leading-6">{tokenCommand}</code>
+        <code className="block break-all rounded-[8px] bg-[color:var(--mount)] p-3 text-fs-12 leading-6">{tokenCommand}</code>
         <ul className="space-y-2" aria-label="监控设备">
           {devices.filter(device => !device.revoked).map(device => <li key={device.id} className="flex flex-wrap items-center justify-between gap-2 border-t border-[color:var(--carve)] pt-2">
-            <div className="min-w-0"><p className="break-all text-sm">{device.name || "未命名设备"}</p><p className={noteClass}>最后在线：{lastSeen(device.last_seen_at)}</p></div>
+            <div className="min-w-0"><p className="break-all text-fs-15">{device.name || "未命名设备"}</p><p className={noteClass}>最后在线：{lastSeen(device.last_seen_at)}</p></div>
             <button className={buttonClass} disabled={disabled} onClick={() => void revokeDevice(device)}>吊销</button>
           </li>)}
         </ul>
       </div>
 
       <div className="space-y-2 border-t border-[color:var(--carve)] pt-4">
-        <div className="flex flex-wrap items-center justify-between gap-2"><h3 className="text-sm font-medium">最近发现的窗口</h3><button className={buttonClass} disabled={disabled} onClick={() => void refresh()}>刷新</button></div>
+        <div className="flex flex-wrap items-center justify-between gap-2"><h3 className="text-fs-15 font-medium">最近发现的窗口</h3><button className={buttonClass} disabled={disabled} onClick={() => void refresh()}>刷新</button></div>
         {windows.length ? <ul className="space-y-2">{windows.map((window, index) => <li key={`${window.bundle_id}-${index}`}>
           <button className="w-full rounded-[8px] border border-[color:var(--rule2)] p-3 text-left disabled:opacity-50" disabled={disabled || rules.length >= 20} onClick={() => {
             editRule(); setDraft({ ...emptyRule(),
               app_match: window.app_name && Array.from(window.app_name).slice(0, 60).join(""),
               title_match: Array.from(window.title).slice(0, 60).join(""),
             });
-          }}><span className="block break-all text-sm">{window.app_name}</span><span className={`${noteClass} block break-all`}>{window.title || "无标题窗口"}</span></button>
+          }}><span className="block break-all text-fs-15">{window.app_name}</span><span className={`${noteClass} block break-all`}>{window.title || "无标题窗口"}</span></button>
         </li>)}</ul> : <p className={noteClass}>尚未发现窗口，请先启动 Mac 监控程序。窗口清单保留 5 分钟。</p>}
       </div>
 
       <div className="space-y-3 border-t border-[color:var(--carve)] pt-4">
-        <div className="flex flex-wrap items-center justify-between gap-2"><h3 className="text-sm font-medium">规则（{rules.length}/20）</h3><button className={buttonClass} disabled={disabled || rules.length >= 20} onClick={() => editRule()}>新建规则</button></div>
+        <div className="flex flex-wrap items-center justify-between gap-2"><h3 className="text-fs-15 font-medium">规则（{rules.length}/20）</h3><button className={buttonClass} disabled={disabled || rules.length >= 20} onClick={() => editRule()}>新建规则</button></div>
         <ul className="space-y-3" aria-label="本机监控规则">{rules.map(rule => <li key={rule.id} className="space-y-2 rounded-[8px] border border-[color:var(--rule2)] p-3">
-          <p className="break-all text-sm font-medium">{rule.name} <span className={noteClass}>（{typeLabels[rule.kind]}，{rule.enabled ? "已启用" : "已停用"}）</span></p>
+          <p className="break-all text-fs-15 font-medium">{rule.name} <span className={noteClass}>（{typeLabels[rule.kind]}，{rule.enabled ? "已启用" : "已停用"}）</span></p>
           <p className={`${noteClass} break-all`}>应用：{rule.app_match || "任意"}；标题：{rule.title_match || "任意"}</p>
-          <p role="status" className={`break-all ${rule.capture?.ok || rule.capture?.neutral ? noteClass : "text-[13px] leading-[1.85] text-[color:var(--seal)]"}`}>{localWatchCaptureMessage(rule)}</p>
+          <p role="status" className={`break-all ${rule.capture?.ok || rule.capture?.neutral ? noteClass : "text-fs-13 leading-[1.85] text-[color:var(--seal)]"}`}>{localWatchCaptureMessage(rule)}</p>
           <div className="flex flex-wrap gap-2">
             <button className={buttonClass} disabled={disabled} onClick={() => void operate(async signal => {
               await localWatchRequest(`/rules/${rule.id}`, { method: "PATCH", signal, headers: { "Content-Type": "application/json" }, body: JSON.stringify({ enabled: !rule.enabled }) });
@@ -319,29 +319,29 @@ export default function LocalWatchSection({ username, sectionClass, headingClass
           </div>
         </li>)}</ul>
         {formOpen && <form onSubmit={saveRule} className="space-y-3 rounded-[8px] border border-[color:var(--rule2)] p-3">
-          <h4 className="text-sm font-medium">{editingId === null ? "新建规则" : "编辑规则"}</h4>
-          <label className="block space-y-1 text-[13px]">名称（1–30 字）<input className={inputClass} value={draft.name} required maxLength={30} disabled={disabled} onChange={event => setDraft({ ...draft, name: event.target.value })} /></label>
-          <label className="block space-y-1 text-[13px]">应用名包含<input className={inputClass} value={draft.app_match} maxLength={60} placeholder="例如：微信" disabled={disabled} onChange={event => setDraft({ ...draft, app_match: event.target.value })} /></label>
-          <label className="block space-y-1 text-[13px]">窗口标题包含<input className={inputClass} value={draft.title_match} maxLength={60} placeholder="例如：工作群（应用名和标题至少填一项）" disabled={disabled} onChange={event => setDraft({ ...draft, title_match: event.target.value })} /></label>
-          <label className="block space-y-1 text-[13px]">类型<select className={inputClass} value={draft.kind} disabled={disabled} onChange={event => setDraft({ ...draft, kind: event.target.value as LocalWatchKind })}>{Object.entries(typeLabels).map(([value, text]) => <option key={value} value={value}>{text}</option>)}</select></label>
-          {draft.kind === "keyword" && <label className="block space-y-1 text-[13px]">关键词（每行一个，也可用逗号分隔）<textarea className={`${inputClass} h-24 py-2`} value={keywords} required placeholder={"@我\n老板的名字"} disabled={disabled} onChange={event => setKeywords(event.target.value)} /><span className={noteClass}>例如：「@我」「老板的名字」。任一关键词出现即提醒。</span></label>}
+          <h4 className="text-fs-15 font-medium">{editingId === null ? "新建规则" : "编辑规则"}</h4>
+          <label className="block space-y-1 text-fs-13">名称（1–30 字）<input className={inputClass} value={draft.name} required maxLength={30} disabled={disabled} onChange={event => setDraft({ ...draft, name: event.target.value })} /></label>
+          <label className="block space-y-1 text-fs-13">应用名包含<input className={inputClass} value={draft.app_match} maxLength={60} placeholder="例如：微信" disabled={disabled} onChange={event => setDraft({ ...draft, app_match: event.target.value })} /></label>
+          <label className="block space-y-1 text-fs-13">窗口标题包含<input className={inputClass} value={draft.title_match} maxLength={60} placeholder="例如：工作群（应用名和标题至少填一项）" disabled={disabled} onChange={event => setDraft({ ...draft, title_match: event.target.value })} /></label>
+          <label className="block space-y-1 text-fs-13">类型<select className={inputClass} value={draft.kind} disabled={disabled} onChange={event => setDraft({ ...draft, kind: event.target.value as LocalWatchKind })}>{Object.entries(typeLabels).map(([value, text]) => <option key={value} value={value}>{text}</option>)}</select></label>
+          {draft.kind === "keyword" && <label className="block space-y-1 text-fs-13">关键词（每行一个，也可用逗号分隔）<textarea className={`${inputClass} h-24 py-2`} value={keywords} required placeholder={"@我\n老板的名字"} disabled={disabled} onChange={event => setKeywords(event.target.value)} /><span className={noteClass}>例如：「@我」「老板的名字」。任一关键词出现即提醒。</span></label>}
           {draft.kind === "number" && <div className="space-y-2">
-            <label className="block space-y-1 text-[13px]">数值标签<input className={inputClass} value={label} required maxLength={20} disabled={disabled} onChange={event => setLabel(event.target.value)} /></label>
-            <label className="block space-y-1 text-[13px]">比较<select className={inputClass} value={op} disabled={disabled} onChange={event => setOp(event.target.value as typeof op)}>{[">", ">=", "<", "<="].map(value => <option key={value}>{value}</option>)}</select></label>
-            <label className="block space-y-1 text-[13px]">阈值<input className={inputClass} type="number" step="any" value={threshold} required disabled={disabled} onChange={event => setThreshold(event.target.value)} /></label>
+            <label className="block space-y-1 text-fs-13">数值标签<input className={inputClass} value={label} required maxLength={20} disabled={disabled} onChange={event => setLabel(event.target.value)} /></label>
+            <label className="block space-y-1 text-fs-13">比较<select className={inputClass} value={op} disabled={disabled} onChange={event => setOp(event.target.value as typeof op)}>{[">", ">=", "<", "<="].map(value => <option key={value}>{value}</option>)}</select></label>
+            <label className="block space-y-1 text-fs-13">阈值<input className={inputClass} type="number" step="any" value={threshold} required disabled={disabled} onChange={event => setThreshold(event.target.value)} /></label>
             <p className={noteClass}>例如：标签「价格」 &gt;= 100。</p>
           </div>}
           {draft.kind === "ai" && <div className="space-y-2">
-            <label className="block space-y-1 text-[13px]">提醒条件（2–200 字）<textarea className={`${inputClass} h-24 py-2`} value={condition} required minLength={2} maxLength={200} placeholder="下载完成或出现报错时提醒我" disabled={disabled} onChange={event => setCondition(event.target.value)} /></label>
-            <label className="block space-y-1 text-[13px]">判断模型<select className={inputClass} value={model} disabled={disabled} onChange={event => setModel(event.target.value as typeof model)}><option value="platform">平台模型（阿里云千问）</option><option value="claude" disabled={!claudeAvailable}>Claude（Anthropic）</option></select></label>
+            <label className="block space-y-1 text-fs-13">提醒条件（2–200 字）<textarea className={`${inputClass} h-24 py-2`} value={condition} required minLength={2} maxLength={200} placeholder="下载完成或出现报错时提醒我" disabled={disabled} onChange={event => setCondition(event.target.value)} /></label>
+            <label className="block space-y-1 text-fs-13">判断模型<select className={inputClass} value={model} disabled={disabled} onChange={event => setModel(event.target.value as typeof model)}><option value="platform">平台模型（阿里云千问）</option><option value="claude" disabled={!claudeAvailable}>Claude（Anthropic）</option></select></label>
             {!claudeAvailable && <p className={noteClass}>请在「聊天模型」中保存并启用 Anthropic 自带模型后再选 Claude。</p>}
             <p className={noteClass}>例如：「下载完成或出现报错时提醒我」。不扣草莓。</p>
           </div>}
           <div className="grid grid-cols-2 gap-3 mobile:grid-cols-1">
-            <label className="block space-y-1 text-[13px]">截图间隔（2–60 秒）<input className={inputClass} type="number" value={draft.interval_seconds} min={2} max={60} required disabled={disabled} onChange={event => setDraft({ ...draft, interval_seconds: Number(event.target.value) })} /></label>
-            <label className="block space-y-1 text-[13px]">提醒冷却（10–3600 秒）<input className={inputClass} type="number" value={draft.cooldown_seconds} min={10} max={3600} required disabled={disabled} onChange={event => setDraft({ ...draft, cooldown_seconds: Number(event.target.value) })} /></label>
+            <label className="block space-y-1 text-fs-13">截图间隔（2–60 秒）<input className={inputClass} type="number" value={draft.interval_seconds} min={2} max={60} required disabled={disabled} onChange={event => setDraft({ ...draft, interval_seconds: Number(event.target.value) })} /></label>
+            <label className="block space-y-1 text-fs-13">提醒冷却（10–3600 秒）<input className={inputClass} type="number" value={draft.cooldown_seconds} min={10} max={3600} required disabled={disabled} onChange={event => setDraft({ ...draft, cooldown_seconds: Number(event.target.value) })} /></label>
           </div>
-          <label className="block space-y-1 text-[13px]">提醒发送到<select className={inputClass} value={draft.conversation_id ?? ""} disabled={disabled} onChange={event => setDraft({ ...draft, conversation_id: event.target.value || null })}><option value="">默认会话</option>{conversations.map(conversation => <option key={conversation.id} value={conversation.id}>{conversation.title || "未命名会话"}</option>)}</select></label>
+          <label className="block space-y-1 text-fs-13">提醒发送到<select className={inputClass} value={draft.conversation_id ?? ""} disabled={disabled} onChange={event => setDraft({ ...draft, conversation_id: event.target.value || null })}><option value="">默认会话</option>{conversations.map(conversation => <option key={conversation.id} value={conversation.id}>{conversation.title || "未命名会话"}</option>)}</select></label>
           <div className="flex flex-wrap gap-2"><button className={buttonClass} type="submit" disabled={disabled}>保存规则</button><button className={buttonClass} type="button" disabled={busy} onClick={() => setFormOpen(false)}>取消</button></div>
         </form>}
       </div>

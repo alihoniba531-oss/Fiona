@@ -66,8 +66,8 @@ function Shelf({ owner, embedded, identityPending = false }: { owner: string; em
   };
   return <StudioShell embedded={embedded}>
     <header className="mb-6">
-      {!embedded && <Link href="/" className="mb-2 inline-flex min-h-10 items-center gap-1 text-sm text-[color:var(--ink2)]"><ArrowLeft size={14} />回到对话</Link>}
-      <div className="flex min-h-10 flex-wrap items-center justify-between gap-3"><h1 className={`text-[28px] tracking-[.24em]${embedded ? " sr-only" : ""}`}>短片工作室</h1>
+      {!embedded && <Link href="/" className="mb-2 inline-flex min-h-10 items-center gap-1 text-fs-13 text-[color:var(--ink2)]"><ArrowLeft size={14} />回到对话</Link>}
+      <div className="flex min-h-10 flex-wrap items-center justify-between gap-3"><h1 className={`text-fs-30 tracking-[.24em]${embedded ? " sr-only" : ""}`}>短片工作室</h1>
         {access && !unavailable && <button type="button" className={`btn btn-primary min-h-10${embedded ? " ml-auto" : ""}`} onClick={() => setCreating(true)}><Plus size={15} />新建项目</button>}
       </div>
       {embedded && <a href="/studio" target="_blank" rel="noopener noreferrer" className="btn btn-quiet mt-3 min-h-10">在新页面打开</a>}
@@ -79,8 +79,8 @@ function Shelf({ owner, embedded, identityPending = false }: { owner: string; em
       : error ? <ErrorNotice message={error} retry={() => void refresh()} />
       : projects.length === 0 ? <Glaze variant="panel" lens={false} backdrop={!embedded} className="rounded-2xl p-6"><EmptyState>还没有项目，点击「新建项目」开始试拍。</EmptyState></Glaze>
       : <div className="grid min-w-0 grid-cols-1 gap-4 @[640px]:grid-cols-2 @[1050px]:grid-cols-3">{projects.map(project => <Link key={project.id} href={studioHref(`/studio/${encodeURIComponent(project.id)}`, embedded)} className="ceramic-card block min-w-0 rounded-2xl p-5">
-        <h2 className="break-words text-xl tracking-[.24em]">{project.title}</h2><span className="chip mt-4">{project.aspect}</span>
-        <p className="readout mt-4 text-xs text-[color:var(--ink2)]">最近更新 {formatStudioDate(project.updated_at)}</p>
+        <h2 className="break-words text-fs-22 tracking-[.24em]">{project.title}</h2><span className="chip mt-4">{project.aspect}</span>
+        <p className="readout mt-4 text-fs-12 text-[color:var(--ink2)]">最近更新 {formatStudioDate(project.updated_at)}</p>
       </Link>)}</div>}
     {creating && <CreateProjectDialog owner={owner} embedded={embedded} busy={busy} onCreate={create} onClose={() => setCreating(false)} />}
   </StudioShell>;
