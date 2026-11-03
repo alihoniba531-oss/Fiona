@@ -736,6 +736,7 @@ async def _stream_claude_agent(ctx, state, deadline, release_user_lock):
                                         if "generated_image" in payload:
                                             image_success = True
                                             image_path = payload["generated_image"]["image_path"]
+                                            chat.claim_pending_generated_image(ctx.user, image_path)
                                             delivered = True
                                             billable_pending = True
                                             # The adapter prepares all text before this event.
@@ -868,5 +869,7 @@ async def _stream_claude_agent(ctx, state, deadline, release_user_lock):
         # An image can finish while the caller is suspended at a heartbeat.
         # The adapter has transferred ownership even before its event is read.
         image_path = image_path or (owned_image_result or {}).get("image_path")
+        if image_path:
+            chat.release_pending_generated_image(ctx.user, image_path)
         if image_path and image_path != persisted_image_path:
             chat.delete_uploaded_files([image_path])
