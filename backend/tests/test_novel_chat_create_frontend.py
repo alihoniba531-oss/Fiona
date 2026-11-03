@@ -2,11 +2,13 @@
 
 渲染用例复用 test_claude_agent_frontend.render_card（真实执行 ChatBubble
 里的 ChatCard），只在 Node runner 中注入一个 NovelDraftCard 桩，以便在
-没有浏览器 effect 的 SSR 环境里验证分支分发和 draft_id 透传。缺 node 或
-依赖时由共享 helper 按既有约定 skip；验收环境有 frontend/node_modules。
+没有浏览器 effect 的 SSR 环境里验证分支分发和 draft_id 透传。经 shared.render_card
+的用例由共享 helper 探测依赖并 skip；直接起 node 的三条用例由本文件的
+require_node_dependencies 守卫，缺 node_modules 时同样 skip。
 """
 import json
 import re
+import shutil
 import subprocess
 from pathlib import Path
 
@@ -17,6 +19,22 @@ from test_claude_agent_frontend import block_after
 
 
 ROOT = Path(__file__).resolve().parents[2]
+DEPENDENCIES = {
+    "typescript": "typescript/lib/typescript.js",
+    "react": "react/index.js",
+    "react-dom/server": "react-dom/server.js",
+}
+
+
+def require_node_dependencies():
+    missing = [name for name, entry in DEPENDENCIES.items()
+               if not (ROOT / "frontend/node_modules" / entry).is_file()]
+    if missing:
+        pytest.skip("frontend dependencies unavailable: " + ", ".join(missing))
+    if not shutil.which("node"):
+        pytest.skip("node is unavailable")
+
+
 BUBBLE = ROOT / "frontend/components/ChatBubble.tsx"
 CARD = ROOT / "frontend/components/NovelDraftCard.tsx"
 CONVERSATIONS = ROOT / "frontend/lib/useConversations.ts"
@@ -24,6 +42,21 @@ PAGE = ROOT / "frontend/app/page.tsx"
 WIZARD = ROOT / "frontend/components/novel/NovelWizard.tsx"
 NOVELS = ROOT / "frontend/lib/novels.ts"
 UUID = "12345678-1234-1234-1234-123456789abc"
+
+
+@pytest.mark.parametrize("missing", DEPENDENCIES)
+def test_node_tests_skip_before_node_when_any_dependency_is_missing(monkeypatch, tmp_path, missing):
+    for name, entry in DEPENDENCIES.items():
+        path = tmp_path / "frontend/node_modules" / entry
+        path.parent.mkdir(parents=True, exist_ok=True)
+        if name != missing:
+            path.write_text("", encoding="utf-8")
+    monkeypatch.setitem(globals(), "ROOT", tmp_path)
+    monkeypatch.setattr(subprocess, "run", lambda *a, **kw: pytest.fail(
+        "Node must not start without dependencies"))
+    with pytest.raises(pytest.skip.Exception,
+                       match=re.escape("frontend dependencies unavailable: " + missing)):
+        require_node_dependencies()
 
 
 def read(path):
@@ -157,6 +190,7 @@ def test_novel_draft_component_states_paths_and_weights():
 
 
 def test_novel_draft_component_renders_loading_state(monkeypatch):
+    require_node_dependencies()
     assert CARD.is_file(), "NovelDraftCard.tsx 尚未实现"
     source = read(CARD)
     component = function_block(source, "export default function NovelDraftCard(")
@@ -194,6 +228,7 @@ process.stdout.write(renderToStaticMarkup(React.createElement(NovelDraftCard, {d
 
 
 def test_use_conversations_rebuilds_song_and_draft_cards():
+    require_node_dependencies()
     source = read(CONVERSATIONS)
     assert "novel_draft_id?: string | null" in source
     assert 'subtype: "novel_draft", draft_id: message.novel_draft_id' in source
@@ -240,6 +275,7 @@ process.stdout.write(JSON.stringify(Object.fromEntries(cases.map(item => [item.n
 
 
 def test_page_open_novel_at_accepts_only_two_shapes():
+    require_node_dependencies()
     source = read(PAGE)
     assert "const openNovelAt = (path: string) => {" in source
     assert r"/^\/novels\/new\?embed=1&draft=[0-9a-f-]{36}$/" in source
