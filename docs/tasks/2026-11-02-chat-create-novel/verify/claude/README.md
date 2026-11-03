@@ -10,3 +10,7 @@
 | `walk_ccn.py` | 真实走查（Playwright 1.63 无头 Chromium，隔离实例：候选 worktree 的 8098 后端 + 3099 dev 前端 + 临时库，开发模式、占位 Key）：登录 → 聊天出草稿卡 → 「去书斋建书」→ 抽屉打开且 iframe 路径为 `/novels/new?embed=1&draft=<id>` → 向导预填思路与篇幅 → 三步提交建书 → 库里草稿 `novel_id` 已填、`novels` 多一行 → iframe 跳到工作台 → 刷新后卡片变「已建书」带「打开」→ 「打开」后 iframe 路径为 `/novels/<id>?embed=1` → 390 宽无横向溢出。`results/walk.txt` / `walk.json`：`== FAIL 0 / 20`；截图在 `results/screenshots/`。占位 Key 下建书后的 setup 必然失败（工作台显示「某一步失败，可以重试」），这是环境所致，不在本批范围。 |
 
 Claude 智能体真实调用 `draft_novel` 的路径没有真实 Anthropic Key，由 `test_novel_chat_create.py` 用假传输回放 `tool_use` 覆盖（工具追加矩阵、参数校验、成功落库、每轮一份、50 上限、不建书不扣费）。
+
+## R3（CI 无 node_modules）
+
+- `gate_ccn_r3.py <worktree> <无 node_modules 副本>`：副本用 rsync 排除 node_modules/.venv/.git 得到。先用 HEAD 版本的测试文件在副本里复现 CI 的 3 failed（正控），再检查守卫位置、既有 9 条用例逐字节未动、自检存在、有依赖 12 passed / 0 skipped、无依赖 0 failed / 4 skipped（3 条约定文案），并在副本里做两处变异（去掉一条用例的守卫；守卫不再 skip）。结果在 `results/gate-r3.txt`。

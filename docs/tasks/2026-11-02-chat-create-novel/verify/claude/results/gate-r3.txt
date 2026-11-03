@@ -1,0 +1,27 @@
+PASS 改动集合只含测试文件 + 返修单 + 报告  [backend/tests/test_novel_chat_create_frontend.py, docs/tasks/2026-11-02-chat-create-novel/05-fix-r3.md, docs/tasks/2026-11-02-chat-create-novel/impl/主代理.md]
+PASS 测试文件确有改动
+PASS 存在模块级守卫 helper（约定文案）  [require_node_dependencies]
+PASS 守卫含 node 缺失分支
+PASS DEPENDENCIES 含 typescript/react/react-dom/server 入口文件
+PASS test_novel_draft_component_renders_loading_state: 守卫在首个 node 调用之前  [call@71 node@1225]
+PASS test_use_conversations_rebuilds_song_and_draft_cards: 守卫在首个 node 调用之前  [call@64 node@1151]
+PASS test_page_open_novel_at_accepts_only_two_shapes: 守卫在首个 node 调用之前  [call@59 node@1538]
+PASS test_novel_draft_component_renders_loading_state: 原断言与坏副本逻辑未动
+PASS test_use_conversations_rebuilds_song_and_draft_cards: 原断言与坏副本逻辑未动
+PASS test_page_open_novel_at_accepts_only_two_shapes: 原断言与坏副本逻辑未动
+PASS test_chat_card_renders_novel_draft_with_draft_id: 原断言与坏副本逻辑未动
+PASS test_chat_bubble_passes_open_novel_to_every_chat_card: 原断言与坏副本逻辑未动
+PASS test_novel_draft_component_states_paths_and_weights: 原断言与坏副本逻辑未动
+PASS test_page_stream_cards_copy_draft_id_and_iframe_uses_state: 原断言与坏副本逻辑未动
+PASS test_wizard_reads_draft_prefills_and_submits_draft_id: 原断言与坏副本逻辑未动
+PASS test_novels_lib_exposes_draft_lookup_and_input_field: 原断言与坏副本逻辑未动
+PASS 新增自检用例恰 1 个  [test_node_tests_skip_before_node_when_any_dependency_is_missing]
+PASS 自检 parametrize DEPENDENCIES、monkeypatch subprocess.run、断言 skip
+PASS worktree 有 node_modules：12 passed / 0 failed / 0 skipped  [{'passed': 12}]
+PASS 副本无 node_modules：0 failed / 8 passed / 4 skipped  [{'passed': 8, 'skipped': 4}]
+PASS 副本 skip 文案是约定文案（恰 3 条）  [[1] Frontend SSR dependencies unavailable: typescript, react, react-dom/server | [3] frontend dependencies unavailable: typescript, react, react-dom/server]
+PASS M1 去守卫：恰该用例 failed  [failed=['test_use_conversations_rebuilds_song_and_draft_cards'] counts={'failed': 1, 'passed': 8, 'skipped': 3}]
+PASS M2 守卫失效：node 用例与自检全红（≥6 failed）  [failed=['test_node_tests_skip_before_node_when_any_dependency_is_missing', 'test_novel_draft_component_renders_loading_state', 'test_page_open_novel_at_accepts_only_two_shapes', 'test_use_conversations_rebuilds_song_and_draft_cards'] counts={'failed': 6, 'passed': 5, 'skipped': 1}]
+PASS 相关子集全绿 0 skipped  [150 passed, 33 warnings in 7.37s]
+
+== 25/25 通过 ==
