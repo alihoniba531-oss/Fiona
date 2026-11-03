@@ -1,0 +1,13 @@
+PASS M1 开关失效：无条件追加 draft_novel  rc=1 failed=7 real=7 FAILED tests/test_novel_chat_create.py::test_switch_matrix_keeps_original_sets_and_object_identity[None-None-base0]
+PASS M2 每轮限一份失效  rc=1 failed=2 real=2 FAILED tests/test_novel_chat_create.py::test_one_draft_per_turn_then_text_reply
+PASS M3 50 份上限边界 >= 改 >  rc=1 failed=1 real=1 FAILED tests/test_novel_chat_create.py::test_fifty_open_drafts_are_rejected_without_creating_more
+PASS M4 落库不核对归属  rc=1 failed=1 real=1 FAILED tests/test_novel_chat_create.py::test_save_message_checks_draft_owner_and_conversation
+PASS M5 config 不排除 draft_id  rc=1 failed=2 real=2 FAILED tests/test_novel_chat_create.py::test_create_with_draft_consumes_and_delete_resets
+PASS M6 create 不消费草稿  rc=1 failed=1 real=1 FAILED tests/test_novel_chat_create.py::test_create_with_draft_consumes_and_delete_resets
+PASS M7 草稿可重复消费  rc=1 failed=1 real=1 FAILED tests/test_novel_chat_create.py::test_create_with_draft_consumes_and_delete_resets
+PASS M8 路由不隔离本人（None 直接返回）  rc=1 failed=1 real=1 FAILED tests/test_novel_chat_create.py::test_get_draft_route_is_owner_only - ...
+PASS M9 刷新不重建草稿卡  rc=1 failed=1 real=1 FAILED tests/test_novel_chat_create_frontend.py::test_use_conversations_rebuilds_song_and_draft_cards
+PASS M10 ChatCard 不渲染草稿卡  rc=1 failed=1 real=1 FAILED tests/test_novel_chat_create_frontend.py::test_chat_card_renders_novel_draft_with_draft_id
+PASS M11 openNovelAt 去掉路径白名单  rc=1 failed=1 real=1 FAILED tests/test_novel_chat_create_frontend.py::test_page_open_novel_at_accepts_only_two_shapes
+PASS M12 向导提交不带 draft_id  rc=1 failed=1 real=1 FAILED tests/test_novel_chat_create_frontend.py::test_wizard_reads_draft_prefills_and_submits_draft_id
+== FAIL 0 / 12

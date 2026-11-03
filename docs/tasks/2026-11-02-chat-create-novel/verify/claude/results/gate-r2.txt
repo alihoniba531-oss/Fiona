@@ -1,0 +1,88 @@
+== 改动集合
+PASS 已跟踪改动都在白名单  []
+PASS 未跟踪新文件都在白名单  []
+PASS 两个新模块存在  
+PASS 两个新测试存在  
+PASS v1.2 授权测试恰一个 hunk  1
+PASS v1.2 授权 hunk 内容  
+PASS page.tsx 不再含 src="/novels?embed=1" 字面量（含注释）  
+PASS 既有测试零 diff（授权文件除外）  
+PASS 授权测试恰两个 hunk  2
+PASS 授权 hunk 1：集合加 novel_drafts  
+PASS 授权 hunk 2：novel.drafts 只放行三个名字  
+PASS 建表无条件（init_db 里无开关判断）  
+PASS 无 importlib 绕行与表存在守卫  
+PASS CLAUDE_CLIENT_TOOLS 常量块与 HEAD 相同  
+PASS page.tsx 保留 BOM  
+PASS 文档里没有本机绝对路径（有文档时）  
+== 计数
+PASS claude_agent.py 含 draft_novel ≥ 3  3
+PASS messages.novel_draft_id 迁移恰 1 处  
+PASS novel_drafts 建表存在  
+PASS backend/studio/sources.py 含 FIONA_NOVEL_CHAT_CREATE  
+PASS backend/.env.example 含 FIONA_NOVEL_CHAT_CREATE  
+PASS CLAUDE.md 含 FIONA_NOVEL_CHAT_CREATE  
+PASS README.md 保留「卡片不落库」  
+PASS CLAUDE.md 保留「卡片不落库」  
+PASS PLAN.md 保留「卡片不落库」  
+PASS docs/ARCHITECTURE.md 保留「卡片不落库」  
+PASS docs/DEPLOYMENT.md 保留「卡片不落库」  
+PASS backend/.env.example 保留「卡片不落库」  
+PASS NovelWizard 读 draft 参数  
+PASS NovelWizard 提交带 draft_id  
+PASS novels.ts 有 getNovelDraft  
+PASS page.tsx 有 openNovelAt 与 novelFrameSrc  
+PASS page.tsx 两处卡片复制都带 draft_id  4
+PASS useConversations 按 novel_draft_id 重建  
+PASS ChatCard 有 novel_draft 分支  
+PASS NovelDraftCard 存在且不加粗  
+PASS CreateNovel 有 draft_id 字段  
+PASS create 排除 draft_id 进 config  
+== 前端
+PASS tsc 退出码 0  
+PASS lint 0 errors 且 warnings ≤ 25  25 problems (0 errors, 25 warnings)
+PASS build 退出码 0  (Use `node --trace-deprecation ...` to show where the warning was created)
+== 后端
+PASS 新测试可收集  41 collected
+PASS 新测试 + 相关既有测试在候选上全过、无 skip  328 passed, 35 warnings in 11.98s
+PASS 全量 pytest 0 failed 0 skipped  7904 passed, 35 warnings in 317.39s (0:05:17)
+PASS passed = 7863 + 41  passed=7904
+== HEAD 对照
+valid_arguments_are_tool_results_and_create_nothing[arguments5-\u7ae0\u6570\u4e0e\u6bcf\u7ae0\u5b57\u6570]
+FAILED tests/test_novel_chat_create.py::test_invalid_arguments_are_tool_results_and_create_nothing[arguments6-\u7ae0\u6570\u4e0e\u6bcf\u7ae0\u5b57\u6570]
+FAILED tests/test_novel_chat_create.py::test_invalid_arguments_are_tool_results_and_create_nothing[arguments7-\u7ae0\u6570\u4e0e\u6bcf\u7ae0\u5b57\u6570]
+FAILED tests/test_novel_chat_create.py::test_invalid_arguments_are_tool_results_and_create_nothing[arguments8-\u7ae0\u6570\u4e0e\u6bcf\u7ae0\u5b57\u6570]
+FAILED tests/test_novel_chat_create.py::test_invalid_arguments_are_tool_results_and_create_nothing[arguments9-\u6700\u5c11\u7ae0\u6570]
+FAILED tests/test_novel_chat_create.py::test_init_db_creates_draft_table_without_switch
+FAILED tests/test_novel_chat_create.py::test_validate_draft_args_defaults_and_stripping
+FAILED tests/test_novel_chat_create.py::test_success_path_card_state_balance_and_persistence
+FAILED tests/test_novel_chat_create.py::test_one_draft_per_turn_then_text_reply
+FAILED tests/test_novel_chat_create.py::test_fifty_open_drafts_are_rejected_without_creating_more
+FAILED tests/test_novel_chat_create.py::test_save_message_checks_draft_owner_and_conversation
+FAILED tests/test_novel_chat_create.py::test_get_draft_route_is_owner_only - ...
+FAILED tests/test_novel_chat_create.py::test_account_and_history_cleanup_remove_only_own_drafts[account]
+FAILED tests/test_novel_chat_create.py::test_account_and_history_cleanup_remove_only_own_drafts[history]
+FAILED tests/test_novel_chat_create.py::test_delete_conversation_removes_only_that_conversations_drafts
+FAILED tests/test_novel_chat_create.py::test_create_with_draft_consumes_and_delete_resets
+FAILED tests/test_novel_chat_create.py::test_create_without_draft_keeps_head_config_shape
+FAILED tests/test_novel_chat_create.py::test_bad_switch_copy_is_caught - Asse...
+FAILED tests/test_novel_chat_create.py::test_bad_one_per_turn_copy_is_caught
+FAILED tests/test_novel_chat_create.py::test_bad_save_message_copy_is_caught
+FAILED tests/test_novel_chat_create_frontend.py::test_chat_card_renders_novel_draft_with_draft_id
+FAILED tests/test_novel_chat_create_frontend.py::test_chat_bubble_passes_open_novel_to_every_chat_card
+FAILED tests/test_novel_chat_create_frontend.py::test_novel_draft_component_states_paths_and_weights
+FAILED tests/test_novel_chat_create_frontend.py::test_novel_draft_component_renders_loading_state
+FAILED tests/test_novel_chat_create_frontend.py::test_use_conversations_rebuilds_song_and_draft_cards
+FAILED tests/test_novel_chat_create_frontend.py::test_page_open_novel_at_accepts_only_two_shapes
+FAILED tests/test_novel_chat_create_frontend.py::test_page_stream_cards_copy_draft_id_and_iframe_uses_state
+FAILED tests/test_novel_chat_create_frontend.py::test_wizard_reads_draft_prefills_and_submits_draft_id
+FAILED tests/test_novel_chat_create_frontend.py::test_novels_lib_exposes_draft_lookup_and_input_field
+41 failed, 33 warnings in 2.34s
+
+PASS HEAD: 后端契约测试有失败  41
+PASS HEAD: 前端契约测试有失败  
+PASS HEAD: 没有 ImportError / ModuleNotFoundError / 收集错误  
+PASS HEAD: 失败全是 AssertionError  
+PASS HEAD: 无 skip  
+== FAIL 0 / 50
+gate exit=0
