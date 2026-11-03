@@ -1,0 +1,27 @@
+# 导演知识库 · 镜头语法卡
+schema: kb.grammar/v1
+id: grammar.angle_low
+title: 低角度仰拍
+version: 1
+status: draft
+updated: 2026-10-16
+family: angle
+aliases: [仰拍, 低机位, 虫视, low angle, worm's eye]
+summary: 机位低、向上拍；人物显得有力量、有威胁，或者让空间显得压迫。
+definition: 摄影机低于被摄对象，向上拍摄。
+narrative_use:
+  - 权力差里的强势一方、威胁者
+  - 英雄出场、冲刺的速度感（贴地低机位）
+  - 建筑、巨物的压迫感
+prompt:
+  write:
+    - 从 [位置] 低角度向上拍，[人物] 占据画面上方，背景是天空或天花板
+    - 低机位贴近地面，[人物] 从画面深处冲向镜头
+  avoid:
+    - 只写「仰拍」不写机位位置：模型常给出轻微仰角，力度不够
+provider_notes:
+  - providers: [wan30, seedance25, seedance20]
+    realism: [realistic]
+    note: 仰拍近景会把下巴和鼻孔放大，写实人脸更容易显得怪；要用就放在中景以外
+see_refs: [grammar.angle_high, grammar.lens_wide]
+sources: [src.film_grammar, src.sds, src.avd]

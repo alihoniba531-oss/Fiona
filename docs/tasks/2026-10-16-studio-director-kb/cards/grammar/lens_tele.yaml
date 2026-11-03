@@ -1,0 +1,22 @@
+# 导演知识库 · 镜头语法卡
+schema: kb.grammar/v1
+id: grammar.lens_tele
+title: 长焦
+version: 1
+status: draft
+updated: 2026-10-16
+family: lens
+aliases: [长焦镜头, 远摄, telephoto, 85mm, 135mm, 200mm]
+summary: 约 85–200mm；压缩空间、背景贴近，带来孤立、窥视、追击的压迫。
+definition: 长焦距镜头：视野窄，前后景被压缩在一起，景深浅。
+narrative_use:
+  - 偷看、监视的距离感
+  - 人群中锁定一张脸，孤立人物
+  - 追逐中背景压过来的紧迫感
+prompt:
+  write:
+    - 长焦从远处拍，背景被压缩、紧贴在 [人物] 身后
+  avoid:
+    - 只为「好看」写 85mm：没有叙事意义就不写
+see_refs: [grammar.dof_shallow, grammar.lens_wide]
+sources: [src.film_grammar, src.sds, src.user_02]

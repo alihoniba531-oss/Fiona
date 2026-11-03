@@ -1,0 +1,39 @@
+# 导演知识库 · 模型能力卡
+schema: kb.provider/v1
+id: provider.seedance20_realistic
+title: Seedance 2.0 · 写实
+version: 1
+status: draft
+updated: 2026-10-16
+provider: seedance20
+style: realistic
+tested: untested
+extends_ref: provider.seedance20_base
+summary: 没有本人实测。官方 FAQ 提到人物中途「换脸」撞脸明星会被审核拦截；肖像闸按 2.5 的实测结论预防。
+portrait_gate:
+  status: untested
+  blocks:
+    - 官方 FAQ：人物中途换脸、撞脸明星时会被审核拦截
+  passes: []
+  workarounds:
+    - 按 2.5 写实卡的实测结论预防：剪影、俯拍遮脸、远景、背影，或改走万相
+    - 人脸参考单独准备一张大头照，放在提示词靠前的位置
+copyright:
+  status: untested
+  blocks: []
+  passes: []
+  workarounds:
+    - 按 2.5 写实卡的实测结论预防
+style_drift: 2.0 与 2.5 的美学偏好差异大，同一场不要混用。
+rules:
+  - id: M1
+    rule: 人脸参考单独一张大头照（无表情、少背景），妆造另用全身照，重要素材放在提示词前面
+    why: 官方 FAQ 的修法
+    neg_refs: [neg.multiview_reference]
+    src: [src.sd20_guide]
+  - id: M2
+    rule: 写实人物镜头按 2.5 的肖像闸规则设计
+    why: 没有 2.0 的实测，按已知最严的口径预防
+    neg_refs: [neg.realistic_face_on_seedance]
+    src: [src.mem_xiakexing]
+sources: [src.sd20_guide, src.mem_xiakexing]

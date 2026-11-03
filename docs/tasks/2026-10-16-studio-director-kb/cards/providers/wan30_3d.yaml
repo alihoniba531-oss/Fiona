@@ -1,0 +1,33 @@
+# 导演知识库 · 模型能力卡
+schema: kb.provider/v1
+id: provider.wan30_3d
+title: 万相 3.0 · 3D
+version: 1
+status: draft
+updated: 2026-10-16
+provider: wan30
+style: 3d
+tested: untested
+extends_ref: provider.wan30_base
+summary: 没有本人实测。写明具体的 3D 风格（3D 卡通、3D 国风、黏土），避免「游戏 CG 感」；第一次使用先跑 5 秒探针。
+portrait_gate:
+  status: untested
+  blocks: []
+  passes: []
+  workarounds: []
+copyright:
+  status: untested
+  blocks: []
+  passes: []
+  workarounds:
+    - 按 Seedance 的实测结论预防：近似知名 IP 的造型先做美术差异化
+style_drift: 官方把「游戏 CG 感」「廉价赛博朋克」列为常见的风格负向；写清具体的 3D 风格和材质。
+rules:
+  - id: M1
+    rule: 写明具体的 3D 风格和材质，例如「3D 卡通、柔和的哑光材质」
+    why: 官方风格清单里有 3D 卡通、黏土等；只写「3D」容易落到游戏 CG 感
+    src: [src.wan_t2v_guide, src.wan3_guide]
+  - id: M2
+    rule: 第一次使用先跑一条 5 秒探针
+    why: 没有本人实测
+sources: [src.wan3_guide, src.wan_t2v_guide]

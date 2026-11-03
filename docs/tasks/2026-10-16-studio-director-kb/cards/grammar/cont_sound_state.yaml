@@ -1,0 +1,23 @@
+# 导演知识库 · 镜头语法卡
+schema: kb.grammar/v1
+id: grammar.cont_sound_state
+title: 声音状态
+version: 1
+status: draft
+updated: 2026-10-16
+family: continuity
+aliases: [声音连续, 环境床连续, audio state]
+summary: 环境床跨切延续；同一动作跨镜只触发一次音效，下一镜只延续尾音；声音状态切换要有 fade。
+definition: 声音层（环境、点音效、音乐、对白、静默）的状态在镜头之间连续，变化有明确的起止和渐变。
+narrative_use:
+  - 让剪辑点「听不出来」
+  - 用声音切换带出场景切换（J/L cut）
+  - 刻意的静默制造冲击
+prompt:
+  write:
+    - 在 sound_plan.audio_states 里写，不写进 video_prompt
+    - 跨切的环境床默认延续；切换写 fade 时长与曲线（05 规定）
+  avoid:
+    - 同一刀击在两镜里各响一次
+see_refs: [grammar.trans_j_l_cut]
+sources: [src.user_02, src.user_05]

@@ -1,0 +1,22 @@
+# 导演知识库 · 反例卡
+schema: kb.neg/v1
+id: neg.dialogue_text_in_video_prompt
+title: 在 video_prompt 里写台词原文
+version: 1
+status: draft
+updated: 2026-10-16
+category: prompt
+summary: 本工作室台词走后期配音（gen.audio false），video_prompt 里写台词原文没有用，还会诱发画面字幕和随意的嘴形。
+wrong: 母亲看着儿子说：「那边吃得惯吗？」
+why: 视频模型不出声时，台词原文只会诱发字幕和不受控的口型；Seedance 2.5 官方 FAQ 指出台词后复述加语气描述会诱发字幕。
+right: 母亲看着儿子，嘴唇闭合（这句台词放在听者镜或插入镜上，由后期配音）；需要真口型时按 P0 单独处理。
+applies_to: {}
+level: warning
+check:
+  kind: regex_forbid
+  when:
+    gen_audio: false
+  fields: [video_prompt]
+  patterns: ['(说|道|问|喊|答)[：:]\s*[“"「]']
+see_refs: [grammar.trans_j_l_cut]
+sources: [src.user_02, src.sd25_guide]

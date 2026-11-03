@@ -1,0 +1,24 @@
+# 导演知识库 · 镜头语法卡
+schema: kb.grammar/v1
+id: grammar.move_truck
+title: 横移
+version: 1
+status: draft
+updated: 2026-10-16
+family: movement
+aliases: [横向平移, 侧移, truck, crab]
+summary: 机位左右平移、朝向不变；并列展示、与横向运动的人同速前进。
+definition: 摄影机整体向左或向右平移，镜头朝向保持不变。
+camerabench: [truck-left, truck-right]
+sensitive_ok: false
+narrative_use:
+  - 并列展示一排物件或人物
+  - 与横向奔跑、行走的人物同速（侧向跟拍）
+  - 让前景遮挡物滑过，产生纵深
+prompt:
+  write:
+    - 镜头向右横向平移，与 [人物] 同速，始终保持全景
+    - 镜头缓慢横移，从左到右扫过桌上的 [物件]（P01 S08 写法）
+  avoid: []
+see_refs: [grammar.move_follow, grammar.pos_profile]
+sources: [src.camerabench, src.sds, src.p01_audit, src.xiakexing_files]

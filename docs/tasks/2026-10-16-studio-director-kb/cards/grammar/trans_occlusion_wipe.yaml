@@ -1,0 +1,22 @@
+# 导演知识库 · 镜头语法卡
+schema: kb.grammar/v1
+id: grammar.trans_occlusion_wipe
+title: 遮挡转场
+version: 1
+status: draft
+updated: 2026-10-16
+family: transition
+aliases: [遮挡切, 擦除转场, 前景划过, object wipe, whip transition]
+summary: 人或物从镜头前划过、遮满画面的一刻切到下一镜；藏住切点。遮挡物要分别写进上一镜的尾和下一镜的头。
+definition: 利用前景遮挡（人走过、门关上、甩摇的模糊）掩盖剪辑点。
+narrative_use:
+  - 无缝换场
+  - 藏住两条生成之间的跳变
+  - 快节奏动作里的顺滑衔接
+prompt:
+  write:
+    - 上一镜结尾写「[人物] 从镜头前横穿而过，身体短暂遮满画面」，下一镜开头写「画面从 [人物] 的背影移开后露出 [新场景]」
+    - Seedance 2.5 的写法要写清时机和方式，例如「第 5 秒快速向左横移转场」
+  avoid: []
+see_refs: [grammar.move_pan, grammar.trans_hard_cut]
+sources: [src.film_grammar, src.avd, src.sd25_guide]

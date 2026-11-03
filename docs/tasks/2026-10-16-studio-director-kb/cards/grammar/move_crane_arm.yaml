@@ -1,0 +1,28 @@
+# 导演知识库 · 镜头语法卡
+schema: kb.grammar/v1
+id: grammar.move_crane_arm
+title: 摇臂升降
+version: 1
+status: draft
+updated: 2026-10-16
+family: movement
+aliases: [摇臂, 升格揭示, crane, jib]
+summary: 机位沿弧线大幅升起或落下，常伴随俯仰变化；宏大揭示、开场与收尾。不要裸写 Crane。
+definition: 摄影机装在摇臂上大幅度升降，通常同时改变俯仰角，是升降与俯仰的组合。
+camerabench: [pedestal-up, pedestal-down, tilt-down, tilt-up]
+sensitive_ok: false
+narrative_use:
+  - 从人物身后升起，揭示前方的宏大场景
+  - 收尾时升高拉开
+  - 从高处落下，进入一个场景
+prompt:
+  write:
+    - 摇臂升起：镜头从 [人物] 身后低处缓慢升高，同时略微俯视，露出前方的 [场景]
+  avoid:
+    - 裸写 Crane 或 crane shot：可能被误判为专名；写中文「摇臂升起」并描述轨迹
+risks:
+  - risk: 升起后露出的大片新空间由模型编造
+    mitigation: 提前写清会露出什么；揭示的内容最好已在关键帧或尾帧里定下
+    neg_refs: [neg.bare_english_camera_term]
+see_refs: [grammar.move_pedestal, grammar.move_aerial]
+sources: [src.camerabench, src.sds, src.user_02]

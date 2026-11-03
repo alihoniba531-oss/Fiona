@@ -1,0 +1,164 @@
+# 导演知识库 · 场景模板卡
+schema: kb.scene/v1
+id: scene.opening_hook
+title: 开场钩子
+version: 1
+status: draft
+updated: 2026-10-16
+position_type: position
+definition: 集首 3–10 秒内用反常画面、冲突或断言抓住观众，不负责交代前情。
+summary: >-
+  前 3 秒必须出现「反常」：一个反常识的断言、一个异常的画面，或者从危机中段直接切入。
+  先给最强的画面，再让旁白或台词跟上；钩子抛出的问题要在本集被回收。
+tags:
+  pace: [fast, medium]
+  emotion: [tense, mystery, awe, comic]
+  cast: [none, solo, duo, small_group, crowd]
+  realism: [realistic, anime, 3d]
+  setting: [interior, exterior, mixed]
+signals:
+  strong:
+    - 位于本集第 1 场的开头
+    - 剧本标注「冷开场 / 倒叙 / 钩子」
+  weak:
+    - 一句反常识断言（如 P02「螺丝松不是因为振动」）
+    - 直接从危机的中段开始
+  counter:
+    - signal: 开头只是平静地交代地点和时间
+      route_to_ref: scene.establishing
+directing:
+  - rule: 前 3 秒必须有反常：断言、异常画面或危机中段，不交代前情。
+  - rule: 钩子要能被回收：在分集方案和本集剧本里写明它在第几场兑现。
+    src: [src.user_02]
+  - rule: 画面先于解释。先给最强的一个画面，旁白或台词在第 1–2 秒内跟上；第 0 帧就要有声音。
+  - rule: 竖屏短视频的主体放在画面中上部，避开底部字幕区和平台按钮区（P01 做过安全区检查）。
+    src: [src.mem_preloq]
+  - rule: 倒叙式钩子的画面要和后文对应场次共用资产与机位，回收时观众才认得出。
+beats:
+  - id: B1
+    name: 抓
+    purpose: 一个反常的画面或断言
+    share: [0.40, 0.60]
+  - id: B2
+    name: 加码
+    purpose: 第二个信息让问题更尖锐
+    share: [0.30, 0.50]
+  - id: B3
+    name: 悬置
+    purpose: 不回答，切到正片
+    share: [0.00, 0.20]
+coverage:
+  - id: C1
+    beat: B1
+    shot: 最强的一个画面：反常细节的大特写，或异常处境的全景
+    size_refs: [grammar.size_extreme_closeup, grammar.size_full]
+    camera_ref: grammar.move_static
+    purpose: 第一眼就让人停下
+  - id: C2
+    beat: B2
+    shot: 换一个反差大的景别，给出第二个信息
+    size_refs: [grammar.size_closeup, grammar.size_wide]
+    camera_ref: grammar.move_static
+    purpose: 让问题更具体、更尖锐
+  - id: C3
+    beat: B3
+    shot: 撞击切或切黑，进入正片第一场
+    size_refs: [grammar.size_extreme_wide]
+    camera_ref: grammar.move_static
+    purpose: 不回答问题
+    optional: true
+    transition_refs: [grammar.trans_smash_cut, grammar.trans_fade_black]
+pacing:
+  basis: 中档依据 P02 G2 草稿（S01 4.62 秒、S02 2.83 秒）；快、慢两档是经验值。
+  src: [src.user_02, src.mem_preloq]
+  tiers:
+    fast:
+      shot_len_s: [1.5, 2.5]
+      shots_per_min: [24, 40]
+      gen_ratio: [1.6, 2.2]
+      use_when: 动作、悬疑类的冷开场
+    medium:
+      shot_len_s: [2.5, 4.0]
+      shots_per_min: [15, 24]
+      gen_ratio: [1.2, 1.6]
+      use_when: 科普断言、情感钩子
+    slow:
+      shot_len_s: [4.0, 6.0]
+      shots_per_min: [10, 15]
+      gen_ratio: [1.1, 1.3]
+      use_when: 一个长时间的诡异画面
+generation:
+  min_gen_s: 4
+  strategy: per_shot
+  rules:
+    - 钩子镜决定观众是否留下，报价时为它单独预留一次重出。
+    - 首帧质量决定一切：关键帧可以多出几版，交给作者挑。
+    - 倒叙钩子与后文对应场次共用资产绑定，必要时直接复用后文镜头（reuse）。
+  src: [src.user_02, src.plan]
+camera:
+  default_refs: [grammar.move_static]
+  allowed: []
+  nonsensitive_only:
+    - ref: grammar.move_push_in
+      condition: 向反常的物件缓慢推近一次；对象不是人脸、不是精密结构
+    - ref: grammar.move_aerial
+      condition: 从高空俯冲进入事件中心；人物保持远景大小
+  avoid:
+    - what: 开场就用组合运镜炫技
+      reason: 一镜一个主导运镜；钩子靠内容，不靠镜头花样
+      neg_refs: [neg.stacked_camera_moves]
+sound:
+  items:
+    - 第 0 帧就有声音，不要静音起头。
+    - 一句断言式的旁白，或一个异常的音效。
+    - 配乐在钩子结束点进入，或者在钩子结尾骤停。
+  src: [src.mem_preloq]
+ai_risks:
+  - id: R1
+    risk: 钩子需要的「反常」超出模型能力（复杂特效、精密物理）
+    applies_to: {}
+    symptom: 生成结果不够反常，或者物理错误
+    mitigation: 先跑一条 5 秒探针；做不到的部分改后期合成
+    fallback: 换一个更简单但同样反常的画面
+    severity: P1
+    src: [src.mem_copyright, src.p01_audit]
+  - id: R2
+    risk: 首帧直接画出了悬念的答案
+    applies_to: {}
+    symptom: 观众第一眼就知道了结局，钩子失效
+    mitigation: 首帧只放线索，答案留到后文
+    fallback: 重出首帧
+    severity: P1
+    neg_refs: [neg.reveal_in_first_frame]
+  - id: R3
+    risk: 断言内容不准确
+    applies_to: {}
+    symptom: 科普类钩子的说法经不起推敲（P01 曾把 line contact vs point contact 删掉）
+    mitigation: 事实只用已核实的资料；Preloq 只用站上写过的内容
+    fallback: 换一句能核实的断言
+    severity: P1
+    src: [src.mem_preloq]
+example:
+  title: P02 开场：螺丝松不是因为振动
+  setup: 旁白讲解类钩子，写实、无人物、中档；万相 3.0、1080P、9:16。取自 P02 G2 草稿（尚未生成）。
+  gens:
+    - id: G1
+      coverage_ref: scene.opening_hook#C1
+      duration_s: 5
+      angle: 微距特写，斜侧 30° 平视，固定
+      video_prompt: >-
+        镜头固定不动。机器人上臂缓慢抬起约 10 度，圆形关节模块随之微微转动，法兰上的一圈螺钉随关节整体转动、始终整齐排列；
+        金属表面的高光随动作缓缓滑过。只有伺服电机的低频嗡鸣。声音只要机械音效，无人声、无音乐。画面中无任何文字、字幕、水印。
+    - id: G2
+      coverage_ref: scene.opening_hook#C2
+      duration_s: 4
+      angle: 微距特写，平视，固定
+      action: 慢动作，上板相对下板向画面左侧横向错动约 1 毫米再回位，往复两三次；两块板始终贴合
+  cues:
+    - {id: N01, role: 旁白, text: "Your robot's screws aren't loosening because of vibration. It's something sneakier.", delivery: voiceover, lip_sync: none}
+    - {id: N02, role: 旁白, text: "Transverse slip: parts shift sideways, friction lets go, and the thread's helix turns it into rotation.", delivery: voiceover, lip_sync: none}
+  shots:
+    - {id: E1, beat: B1, from: G1, in_s: 0.3, len_s: 4.625, cue_ids: [N01], mouth: none}
+    - {id: E2, beat: B2, from: G2, in_s: 0.3, len_s: 2.833, cue_ids: [N02], mouth: none, note: N02 延续到下一镜 S03}
+  totals: 2 镜共 7.46 秒，落在中档；生成 2 条共 9 秒，gen_ratio 约 1.21；万相 1080P 约 ¥10.8。
+sources: [src.user_02, src.plan, src.mem_preloq, src.mem_copyright, src.p01_audit, src.film_grammar]

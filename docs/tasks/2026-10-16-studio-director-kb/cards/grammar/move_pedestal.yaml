@@ -1,0 +1,27 @@
+# 导演知识库 · 镜头语法卡
+schema: kb.grammar/v1
+id: grammar.move_pedestal
+title: 升降
+version: 1
+status: draft
+updated: 2026-10-16
+family: movement
+aliases: [垂直升降, 上移, 下移, pedestal]
+summary: 机身垂直上升或下降、俯仰不变；跟随起立、坐下。P01 S11 的下移让金属屑变成了木刨花。
+definition: 摄影机整体垂直升降，镜头角度不变。
+camerabench: [pedestal-up, pedestal-down]
+sensitive_ok: false
+narrative_use:
+  - 跟随人物起立、坐下、上楼
+  - 从桌面高度升到人物视线高度
+prompt:
+  write:
+    - 镜头垂直缓慢上升，俯仰角不变，从桌面高度升到 [人物] 胸口高度
+  avoid:
+    - 在材质敏感的镜头里升降（P01 S11）
+risks:
+  - risk: 升降时露出的新区域被模型重画，材质出错
+    mitigation: 材质敏感的镜头改固定机位，并写死材质
+    neg_refs: [neg.camera_move_rewrites_material]
+see_refs: [grammar.move_crane_arm, grammar.move_tilt]
+sources: [src.camerabench, src.sds, src.p01_audit, src.mem_preloq]

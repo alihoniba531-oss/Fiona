@@ -1,0 +1,30 @@
+# 导演知识库 · 镜头语法卡
+schema: kb.grammar/v1
+id: grammar.size_closeup
+title: 特写
+version: 1
+status: draft
+updated: 2026-10-16
+family: shot_size
+order: 8
+aliases: [面部特写, 物件特写, close-up, CU]
+summary: 脸或单个物体占满画面；微表情、关键道具、打断节奏。人脸或结构敏感，一律固定机位。
+definition: 人物的脸（额头到下巴）或一个物体占满画面。
+framing: 面部充满画面，或单个物体充满画面
+mouth_readable: high
+narrative_use:
+  - 微表情：一个眼神的变化
+  - 让观众注意一个关键道具
+  - 在快节奏里打断，制造停顿
+prompt:
+  write:
+    - 特写，[人物] 的脸占满画面，焦点在眼睛，镜头固定不动
+    - 特写，[物件] 占满画面，[材质] 写死，例如「银灰色金属、有螺纹」
+  avoid:
+    - 特写里写推近、环绕：会让模型重画脸部或结构
+risks:
+  - risk: 结构或材质被改写
+    mitigation: 固定机位，并把材质与零件关系写死（P01 S05、S11 的修法）
+    neg_refs: [neg.orbit_structure_interpenetration, neg.camera_move_rewrites_material]
+see_refs: [grammar.size_extreme_closeup, grammar.move_static, grammar.dof_shallow]
+sources: [src.film_grammar, src.sds, src.p01_audit, src.mem_preloq]

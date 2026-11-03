@@ -1,0 +1,23 @@
+# 导演知识库 · 镜头语法卡
+schema: kb.grammar/v1
+id: grammar.axis_screen_direction
+title: 运动方向
+version: 1
+status: draft
+updated: 2026-10-16
+family: axis
+aliases: [银幕方向, 动作方向, screen direction]
+summary: 主体在画面里的运动方向跨镜保持（一直从左往右跑）；要改方向，先用正对或背对镜头的中性镜过渡。
+definition: 运动主体在连续镜头里保持相同的画面方向，观众才会觉得是同一段运动。
+narrative_use:
+  - 追逐：逃的人和追的人都从左往右
+  - 旅途：一直朝同一方向，表示一路向前
+  - 方向反转：表示折返或局势逆转
+prompt:
+  write:
+    - 每镜写清「向画面右侧奔跑」；跨镜不变
+    - 要掉头时先插一个正对或背对镜头的中性镜
+  avoid:
+    - 上一镜向右跑、下一镜向左跑却没有过渡
+see_refs: [grammar.axis_180, grammar.axis_reset, grammar.trans_match_action]
+sources: [src.film_grammar, src.avd]

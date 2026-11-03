@@ -1,0 +1,26 @@
+# 导演知识库 · 镜头语法卡
+schema: kb.grammar/v1
+id: grammar.axis_180
+title: 180° 轴线
+version: 1
+status: draft
+updated: 2026-10-16
+family: axis
+aliases: [轴线法则, 180 度法则, 动作轴线, 180-degree rule, line of action]
+summary: 在两个角色之间画一条线，所有机位都留在线的同一侧，A 始终在左、B 始终在右。AI 出首帧容易左右镜像，要按世界坐标明写。
+definition: 两个主体（或一个主体与它的运动方向）之间有一条假想线，摄影机只在这条线的一侧取景，画面里的左右关系就保持稳定。
+narrative_use:
+  - 对话、对峙：观众始终知道谁在哪
+  - 打斗：攻守方向清楚
+  - 有意越轴：表现关系翻转或心理混乱（要让观众看懂是故意的）
+prompt:
+  write:
+    - 每张首帧写明左右：「[A] 在画面左侧、面朝右，[B] 在画面右侧、面朝左」
+    - 换机位后按世界坐标重新推导左右，不凭感觉（02 规定）
+  avoid:
+    - 反打镜不写左右：模型常把两人画成同一朝向
+risks:
+  - risk: 首帧被画成镜像，正反打越轴
+    mitigation: 关键帧质检时对照建立镜核对左右；不对就重出首帧，别靠视频补救
+see_refs: [grammar.axis_eyeline, grammar.axis_reset, grammar.pos_over_shoulder]
+sources: [src.film_grammar, src.avd, src.user_02]

@@ -1,0 +1,24 @@
+# 导演知识库 · 镜头语法卡
+schema: kb.grammar/v1
+id: grammar.move_pull_out
+title: 拉远
+version: 1
+status: draft
+updated: 2026-10-16
+family: movement
+aliases: [后拉, 拉镜, 后退, dolly out, pull out]
+summary: 机位后退；揭示环境、表现孤立、收尾。拉远时模型要补画新空间，画外有什么要提前写清。
+definition: 摄影机沿光轴后退，景别逐渐变松，画外空间进入画面。
+camerabench: [dolly-out]
+sensitive_ok: false
+narrative_use:
+  - 揭示人物所处的处境（原来他在悬崖边）
+  - 一场或一集的收尾，留白
+  - 表现孤立：人物越来越小
+prompt:
+  write:
+    - 镜头缓慢后退拉远，从近景拉到全景，画面里逐渐露出 [事先写清的环境]
+  avoid:
+    - 只写「拉远」不写会露出什么：模型会自行编造新内容，可能和设定冲突
+see_refs: [grammar.move_push_in, grammar.move_aerial]
+sources: [src.camerabench, src.sds, src.p01_audit]

@@ -1,0 +1,20 @@
+# 导演知识库 · 反例卡
+schema: kb.neg/v1
+id: neg.vague_camera_move
+title: 运镜没有方向和起止
+version: 1
+status: draft
+updated: 2026-10-16
+category: prompt
+summary: 「镜头慢慢移动」「镜头跟随」没有方向、速度、起止和景别，模型只能乱猜，动作也容易糊。
+wrong: 镜头慢慢移动，跟随人物。
+why: 没有可执行参数。
+right: 镜头在人物身后稳定跟随，保持中全景，约 3 秒后停住；或者「镜头沿视线方向推近，从中景到中近景，约 3 秒」。
+applies_to: {}
+level: info
+check:
+  kind: regex_forbid
+  fields: [video_prompt]
+  patterns: ['镜头(慢慢|缓缓)?(移动|运动)[，。,]']
+see_refs: [grammar.move_follow, grammar.move_push_in]
+sources: [src.prop_asset, src.sds]

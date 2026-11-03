@@ -1,0 +1,27 @@
+# 导演知识库 · 反例卡
+schema: kb.neg/v1
+id: neg.emotion_glow_eyes
+title: 强情绪让眼睛发光
+version: 1
+status: draft
+updated: 2026-10-16
+category: provider
+summary: Seedance 2.5 对强烈情绪词过度响应，瞳孔出现红光、蓝光。改常规描述，必要时写「正常人眼、不发光」。
+wrong: 他怒目圆睁，眼中杀气四溢，神情狂热。
+why: Seedance 2.5 官方 FAQ：把强烈情绪写成眼睛的特效化表现时，模型会让瞳孔发光。
+right: 他眼神锐利，咬紧牙关，下颌绷紧；人物为正常人眼、不发光。
+applies_to:
+  providers: [seedance25]
+evidence:
+  - case: Seedance 2.5 官方 FAQ
+    detail: 约束正常人眼、改用常规情绪词后恢复
+    src: [src.sd25_guide]
+level: warning
+check:
+  kind: regex_forbid
+  when:
+    providers: [seedance25]
+  fields: [video_prompt]
+  patterns: ['杀气', '怒目圆睁', '狂热', '极度(震惊|惊恐)', '眼(中|里|神).{0,4}(冒光|发光|喷火|燃烧)']
+see_refs: [grammar.size_close]
+sources: [src.sd25_guide]

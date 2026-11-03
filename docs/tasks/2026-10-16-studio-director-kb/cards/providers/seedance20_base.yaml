@@ -1,0 +1,91 @@
+# 导演知识库 · 模型能力卡
+schema: kb.provider/v1
+id: provider.seedance20_base
+title: Seedance 2.0 · 通用
+version: 1
+status: draft
+updated: 2026-10-16
+provider: seedance20
+style: base
+tested: untested
+summary: >-
+  本机 MCP 没有接入，只有官方资料。时间戳规则与 2.5 相反：不写秒数，用「镜头1 / 镜头2」按事件顺序组织，节奏交给模型。
+  官方建议优先低缓、连续的小动作，规避狂奔、大跳，所以不适合打斗和追逐。
+model_ids: []
+capabilities:
+  input_modes: [文生视频, 首帧生视频, 全模态参考（图片、视频、音频）, 编辑视频, 延长视频]
+  duration_s: null
+  resolutions: null
+  ratios: [固定 6 档（官方说法，具体档位以控制台为准）]
+  native_audio: true
+  reference_audio: true
+  last_frame: null
+  max_reference_images: null
+  unsupported: [本机 MCP 未接入]
+pricing_note: 未接入，未报价；以方舟控制台为准。
+prompt_syntax:
+  structure: 精准主体 + 动作细节 + 场景环境 + 光影色调 + 镜头运镜 + 视觉风格 + 画质 + 约束条件（官方进阶公式）
+  timestamps:
+    supported: false
+    format: 不写秒数；用「镜头1 / 镜头2 / 镜头3」按事件发生的顺序组织
+    note: 官方说模型对精确时间（如 0–3 秒）的支持不稳定，强行限制时长可能导致结果异常。与 2.5 相反。
+  shot_labels: 「镜头1」「镜头2」……每个镜头写运镜或切换方式、主体动作与表情、位置变化、音频
+  dialogue: 台词放在 {} 里，音效放在 <> 里，音乐放在 () 里，字幕放在【】里；小语种要标注语种
+  negatives: 约束词写在结尾：「保持无字幕」「不要生成 Logo」「不要生成水印」
+  symbols: 「将图片1中穿红色连衣裙的女人定义为主体1」，之后始终用同一个标签指代
+pipeline_overrides:
+  - rule: 每条至少生成 4 秒，gen.audio 默认 false
+    why: 本工作室统一口径
+    src: [src.user_02]
+  - rule: 不用秒数时间戳，这一点和本库其他通道不同
+    why: 官方规则
+    src: [src.sd20_guide]
+limits:
+  cast_stable_max: 4
+  reference_subjects_stable: 推荐素材总数 4–5 个（角色图 1–2 张、场景图 1 张、运镜视频 1 段、音频 1 段）
+  prompt_max_chars: null
+  concurrent_tasks: null
+rules:
+  - id: M1
+    rule: 不写秒数时间戳，用「镜头 N」
+    why: 官方规则
+    neg_refs: [neg.timestamp_seconds_on_seedance20]
+    src: [src.sd20_guide]
+  - id: M2
+    rule: 一个镜头只写一种运镜
+    why: 官方：同时要求推拉摇移会增加画面不稳定
+    neg_refs: [neg.stacked_camera_moves]
+    src: [src.sd20_guide]
+  - id: M3
+    rule: 动作优先低缓、连续的小动作，写清肢体部位、幅度和前后衔接；规避狂奔、大跳、剧烈翻滚
+    why: 官方规则；打斗、追逐不要选 2.0
+    neg_refs: [neg.too_many_actions]
+    src: [src.sd20_guide]
+  - id: M4
+    rule: 人物参考用大头照加全身照，不用三视图或多视图
+    why: 官方 FAQ：多视图会被识别成多个主体，导致换脸、双胞胎
+    neg_refs: [neg.multiview_reference]
+    src: [src.sd20_guide]
+  - id: M5
+    rule: 参考人物超过 4 人时先分组出图，再用分组图生视频
+    why: 官方 FAQ：超过 4 人时人数不符、人物重复
+    src: [src.sd20_guide]
+  - id: M6
+    rule: 台词语言统一，不中英混用；多音字、生僻字换成发音相同的常用字
+    why: 官方注意事项和 FAQ
+    src: [src.sd20_guide]
+  - id: M7
+    rule: 横屏生成字幕的概率明显低于竖屏，竖屏需求可以横屏生成后再裁
+    why: 官方 FAQ
+    neg_refs: [neg.text_in_generated_frame]
+    src: [src.sd20_guide]
+  - id: M8
+    rule: 带旁白的片尾容易有咔哒声，后期做音量淡出
+    why: 官方 FAQ
+    src: [src.sd20_guide]
+  - id: M9
+    rule: 抽象情绪改成具体的身体细节
+    why: 官方动作描述要求
+    neg_refs: [neg.abstract_emotion]
+    src: [src.sd20_guide]
+sources: [src.sd20_guide, src.user_02]

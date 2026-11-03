@@ -1,0 +1,49 @@
+# 导演知识库 · 模型能力卡
+schema: kb.provider/v1
+id: provider.wan30_realistic
+title: 万相 3.0 · 写实
+version: 1
+status: draft
+updated: 2026-10-16
+provider: wan30
+style: realistic
+tested: partial
+extends_ref: provider.wan30_base
+summary: >-
+  写实人物戏的默认通道：没有观察到肖像闸。风险在 AI 人脸跨镜漂移和材质被改，靠固定机位、从定妆派生、材质写死来控制。
+  P01 是写实科普，实测过；写实打斗还没实测。
+portrait_gate:
+  status: none
+  blocks: []
+  passes:
+    - 写实人脸首帧（蓝海囚笼时期万相 2.5 就是因为接受写实人脸才被选为人脸通道）
+    - P01 S10 生成过 AI 人物正脸，没有被拒（那次是内容上不想露脸，不是被拦）
+  workarounds: []
+copyright:
+  status: untested
+  blocks: []
+  passes: []
+  workarounds:
+    - 按 Seedance 的实测结论预防：近似知名 IP 的造型先做美术差异化
+style_drift: 写实首帧一般保持写实；常见的是材质和物理被改（金属屑变木刨花），不是画风漂移。
+rules:
+  - id: M1
+    rule: 写实人脸可以用，但正脸镜一律固定机位，关键帧从定妆图派生
+    why: 运镜和推近会重画脸部，身份漂移
+    neg_refs: [neg.move_on_sensitive_shot]
+    src: [src.mem_lanhai, src.p01_audit, src.mem_robotdog]
+  - id: M2
+    rule: 要求人物不露脸的项目，固定俯视构图并写明「人物的头和脸始终在画面之外」
+    why: P01 S10 修正版这样写后通过
+    neg_refs: [neg.push_tilt_reveals_face]
+    src: [src.p01_audit]
+  - id: M3
+    rule: 材质、颜色、数量写死；质检核对物理常识
+    why: P01 S11 的金属屑被画成了木刨花
+    neg_refs: [neg.camera_move_rewrites_material]
+    src: [src.p01_audit, src.mem_preloq]
+  - id: M4
+    rule: 写实打斗、追逐还没实测，第一次用先跑一条 5 秒探针
+    why: 侠客行用的是 Seedance
+    src: [src.mem_xiakexing]
+sources: [src.mem_lanhai, src.p01_audit, src.mem_preloq, src.mem_robotdog, src.mem_xiakexing]

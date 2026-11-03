@@ -1,0 +1,25 @@
+# 导演知识库 · 镜头语法卡
+schema: kb.grammar/v1
+id: grammar.focus_rack
+title: 移焦
+version: 1
+status: draft
+updated: 2026-10-16
+family: lens
+aliases: [焦点转移, 拉焦, rack focus]
+summary: 机位不动、焦点从一个对象平滑转到另一个；不动镜头就能转移注意力。要写成「术语 + 白话」。
+definition: 镜头位置不变，焦平面在前景和背景之间移动，原来清楚的变模糊、原来模糊的变清楚。
+narrative_use:
+  - 揭示：焦点从前景物件转到背景里出现的人
+  - 注意力转移：从说话的人转到听的人
+  - 把两个对象联系起来
+prompt:
+  write:
+    - 移焦：画面焦点平滑转变，前景的 [A] 变模糊，背景的 [B] 从模糊逐渐变清楚（Seedance 2.5 官方建议的写法）
+  avoid:
+    - 只写「rack focus」：小众术语，模型可能不执行
+risks:
+  - risk: 焦点移到写实人脸时，模型会重画面部
+    mitigation: 移焦本身可以用在固定机位的镜头上；目标是写实人脸时慎用，优先移到物件
+see_refs: [grammar.dof_shallow, grammar.trans_eyeline_match]
+sources: [src.film_grammar, src.sds, src.sd25_guide]

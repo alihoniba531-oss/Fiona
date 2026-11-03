@@ -1,0 +1,21 @@
+# 导演知识库 · 镜头语法卡
+schema: kb.grammar/v1
+id: grammar.trans_j_l_cut
+title: 声音先行与延后
+version: 1
+status: draft
+updated: 2026-10-16
+family: transition
+aliases: [J-cut, L-cut, 声音桥, sound bridge]
+summary: 下一镜的声音先响再切画（J），或上一镜的声音盖过切点（L）；对话不露嘴形时最自然的剪法，也用于场与场的衔接。
+definition: 声音和画面的切点错开：J-cut 声音早于画面，L-cut 声音晚于画面。
+narrative_use:
+  - 对话：台词跨过切点，落在听者的反应上
+  - 换场：下一场的环境声先进来
+  - 回忆进出：过去的声音先于过去的画面出现
+prompt:
+  write:
+    - 不写进 video_prompt；在 cue 的窗口和 sound_plan 里安排：cue 起点早于（或终点晚于）镜头边界
+  avoid: []
+see_refs: [grammar.cont_sound_state]
+sources: [src.film_grammar, src.user_02, src.user_05]

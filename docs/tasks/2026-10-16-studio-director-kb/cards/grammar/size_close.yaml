@@ -1,0 +1,31 @@
+# 导演知识库 · 镜头语法卡
+schema: kb.grammar/v1
+id: grammar.size_close
+title: 近景
+version: 1
+status: draft
+updated: 2026-10-16
+family: shot_size
+order: 7
+aliases: [头肩景, 肩上景, close shot]
+summary: 肩部以上的头肩镜；情绪加压、关键反应。属于人脸敏感镜头，一律固定机位。
+definition: 画面下缘在肩部，脸占画面主要部分。
+framing: 肩部以上（头肩）
+mouth_readable: high
+narrative_use:
+  - 关键句之后听者的反应
+  - 情绪加压、人物被逼到角落
+  - 告白、哭泣等表演承载镜
+prompt:
+  write:
+    - 近景，肩部以上，镜头固定不动，[人物] 面朝 [方向]，[可见的微表情：眼眶、嘴角、喉结]
+  avoid:
+    - 「很伤心」「很紧张」这类抽象情绪
+    - 近景里写任何运镜
+provider_notes:
+  - providers: [seedance25, seedance20]
+    realism: [realistic]
+    note: 写实正脸、侧脸近景首帧会被肖像闸拒收；改万相，或改逆光剪影、背影
+    src: [src.mem_xiakexing, src.mem_lanhai]
+see_refs: [grammar.size_closeup, grammar.move_static]
+sources: [src.film_grammar, src.sds, src.sd20_guide, src.mem_xiakexing, src.mem_lanhai]

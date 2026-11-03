@@ -1,0 +1,231 @@
+# 导演知识库 · 场景模板卡
+schema: kb.scene/v1
+id: scene.reveal
+title: 悬疑揭示
+version: 1
+status: draft
+updated: 2026-10-16
+definition: 先遮住、后揭开关键信息（身份、物件、真相），由镜头控制观众何时得知。
+summary: >-
+  先决定信息差：观众比角色先知道、同时知道，还是后知道，再选机位。
+  图生视频的首帧定死了画面内容，所以揭示物不能出现在首帧里——要么让遮挡物在首帧、镜内移开，要么用切。
+  揭开前慢、揭开那一下快，之后给反应。
+tags:
+  pace: [slow, medium, fast]
+  emotion: [mystery, fear, tense, awe]
+  cast: [solo, duo, small_group]
+  realism: [realistic, anime, 3d]
+  setting: [interior, exterior, mixed]
+signals:
+  strong:
+    - 「原来 / 竟然 / 赫然 / 定睛一看」
+    - 门后、帘后、镜中、转身露脸；掀开盖布
+  weak:
+    - 发现尸体、线索、伤口
+    - 角色缓慢接近一个被遮住的东西
+  counter:
+    - signal: 揭开的信息推翻了前文的理解
+      route_to_ref: scene.twist
+    - signal: 只是拖延和逼近，还没有揭开
+      route_to_ref: scene.tension
+directing:
+  - rule: >-
+      先定信息差：观众先知道（深焦背景里先露出来）、同时知道（主观视角）、后知道（先拍角色的反应，再给揭示物）。
+    see_refs: [grammar.dof_deep, grammar.pos_pov, grammar.trans_eyeline_match]
+    src: [src.avd]
+  - rule: 遮挡物要具体（门、帘、布、转身的背、镜子、焦外），揭开的方式写成动作（掀开、推开、转身、移焦）。
+    see_refs: [grammar.focus_rack]
+  - rule: >-
+      首帧不能画出要揭示的东西。要么遮挡物在首帧、镜内移开（需要锁定揭示后的画面时用首尾帧模式），
+      要么不在镜内揭示：上一镜是反应，下一镜是揭示物的独立首帧。后一种更稳。
+    see_refs: [neg.reveal_in_first_frame]
+  - rule: 揭示物的造型要先定稿（道具或定妆资产），不交给视频模型临场编。
+    src: [src.user_02]
+  - rule: 揭示之后至少一镜停留：反应近景或沉默。
+beats:
+  - id: B1
+    name: 引诱
+    purpose: 异常的线索
+    share: [0.20, 0.30]
+  - id: B2
+    name: 接近
+    purpose: 拖延、遮挡、逼近
+    share: [0.25, 0.40]
+  - id: B3
+    name: 揭开
+    purpose: 信息落地
+    share: [0.10, 0.20]
+  - id: B4
+    name: 反应
+    purpose: 角色和观众消化它
+    share: [0.15, 0.30]
+coverage:
+  - id: C1
+    beat: B1
+    shot: 异常线索的大特写（脚印、血迹、半开的门）
+    size_refs: [grammar.size_extreme_closeup]
+    camera_ref: grammar.move_static
+    purpose: 引诱
+  - id: C2
+    beat: B2
+    shot: 背影跟随角色接近，或主观视角
+    size_refs: [grammar.size_medium, grammar.size_medium_wide]
+    angle_ref: grammar.pos_back
+    camera_ref: grammar.move_follow
+    purpose: 拖延，和角色一起接近
+  - id: C3
+    beat: B2
+    shot: 手伸向遮挡物的大特写
+    size_refs: [grammar.size_extreme_closeup]
+    camera_ref: grammar.move_static
+    purpose: 最后一次拖延
+  - id: C4
+    beat: B3
+    shot: 揭示物的独立首帧（特写），或遮挡物在镜内移开
+    size_refs: [grammar.size_closeup]
+    camera_ref: grammar.move_static
+    purpose: 信息落地
+    transition_refs: [grammar.trans_hard_cut, grammar.trans_eyeline_match]
+  - id: C5
+    beat: B4
+    shot: 反应近景，固定机位
+    size_refs: [grammar.size_close]
+    camera_ref: grammar.move_static
+    purpose: 消化
+  - id: C6
+    beat: B4
+    shot: 回到全景交代处境
+    size_refs: [grammar.size_full]
+    camera_ref: grammar.move_static
+    purpose: 揭示改变了什么
+    optional: true
+pacing:
+  basis: 经验值：铺垫慢、揭开快、反应慢（ai-visual-director 的「渐进」节奏类型，按 4 秒最少生成调整过）。满 5 集后校准。
+  src: [src.avd]
+  tiers:
+    fast:
+      shot_len_s: [1.5, 2.5]
+      shots_per_min: [24, 40]
+      gen_ratio: [1.5, 2.0]
+      use_when: 惊吓式揭示
+    medium:
+      shot_len_s: [2.5, 4.0]
+      shots_per_min: [15, 24]
+      gen_ratio: [1.2, 1.5]
+      use_when: 常规揭示
+    slow:
+      shot_len_s: [4.0, 7.0]
+      shots_per_min: [9, 15]
+      gen_ratio: [1.05, 1.3]
+      use_when: 缓慢逼近的长铺垫
+generation:
+  min_gen_s: 4
+  strategy: per_shot
+  rules:
+    - 揭示物单独出首帧，造型从定稿资产派生。
+    - 镜内揭示时用首尾帧模式：首帧有遮挡物，尾帧是揭示后的画面（万相、Seedance 都支持尾帧）。
+    - 揭开动作所在的那条可以裁成两镜：抓住遮挡物、猛地掀开，中间硬切到揭示物。
+  src: [src.mcp_models, src.user_05]
+camera:
+  default_refs: [grammar.move_static]
+  allowed: []
+  nonsensitive_only:
+    - ref: grammar.move_push_in
+      condition: 缓慢推向门、帘、箱子等非人物的遮挡物
+    - ref: grammar.move_follow
+      condition: 背影跟随角色接近
+  avoid:
+    - what: 推近之后上摇，揭示一张脸
+      reason: 运镜会把画外的内容（包括脸）交给模型临场编
+      neg_refs: [neg.push_tilt_reveals_face]
+    - what: 拉远揭示一个没有事先设定的空间
+      reason: 模型会编造新内容，揭示物可能和设定冲突
+sound:
+  items:
+    - 揭开前抽空：环境声降到最低，只留呼吸或一个持续音。
+    - 揭开那一刻一个短促的冲击音；或者反过来，彻底静默。
+    - 配乐不要提前「剧透」；揭示之后再进。
+  see_refs: [grammar.trans_smash_cut]
+ai_risks:
+  - id: R1
+    risk: 首帧已经画出了秘密
+    applies_to: {}
+    symptom: 镜头一开始观众就看到了要揭示的东西
+    mitigation: 首帧只放遮挡物或线索；揭示物单独出首帧
+    fallback: 重出首帧
+    severity: P1
+    neg_refs: [neg.reveal_in_first_frame]
+  - id: R2
+    risk: 揭示物被模型改了样子
+    applies_to: {}
+    symptom: 信件、怪物、尸体、遗物和设定不一样
+    mitigation: 揭示物用定稿资产绑定；镜内揭示用首尾帧锁定结果
+    fallback: 改用切：揭示物用独立首帧，镜内不动
+    severity: P1
+    src: [src.user_02]
+  - id: R3
+    risk: 运镜露出不该露的脸
+    applies_to: {}
+    symptom: 推近、上摇时画外的 AI 人脸进入画面
+    mitigation: 揭示镜固定机位
+    fallback: 改固定机位重出
+    severity: P1
+    neg_refs: [neg.push_tilt_reveals_face]
+    src: [src.p01_audit]
+  - id: R4
+    risk: 血腥、恐怖画面被平台拦截（未实测）
+    applies_to: {}
+    symptom: 生成失败或输出被拦
+    mitigation: 写成暗示：血迹、影子、反应，而不是直接呈现
+    fallback: 只拍反应
+    severity: P2
+  - id: R5
+    risk: 揭示的信件、屏幕上的文字是乱码
+    applies_to: {}
+    symptom: 字迹错乱
+    mitigation: 文字内容后期合成
+    fallback: 只拍信封或屏幕光
+    severity: P1
+    neg_refs: [neg.text_in_generated_frame]
+example:
+  title: 阁楼的木箱
+  setup: >-
+    写实、室内、一人、慢转快；万相 3.0、480P、16:9。女孩循着泥脚印找到阁楼角落盖着白布的木箱，
+    掀开后发现里面是她自己小时候的红色雨靴，靴上沾着新鲜的泥。观众和她同时知道。
+  gens:
+    - id: G1
+      coverage_ref: scene.reveal#C1
+      duration_s: 5
+      angle: 地板大特写，固定
+      action: 一串新鲜的泥脚印通向角落，一束光里灰尘缓缓飘动
+    - id: G2
+      coverage_ref: scene.reveal#C2
+      duration_s: 6
+      angle: 背影中景，缓慢跟随
+      action: 女孩举着手电缓慢走向角落盖着白布的木箱，光束轻轻晃动
+    - id: G3
+      coverage_ref: scene.reveal#C3
+      duration_s: 4
+      angle: 手部大特写，固定
+      video_prompt: >-
+        镜头固定不动。女孩的右手捏住白布的一角，停顿约两秒，然后猛地把白布向画面右上方掀开，白布飞出画面；
+        画面里只有手和飘起的布，看不到箱子里面。画面中无任何文字、字幕、水印。
+    - id: G4
+      coverage_ref: scene.reveal#C4
+      duration_s: 4
+      angle: 箱内特写，固定（独立首帧）
+      action: 箱子里一双小小的红色雨靴，靴面沾着湿泥，几粒灰尘慢慢落下
+    - id: G5
+      coverage_ref: scene.reveal#C5
+      duration_s: 5
+      angle: 近景，固定
+      action: 女孩的脸被手电光从下方照亮，瞳孔微缩，呼吸停住，手电光轻轻发抖
+  shots:
+    - {id: E1, beat: B1, from: G1, in_s: 0.3, len_s: 4.0}
+    - {id: E2, beat: B2, from: G2, in_s: 0.3, len_s: 4.5}
+    - {id: E3, beat: B2, from: G3, in_s: 0.3, len_s: 2.0}
+    - {id: E4, beat: B3, from: G3, in_s: 2.3, len_s: 1.5, note: 掀开的一瞬，硬切到 E5}
+    - {id: E5, beat: B3, from: G4, in_s: 0.3, len_s: 2.5}
+    - {id: E6, beat: B4, from: G5, in_s: 0.3, len_s: 4.0, mouth: none}
+  totals: 6 镜共 18.5 秒，约 19.5 镜/分，落在中档；生成 5 条共 24 秒，gen_ratio 约 1.30；万相 480P 约 ¥7.2。
+sources: [src.user_02, src.user_05, src.p01_audit, src.mcp_models, src.avd, src.film_grammar]

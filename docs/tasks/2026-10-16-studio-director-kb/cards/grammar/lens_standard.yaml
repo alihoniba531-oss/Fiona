@@ -1,0 +1,21 @@
+# 导演知识库 · 镜头语法卡
+schema: kb.grammar/v1
+id: grammar.lens_standard
+title: 标准焦段
+version: 1
+status: draft
+updated: 2026-10-16
+family: lens
+aliases: [标准镜头, 50mm, normal lens]
+summary: 约 35–50mm，接近人眼；平实。一般不写，清单里填 inherit 即可。
+definition: 视角和透视接近人眼的焦段，不夸张也不压缩。
+narrative_use:
+  - 平实的叙事和对话
+  - 和广角、长焦形成对比时才值得点名
+prompt:
+  write:
+    - 一般不写；需要对比时写「50mm 标准镜头，平实视角」
+  avoid:
+    - 每镜都写「50mm」：没有叙事意义，只占提示词长度
+see_refs: [grammar.lens_wide, grammar.lens_tele]
+sources: [src.film_grammar, src.sds, src.user_02]

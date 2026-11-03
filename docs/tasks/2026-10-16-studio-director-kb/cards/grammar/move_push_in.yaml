@@ -1,0 +1,31 @@
+# 导演知识库 · 镜头语法卡
+schema: kb.grammar/v1
+id: grammar.move_push_in
+title: 推近
+version: 1
+status: draft
+updated: 2026-10-16
+family: movement
+aliases: [推镜, 推轨推进, 前推, dolly in, push in]
+summary: 机位向主体前移；累积压力、把注意力收进一个点。要写方向、起止景别和时长，不能接上摇或下摇。
+definition: 摄影机沿光轴向主体物理前移，景别逐渐变紧，透视随之变化。
+camerabench: [dolly-in]
+sensitive_ok: false
+narrative_use:
+  - 关键句或发现之前，慢慢加压
+  - 把观众的注意力收到一个物件上
+  - 开场把观众直接带到主体（P01 S01 轻微推近到膝关节）
+prompt:
+  write:
+    - 镜头沿视线方向缓慢推近，从中景推到中近景，约 3 秒，推近后停住
+    - 安全写法是中文「推近」「推轨推进」，不要裸写 Dolly
+  avoid:
+    - 「镜头慢慢移动」：没有方向、速度和起止
+    - 推近之后再上摇或下摇（P01 S10 因此露出了 AI 人物正脸）
+    - 推近一张可读的写实人脸
+risks:
+  - risk: 推近时模型补画细节，人脸或结构被改写
+    mitigation: 只推向非敏感对象；敏感镜头改固定机位，用景别跳切代替推近
+    neg_refs: [neg.push_tilt_reveals_face, neg.move_on_sensitive_shot]
+see_refs: [grammar.move_zoom, grammar.move_pull_out]
+sources: [src.camerabench, src.sds, src.prop_asset, src.p01_audit, src.user_02]

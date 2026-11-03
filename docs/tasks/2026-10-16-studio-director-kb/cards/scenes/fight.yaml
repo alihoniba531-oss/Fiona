@@ -1,0 +1,373 @@
+# 导演知识库 · 场景模板卡（样卡，2026-10-16 用户已过目）
+# 两套第三方 Skill 都没有打斗模板。本卡依据《侠客行》实测（Seedance 2.5，30 秒 9 剪）和万相 3.0 官方格斗短剧实践新写。
+schema: kb.scene/v1
+id: scene.fight
+title: 打斗
+version: 2
+status: reviewed
+updated: 2026-10-16
+
+definition: 有肢体或兵器接触的对抗，按回合推进到胜负、中断或僵持。
+summary: >-
+  三件事决定成败：动作链连续（上一镜的收势就是下一镜的起势），受力和后果看得见，谁占上风一眼可辨。
+  快节奏靠「一条生成里放一个连续动作单元，剪辑时裁成多镜」，不靠逐镜生成一两秒的短镜。
+  动态运镜只给不露脸、不露精细结构的远景和俯拍；近景和兵器特写一律固定机位。
+
+tags:
+  pace: [fast, medium, slow]
+  emotion: [tense, anger, awe]
+  cast: [duo, small_group, crowd]
+  realism: [realistic, anime, 3d]
+  setting: [interior, exterior]
+
+signals:
+  strong:
+    - 连续出现攻防动作词：劈、砍、刺、挑、格挡、闪避、出拳、踢、摔、锁喉、过招
+    - 写到明确的接触与后果：击中、相撞、兵器脱手、倒地、受伤
+  weak:
+    - 拔刀、摆架势、叫阵之后「同时出手」
+    - 剧本只写「缠斗 / 交手 / 混战 / 一场恶战」，没有细写招式
+  counter:
+    - signal: 只有威胁、逼近、推搡前的对峙，没有攻防
+      route_to_ref: scene.confrontation
+    - signal: 一方在逃、一方在追，接触只是偶发
+      route_to_ref: scene.chase
+    - signal: 法术光效对轰、远距离施法，没有近身攻防
+      route_to_ref: scene.spectacle
+    - signal: 非打斗场景里的单个击打或开枪动作
+      route_to_ref: scene.action_insert
+
+directing:
+  - rule: 动作链连续。每镜的收势就是下一镜的起势，站位、重心、受力方向都要延续，不许瞬移或凭空换位。
+    see_refs: [grammar.cont_in_out_state, grammar.axis_screen_direction]
+    src: [src.wan3_guide]
+  - rule: 强弱一眼可辨。双方在体格、兵器、服色、发型里至少两项明显不同（侠客行：米白麻袍加发髻，对深炭灰长袍加高马尾）；弱势一方取胜时，写清靠什么（借力、地形、速度），不写硬碰硬。
+    src: [src.wan3_guide, src.xiakexing_files]
+  - rule: 发力要合乎身体。先破坏重心、再借惯性；不超出关节活动范围；不写单手举起或抛飞大体重对手这类超能力表现，除非画风设定本来就允许。
+    see_refs: [neg.superpower_physics]
+    src: [src.wan3_guide]
+  - rule: 每次受力分层写：碰撞点 → 冲击形态（火星、尘爆、水花）→ 环境后果（沙面犁开、器物破损）→ 镜头反馈（一次震动或短暂失焦，写明时机）。
+    see_refs: [grammar.move_shake_impact]
+    src: [src.wan3_guide, src.xiakexing_files]
+  - rule: 快—慢—快。回合中间要有静止点（锁刃角力、对视、断发飘落），否则高潮没有对比。
+    src: [src.wan3_guide, src.xiakexing_files]
+  - rule: 胜负和代价可读。每个回合结束时，画面要看得出谁占上风；伤痕、污渍、破损跨镜累积，不能下一镜就干净了。
+    see_refs: [grammar.cont_wardrobe_damage]
+
+action_units:
+  rule: >-
+    每镜最多 2–3 个有因果关系的动作。打斗里，一串同类连续交击（如「连续对砍数刀」）算 1 个动作单元；
+    只有单独细写的记忆点动作（锁刃 → 弹开、错身一刀）各算 1 个。知识库检查按这个口径计数。
+  ok: 无人机侧向平移跟拍，与人同速。灰衣客大步前压、连续猛攻（1 个单元）；最后一刀白衣客矮身闪过，反手一刀逼退对方（1 个记忆点）。
+  not_ok: 一秒内劈三刀，接转身、踢腿、跳起回旋斩、落地翻滚（频次时间戳，外加 5 个各自独立的动作）。
+  decision: 2026-10-16 用户确认这个计数口径
+  see_refs: [neg.frequency_timestamp]
+  src: [src.user_02, src.sd25_guide, src.xiakexing_files]
+
+beats:
+  - id: B1
+    name: 起势
+    purpose: 交代地形、双方距离和强弱；静中蓄力
+    share: [0.10, 0.20]
+  - id: B2
+    name: 首次交锋
+    purpose: 冲刺接近到第一次碰撞，用一次大的受力把节奏点燃
+    share: [0.08, 0.15]
+  - id: B3
+    name: 攻防回合
+    purpose: 两到三个回合，攻守交替；每回合借一次环境（沙坡、水面、桌椅）
+    share: [0.35, 0.50]
+  - id: B4
+    name: 转折
+    purpose: 局势改变的那一下——锁刃角力、失手、借地形反制；先静后爆
+    share: [0.10, 0.20]
+  - id: B5
+    name: 决胜
+    purpose: 一击定胜负，或者一击中断
+    share: [0.05, 0.12]
+  - id: B6
+    name: 余波
+    purpose: 定住、看清代价，回到开场构图形成闭环
+    share: [0.08, 0.15]
+
+coverage:
+  - id: C1
+    beat: B1
+    shot: 高空俯拍的大远景，交代地形和双方距离；可以从高处俯冲下降
+    size_refs: [grammar.size_extreme_wide, grammar.size_wide]
+    angle_ref: grammar.angle_top_down
+    camera_ref: grammar.move_aerial
+    purpose: 立空间；结尾 C8 回到这个构图
+  - id: C2
+    beat: B2
+    shot: 低机位侧面远景或全景，双方相向冲刺到第一次碰撞；撞击帧一次震动
+    size_refs: [grammar.size_wide, grammar.size_full]
+    angle_ref: grammar.angle_low
+    camera_ref: grammar.move_shake_impact
+    purpose: 第一下要大，后面才有层次
+  - id: C3
+    beat: B3
+    shot: 全景，侧向平移跟拍，与人同速，看清攻守转换
+    size_refs: [grammar.size_full]
+    angle_ref: grammar.pos_profile
+    camera_ref: grammar.move_truck
+    purpose: 回合的主机位；一条长条可裁成 2–3 镜
+  - id: C4
+    beat: B3
+    shot: 正上方顶视，看站位和绕圈
+    size_refs: [grammar.size_wide, grammar.size_full]
+    angle_ref: grammar.angle_top_down
+    camera_ref: grammar.move_static
+    purpose: 重新交代位置，顺带避开正脸
+  - id: C5
+    beat: B3
+    shot: 插入大特写——兵器相击、手腕发力、脚踏地面
+    size_refs: [grammar.size_extreme_closeup]
+    angle_ref: grammar.angle_eye_level
+    camera_ref: grammar.move_static
+    purpose: 快节奏的主要来源，不露脸；兵器形状属于结构敏感，固定机位，冲击感靠火星、尘土和音效
+  - id: C6
+    beat: B4
+    shot: 锁刃角力——兵器交叉的特写，或高角度俯拍让头发和俯角挡住脸；先静 1–2 秒再爆开
+    size_refs: [grammar.size_closeup, grammar.size_medium]
+    angle_ref: grammar.angle_high
+    camera_ref: grammar.move_static
+    purpose: 回合中的静止点
+  - id: C7
+    beat: B5
+    shot: 侧面全景，压低冲刺、错身而过各出一刀，动作匹配切到背对背
+    size_refs: [grammar.size_full]
+    angle_ref: grammar.pos_profile
+    camera_ref: grammar.move_static
+    purpose: 决胜要干净，镜头不抢戏
+    transition_refs: [grammar.trans_match_action]
+  - id: C8
+    beat: B6
+    shot: 中全景背对背定住，给一个代价细节（断发、刀上沙粒），再拉升回到 C1 的大远景
+    size_refs: [grammar.size_medium_wide, grammar.size_extreme_wide]
+    angle_ref: grammar.pos_back
+    camera_ref: grammar.move_aerial
+    purpose: 闭环；可以后期减速
+    see_refs: [grammar.time_speed_ramp]
+
+pacing:
+  basis: >-
+    镜长指成片里的剪辑长度。快档依据万相 3.0 官方格斗短剧：15 秒 8 镜，每镜 1.4–2.3 秒。
+    中档依据侠客行：30 秒 9 剪，均值 3.3 秒（2.5–4.5 秒）；生成 8 条共 42 秒（5–6 秒/条），gen_ratio 约 1.4。
+    一场打斗内按节拍换档：B1 慢 → B2、B3 快 → B4 慢（静止点）→ B5 快 → B6 慢。
+  src: [src.wan3_guide, src.xiakexing_files, src.mem_xiakexing]
+  tiers:
+    fast:
+      shot_len_s: [1.4, 2.5]
+      shots_per_min: [24, 43]
+      gen_ratio: [1.4, 2.0]
+      use_when: 攻防回合、决胜前后；只能用「一条生成裁成多镜」实现
+    medium:
+      shot_len_s: [2.5, 3.5]
+      shots_per_min: [17, 24]
+      gen_ratio: [1.3, 1.6]
+      use_when: 需要看清招式的回合；侠客行整体落在这一档
+    slow:
+      shot_len_s: [3.5, 6.0]
+      shots_per_min: [10, 17]
+      gen_ratio: [1.1, 1.4]
+      use_when: 起势对峙、锁刃角力、余波；写意武侠
+
+generation:
+  min_gen_s: 4
+  strategy: one_take_multi_cut
+  routes:
+    - id: A
+      name: 单机位连续动作长条（建议默认）
+      how: >-
+        每条 5–6 秒，只放一个动作单元，加至多 1–2 个记忆点。剪辑时裁掉起势段（侠客行入点 0.3–1.3 秒），
+        一条可以裁成 2–3 镜，和其他机位交叉；切点对齐配乐起音或击打点。
+      evidence: 侠客行 8 条全部可用；其中 2 条首帧先被肖像闸拒收，改图后一次通过，拒收不计费。
+      decision: 2026-10-16 用户确认为默认做法
+      src: [src.xiakexing_files, src.mem_xiakexing]
+    - id: B
+      name: 一条多镜头（可选，先跑探针）
+      how: 万相 3.0 或 Seedance 2.5 在一条 10–15 秒里用时间戳写 6–8 个分镜，每段 1.4–2.3 秒，后期按分镜点裁开。
+      risk: >-
+        首帧只锁第一个分镜，之后各分镜的人物、服装、兵器只能靠文字维持，容易漂移；
+        不适合要和前后镜严格衔接的回合。Seedance 2.0 不认时间戳，只能写「镜头 1 / 镜头 2」，节奏由模型自己定。
+      decision: 2026-10-16 用户确认为可选做法，先跑探针
+      src: [src.wan3_guide, src.sd25_guide, src.sd20_guide]
+  rules:
+    - 首帧按上一镜尾帧的状态出图（站位、持刀手、重心、伤痕）；需要时开 return_last_frame 拿尾帧做参考。
+    - 时间戳只用来切段，不用来数次数；不写「一秒三刀」。
+    - Seedance 2.5 建议写整数秒时间戳（官方口径）。侠客行用过 1.5 秒的分段边界也出了片，但没有单独验证是否被精确执行。
+    - 480P 下，远景里的火星、刀光、沙粒可能糊成噪点（推断，未实测）。远景的细节靠插入大特写来补，或者在报价卡上把这一镜单独切到 720P。
+  src: [src.user_02, src.user_05, src.sd25_guide, src.wan3_guide, src.plan]
+
+camera:
+  default_refs: [grammar.move_static]
+  allowed: []
+  nonsensitive_only:
+    - ref: grammar.move_shake_impact
+      condition: 撞击帧一次短震动，或不超过 0.2 秒的失焦，写明时机；只用于远景、全景这类不露脸、不露精细结构的镜头
+    - ref: grammar.move_aerial
+      condition: 高空俯冲下降或拉升；大远景、远景，人物占画高 1/4 以下
+    - ref: grammar.move_truck
+      condition: 侧向平移跟拍，与人同速；全景以上
+    - ref: grammar.move_follow
+      condition: 贴地或贴着沙脊追拍；全景以上，人物背向或侧向镜头
+    - ref: grammar.move_orbit
+      condition: 快速环绕，写明转过的角度（侠客行写的是约 90°）；只在俯视远景或全景、没有正脸时使用
+    - ref: grammar.move_handheld
+      condition: 全景以上的混战，用来传递混乱；近景不用
+  avoid:
+    - what: 贴近人物环绕、推近露脸的近景
+      reason: 侠客行 K07 原版是贴近环绕的双人脸特写，首帧被肖像闸拒收，改成俯拍、头发遮脸后才通过；万相上运镜也会重画脸部
+      neg_refs: [neg.move_on_sensitive_shot]
+    - what: 裸写 Dolly、Crane、Aerial 这类英文术语
+      reason: 可能被误判成专名或品牌；写白话，例如「无人机从高空俯冲下降」「摇臂升起」
+      neg_refs: [neg.bare_english_camera_term]
+    - what: 一镜里同时环绕、推近、升降
+      reason: 一镜一个主导运镜；动作已经很满，镜头再叠加只会更乱
+      neg_refs: [neg.stacked_camera_moves]
+  src: [src.mem_xiakexing, src.xiakexing_files, src.user_02, src.sds]
+
+sound:
+  items:
+    - 打斗是少数值得开原生音频的场景，因为拟音和动作天然同步。侠客行用 Seedance 2.5 的原生音效，提示词只要拟音与环境声，并写明「无配乐、无人声、无台词」，实测有效。开启时按 02 的规定，在 sound_plan.clip_audio 写明怎么取用、降噪和避让。
+    - 每次击打设一个 hard 同步点（动作 → 音效）；同一击跨镜只响一次，下一镜只延续尾音。
+    - 切点跟着配乐的节拍走：鼓入、骤停、重击。侠客行的配乐 32 秒、约 139.5 BPM，4.16 秒鼓入、23 秒骤停、24.35 秒重击，正好压在决胜一刀上。
+    - 决胜一击之前让音乐抽空（骤停，只剩风声），这一击之后再进重音或长音。
+    - 拟音写清材质和动作：金属铮鸣或钝器闷击、刀风破空、脚踏沙石、衣袍猎猎、喘息；万相官方示例还会给每镜的音效标出方位（中心、左右、近场）。
+    - 喊杀和喘息如果走后期配音，嘴在动作中不可读，lip_sync 用 avoid。
+    - Seedance 原生音频里混进配乐时：把「音乐、背景音乐、BGM、配乐、器乐、旋律」这些同义词一次写全，并在提示词开头和结尾各写一遍（Seedance 2.5 官方 FAQ）。
+  see_refs: [grammar.cont_sound_state]
+  src: [src.xiakexing_files, src.mem_xiakexing, src.user_02, src.user_05, src.wan3_guide, src.sd25_guide]
+
+ai_risks:
+  - id: R1
+    risk: 写实人物露脸的首帧被 Seedance 肖像闸拒收
+    applies_to:
+      providers: [seedance25, seedance20]
+      realism: [realistic]
+    symptom: 提交即被拒（提示输入图可能含真人）；明确拒绝，不计费
+    mitigation: >-
+      设计阶段就按「强逆光剪影」「约 65° 俯拍、头发遮脸」「远景、背影」出首帧。
+      侠客行 K05（侧面中景）和 K07（双人脸特写）按这两种改法重出后，都一次通过。
+    fallback: 改走万相（没有肖像闸，但打斗还没实测，先跑一条 5 秒探针）
+    severity: P1
+    note: Seedance 2.0 没有实测，按 2.5 的结论预防
+    provider_refs: [provider.seedance25_realistic, provider.seedance20_realistic]
+    neg_refs: [neg.realistic_face_on_seedance]
+    src: [src.mem_xiakexing]
+  - id: R2
+    risk: 角色造型近似知名 IP，被 Seedance 输出阶段的版权检测拦截
+    applies_to:
+      providers: [seedance25]
+    symptom: 生成跑完才返回 OutputVideoSensitiveContentDetected；不计费，但白等约 6 分钟
+    mitigation: >-
+      优先做美术差异化：换脸谱、冠饰、服色，不点名原角色。实测露脸反而比过肩背影安全——
+      过肩背影只露出标志性装束时被拦过。量产前先跑一条 5 秒探针。
+    fallback: 把人物缩成远景小剪影（不超过画高 1/8），不描写标志性服饰和道具
+    severity: P1
+    provider_refs: [provider.seedance25_realistic]
+    neg_refs: [neg.ip_lookalike_design]
+    src: [src.mem_copyright]
+  - id: R3
+    risk: 肢体穿模、手指数量不对、兵器变形
+    applies_to: {}
+    symptom: 两人接触时手臂融在一起，刀身弯折或变成两把
+    mitigation: 每镜只放一个动作单元；写明持刀手是左手还是右手、兵器的形状；接触点用火星、尘土、水花遮掩；写「双手保持自然的五指结构」
+    fallback: 改成兵器相击的大特写，或改成剪影
+    severity: P1
+    src: [src.sds, src.wan3_guide]
+  - id: R4
+    risk: 滑步、动作发糊，或出现超能力式的物理
+    applies_to: {}
+    symptom: 人在地面上平移、脚不着力，或一掌把人打飞十米
+    mitigation: 写重心、发力顺序和地面后果（脚跟犁开沙面、沙流倾泻）；写速度和幅度的修饰词；不写单手举人
+    fallback: 拆成两条短的
+    severity: P1
+    neg_refs: [neg.superpower_physics]
+    src: [src.wan3_guide, src.sds, src.xiakexing_files]
+  - id: R5
+    risk: 回合之间不连贯，人物瞬移换位
+    applies_to: {}
+    symptom: 上一镜白衣客在左、刀在右手，下一镜站到了右边、刀换到左手
+    mitigation: 每镜的 continuity.in 和 out 写清站位、朝向、持刀手、重心；首帧从上一镜尾帧派生；关键衔接用动作匹配切
+    fallback: 插一个顶视站位镜，重新交代位置
+    severity: P1
+    see_refs: [grammar.axis_reset, grammar.cont_props_hands]
+    src: [src.user_02, src.wan3_guide]
+  - id: R6
+    risk: 招式被吞，时间线被压缩
+    applies_to: {}
+    symptom: 写了八招只出来三招，或者全部挤在前两秒
+    mitigation: 连击概括写，只细写 1–2 个记忆点；一条 5–6 秒里最多一个动作单元加两个记忆点
+    fallback: 拆成两条
+    severity: P2
+    neg_refs: [neg.frequency_timestamp]
+    src: [src.sd25_guide, src.sds]
+  - id: R7
+    risk: 人数漂移、双胞胎、双方互换外貌
+    applies_to: {}
+    symptom: 双人对打变成三人，或两人长成一样
+    mitigation: 写「不新增人物」；双方至少两项强区分；Seedance 2.0 参考人物超过 4 人就不稳，先分组出图
+    fallback: 群战用远景剪影，只给少数主角插入近景
+    severity: P1
+    note: 群战（crowd）时按 P0 处理
+    src: [src.wan3_guide, src.sd20_guide, src.xiakexing_files]
+  - id: R8
+    risk: 人物眼睛发光
+    applies_to:
+      providers: [seedance25]
+    symptom: 情绪写得太强时，瞳孔出现红光、蓝光
+    mitigation: 不写「杀气、怒目圆睁、狂热」这类强情绪词，改成「眼神锐利、咬紧牙关」；必要时写「正常人眼、不发光」
+    fallback: 重出
+    severity: P2
+    neg_refs: [neg.emotion_glow_eyes]
+    src: [src.sd25_guide]
+  - id: R9
+    risk: 运镜把遮住的脸带进画面，或重画脸部
+    applies_to: {}
+    symptom: 原本被头发、俯角遮住的脸，在环绕、推近的过程中露了出来
+    mitigation: 近景一律固定机位；动态运镜只给远景和俯拍
+    fallback: 改固定机位重出
+    severity: P1
+    neg_refs: [neg.move_on_sensitive_shot, neg.push_tilt_reveals_face]
+    src: [src.mem_xiakexing, src.p01_audit]
+
+example:
+  title: 沙丘对决（据《侠客行》实测整理）
+  setup: >-
+    写实武侠、外景、两人、整体中档、回合段快档。原片用 Seedance 2.5、1080p、开原生拟音，配乐 32 秒另配；
+    本库的默认通道是万相 480P，换通道前先跑探针。白衣客（米白麻袍、发髻、亮银单刃长刀）对灰衣客（深炭灰长袍、高马尾、略宽弯刀、胡茬）。
+  prompt_skeleton: >-
+    以首帧画面为起点，第 0 秒即首帧。［画风与光线一句］。［双方区分特征一句］，全程保持首帧中的样貌与服装，不新增人物。
+    ［本镜唯一的主导运镜：方向、速度、角度，以及和人物的关系］。［时间段］［动作单元：概括写连击］；［记忆点：细写一个，含受力分层］。
+    声音：只要拟音与环境声——［材质加动作的具体声音］。无配乐、无人声、无台词。画面中无任何文字、字幕、水印。
+  gens:
+    - {id: G1, coverage_ref: scene.fight#C1, duration_s: 6, camera: 高空俯拍，无人机快速下降并推近, action: 相向疾冲 → 第一刀硬碰，火星和沙尘炸开 → 连续对砍}
+    - {id: G2, coverage_ref: scene.fight#C3, duration_s: 5, camera: 俯视约 45°，快速环绕约 90°, action: 连续对砍（1 个单元），踢起沙浪}
+    - {id: G3, coverage_ref: scene.fight#C3, duration_s: 5, camera: 贴着沙脊低空高速追拍, action: 边跑边交手（1 个单元），沙尾随风飘落}
+    - {id: G4, coverage_ref: scene.fight#C3, duration_s: 5, camera: 侧前方高处侧向平移跟拍，强逆光剪影, action: 灰衣客连续猛攻（1 个单元）→ 白衣客矮身闪过、反手逼退（记忆点）, note: 原版侧面中景首帧被肖像闸拒收，改逆光剪影后通过}
+    - {id: G5, coverage_ref: scene.fight#C4, duration_s: 5, camera: 正上方顶视，急速俯冲, action: 举刀劈下 → 硬接 → 环形冲击波（记忆点）；落地后绕圈对攻（1 个单元）}
+    - {id: G6, coverage_ref: scene.fight#C3, duration_s: 5, camera: 斜跟着两人沿陡坡下行, action: 滑坡中连续对砍（1 个单元），沙流倾泻}
+    - {id: G7, coverage_ref: scene.fight#C6, duration_s: 5, camera: 头顶低空俯拍，缓慢盘旋, action: 锁刃角力约 1.5 秒 → 弹开（记忆点）→ 再起连斩（1 个单元）, note: 原版贴近环绕双人脸特写被拒收，改俯拍、头发遮脸后通过}
+    - {id: G8, coverage_ref: scene.fight#C7, duration_s: 6, camera: 先固定侧面全景，最后急速拉升, action: 压低冲刺 → 错身一刀（记忆点）→ 背对背定住、断发飘散}
+  shots:
+    - {id: E1, beat: B1, from: G1, in_s: 0.0, len_s: 4.17}
+    - {id: E2, beat: B3, from: G2, in_s: 0.3, len_s: 3.0}
+    - {id: E3, beat: B3, from: G3, in_s: 0.9, len_s: 3.25}
+    - {id: E4, beat: B3, from: G4, in_s: 0.6, len_s: 2.54}
+    - {id: E5, beat: B3, from: G5, in_s: 1.3, len_s: 2.83}
+    - {id: E6, beat: B3, from: G6, in_s: 0.8, len_s: 2.46}
+    - {id: E7, beat: B4, from: G7, in_s: 0.79, len_s: 4.21}
+    - {id: E8, beat: B5, from: G8, in_s: 0.0, len_s: 4.5}
+    - {id: E9, beat: B6, from: G8, in_s: 4.5, len_s: 2.5, speed: 0.6, note: 后期 0.6 倍减速}
+  totals: >-
+    9 剪共 29.5 秒（末帧定格补足 30 秒），均值 3.3 秒/剪，整体落在中档，回合段 E4–E6 接近快档上沿；
+    生成 8 条共 42 秒，gen_ratio 约 1.4；切点对齐配乐的鼓入（约 4.17 秒）和决胜重击（约 24.4 秒）。
+    按 1080p 实测 ¥147；同样 42 秒换万相 480P 约 ¥12.6（未实测）。
+  lessons:
+    - 这条片的快感主要来自镜内的动作密度和运镜速度，不是来自切得碎。
+    - 每条都只给一个主导运镜，而且都放在人物小、脸不可读的机位上；两条贴近露脸的首帧都被拒收。
+  src: [src.xiakexing_files, src.mem_xiakexing]
+
+sources: [src.user_02, src.user_05, src.p01_audit, src.mem_xiakexing, src.mem_copyright, src.xiakexing_files, src.plan, src.wan3_guide, src.sd25_guide, src.sd20_guide, src.sds, src.film_grammar]

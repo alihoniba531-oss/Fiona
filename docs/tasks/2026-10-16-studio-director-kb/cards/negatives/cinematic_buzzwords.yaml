@@ -1,0 +1,21 @@
+# 导演知识库 · 反例卡
+schema: kb.neg/v1
+id: neg.cinematic_buzzwords
+title: 空泛的质感形容词
+version: 1
+status: draft
+updated: 2026-10-16
+category: prompt
+summary: 「氛围感、高级感、史诗感、大片感」没有可执行参数；写焦段、机位、光源、尺度和材质。
+wrong: 宏大史诗场面，氛围感拉满，高级感，大片感。
+why: 形容词不是镜头指令；模型无从执行，还会占用提示词长度。
+right: 大远景，24mm，人物约占画高 1/10，前景沙脊、中景两个小人影、远处连绵沙丘；低角度暖金阳光从画面左侧来。
+applies_to: {}
+level: info
+check:
+  kind: regex_forbid
+  fields: [video_prompt, prompt]
+  patterns: ['氛围感', '高级感', '史诗感', '大片感']
+see_refs: [grammar.size_extreme_wide, grammar.cont_lighting]
+notes: 「写实电影级质感」这类质量锚点是厂商示例里的常见写法，不在此列。
+sources: [src.prop_asset]

@@ -1,0 +1,31 @@
+# 导演知识库 · 镜头语法卡
+schema: kb.grammar/v1
+id: grammar.move_orbit
+title: 环绕
+version: 1
+status: draft
+updated: 2026-10-16
+family: movement
+aliases: [弧形环绕, 绕拍, 盘旋, orbit, arc shot]
+summary: 镜头绕主体转；仪式感、包围感。最容易让模型编出新结构，只在远景、俯视、无正脸、无精密结构时用，并写明方向和角度。
+definition: 摄影机以主体为中心做弧形运动，镜头始终朝向主体。
+camerabench: [arc-CW, arc-CCW, arc-tracking]
+sensitive_ok: false
+narrative_use:
+  - 主角登场、觉醒等仪式性时刻
+  - 打斗回合的包围感（远景、俯视）
+  - 展示一个非精密的物体全貌
+prompt:
+  write:
+    - 镜头绕两人顺时针环绕约 90°，始终俯视约 45°，人物保持远景大小（侠客行 S02）
+    - 写清方向（顺时针 / 逆时针）、角度（约 90° / 180°）和俯仰
+  avoid:
+    - 环绕精密机构（P01 S05：丝杠「长进」了滚柱）
+    - 贴近人物环绕近景（侠客行 K07 原版被肖像闸拒收）
+    - 环绕加推近加升降的组合运镜
+risks:
+  - risk: 绕到背面时模型重新编造结构、零件互相穿插
+    mitigation: 结构敏感的镜头一律固定；要展示多面就拆成几个固定机位镜头
+    neg_refs: [neg.orbit_structure_interpenetration, neg.stacked_camera_moves]
+see_refs: [grammar.move_static, grammar.move_aerial]
+sources: [src.camerabench, src.sds, src.wan3_guide, src.p01_audit, src.xiakexing_files, src.mem_xiakexing]

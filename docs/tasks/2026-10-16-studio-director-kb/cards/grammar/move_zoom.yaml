@@ -1,0 +1,25 @@
+# 导演知识库 · 镜头语法卡
+schema: kb.grammar/v1
+id: grammar.move_zoom
+title: 变焦推拉
+version: 1
+status: draft
+updated: 2026-10-16
+family: movement
+aliases: [变焦, 急推, 急拉, zoom, snap zoom, crash zoom, 希区柯克变焦, dolly zoom]
+summary: 机位不动、焦距变化；急推变焦用于惊吓和喜剧。希区柯克变焦要写成「术语 + 白话」。
+definition: 摄影机位置不变，改变焦距让画面放大或缩小；透视不变，这一点与推近不同。
+camerabench: [zoom-in, zoom-out]
+sensitive_ok: false
+narrative_use:
+  - 急推变焦：惊吓、喜剧的强调
+  - 缓慢变焦：监视、窥探感
+  - 希区柯克变焦：心理冲击、眩晕
+prompt:
+  write:
+    - 镜头不移动，焦距迅速推近，画面在约 0.5 秒内放大到 [局部]
+    - 希区柯克变焦：镜头后退的同时焦距推近，人物大小不变而背景向后拉伸
+  avoid:
+    - 变焦推近一张写实人脸：放大时模型补画细节，身份容易漂移
+see_refs: [grammar.move_push_in]
+sources: [src.camerabench, src.sds, src.wan3_guide, src.sd25_guide]

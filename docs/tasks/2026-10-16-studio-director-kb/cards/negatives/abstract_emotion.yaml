@@ -1,0 +1,24 @@
+# 导演知识库 · 反例卡
+schema: kb.neg/v1
+id: neg.abstract_emotion
+title: 抽象情绪词
+version: 1
+status: draft
+updated: 2026-10-16
+category: performance
+summary: 「很紧张」「很伤心」没有可见行为；改成身体部位、方向、幅度和持续时间。
+wrong: 她很紧张，非常伤心。
+why: 模型无法把抽象情绪转成准确的表演，常给出中性脸或夸张的怪脸。02 要求把「犹豫、紧张、震惊」转成身体部位、方向、幅度和持续时间。
+right: 她的视线停顿了一下，吞咽，指腹压住衣角；眼眶边缘慢慢泛红，嘴唇抿成一条线。
+applies_to: {}
+evidence:
+  - case: Seedance 2.0 官方
+    detail: 用具体的身体细节表现情绪，替代「很悲伤」「非常愤怒」
+    src: [src.sd20_guide]
+level: info
+check:
+  kind: regex_forbid
+  fields: [video_prompt]
+  patterns: ['很(紧张|伤心|难过|生气|开心|害怕|激动|悲伤)', '非常(紧张|伤心|愤怒|害怕|悲伤)']
+see_refs: [grammar.size_close]
+sources: [src.user_02, src.sd20_guide, src.prop_asset, src.sds]

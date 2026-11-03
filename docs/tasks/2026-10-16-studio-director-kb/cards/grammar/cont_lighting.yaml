@@ -1,0 +1,25 @@
+# 导演知识库 · 镜头语法卡
+schema: kb.grammar/v1
+id: grammar.cont_lighting
+title: 光向与光质
+version: 1
+status: draft
+updated: 2026-10-16
+family: continuity
+aliases: [光线连续, 主光方向, lighting continuity]
+summary: 主光的方向、色温、软硬跨镜保持；光线定在关键帧里，video_prompt 不改它，运镜也不能改它。
+definition: 同一场、同一时间里，光从哪边来、什么颜色、软还是硬，镜与镜之间一致。
+narrative_use:
+  - 让剪在一起的镜头像同一时空
+  - 光线的变化（日落、灯灭）本身就是事件
+prompt:
+  write:
+    - 关键帧 prompt 里写死：「主光来自画面左上方，暖金色低角度阳光」
+    - video_prompt 只在光线本身要变化时才写光
+  avoid:
+    - 在 video_prompt 里重复首帧的光线描述，或写出与首帧矛盾的光线
+risks:
+  - risk: 运镜重新定义了光源，前后镜冷暖跳变
+    mitigation: 光线锁在关键帧阶段；多镜共用同一张定光的参考图
+see_refs: [grammar.cont_time_weather]
+sources: [src.user_02, src.sds]

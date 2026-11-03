@@ -1,0 +1,23 @@
+# 导演知识库 · 镜头语法卡
+schema: kb.grammar/v1
+id: grammar.lens_wide
+title: 广角
+version: 1
+status: draft
+updated: 2026-10-16
+family: lens
+aliases: [广角镜头, 超广角, 鱼眼, wide-angle lens, 14mm, 24mm]
+summary: 约 14–35mm；空间夸张、近大远小，带来压迫或开阔。有叙事意义才写，写就写毫米数。
+definition: 短焦距镜头：视野宽、透视夸张，靠近镜头的物体被放大，边缘可能拉伸。
+narrative_use:
+  - 幽闭空间里的压迫、巨物逼近
+  - 环境建立时交代大空间
+  - 前景物件夸张放大，强调它的分量
+prompt:
+  write:
+    - 24mm 广角，前景的 [物件] 被夸张放大，背景的 [人物] 显得很远
+  avoid:
+    - 没有叙事意义时写「广角镜头，自然透视」当填充词
+    - 写实人脸近景用广角：五官会变形
+see_refs: [grammar.lens_standard, grammar.lens_tele, grammar.angle_low]
+sources: [src.film_grammar, src.sds, src.user_02, src.wan3_guide]

@@ -1,0 +1,28 @@
+# 导演知识库 · 镜头语法卡
+schema: kb.grammar/v1
+id: grammar.move_tilt
+title: 上摇与下摇
+version: 1
+status: draft
+updated: 2026-10-16
+family: movement
+aliases: [俯仰摇, 竖摇, 上摇, 下摇, tilt up, tilt down]
+summary: 机位不动，镜头原地上下转；自下而上揭示人物或高度。上摇最容易把画外的脸带进画面。
+definition: 摄影机位置固定，绕水平轴上下转动。
+camerabench: [tilt-up, tilt-down, tilt-tracking]
+sensitive_ok: false
+narrative_use:
+  - 从脚到头逐步揭示一个人
+  - 表现高度：从地面摇到楼顶
+  - 下摇：从天空落回人物，回到现实
+prompt:
+  write:
+    - 镜头原地缓慢上摇，从 [人物] 的鞋子摇到腰间的 [道具]，停在腰部，不摇到脸
+  avoid:
+    - 推近加上摇：P01 S10 因此把原本在画外的 AI 人物正脸带进了画面
+risks:
+  - risk: 上摇露出原本不想出现的脸或物体
+    mitigation: 写明停在哪里、哪些部分始终在画外；人物不露脸的项目不用上摇
+    neg_refs: [neg.push_tilt_reveals_face]
+see_refs: [grammar.move_pan, grammar.move_pedestal]
+sources: [src.camerabench, src.sds, src.p01_audit]

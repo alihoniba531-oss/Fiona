@@ -1,0 +1,21 @@
+# 导演知识库 · 镜头语法卡
+schema: kb.grammar/v1
+id: grammar.axis_reset
+title: 越轴重建
+version: 1
+status: draft
+updated: 2026-10-16
+family: axis
+aliases: [重新建立轴线, 合法越轴, crossing the line]
+summary: 需要越轴时，用中性镜、跟拍带过、顶视或全景重新交代空间；AI 拆镜里最省事的是插一个顶视或全景站位镜。
+definition: 让观众接受新的左右关系的办法：先给出能看清全局的镜头，再在新的一侧继续拍。
+narrative_use:
+  - 打斗、追逐里位置发生大变化之后
+  - 一方走到另一方身后
+  - 修补生成结果里意外出现的越轴
+prompt:
+  write:
+    - 插入一镜正上方顶视或全景，交代两人新的相对位置，再接新的正反打
+  avoid: []
+see_refs: [grammar.angle_top_down, grammar.size_full, grammar.axis_180]
+sources: [src.film_grammar, src.avd]

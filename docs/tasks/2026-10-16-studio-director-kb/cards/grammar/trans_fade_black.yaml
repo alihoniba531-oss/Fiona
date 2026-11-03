@@ -1,0 +1,21 @@
+# 导演知识库 · 镜头语法卡
+schema: kb.grammar/v1
+id: grammar.trans_fade_black
+title: 淡入淡出黑场
+version: 1
+status: draft
+updated: 2026-10-16
+family: transition
+aliases: [黑场, 渐隐, 渐显, fade in, fade out, fade to black]
+summary: 从黑场渐显、或渐隐到黑场；开场、结尾、大的时间跳跃。结尾悬念常用「切黑」。后期做。
+definition: 画面与纯黑之间的渐变；「切黑」是没有渐变的突然变黑。
+narrative_use:
+  - 片头开场、片尾结束
+  - 大的时间跳跃
+  - 结尾悬念停在答案之前的切黑
+prompt:
+  write:
+    - 不写进 video_prompt；合成时加淡入淡出或切黑；黑场镜在清单里用 post_only
+  avoid: []
+see_refs: [grammar.trans_dissolve]
+sources: [src.film_grammar, src.avd, src.user_05]

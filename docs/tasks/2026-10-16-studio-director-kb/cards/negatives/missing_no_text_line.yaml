@@ -1,0 +1,20 @@
+# 导演知识库 · 反例卡
+schema: kb.neg/v1
+id: neg.missing_no_text_line
+title: 漏了「无文字、字幕、水印」
+version: 1
+status: draft
+updated: 2026-10-16
+category: prompt
+summary: 02 规定 video_prompt 末尾固定写「画面中无任何文字、字幕、水印。」，漏写时模型可能自己加字幕、Logo。
+wrong: video_prompt 以动作描述结尾，没有任何文字约束。
+why: 两家模型都可能自行加字幕或水印；这句是本工作室的固定结尾。
+right: ……手停在半空。画面中无任何文字、字幕、水印。
+applies_to: {}
+level: warning
+check:
+  kind: regex_require
+  fields: [video_prompt]
+  patterns: ['画面中无任何文字、字幕、水印']
+see_refs: [grammar.trans_hard_cut]
+sources: [src.user_02, src.sd20_guide]

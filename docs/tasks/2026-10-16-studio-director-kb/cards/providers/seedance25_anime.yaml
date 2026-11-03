@@ -1,0 +1,40 @@
+# 导演知识库 · 模型能力卡
+schema: kb.provider/v1
+id: provider.seedance25_anime
+title: Seedance 2.5 · 动漫
+version: 1
+status: draft
+updated: 2026-10-16
+provider: seedance25
+style: anime
+tested: tested
+extends_ref: provider.seedance25_base
+summary: 动漫画风的人物露脸可以过（蓝海囚笼 v2 实测，主角 18–19 镜一致）；版权规则按写实卡的结论预防。提示词开头写明画风。
+portrait_gate:
+  status: tested
+  blocks: []
+  passes:
+    - 动漫画风的人物露脸镜头（蓝海囚笼 v2，480P，36 镜）
+    - 面罩、剪影、远景群像（蓝海囚笼实测放行）
+  workarounds: []
+copyright:
+  status: untested
+  blocks: []
+  passes: []
+  workarounds:
+    - 按写实卡的实测结论预防：近似知名 IP 的造型先做美术差异化，先跑探针
+style_drift: 2.0 官方 FAQ 提到动漫参考图偏写实、提示词又没强调风格时会漂成写实；2.5 没有说明，按同样方式预防。
+rules:
+  - id: M1
+    rule: 人物戏要用 Seedance 时，动漫画风是首选
+    why: 写实露脸会被肖像闸拒收，动漫露脸实测可过
+    src: [src.mem_lanhai, src.mem_xiakexing]
+  - id: M2
+    rule: 角色一致性靠参考图绑定；蓝海囚笼 v2 主角 18–19 镜、飞牌男 8 镜、反派 10 镜都一致
+    why: 实测
+    src: [src.mem_lanhai]
+  - id: M3
+    rule: 提示词开头写明画风，例如「2D 日漫画风」
+    why: 预防风格漂移
+    src: [src.sd20_guide]
+sources: [src.mem_lanhai, src.mem_xiakexing, src.sd20_guide]

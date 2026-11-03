@@ -1,0 +1,21 @@
+# 导演知识库 · 镜头语法卡
+schema: kb.grammar/v1
+id: grammar.cont_wardrobe_damage
+title: 服装与伤痕累积
+version: 1
+status: draft
+updated: 2026-10-16
+family: continuity
+aliases: [妆发连续, 伤痕连续, 污渍累积, wardrobe continuity]
+summary: 打斗、追逐里的伤痕、污渍、破损和断发只能累积，不能下一镜就变干净；每张首帧都要带上当前状态。
+definition: 服装、妆发、伤痕、污渍在连续镜头里按剧情只增不减（除非剧情里清理过）。
+narrative_use:
+  - 让代价可见：越打越狼狈
+  - 时间流逝的线索
+prompt:
+  write:
+    - 关键帧 prompt 写当前状态：「白衣客左袖撕裂、左脸有一道沙尘，发髻松散」
+  avoid:
+    - 所有首帧都从同一张干净的定妆图直接派生，忘了带上伤痕
+see_refs: [grammar.cont_in_out_state]
+sources: [src.film_grammar, src.wan3_guide]

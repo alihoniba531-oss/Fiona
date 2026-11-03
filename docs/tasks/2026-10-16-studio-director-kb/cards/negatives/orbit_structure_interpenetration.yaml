@@ -1,0 +1,27 @@
+# 导演知识库 · 反例卡
+schema: kb.neg/v1
+id: neg.orbit_structure_interpenetration
+title: 环绕让零件互相穿插
+version: 1
+status: draft
+updated: 2026-10-16
+category: camera
+summary: 环绕精密机构时，模型绕到另一面会重新编造结构，零件互相穿插。P01 S05 探针里丝杠「长进」了滚柱。
+wrong: 微距特写。镜头缓慢环绕反向式滚柱丝杠，展示滚柱与丝杠的啮合。
+why: 环绕要求模型生成首帧里看不到的另一面；精密结构的几何关系最容易在这时出错。
+right: 镜头固定不动。丝杠缓慢旋转，带螺纹的滚柱在原位自转并绕丝杠缓慢公转，滚柱始终与丝杠平行；丝杠和每根滚柱始终是彼此分开的独立零件，互不穿插。（P01 S05 定稿）
+applies_to:
+  sensitivity: [structure]
+evidence:
+  - case: P01 S05 探针
+    detail: 环绕运镜让丝杠与滚柱穿插；改固定机位并写死零件关系后通过
+    src: [src.p01_audit]
+level: warning
+check:
+  kind: regex_forbid
+  when:
+    sensitivity: [structure]
+  fields: [video_prompt, review.framing.camera]
+  patterns: ['环绕', '绕.{0,6}(一圈|旋转|拍摄)', '盘旋']
+see_refs: [grammar.move_orbit, grammar.size_extreme_closeup]
+sources: [src.p01_audit, src.mem_preloq]

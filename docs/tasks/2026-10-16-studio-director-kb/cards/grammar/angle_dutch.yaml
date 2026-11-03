@@ -1,0 +1,22 @@
+# 导演知识库 · 镜头语法卡
+schema: kb.grammar/v1
+id: grammar.angle_dutch
+title: 荷兰角
+version: 1
+status: draft
+updated: 2026-10-16
+family: angle
+aliases: [倾斜构图, 斜角, Dutch angle, canted angle]
+summary: 画面整体倾斜；表达失衡、不安、疯狂。要写成静态倾斜，避免被当成旋转运镜。
+definition: 摄影机绕光轴倾斜，地平线不再水平。
+narrative_use:
+  - 对峙、惊悚里的心理失衡
+  - 醉酒、眩晕、精神崩溃
+prompt:
+  write:
+    - 荷兰角：整个画面向右倾斜约 15°，整镜保持这个倾斜，不旋转
+  avoid:
+    - 只写「Dutch angle」或「倾斜镜头」：模型可能理解成画面旋转
+    - 一场里连续多镜都用，观众会疲劳
+see_refs: [grammar.angle_eye_level]
+sources: [src.film_grammar, src.sds, src.avd]

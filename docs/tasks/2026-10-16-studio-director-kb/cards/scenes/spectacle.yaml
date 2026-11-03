@@ -1,0 +1,249 @@
+# 导演知识库 · 场景模板卡
+schema: kb.scene/v1
+id: scene.spectacle
+title: 奇观异象
+version: 1
+status: draft
+updated: 2026-10-16
+definition: 以超自然或大尺度视觉事件为主体（法术、变身、巨物降临、天象异变），人物只是尺度参照。
+summary: >-
+  尺度靠小人参照，光要有来处，特效分层写：发光源 → 传播 → 环境反应 → 镜头反馈。
+  仙侠、神话题材的版权风险集中在这里：近似知名 IP 的造型会在生成完才被拦，美术差异化优先，先跑 5 秒探针。
+tags:
+  pace: [slow, medium, fast]
+  emotion: [awe, fear, tense, joy]
+  cast: [none, solo, small_group, crowd]
+  realism: [anime, 3d, realistic]
+  setting: [exterior, interior, mixed]
+signals:
+  strong:
+    - 法术、变身、显圣、巨兽、天裂
+    - 「光芒 / 化作 / 降临 / 滔天」
+  weak:
+    - 仙侠、玄幻、神话的高潮段
+    - 大量群众仰望
+  counter:
+    - signal: 有近身攻防
+      route_to_ref: scene.fight
+    - signal: 只为交代世界观的远景
+      route_to_ref: scene.establishing
+directing:
+  - rule: 尺度靠参照：大远景里放一个小人剪影（不超过画高 1/8，这同时是版权兜底）去对比巨物和天象。
+    see_refs: [grammar.size_extreme_wide]
+    src: [src.mem_copyright]
+  - rule: 光要有来处：法杖、裂缝、符文、天光才是光源；光照到哪里（湿地面、雾、轮廓）就在哪里反射。不写无来源的泛光。
+    src: [src.prop_asset]
+  - rule: 特效分层写：发光源 → 传播（扩散、裂开、上升）→ 环境反应（风、尘、水、树）→ 镜头反馈（一次震动或眩光）。
+    src: [src.wan3_guide]
+  - rule: 美术差异化优先：近似知名 IP（西游、封神、游戏角色）先在脸谱、冠饰、服色上做差异，不点名原角色；先跑 5 秒探针再量产。
+    see_refs: [neg.ip_lookalike_design]
+    src: [src.mem_copyright]
+  - rule: 宗教意象保持庄严：神祇只用背影、侧影、剪影，不具象化面容（观音入梦的做法）。
+    src: [src.mem_guanyin]
+  - rule: 奇观之后回到人：给一镜人物的反应（剪影或背影仰望），观众才有情感落点。
+beats:
+  - id: B1
+    name: 征兆
+    purpose: 异常开始
+    share: [0.15, 0.25]
+  - id: B2
+    name: 显现
+    purpose: 主体出现，尺度建立
+    share: [0.30, 0.45]
+  - id: B3
+    name: 高潮
+    purpose: 最大的视觉事件
+    share: [0.20, 0.30]
+  - id: B4
+    name: 余波
+    purpose: 人的反应，环境留下的痕迹
+    share: [0.10, 0.20]
+coverage:
+  - id: C1
+    beat: B1
+    shot: 环境局部的异变：水面震动、树叶倒卷、石子跳动
+    size_refs: [grammar.size_extreme_closeup]
+    camera_ref: grammar.move_static
+    purpose: 征兆
+  - id: C2
+    beat: B2
+    shot: 低角度大远景，主体与小人剪影的尺度对比
+    size_refs: [grammar.size_extreme_wide]
+    angle_ref: grammar.angle_low
+    camera_ref: grammar.move_static
+    purpose: 建立尺度
+  - id: C3
+    beat: B2
+    shot: 高空俯拍或拉升，交代规模
+    size_refs: [grammar.size_extreme_wide]
+    angle_ref: grammar.angle_high
+    camera_ref: grammar.move_aerial
+    purpose: 规模
+  - id: C4
+    beat: B3
+    shot: 全景，光效爆发，人物成剪影
+    size_refs: [grammar.size_full]
+    angle_ref: grammar.pos_back
+    camera_ref: grammar.move_static
+    purpose: 高潮
+  - id: C5
+    beat: B4
+    shot: 人物背影仰望的中景
+    size_refs: [grammar.size_medium]
+    angle_ref: grammar.pos_back
+    camera_ref: grammar.move_static
+    purpose: 情感落点
+  - id: C6
+    beat: B4
+    shot: 环境痕迹的大特写：焦土、冰晶、落下的羽毛、化成光点的落叶
+    size_refs: [grammar.size_extreme_closeup]
+    camera_ref: grammar.move_static
+    purpose: 余波
+    optional: true
+pacing:
+  basis: 经验值；神圣、庄严的显现用慢档（观音入梦），爆发用快档。满 5 集后校准。
+  src: [src.mem_guanyin]
+  tiers:
+    fast:
+      shot_len_s: [2.0, 3.0]
+      shots_per_min: [20, 30]
+      gen_ratio: [1.4, 1.9]
+      use_when: 高潮爆发
+    medium:
+      shot_len_s: [3.0, 5.0]
+      shots_per_min: [12, 20]
+      gen_ratio: [1.15, 1.4]
+      use_when: 常规奇观
+    slow:
+      shot_len_s: [5.0, 8.0]
+      shots_per_min: [8, 12]
+      gen_ratio: [1.05, 1.25]
+      use_when: 神圣、庄严的显现
+generation:
+  min_gen_s: 4
+  strategy: per_shot
+  rules:
+    - 奇观镜单条成本高、失败率高：先跑 5 秒探针，再量产（《我命由我不由天》的做法）。
+    - Seedance 的版权拦截在生成完才发生，失败不计费，但要白等约 6 分钟，排队时预留时间。
+    - 特效的形态（颜色、形状、位置）定在关键帧里，视频只写运动。
+    - 配乐提示里不写「东方史诗、唢呐」这类容易撞上知名作品的指向。
+  src: [src.mem_copyright]
+camera:
+  default_refs: [grammar.move_static]
+  allowed: []
+  nonsensitive_only:
+    - ref: grammar.move_aerial
+      condition: 高空拉升，揭示规模
+    - ref: grammar.move_crane_arm
+      condition: 从人物背后升起，揭示奇观；要露出的内容事先写清
+    - ref: grammar.move_pull_out
+      condition: 从局部拉到全景；画外的东西事先写清
+    - ref: grammar.move_orbit
+      condition: 只在大远景、没有人脸、主体不是精密结构时
+    - ref: grammar.move_push_in
+      condition: 缓慢推向光源
+  avoid:
+    - what: 环绕加推近加升降的组合运镜
+      reason: 一镜一个主导运镜；奇观本身已经很满
+      neg_refs: [neg.stacked_camera_moves]
+    - what: 裸写 Aerial、Crane
+      reason: 可能被误判为专名；写中文白话
+      neg_refs: [neg.bare_english_camera_term]
+sound:
+  items:
+    - 低频是奇观的骨架：持续的轰鸣随规模增长。
+    - 高潮前抽空，高潮那一击给重低音加高频碎裂。
+    - 配乐不要指向知名作品。
+    - 余波留下环境声：风声、落物声。
+  src: [src.mem_copyright]
+ai_risks:
+  - id: R1
+    risk: 造型近似知名 IP，被 Seedance 输出阶段的版权检测拦截
+    applies_to:
+      providers: [seedance25]
+    symptom: 跑完才返回 OutputVideoSensitiveContentDetected；不计费，白等约 6 分钟
+    mitigation: 美术差异化：换脸谱、冠饰、服色，不点名原角色；露脸反而比过肩背影安全；先跑探针
+    fallback: 人物缩成不超过画高 1/8 的小剪影，不描写标志性服饰道具
+    severity: P1
+    neg_refs: [neg.ip_lookalike_design]
+    src: [src.mem_copyright]
+  - id: R2
+    risk: 光效没有来处，泛光一片
+    applies_to: {}
+    symptom: 整个画面发亮，看不出光从哪来
+    mitigation: 写明光源和它照亮的表面
+    fallback: 降低光效强度，只保留光源本身
+    severity: P2
+    src: [src.prop_asset]
+  - id: R3
+    risk: 尺度失真
+    applies_to: {}
+    symptom: 巨物像模型，小人像巨人
+    mitigation: 画面里放尺度锚点（树、房屋、人）；人物写明占画高的比例
+    fallback: 重出首帧
+    severity: P2
+  - id: R4
+    risk: 极端物理崩坏（爆炸、流体、破碎）
+    applies_to: {}
+    symptom: 碎片乱飞、流体不连续
+    mitigation: 先跑短探针；复杂部分改后期合成
+    fallback: 只拍余波
+    severity: P1
+    src: [src.sds]
+  - id: R5
+    risk: 宗教、神话形象被具象化或显得不庄重
+    applies_to: {}
+    symptom: 神祇的脸被画出来，或者造型轻佻
+    mitigation: 只用背影、侧影、剪影；话语不具象
+    fallback: 只拍光与环境
+    severity: P1
+    src: [src.mem_guanyin]
+  - id: R6
+    risk: 画风漂移（动漫漂成写实）
+    applies_to: {}
+    symptom: 风格和设定不同
+    mitigation: 提示词明写画风；参考图先转成目标画风
+    fallback: 重出
+    severity: P2
+    src: [src.sd20_guide]
+example:
+  title: 山神苏醒
+  setup: >-
+    2D 国漫画风、外景、一人、中档；Seedance 2.5、480p、16:9（动漫画风已在蓝海囚笼 v2 实测可用）。
+    樵夫在山道上看到整座山裂开金光；山神不现形，只有光和山。
+  gens:
+    - id: G1
+      coverage_ref: scene.spectacle#C1
+      duration_s: 5
+      angle: 溪水大特写，固定
+      action: 山脚溪水的水面一圈圈震动，鹅卵石轻轻跳动
+    - id: G2
+      coverage_ref: scene.spectacle#C2
+      duration_s: 6
+      angle: 低角度大远景，固定
+      video_prompt: >-
+        2D 国漫画风。镜头固定不动。整座山的轮廓上裂开一道发着金光的竖缝，金光照亮山脚的雾；
+        山脚山道上一个背着柴的小人剪影，不超过画高 1/8，一动不动。画面中无任何文字、字幕、水印。
+    - id: G3
+      coverage_ref: scene.spectacle#C3
+      duration_s: 6
+      angle: 航拍视角，从山腰缓慢拉升
+      action: 金光从裂缝向两侧蔓延，群山之间的雾被冲开
+    - id: G4
+      coverage_ref: scene.spectacle#C4
+      duration_s: 5
+      angle: 全景，背影，固定
+      action: 樵夫的背影站在山道上，前方整片山壁的金光骤然大亮，风把他的衣角吹得笔直
+    - id: G5
+      coverage_ref: scene.spectacle#C6
+      duration_s: 5
+      angle: 地面大特写，固定
+      action: 樵夫脚边，一片落叶在金光里慢慢化成细小的光点飘起
+  shots:
+    - {id: E1, beat: B1, from: G1, in_s: 0.3, len_s: 3.5}
+    - {id: E2, beat: B2, from: G2, in_s: 0.3, len_s: 5.0}
+    - {id: E3, beat: B2, from: G3, in_s: 0.3, len_s: 5.0}
+    - {id: E4, beat: B3, from: G4, in_s: 0.3, len_s: 4.0}
+    - {id: E5, beat: B4, from: G5, in_s: 0.3, len_s: 4.0}
+  totals: 5 镜共 21.5 秒，约 14 镜/分，落在中档；生成 5 条共 27 秒，gen_ratio 约 1.26；Seedance 2.5 480p 按 MCP 估价约 ¥25–31（480p 费率是外推值，未实测）。
+sources: [src.mem_copyright, src.mem_guanyin, src.mem_lanhai, src.mcp_models, src.prop_asset, src.wan3_guide, src.sd20_guide, src.sds, src.film_grammar]

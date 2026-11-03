@@ -1,0 +1,29 @@
+# 导演知识库 · 镜头语法卡
+schema: kb.grammar/v1
+id: grammar.size_extreme_closeup
+title: 大特写
+version: 1
+status: draft
+updated: 2026-10-16
+family: shot_size
+order: 9
+aliases: [局部特写, 微距特写, 微距, extreme close-up, ECU, macro]
+summary: 局部占满画面：眼、手指、刀刃、零件，含微距；讲清因果细节、给剪辑切点，几乎都是结构或材质敏感镜头。
+definition: 只拍一个局部：眼睛、手指、螺纹、刀刃、水滴；微距是它的极端形式。
+framing: 局部充满画面
+mouth_readable: none
+narrative_use:
+  - 放大关键因果：扣扳机、螺母转开几度、刀刃相击
+  - 剪辑切点和插入镜，也是口型问题最安全的去处
+  - 机构原理演示（P01、P02 的主力景别）
+prompt:
+  write:
+    - 微距特写，[局部] 占满画面，镜头固定不动；[材质与颜色] 写死；[零件关系] 写死，例如「丝杠和每根滚柱始终是彼此分开的独立零件」
+  avoid:
+    - 微距里写环绕、下移、推近加上摇
+risks:
+  - risk: 运镜让零件互相穿插、材质变样（P01 S05 丝杠穿进滚柱、S11 金属屑变木刨花）
+    mitigation: 固定机位，材质写死，数量写少（「少量细小切屑」）
+    neg_refs: [neg.orbit_structure_interpenetration, neg.camera_move_rewrites_material]
+see_refs: [grammar.size_closeup, grammar.move_static]
+sources: [src.film_grammar, src.sds, src.p01_audit, src.mem_preloq]

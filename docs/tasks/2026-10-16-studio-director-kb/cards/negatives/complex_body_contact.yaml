@@ -1,0 +1,24 @@
+# 导演知识库 · 反例卡
+schema: kb.neg/v1
+id: neg.complex_body_contact
+title: 复杂的身体接触
+version: 1
+status: draft
+updated: 2026-10-16
+category: physics
+summary: 拥抱、十指相扣、脸贴脸这类多处同时接触，是手臂融合、手指变形的高发区。一次一处接触，用背影藏住接触面。
+wrong: 两人紧紧相拥，十指交缠，脸贴着脸慢慢转圈。
+why: 多个肢体同时接触、再加上旋转，模型很难保持每只手、每条手臂的结构。
+right: 从母亲背后拍。首帧里儿子已经俯身抱住母亲，母亲的背挡住两人之间；儿子的右手在她背上轻轻收紧一下，两人保持不动。
+applies_to: {}
+evidence:
+  - case: seedance-shot-design 失败诊断
+    detail: 多主体复杂互动属于成功率较低的一档；同时的肢体动作越多，变形风险越高
+    src: [src.sds]
+level: info
+check:
+  kind: regex_forbid
+  fields: [video_prompt]
+  patterns: ['十指(交缠|紧扣|相扣)', '脸贴着脸', '相拥.{0,6}(转圈|旋转)']
+see_refs: [grammar.pos_back, grammar.cont_props_hands]
+sources: [src.sds]

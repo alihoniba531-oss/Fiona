@@ -1,0 +1,340 @@
+# 导演知识库 · 场景模板卡（样卡，2026-10-16 用户已过目）
+schema: kb.scene/v1
+id: scene.dialogue
+title: 对话
+version: 2
+status: reviewed
+updated: 2026-10-16
+
+definition: 两到三名角色以交换信息、推进关系为主的文戏，冲突还没升级成对抗。
+summary: >-
+  难点不在镜头花样，而在三件事：轴线稳定，谁在说一眼可辨，嘴形不和后期配音打架。
+  默认按机位生成长条，剪辑时正反打交叉裁切；说话人尽量不露可读嘴形，情绪交给听者的反应。
+
+tags:
+  pace: [fast, medium, slow]
+  emotion: [calm, warm, sad, tense, comic]
+  cast: [duo, small_group]
+  realism: [realistic, anime, 3d]
+  setting: [interior, exterior]
+
+signals:
+  strong:
+    - 同一场里两到三名角色的台词交替出现，至少两轮
+    - 台词以询问、告知、商量、解释为主，语气没有升级到威胁
+  weak:
+    - 动作描写少，多为坐、站、端茶、递物、边走边说
+    - 地点适合静态对坐或并行，如饭桌、车内、病房、办公室、走廊
+  counter:
+    - signal: 出现质问、威胁、拍桌、步步逼近，或双方立场明显对立
+      route_to_ref: scene.confrontation
+    - signal: 只有一个人在说，对方不回应或不在场
+      route_to_ref: scene.monologue
+    - signal: 三人以上轮流发言，而且各自有反应戏
+      route_to_ref: scene.ensemble
+    - signal: 旁白或口播占满时长，角色不开口
+      route_to_ref: scene.explainer
+
+directing:
+  - rule: 先立轴线。建立镜里 A 在左、面朝右，B 在右、面朝左；之后所有正反打都在两人连线的同一侧。换机位后按世界坐标重新推导左右，不凭感觉。
+    see_refs: [grammar.axis_180, grammar.axis_eyeline]
+  - rule: 每镜写齐站位、面部朝向、视线落点三项，缺一项模型就容易让两人各看空气。
+    see_refs: [grammar.axis_eyeline]
+    src: [src.sds]
+  - rule: 情绪落在听者身上。关键句的分量常在听的人脸上，而不在说的人嘴上；这同时绕开了口型问题。
+    see_refs: [grammar.pos_over_shoulder]
+  - rule: 距离就是关系。关系拉近时景别逐级收紧（双人镜 → 过肩 → 单人近景），关系破裂时回到双人镜或拉开距离。
+    see_refs: [grammar.size_medium_wide, grammar.size_close]
+  - rule: 抽象情绪要写成看得见的动作：停筷、垂眼、喉结滚动、手指摩挲杯沿；不写「很难过」「很紧张」。
+    see_refs: [neg.abstract_emotion]
+    src: [src.sd20_guide, src.prop_asset]
+
+beats:
+  - id: B1
+    name: 建立
+    purpose: 交代谁和谁、在哪、相对位置和关系，立住轴线
+    share: [0.10, 0.20]
+  - id: B2
+    name: 交换
+    purpose: 信息来回；景别随紧张度逐步收紧
+    share: [0.40, 0.55]
+  - id: B3
+    name: 关键句
+    purpose: 本场的变化点——一句话改变了谁知道什么、谁决定什么
+    share: [0.15, 0.25]
+  - id: B4
+    name: 落点
+    purpose: 反应停留，或一方离开、动作收尾，给下一场留接口
+    share: [0.10, 0.20]
+
+coverage:
+  - id: C1
+    beat: B1
+    shot: 双人镜，两人分居画面左右，看得清相对位置和中间的桌子或物件
+    size_refs: [grammar.size_medium_wide, grammar.size_medium]
+    angle_ref: grammar.angle_eye_level
+    camera_ref: grammar.move_static
+    purpose: 立轴线；B4 可以再用一次同机位做落点
+  - id: C2
+    beat: B2
+    shot: 从说话人背后过肩拍听者——听者正脸，说话人只露肩和后脑
+    size_refs: [grammar.size_medium_close]
+    angle_ref: grammar.pos_over_shoulder
+    camera_ref: grammar.move_static
+    purpose: 说话人的嘴不可读，台词可以在后期自由摆放
+  - id: C3
+    beat: B2
+    shot: 反打——从另一人背后过肩拍回来
+    size_refs: [grammar.size_medium_close]
+    angle_ref: grammar.pos_over_shoulder
+    camera_ref: grammar.move_static
+    purpose: 和 C2 组成正反打；两条机位长条交替裁切
+  - id: C4
+    beat: B2
+    shot: 紧张度上升后，从过肩改成单人中近景或近景，去掉前景肩膀
+    size_refs: [grammar.size_medium_close, grammar.size_close]
+    angle_ref: grammar.angle_eye_level
+    camera_ref: grammar.move_static
+    purpose: 把人物隔离出来加压；仍然优先拍听者
+    optional: true
+  - id: C5
+    beat: B3
+    shot: 关键句落在听者的反应近景，或落在一个道具动作的大特写
+    size_refs: [grammar.size_close, grammar.size_extreme_closeup]
+    angle_ref: grammar.angle_eye_level
+    camera_ref: grammar.move_static
+    purpose: 用反应或动作把变化演出来，不靠说话人的嘴
+  - id: C6
+    beat: B3
+    shot: 插入镜——手、杯、信、手机等道具
+    size_refs: [grammar.size_extreme_closeup]
+    camera_ref: grammar.move_static
+    purpose: 给剪辑提供切点，也是嘴形问题最安全的去处
+    optional: true
+  - id: C7
+    beat: B4
+    shot: 回到双人镜，或一人起身出画、另一人留在画内
+    size_refs: [grammar.size_medium_wide, grammar.size_full]
+    angle_ref: grammar.angle_eye_level
+    camera_ref: grammar.move_static
+    purpose: 收束；和下一场用声音桥或动作匹配衔接
+    transition_refs: [grammar.trans_j_l_cut, grammar.trans_match_action]
+
+pacing:
+  basis: >-
+    镜长指成片里的剪辑长度，不是生成时长。中速档依据 P01 实测（约 3.9 秒/镜）和本项目
+    「一集 3–4 分钟、约 60 镜」的口径（均值约 3.5 秒/镜）；快、慢两档是经验值，
+    累计满 5 集后用 studio_stats 的实测校准。gen_ratio = 生成总秒数 ÷ 成片秒数，供报价估算。
+  src: [src.p01_audit, src.plan]
+  tiers:
+    fast:
+      shot_len_s: [2.0, 3.0]
+      shots_per_min: [20, 30]
+      gen_ratio: [1.2, 1.6]
+      use_when: 抢白、快问快答、轻喜剧对话
+    medium:
+      shot_len_s: [3.0, 4.5]
+      shots_per_min: [13, 20]
+      gen_ratio: [1.1, 1.4]
+      use_when: 常规的信息交换
+    slow:
+      shot_len_s: [4.5, 7.5]
+      shots_per_min: [8, 13]
+      gen_ratio: [1.0, 1.3]
+      use_when: 沉重话题、告白、长停顿
+
+generation:
+  min_gen_s: 4
+  strategy: by_angle
+  rules:
+    - 按机位生成，不按台词生成。每个机位生成一条 6–10 秒的长条，覆盖这个机位要用到的全部台词时段和反应；剪辑时几条长条交替裁切成正反打。
+    - 每条至少生成 4 秒；成片里短于 4 秒的镜头也照样提交 4 秒再裁，开头通常裁掉 0.3 秒左右的起势（P01 实测）。
+    - 一条长条里按时间安排 2–3 个有因果的小动作（停筷 → 把筷子搁到碗沿 → 手收回桌面），每 3–5 秒至少有一个看得见的变化，防止画面冻住或循环。
+    - G3 锁轴以后每句台词的时长已知，长条时长按「本机位要覆盖的台词 + 反应 + 前后余量」来定。
+  src: [src.user_02, src.user_05, src.p01_audit, src.sds]
+
+camera:
+  default_refs: [grammar.move_static]
+  allowed: []
+  nonsensitive_only:
+    - ref: grammar.move_push_in
+      condition: 关键句前后极缓地推近一次；只用于不露可读人脸的镜头（双人全景、背影、道具）
+    - ref: grammar.move_truck
+      condition: 两人边走边谈；全景以上，人物不露可读正脸
+    - ref: grammar.move_follow
+      condition: 同上，跟在两人身后或侧后方
+    - ref: grammar.move_orbit
+      condition: 不推荐；只在全景以上、没有正脸和精细结构时可选
+  avoid:
+    - what: 写实正脸镜头里的任何运镜，包括手持微晃
+      reason: 运镜会让模型重画脸部，造成身份漂移；按统一口径，人脸敏感镜头一律固定机位
+      neg_refs: [neg.move_on_sensitive_shot]
+    - what: 推近之后再接上摇或下摇
+      reason: P01 S10 实测，推近上摇把原本在画外的 AI 人物正脸带进了画面
+      neg_refs: [neg.push_tilt_reveals_face]
+    - what: 同一镜里叠加推、摇、移
+      reason: 万相和 Seedance 的官方指南都建议一镜只用一种运镜
+      neg_refs: [neg.stacked_camera_moves]
+  src: [src.p01_audit, src.mem_preloq, src.sd20_guide]
+
+sound:
+  items:
+    - 台词走后期配音，gen.audio 默认 false；一句或一个呼吸单元一条 cue。
+    - 用 J-cut / L-cut 让台词跨过切点：下一句先出声再切画面，或上一句的尾巴盖在听者的反应上。说话人不露嘴形时，这是最自然的剪法。
+    - 环境床跨切延续；对话期间按 cue 自动避让，约 -6 dB。关键句前后各留 0.15–0.30 秒，不叠别的声音。
+    - 对话里少用 BGM；需要时只在 B4 落点进入，或在关键句之后抽空。
+    - 画外音和内心独白：delivery 写 voiceover 或 inner，lip_sync 写 none，video_prompt 写明「人物嘴唇闭合、不说话」。
+    - 道具声（搁筷、杯底碰桌）适合做 hard 同步点，既能掩护切点，也让画面更真实。
+  see_refs: [grammar.trans_j_l_cut, grammar.cont_sound_state]
+  src: [src.user_02, src.user_05]
+
+lip_sync:
+  default: avoid
+  ladder:
+    - level: offscreen
+      how: 说话人不在画内，画面是听者或道具
+      risk: P2
+    - level: avoid
+      how: 说话人在画内但嘴不可读——背对、侧后方、过肩前景、远景、被手或杯子挡住、低头
+      risk: P2
+    - level: sync
+      how: >-
+        真口型。本机 MCP 接入的万相 3.0 和 Seedance 2.5 都不支持参考音频输入，
+        原生口型会用模型自己的声音，和定档声线对不上。
+      risk: P0
+      requires: 单独报价，先跑探针；角色写进 visible_mouth_roles
+  rule: 每段可见对白都要有 offscreen、avoid、sync 三者之一的方案（02-分集拆镜 的硬阻塞项）。
+  decision: 2026-10-16 用户确认默认 avoid，真口型一律 P0
+  src: [src.user_02, src.user_05, src.mcp_models]
+
+ai_risks:
+  - id: R1
+    risk: 嘴在动、配音对不上，或者画外音时角色张嘴
+    applies_to: {}
+    symptom: 生成的画面里人物自己在说话，后期配音的节奏和嘴形对不上
+    mitigation: 说话人用过肩背面、侧后方或远景；听者镜写「嘴唇自然闭合」；画外音镜写「人物不说话」
+    fallback: 改用 offscreen，把这句台词挪到听者反应镜或插入镜上
+    severity: P1
+    neg_refs: [neg.voiceover_mouth_moves]
+  - id: R2
+    risk: 视线或轴线错乱
+    applies_to: {}
+    symptom: 正反打时两人看向画面同一侧，像各自对着空气说话
+    mitigation: 每镜写齐站位、朝向、视线三项；反打首帧按世界坐标出图，A 在右、B 在左时要明写
+    fallback: 用双人镜覆盖这几句，不做正反打
+    severity: P1
+    see_refs: [grammar.axis_180, grammar.axis_reset]
+  - id: R3
+    risk: 写实正脸首帧被 Seedance 的肖像闸拒收
+    applies_to:
+      providers: [seedance25, seedance20]
+      realism: [realistic]
+    symptom: 提交即被拒（提示可能含真人），明确拒绝不计费
+    mitigation: >-
+      写实对话默认走万相。Seedance 只接动漫画风（蓝海囚笼 v2 实测露脸可过），或者背影、逆光剪影镜头；
+      3D 画风还没实测，先跑探针。
+    fallback: 换万相；或把该镜改成背影、侧后方
+    severity: P1
+    note: Seedance 2.0 没有实测，按 2.5 的结论预防
+    provider_refs: [provider.seedance25_realistic, provider.seedance20_realistic]
+    neg_refs: [neg.realistic_face_on_seedance]
+    src: [src.mem_xiakexing, src.mem_lanhai]
+  - id: R4
+    risk: 长条静止、冻住或循环
+    applies_to: {}
+    symptom: 6–10 秒的听者镜里人物一动不动，或者同一个小动作来回重复
+    mitigation: 写成过程而不是状态，每 3–5 秒一个可见变化；呼吸、眨眼、手指动作、热气、窗外雨丝都能用
+    fallback: 缩短生成时长，或把长条拆成两条
+    severity: P2
+    src: [src.sds]
+  - id: R5
+    risk: 多出第三个人、出现双胞胎，或两人互换外貌
+    applies_to: {}
+    symptom: 双人镜里凭空多人，或者同一张脸出现两次
+    mitigation: 提示词写「不新增人物」；两人在发型、服色、体型上至少两处明显不同；参考图用单人照，不用三视图
+    fallback: 改成单人镜加过肩前景
+    severity: P1
+    src: [src.wan3_guide, src.sd20_guide]
+  - id: R6
+    risk: 画面里自动冒出字幕
+    applies_to: {}
+    symptom: 生成片里出现台词字幕或乱码文字
+    mitigation: >-
+      video_prompt 里不写台词原文，只写「在说话 / 在听」；结尾固定「画面中无任何文字、字幕、水印」。
+      Seedance 在竖屏下更容易出字幕，竖屏项目优先万相，或横屏生成后再裁。
+    fallback: 重出；仍出现时改用万相
+    severity: P2
+    neg_refs: [neg.dialogue_text_in_video_prompt]
+    src: [src.sd25_guide, src.sd20_guide, src.user_02]
+  - id: R7
+    risk: 写实 AI 人脸跨镜漂移
+    applies_to:
+      realism: [realistic]
+    symptom: 同一个人在不同机位长得不一样
+    mitigation: 关键帧一律从定妆图派生；正脸镜固定机位；同一角色的正脸集中在少数几条机位长条里反复裁用
+    fallback: 减少正脸镜，改用过肩、侧后方和插入镜
+    severity: P1
+    src: [src.mem_robotdog, src.user_02]
+
+example:
+  title: 饭馆夜谈
+  setup: >-
+    写实、室内、两人、中速；万相 3.0、480P、16:9。雨夜小饭馆，母亲（CHAR_MOTHER）和回家吃饭的
+    儿子（CHAR_SON）隔桌对坐。本场的变化：儿子说要去外地工作，母亲没有挽留，只把一盘饺子推到他面前。
+  axis: 母亲在画面左、面朝右；儿子在画面右、面朝左；全场机位都在两人连线靠窗的一侧。
+  gens:
+    - id: G1
+      coverage_ref: scene.dialogue#C1
+      angle: 双人中全景，窗侧平视
+      duration_s: 6
+      video_prompt: >-
+        保持 CHAR_MOTHER 和 CHAR_SON 的身份与入镜站位；镜头固定不动。两人隔桌对坐，母亲在画面左侧低头往儿子碗里夹菜，
+        儿子在画面右侧双手捧着茶杯，两人都不说话、嘴唇闭合。窗外雨丝持续落下，桌上热气缓缓上升。画面中无任何文字、字幕、水印。
+    - id: G2
+      coverage_ref: scene.dialogue#C2
+      angle: 从儿子右肩后方过肩拍母亲，焦点在母亲脸上
+      duration_s: 8
+      video_prompt: >-
+        保持 CHAR_MOTHER 的身份与站位，前景是儿子虚化的右肩和后脑；镜头固定不动。母亲面朝画面右侧，视线落在儿子脸上。
+        前 3 秒，母亲握筷的手停在半空；随后慢慢把筷子搁到碗沿，双手收回桌面，视线垂下。母亲嘴唇自然闭合、不说话。
+        画面中无任何文字、字幕、水印。
+    - id: G3
+      coverage_ref: scene.dialogue#C3
+      angle: 从母亲左肩后方过肩拍儿子，焦点在儿子脸上
+      duration_s: 8
+      video_prompt: >-
+        保持 CHAR_SON 的身份与站位，前景是母亲虚化的左肩；镜头固定不动。儿子面朝画面左侧。前 3 秒儿子垂下眼，轻轻点了一下头；
+        之后眼眶微微发红，喉结滚动一下，嘴唇抿紧。儿子不说话。画面中无任何文字、字幕、水印。
+    - id: G4
+      coverage_ref: scene.dialogue#C6
+      angle: 桌面大特写，略俯
+      duration_s: 5
+      video_prompt: >-
+        镜头固定不动。母亲的右手把一盘饺子从画面左侧推向右侧，盘底在木桌面上滑过一小段后停住，手指在盘沿停留一下再收回。
+        饺子保持完整、不变形。画面中无任何文字、字幕、水印。
+    - id: G5
+      coverage_ref: scene.dialogue#C7
+      angle: 同 G1 机位的双人中全景
+      duration_s: 7
+      video_prompt: >-
+        保持 CHAR_MOTHER 和 CHAR_SON 的身份与站位；镜头固定不动。儿子低下头，从面前的盘子里夹起一只饺子送进嘴里，碗挡住他的下半张脸；
+        母亲双手放在桌上，静静看着他。窗外雨丝持续落下。画面中无任何文字、字幕、水印。
+  cues:
+    - {id: D01, role: 儿子, text: 妈，我下个月去深圳。, delivery: onscreen, lip_sync: avoid, note: 在 E1 最后 0.5 秒先出声（J-cut）}
+    - {id: D02, role: 母亲, text: ……工作定了？, delivery: onscreen, lip_sync: avoid}
+    - {id: D03, role: 儿子, text: 定了，签了三年。, delivery: onscreen, lip_sync: avoid}
+    - {id: D04, role: 母亲, text: 那边……吃得惯吗？, delivery: offscreen, lip_sync: offscreen}
+    - {id: D05, role: 儿子, text: 吃得惯。, delivery: onscreen, lip_sync: avoid, note: 低头、碗挡住嘴}
+  shots:
+    - {id: E1, beat: B1, from: G1, in_s: 0.3, len_s: 4.0, cue_ids: [D01], mouth: none}
+    - {id: E2, beat: B2, from: G2, in_s: 0.5, len_s: 3.5, cue_ids: [D01], mouth: averted}
+    - {id: E3, beat: B2, from: G3, in_s: 0.3, len_s: 3.0, cue_ids: [D02], mouth: averted}
+    - {id: E4, beat: B2, from: G2, in_s: 4.0, len_s: 4.0, cue_ids: [D03], mouth: averted}
+    - {id: E5, beat: B3, from: G4, in_s: 0.5, len_s: 4.0, cue_ids: [D04], mouth: none}
+    - {id: E6, beat: B3, from: G3, in_s: 3.5, len_s: 4.0, cue_ids: [], mouth: none, note: 儿子的反应停留，约 3 秒沉默}
+    - {id: E7, beat: B4, from: G5, in_s: 0.5, len_s: 6.0, cue_ids: [D05], mouth: averted}
+  totals: >-
+    7 镜共 28.5 秒，约 14.7 镜/分，落在中速档；生成 5 条共 34 秒，gen_ratio 约 1.19；万相 480P 约 ¥10.2。
+    G2、G3 各裁出两镜，是「按机位生成」的省钱之处。
+
+sources: [src.user_02, src.user_05, src.p01_audit, src.mem_preloq, src.mem_xiakexing, src.mem_lanhai, src.mem_robotdog, src.mcp_models, src.plan, src.wan3_guide, src.sd25_guide, src.sd20_guide, src.sds, src.avd, src.prop_asset, src.film_grammar]

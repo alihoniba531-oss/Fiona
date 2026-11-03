@@ -1,0 +1,243 @@
+# 导演知识库 · 场景模板卡
+schema: kb.scene/v1
+id: scene.ensemble
+title: 群戏
+version: 1
+status: draft
+updated: 2026-10-16
+definition: 三人以上同场且多人有戏（会议、宴会、审讯、团队行动），核心是调度观众的注意力。
+summary: >-
+  先用深焦全景或顶视立好座次图，之后单人镜的视线都按这张图推。每一刻只有一个焦点人物；反应镜比说话镜重要。
+  AI 的风险在人数：人数漂移、换脸、双胞胎，参考人物越多越不稳。
+tags:
+  pace: [medium, slow, fast]
+  emotion: [tense, comic, warm, mystery, anger]
+  cast: [small_group, crowd]
+  realism: [realistic, anime, 3d]
+  setting: [interior, exterior, mixed]
+signals:
+  strong:
+    - 三名以上有名有姓的角色同场发言或有反应
+    - 「众人 / 全场 / 满座 / 大家」
+  weak:
+    - 宴会厅、朝堂、会议室、饭桌
+    - 宣布、审讯、表决
+  counter:
+    - signal: 只有两人有戏，其他人是背景
+      route_to_ref: scene.dialogue
+    - signal: 多人混战
+      route_to_ref: scene.fight
+directing:
+  - rule: 先画座次图：用深焦全景或顶视交代每个人的位置，写进 role_ledger；之后单人镜的视线方向都按这张图推。
+    see_refs: [grammar.dof_deep, grammar.angle_top_down, grammar.axis_eyeline]
+    src: [src.user_05]
+  - rule: 每一刻只有一个焦点人物；用景别、深焦里的前景位置、众人的视线把观众引过去。
+    src: [src.avd]
+  - rule: 反应镜比说话镜重要：宣布时拍听的人；一句话可以切两三个人的反应。
+  - rule: 控制同框人数：有戏的人同框尽量不超过 4 个（Seedance 2.0 参考人物超过 4 人就不稳），人多时用分组镜。
+    src: [src.sd20_guide]
+  - rule: 用座位、服色、发型区分人物，至少两项可辨。
+beats:
+  - id: B1
+    name: 布局
+    purpose: 谁在、坐哪、关系如何
+    share: [0.15, 0.25]
+  - id: B2
+    name: 议题
+    purpose: 发言和反应轮转
+    share: [0.35, 0.50]
+  - id: B3
+    name: 爆点
+    purpose: 宣布、指控或翻脸
+    share: [0.15, 0.25]
+  - id: B4
+    name: 余波
+    purpose: 众人的反应，有人离席
+    share: [0.10, 0.20]
+coverage:
+  - id: C1
+    beat: B1
+    shot: 深焦全景或略俯的全景，看清每个人的位置
+    size_refs: [grammar.size_full]
+    angle_ref: grammar.angle_high
+    camera_ref: grammar.move_static
+    purpose: 座次图；B4 可再用一次
+  - id: C2
+    beat: B2
+    shot: 发言者的中近景，过肩或侧后，嘴不可读
+    size_refs: [grammar.size_medium_close]
+    angle_ref: grammar.pos_over_shoulder
+    camera_ref: grammar.move_static
+    purpose: 发言
+  - id: C3
+    beat: B2
+    shot: 分组镜：两三人同框的反应
+    size_refs: [grammar.size_medium]
+    camera_ref: grammar.move_static
+    purpose: 一次交代几个人的态度
+  - id: C4
+    beat: B3
+    shot: 焦点人物的近景，固定
+    size_refs: [grammar.size_close]
+    camera_ref: grammar.move_static
+    purpose: 爆点
+  - id: C5
+    beat: B3
+    shot: 反应轮转：两三个人的近景，各 1.5–2.5 秒
+    size_refs: [grammar.size_close]
+    camera_ref: grammar.move_static
+    purpose: 一句话激起的不同反应
+  - id: C6
+    beat: B4
+    shot: 回到全景，有人起身离席
+    size_refs: [grammar.size_full]
+    camera_ref: grammar.move_static
+    purpose: 余波
+pacing:
+  basis: 经验值，中档按对话卡口径；爆点后的反应轮转进快档。满 5 集后校准。
+  tiers:
+    fast:
+      shot_len_s: [2.0, 3.0]
+      shots_per_min: [20, 30]
+      gen_ratio: [1.3, 1.8]
+      use_when: 爆点后的反应轮转
+    medium:
+      shot_len_s: [3.0, 4.5]
+      shots_per_min: [13, 20]
+      gen_ratio: [1.15, 1.5]
+      use_when: 常规议事
+    slow:
+      shot_len_s: [4.5, 6.5]
+      shots_per_min: [9, 13]
+      gen_ratio: [1.05, 1.3]
+      use_when: 沉重的宣布
+generation:
+  min_gen_s: 4
+  strategy: by_angle
+  rules:
+    - 全景机位一条 8–10 秒的长条，B1、B4 各用一段。
+    - 每个主要人物一条 6 秒的反应长条（含两个反应变化），按需裁用。
+    - 同框人物越多，越要写「不新增人物，画面中共 N 人」。
+    - 参考图每人一张单人照，不用三视图或多视图（Seedance 2.0 官方）；Seedance 2.5 主体图 1–8 个效果较好（官方）。
+    - Seedance 2.5 按人物首次出场的顺序上传参考素材，编号和提示词一一对应（官方 FAQ）。
+  src: [src.sd20_guide, src.sd25_guide]
+camera:
+  default_refs: [grammar.move_static]
+  allowed: []
+  nonsensitive_only:
+    - ref: grammar.move_truck
+      condition: 缓慢横移扫过座位上的众人；全景以上
+    - ref: grammar.move_push_in
+      condition: 全景缓慢推向焦点人物；人物不露可读正脸时
+  avoid:
+    - what: 绕整桌人环绕
+      reason: 一桌都是人脸，绕到另一侧时模型会重新编排座位和人物
+      neg_refs: [neg.move_on_sensitive_shot]
+sound:
+  items:
+    - 室内的空间感（混响）保持一致。
+    - 底层是众人的低语或碗筷声，焦点人物说话时压下去。
+    - 爆点前所有人安静下来，声音抽空。
+    - 反应轮转时每个反应配一个小声音（放下碗筷、椅子挪动）。
+    - 多人台词每人一个 cue，role_ledger 绑定声线。
+  src: [src.user_05]
+ai_risks:
+  - id: R1
+    risk: 人数漂移、出现双胞胎
+    applies_to: {}
+    symptom: 四人桌变成五人，或两个人长成一样
+    mitigation: 写「画面中共 N 人，不新增人物」；单人参考图；人多时分组出图
+    fallback: 少拍同框，多拍单人和分组
+    severity: P1
+    note: 六人以上（crowd）按 P0 处理
+    src: [src.sd20_guide, src.wan3_guide]
+  - id: R2
+    risk: 人物互换外貌或座位
+    applies_to: {}
+    symptom: 上一镜坐左边的人，下一镜坐到了右边
+    mitigation: role_ledger 固定座位；首帧对照座次图质检
+    fallback: 插回全景重新交代
+    severity: P1
+    src: [src.user_05]
+  - id: R3
+    risk: 众人的视线方向乱
+    applies_to: {}
+    symptom: 宣布时众人看向不同的方向
+    mitigation: 每镜写清视线目标（「看向画面右侧站着的大哥」）
+    fallback: 用低头、垂眼代替对视
+    severity: P1
+    see_refs: [grammar.axis_eyeline]
+  - id: R4
+    risk: 多人同框时手和餐具穿模
+    applies_to: {}
+    symptom: 筷子穿过手指，碗嵌进桌面
+    mitigation: 同框镜里只让一个人有手部动作
+    fallback: 手部动作单独拍特写
+    severity: P2
+  - id: R5
+    risk: 写实正脸首帧被 Seedance 肖像闸拒收
+    applies_to:
+      providers: [seedance25, seedance20]
+      realism: [realistic]
+    symptom: 提交即被拒，不计费
+    mitigation: 写实群戏默认走万相
+    fallback: 换万相
+    severity: P1
+    neg_refs: [neg.realistic_face_on_seedance]
+    src: [src.mem_xiakexing]
+  - id: R6
+    risk: Seedance 2.5 角色与参考图对错
+    applies_to:
+      providers: [seedance25]
+    symptom: 先出场的人被换成了另一个参考角色
+    mitigation: 按首次出场顺序上传参考素材，并同步调整编号
+    fallback: 重出
+    severity: P1
+    src: [src.sd25_guide]
+example:
+  title: 家宴分房
+  setup: >-
+    写实、室内、四人、中档；万相 3.0、480P、16:9。大哥站起来宣布父亲把老房子留给了小弟，二姐当场离席，母亲始终没有抬头。
+    座次：大哥画面中央偏右站立，母亲左前，二姐右前，小弟左后。
+  gens:
+    - id: G1
+      coverage_ref: scene.ensemble#C1
+      duration_s: 8
+      angle: 略俯全景，深焦，固定
+      video_prompt: >-
+        镜头固定不动。画面中共 4 人，不新增人物：圆桌边大哥站着，母亲、二姐、小弟坐着，转盘上的菜还冒着热气。
+        前 4 秒四人都不动；之后二姐推开椅子站起来，转身离开桌子，走出画面右侧。人物都不说话、嘴唇闭合。画面中无任何文字、字幕、水印。
+    - id: G2
+      coverage_ref: scene.ensemble#C2
+      duration_s: 6
+      angle: 从母亲右肩后过肩拍大哥，中近景
+      action: 大哥展开一张折好的纸，低头看着纸，嘴被纸挡住
+    - id: G3
+      coverage_ref: scene.ensemble#C5
+      duration_s: 6
+      angle: 二姐近景，固定
+      action: 二姐的筷子停在半空，抬眼看向画面右侧的大哥；之后嘴角慢慢绷紧
+    - id: G4
+      coverage_ref: scene.ensemble#C5
+      duration_s: 6
+      angle: 小弟近景，固定
+      action: 小弟愣住，随后猛地看向画面左侧的母亲
+    - id: G5
+      coverage_ref: scene.ensemble#C4
+      duration_s: 6
+      angle: 母亲近景，固定
+      action: 母亲垂着眼，手指慢慢转着茶杯，始终没有抬头
+  cues:
+    - {id: D01, role: 大哥, text: 爸走之前，把老房子留给了……, delivery: onscreen, lip_sync: avoid}
+    - {id: D02, role: 大哥, text: 小弟。, delivery: offscreen, lip_sync: offscreen}
+    - {id: D03, role: 二姐, text: 凭什么？, delivery: offscreen, lip_sync: offscreen}
+  shots:
+    - {id: E1, beat: B1, from: G1, in_s: 0.3, len_s: 4.0}
+    - {id: E2, beat: B2, from: G2, in_s: 0.3, len_s: 3.5, cue_ids: [D01], mouth: masked}
+    - {id: E3, beat: B2, from: G3, in_s: 0.3, len_s: 3.0, cue_ids: [D01], mouth: none}
+    - {id: E4, beat: B3, from: G4, in_s: 0.3, len_s: 2.5, cue_ids: [D02], mouth: none}
+    - {id: E5, beat: B3, from: G3, in_s: 3.5, len_s: 2.0, mouth: none}
+    - {id: E6, beat: B3, from: G5, in_s: 0.3, len_s: 3.0, cue_ids: [D03], mouth: none}
+    - {id: E7, beat: B4, from: G1, in_s: 4.3, len_s: 3.5}
+  totals: 7 镜共 21.5 秒，约 19.5 镜/分，落在中档；生成 5 条共 32 秒，gen_ratio 约 1.49；万相 480P 约 ¥9.6。
+sources: [src.user_05, src.mem_xiakexing, src.sd20_guide, src.sd25_guide, src.wan3_guide, src.avd, src.film_grammar]

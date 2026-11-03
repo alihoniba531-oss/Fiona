@@ -1,0 +1,218 @@
+# 导演知识库 · 场景模板卡
+schema: kb.scene/v1
+id: scene.flashback
+title: 回忆闪回
+version: 1
+status: draft
+updated: 2026-10-16
+definition: 跳回过去的段落（整场或插入式），必须有清楚的进出标记。
+summary: >-
+  进和出都要有标记：声音先行、图形匹配、叠化，至少用一种，出来时反向用同一种。
+  过去时空的视觉差异定在关键帧里，全段一致；年轻版、老年版单独定妆，不让模型临场把现在的脸改年轻。
+  整场回忆按它的内容类型拆，本卡只管进出。
+tags:
+  pace: [medium, slow, fast]
+  emotion: [sad, warm, mystery, tense, joy]
+  cast: [solo, duo, small_group]
+  realism: [realistic, anime, 3d]
+  setting: [interior, exterior, mixed]
+signals:
+  strong:
+    - 「那年 / 多年前 / 想起 / 记得」
+    - 剧本标注「回忆」
+  weak:
+    - 时态变化
+    - 同一人物的年龄、服装、伤痕不同
+  counter:
+    - signal: 没有时空跳跃，只是在讲述过去
+      route_to_ref: scene.monologue
+directing:
+  - rule: 进出都要有标记：声音先行（J-cut）、图形匹配（现在的手 → 童年的手）、叠化，至少用一个；出回忆时反向用同一种。
+    see_refs: [grammar.trans_j_l_cut, grammar.trans_match_graphic, grammar.trans_dissolve]
+  - rule: 过去时空要可区分：在关键帧阶段定一个统一的视觉差异（色温、饱和度、颗粒、柔光），全段一致；不靠视频模型临场「做旧」。
+    see_refs: [grammar.cont_lighting]
+  - rule: 年龄版本单独定妆：年轻版、老年版各出定妆图并绑定，不让模型把现在的脸临场改年轻。
+    src: [src.user_02, src.mem_robotdog]
+  - rule: 碎片式闪回（插入一两秒的记忆闪现）用快档，通常不配台词；整场回忆用对应的内容模板拆，本卡只管进出。
+  - rule: 每次闪回都要回答一个「现在」的问题，否则删掉。
+  - rule: 想象和梦境也按本类处理，在 notes 里标「非真实时空」。
+beats:
+  - id: B1
+    name: 触发
+    purpose: 现在的一个物件、一句话、一个声音
+    share: [0.10, 0.20]
+  - id: B2
+    name: 进入
+    purpose: 转场标记
+    share: [0.05, 0.15]
+  - id: B3
+    name: 回忆
+    purpose: 过去发生的事
+    share: [0.45, 0.65]
+  - id: B4
+    name: 返回
+    purpose: 同一标记反向，回到现在的反应
+    share: [0.10, 0.20]
+coverage:
+  - id: C1
+    beat: B1
+    shot: 现在：触发物的大特写（旧照片、硬币、伤疤）
+    size_refs: [grammar.size_extreme_closeup]
+    camera_ref: grammar.move_static
+    purpose: 触发
+  - id: C2
+    beat: B2
+    shot: 图形匹配：过去同一姿势、同一位置的对应画面
+    size_refs: [grammar.size_extreme_closeup]
+    camera_ref: grammar.move_static
+    purpose: 进入
+    transition_refs: [grammar.trans_match_graphic, grammar.trans_dissolve]
+  - id: C3
+    beat: B3
+    shot: 过去的建立镜（远景或全景）
+    size_refs: [grammar.size_wide, grammar.size_full]
+    camera_ref: grammar.move_static
+    purpose: 交代过去的时空
+  - id: C4
+    beat: B3
+    shot: 过去的关键动作或面孔（用年轻版定妆）
+    size_refs: [grammar.size_close, grammar.size_extreme_closeup]
+    camera_ref: grammar.move_static
+    purpose: 回忆的核心
+  - id: C5
+    beat: B4
+    shot: 同一个图形匹配反向，回到现在
+    size_refs: [grammar.size_extreme_closeup]
+    camera_ref: grammar.move_static
+    purpose: 返回
+    transition_refs: [grammar.trans_match_graphic]
+  - id: C6
+    beat: B4
+    shot: 现在的反应近景
+    size_refs: [grammar.size_close]
+    camera_ref: grammar.move_static
+    purpose: 回忆改变了什么
+pacing:
+  basis: 经验值；碎片闪现用快档，整段抒情回忆用慢档。满 5 集后校准。
+  tiers:
+    fast:
+      shot_len_s: [1.5, 2.5]
+      shots_per_min: [24, 40]
+      gen_ratio: [1.6, 2.4]
+      use_when: 碎片式的记忆闪现
+    medium:
+      shot_len_s: [2.5, 4.0]
+      shots_per_min: [15, 24]
+      gen_ratio: [1.2, 1.5]
+      use_when: 常规回忆
+    slow:
+      shot_len_s: [4.0, 6.0]
+      shots_per_min: [10, 15]
+      gen_ratio: [1.05, 1.3]
+      use_when: 抒情的整段回忆
+generation:
+  min_gen_s: 4
+  strategy: per_shot
+  rules:
+    - 过去时空的视觉差异写进关键帧 prompt（例如「暖黄、低饱和、柔光、轻微颗粒」），视频阶段不再写。
+    - 年龄版本的 asset_bindings 单独登记，scope 只覆盖回忆镜。
+    - 图形匹配的两张首帧构图对齐：同位置、同大小、同姿势。
+    - 叠化在后期做，两镜各多生成 0.5–1 秒余量。
+  src: [src.user_05]
+camera:
+  default_refs: [grammar.move_static]
+  allowed: []
+  nonsensitive_only:
+    - ref: grammar.move_push_in
+      condition: 回忆里的环境或物件缓慢推近，增加梦感；不推人脸
+  avoid:
+    - what: 在 video_prompt 里写「画面逐渐变成回忆的色调」
+      reason: 色调变化模型执行不稳，同一条前后还会不一致；在关键帧或后期调色里做
+sound:
+  items:
+    - 声音先行进入回忆：过去的声音在现在的画面上先响起（J-cut）。
+    - 回忆里的声音更远、更软（低通、更多混响），和现在区分开。
+    - 返回时，现在的环境声重新进来，切回现实。
+    - 回忆里的台词也走后期配音，口型按对话卡处理。
+  see_refs: [grammar.trans_j_l_cut]
+ai_risks:
+  - id: R1
+    risk: 年轻版和现在的人物对不上，或在回忆里漂移
+    applies_to: {}
+    symptom: 观众认不出是同一个人
+    mitigation: 年轻版单独定妆并绑定，保留 2–3 个跨年龄不变的特征（痣、疤、眼镜框）
+    fallback: 回忆里不露脸，只拍手、背影和物件
+    severity: P1
+    src: [src.sds]
+  - id: R2
+    risk: 回忆的色调在镜内漂移
+    applies_to: {}
+    symptom: 一条里前暖后冷
+    mitigation: 色调定在关键帧，video_prompt 不写光线
+    fallback: 后期统一调色
+    severity: P2
+    see_refs: [grammar.cont_lighting]
+  - id: R3
+    risk: 叠化余量不够
+    applies_to: {}
+    symptom: 叠化时露出起势或穿帮
+    mitigation: 两镜各多生成 0.5–1 秒
+    fallback: 改成硬切加声音桥
+    severity: P2
+  - id: R4
+    risk: 回忆段的画风漂移（例如动漫回忆漂成写实）
+    applies_to: {}
+    symptom: 风格和设定不同
+    mitigation: 在提示词里明写画风；参考图先转成目标画风
+    fallback: 重出
+    severity: P2
+    src: [src.sd20_guide]
+  - id: R5
+    risk: 过去年代的服装、道具出错
+    applies_to: {}
+    symptom: 八十年代的场景里出现智能手机
+    mitigation: 年代道具先定稿，写进关键帧
+    fallback: 重出首帧
+    severity: P2
+example:
+  title: 旧硬币
+  setup: >-
+    写实、中档；万相 3.0、480P、16:9。老人摊开手掌看着一枚旧硬币，回到小时候父亲在河边把它放进他手心的那天。
+    回忆段在关键帧里统一为暖黄、低饱和、轻微颗粒；回忆里不露父亲的脸。
+  gens:
+    - id: G1
+      coverage_ref: scene.flashback#C1
+      duration_s: 5
+      angle: 手掌大特写，俯拍，固定
+      action: 老人掌心一枚磨旧的硬币，静止约 2 秒，然后手指慢慢合拢
+    - id: G2
+      coverage_ref: scene.flashback#C2
+      duration_s: 5
+      angle: 与 G1 同构图的大特写（回忆色调）
+      action: 一只小男孩的手掌，掌心同一枚崭新的硬币，河面的反光在手上晃动
+    - id: G3
+      coverage_ref: scene.flashback#C3
+      duration_s: 6
+      angle: 远景，河边石阶
+      action: 父亲和小男孩蹲在河边石阶上打水漂，石片在水面跳了几下
+    - id: G4
+      coverage_ref: scene.flashback#C4
+      duration_s: 5
+      angle: 手部大特写
+      action: 父亲的大手把硬币放进男孩的手心，再轻轻把男孩的手指合上
+    - id: G5
+      coverage_ref: scene.flashback#C6
+      duration_s: 5
+      angle: 近景，固定
+      action: 老人低头看着合拢的手，眼角的皱纹慢慢舒展开
+  cues:
+    - {id: D01, role: 父亲, text: 攥紧了，别丢了。, delivery: offscreen, lip_sync: offscreen, note: 在 E1 后半先响（J-cut）}
+  shots:
+    - {id: E1, beat: B1, from: G1, in_s: 0.3, len_s: 2.5, cue_ids: [D01]}
+    - {id: E2, beat: B2, from: G2, in_s: 0.3, len_s: 3.0, cue_ids: [D01]}
+    - {id: E3, beat: B3, from: G3, in_s: 0.3, len_s: 5.0}
+    - {id: E4, beat: B3, from: G4, in_s: 0.3, len_s: 4.0}
+    - {id: E5, beat: B4, from: G1, in_s: 2.8, len_s: 2.0, note: 回到现在，手指合拢}
+    - {id: E6, beat: B4, from: G5, in_s: 0.3, len_s: 4.0, mouth: none}
+  totals: 6 镜共 20.5 秒，约 17.6 镜/分，落在中档；生成 5 条共 26 秒，gen_ratio 约 1.27；万相 480P 约 ¥7.8。
+sources: [src.user_02, src.user_05, src.mem_robotdog, src.sd20_guide, src.sds, src.film_grammar]

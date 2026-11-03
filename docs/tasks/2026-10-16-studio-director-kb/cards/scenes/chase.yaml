@@ -1,0 +1,251 @@
+# 导演知识库 · 场景模板卡
+schema: kb.scene/v1
+id: scene.chase
+title: 追逐
+version: 1
+status: draft
+updated: 2026-10-16
+definition: 一方逃、一方追，持续的空间移动和距离变化是张力核心。
+summary: >-
+  距离就是张力：每两三镜交代一次追与逃的距离。方向锁死，掉头先给中性镜。
+  每个回合一个障碍；逃者多用背影和侧面远景，追者用脚步、手、影子这些局部表现威胁。
+tags:
+  pace: [fast, medium]
+  emotion: [tense, fear]
+  cast: [duo, small_group, crowd]
+  realism: [realistic, anime, 3d]
+  setting: [exterior, interior, mixed]
+signals:
+  strong:
+    - 跑、追、逃、甩开、拐进、翻墙
+    - 明确有追的一方和逃的一方
+  weak:
+    - 「身后 / 追兵 / 车灯逼近」
+    - 时间或距离上的压力
+  counter:
+    - signal: 追上之后开始交手
+      route_to_ref: scene.fight
+    - signal: 只有一人在跑，没有追兵
+      route_to_ref: scene.montage
+    - signal: 躲起来不动，等追兵过去
+      route_to_ref: scene.tension
+directing:
+  - rule: 距离就是张力。每两三镜交代一次追与逃的距离，观众要知道是快追上了还是甩开了；高空俯拍最直接。
+    see_refs: [grammar.move_aerial]
+  - rule: 方向锁死。逃者和追者都向画面同一侧（或都向画面深处）跑；掉头前先插一个正对或背对镜头的中性镜。
+    see_refs: [grammar.axis_screen_direction, grammar.axis_reset]
+  - rule: 每个回合一个障碍（摊子、栏杆、墙、车流），越过障碍就是一个节拍。
+  - rule: 逃者多用背影和侧面远景；追者用局部（脚步、手、影子）表现威胁；正脸只给关键反应，而且固定机位。
+    see_refs: [grammar.pos_back, grammar.size_extreme_closeup]
+  - rule: 结局三选一：被追上（转打斗）、甩开（转蓄势）、意外中断。
+beats:
+  - id: B1
+    name: 起跑
+    purpose: 发现、反应、拔腿就跑
+    share: [0.10, 0.20]
+  - id: B2
+    name: 奔逃
+    purpose: 距离变化
+    share: [0.30, 0.45]
+  - id: B3
+    name: 障碍
+    purpose: 越过或撞翻一个障碍
+    share: [0.20, 0.30]
+  - id: B4
+    name: 结局
+    purpose: 追上、甩开或中断
+    share: [0.10, 0.20]
+coverage:
+  - id: C1
+    beat: B1
+    shot: 发现的反应近景，固定机位
+    size_refs: [grammar.size_close]
+    camera_ref: grammar.move_static
+    purpose: 起跑的动机
+  - id: C2
+    beat: B2
+    shot: 侧面平行跟拍的全景
+    size_refs: [grammar.size_full]
+    angle_ref: grammar.pos_profile
+    camera_ref: grammar.move_truck
+    purpose: 看清奔跑的全身动作和方向
+  - id: C3
+    beat: B2
+    shot: 身后跟随的远景
+    size_refs: [grammar.size_wide]
+    angle_ref: grammar.pos_back
+    camera_ref: grammar.move_follow
+    purpose: 速度感，前方的未知
+  - id: C4
+    beat: B2
+    shot: 追者的局部：脚步踏进水洼、伸出的手、投在墙上的影子
+    size_refs: [grammar.size_extreme_closeup]
+    camera_ref: grammar.move_static
+    purpose: 威胁逼近；最安全的快节奏插入
+  - id: C5
+    beat: B3
+    shot: 固定全景，人物从画面一侧冲入、越过障碍、从另一侧冲出
+    size_refs: [grammar.size_full]
+    angle_ref: grammar.angle_eye_level
+    camera_ref: grammar.move_static
+    purpose: 障碍节拍；切点放在出画之后
+  - id: C6
+    beat: B3
+    shot: 高空俯拍，交代追逃距离
+    size_refs: [grammar.size_extreme_wide]
+    angle_ref: grammar.angle_top_down
+    camera_ref: grammar.move_aerial
+    purpose: 距离一目了然
+  - id: C7
+    beat: B4
+    shot: 远景背影：停下、消失或被拦住
+    size_refs: [grammar.size_wide]
+    angle_ref: grammar.pos_back
+    camera_ref: grammar.move_static
+    purpose: 结局
+pacing:
+  basis: 经验值，参照打斗卡的快、中档（侠客行均值 3.3 秒/剪）。满 5 集后校准。
+  src: [src.xiakexing_files]
+  tiers:
+    fast:
+      shot_len_s: [1.5, 2.5]
+      shots_per_min: [24, 40]
+      gen_ratio: [1.4, 2.0]
+      use_when: 追逐高潮、障碍连续出现
+    medium:
+      shot_len_s: [2.5, 3.5]
+      shots_per_min: [17, 24]
+      gen_ratio: [1.25, 1.6]
+      use_when: 常规追逐
+    slow:
+      shot_len_s: [3.5, 5.0]
+      shots_per_min: [12, 17]
+      gen_ratio: [1.1, 1.4]
+      use_when: 起跑前的发现、甩开后的喘息
+generation:
+  min_gen_s: 4
+  strategy: one_take_multi_cut
+  rules:
+    - 跟拍长条每条 5–6 秒，裁成 2 镜，与插入镜交叉。
+    - 人物入画、出画在一条里完成，切点放在出画之后，方便衔接。
+    - 每条只写一个障碍。
+  src: [src.xiakexing_files]
+camera:
+  default_refs: [grammar.move_static]
+  allowed: []
+  nonsensitive_only:
+    - ref: grammar.move_truck
+      condition: 侧面平行跟拍；全景以上
+    - ref: grammar.move_follow
+      condition: 身后跟随；人物背对镜头
+    - ref: grammar.move_aerial
+      condition: 高空跟随或俯冲；人物保持远景大小
+    - ref: grammar.move_handheld
+      condition: 全景以上的混乱奔逃
+    - ref: grammar.move_pan
+      condition: 跟着人物冲过画面
+  avoid:
+    - what: 在逃者正前方后退引导、拍写实正脸
+      reason: 人脸敏感镜头不能运镜；写实正脸在 Seedance 上还会被拒收
+      neg_refs: [neg.move_on_sensitive_shot]
+    - what: 一镜里叠加跟拍、环绕、升降
+      reason: 动作已经很快，镜头再叠加只会糊
+      neg_refs: [neg.stacked_camera_moves]
+sound:
+  items:
+    - 脚步和喘息是主轴，节奏与切点同步。
+    - 追者的脚步和喊声在画外持续；压迫感来自声音距离的变化（音量和混响）。
+    - 障碍处一个 hard 音效（摊子倒塌、栏杆撞响）。
+    - 配乐用持续的打击节奏；结局处抽空。
+  src: [src.user_05]
+ai_risks:
+  - id: R1
+    risk: 滑步、脚不着地
+    applies_to: {}
+    symptom: 人在地面上平移，步伐和位移对不上
+    mitigation: 写步伐、重心和地面后果（水花、泥点、扬尘）
+    fallback: 改成局部脚步特写加远景
+    severity: P1
+    neg_refs: [neg.superpower_physics]
+    src: [src.sds]
+  - id: R2
+    risk: 运动方向跳变
+    applies_to: {}
+    symptom: 上一镜向右跑，下一镜向左跑
+    mitigation: 每镜写清画面方向；掉头前插中性镜
+    fallback: 插一个高空俯拍重新交代
+    severity: P1
+    see_refs: [grammar.axis_screen_direction]
+  - id: R3
+    risk: 追兵人数漂移、路人乱入
+    applies_to: {}
+    symptom: 三个追兵变成五个，背景路人冲进主体动线
+    mitigation: 写「不新增人物」和追兵人数；人群写成背景、不与主角接触
+    fallback: 远景剪影
+    severity: P1
+    src: [src.wan3_guide]
+  - id: R4
+    risk: 快速跟拍下画面糊动
+    applies_to: {}
+    symptom: 动作幅度不清、方向不明
+    mitigation: 写速度、方向、距离：「向画面左侧大步冲出三步」
+    fallback: 改固定机位，让人物冲过画面
+    severity: P2
+    src: [src.sds]
+  - id: R5
+    risk: 写实逃者的正脸首帧被 Seedance 拒收
+    applies_to:
+      providers: [seedance25, seedance20]
+      realism: [realistic]
+    symptom: 提交即被拒，不计费
+    mitigation: 逃者用背影、侧面远景或逆光剪影
+    fallback: 换万相
+    severity: P1
+    neg_refs: [neg.realistic_face_on_seedance]
+    src: [src.mem_xiakexing]
+example:
+  title: 夜市追逐
+  setup: 写实、外景、三人（逃者一、追兵两人）、快到中档；万相 3.0、480P、16:9。逃者和追兵全程向画面左侧跑。
+  gens:
+    - id: G1
+      coverage_ref: scene.chase#C1
+      duration_s: 4
+      angle: 近景，固定
+      action: 摆摊的青年猛然抬头看向画面右侧，随即转身
+    - id: G2
+      coverage_ref: scene.chase#C2
+      duration_s: 6
+      angle: 全景，侧面平行跟拍
+      video_prompt: >-
+        镜头向左横向平移，与青年同速，始终保持全景。青年向画面左侧狂奔，撞开一串挂着的彩灯，彩灯剧烈摇晃；
+        脚下踩起积水。不新增人物。画面中无任何文字、字幕、水印。
+    - id: G3
+      coverage_ref: scene.chase#C4
+      duration_s: 4
+      angle: 地面大特写，固定
+      action: 一只皮鞋从画面右侧重重踏进水洼，水花溅起，向画面左侧离开
+    - id: G4
+      coverage_ref: scene.chase#C5
+      duration_s: 5
+      angle: 全景，固定
+      action: 青年从画面右侧冲入，撞翻炸串摊，竹签和铁盘飞散，他从画面左侧冲出
+    - id: G5
+      coverage_ref: scene.chase#C6
+      duration_s: 6
+      angle: 高空俯拍，无人机缓慢跟随
+      action: 夜市街道上，前面一个小人影，后面两个小人影，距离在缩短
+    - id: G6
+      coverage_ref: scene.chase#C7
+      duration_s: 6
+      angle: 远景，背影，固定
+      action: 青年拐进漆黑的窄巷消失，两个追兵在巷口停下，左右张望
+  shots:
+    - {id: E1, beat: B1, from: G1, in_s: 0.3, len_s: 2.0, mouth: none}
+    - {id: E2, beat: B2, from: G2, in_s: 0.3, len_s: 2.5}
+    - {id: E3, beat: B2, from: G3, in_s: 0.3, len_s: 1.8}
+    - {id: E4, beat: B2, from: G2, in_s: 3.0, len_s: 2.5}
+    - {id: E5, beat: B3, from: G4, in_s: 0.3, len_s: 3.5, note: 摊子倒塌 hard 同步音效}
+    - {id: E6, beat: B3, from: G5, in_s: 0.5, len_s: 3.0}
+    - {id: E7, beat: B4, from: G6, in_s: 0.3, len_s: 4.5}
+  totals: 7 镜共 19.8 秒，约 21.2 镜/分，落在中档；生成 6 条共 31 秒，gen_ratio 约 1.57；万相 480P 约 ¥9.3。
+sources: [src.user_05, src.xiakexing_files, src.mem_xiakexing, src.wan3_guide, src.sds, src.film_grammar]

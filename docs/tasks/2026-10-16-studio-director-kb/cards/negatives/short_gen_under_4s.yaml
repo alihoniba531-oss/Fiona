@@ -1,0 +1,19 @@
+# 导演知识库 · 反例卡
+schema: kb.neg/v1
+id: neg.short_gen_under_4s
+title: 生成时长不到 4 秒
+version: 1
+status: draft
+updated: 2026-10-16
+category: production
+summary: 成片里 2 秒的镜头也要提交 4 秒再裁。开头的起势要裁掉，短生成没有余量。
+wrong: gen.duration 写 2（万相允许 2 秒）。
+why: 本工作室统一口径：最少生成 4 秒，覆盖 trim_start 加镜头帧长（02）。
+right: gen.duration 写 4，trim_start 0.3，按批准的帧数裁出 2 秒。
+applies_to: {}
+level: warning
+check:
+  kind: min_gen_duration
+  min: 4
+see_refs: [grammar.trans_hard_cut]
+sources: [src.user_02, src.mcp_models]

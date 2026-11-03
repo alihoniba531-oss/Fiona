@@ -1,0 +1,192 @@
+# 导演知识库 · 场景模板卡
+schema: kb.scene/v1
+id: scene.cliffhanger
+title: 结尾悬念
+version: 1
+status: draft
+updated: 2026-10-16
+position_type: position
+definition: 集尾 5–15 秒留下未解问题或迫近的危机，停在答案之前。
+summary: >-
+  停在答案之前一刻：看到有人来了，看不到是谁；看到信封，看不到内容。最后一镜要「问」，不要「答」，然后切黑。
+  最后一个声音比最后一个画面更重要。下一集的开场钩子从这里接。
+tags:
+  pace: [medium, fast, slow]
+  emotion: [tense, mystery, fear, awe]
+  cast: [none, solo, duo, small_group, crowd]
+  realism: [realistic, anime, 3d]
+  setting: [interior, exterior, mixed]
+signals:
+  strong:
+    - 本集的最后一场
+    - 分集方案「终点 / 钩子」一列
+  weak:
+    - 「就在这时 / 门开了 / 电话响了」
+    - 突然出现的人、物、消息
+  counter:
+    - signal: 问题在本集之内就被解答了
+      route_to_ref: scene.reveal
+directing:
+  - rule: 停在答案之前：观众看到「有人来了」，看不到是谁；看到信封，看不到内容。
+    see_refs: [neg.reveal_in_first_frame]
+  - rule: 最后一镜问问题：一个反应（脸僵住）或一个异常（门缝里的光），然后切黑。
+    see_refs: [grammar.trans_fade_black]
+  - rule: 最后一个声音最重要：一声门铃、半截话、一次骤停；切黑后可以留 0.5–1 秒的声音尾巴。
+  - rule: 和下一集对接：下一集的开场钩子从这里接，用同一资产、同一机位。
+    src: [src.user_02]
+  - rule: 片名、下集预告这类字卡放在切黑之后，post_only（蓝海囚笼的片名卡就在片尾）。
+    src: [src.mem_lanhai]
+beats:
+  - id: B1
+    name: 松弛
+    purpose: 角色以为一切结束了，制造落差
+    share: [0.20, 0.35]
+  - id: B2
+    name: 打断
+    purpose: 新信息出现
+    share: [0.25, 0.40]
+  - id: B3
+    name: 悬置
+    purpose: 反应，然后切黑
+    share: [0.25, 0.40]
+coverage:
+  - id: C1
+    beat: B1
+    shot: 角色以为一切结束了的中景
+    size_refs: [grammar.size_medium]
+    camera_ref: grammar.move_static
+    purpose: 松弛
+  - id: C2
+    beat: B2
+    shot: 新信息的局部：亮起的手机光、门缝下的影子、信封的一角
+    size_refs: [grammar.size_extreme_closeup]
+    camera_ref: grammar.move_static
+    purpose: 打断
+  - id: C3
+    beat: B3
+    shot: 反应近景，僵住，固定机位
+    size_refs: [grammar.size_close]
+    camera_ref: grammar.move_static
+    purpose: 把问题留给观众
+  - id: C4
+    beat: B3
+    shot: 切黑，片尾字卡叠在最后一镜的虚化尾帧上（post_only）
+    size_refs: [grammar.size_close]
+    camera_ref: grammar.move_static
+    purpose: 收束本集
+    optional: true
+    transition_refs: [grammar.trans_fade_black]
+pacing:
+  basis: 经验值；危机迫近用快档，静默的反应停留用慢档。满 5 集后校准。
+  tiers:
+    fast:
+      shot_len_s: [1.5, 2.5]
+      shots_per_min: [24, 40]
+      gen_ratio: [1.5, 2.0]
+      use_when: 危机迫近
+    medium:
+      shot_len_s: [2.5, 4.0]
+      shots_per_min: [15, 24]
+      gen_ratio: [1.15, 1.5]
+      use_when: 常规结尾悬念
+    slow:
+      shot_len_s: [4.0, 6.0]
+      shots_per_min: [10, 15]
+      gen_ratio: [1.05, 1.3]
+      use_when: 静默的反应停留
+generation:
+  min_gen_s: 4
+  strategy: per_shot
+  rules:
+    - 打断的信息（屏幕内容、信件文字）一律后期合成；屏幕的亮光可以生成，文字不生成。
+    - 反应镜生成 5–6 秒，最后一刻停在最强的表情上。
+    - 片尾字卡 post_only，用最后一镜尾帧的虚化画面做底（P01 S12 的做法）。
+  src: [src.p01_audit, src.user_02]
+camera:
+  default_refs: [grammar.move_static]
+  allowed: []
+  nonsensitive_only:
+    - ref: grammar.move_push_in
+      condition: 缓慢推向门、手机这类物件，制造逼近
+  avoid:
+    - what: 最后一镜拉远「交代一切」
+      reason: 答案被画出来了，悬念就没了
+sound:
+  items:
+    - 松弛段的声音要暖、要满，让落差更大。
+    - 打断用一个具体的声音：手机震动、门铃、脚步停住。
+    - 切黑那一刻声音骤停，或者留一个 0.5–1 秒的尾音。
+    - 不要用配乐「解释」悬念。
+  see_refs: [grammar.trans_fade_black, grammar.cont_sound_state]
+ai_risks:
+  - id: R1
+    risk: 手机屏幕、信件上的文字是乱码
+    applies_to: {}
+    symptom: 屏幕上的字错乱
+    mitigation: 画面里屏幕只是一片亮光，内容后期合成
+    fallback: 屏幕朝下，只拍透出的光
+    severity: P1
+    neg_refs: [neg.text_in_generated_frame]
+  - id: R2
+    risk: 首帧画出了答案（来人的脸、信的内容）
+    applies_to: {}
+    symptom: 悬念被提前揭开
+    mitigation: 首帧只放局部和反应
+    fallback: 重出首帧
+    severity: P1
+    neg_refs: [neg.reveal_in_first_frame]
+  - id: R3
+    risk: 反应镜冻住
+    applies_to: {}
+    symptom: 人物一动不动
+    mitigation: 写呼吸停住、瞳孔收缩、手指收紧这类微变化
+    fallback: 缩短
+    severity: P2
+    src: [src.sds]
+  - id: R4
+    risk: 写实正脸首帧被 Seedance 肖像闸拒收
+    applies_to:
+      providers: [seedance25, seedance20]
+      realism: [realistic]
+    symptom: 提交即被拒，不计费
+    mitigation: 写实反应镜默认走万相
+    fallback: 换万相
+    severity: P1
+    neg_refs: [neg.realistic_face_on_seedance]
+    src: [src.mem_xiakexing]
+example:
+  title: 未知号码
+  setup: >-
+    写实、室内夜、一人、中档；万相 3.0、480P、16:9。女人以为风波已经过去，窝在沙发里看电视；
+    手机亮起，未知号码发来一张她小时候的照片（照片内容后期合成）。
+  gens:
+    - id: G1
+      coverage_ref: scene.cliffhanger#C1
+      duration_s: 6
+      angle: 中景，固定
+      action: 深夜的客厅，女人窝在沙发里，肩膀放松，捧着热水杯，电视的光在她脸上闪动
+    - id: G2
+      coverage_ref: scene.cliffhanger#C2
+      duration_s: 4
+      angle: 茶几大特写，固定
+      action: 扣在茶几上的手机震动，边缘透出亮光，手机被震得慢慢转了一个小角度
+    - id: G3
+      coverage_ref: scene.cliffhanger#C2
+      duration_s: 4
+      angle: 手机大特写，固定
+      video_prompt: >-
+        镜头固定不动。女人的手把手机翻过来，屏幕是一片均匀的白光，看不到任何内容；手指停在屏幕边缘。
+        画面中无任何文字、字幕、水印。
+    - id: G4
+      coverage_ref: scene.cliffhanger#C3
+      duration_s: 6
+      angle: 近景，固定
+      action: 女人的脸被屏幕的光从下方照亮，表情一点点僵住，呼吸停住，手指慢慢收紧
+  shots:
+    - {id: E1, beat: B1, from: G1, in_s: 0.3, len_s: 4.0, mouth: none}
+    - {id: E2, beat: B2, from: G2, in_s: 0.3, len_s: 3.0}
+    - {id: E3, beat: B2, from: G3, in_s: 0.3, len_s: 2.5, note: 屏幕内容后期合成}
+    - {id: E4, beat: B3, from: G4, in_s: 0.3, len_s: 5.0, mouth: none}
+    - {id: E5, beat: B3, from: post_only, len_s: 2.5, note: 切黑，片尾字卡}
+  totals: 5 镜共 17 秒（含 2.5 秒后期镜），约 17.6 镜/分，落在中档；生成 4 条共 20 秒，gen_ratio 约 1.18；万相 480P 约 ¥6.0。
+sources: [src.user_02, src.p01_audit, src.mem_lanhai, src.mem_xiakexing, src.sds, src.film_grammar]

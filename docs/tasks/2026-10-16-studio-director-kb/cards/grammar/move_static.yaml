@@ -1,0 +1,28 @@
+# 导演知识库 · 镜头语法卡
+schema: kb.grammar/v1
+id: grammar.move_static
+title: 固定机位
+version: 1
+status: draft
+updated: 2026-10-16
+family: movement
+aliases: [固定镜头, 静止机位, 机位不变, static shot, locked-off]
+summary: 机位、角度、焦距都不变；人脸、结构、材质敏感的镜头一律用它。P01 的三次返工都是改回固定机位才解决的。
+definition: 摄影机在整个镜头里完全不动，画面变化只来自主体和环境。
+camerabench: [static, no-motion, no-shaking]
+sensitive_ok: true
+narrative_use:
+  - 敏感镜头的唯一选择：可读人脸、精密结构、易变材质
+  - 冷静、客观的观察
+  - 让表演和动作本身承担节奏
+prompt:
+  write:
+    - 镜头固定不动，机位不变（万相官方写法：固定镜头，摄影机静止，机位不变）
+    - 把「镜头固定不动」放在 video_prompt 开头，P01 修正版都这样写
+  avoid:
+    - 只在末尾写一句「固定镜头」，前面又写了「镜头跟随」，两条指令互相矛盾
+risks:
+  - risk: 长时间固定镜头里画面冻住或循环
+    mitigation: 每 3–5 秒安排一个可见变化（呼吸、手指、热气、雨丝）
+see_refs: [grammar.move_shake_impact]
+sources: [src.user_02, src.p01_audit, src.mem_preloq, src.wan3_guide, src.camerabench, src.sds]

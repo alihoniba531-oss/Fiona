@@ -1,0 +1,28 @@
+# 导演知识库 · 反例卡
+schema: kb.neg/v1
+id: neg.music_leaks_native_audio
+title: 原生音频混进了配乐
+version: 1
+status: draft
+updated: 2026-10-16
+category: audio
+summary: 开 Seedance 原生音频又只写一次「无配乐」，特效音仍可能被生成成配乐。把音乐类同义词写全，首尾各写一遍。
+wrong: 声音：刀剑声。无配乐。
+why: Seedance 2.5 官方 FAQ：模型会用别的说法绕过单一的约束词。
+right: 开头写「音频只保留拟音与环境声，不产出任何音乐类音轨」；结尾再写「无音乐、无背景音乐、无 BGM、无配乐、无器乐、无旋律、无人声、无台词」。
+applies_to:
+  providers: [seedance25]
+evidence:
+  - case: 侠客行
+    detail: 写「只要拟音与环境声……无配乐、无人声、无台词」，8 条实测都没有混进配乐
+    src: [src.xiakexing_files]
+level: info
+check:
+  kind: regex_require
+  when:
+    providers: [seedance25]
+    gen_audio: true
+  fields: [video_prompt]
+  patterns: ['无(配乐|背景音乐|BGM|bgm|音乐)', '不要(配乐|背景音乐|BGM|bgm|音乐)']
+see_refs: [grammar.cont_sound_state]
+sources: [src.sd25_guide, src.xiakexing_files]

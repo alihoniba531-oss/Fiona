@@ -1,0 +1,21 @@
+# 导演知识库 · 镜头语法卡
+schema: kb.grammar/v1
+id: grammar.trans_match_graphic
+title: 图形匹配切
+version: 1
+status: draft
+updated: 2026-10-16
+family: transition
+aliases: [形状匹配, graphic match]
+summary: 用形状、颜色或构图相似的两个画面衔接两个时空；靠关键帧构图对齐，不靠视频模型。
+definition: 上一镜结束的画面和下一镜开始的画面在形状、位置或颜色上相似。
+narrative_use:
+  - 时空转换：圆月切到圆盘、旋转的车轮切到钟表
+  - 回忆进出：现在的手切到童年的手
+prompt:
+  write:
+    - 在两张首帧（或上一镜尾帧与下一镜首帧）里把匹配物放在画面同一位置、同样大小
+  avoid:
+    - 只在 video_prompt 里写「匹配剪辑」：视频模型不知道下一镜是什么
+see_refs: [grammar.trans_dissolve]
+sources: [src.film_grammar, src.avd, src.sds]

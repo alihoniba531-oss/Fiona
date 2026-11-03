@@ -1,0 +1,17 @@
+# 导演知识库 · 反例卡
+schema: kb.neg/v1
+id: neg.reveal_in_first_frame
+title: 揭示镜的首帧画出了秘密
+version: 1
+status: draft
+updated: 2026-10-16
+category: production
+summary: 图生视频的首帧定死了画面内容。揭示镜的首帧如果已经画出要揭示的东西，悬念在第一帧就没了。
+wrong: 揭示镜的首帧：掀开的白布下，箱子里的红色雨靴清清楚楚。video_prompt：女孩慢慢掀开白布。
+why: 首帧就是成片的第一帧，观众先看到答案，再看到「揭开」。
+right: 首帧只有盖着白布的箱子和手；揭开的一瞬硬切到揭示物的独立首帧。或者用首尾帧模式：首帧有遮挡，尾帧是揭示后的画面。
+applies_to: {}
+level: info
+see_refs: [grammar.trans_hard_cut, grammar.trans_eyeline_match]
+notes: 语义问题，正则查不出来，只作注入材料；由导演模型在揭示、悬念类场景里自查。
+sources: [src.user_05, src.mcp_models]

@@ -1,0 +1,22 @@
+# 导演知识库 · 镜头语法卡
+schema: kb.grammar/v1
+id: grammar.dof_shallow
+title: 浅景深
+version: 1
+status: draft
+updated: 2026-10-16
+family: lens
+aliases: [背景虚化, 浅焦, shallow depth of field, bokeh]
+summary: 只有主体清楚、前后都虚；隔离人物，过肩镜里让前景肩膀虚化。写清焦点落在谁身上。
+definition: 清晰范围很窄，焦点外的前景和背景都模糊。
+narrative_use:
+  - 把人物从环境里隔离出来
+  - 过肩镜：前景肩膀虚化，焦点在对面的脸
+  - 引导视线到一个小物件
+prompt:
+  write:
+    - 浅景深，前景 [A] 的肩膀虚化，焦点在 [B] 的脸上
+  avoid:
+    - 只写「浅景深」不写焦点：模型可能把焦点放错人
+see_refs: [grammar.pos_over_shoulder, grammar.focus_rack, grammar.dof_deep]
+sources: [src.film_grammar, src.sds]

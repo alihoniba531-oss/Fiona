@@ -1,0 +1,27 @@
+# 导演知识库 · 反例卡
+schema: kb.neg/v1
+id: neg.move_on_sensitive_shot
+title: 敏感镜头用了运镜
+version: 1
+status: draft
+updated: 2026-10-16
+category: camera
+summary: 人脸、结构、材质敏感的镜头写了推、拉、摇、移、环绕、手持；模型会在运动中重画脸、零件或材质。一律改固定机位。
+wrong: 近景，写实人物正脸。镜头缓慢推近，手持微晃，营造紧张感。
+why: 运镜让模型在运动过程中重新生成画面内容；可读人脸会漂移，精密结构会穿插，材质会变样。统一口径：敏感镜头一律固定机位。
+right: 镜头固定不动，机位不变。[人物] 的下颌慢慢绷紧，喉结滚动一下。——紧张感交给表演和剪辑（景别跳切），不交给运镜。
+applies_to:
+  sensitivity: [face, structure, material]
+evidence:
+  - case: P01 S05、S10、S11
+    detail: 环绕让丝杠穿进滚柱；推近上摇露出 AI 人物正脸；下移让金属屑变成木刨花。三镜都改固定机位后通过
+    src: [src.p01_audit]
+  - case: 侠客行 K07
+    detail: 贴近环绕的双人脸特写首帧被肖像闸拒收，改俯拍、头发遮脸后通过
+    src: [src.mem_xiakexing]
+level: warning
+check:
+  kind: sensitive_camera
+  static_patterns: ['固定', '静止', '机位不变', '不动']
+see_refs: [grammar.move_static]
+sources: [src.p01_audit, src.mem_xiakexing, src.user_02]

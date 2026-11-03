@@ -1,0 +1,243 @@
+# 导演知识库 · 场景模板卡
+schema: kb.scene/v1
+id: scene.monologue
+title: 情感独白
+version: 1
+status: draft
+updated: 2026-10-16
+definition: 单人承载情绪：内心独白、倾诉、哭诉、自语，表演和留白是主体。
+summary: >-
+  内心独白时嘴唇闭合。情绪从手传到肩再到脸，脸留到最后；可以一人配空镜，让环境代笔，也就少了几张容易漂移的 AI 脸。
+  情绪顶点给一个固定长镜，按 2 秒一段写微表情递进。
+tags:
+  pace: [slow, medium]
+  emotion: [sad, warm, calm, tense, joy]
+  cast: [solo]
+  realism: [realistic, anime, 3d]
+  setting: [interior, exterior, mixed]
+signals:
+  strong:
+    - 单人长台词或内心 OS
+    - 情绪词密集、动作少
+  weak:
+    - 「独自 / 默默 / 想起 / 喃喃」
+  counter:
+    - signal: 另一个人有回应
+      route_to_ref: scene.dialogue
+    - signal: 画面转入过去的时空
+      route_to_ref: scene.flashback
+    - signal: 旁白在讲知识、讲原理
+      route_to_ref: scene.explainer
+directing:
+  - rule: 内心独白和自言自语分开处理。内心独白（inner）嘴唇闭合；自言自语（onscreen）用侧后、低头或远景让嘴不可读。
+    see_refs: [neg.voiceover_mouth_moves]
+    src: [src.user_05]
+  - rule: 身体传导：情绪从手到肩再到脸，不直接从脸开始。先拍手（攥紧、松开），最后才给脸。
+    src: [src.avd]
+  - rule: 一人配空镜：让环境代笔（窗外的雨、空椅子、熄灭的灯）。脸镜头越少，AI 人脸漂移的机会越少。
+  - rule: >-
+      情绪顶点给一个 6–8 秒的固定长镜，每 2 秒一段写微表情的递进（借 seedance-shot-design 微表情模板的结构；
+      它默认手持，本库按统一口径改成固定机位）。
+    src: [src.sds]
+  - rule: 镜子和窗户：看镜子是和自己对话，看窗外是向往远方。
+    src: [src.avd]
+beats:
+  - id: B1
+    name: 进入
+    purpose: 环境和人物此刻的状态
+    share: [0.15, 0.25]
+  - id: B2
+    name: 展开
+    purpose: 情绪升起，台词的主体
+    share: [0.35, 0.50]
+  - id: B3
+    name: 顶点
+    purpose: 崩溃、释然或下定决心
+    share: [0.15, 0.25]
+  - id: B4
+    name: 余韵
+    purpose: 情绪落地
+    share: [0.10, 0.20]
+coverage:
+  - id: C1
+    beat: B1
+    shot: 远景或全景的背影、侧影，人物在环境里很小
+    size_refs: [grammar.size_wide, grammar.size_full]
+    angle_ref: grammar.pos_back
+    camera_ref: grammar.move_static
+    purpose: 孤独和处境
+  - id: C2
+    beat: B2
+    shot: 手部大特写：攥紧、摩挲一件旧物
+    size_refs: [grammar.size_extreme_closeup]
+    camera_ref: grammar.move_static
+    purpose: 情绪先从手出来
+  - id: C3
+    beat: B2
+    shot: 空镜：环境代笔（空椅子、窗外的雨、空酒罐）
+    size_refs: [grammar.size_closeup, grammar.size_extreme_closeup]
+    camera_ref: grammar.move_static
+    purpose: 台词落在环境上
+  - id: C4
+    beat: B3
+    shot: 近景固定长镜，微表情递进
+    size_refs: [grammar.size_close]
+    angle_ref: grammar.angle_eye_level
+    camera_ref: grammar.move_static
+    purpose: 顶点
+  - id: C5
+    beat: B3
+    shot: 镜子或窗玻璃里的倒影
+    size_refs: [grammar.size_medium_close]
+    camera_ref: grammar.move_static
+    purpose: 和自己对话
+    optional: true
+  - id: C6
+    beat: B4
+    shot: 拉开到远景或大远景
+    size_refs: [grammar.size_wide, grammar.size_extreme_wide]
+    camera_ref: grammar.move_static
+    purpose: 余韵、留白
+pacing:
+  basis: 经验值；独白以慢档为主，激动的倾诉才进快档。满 5 集后校准。
+  tiers:
+    fast:
+      shot_len_s: [2.5, 3.5]
+      shots_per_min: [17, 24]
+      gen_ratio: [1.2, 1.5]
+      use_when: 激动的倾诉
+    medium:
+      shot_len_s: [3.5, 5.5]
+      shots_per_min: [11, 17]
+      gen_ratio: [1.1, 1.35]
+      use_when: 常规独白
+    slow:
+      shot_len_s: [5.5, 9.0]
+      shots_per_min: [7, 11]
+      gen_ratio: [1.05, 1.2]
+      use_when: 情绪顶点的长镜
+generation:
+  min_gen_s: 4
+  strategy: per_shot
+  rules:
+    - 情绪顶点的长镜生成 8–10 秒，按 2 秒一段写微表情递进，最高写到克制的强度。
+    - 空镜可以复用本场环境建立的素材。
+    - 内心独白镜的 video_prompt 必须写「嘴唇闭合、不说话」。
+  src: [src.sds, src.user_05]
+camera:
+  default_refs: [grammar.move_static]
+  allowed: []
+  nonsensitive_only:
+    - ref: grammar.move_pull_out
+      condition: 余韵时，背影或远景缓慢拉远；画外有什么要事先写清
+    - ref: grammar.move_push_in
+      condition: 背影或空镜缓慢推近
+  avoid:
+    - what: 正脸长镜里的推近或手持
+      reason: 人脸敏感镜头一律固定机位
+      neg_refs: [neg.move_on_sensitive_shot]
+sound:
+  items:
+    - 内心独白要近、干、贴耳（混响少），和环境声分层；自言自语带一点空间混响。
+    - 环境床保持很低但不断。
+    - 情绪顶点之后留 2–3 秒沉默。
+    - 配乐只在余韵进入。
+  src: [src.user_05, src.avd]
+ai_risks:
+  - id: R1
+    risk: 内心独白时角色的嘴在动
+    applies_to: {}
+    symptom: 画外音时角色像在说话
+    mitigation: 写「嘴唇闭合、不说话」；能用背影就用背影
+    fallback: 改成空镜或手部特写
+    severity: P1
+    neg_refs: [neg.voiceover_mouth_moves]
+  - id: R2
+    risk: 长镜冻住或循环
+    applies_to: {}
+    symptom: 8 秒里人物一动不动，或者同一个表情来回
+    mitigation: 每 2 秒写一个微表情变化
+    fallback: 缩短
+    severity: P2
+    src: [src.sds]
+  - id: R3
+    risk: 微表情过度，五官扭曲
+    applies_to: {}
+    symptom: 哭成一张怪脸
+    mitigation: 强度最高写到克制的一级（眼眶泛红、下巴轻颤），不写「崩溃大哭」
+    fallback: 改成背影或手部
+    severity: P1
+    neg_refs: [neg.abstract_emotion]
+  - id: R4
+    risk: 写实人脸在长镜里漂移
+    applies_to:
+      realism: [realistic]
+    symptom: 长镜后半段脸变了
+    mitigation: 固定机位；关键帧从定妆图派生；长镜不超过 10 秒
+    fallback: 缩短，或拆成两条
+    severity: P1
+  - id: R5
+    risk: Seedance 让人物眼睛发光
+    applies_to:
+      providers: [seedance25]
+    symptom: 情绪浓时瞳孔发光
+    mitigation: 写「正常人眼」，改用常规的情绪描述
+    fallback: 重出
+    severity: P2
+    neg_refs: [neg.emotion_glow_eyes]
+    src: [src.sd25_guide]
+  - id: R6
+    risk: 写实正脸首帧被 Seedance 肖像闸拒收
+    applies_to:
+      providers: [seedance25, seedance20]
+      realism: [realistic]
+    symptom: 提交即被拒，不计费
+    mitigation: 写实独白默认走万相；Seedance 只用背影、剪影或动漫画风
+    fallback: 换万相
+    severity: P1
+    neg_refs: [neg.realistic_face_on_seedance]
+    src: [src.mem_xiakexing]
+example:
+  title: 天台独白
+  setup: 写实、外景夜、一人、中档；万相 3.0、480P、16:9。男人一个人坐在天台上，内心独白：又一次没回家看母亲。
+  gens:
+    - id: G1
+      coverage_ref: scene.monologue#C1
+      duration_s: 6
+      angle: 远景，背影，固定
+      action: 城市夜景前，男人坐在天台边的水泥台上，背影很小，远处的灯火闪烁
+    - id: G2
+      coverage_ref: scene.monologue#C2
+      duration_s: 5
+      angle: 手部大特写，固定
+      action: 男人的手指摩挲着一张旧车票的边角，慢慢把它攥进掌心
+    - id: G3
+      coverage_ref: scene.monologue#C3
+      duration_s: 5
+      angle: 空镜特写，固定
+      action: 他身边的空啤酒罐被风吹得轻轻滚了半圈
+    - id: G4
+      coverage_ref: scene.monologue#C4
+      duration_s: 8
+      angle: 近景，侧前方，固定
+      video_prompt: >-
+        保持 CHAR_MAN 的身份；镜头固定不动。0–2 秒，男人的目光平静地望向画面左侧远处；2–4 秒，眼眶慢慢泛红；
+        4–6 秒，下巴轻轻发颤，深吸一口气；6–8 秒，闭上眼又睁开，嘴角很淡地扬了一下。嘴唇闭合、不说话。
+        画面中无任何文字、字幕、水印。
+    - id: G5
+      coverage_ref: scene.monologue#C6
+      duration_s: 6
+      angle: 大远景，固定
+      action: 天台和整座城市，人物成了一个小点，城市灯火一片一片亮着
+  cues:
+    - {id: N01, role: 男人, text: 我跟自己说过，今年一定回去看你。, delivery: inner, lip_sync: none}
+    - {id: N02, role: 男人, text: 车票买了三次，又退了三次。, delivery: inner, lip_sync: none}
+    - {id: N03, role: 男人, text: 明年吧……明年一定。, delivery: inner, lip_sync: none}
+  shots:
+    - {id: E1, beat: B1, from: G1, in_s: 0.3, len_s: 5.0, cue_ids: [N01], mouth: none}
+    - {id: E2, beat: B2, from: G2, in_s: 0.3, len_s: 4.0, cue_ids: [N02]}
+    - {id: E3, beat: B2, from: G3, in_s: 0.3, len_s: 4.0, cue_ids: [N02]}
+    - {id: E4, beat: B3, from: G4, in_s: 0.3, len_s: 7.5, cue_ids: [N03], mouth: none}
+    - {id: E5, beat: B4, from: G5, in_s: 0.3, len_s: 5.5}
+  totals: 5 镜共 26 秒，约 11.5 镜/分，落在中档；生成 5 条共 30 秒，gen_ratio 约 1.15；万相 480P 约 ¥9.0。
+sources: [src.user_05, src.mem_xiakexing, src.sd25_guide, src.sds, src.avd, src.film_grammar]

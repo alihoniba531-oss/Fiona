@@ -1,0 +1,29 @@
+# 导演知识库 · 镜头语法卡
+schema: kb.grammar/v1
+id: grammar.size_medium_close
+title: 中近景
+version: 1
+status: draft
+updated: 2026-10-16
+family: shot_size
+order: 6
+aliases: [胸上景, medium close-up, MCU]
+summary: 胸部以上；对话单人镜、过肩镜的常用尺寸，情绪从这里开始被看见。属于人脸敏感镜头。
+definition: 画面下缘在胸部，脸部表情清楚可读，背景开始虚化。
+framing: 胸部以上
+mouth_readable: high
+narrative_use:
+  - 对话的单人镜和过肩镜
+  - 情绪开始被看见的阶段
+  - 把一个人从环境里隔离出来
+prompt:
+  write:
+    - 中近景，胸部以上，[人物] 位于画面 [左 / 右] 三分之一处，面朝画面 [右 / 左]，视线落在 [对象]
+  avoid:
+    - 只写景别、不写朝向和视线：对话里两人会各看空气
+risks:
+  - risk: 可读的人脸让口型和配音对不上
+    mitigation: 说话时改成过肩背面或听者镜；需要真口型时按 P0 单独处理
+    neg_refs: [neg.voiceover_mouth_moves]
+see_refs: [grammar.pos_over_shoulder, grammar.axis_eyeline, grammar.move_static]
+sources: [src.film_grammar, src.sds, src.user_02]

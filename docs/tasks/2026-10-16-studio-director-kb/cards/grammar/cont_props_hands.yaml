@@ -1,0 +1,23 @@
+# 导演知识库 · 镜头语法卡
+schema: kb.grammar/v1
+id: grammar.cont_props_hands
+title: 道具与持手
+version: 1
+status: draft
+updated: 2026-10-16
+family: continuity
+aliases: [道具连续, 持手, 道具归属, prop continuity]
+summary: 道具在谁手里、哪只手、什么状态（开或合、满或空），跨镜一致；多人镜用 role_ledger 固定归属。
+definition: 道具的持有人、持手、朝向和状态在连续镜头里保持一致，变化必须在画面里发生。
+narrative_use:
+  - 交接道具的戏：交出和接住都要看得见
+  - 打斗：兵器始终在同一只手
+  - 关键物件状态的变化本身就是剧情
+prompt:
+  write:
+    - 「[道具] 由 [角色] 右手持有，刀刃朝下」；交接写成「[A] 右手递出 → [B] 左手接住」
+    - 多人镜在 role_ledger 写 prop_binding_ids（05 规定）
+  avoid:
+    - 「他把道具交给对方」：没有持有人、朝向和状态
+see_refs: [grammar.cont_in_out_state]
+sources: [src.user_05, src.prop_asset]

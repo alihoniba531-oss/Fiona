@@ -1,0 +1,31 @@
+# 导演知识库 · 镜头语法卡
+schema: kb.grammar/v1
+id: grammar.move_aerial
+title: 高空俯拍（无人机视角）
+version: 1
+status: draft
+updated: 2026-10-16
+family: movement
+aliases: [航拍, 无人机视角, 航拍视角, aerial, drone shot]
+summary: 镜头在高空飞行、俯冲或拉升；立空间、表现速度，人物小所以最容易过肖像闸。只写中文白话，不裸写 Aerial。
+definition: 模拟无人机在空中飞行拍摄：俯冲下降、拉升、高空跟随或高空盘旋。
+camerabench: [aerial-tracking, pedestal-up, pedestal-down]
+sensitive_ok: false
+narrative_use:
+  - 开场立地形与世界
+  - 打斗、追逐的空间全貌与速度
+  - 收尾急速拉升，人物变成小点
+prompt:
+  write:
+    - 航拍视角，无人机从高空快速下降并向两人推近（侠客行 S01）
+    - 无人机急速拉升并向后退，画面迅速变成高空大全景（侠客行 S08）
+  avoid:
+    - 裸写 Aerial：写「航拍视角」或「无人机从高空……」
+    - 下降到近景还露脸：一旦进入近景就不再是安全镜头
+provider_notes:
+  - providers: [seedance25]
+    realism: [realistic]
+    note: 远景、航拍镜头里的写实人物能过肖像闸（侠客行实测）
+    src: [src.mem_xiakexing]
+see_refs: [grammar.size_extreme_wide, grammar.angle_top_down, grammar.move_crane_arm]
+sources: [src.camerabench, src.sds, src.sd25_guide, src.xiakexing_files, src.mem_xiakexing, src.user_02]

@@ -1,0 +1,23 @@
+# 导演知识库 · 镜头语法卡
+schema: kb.grammar/v1
+id: grammar.trans_match_action
+title: 动作匹配切
+version: 1
+status: draft
+updated: 2026-10-16
+family: transition
+aliases: [动作剪辑, 匹配剪辑, match on action]
+summary: 一个动作跨两镜完成，切点落在动作中途；打斗、动作场景的骨架。要写清匹配的对象和动作点。
+definition: 上一镜在动作进行中切出，下一镜从同一动作的延续处切入，观众感觉动作连贯。
+narrative_use:
+  - 打斗：举刀在上一镜，落刀在下一镜
+  - 换景别不打断动作：全景推门、特写门把转动
+  - 省略过程：扔出在上一镜，接住在下一镜
+prompt:
+  write:
+    - 清单里写「动作匹配切：上一镜出点在 [动作] 的 [阶段]，下一镜入点从同一动作的 [阶段] 开始」（02 规定要指出匹配对象或动作点）
+    - 下一镜的首帧按上一镜尾帧的姿态出图
+  avoid:
+    - 两镜的动作方向相反：观众会觉得跳
+see_refs: [grammar.cont_in_out_state, grammar.axis_screen_direction]
+sources: [src.film_grammar, src.avd, src.user_02]

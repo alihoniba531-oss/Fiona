@@ -1,0 +1,21 @@
+# 导演知识库 · 镜头语法卡
+schema: kb.grammar/v1
+id: grammar.dof_deep
+title: 深焦
+version: 1
+status: draft
+updated: 2026-10-16
+family: lens
+aliases: [全景深, 大景深, deep focus]
+summary: 前中后景都清楚；群戏里多层信息同时可读，背景里藏着要被发现的东西。
+definition: 清晰范围很大，从前景到远景都对焦。
+narrative_use:
+  - 群戏：前景说话、背景有人反应
+  - 揭示：观众先于角色看到背景里的东西
+  - 环境建立
+prompt:
+  write:
+    - 深焦，前景 [A]、中景 [B]、背景 [C] 都清晰可见
+  avoid: []
+see_refs: [grammar.dof_shallow]
+sources: [src.film_grammar, src.sds, src.wan3_guide]

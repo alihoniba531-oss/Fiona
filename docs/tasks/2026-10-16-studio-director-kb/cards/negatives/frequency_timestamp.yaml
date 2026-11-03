@@ -1,0 +1,24 @@
+# 导演知识库 · 反例卡
+schema: kb.neg/v1
+id: neg.frequency_timestamp
+title: 用时间戳数次数
+version: 1
+status: draft
+updated: 2026-10-16
+category: prompt
+summary: 「一秒内劈三刀」「一秒摇头三次」这类频次要求，两家官方都明确不建议。连击概括写，只细写一两个记忆点。
+wrong: 第 2 秒内连劈三刀，接转身、踢腿、跳起回旋斩、落地翻滚。
+why: 模型难以控制高频动作；时间戳只适合切段，不适合数次数。
+right: '[2-5秒] 两人以极快的节奏连续对砍（概括写）；最后白衣客矮身闪过，反手一刀逼退对方（细写一个记忆点）。'
+applies_to: {}
+evidence:
+  - case: 万相 3.0、Seedance 2.5 官方
+    detail: 都写明不要用时间戳控制频次
+    src: [src.wan3_guide, src.sd25_guide]
+level: warning
+check:
+  kind: regex_forbid
+  fields: [video_prompt]
+  patterns: ['[一1两2]\s*秒(内|之内|钟)?.{0,6}[0-9一二两三四五六七八九十]+\s*(次|刀|下|拳|脚)']
+see_refs: [grammar.cont_in_out_state]
+sources: [src.wan3_guide, src.sd25_guide]

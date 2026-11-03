@@ -1,0 +1,22 @@
+# 导演知识库 · 镜头语法卡
+schema: kb.grammar/v1
+id: grammar.trans_eyeline_match
+title: 视线匹配切
+version: 1
+status: draft
+updated: 2026-10-16
+family: transition
+aliases: [视线剪辑, eyeline match]
+summary: 上一镜角色看向画外某处，下一镜就是他看到的东西；揭示和发现的基本剪法。
+definition: 用角色的视线方向连接两镜：看的人在前，被看的东西在后。
+narrative_use:
+  - 揭示：震惊的表情 → 引起震惊的东西
+  - 期待：望向门口 → 门口出现人影
+  - 主观视角的入口
+prompt:
+  write:
+    - 上一镜写「视线移向画面左上方」，下一镜的机位放在与这个方向一致的位置
+  avoid:
+    - 上一镜看左上，下一镜被看的东西却从右侧拍：方向对不上
+see_refs: [grammar.axis_eyeline, grammar.pos_pov]
+sources: [src.film_grammar, src.avd]

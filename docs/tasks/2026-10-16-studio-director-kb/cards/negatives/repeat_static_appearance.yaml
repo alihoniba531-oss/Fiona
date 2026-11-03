@@ -1,0 +1,21 @@
+# 导演知识库 · 反例卡
+schema: kb.neg/v1
+id: neg.repeat_static_appearance
+title: video_prompt 重复首帧外观
+version: 1
+status: draft
+updated: 2026-10-16
+category: prompt
+summary: 首帧已经锁住外观，video_prompt 再复述一遍服装、光线、构图，只会和首帧打架、挤掉动作描述。多人镜可以保留每人不超过 3 个的区分标签。
+wrong: 一位穿米白色麻布长袍、腰系深褐腰带、头顶发髻、手持亮银单刃长刀的侠客站在金色沙丘上，午后低角度暖金色阳光，长长的影子……
+why: 02 规定 video_prompt 不重复首帧已有的静态外观；图生视频的官方公式只写运动和运镜。
+right: 保持 CHAR_WHITE 的身份与入镜站位（白衣客：米白麻袍、发髻、单刃长刀）；镜头固定不动。白衣客大步前压、连续劈砍……
+applies_to: {}
+evidence:
+  - case: 侠客行
+    detail: 双人打斗的每条提示词都带了两人的区分特征，用来防止互换；这属于 02 允许的「连续性保护」，不算复述外观
+    src: [src.xiakexing_files]
+level: info
+notes: 语义问题，只作注入材料。
+see_refs: [grammar.cont_in_out_state]
+sources: [src.user_02, src.wan_t2v_guide, src.xiakexing_files]

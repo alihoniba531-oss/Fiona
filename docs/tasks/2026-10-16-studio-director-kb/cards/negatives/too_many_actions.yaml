@@ -1,0 +1,24 @@
+# 导演知识库 · 反例卡
+schema: kb.neg/v1
+id: neg.too_many_actions
+title: 一镜里动作太多
+version: 1
+status: draft
+updated: 2026-10-16
+category: performance
+summary: 一镜超过 2–3 个有因果的动作（打斗里按动作单元计数），会被压缩、吞掉或糊成一团。复杂动作拆镜，不靠长提示词堆叠。
+wrong: 她推开门，冲进房间，扔下包，拿起电话，拨号，又挂断，转身哭了。
+why: 02 规定一个主导意图、总计最多 2–3 个有因果的动作；时间线会被压缩，部分动作被吞掉。
+right: 拆成三镜：推门冲进来；扔下包、拿起电话；拨号之后又挂断。哭放到第四镜的反应近景。
+applies_to: {}
+evidence:
+  - case: seedance-shot-design 失败诊断
+    detail: 5 秒窗口里超过 2–3 个动作，时间线压缩的风险明显上升
+    src: [src.sds]
+level: warning
+check:
+  kind: action_count
+  max: 3
+see_refs: [grammar.cont_in_out_state]
+notes: 打斗里一串同类连续交击算 1 个动作单元（scene.fight 的 action_units，2026-10-16 用户确认）。
+sources: [src.user_02, src.sds]

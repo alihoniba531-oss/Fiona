@@ -1,0 +1,30 @@
+# 导演知识库 · 模型能力卡
+schema: kb.provider/v1
+id: provider.seedance20_3d
+title: Seedance 2.0 · 3D
+version: 1
+status: draft
+updated: 2026-10-16
+provider: seedance20
+style: 3d
+tested: untested
+extends_ref: provider.seedance20_base
+summary: 没有本人实测。官方 FAQ 的风格漂移案例就是 3D 国漫仙侠漂成真人；写明「3D 国漫 CG」这类风格约束。
+portrait_gate:
+  status: untested
+  blocks: []
+  passes: []
+  workarounds: []
+copyright:
+  status: untested
+  blocks: []
+  passes: []
+  workarounds:
+    - 按 2.5 写实卡的实测结论预防
+style_drift: 官方 FAQ：仙侠 3D 国漫风格曾漂移成真人风格，加明确的风格约束词后保持住了。
+rules:
+  - id: M1
+    rule: 写明具体的 3D 风格约束词，例如「3D 国漫 CG 仙侠风格」
+    why: 官方 FAQ 的修法
+    src: [src.sd20_guide]
+sources: [src.sd20_guide]

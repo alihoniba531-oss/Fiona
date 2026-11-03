@@ -1,0 +1,23 @@
+# 导演知识库 · 反例卡
+schema: kb.neg/v1
+id: neg.timestamp_seconds_on_seedance20
+title: 给 Seedance 2.0 写秒数时间戳
+version: 1
+status: draft
+updated: 2026-10-16
+category: provider
+summary: Seedance 2.0 不响应秒数时间戳，强行限制时长可能结果异常；用「镜头1 / 镜头2」按事件顺序组织。2.5 正好相反。
+wrong: 0-3秒：男人缓慢起跑。3-6秒：撞翻水果摊。
+why: Seedance 2.0 官方说模型对精确时间的支持不稳定；2.5 官方也确认 2.0 只响应镜头序号。
+right: 镜头 1：街巷侧拍，男人缓慢起跑。镜头 2：男人撞翻水果摊，镜头快速摇动。
+applies_to:
+  providers: [seedance20]
+level: warning
+check:
+  kind: regex_forbid
+  when:
+    providers: [seedance20]
+  fields: [video_prompt]
+  patterns: ['\d+\s*[-–~～至到]\s*\d+\s*(秒|s\b)', '第\s*\d+\s*秒']
+see_refs: [grammar.trans_hard_cut]
+sources: [src.sd20_guide, src.sd25_guide]

@@ -1,0 +1,25 @@
+# 导演知识库 · 镜头语法卡
+schema: kb.grammar/v1
+id: grammar.size_medium_wide
+title: 中全景
+version: 1
+status: draft
+updated: 2026-10-16
+family: shot_size
+order: 4
+aliases: [七分身, 膝上景, medium full shot, cowboy shot]
+summary: 膝盖以上；肢体语言和表情兼顾，站立对话、持兵器对峙最常用。
+definition: 画面下缘大约在膝盖，手里的物件和腰间的兵器都在画内。
+framing: 膝盖以上
+mouth_readable: low
+narrative_use:
+  - 站立的双人对话、对峙
+  - 持兵器或道具时，同时看手和上身
+  - 走位中的对话
+prompt:
+  write:
+    - 中全景，膝盖以上，[人物] 位于画面 [左 / 右] 三分之一处
+  avoid:
+    - 只写「七分身」：不同模型对它的理解不一样，写「膝盖以上」
+see_refs: [grammar.size_full, grammar.size_medium]
+sources: [src.film_grammar, src.sds, src.wan_t2v_guide]

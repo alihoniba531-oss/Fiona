@@ -1,0 +1,20 @@
+# 导演知识库 · 反例卡
+schema: kb.neg/v1
+id: neg.keep_consistent_vague
+title: 「保持上一镜一致」
+version: 1
+status: draft
+updated: 2026-10-16
+category: continuity
+summary: 「保持上一镜一致」没有可核对的对象。写明上一镜尾帧的人物位置、朝向、道具、光源方向和背景标志。
+wrong: 保持上一镜一致。
+why: 模型不知道上一镜是什么；人工质检也没有可核对的项。
+right: 白衣客在画面左侧、面朝右，刀在右手、刃口朝下；主光来自画面左上方的低角度暖金阳光；背景是同一道弧形沙脊。
+applies_to: {}
+level: info
+check:
+  kind: regex_forbid
+  fields: [video_prompt]
+  patterns: ['保持(和|与)?(上一镜|上一个镜头|前一镜)(头)?一致']
+see_refs: [grammar.cont_in_out_state, grammar.cont_lighting]
+sources: [src.prop_asset, src.user_02]

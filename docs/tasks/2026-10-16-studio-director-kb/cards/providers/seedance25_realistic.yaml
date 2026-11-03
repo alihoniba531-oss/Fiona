@@ -1,0 +1,62 @@
+# 导演知识库 · 模型能力卡
+schema: kb.provider/v1
+id: provider.seedance25_realistic
+title: Seedance 2.5 · 写实
+version: 1
+status: draft
+updated: 2026-10-16
+provider: seedance25
+style: realistic
+tested: tested
+extends_ref: provider.seedance25_base
+summary: >-
+  有肖像闸：写实人物露脸的中景、近景首帧会被拒（不计费），逆光剪影、约 65° 俯拍遮脸、远景、背影都能过。
+  有输出阶段的版权检测：近似知名 IP 的造型跑完才被拦，美术差异化比缩成剪影更可取。写实人物戏默认走万相。
+portrait_gate:
+  status: tested
+  blocks:
+    - 写实人物露脸的中景、近景、特写首帧（侠客行 K05 侧面中景、K07 双人脸特写；提示「输入图可能含真人」）
+    - 写实人脸首帧整体（蓝海囚笼：PrivacyInformation）
+  passes:
+    - 远景、航拍里的小人物（人物约占画高 1/4 以下）
+    - 背影
+    - 强逆光剪影（侠客行 K05b）
+    - 约 65° 俯拍、头发遮脸（侠客行 K07b）
+    - 风格化很强的写实妆容露脸（《战》的京剧脸谱写实化扮相，中景、近景、特写都过）
+  workarounds:
+    - 写实露脸的镜头改走万相
+    - 改强逆光剪影
+    - 改高角度俯拍，让头发和俯角挡住脸
+    - 改远景或背影
+copyright:
+  status: tested
+  blocks:
+    - 近似知名 IP 的角色造型（猴王加金冠双翎、金箍长棍、红披风，人物推近到画高约 1/4；《我命由我不由天》）
+    - 过肩背影只露出标志性装束（《战》G10）
+  passes:
+    - 美术方向差异化后的露脸中景、近景（《战》10 余条）
+    - 不超过画高 1/8 的小剪影
+    - 不超过画高 1/4 的远景小背影
+  workarounds:
+    - 美术差异化优先：换脸谱、冠饰、服色
+    - 不点名原角色，不描写标志性服饰和道具
+    - 兜底：人物缩成远景小剪影
+    - 配乐提示去掉「东方史诗、唢呐」这类容易撞上知名作品的指向
+    - 量产前先跑一条 5 秒探针
+style_drift: 写实首帧一般保持写实；和万相的写实片段混剪时质感差异明显（推断），尽量一场只用一个通道。
+rules:
+  - id: M1
+    rule: 写实人物镜头在设计阶段就按肖像闸规则出首帧，不要等被拒再改
+    why: 侠客行按这个改法重出后一次通过
+    neg_refs: [neg.realistic_face_on_seedance]
+    src: [src.mem_xiakexing]
+  - id: M2
+    rule: 版权检测在生成完才拦，失败不计费但白等约 6 分钟；涉及 IP 的镜头排队时预留时间
+    why: 《我命由我不由天》实测
+    neg_refs: [neg.ip_lookalike_design]
+    src: [src.mem_copyright]
+  - id: M3
+    rule: 露脸反而比只露标志性装束的过肩背影安全
+    why: 《战》实测：露脸镜头全过，过肩背影被拦
+    src: [src.mem_copyright]
+sources: [src.mem_xiakexing, src.mem_lanhai, src.mem_copyright]

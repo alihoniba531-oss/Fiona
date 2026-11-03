@@ -1,0 +1,24 @@
+# 导演知识库 · 镜头语法卡
+schema: kb.grammar/v1
+id: grammar.move_handheld
+title: 手持
+version: 1
+status: draft
+updated: 2026-10-16
+family: movement
+aliases: [手持跟拍, 手持晃动, 呼吸感微晃, handheld]
+summary: 带人手晃动的镜头；纪实感、混乱、紧张。只用于全景以上，写实脸部镜头里的手持晃动也算运镜。
+definition: 模拟人手持机的不规则轻微晃动，可以与跟拍叠加。
+camerabench: [minimal-shaking, unsteady, very-unsteady]
+sensitive_ok: false
+narrative_use:
+  - 混战、逃亡里的混乱和慌张
+  - 纪实、偷拍感
+  - 模仿人物不稳的步伐
+prompt:
+  write:
+    - 手持跟拍，轻微晃动，保持全景
+  avoid:
+    - 在写实正脸的近景里写「手持微晃」：属于运镜，会让模型重画脸部
+see_refs: [grammar.move_follow, grammar.move_shake_impact]
+sources: [src.camerabench, src.sds, src.wan3_guide, src.user_02]

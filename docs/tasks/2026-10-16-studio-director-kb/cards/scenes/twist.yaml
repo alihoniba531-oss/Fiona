@@ -1,0 +1,230 @@
+# 导演知识库 · 场景模板卡
+schema: kb.scene/v1
+id: scene.twist
+title: 反转
+version: 1
+status: draft
+updated: 2026-10-16
+definition: 先让观众相信一种理解，再用一个信息推翻它（身份、立场、局势逆转），需要前后对照。
+summary: >-
+  伏笔必须是画面：前文放一个当时不起眼、事后说得通的细节，反转时用同一资产、同一构图回收。
+  反转那一刻对切，上一镜还是旧理解的情绪，下一镜直接推翻；之后至少两拍消化。一场只放一个反转。
+tags:
+  pace: [medium, fast, slow]
+  emotion: [tense, mystery, joy, sad, comic]
+  cast: [solo, duo, small_group]
+  realism: [realistic, anime, 3d]
+  setting: [interior, exterior, mixed]
+signals:
+  strong:
+    - 「其实 / 没想到 / 原来他才是 / 竟是」
+    - 前文的铺垫被推翻
+  weak:
+    - 情绪急转（冷到暖、胜到败）
+    - 身份揭晓
+  counter:
+    - signal: 揭开的只是新信息，并不推翻前文
+      route_to_ref: scene.reveal
+    - signal: 本集结尾停在反转之前
+      route_to_ref: scene.cliffhanger
+directing:
+  - rule: 伏笔必须是画面：在前文放一个当时不起眼、事后说得通的细节（道具、伤疤、一个眼神），反转时用同一资产、同一构图回收。
+    see_refs: [grammar.trans_match_graphic]
+  - rule: 误导要公平：观众被引向错误的理解，但信息没有被藏起来。
+  - rule: 反转那一刻对切：上一镜还是旧理解的情绪，下一镜直接给推翻它的画面（撞击切、反差对切）。
+    see_refs: [grammar.trans_smash_cut]
+    src: [src.sds]
+  - rule: 反转之后至少两拍：角色的反应，加伏笔的回收特写。
+  - rule: 一场只放一个反转。
+beats:
+  - id: B1
+    name: 旧理解
+    purpose: 让观众相信一种解释
+    share: [0.25, 0.40]
+  - id: B2
+    name: 误导加强
+    purpose: 情绪推向旧理解的极点
+    share: [0.15, 0.25]
+  - id: B3
+    name: 翻转
+    purpose: 推翻它的那个信息
+    share: [0.10, 0.20]
+  - id: B4
+    name: 重新理解
+    purpose: 反应与伏笔回收
+    share: [0.20, 0.35]
+coverage:
+  - id: C1
+    beat: B1
+    shot: 旧理解的建立镜（中景或全景）
+    size_refs: [grammar.size_medium, grammar.size_full]
+    camera_ref: grammar.move_static
+    purpose: 旧理解
+  - id: C2
+    beat: B1
+    shot: 伏笔：一个不起眼的道具或细节的大特写
+    size_refs: [grammar.size_extreme_closeup]
+    camera_ref: grammar.move_static
+    purpose: 埋线；当时看不出意义
+  - id: C3
+    beat: B2
+    shot: 强化旧理解的反应近景
+    size_refs: [grammar.size_close]
+    camera_ref: grammar.move_static
+    purpose: 误导到极点
+  - id: C4
+    beat: B3
+    shot: 推翻它的画面：人物入画、证物、身份标志
+    size_refs: [grammar.size_medium_wide, grammar.size_closeup]
+    camera_ref: grammar.move_static
+    purpose: 翻转；这一镜首帧就要画对
+    transition_refs: [grammar.trans_smash_cut, grammar.trans_hard_cut]
+  - id: C5
+    beat: B4
+    shot: 反应近景，固定
+    size_refs: [grammar.size_close]
+    camera_ref: grammar.move_static
+    purpose: 角色重新理解
+  - id: C6
+    beat: B4
+    shot: 伏笔回收：同一道具、同一构图的特写
+    size_refs: [grammar.size_extreme_closeup]
+    camera_ref: grammar.move_static
+    purpose: 观众回头看说得通
+    transition_refs: [grammar.trans_match_graphic]
+pacing:
+  basis: 经验值：旧理解用慢档，翻转之后进快档。满 5 集后校准。
+  tiers:
+    fast:
+      shot_len_s: [1.5, 2.5]
+      shots_per_min: [24, 40]
+      gen_ratio: [1.5, 2.0]
+      use_when: 翻转之后的快速回收
+    medium:
+      shot_len_s: [2.5, 4.0]
+      shots_per_min: [15, 24]
+      gen_ratio: [1.2, 1.5]
+      use_when: 常规反转
+    slow:
+      shot_len_s: [4.0, 6.0]
+      shots_per_min: [10, 15]
+      gen_ratio: [1.05, 1.3]
+      use_when: 建立旧理解
+generation:
+  min_gen_s: 4
+  strategy: per_shot
+  rules:
+    - 伏笔镜和回收镜从同一张底图派生（同资产、同构图）；回收镜可以直接复用伏笔镜的素材（reuse）。
+    - 翻转镜的人物或证物用定稿资产，首帧就要画对——这一镜画出答案是对的，因为它在硬切之后。
+    - 反转前后两镜的情绪反差，写进各自的 performance 字段。
+  src: [src.user_02]
+camera:
+  default_refs: [grammar.move_static]
+  allowed: []
+  nonsensitive_only:
+    - ref: grammar.move_push_in
+      condition: 伏笔物件缓慢推近，引导但不点破
+    - ref: grammar.move_follow
+      condition: 旧理解阶段的背影跟随
+  avoid:
+    - what: 翻转镜里用运镜「慢慢揭示」一张脸
+      reason: 运镜会把画外的脸交给模型临场画；翻转要靠切
+      neg_refs: [neg.push_tilt_reveals_face]
+sound:
+  items:
+    - 翻转之前，声音延续旧理解（紧张的呼吸、压抑的低频）。
+    - 翻转点用撞击切：环境突变、音乐骤停或骤起。
+    - 回收伏笔时用一个和伏笔镜相同的声音做声音回收。
+    - 旁白不要解释反转。
+  see_refs: [grammar.trans_smash_cut]
+ai_risks:
+  - id: R1
+    risk: 伏笔道具和回收道具长得不一样
+    applies_to: {}
+    symptom: 观众认不出是同一个东西，回收失效
+    mitigation: 同一资产绑定，同一底图派生
+    fallback: 回收镜直接复用伏笔镜素材
+    severity: P1
+  - id: R2
+    risk: 翻转人物的身份不明显
+    applies_to: {}
+    symptom: 观众没认出来人是谁
+    mitigation: 定妆里放强特征（服装、伤疤、饰物），首帧给足
+    fallback: 加一镜身份特征的大特写
+    severity: P1
+  - id: R3
+    risk: 写实正脸首帧被 Seedance 肖像闸拒收
+    applies_to:
+      providers: [seedance25, seedance20]
+      realism: [realistic]
+    symptom: 提交即被拒，不计费
+    mitigation: 写实反转默认走万相
+    fallback: 换万相
+    severity: P1
+    neg_refs: [neg.realistic_face_on_seedance]
+    src: [src.mem_xiakexing]
+  - id: R4
+    risk: 情绪反差演不出来
+    applies_to: {}
+    symptom: 反转前后人物都是中性表情
+    mitigation: 写可见动作：嘴唇发抖 → 捂着嘴笑出眼泪
+    fallback: 用道具和环境的变化表现反差
+    severity: P2
+    neg_refs: [neg.abstract_emotion]
+  - id: R5
+    risk: 证物上的文字是乱码
+    applies_to: {}
+    symptom: 文件、照片上的字错乱
+    mitigation: 文字后期合成
+    fallback: 只拍证物的轮廓
+    severity: P1
+    neg_refs: [neg.text_in_generated_frame]
+example:
+  title: 蒙眼
+  setup: >-
+    写实、室内、多人、中档；万相 3.0、480P、16:9。女孩被蒙着眼、被人拽着走进黑暗的楼道（观众以为是绑架），
+    灯亮后是全家给她过生日。伏笔：拽着她的那只手腕上系着一根褪色的红绳，是她小时候给哥哥编的。
+  gens:
+    - id: G1
+      coverage_ref: scene.twist#C1
+      duration_s: 6
+      angle: 背影中景，缓慢跟随
+      action: 女孩蒙着眼，一只手被人拽着，跌跌撞撞走进黑暗的楼道
+    - id: G2
+      coverage_ref: scene.twist#C2
+      duration_s: 4
+      angle: 手腕大特写，固定
+      action: 拽着她的那只手，手腕上系着一根褪色的红绳，绳结轻轻晃动
+    - id: G3
+      coverage_ref: scene.twist#C3
+      duration_s: 5
+      angle: 近景，固定
+      action: 女孩蒙着眼，嘴唇发抖，呼吸急促，肩膀缩紧
+    - id: G4
+      coverage_ref: scene.twist#C4
+      duration_s: 5
+      angle: 中全景，固定
+      video_prompt: >-
+        镜头固定不动。画面中共 5 人，不新增人物。房间的灯全亮，墙上挂满彩带，四个人举着蛋糕和彩带筒站在女孩对面，
+        彩带筒同时喷出彩纸，彩纸缓缓飘落。人物嘴唇闭合。画面中无任何文字、字幕、水印。
+    - id: G5
+      coverage_ref: scene.twist#C5
+      duration_s: 6
+      angle: 近景，固定
+      action: 女孩扯下眼罩，愣住两秒，然后捂着嘴笑出了眼泪
+    - id: G6
+      coverage_ref: scene.twist#C6
+      duration_s: 4
+      angle: 与 G2 同构图的手腕大特写
+      action: 哥哥举起手腕晃了晃，褪色的红绳在灯光下轻轻摆动
+  cues:
+    - {id: D01, role: 众人, text: 生日快乐！, delivery: offscreen, lip_sync: offscreen}
+  shots:
+    - {id: E1, beat: B1, from: G1, in_s: 0.3, len_s: 4.5}
+    - {id: E2, beat: B1, from: G2, in_s: 0.3, len_s: 2.0}
+    - {id: E3, beat: B2, from: G3, in_s: 0.3, len_s: 4.0, mouth: none}
+    - {id: E4, beat: B3, from: G4, in_s: 0.3, len_s: 2.5, mouth: none, note: 撞击切，灯光与彩带筒同时}
+    - {id: E5, beat: B4, from: G5, in_s: 0.3, len_s: 4.5, cue_ids: [D01], mouth: masked}
+    - {id: E6, beat: B4, from: G6, in_s: 0.3, len_s: 2.5}
+  totals: 6 镜共 20 秒，约 18 镜/分，落在中档；生成 6 条共 30 秒，gen_ratio 1.5；万相 480P 约 ¥9.0。
+sources: [src.user_02, src.mem_xiakexing, src.sds, src.film_grammar]

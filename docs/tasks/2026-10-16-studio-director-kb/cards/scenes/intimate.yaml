@@ -1,0 +1,216 @@
+# 导演知识库 · 场景模板卡
+schema: kb.scene/v1
+id: scene.intimate
+title: 温情亲密
+version: 1
+status: draft
+updated: 2026-10-16
+definition: 以身体接触或近距离传递情感：拥抱、牵手、依偎、告别、和解。
+summary: >-
+  情绪在接触前的犹豫和接触后的停留，不在接触本身。接触是 AI 穿模的高发区：
+  接触点要少，动作要慢，构图要藏住接触面（背影拥抱、手部特写只拍两只手）。
+tags:
+  pace: [slow, medium]
+  emotion: [warm, sad, joy, calm]
+  cast: [duo, small_group]
+  realism: [realistic, anime, 3d]
+  setting: [interior, exterior, mixed]
+signals:
+  strong:
+    - 拥抱、搀扶、擦泪、抚摸头发、额头相抵、牵手
+    - 告别、重逢、和解
+  weak:
+    - 台词少、动作慢
+    - 「轻轻 / 紧紧 / 久久」
+  counter:
+    - signal: 主要靠说话推进
+      route_to_ref: scene.dialogue
+    - signal: 只有一个人
+      route_to_ref: scene.monologue
+directing:
+  - rule: 情绪在接触前后：伸出的手停在半空的犹豫，和接触之后不松手的停留，比接触本身更动人。
+  - rule: 接触点越少越稳：一次只写一处接触（手搭肩、额头相抵）；拥抱用背影或侧后构图，让一个人的背挡住接触面。
+    see_refs: [neg.complex_body_contact]
+  - rule: 动作要慢：所有接触动作写「缓缓、轻轻」，并写清哪只手放在哪里。
+    see_refs: [grammar.cont_props_hands]
+  - rule: 手部特写只拍两只手，不要第三只手入画；手的状态写成结构简单的样子（一只手覆在另一只手背上）。
+    src: [src.sds]
+  - rule: 距离先远后近：先用中全景交代两人之间的空隙，接触时再进中景或特写。
+beats:
+  - id: B1
+    name: 距离
+    purpose: 两人之间的空隙
+    share: [0.20, 0.30]
+  - id: B2
+    name: 靠近
+    purpose: 犹豫与迈出
+    share: [0.20, 0.35]
+  - id: B3
+    name: 接触
+    purpose: 一处接触
+    share: [0.20, 0.35]
+  - id: B4
+    name: 停留或分开
+    purpose: 不松手，或一人离开
+    share: [0.15, 0.25]
+coverage:
+  - id: C1
+    beat: B1
+    shot: 中全景双人，两人之间的距离看得见
+    size_refs: [grammar.size_medium_wide]
+    camera_ref: grammar.move_static
+    purpose: 距离
+  - id: C2
+    beat: B2
+    shot: 手的大特写：伸出，停在半空
+    size_refs: [grammar.size_extreme_closeup]
+    camera_ref: grammar.move_static
+    purpose: 犹豫
+  - id: C3
+    beat: B3
+    shot: 背影或侧后方的拥抱中景，一人的背挡住接触面
+    size_refs: [grammar.size_medium]
+    angle_ref: grammar.pos_back
+    camera_ref: grammar.move_static
+    purpose: 接触
+  - id: C4
+    beat: B3
+    shot: 手部特写：一只手覆在另一只手背上
+    size_refs: [grammar.size_extreme_closeup]
+    camera_ref: grammar.move_static
+    purpose: 接触的细节
+    optional: true
+  - id: C5
+    beat: B4
+    shot: 一人离开的全景背影，另一人留在原地
+    size_refs: [grammar.size_full]
+    angle_ref: grammar.pos_back
+    camera_ref: grammar.move_static
+    purpose: 分开
+  - id: C6
+    beat: B4
+    shot: 留下的人的近景，固定
+    size_refs: [grammar.size_close]
+    camera_ref: grammar.move_static
+    purpose: 停留的情绪
+    optional: true
+pacing:
+  basis: 经验值；告别、和解以慢档为主，重逢的冲刺拥抱才进快档。满 5 集后校准。
+  tiers:
+    fast:
+      shot_len_s: [2.5, 3.5]
+      shots_per_min: [17, 24]
+      gen_ratio: [1.2, 1.5]
+      use_when: 重逢的冲刺拥抱
+    medium:
+      shot_len_s: [3.5, 5.5]
+      shots_per_min: [11, 17]
+      gen_ratio: [1.1, 1.35]
+      use_when: 常规温情戏
+    slow:
+      shot_len_s: [5.5, 8.0]
+      shots_per_min: [8, 11]
+      gen_ratio: [1.05, 1.2]
+      use_when: 告别的停留
+generation:
+  min_gen_s: 4
+  strategy: per_shot
+  rules:
+    - 接触动作单独成条，5–6 秒；接触发生在第 2–3 秒，之后保持静止的停留。
+    - 拥抱镜的首帧直接摆好拥抱姿态，视频只写呼吸和手的轻微收紧——比生成「走过去抱住」更稳（推断，未实测，先跑探针）。
+    - 手部特写写清左右手和手的结构。
+camera:
+  default_refs: [grammar.move_static]
+  allowed: []
+  nonsensitive_only:
+    - ref: grammar.move_push_in
+      condition: 背影拥抱的中景极缓推近
+  avoid:
+    - what: 环绕拥抱中的两人
+      reason: 绕到正面时模型要重画接触面和脸，穿模的概率最高
+      neg_refs: [neg.move_on_sensitive_shot, neg.complex_body_contact]
+sound:
+  items:
+    - 声音要近、要轻：衣料摩擦、呼吸、一声压住的哽咽。
+    - 环境声降低但保留（车站广播、风）。
+    - 配乐在接触那一刻进入，或在分开时进入。
+    - 台词极少；有台词时说话的一方背对镜头。
+ai_risks:
+  - id: R1
+    risk: 手臂融合、手指交错变形
+    applies_to: {}
+    symptom: 拥抱时两人的手臂长在一起，十指相扣变成一团
+    mitigation: 一次一处接触；接触面藏在背影后面；手的状态写成结构简单的样子
+    fallback: 改拍手部特写的结果（手搭在肩上），不拍接触过程
+    severity: P1
+    neg_refs: [neg.complex_body_contact]
+    src: [src.sds]
+  - id: R2
+    risk: 拥抱时脸被挤压变形
+    applies_to: {}
+    symptom: 贴在一起的脸互相融合
+    mitigation: 用背影或侧后方构图，脸不贴在镜头前
+    fallback: 只拍背影
+    severity: P1
+  - id: R3
+    risk: 写实正脸首帧被 Seedance 肖像闸拒收
+    applies_to:
+      providers: [seedance25, seedance20]
+      realism: [realistic]
+    symptom: 提交即被拒，不计费
+    mitigation: 写实温情戏默认走万相；Seedance 只用背影或动漫画风
+    fallback: 换万相
+    severity: P1
+    neg_refs: [neg.realistic_face_on_seedance]
+    src: [src.mem_xiakexing]
+  - id: R4
+    risk: 情绪过度，哭成怪脸
+    applies_to: {}
+    symptom: 五官扭曲
+    mitigation: 强度写到克制的一级（眼眶泛红、嘴唇抿紧）
+    fallback: 背影
+    severity: P2
+    neg_refs: [neg.abstract_emotion]
+  - id: R5
+    risk: 第三个人或第三只手入画
+    applies_to: {}
+    symptom: 手部特写里多出一只手
+    mitigation: 写「画面里只有两人」「只有两只手」
+    fallback: 重出
+    severity: P2
+    src: [src.wan3_guide]
+example:
+  title: 站台告别
+  setup: 写实、外景、两人、慢到中档；万相 3.0、480P、16:9。母亲送儿子上火车，两人之间隔着一只行李箱。
+  gens:
+    - id: G1
+      coverage_ref: scene.intimate#C1
+      duration_s: 6
+      angle: 中全景双人，侧面平视，固定
+      action: 站台上母亲和儿子面对面站着，中间隔着一只行李箱，两人都没动，列车在后景缓缓进站
+    - id: G2
+      coverage_ref: scene.intimate#C2
+      duration_s: 6
+      angle: 手部大特写，固定
+      action: 母亲的右手抬起，停在半空约 2 秒，然后轻轻落在儿子的左臂上，停住
+    - id: G3
+      coverage_ref: scene.intimate#C3
+      duration_s: 6
+      angle: 从母亲背后拍的中景，固定
+      video_prompt: >-
+        保持 CHAR_MOTHER 与 CHAR_SON 的身份；镜头固定不动。首帧里儿子已经俯身抱住母亲，母亲的背挡住两人之间；
+        儿子的右手在母亲背上轻轻收紧一下，两人随呼吸微微起伏，保持不动。画面里只有两人。画面中无任何文字、字幕、水印。
+    - id: G4
+      coverage_ref: scene.intimate#C5
+      duration_s: 6
+      angle: 全景背影，固定
+      action: 儿子拖着行李箱走向车门，母亲留在站台原地，双手垂在身侧
+  cues:
+    - {id: D01, role: 母亲, text: 到了打电话。, delivery: onscreen, lip_sync: avoid, note: 母亲背对镜头}
+  shots:
+    - {id: E1, beat: B1, from: G1, in_s: 0.3, len_s: 5.0}
+    - {id: E2, beat: B2, from: G2, in_s: 0.3, len_s: 5.0}
+    - {id: E3, beat: B3, from: G3, in_s: 0.3, len_s: 5.5, cue_ids: [D01], mouth: averted}
+    - {id: E4, beat: B4, from: G4, in_s: 0.3, len_s: 5.5}
+  totals: 4 镜共 21 秒，约 11.4 镜/分，落在中档；生成 4 条共 24 秒，gen_ratio 约 1.14；万相 480P 约 ¥7.2。
+sources: [src.mem_xiakexing, src.wan3_guide, src.sds, src.film_grammar]

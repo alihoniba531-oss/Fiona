@@ -1,0 +1,25 @@
+# 导演知识库 · 反例卡
+schema: kb.neg/v1
+id: neg.superpower_physics
+title: 超能力式的物理
+version: 1
+status: draft
+updated: 2026-10-16
+category: physics
+summary: 单手举起、抛飞大体重对手，一掌把人打飞十米；除非画风设定允许，否则写真实的发力顺序和地面后果。
+wrong: 他单手把壮汉举过头顶，扔出十米远。
+why: 万相官方格斗实践明确禁止超能力式表现；不合物理的动作也最容易滑步、穿模。
+right: 他先侧身卸开对方的冲力、踩住对方前脚破坏重心，再借对方前冲的惯性把人摔向地面；尘土从落地处扬起。
+applies_to: {}
+evidence:
+  - case: 万相 3.0 官方短剧格斗示例
+    detail: 摔投和关节技要符合真实的发力顺序（先破坏重心，再借惯性加杠杆）
+    src: [src.wan3_guide]
+level: info
+check:
+  kind: regex_forbid
+  fields: [video_prompt]
+  patterns: ['单手(举起|拎起|抛飞|扔出)', '一[掌拳脚].{0,6}(飞出|打飞|踢飞)']
+see_refs: [grammar.cont_in_out_state]
+notes: 仙侠、玄幻设定里允许超自然力量时，在场景的 kb.deviation 里说明后忽略本条。
+sources: [src.wan3_guide, src.sds]

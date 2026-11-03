@@ -1,0 +1,32 @@
+# 导演知识库 · 反例卡
+schema: kb.neg/v1
+id: neg.ip_lookalike_design
+title: 造型近似知名 IP
+version: 1
+status: draft
+updated: 2026-10-16
+category: provider
+summary: 点名或描写知名角色的标志性造型（冠饰、兵器、披风），Seedance 跑完才拦，不计费但白等约 6 分钟。美术差异化优先，小剪影兜底。
+wrong: 猴王，金冠双翎，金箍长棍，红披风，镜头推近到人物占画高 1/4。
+why: Seedance 输出阶段的版权检测会拦近似知名 IP 的角色；拦的是特定造型组合，不是「猴子、红披风、长棍」本身。
+right: 京剧猴戏扮相写实化：新漆火焰脸谱、暗紫铜小冠加大朱红绒球、杏黄箭衣云肩，无甲、无金毛、无紧箍，提示词称「红绸武者」。（《战》实测，中景露脸一次通过）
+applies_to: {}
+evidence:
+  - case: 《我命由我不由天》
+    detail: 跑满 349 秒后返回 OutputVideoSensitiveContentDetected；改小剪影、不点名、不写标志物后通过
+    src: [src.mem_copyright]
+  - case: 《战》
+    detail: 美术差异化后露脸镜头全过；只露冠和翎的过肩背影被拦
+    src: [src.mem_copyright]
+  - case: Preloq
+    detail: 机器人造型不能像 Optimus、Unitree、Figure、Atlas
+    src: [src.mem_preloq]
+level: warning
+check:
+  kind: regex_forbid
+  fields: [video_prompt, prompt]
+  ignore_case: true
+  patterns: ['孙悟空', '猴王', '齐天大圣', '哪吒', '金箍棒', 'optimus', 'unitree', '\batlas\b']
+notes: 正则只能拦住少数常见名字，挡不住造型上的近似；造型差异化靠定妆阶段把关。
+see_refs: [grammar.size_extreme_wide, grammar.pos_back]
+sources: [src.mem_copyright, src.mem_preloq]

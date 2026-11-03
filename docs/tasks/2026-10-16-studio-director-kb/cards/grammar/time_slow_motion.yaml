@@ -1,0 +1,26 @@
+# 导演知识库 · 镜头语法卡
+schema: kb.grammar/v1
+id: grammar.time_slow_motion
+title: 慢动作
+version: 1
+status: draft
+updated: 2026-10-16
+family: time
+aliases: [升格, 高速摄影, slow motion]
+summary: 动作放慢，放大关键瞬间。生成时写「慢动作」，或者后期减速；万相把不必要的慢动作列为常见问题，没有需要就不写。
+definition: 让画面里的动作以低于真实的速度播放：可以在生成时要求，也可以后期减速。
+narrative_use:
+  - 撞击、落地、飞溅的关键瞬间
+  - 情绪凝固：回头、松手、泪水落下
+prompt:
+  write:
+    - 慢动作落地，落地瞬间膝关节弯曲缓冲（P01 S02）
+    - 后期减速写进清单的 speed 字段，例如 0.6（侠客行收尾段）
+  avoid:
+    - 没有需要时写「电影感慢镜头」：万相会把动作整体放慢，节奏变拖
+provider_notes:
+  - providers: [wan30]
+    note: 官方把慢动作列在常见负向里，除非明确需要；不写时默认常速
+    src: [src.wan3_guide]
+see_refs: [grammar.time_speed_ramp]
+sources: [src.wan3_guide, src.avd, src.p01_audit, src.xiakexing_files]

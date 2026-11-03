@@ -1,0 +1,34 @@
+# 导演知识库 · 模型能力卡
+schema: kb.provider/v1
+id: provider.seedance25_3d
+title: Seedance 2.5 · 3D
+version: 1
+status: draft
+updated: 2026-10-16
+provider: seedance25
+style: 3d
+tested: untested
+extends_ref: provider.seedance25_base
+summary: 没有本人实测。写实感很强的 3D 人脸可能触发肖像闸，第一次使用先跑 5 秒探针；写明具体的 3D 风格。
+portrait_gate:
+  status: untested
+  blocks: []
+  passes: []
+  workarounds:
+    - 写实感强的 3D 人脸按写实卡处理：剪影、俯拍、远景，或改走万相
+copyright:
+  status: untested
+  blocks: []
+  passes: []
+  workarounds:
+    - 按写实卡的实测结论预防
+style_drift: 写明具体的 3D 风格（3D 国漫 CG、3D 卡通），避免漂成写实或游戏 CG。
+rules:
+  - id: M1
+    rule: 第一次使用先跑一条 5 秒探针
+    why: 没有本人实测
+  - id: M2
+    rule: 写明具体的 3D 风格和材质
+    why: 2.0 官方 FAQ 的风格漂移案例就是 3D 国漫漂成真人
+    src: [src.sd20_guide]
+sources: [src.sd20_guide, src.mem_xiakexing]

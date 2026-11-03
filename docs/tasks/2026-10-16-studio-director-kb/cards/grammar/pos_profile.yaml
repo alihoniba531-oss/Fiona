@@ -1,0 +1,26 @@
+# 导演知识库 · 镜头语法卡
+schema: kb.grammar/v1
+id: grammar.pos_profile
+title: 侧面
+version: 1
+status: draft
+updated: 2026-10-16
+family: position
+aliases: [正侧面, 侧拍, profile]
+summary: 从人物正侧方拍；运动方向最清楚，适合打斗、追逐。写实侧脸在 Seedance 上同样会被肖像闸拒收。
+definition: 摄影机与人物朝向大致成 90°，人物在画面里横向运动或横向相对。
+narrative_use:
+  - 打斗、追逐：左右方向一目了然
+  - 两人面对面的剪影构图
+  - 决胜的错身而过
+prompt:
+  write:
+    - 从正侧面拍，[人物] 面朝画面右侧，向右奔跑
+  avoid: []
+provider_notes:
+  - providers: [seedance25, seedance20]
+    realism: [realistic]
+    note: 写实人物侧面中景首帧被拒过（侠客行 K05）；改强逆光、人物成剪影后通过
+    src: [src.mem_xiakexing]
+see_refs: [grammar.axis_screen_direction, grammar.move_truck]
+sources: [src.film_grammar, src.mem_xiakexing]

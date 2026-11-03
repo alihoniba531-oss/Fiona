@@ -1,0 +1,18 @@
+# 导演知识库 · 反例卡
+schema: kb.neg/v1
+id: neg.multiview_reference
+title: Seedance 2.0 用多视图做人物参考
+version: 1
+status: draft
+updated: 2026-10-16
+category: provider
+summary: Seedance 2.0 会把同一人物的多视图识别成多个主体，导致换脸、双胞胎。用大头照加全身照。2.5 支持多视图。
+wrong: 参考素材是一张人物三视图（正、侧、背）。
+why: Seedance 2.0 官方 FAQ：多视图素材包含同一人物的不同角度，模型容易识别成多个不同主体。
+right: 一张只含头部的大头照（无表情、少背景）加一张全身照；提示词写「主体1 的面部参考图片1，妆造参考图片2」。
+applies_to:
+  providers: [seedance20]
+level: info
+notes: 素材层面的问题，提示词检查查不出来；在参考素材绑定时把关。
+see_refs: [grammar.cont_in_out_state]
+sources: [src.sd20_guide, src.sd25_guide]

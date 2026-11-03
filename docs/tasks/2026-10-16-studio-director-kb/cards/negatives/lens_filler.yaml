@@ -1,0 +1,20 @@
+# 导演知识库 · 反例卡
+schema: kb.neg/v1
+id: neg.lens_filler
+title: 没有叙事意义的焦段填充
+version: 1
+status: draft
+updated: 2026-10-16
+category: prompt
+summary: 每镜都写「50mm，自然透视」。焦段有叙事意义才写，否则清单里填 inherit。
+wrong: 50mm 标准镜头，自然透视，浅景深，电影感。
+why: 02 规定焦段、焦点只在有叙事意义时写，不要制造「自然透视」填充词。
+right: （平实镜头）不写焦段；（需要压迫感时）长焦从远处拍，背景被压缩、紧贴在人物身后。
+applies_to: {}
+level: info
+check:
+  kind: regex_forbid
+  fields: [video_prompt, review.framing.lens]
+  patterns: ['自然透视']
+see_refs: [grammar.lens_standard, grammar.lens_tele]
+sources: [src.user_02]

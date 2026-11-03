@@ -1,0 +1,21 @@
+# 导演知识库 · 镜头语法卡
+schema: kb.grammar/v1
+id: grammar.angle_eye_level
+title: 平视
+version: 1
+status: draft
+updated: 2026-10-16
+family: angle
+aliases: [水平机位, eye level]
+summary: 镜头与人物眼睛同高；中立、客观，是对话和叙事的默认角度。
+definition: 摄影机高度与人物眼睛大致相同，镜头不仰不俯。
+narrative_use:
+  - 对话、日常叙事的默认角度
+  - 让观众与人物平等相处
+  - 和仰拍、俯拍对比，突出权力变化
+prompt:
+  write:
+    - 平视，镜头与 [人物] 的眼睛同高
+  avoid: []
+see_refs: [grammar.angle_low, grammar.angle_high]
+sources: [src.film_grammar, src.sds, src.wan_t2v_guide]

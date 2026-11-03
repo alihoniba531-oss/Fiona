@@ -1,0 +1,33 @@
+# 导演知识库 · 模型能力卡
+schema: kb.provider/v1
+id: provider.wan30_anime
+title: 万相 3.0 · 动漫
+version: 1
+status: draft
+updated: 2026-10-16
+provider: wan30
+style: anime
+tested: untested
+extends_ref: provider.wan30_base
+summary: 没有本人实测。首帧先用目标画风出图，提示词开头写明画风；第一次使用先跑 5 秒探针。
+portrait_gate:
+  status: untested
+  blocks: []
+  passes: []
+  workarounds: []
+copyright:
+  status: untested
+  blocks: []
+  passes: []
+  workarounds:
+    - 按 Seedance 的实测结论预防：近似知名 IP 的造型先做美术差异化
+style_drift: 官方把「卡通与写实混淆」列为常见负向；提示词写齐画风、色调、情绪（官方「风格三件套」）。
+rules:
+  - id: M1
+    rule: 首帧先用目标画风出图，提示词开头写画风，例如「2D 日漫画风」
+    why: 图生视频的画风主要由首帧决定；文字再加一道约束
+    src: [src.wan3_guide, src.wan_t2v_guide]
+  - id: M2
+    rule: 第一次使用先跑一条 5 秒探针
+    why: 没有本人实测
+sources: [src.wan3_guide, src.wan_t2v_guide]

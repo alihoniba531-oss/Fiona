@@ -1,0 +1,21 @@
+# 导演知识库 · 镜头语法卡
+schema: kb.grammar/v1
+id: grammar.angle_top_down
+title: 正上方顶视
+version: 1
+status: draft
+updated: 2026-10-16
+family: angle
+aliases: [顶视, 鸟瞰, 垂直俯拍, 上帝视角, top-down, bird's eye]
+summary: 镜头垂直向下；看几何、站位和绕圈，打斗里用来重新交代位置，也天然避开人脸。
+definition: 摄影机在被摄对象正上方，光轴垂直向下。
+narrative_use:
+  - 交代站位、阵型、绕圈对攻（侠客行 S04）
+  - 桌面、地图、棋盘这类平面信息
+  - 越轴之后重新交代空间
+prompt:
+  write:
+    - 正上方垂直顶视，[人物] 在画面中央，[地面纹理] 铺满画面
+  avoid: []
+see_refs: [grammar.axis_reset, grammar.angle_high, grammar.move_aerial]
+sources: [src.film_grammar, src.sds, src.xiakexing_files]

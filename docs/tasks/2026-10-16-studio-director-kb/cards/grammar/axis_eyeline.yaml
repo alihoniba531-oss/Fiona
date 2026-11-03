@@ -1,0 +1,22 @@
+# 导演知识库 · 镜头语法卡
+schema: kb.grammar/v1
+id: grammar.axis_eyeline
+title: 视线
+version: 1
+status: draft
+updated: 2026-10-16
+family: axis
+aliases: [视线方向, 视线落点, 视线匹配, eyeline]
+summary: 每镜写齐站位、面部朝向、视线落点三项；两人对看时视线方向相反、高度一致。
+definition: 角色看向哪里、看什么。正反打里两人的视线要相互对上，高度差要与真实的高度差一致。
+narrative_use:
+  - 让正反打成立：两人真的在看对方
+  - 视线回避、看向画外：说谎、心虚、关注不在场的人
+  - 视线方向带出下一镜（视线匹配切）
+prompt:
+  write:
+    - 「[人物] 位于画面左侧，面部朝向画面右侧的 [B]，视线落在 [B] 的眼睛上」——站位、朝向、视线三项写全（seedance-shot-design 的演员调度三要素）
+  avoid:
+    - 只写「两人对视」：模型常让两人都看镜头或看同一侧
+see_refs: [grammar.axis_180, grammar.trans_eyeline_match]
+sources: [src.film_grammar, src.sds, src.avd]

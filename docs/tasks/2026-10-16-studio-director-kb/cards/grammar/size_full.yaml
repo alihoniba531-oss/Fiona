@@ -1,0 +1,25 @@
+# 导演知识库 · 镜头语法卡
+schema: kb.grammar/v1
+id: grammar.size_full
+title: 全景
+version: 1
+status: draft
+updated: 2026-10-16
+family: shot_size
+order: 3
+aliases: [全身景, full shot, FS]
+summary: 人物头到脚完整入画；看全身动作和走位，打斗、舞蹈、进出门的主力景别。
+definition: 人物从头到脚完整在画面里，上下略有留空。
+framing: 头顶和脚下都留出一点空间
+mouth_readable: low
+narrative_use:
+  - 看清全身动作、发力和步伐（打斗、舞蹈、跌倒）
+  - 人物和身边家具、门、车的关系
+  - 动作场景里的回合主机位
+prompt:
+  write:
+    - 全景，人物从头到脚完整入画，脚下留出地面
+  avoid:
+    - 只写「全身」：模型常把脚或头顶裁掉
+see_refs: [grammar.size_medium_wide, grammar.move_truck]
+sources: [src.film_grammar, src.sds, src.wan_t2v_guide]

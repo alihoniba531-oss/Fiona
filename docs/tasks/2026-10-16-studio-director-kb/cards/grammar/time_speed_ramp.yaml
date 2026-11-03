@@ -1,0 +1,21 @@
+# 导演知识库 · 镜头语法卡
+schema: kb.grammar/v1
+id: grammar.time_speed_ramp
+title: 变速
+version: 1
+status: draft
+updated: 2026-10-16
+family: time
+aliases: [速度渐变, 回弹变速, speed ramp]
+summary: 一镜内速度变化（常速 → 慢 → 常速）；制造关键瞬间的滞留感。第一版一律后期做，写进清单。
+definition: 同一镜头内播放速度连续变化，常见是撞击前常速、撞击时放慢、之后恢复。
+narrative_use:
+  - 决胜一击的滞留感
+  - 动作片的节奏点缀
+prompt:
+  write:
+    - 不写进 video_prompt；后期按清单的 speed 字段或剪辑表执行（侠客行 S08 尾段 0.6 倍）
+  avoid:
+    - 在生成提示词里要求「先快后慢再快」：Seedance 2.5 认得「回弹变速」这个说法，但变速点落在哪一帧由模型决定，裁切点跟着漂（未实测）
+see_refs: [grammar.time_slow_motion]
+sources: [src.avd, src.xiakexing_files, src.sd25_guide]

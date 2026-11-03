@@ -1,0 +1,196 @@
+# 导演知识库 · 场景模板卡
+schema: kb.scene/v1
+id: scene.establishing
+title: 环境建立
+version: 1
+status: draft
+updated: 2026-10-16
+definition: 交代新地点、时间、天气或世界规则，没有主要剧情动作，人物可有可无。
+summary: >-
+  由大到小：大远景立世界，远景落到要出事的地点，再用一个细节把观众带进场。
+  让环境自己动（云、雨、炊烟、人流），镜头尽量不动；时间和天气写成看得见的证据。
+tags:
+  pace: [slow, medium, fast]
+  emotion: [calm, awe, mystery, tense, warm]
+  cast: [none, solo, small_group, crowd]
+  realism: [realistic, anime, 3d]
+  setting: [exterior, interior, mixed]
+signals:
+  strong:
+    - 某个地点在本集第一次出现
+    - 只有环境描写，没有台词和剧情动作
+  weak:
+    - 「清晨 / 深夜 / 远处 / 城门外」这类时空描写
+    - 时间跳跃之后的第一段
+  counter:
+    - signal: 空镜里有悬念物（门缝、血迹、陌生的脚印）
+      route_to_ref: scene.reveal
+    - signal: 本集第一场的开头，需要抓住观众
+      route_to_ref: scene.opening_hook
+    - signal: 用一串空镜压缩时间（日复一日、四季更替）
+      route_to_ref: scene.montage
+directing:
+  - rule: 由大到小三步：大远景立地形与时间，远景或全景落到具体地点和入口，最后一个细节锚点（门牌、灯、雨滴）引入下一场。
+    see_refs: [grammar.size_extreme_wide, grammar.size_wide, grammar.size_extreme_closeup]
+  - rule: 时间和天气写成看得见的证据：长影子是午后，湿亮的地面是雨后，窗里亮灯是傍晚；不写「清晨的氛围」。
+    see_refs: [grammar.cont_time_weather, neg.cinematic_buzzwords]
+  - rule: 让环境动、不让镜头动。云、雨、雾、炊烟、人流、树影都是现成的运动；要运镜，只用高空俯拍、横移这类非敏感运镜。
+    see_refs: [grammar.move_static, grammar.move_aerial]
+  - rule: 环境建立一般不超过本场时长的 15%；无人物的空镜连续不超过 3 镜（G2 要主动报告纯功能镜的比例）。
+    src: [src.user_02]
+beats:
+  - id: B1
+    name: 世界
+    purpose: 在哪里、什么时候、什么天气
+    share: [0.30, 0.50]
+  - id: B2
+    name: 落点
+    purpose: 具体到要出事的那栋楼、那条巷、那扇门
+    share: [0.30, 0.50]
+  - id: B3
+    name: 细节锚点
+    purpose: 一个细节把观众带进场，或者埋下线索
+    share: [0.15, 0.30]
+coverage:
+  - id: C1
+    beat: B1
+    shot: 大远景，高处俯视或高空缓慢移动
+    size_refs: [grammar.size_extreme_wide]
+    angle_ref: grammar.angle_high
+    camera_ref: grammar.move_aerial
+    purpose: 立地形、时间、天气；同一地点可在本集多场复用
+  - id: C2
+    beat: B2
+    shot: 远景或全景，平视，看清具体地点和入口
+    size_refs: [grammar.size_wide, grammar.size_full]
+    angle_ref: grammar.angle_eye_level
+    camera_ref: grammar.move_static
+    purpose: 把观众放到要出事的地方
+  - id: C3
+    beat: B3
+    shot: 大特写一个细节：门牌、灯、雨滴、桌上的信
+    size_refs: [grammar.size_extreme_closeup]
+    angle_ref: grammar.angle_eye_level
+    camera_ref: grammar.move_static
+    purpose: 引入或埋线；细节里的精确文字一律后期加
+  - id: C4
+    beat: B3
+    shot: 人物从画外走入，背影或远景
+    size_refs: [grammar.size_full, grammar.size_wide]
+    angle_ref: grammar.pos_back
+    camera_ref: grammar.move_static
+    purpose: 把场景交给人物
+    optional: true
+pacing:
+  basis: 经验值。环境建立多为慢档；快档只用于城市快剪式的开场。满 5 集后用 studio_stats 校准。
+  tiers:
+    fast:
+      shot_len_s: [2.0, 3.0]
+      shots_per_min: [20, 30]
+      gen_ratio: [1.4, 2.0]
+      use_when: 城市快剪开场、蒙太奇式的建立
+    medium:
+      shot_len_s: [3.0, 5.0]
+      shots_per_min: [12, 20]
+      gen_ratio: [1.2, 1.4]
+      use_when: 常规换场
+    slow:
+      shot_len_s: [5.0, 8.0]
+      shots_per_min: [8, 12]
+      gen_ratio: [1.05, 1.25]
+      use_when: 抒情、静谧、诗意的开场
+generation:
+  min_gen_s: 4
+  strategy: per_shot
+  rules:
+    - 空镜一条一镜；环境的运动（雨、雾、炊烟、人流）写进 video_prompt。
+    - 同一地点的大远景可以在本集多场复用（production 写 reuse），省钱也统一空间。
+    - 关键帧里不出现可读的招牌文字；地名、时间这类字幕一律后期加角标。
+  src: [src.user_02]
+camera:
+  default_refs: [grammar.move_static]
+  allowed: []
+  nonsensitive_only:
+    - ref: grammar.move_aerial
+      condition: 大远景、远景；高空缓慢移动或拉升
+    - ref: grammar.move_truck
+      condition: 横移扫过街景、店铺
+    - ref: grammar.move_pan
+      condition: 从天空摇到街道，起止写清
+    - ref: grammar.move_crane_arm
+      condition: 从人物身后升起揭示前方场景；要露出的内容事先写清
+  avoid:
+    - what: 拉远时不写画外有什么
+      reason: 模型会自行补画新空间，可能和设定冲突
+    - what: 「宏大」「史诗感」「电影感」这类空泛形容
+      reason: 没有可执行参数
+      neg_refs: [neg.cinematic_buzzwords]
+sound:
+  items:
+    - 环境床先于画面进入（J-cut），让观众先听到地方。
+    - 写具体声源、距离和方向：近处屋檐滴水、右后方远处的叫卖声、风穿过巷子（05 规定）。
+    - 层次是「近处一个点声源 + 远处一张床」，不要只写「街道氛围」。
+    - 配乐可以在这里进入；有旁白时环境按 cue 避让。
+  see_refs: [grammar.trans_j_l_cut, grammar.cont_sound_state]
+  src: [src.user_05]
+ai_risks:
+  - id: R1
+    risk: 建筑结构被编造、互相穿插或漂浮
+    applies_to: {}
+    symptom: 屋顶穿过另一栋楼，桥悬在半空
+    mitigation: 结构在关键帧里定死；只让环境元素运动；运镜幅度小
+    fallback: 改固定机位
+    severity: P1
+    src: [src.wan3_guide]
+  - id: R2
+    risk: 招牌、门牌上的文字变成乱码
+    applies_to: {}
+    symptom: 汉字缺笔画、英文字母错乱
+    mitigation: 关键帧不放可读文字；需要的地名后期加
+    fallback: 后期遮挡或模糊招牌
+    severity: P1
+    neg_refs: [neg.text_in_generated_frame]
+    src: [src.sd25_guide]
+  - id: R3
+    risk: 远景细节在 480P 下糊成噪点（推断，未实测）
+    applies_to: {}
+    symptom: 雨丝、人群、灯光变成一片颗粒
+    mitigation: 远景只靠大轮廓和光影；细节交给特写；或报价时把这一镜单独切 720P
+    fallback: 换成全景
+    severity: P2
+    src: [src.plan]
+  - id: R4
+    risk: 环境镜里冻住，像一张照片
+    applies_to: {}
+    symptom: 6 秒里画面几乎不动
+    mitigation: 至少写一种持续的环境运动（雾流动、雨落下、炊烟升起）
+    fallback: 缩短生成时长
+    severity: P2
+    src: [src.sds]
+example:
+  title: 江南雨巷清晨
+  setup: 写实、外景、无主角、慢档；万相 3.0、480P、16:9。下一场的主角会从巷子深处走来。
+  gens:
+    - id: G1
+      coverage_ref: scene.establishing#C1
+      duration_s: 6
+      angle: 高处固定俯视
+      video_prompt: >-
+        镜头固定不动。白墙黑瓦的屋顶连成一片，晨雾在巷子上方缓慢流动，两三户人家的烟囱升起淡淡的炊烟，
+        屋顶的瓦面湿亮。画面中无任何文字、字幕、水印。
+    - id: G2
+      coverage_ref: scene.establishing#C2
+      duration_s: 6
+      angle: 巷口平视远景
+      action: 石板路湿亮，一个撑伞的小人影从巷子深处慢慢走来，始终保持远景大小
+    - id: G3
+      coverage_ref: scene.establishing#C3
+      duration_s: 5
+      angle: 屋檐瓦当大特写
+      action: 雨水从瓦当边缘聚成水滴落下，落进石阶上的水洼，涟漪一圈圈扩散
+  shots:
+    - {id: E1, beat: B1, from: G1, in_s: 0.3, len_s: 5.5}
+    - {id: E2, beat: B2, from: G2, in_s: 0.3, len_s: 5.5}
+    - {id: E3, beat: B3, from: G3, in_s: 0.3, len_s: 4.5}
+  totals: 3 镜共 15.5 秒，约 11.6 镜/分，落在慢档；生成 3 条共 17 秒，gen_ratio 约 1.10；万相 480P 约 ¥5.1。
+sources: [src.user_02, src.user_05, src.plan, src.wan3_guide, src.sd25_guide, src.sds, src.film_grammar]

@@ -1,0 +1,22 @@
+# 导演知识库 · 镜头语法卡
+schema: kb.grammar/v1
+id: grammar.trans_smash_cut
+title: 撞击切
+version: 1
+status: draft
+updated: 2026-10-16
+family: transition
+aliases: [冲击切, 骤切, smash cut]
+summary: 从安静突然切到喧闹（或反过来）；反转、惊吓、喜剧。主要靠声音的强烈对比。
+definition: 情绪或音量截然相反的两镜直接相接，制造冲击。
+narrative_use:
+  - 反转：温馨 → 惊变
+  - 惊吓：寂静 → 巨响
+  - 喜剧：豪言壮语 → 狼狈结果
+prompt:
+  write:
+    - 在 sound_plan 里安排：切点前留 0.3–0.5 秒的静默或低音量，切点后立刻进入高能量声音
+  avoid:
+    - 只靠画面：没有声音反差，撞击切就成了普通硬切
+see_refs: [grammar.trans_hard_cut, grammar.cont_sound_state]
+sources: [src.film_grammar, src.avd, src.sds]

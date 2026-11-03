@@ -1,0 +1,25 @@
+# 导演知识库 · 反例卡
+schema: kb.neg/v1
+id: neg.bare_english_camera_term
+title: 裸写 Dolly、Crane、Aerial
+version: 1
+status: draft
+updated: 2026-10-16
+category: prompt
+summary: 英文运镜术语裸写可能被当成专名或品牌，指令失效。写中文白话。
+wrong: Dolly in to her face. Crane shot over the city. Aerial view of the desert.
+why: 裸写的 Dolly、Crane、Aerial 可能被误判为人名或品牌；本工作室 02 明确禁止。
+right: 推轨推进 / 镜头沿视线方向缓慢推近；摇臂升起，镜头从人物身后升高并略微俯视；航拍视角，无人机从高空俯冲下降。
+applies_to: {}
+evidence:
+  - case: seedance-shot-design 失败诊断
+    detail: 列为「镜头指令失效」的根因之一
+    src: [src.sds]
+level: warning
+check:
+  kind: regex_forbid
+  fields: [video_prompt, prompt]
+  ignore_case: true
+  patterns: ['\bdolly\b', '\bcrane\b', '\baerial\b']
+see_refs: [grammar.move_push_in, grammar.move_crane_arm, grammar.move_aerial]
+sources: [src.user_02, src.sds]

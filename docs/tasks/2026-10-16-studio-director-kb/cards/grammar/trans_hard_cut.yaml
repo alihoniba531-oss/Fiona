@@ -1,0 +1,22 @@
+# 导演知识库 · 镜头语法卡
+schema: kb.grammar/v1
+id: grammar.trans_hard_cut
+title: 硬切
+version: 1
+status: draft
+updated: 2026-10-16
+family: transition
+aliases: [直切, 切, cut]
+summary: 直接从上一镜切到下一镜；默认转场。镜头之间的转场写在清单里，不写进单镜的 video_prompt。
+definition: 没有任何过渡效果的镜头衔接。
+narrative_use:
+  - 绝大多数镜头之间的默认衔接
+  - 快节奏里干脆利落
+prompt:
+  write:
+    - 单镜生成时不写转场；清单的 transition_in / transition_out 填「硬切」
+    - 一条多镜头生成时，在分段之间写「硬切到 [下一镜]」（万相支持「硬切转场」这个说法）
+  avoid:
+    - 一镜到底的需求里出现硬切（万相官方列为常见问题）
+see_refs: [grammar.trans_match_action, grammar.trans_smash_cut]
+sources: [src.film_grammar, src.avd, src.wan3_guide, src.user_02]

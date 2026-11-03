@@ -1,0 +1,27 @@
+# 导演知识库 · 反例卡
+schema: kb.neg/v1
+id: neg.camera_move_rewrites_material
+title: 运镜改写了材质
+version: 1
+status: draft
+updated: 2026-10-16
+category: camera
+summary: 升降、下移这类运镜露出新区域时，模型会重画材质；材质没写死时更糟。P01 S11 的金属切屑被画成了木刨花。
+wrong: 车刀精车丝杠，切屑飞出。镜头缓慢下移到料盘。
+why: 下移露出的料盘和切屑由模型临场生成；没写死材质时，它会按最常见的样子画（木刨花）。
+right: 镜头固定不动。车刀沿钢制丝杠缓慢进给精车，刀尖处只有少量细小的银灰色金属螺旋切屑断续飞出，切屑坚硬、有金属光泽，落进下方料盘。（P01 S11 定稿）
+applies_to:
+  sensitivity: [material]
+evidence:
+  - case: P01 S11
+    detail: v1 下移运镜，切屑成了黄色蓬松的木刨花状；自检时误判为回火色，用户指出后改固定机位并限定金属切屑
+    src: [src.p01_audit, src.mem_preloq]
+level: warning
+check:
+  kind: regex_forbid
+  when:
+    sensitivity: [material]
+  fields: [video_prompt, review.framing.camera]
+  patterns: ['下移', '上移', '升降', '镜头(缓慢)?(下降|上升)']
+see_refs: [grammar.move_pedestal, grammar.size_extreme_closeup]
+sources: [src.p01_audit, src.mem_preloq]

@@ -1,0 +1,206 @@
+# 导演知识库 · 场景模板卡
+schema: kb.scene/v1
+id: scene.comedy
+title: 喜剧包袱
+version: 1
+status: draft
+updated: 2026-10-16
+definition: 按「铺垫 → 停顿 → 抖包袱 → 反应」的节奏制造笑点。
+summary: >-
+  笑点靠时机：包袱前一个 0.5–1.5 秒的停顿，包袱那一下的反差（硬切、景别跳），之后的反应镜。
+  用身体和道具制造喜感，比用夸张大表情稳——AI 生成夸张表情容易五官变形，动漫画风可以夸张一些。
+tags:
+  pace: [fast, medium, slow]
+  emotion: [comic, joy]
+  cast: [solo, duo, small_group]
+  realism: [anime, 3d, realistic]
+  setting: [interior, exterior, mixed]
+signals:
+  strong:
+    - 误会、出糗、反差、吐槽
+    - 剧本标注「笑点」
+  weak:
+    - 一句话之后全场愣住
+    - 夸张的反应
+  counter:
+    - signal: 轻松的对话，但没有明确的包袱
+      route_to_ref: scene.dialogue
+    - signal: 喜剧风格的打斗
+      route_to_ref: scene.fight
+directing:
+  - rule: 节奏三拍：铺垫要完整；包袱前给一个停顿（0.5–1.5 秒的静止或沉默）；包袱要短促。
+    src: [src.avd]
+  - rule: 反差制造笑点：言行反差（嘴上说没吃，手里滴着奶油）、预期反差。用画面揭示反差，不用台词解释。
+  - rule: 反应是第二个包袱：抖完之后切到旁观者的反应（挑眉、愣住、捂脸）。
+  - rule: 用身体和道具制造喜感，少用夸张大表情；动漫画风可以夸张一些。
+  - rule: 包袱那一下从中景硬切到特写，代替急推变焦推人脸。
+    see_refs: [grammar.trans_smash_cut, grammar.move_zoom]
+beats:
+  - id: B1
+    name: 铺垫
+    purpose: 建立预期
+    share: [0.30, 0.45]
+  - id: B2
+    name: 停顿
+    purpose: 包袱前的静止
+    share: [0.05, 0.15]
+  - id: B3
+    name: 包袱
+    purpose: 反差揭开
+    share: [0.15, 0.25]
+  - id: B4
+    name: 反应
+    purpose: 第二个笑点
+    share: [0.15, 0.30]
+coverage:
+  - id: C1
+    beat: B1
+    shot: 中景铺垫：人物在做一件事、说一句话
+    size_refs: [grammar.size_medium]
+    camera_ref: grammar.move_static
+    purpose: 建立预期
+  - id: C2
+    beat: B2
+    shot: 同一机位静止，或一个空的停顿镜
+    size_refs: [grammar.size_medium]
+    camera_ref: grammar.move_static
+    purpose: 停顿
+  - id: C3
+    beat: B3
+    shot: 硬切到揭示反差的特写或大特写
+    size_refs: [grammar.size_closeup, grammar.size_extreme_closeup]
+    camera_ref: grammar.move_static
+    purpose: 包袱；这一镜首帧就画出反差
+    transition_refs: [grammar.trans_hard_cut, grammar.trans_smash_cut]
+  - id: C4
+    beat: B4
+    shot: 旁观者的反应近景
+    size_refs: [grammar.size_close]
+    camera_ref: grammar.move_static
+    purpose: 第二个笑点
+  - id: C5
+    beat: B4
+    shot: 回到全景，两人对视的尴尬
+    size_refs: [grammar.size_full]
+    camera_ref: grammar.move_static
+    purpose: 收尾
+    optional: true
+pacing:
+  basis: 经验值，参照 ai-visual-director 的喜剧节奏（每镜 2–3 秒，含停顿留白），按 4 秒最少生成调整过。满 5 集后校准。
+  src: [src.avd]
+  tiers:
+    fast:
+      shot_len_s: [1.5, 2.5]
+      shots_per_min: [24, 40]
+      gen_ratio: [1.5, 2.2]
+      use_when: 连续的小包袱
+    medium:
+      shot_len_s: [2.5, 3.5]
+      shots_per_min: [17, 24]
+      gen_ratio: [1.25, 1.6]
+      use_when: 常规包袱
+    slow:
+      shot_len_s: [3.5, 5.0]
+      shots_per_min: [12, 17]
+      gen_ratio: [1.1, 1.4]
+      use_when: 冷幽默的长停顿
+generation:
+  min_gen_s: 4
+  strategy: by_angle
+  rules:
+    - 铺垫和停顿可以是同一条：中景长条 6–8 秒，最后 1–2 秒静止，裁成两镜。
+    - 包袱镜单独一条，首帧就把反差画出来——它在硬切之后，这里首帧画出答案是对的。
+    - 急推变焦只用在物件上，不推人脸。
+camera:
+  default_refs: [grammar.move_static]
+  allowed: []
+  nonsensitive_only:
+    - ref: grammar.move_zoom
+      condition: 急推变焦推向物件（被撞翻的盘子、藏起来的蛋糕），不推人脸
+    - ref: grammar.move_pan
+      condition: 甩摇到旁观者，全景以上
+  avoid:
+    - what: 急推变焦推人脸
+      reason: 放大时模型补画细节，脸容易变形；人脸敏感镜头一律固定
+      neg_refs: [neg.move_on_sensitive_shot]
+sound:
+  items:
+    - 停顿要真的安静：环境声压低，只剩一个小声音（钟表滴答）。
+    - 包袱那一下一个点音效（盘子碎、杯子倒），或者音乐骤停。
+    - 不用罐头笑声。
+    - 喜剧配乐轻快，在包袱前抽空。
+  see_refs: [grammar.trans_smash_cut]
+ai_risks:
+  - id: R1
+    risk: 夸张表情让五官变形
+    applies_to:
+      realism: [realistic, 3d]
+    symptom: 瞪眼、张大嘴时脸变形
+    mitigation: 用身体和道具制造喜感；表情写到中等强度
+    fallback: 改用动作和道具镜
+    severity: P1
+  - id: R2
+    risk: 停顿镜冻住，像坏片
+    applies_to: {}
+    symptom: 停顿那 1–2 秒完全不动
+    mitigation: 写一个微动作：眨一下眼、喉结动一下
+    fallback: 用后期定格代替
+    severity: P2
+  - id: R3
+    risk: 道具的物理不合理
+    applies_to: {}
+    symptom: 盘子飞得太远、奶油流得太快
+    mitigation: 写清物理后果和幅度
+    fallback: 重出
+    severity: P2
+    src: [src.sds]
+  - id: R4
+    risk: 写实正脸首帧被 Seedance 肖像闸拒收
+    applies_to:
+      providers: [seedance25, seedance20]
+      realism: [realistic]
+    symptom: 提交即被拒，不计费
+    mitigation: 写实喜剧默认走万相；Seedance 用动漫画风
+    fallback: 换万相
+    severity: P1
+    neg_refs: [neg.realistic_face_on_seedance]
+    src: [src.mem_xiakexing, src.mem_lanhai]
+example:
+  title: 偷吃蛋糕
+  setup: >-
+    2D 日漫画风、室内、两人、中档；Seedance 2.5、480p、16:9（动漫画风已在蓝海囚笼 v2 实测可用）。
+    妈妈问冰箱里的蛋糕去哪了，男孩说没看见，背在身后的手里正捏着半块蛋糕。
+  gens:
+    - id: G1
+      coverage_ref: scene.comedy#C1
+      duration_s: 8
+      angle: 中景，固定
+      video_prompt: >-
+        2D 日漫画风。镜头固定不动。厨房里，男孩背对冰箱站得笔直，双手背在身后，一脸无辜地看着画面左侧；
+        最后 2 秒他一动不动，只眨了一下眼。男孩嘴唇闭合。画面中无任何文字、字幕、水印。
+    - id: G2
+      coverage_ref: scene.comedy#C3
+      duration_s: 4
+      angle: 背后双手的特写，固定
+      action: 男孩背在身后的手里捏着半块蛋糕，奶油慢慢往下滴，滴到地板上
+    - id: G3
+      coverage_ref: scene.comedy#C4
+      duration_s: 5
+      angle: 妈妈近景，固定
+      action: 妈妈双手抱胸，一边的眉毛慢慢挑起来
+    - id: G4
+      coverage_ref: scene.comedy#C5
+      duration_s: 5
+      angle: 全景，固定
+      action: 母子对视，男孩慢慢把蛋糕从背后拿出来递过去，妈妈接过去咬了一口
+  cues:
+    - {id: D01, role: 妈妈, text: 冰箱里的蛋糕呢？, delivery: offscreen, lip_sync: offscreen}
+    - {id: D02, role: 男孩, text: 没看见。, delivery: offscreen, lip_sync: offscreen, note: 台词落在滴奶油的手上，言行反差就是包袱}
+  shots:
+    - {id: E1, beat: B1, from: G1, in_s: 0.3, len_s: 4.0, cue_ids: [D01], mouth: none}
+    - {id: E2, beat: B2, from: G1, in_s: 4.5, len_s: 1.5, mouth: none}
+    - {id: E3, beat: B3, from: G2, in_s: 0.3, len_s: 2.5, cue_ids: [D02]}
+    - {id: E4, beat: B4, from: G3, in_s: 0.3, len_s: 3.0, mouth: none}
+    - {id: E5, beat: B4, from: G4, in_s: 0.3, len_s: 4.5}
+  totals: 5 镜共 15.5 秒，约 19.4 镜/分，落在中档；生成 4 条共 22 秒，gen_ratio 约 1.42；Seedance 2.5 480p 按 MCP 估价约 ¥20–26（未实测）。
+sources: [src.mem_xiakexing, src.mem_lanhai, src.sds, src.avd, src.film_grammar]

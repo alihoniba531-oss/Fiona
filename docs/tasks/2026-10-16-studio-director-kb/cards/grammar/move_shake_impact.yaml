@@ -1,0 +1,30 @@
+# 导演知识库 · 镜头语法卡
+schema: kb.grammar/v1
+id: grammar.move_shake_impact
+title: 撞击震动
+version: 1
+status: draft
+updated: 2026-10-16
+family: movement
+aliases: [镜头震动, 画面震动, 镜头反馈, impact shake]
+summary: 撞击、落地的一瞬画面短促一震后稳住；把受力传给观众。写清时机和持续时间。统一口径下敏感镜头不用。
+definition: 在受力瞬间加一次短暂的画面震动或失焦，随后立刻稳住。
+camerabench: [unsteady]
+sensitive_ok: false
+narrative_use:
+  - 打斗里的撞击帧
+  - 落地、爆炸、重物砸下
+  - 万相官方把它叫「镜头反馈层」：震动、失焦，要写明时长
+prompt:
+  write:
+    - 第 3 秒刀刃相撞的一瞬，画面短促震动一下后立刻稳住
+    - 落地冲击的余震：执行器轻微压缩后回弹，镜头有一次轻微震动后稳住（P01 S03）
+  avoid:
+    - 「画面一直在震」：持续震动属于手持，不是撞击反馈
+risks:
+  - risk: 用在敏感镜头上
+    mitigation: >-
+      P01 S03 在执行器特写上用过一次轻微震动，成片保留了；但按统一口径，敏感镜头仍默认固定机位，
+      要用震动时在 G2 主动报告。
+see_refs: [grammar.move_handheld, grammar.move_static]
+sources: [src.camerabench, src.wan3_guide, src.p01_audit, src.user_02]

@@ -1,0 +1,30 @@
+# 导演知识库 · 镜头语法卡
+schema: kb.grammar/v1
+id: grammar.size_medium
+title: 中景
+version: 1
+status: draft
+updated: 2026-10-16
+family: shot_size
+order: 5
+aliases: [腰上景, medium shot, MS]
+summary: 腰部以上；叙事的主力景别，对话里的双人镜、手部动作与表情兼顾。
+definition: 画面下缘在腰部附近，人物上半身和手部动作都清楚。
+framing: 腰部以上
+mouth_readable: low
+narrative_use:
+  - 对话的双人镜、坐着的对话
+  - 手部操作与表情同时要交代时
+  - 情绪还没到加压阶段的叙事推进
+prompt:
+  write:
+    - 中景，腰部以上，从 [方位] 平视拍摄
+  avoid:
+    - 写实人物的中景已能看清侧脸；走 Seedance 时侧脸中景会被肖像闸拒收（侠客行 K05）
+provider_notes:
+  - providers: [seedance25, seedance20]
+    realism: [realistic]
+    note: 写实人物侧面中景首帧被拒过；改强逆光剪影后通过
+    src: [src.mem_xiakexing]
+see_refs: [grammar.size_medium_wide, grammar.size_medium_close]
+sources: [src.film_grammar, src.sds, src.wan_t2v_guide, src.mem_xiakexing]

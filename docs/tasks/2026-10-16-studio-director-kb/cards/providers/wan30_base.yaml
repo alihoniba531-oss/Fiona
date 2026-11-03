@@ -1,0 +1,103 @@
+# 导演知识库 · 模型能力卡
+schema: kb.provider/v1
+id: provider.wan30_base
+title: 万相 3.0 · 通用
+version: 1
+status: draft
+updated: 2026-10-16
+provider: wan30
+style: base
+tested: partial
+summary: >-
+  工作室默认通道（480P）。图生视频提示词只写「运动 + 运镜」；支持尾帧、原生音频和多镜头时间戳，不支持参考音频。
+  本工作室规则高于厂商能力：最少生成 4 秒、gen.audio 显式关掉、敏感镜头固定机位。P01 在 1080P 竖屏实测过，480P 和打斗还没实测。
+model_ids: [wan3.0-video, wan3.0-video-prime]
+capabilities:
+  input_modes: [文生视频, 首帧生视频, 首尾帧生视频, 参考图生视频]
+  duration_s: [2, 30]
+  resolutions: [480P, 720P, 1080P]
+  ratios: [adaptive, '21:9', '16:9', '4:3', '1:1', '3:4', '9:16']
+  native_audio: true
+  reference_audio: false
+  last_frame: true
+  max_reference_images: 10
+  unsupported: [参考视频, 参考音频, 视频编辑, 视频延长, negative_prompt, 4K]
+pricing_note: >-
+  官方原价（北京地域）480P ¥0.3/秒、720P ¥0.6/秒、1080P ¥1.2/秒，可能有折扣；P01 的 1080P 实际按原价计费。
+  数据来自本机 MCP 规格表，2026-10-16；以控制台为准。
+prompt_syntax:
+  structure: >-
+    图生视频：只写运动和运镜，首帧已经定了主体、场景和风格（官方公式「运动 + 运镜」）。
+    多镜头：总体描述 + 镜头序号 + 时间戳 + 分镜内容；写不到的板块跳过。
+  timestamps:
+    supported: true
+    format: 「[0-3秒]」「（0-3秒）」「第1个镜头[0-3秒]」均可，全篇只用一种；各段首尾相接，不跳段、不重叠
+    note: 官方建议每段 2–5 秒，但官方格斗短剧示例每镜 1.4–2.3 秒。不要用时间戳控制次数（「一秒摇头三次」）。
+  shot_labels: 「镜头1」「分镜1」，或带时间戳；一镜到底写「生成单镜头」
+  dialogue: 角色名 + 说话动词 + 冒号 + 引号里的台词；不要台词时写「无台词」；要口型时写「口型同步」
+  negatives: 本机 MCP 不支持 negative_prompt 参数，负向内容写进正文；本工作室固定以「画面中无任何文字、字幕、水印。」结尾
+  symbols: 参考素材按上传顺序编号「图1」「视频1」，图和视频分开计数
+pipeline_overrides:
+  - rule: 每条至少生成 4 秒（厂商允许 2 秒）
+    why: 开头要裁掉起势；本工作室统一口径
+    src: [src.user_02]
+  - rule: gen.audio 默认 false，提交时显式关掉音频（MCP 和上游默认都是开的）
+    why: 声音层由后期统一制作，原生声会和配音、环境床打架
+    src: [src.user_02, src.mcp_models]
+  - rule: 默认分辨率 480P；报价卡上可以按镜头切 720P / 1080P
+    why: 已批准的计划
+    src: [src.plan]
+  - rule: 建议显式关掉 prompt_extend（MCP 默认开）
+    why: 自动改写可能加进未经批准的运镜和内容；万相 2.5 时期本工作区一直关着。3.0 是否必须关，在 WO0 里核实
+    src: [src.mem_lanhai, src.mcp_models]
+limits:
+  concurrent_tasks: 3
+  prompt_max_chars: null
+  cast_stable_max: null
+rules:
+  - id: M1
+    rule: 图生视频的提示词只写运动、表演和运镜，不重复首帧已有的外观
+    why: 官方公式如此；本工作室 02 规定 video_prompt 不重复静态外观
+    neg_refs: [neg.repeat_static_appearance]
+    src: [src.wan_t2v_guide, src.user_02]
+  - id: M2
+    rule: 固定机位写「镜头固定不动，机位不变」，放在提示词开头
+    why: 官方写法；P01 的修正版都把它放在开头
+    src: [src.wan3_guide, src.p01_audit]
+  - id: M3
+    rule: 运镜会让模型编出新内容；结构、人脸、材质敏感的镜头一律固定机位
+    why: P01 三次返工（环绕穿插、推近上摇露脸、下移改材质）
+    neg_refs: [neg.move_on_sensitive_shot, neg.orbit_structure_interpenetration, neg.push_tilt_reveals_face, neg.camera_move_rewrites_material]
+    src: [src.p01_audit, src.mem_preloq]
+  - id: M4
+    rule: 不要的东西显式写出来：「无台词」「无背景音乐」
+    why: 不写的话模型会自己决定加不加
+    src: [src.wan3_guide, src.wan_t2v_guide]
+  - id: M5
+    rule: 一条多镜头时，全篇一种时间戳格式、各段首尾相接；时间戳只切段，不数次数
+    why: 官方规则
+    neg_refs: [neg.frequency_timestamp]
+    src: [src.wan3_guide]
+  - id: M6
+    rule: 动作类：受力分层写，动作链连续，不写超能力式的物理
+    why: 官方格斗短剧实践
+    neg_refs: [neg.superpower_physics, neg.too_many_actions]
+    src: [src.wan3_guide]
+  - id: M7
+    rule: 多人镜写「不新增人物」或「画面中共 N 人」
+    why: 官方示例里反复出现；「多人同屏」是官方列出的常见负向
+    src: [src.wan3_guide]
+  - id: M8
+    rule: 不需要时不写慢动作
+    why: 官方把不必要的慢动作列为常见问题
+    src: [src.wan3_guide]
+  - id: M9
+    rule: 竖屏写 ratio 9:16 并配竖幅首帧；P01 实测输出 1080×1920、30fps，合成时统一到 24fps 时基
+    why: P01 实测；05 的时基固定 24fps
+    src: [src.mem_preloq, src.user_05]
+  - id: M10
+    rule: 结尾固定写「画面中无任何文字、字幕、水印。」
+    why: 02 规定
+    neg_refs: [neg.missing_no_text_line, neg.text_in_generated_frame]
+    src: [src.user_02]
+sources: [src.wan3_guide, src.wan_t2v_guide, src.mcp_models, src.plan, src.user_02, src.user_05, src.p01_audit, src.mem_preloq, src.mem_lanhai]

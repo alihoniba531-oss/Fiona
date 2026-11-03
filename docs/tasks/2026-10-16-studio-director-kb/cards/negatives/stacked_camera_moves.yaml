@@ -1,0 +1,24 @@
+# 导演知识库 · 反例卡
+schema: kb.neg/v1
+id: neg.stacked_camera_moves
+title: 一镜叠加多种运镜
+version: 1
+status: draft
+updated: 2026-10-16
+category: camera
+summary: 一镜里同时要求环绕、推近、升降。两家官方都建议一镜一种运镜；本工作室口径是一个主导意图、总计最多 2–3 个有因果的动作。
+wrong: 镜头环绕主角的同时推近，并缓缓升起俯视全场。
+why: 多个运镜叠加时，模型往往只执行一个，或者画面不稳定；动作和运镜合计也超出了 2–3 个的上限。
+right: 镜头绕主角顺时针环绕约 90°，始终保持全景。——要推近和俯视，拆成下一镜。
+applies_to: {}
+evidence:
+  - case: Seedance 2.0 官方
+    detail: 一个镜头里尽量只指定一种运镜，同时要求推拉摇移会增加不稳定
+    src: [src.sd20_guide]
+level: warning
+check:
+  kind: regex_forbid
+  fields: [video_prompt]
+  patterns: ['(环绕|推近|拉远|横移|升起|下降|上摇|下摇|跟随).{0,10}(同时|并且|并|再|然后|接着).{0,10}(环绕|推近|拉远|横移|升起|下降|上摇|下摇|跟随)']
+see_refs: [grammar.move_orbit, grammar.move_push_in]
+sources: [src.sd20_guide, src.sds, src.user_02]

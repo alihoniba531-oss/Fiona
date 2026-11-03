@@ -1,0 +1,23 @@
+# 导演知识库 · 镜头语法卡
+schema: kb.grammar/v1
+id: grammar.cont_in_out_state
+title: 入出状态
+version: 1
+status: draft
+updated: 2026-10-16
+family: continuity
+aliases: [入镜状态, 出镜状态, 首尾帧衔接, continuity]
+summary: 每镜写清入镜和出镜时人物的姿态、位置、重心；下一镜的首帧按上一镜的出镜状态出图。
+definition: 镜头开始时的状态必须接得上上一镜结束时的状态。
+narrative_use:
+  - 动作匹配切的前提
+  - 打斗、追逐里的连续动作链
+  - 防止人物瞬移、姿势跳变
+prompt:
+  write:
+    - 清单 continuity.in / out 写具体状态：「右手已抬到水面上方」→「右手停在水面，纹章沉入半枚」（05 示例）
+    - 需要时开 return_last_frame，用上一镜尾帧做下一镜首帧的参考
+  avoid:
+    - 「保持上一镜一致」：没有可核对的对象
+see_refs: [grammar.trans_match_action, grammar.cont_props_hands]
+sources: [src.user_02, src.user_05, src.prop_asset]

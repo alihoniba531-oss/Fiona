@@ -1,0 +1,230 @@
+# 导演知识库 · 场景模板卡
+schema: kb.scene/v1
+id: scene.explainer
+title: 旁白讲解
+version: 1
+status: draft
+updated: 2026-10-16
+definition: 旁白或口播主导，画面是插图式证据，常见于科普和产品讲解。
+summary: >-
+  一镜一个论点，画面跟着关键词走，关键词出口时画面发生变化（用 sync_points 锚定）。
+  精确的术语、数字、图表一律 post_only 或角标。P01、P02 的规格（竖屏、英文配音、硬字幕、角标、片尾字卡）就是这一类的模板。
+tags:
+  pace: [medium, slow, fast]
+  emotion: [calm, awe, mystery, tense]
+  cast: [none, solo]
+  realism: [realistic, 3d, anime]
+  setting: [interior, exterior, mixed]
+signals:
+  strong:
+    - 旁白或口播占满时长，角色不开口
+    - 术语、数据、「为什么 / 原因是 / 实际上」
+  weak:
+    - 需要角标、图表、对比
+    - 讲机构原理、讲产品
+  counter:
+    - signal: 画面里的角色在对话
+      route_to_ref: scene.dialogue
+    - signal: 只拍一个机构动作，没有讲解
+      route_to_ref: scene.action_insert
+directing:
+  - rule: 一镜一个论点：每镜对应旁白里的一句或一个分句；画面是证据，不是装饰。
+  - rule: 画面跟关键词：关键词出口的那一刻画面发生变化（螺母转开、角标弹出），用 sync_points 的关键词锚点锚定。
+    src: [src.user_05]
+  - rule: 精确信息走后期：数字、标准号、曲线、对比表一律 post_only 或角标（P01 S06 分屏、P02 S04 Junker 曲线、S08 片尾字卡）。
+    src: [src.p01_audit, src.mem_preloq]
+  - rule: >-
+      守住事实红线：只用已核实的资料。Preloq 只用站上写过的内容；片中不露品牌；
+      不说 factory、manufacturer、ISO-certified；机器人造型不能像知名品牌。
+    src: [src.mem_preloq]
+  - rule: 竖屏版式：主体放在画面中上部；字幕和角标避开平台按钮区，按成片尺寸渲染。
+    src: [src.mem_preloq, src.plan]
+beats:
+  - id: B1
+    name: 钩子
+    purpose: 一个反常识的问题或断言
+    share: [0.10, 0.20]
+  - id: B2
+    name: 机制
+    purpose: 为什么会这样
+    share: [0.30, 0.45]
+  - id: B3
+    name: 证据与对比
+    purpose: 数据、试验、好坏对比
+    share: [0.20, 0.35]
+  - id: B4
+    name: 结论与行动
+    purpose: 怎么办；片尾行动号召
+    share: [0.10, 0.20]
+coverage:
+  - id: C1
+    beat: B1
+    shot: 反常识画面的微距特写
+    size_refs: [grammar.size_extreme_closeup]
+    camera_ref: grammar.move_static
+    purpose: 钩子
+  - id: C2
+    beat: B2
+    shot: 固定机位的机构动作微距
+    size_refs: [grammar.size_extreme_closeup]
+    camera_ref: grammar.move_static
+    purpose: 机制
+  - id: C3
+    beat: B3
+    shot: 后期图表或分屏（post_only）
+    size_refs: [grammar.size_extreme_closeup]
+    camera_ref: grammar.move_static
+    purpose: 精确证据
+  - id: C4
+    beat: B3
+    shot: 两种状态的同构图特写对比（好与坏）
+    size_refs: [grammar.size_extreme_closeup]
+    camera_ref: grammar.move_static
+    purpose: 对比
+    optional: true
+  - id: C5
+    beat: B4
+    shot: 人与物的近景，只拍手，不露脸
+    size_refs: [grammar.size_close]
+    camera_ref: grammar.move_static
+    purpose: 回到人
+  - id: C6
+    beat: B4
+    shot: 片尾字卡叠在尾帧虚化画面上（post_only）
+    size_refs: [grammar.size_close]
+    camera_ref: grammar.move_static
+    purpose: 行动号召
+pacing:
+  basis: >-
+    中档依据 P01 成片（12 镜 47.3 秒，均值约 3.9 秒/镜，生成 50 秒）和 P02 G2 草稿（8 镜 34.9 秒，均值约 4.4 秒/镜，生成 33 秒）。
+    post_only 镜头不花生成费，所以 gen_ratio 可以低于 1。
+  src: [src.p01_audit, src.mem_preloq]
+  tiers:
+    fast:
+      shot_len_s: [2.5, 3.5]
+      shots_per_min: [17, 24]
+      gen_ratio: [1.1, 1.5]
+      use_when: 快节奏的清单式科普
+    medium:
+      shot_len_s: [3.5, 5.0]
+      shots_per_min: [12, 17]
+      gen_ratio: [0.9, 1.2]
+      use_when: 常规讲解（P01、P02）
+    slow:
+      shot_len_s: [5.0, 7.0]
+      shots_per_min: [9, 12]
+      gen_ratio: [0.8, 1.1]
+      use_when: 复杂机构的完整演示
+generation:
+  min_gen_s: 4
+  strategy: post_heavy
+  rules:
+    - 每条生成时长 = 镜长 + 0.3 秒起势，向上取整，最少 4 秒（P01、P02 都按此算）。
+    - 画面里不出现可读文字；角标、字幕、图表一律后期渲染。
+    - post_only 镜头约占 15–25%（P01 12 镜里 2 镜，P02 8 镜里 2 镜）。
+    - 原生音频关掉（gen.audio false）；每条提示词写「声音只要机械音效，无人声、无音乐」。
+  src: [src.p01_audit, src.user_02]
+camera:
+  default_refs: [grammar.move_static]
+  allowed: []
+  nonsensitive_only:
+    - ref: grammar.move_push_in
+      condition: 结构简单的对象缓慢推近（P01 S01、S04、S09 用过）
+    - ref: grammar.move_truck
+      condition: 缓慢横移扫过样件（P01 S08）
+  avoid:
+    - what: 环绕机构
+      reason: P01 S05 探针里丝杠「长进」了滚柱
+      neg_refs: [neg.orbit_structure_interpenetration]
+    - what: 下移、升降
+      reason: P01 S11 下移后金属屑变成了木刨花
+      neg_refs: [neg.camera_move_rewrites_material]
+    - what: 推近之后上摇
+      reason: P01 S10 露出了 AI 人物正脸
+      neg_refs: [neg.push_tilt_reveals_face]
+sound:
+  items:
+    - 旁白主导：Preloq 用英文 edge-tts，中文对照只给创作者审阅，不进成片。
+    - 画面声只要机械音效。
+    - BGM 低音量全程铺底，按旁白避让（P01 合成用 duck -8 dB）。
+    - 响度：P01 合成用 loudnorm -14 LUFS、真峰值 -1.5 dB。
+    - 关键词和画面变化 hard 同步，前后留 0.15–0.30 秒。
+  src: [src.mem_preloq, src.user_05]
+ai_risks:
+  - id: R1
+    risk: 机构零件互相穿插
+    applies_to: {}
+    symptom: 丝杠穿进滚柱
+    mitigation: 固定机位；把「彼此分开的独立零件」写死
+    fallback: 机构静止，或改 post_only 示意图
+    severity: P0
+    neg_refs: [neg.orbit_structure_interpenetration]
+    src: [src.p01_audit]
+  - id: R2
+    risk: 材质被改写
+    applies_to: {}
+    symptom: 金属屑变成木刨花
+    mitigation: 材质写死；质检核对物理常识
+    fallback: 固定机位重出
+    severity: P1
+    neg_refs: [neg.camera_move_rewrites_material]
+    src: [src.p01_audit]
+  - id: R3
+    risk: 露出 AI 人脸（项目要求不露脸）
+    applies_to: {}
+    symptom: 推近上摇时人脸进入画面
+    mitigation: 固定俯视构图，写明「人物的头和脸始终在画面之外」（P01 S10 修正版）
+    fallback: 只拍手与样件
+    severity: P1
+    neg_refs: [neg.push_tilt_reveals_face]
+    src: [src.p01_audit]
+  - id: R4
+    risk: 讲解内容的事实错误
+    applies_to: {}
+    symptom: 说法经不起推敲（P01 删掉了 line contact vs point contact）
+    mitigation: 只用已核实的资料；口播稿过一遍事实核对
+    fallback: 删掉这句
+    severity: P1
+    src: [src.mem_preloq]
+  - id: R5
+    risk: 画面里的文字、刻度是乱码
+    applies_to: {}
+    symptom: 标签、数字错乱
+    mitigation: 画面不放文字；角标后期
+    fallback: 后期遮挡
+    severity: P1
+    neg_refs: [neg.text_in_generated_frame]
+  - id: R6
+    risk: 机器人造型像知名品牌
+    applies_to: {}
+    symptom: 外形近似 Optimus、Unitree、Figure、Atlas
+    mitigation: 定妆阶段做造型差异化；片中不露品牌
+    fallback: 只拍局部机构
+    severity: P1
+    neg_refs: [neg.ip_lookalike_design]
+    src: [src.mem_preloq]
+example:
+  title: P02 机制段：横向滑移与 Junker 试验
+  setup: 写实、无人物、中档；万相 3.0、1080P、9:16。取自 P02 G2 草稿（尚未生成），对应 S03–S05。
+  gens:
+    - id: G1
+      coverage_ref: scene.explainer#C2
+      duration_s: 5
+      angle: 微距特写，平视略俯，固定
+      video_prompt: >-
+        镜头固定不动。慢动作：下方钢板轻微横向错动，六角螺母沿螺纹缓慢转开几度，螺母底面与钢板之间露出一条细细的缝；
+        螺纹的螺旋线保持清晰连续、不变形。只有轻微的金属摩擦声。声音只要机械音效，无人声、无音乐。画面中无任何文字、字幕、水印。
+    - id: G2
+      coverage_ref: scene.explainer#C4
+      duration_s: 7
+      angle: 微距特写，平视略俯，固定
+      action: 夹具高频振动，螺母缓慢转松，露出细缝
+  cues:
+    - {id: N02, role: 旁白, text: "Transverse slip: parts shift sideways, friction lets go, and the thread's helix turns it into rotation.", delivery: voiceover, lip_sync: none}
+    - {id: N03, role: 旁白, text: "Junker's test plots preload against load cycles. Spring washers and double nuts do poorly — several spring-washer standards have been withdrawn.", delivery: voiceover, lip_sync: none}
+  shots:
+    - {id: E1, beat: B2, from: G1, in_s: 0.3, len_s: 4.125, cue_ids: [N02]}
+    - {id: E2, beat: B3, from: post_only, len_s: 3.25, cue_ids: [N03], note: Junker 曲线动画，自渲染}
+    - {id: E3, beat: B3, from: G2, in_s: 0.3, len_s: 6.0, cue_ids: [N03]}
+  totals: 3 镜共 13.4 秒，约 13.5 镜/分，落在中档；生成 2 条共 12 秒，gen_ratio 约 0.90；万相 1080P 约 ¥14.4。
+sources: [src.user_02, src.user_05, src.plan, src.p01_audit, src.mem_preloq, src.film_grammar]

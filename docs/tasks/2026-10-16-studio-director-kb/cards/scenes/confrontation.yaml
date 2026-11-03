@@ -1,0 +1,248 @@
+# 导演知识库 · 场景模板卡
+schema: kb.scene/v1
+id: scene.confrontation
+title: 争执对峙
+version: 1
+status: draft
+updated: 2026-10-16
+definition: 立场对立的双方用语言、姿态或距离施压，还没动手或即将动手。
+summary: >-
+  权力看高度和距离；冲突升级时距离缩短、景别收紧。威胁要落到身体上（拍桌、逼近一步），
+  对视沉默是武器。不要两人正脸对吼——口型风险最高，改成一方过肩背对、一方听。
+tags:
+  pace: [fast, medium, slow]
+  emotion: [tense, anger, fear, mystery]
+  cast: [duo, small_group]
+  realism: [realistic, anime, 3d]
+  setting: [interior, exterior, mixed]
+signals:
+  strong:
+    - 质问、威胁、冷笑、怒视、拍桌、步步逼近
+    - 双方立场对立，至少一方在施压
+  weak:
+    - 长时间的对视沉默
+    - 一坐一站这类高度差，或明显的权力差
+  counter:
+    - signal: 出现攻防、击打等肢体接触
+      route_to_ref: scene.fight
+    - signal: 意见不同但语气平和，以交换信息为主
+      route_to_ref: scene.dialogue
+directing:
+  - rule: 权力看高度和距离：一坐一站、一高一低。冲突升级时距离缩短、景别收紧，缓和时拉开。
+    see_refs: [grammar.angle_low, grammar.angle_high]
+    src: [src.avd]
+  - rule: 对视沉默是武器。给 2–5 秒无台词的对视，靠呼吸、下颌、手指传递压力。
+    src: [src.avd]
+  - rule: 威胁落到身体上：拍桌、逼近一步、按住对方的手、把东西推到对方面前。抽象情绪写成动作。
+    see_refs: [neg.abstract_emotion]
+  - rule: 不要两人正脸大特写对吼。说话的一方过肩背对或在画外，镜头给听的一方。
+    see_refs: [grammar.pos_over_shoulder]
+  - rule: 阻隔物（桌子、门槛、供桌）放在两人之间；跨过它就是升级。
+    src: [src.avd]
+beats:
+  - id: B1
+    name: 摆阵
+    purpose: 立场、位置、高度差
+    share: [0.15, 0.25]
+  - id: B2
+    name: 施压
+    purpose: 质问与反驳，层层加码
+    share: [0.35, 0.50]
+  - id: B3
+    name: 顶点
+    purpose: 拍桌、逼近或沉默对视
+    share: [0.15, 0.25]
+  - id: B4
+    name: 结果
+    purpose: 一方让步或离场，或转入打斗
+    share: [0.10, 0.20]
+coverage:
+  - id: C1
+    beat: B1
+    shot: 双人中全景，高度差和中间的阻隔物都可见
+    size_refs: [grammar.size_medium_wide]
+    angle_ref: grammar.angle_eye_level
+    camera_ref: grammar.move_static
+    purpose: 立轴线和权力关系
+  - id: C2
+    beat: B2
+    shot: 低角度拍强势的一方，可从弱势方肩后过肩
+    size_refs: [grammar.size_medium]
+    angle_ref: grammar.angle_low
+    camera_ref: grammar.move_static
+    purpose: 强化压迫
+  - id: C3
+    beat: B2
+    shot: 高角度拍弱势的一方，从强势方肩后俯拍
+    size_refs: [grammar.size_medium_close]
+    angle_ref: grammar.angle_high
+    camera_ref: grammar.move_static
+    purpose: 人物被压制
+  - id: C4
+    beat: B3
+    shot: 插入：拍桌的手、攥紧的拳、被推过去的东西
+    size_refs: [grammar.size_extreme_closeup]
+    camera_ref: grammar.move_static
+    purpose: 顶点动作，配 hard 同步音效
+  - id: C5
+    beat: B3
+    shot: 侧面双人镜，两人对视，可用逆光剪影
+    size_refs: [grammar.size_medium]
+    angle_ref: grammar.pos_profile
+    camera_ref: grammar.move_static
+    purpose: 沉默的张力
+  - id: C6
+    beat: B4
+    shot: 一方转身离场的背影全景
+    size_refs: [grammar.size_full]
+    angle_ref: grammar.pos_back
+    camera_ref: grammar.move_static
+    purpose: 结果；或者接打斗
+    transition_refs: [grammar.trans_hard_cut, grammar.trans_smash_cut]
+pacing:
+  basis: 经验值，按对话卡的中档口径（约 3.5 秒/镜）上下浮动；顶点前会变快，沉默对视会拉长。满 5 集后校准。
+  src: [src.plan]
+  tiers:
+    fast:
+      shot_len_s: [1.8, 2.8]
+      shots_per_min: [21, 33]
+      gen_ratio: [1.4, 1.9]
+      use_when: 争吵爆发
+    medium:
+      shot_len_s: [2.8, 4.0]
+      shots_per_min: [15, 21]
+      gen_ratio: [1.2, 1.5]
+      use_when: 常规质问与反驳
+    slow:
+      shot_len_s: [4.0, 7.0]
+      shots_per_min: [9, 15]
+      gen_ratio: [1.05, 1.3]
+      use_when: 冷对峙、长沉默
+generation:
+  min_gen_s: 4
+  strategy: by_angle
+  rules:
+    - 和对话一样按机位生成：强弱两方各一条 6–8 秒的机位长条，交替裁切。
+    - 顶点动作（拍桌）单独一条插入镜，配 hard 同步音效。
+    - 沉默对视镜生成 6 秒，裁 3–5 秒用。
+  src: [src.user_02]
+camera:
+  default_refs: [grammar.move_static]
+  allowed: []
+  nonsensitive_only:
+    - ref: grammar.move_push_in
+      condition: 双人中全景或背影镜缓慢推近一次，不露可读正脸
+    - ref: grammar.move_handheld
+      condition: 全景以上的争吵，表现失控
+  avoid:
+    - what: 正脸近景里的推近或手持
+      reason: 人脸敏感镜头一律固定机位
+      neg_refs: [neg.move_on_sensitive_shot]
+    - what: 连续多镜用荷兰角
+      reason: 观众会疲劳，失去冲击
+sound:
+  items:
+    - 随冲突升级把环境床逐步压低；顶点前 0.3–0.5 秒几乎静默。
+    - 拍桌、杯盏震动做 hard 同步点。
+    - 沉默对视只留呼吸和一个持续的低音（烛火、冰箱嗡鸣、雨声）。
+    - 台词按 cue 避让；争吵时 cue 可以相邻，但不要互相重叠。
+  see_refs: [grammar.trans_smash_cut, grammar.cont_sound_state]
+  src: [src.user_05]
+ai_risks:
+  - id: R1
+    risk: 激烈说话的口型和配音对不上
+    applies_to: {}
+    symptom: 人物大张嘴的节奏和台词不同步
+    mitigation: 说话方过肩背对或在画外，镜头给听的一方；需要真口型时按 P0
+    fallback: 改成 offscreen
+    severity: P1
+    neg_refs: [neg.voiceover_mouth_moves]
+  - id: R2
+    risk: 强情绪让 Seedance 人物眼睛发光
+    applies_to:
+      providers: [seedance25]
+    symptom: 怒视时瞳孔出现红光、蓝光
+    mitigation: 写「眼神锐利、下颌绷紧」，不写「怒目圆睁、杀气」
+    fallback: 重出
+    severity: P2
+    neg_refs: [neg.emotion_glow_eyes]
+    src: [src.sd25_guide]
+  - id: R3
+    risk: 拍桌、按手这类接触动作的手部畸形
+    applies_to: {}
+    symptom: 手指数量不对、手掌陷进桌面
+    mitigation: 单独一条大特写，写清哪只手、怎么落下、落下后停住
+    fallback: 只拍桌上杯盏震动的结果
+    severity: P1
+    src: [src.sds]
+  - id: R4
+    risk: 高度差或视线方向画反
+    applies_to: {}
+    symptom: 俯拍和仰拍的人对不上，两人不像在对视
+    mitigation: 每镜写站位、朝向、视线；关键帧质检对照建立镜核对
+    fallback: 用双人镜覆盖
+    severity: P1
+    see_refs: [grammar.axis_eyeline]
+  - id: R5
+    risk: 写实正脸首帧被 Seedance 肖像闸拒收
+    applies_to:
+      providers: [seedance25, seedance20]
+      realism: [realistic]
+    symptom: 提交即被拒，不计费
+    mitigation: 写实对峙默认走万相；Seedance 只接剪影、背影或动漫画风
+    fallback: 换万相
+    severity: P1
+    neg_refs: [neg.realistic_face_on_seedance]
+    src: [src.mem_xiakexing]
+example:
+  title: 祠堂对质
+  setup: >-
+    写实、室内、两人、中档；万相 3.0、480P、16:9。族长端坐在上首台阶上的太师椅里（画面左、高处），
+    年轻人站在堂下（画面右、低处），两人之间隔着供桌。本场的变化：年轻人当面拒绝了族长定下的亲事。
+  gens:
+    - id: G1
+      coverage_ref: scene.confrontation#C1
+      duration_s: 6
+      angle: 双人中全景，侧面平视
+      action: 族长端坐不动，年轻人站在堂下，两人隔着供桌，烛火轻轻摇动；两人都不说话
+    - id: G2
+      coverage_ref: scene.confrontation#C2
+      duration_s: 6
+      angle: 从年轻人右肩后低角度过肩拍族长
+      video_prompt: >-
+        保持 CHAR_ELDER 身份与坐姿，前景是年轻人虚化的右肩；镜头固定不动。族长缓慢放下手中的茶盏，抬起眼看向画面右侧的年轻人，
+        下颌微微抬起。族长嘴唇闭合、不说话。画面中无任何文字、字幕、水印。
+    - id: G3
+      coverage_ref: scene.confrontation#C3
+      duration_s: 8
+      angle: 从族长左肩后高角度俯拍年轻人
+      action: 年轻人下颌绷紧、喉结滚动一下；之后手指攥紧衣角，抬起眼直视画面左上方；嘴唇闭合
+    - id: G4
+      coverage_ref: scene.confrontation#C4
+      duration_s: 4
+      angle: 供桌桌面大特写
+      action: 年轻人的右手猛地拍在供桌上后停住，桌上的茶盏震了一下，茶水溅出几滴
+    - id: G5
+      coverage_ref: scene.confrontation#C5
+      duration_s: 6
+      angle: 侧面中景，门外天光逆光，两人成剪影
+      action: 两人隔着供桌对视，一动不动，只有烛火摇动
+    - id: G6
+      coverage_ref: scene.confrontation#C6
+      duration_s: 6
+      angle: 全景背影
+      action: 年轻人转身，大步走出祠堂大门，门外是白亮的天光
+  cues:
+    - {id: D01, role: 族长, text: 这门亲事，是你爹定的。, delivery: offscreen, lip_sync: offscreen}
+    - {id: D02, role: 年轻人, text: 他定的，我不认。, delivery: onscreen, lip_sync: avoid}
+    - {id: D03, role: 族长, text: 跪下。, delivery: offscreen, lip_sync: offscreen}
+  shots:
+    - {id: E1, beat: B1, from: G1, in_s: 0.3, len_s: 4.0, mouth: none}
+    - {id: E2, beat: B2, from: G3, in_s: 0.3, len_s: 3.5, cue_ids: [D01], mouth: none}
+    - {id: E3, beat: B2, from: G2, in_s: 0.3, len_s: 3.0, cue_ids: [D02], mouth: averted}
+    - {id: E4, beat: B2, from: G3, in_s: 4.0, len_s: 3.5, cue_ids: [D03], mouth: none}
+    - {id: E5, beat: B3, from: G4, in_s: 0.3, len_s: 2.5, mouth: none, note: 拍桌 hard 同步音效}
+    - {id: E6, beat: B3, from: G5, in_s: 0.3, len_s: 5.0, mouth: none, note: 约 4 秒沉默对视}
+    - {id: E7, beat: B4, from: G6, in_s: 0.3, len_s: 5.0, mouth: none}
+  totals: 7 镜共 26.5 秒，约 15.8 镜/分，落在中档；生成 6 条共 36 秒，gen_ratio 约 1.36；万相 480P 约 ¥10.8。
+sources: [src.user_02, src.user_05, src.plan, src.mem_xiakexing, src.sd25_guide, src.sds, src.avd, src.film_grammar]

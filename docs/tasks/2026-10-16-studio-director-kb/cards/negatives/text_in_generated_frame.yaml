@@ -1,0 +1,27 @@
+# 导演知识库 · 反例卡
+schema: kb.neg/v1
+id: neg.text_in_generated_frame
+title: 让模型生成精确文字
+version: 1
+status: draft
+updated: 2026-10-16
+category: production
+summary: 招牌、屏幕内容、刻度、标准号、日历数字交给生成，几乎一定出错。精确文字、UI、数字一律后期（post_only 或角标）。
+wrong: 手机屏幕上显示「未知号码：你还记得我吗」；墙上的日历写着「3 月 27 日」。
+why: 两家模型都会把字母和汉字写错（Seedance 2.5 官方 FAQ 有 DIHETAO 拼错、「稳健」写成「稳键」的案例）；02 规定精确文字、UI、数字只能后期制作。
+right: 画面里屏幕只是一片均匀的亮光，看不到内容；文字在后期合成到屏幕上。
+applies_to: {}
+evidence:
+  - case: Seedance 2.5 官方 FAQ
+    detail: 英文字母替换、中文错别字
+    src: [src.sd25_guide]
+  - case: P01、P02
+    detail: 角标、图表、片尾字卡全部 post_only 或 overlay 渲染
+    src: [src.p01_audit, src.mem_preloq]
+level: warning
+check:
+  kind: regex_forbid
+  fields: [prompt, video_prompt]
+  patterns: ['写着[“"「]', '显示(着)?[“"「]', '屏幕上(写|显示)', '字样']
+see_refs: [grammar.size_extreme_closeup]
+sources: [src.user_02, src.sd25_guide, src.p01_audit, src.mem_preloq]

@@ -1,0 +1,28 @@
+# 导演知识库 · 镜头语法卡
+schema: kb.grammar/v1
+id: grammar.move_follow
+title: 跟拍
+version: 1
+status: draft
+updated: 2026-10-16
+family: movement
+aliases: [跟随, 跟踪镜头, 引导后退, tracking shot, follow shot, leading shot]
+summary: 镜头随主体移动，分身后跟、侧面跟、前方后退引导三种；传递速度与旅程感。只给全景以上、不露可读正脸的镜头。
+definition: 摄影机跟随运动中的主体，保持主体在画面里的位置大致不变。
+camerabench: [tail-tracking, side-tracking, lead-tracking]
+sensitive_ok: false
+narrative_use:
+  - 身后跟：前进、探索、被引向未知
+  - 侧面跟：看清奔跑或格斗的全身动作
+  - 前方后退引导：人物主动向前，观众站在未知的前方
+  - 追逐里的速度感（贴地、贴着沙脊）
+prompt:
+  write:
+    - 镜头在 [人物] 身后稳定跟随，保持中全景
+    - 侧面平行跟拍，与 [人物] 同速
+    - 镜头在 [人物] 正前方缓慢后退引导，始终保持中景（人物会正对镜头，敏感时不用）
+    - 无人机贴着沙脊低空高速向前追拍（侠客行 S03）
+  avoid:
+    - 只写「镜头跟随」：没有方位、速度和景别，动作容易糊
+see_refs: [grammar.move_truck, grammar.pos_back, grammar.axis_screen_direction]
+sources: [src.camerabench, src.sds, src.xiakexing_files]

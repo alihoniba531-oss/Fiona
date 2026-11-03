@@ -1,0 +1,29 @@
+# 导演知识库 · 反例卡
+schema: kb.neg/v1
+id: neg.realistic_face_on_seedance
+title: 写实露脸首帧交给 Seedance
+version: 1
+status: draft
+updated: 2026-10-16
+category: provider
+summary: 写实人物露脸的中景、近景首帧交给 Seedance 会被肖像闸拒收（不计费）。改走万相，或改逆光剪影、约 65° 俯拍遮脸、远景、背影。
+wrong: Seedance 2.5，首帧是写实武侠人物的侧面中景，脸清晰可见。
+why: Seedance 对可能是真人的人脸输入有肖像闸，提交即拒。
+right: 同一镜头改成强逆光，人物是带金色轮廓光的剪影（侠客行 K05b）；或者写实露脸镜头改走万相。
+applies_to:
+  providers: [seedance25, seedance20]
+  realism: [realistic]
+evidence:
+  - case: 侠客行 K05、K07
+    detail: 侧面中景、双人脸特写被拒；改逆光剪影、65° 俯拍后一次通过
+    src: [src.mem_xiakexing]
+  - case: 蓝海囚笼
+    detail: Seedance 2.5 拒收写实人脸（PrivacyInformation），改用万相
+    src: [src.mem_lanhai]
+level: warning
+check:
+  kind: provider_face
+  providers: [seedance25, seedance20]
+  realism: [realistic]
+see_refs: [grammar.angle_high, grammar.pos_back, grammar.size_wide]
+sources: [src.mem_xiakexing, src.mem_lanhai]

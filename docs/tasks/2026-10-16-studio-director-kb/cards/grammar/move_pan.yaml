@@ -1,0 +1,25 @@
+# 导演知识库 · 镜头语法卡
+schema: kb.grammar/v1
+id: grammar.move_pan
+title: 水平摇
+version: 1
+status: draft
+updated: 2026-10-16
+family: movement
+aliases: [摇镜, 横摇, 甩摇, pan, whip pan]
+summary: 机位不动，镜头原地左右转；从一个对象带到另一个对象。快速甩摇可以当转场。
+definition: 摄影机位置固定，绕竖直轴左右转动。
+camerabench: [pan-left, pan-right]
+sensitive_ok: false
+narrative_use:
+  - 从一个人或物带到另一个，建立两者的关系
+  - 跟随横向运动的主体
+  - 甩摇：快速摇过造成运动模糊，用来转场或制造惊吓
+prompt:
+  write:
+    - 镜头原地向左水平摇，从 [A] 摇到 [B]，约 2 秒，摇到后停住
+    - 甩摇：镜头快速向右甩过，画面短暂模糊（只用于转场）
+  avoid:
+    - 只写「pan」：写中文「水平摇」，并写清起点和终点
+see_refs: [grammar.move_tilt, grammar.trans_occlusion_wipe]
+sources: [src.camerabench, src.sds, src.wan3_guide]

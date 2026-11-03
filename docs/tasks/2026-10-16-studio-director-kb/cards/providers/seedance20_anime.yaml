@@ -1,0 +1,30 @@
+# 导演知识库 · 模型能力卡
+schema: kb.provider/v1
+id: provider.seedance20_anime
+title: Seedance 2.0 · 动漫
+version: 1
+status: draft
+updated: 2026-10-16
+provider: seedance20
+style: anime
+tested: untested
+extends_ref: provider.seedance20_base
+summary: 没有本人实测。官方 FAQ：参考图偏写实、提示词又没强调风格时，动漫会漂成真人写实；先把参考图转成目标画风。
+portrait_gate:
+  status: untested
+  blocks: []
+  passes: []
+  workarounds: []
+copyright:
+  status: untested
+  blocks: []
+  passes: []
+  workarounds:
+    - 按 2.5 写实卡的实测结论预防
+style_drift: 官方 FAQ：2D 或 3D 动漫的参考图偏写实、提示词没强调风格时，可能漂成真人写实。写明「2D 日漫风格」，参考图先转成目标画风。
+rules:
+  - id: M1
+    rule: 提示词写明画风；参考图先转成目标画风再生视频
+    why: 官方 FAQ 的修法
+    src: [src.sd20_guide]
+sources: [src.sd20_guide]

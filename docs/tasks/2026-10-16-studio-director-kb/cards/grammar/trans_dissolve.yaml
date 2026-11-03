@@ -1,0 +1,22 @@
+# 导演知识库 · 镜头语法卡
+schema: kb.grammar/v1
+id: grammar.trans_dissolve
+title: 叠化
+version: 1
+status: draft
+updated: 2026-10-16
+family: transition
+aliases: [溶解, 交叉淡化, dissolve, crossfade]
+summary: 上一镜淡出的同时下一镜淡入；时间流逝、回忆、梦境。后期做，不靠视频模型。
+definition: 两个镜头短暂重叠，一个渐隐、一个渐显。
+narrative_use:
+  - 时间流逝
+  - 进入或退出回忆、梦境
+  - 蒙太奇里柔化衔接
+prompt:
+  write:
+    - 不写进 video_prompt；合成时用叠化（如 ffmpeg xfade），两镜各多留 0.5–1 秒余量
+  avoid:
+    - 一场里频繁使用：节奏会变软
+see_refs: [grammar.trans_fade_black, grammar.trans_match_graphic]
+sources: [src.film_grammar, src.avd]

@@ -1,0 +1,22 @@
+# 导演知识库 · 镜头语法卡
+schema: kb.grammar/v1
+id: grammar.pos_pov
+title: 主观视角
+version: 1
+status: draft
+updated: 2026-10-16
+family: position
+aliases: [第一人称, POV, point of view]
+summary: 画面就是角色眼中所见；用于发现、窥视、紧张。要写明画面里看不到这个角色本人。
+definition: 摄影机代替角色的眼睛；画面里最多露出角色自己的手。
+narrative_use:
+  - 视线匹配：上一镜角色看向某处，这一镜就是他看到的
+  - 躲藏、窥视、被追时的紧张
+  - 揭示：观众和角色同时发现
+prompt:
+  write:
+    - 主观视角：[角色] 从衣柜门缝里看出去的画面，画面里看不到 [角色] 本人，只有门缝两侧的木板边缘
+  avoid:
+    - 只写「POV」：模型常把这个角色画进画面，变成第三人称
+see_refs: [grammar.trans_eyeline_match, grammar.axis_eyeline]
+sources: [src.film_grammar, src.sds, src.avd]

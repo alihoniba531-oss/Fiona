@@ -1,0 +1,24 @@
+# 导演知识库 · 反例卡
+schema: kb.neg/v1
+id: neg.voiceover_mouth_moves
+title: 画外音时角色在张嘴
+version: 1
+status: draft
+updated: 2026-10-16
+category: audio
+summary: 旁白或内心独白覆盖的镜头没写嘴部状态，模型让角色跟着「说话」。写「嘴唇闭合、不说话」。
+wrong: （画外音覆盖的镜头）近景，男人望向窗外，若有所思。
+why: 模型看到人物脸部、又处在叙事语境里，常会生成说话的嘴形；后期旁白一叠就穿帮。
+right: 近景，镜头固定不动。男人望向窗外，目光慢慢垂下。嘴唇闭合、不说话。
+applies_to: {}
+evidence:
+  - case: seedance-shot-design 短剧规则
+    detail: 画外音和独白必须追加「禁止画面中角色出现说话口型」
+    src: [src.sds]
+level: warning
+check:
+  kind: cue_mouth
+  deliveries: [voiceover, inner]
+  require_patterns: ['嘴唇闭合', '不说话', '嘴.{0,4}(闭|合)']
+see_refs: [grammar.size_close]
+sources: [src.sds, src.user_05]

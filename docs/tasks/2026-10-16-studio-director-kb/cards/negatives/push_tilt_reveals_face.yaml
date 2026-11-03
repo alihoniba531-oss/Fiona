@@ -1,0 +1,24 @@
+# 导演知识库 · 反例卡
+schema: kb.neg/v1
+id: neg.push_tilt_reveals_face
+title: 推近接上摇，露出了脸
+version: 1
+status: draft
+updated: 2026-10-16
+category: camera
+summary: 推近之后再上摇或下摇，会把原本在画外的内容（尤其是脸）交给模型临场画出来。P01 S10 的原版就这样露出了 AI 人物正脸。
+wrong: 镜头从桌面上的样件缓慢推近，然后上摇到工程师。
+why: 上摇露出的区域首帧里没有，模型要临场编；在不露脸的项目里就会冒出一张 AI 人脸。
+right: 镜头固定不动，始终保持首帧的俯视构图，画面中只有桌面、图纸、样件和人物的手与前臂，人物的头和脸始终在画面之外。（P01 S10 修正版）
+applies_to: {}
+evidence:
+  - case: P01 S10
+    detail: v1 推近上摇露出人脸，用户批准改固定机位重出
+    src: [src.p01_audit]
+level: warning
+check:
+  kind: regex_forbid
+  fields: [video_prompt, review.framing.camera]
+  patterns: ['推近.{0,12}(上摇|下摇|上移|抬起镜头)', '(上摇|下摇).{0,12}推近']
+see_refs: [grammar.move_push_in, grammar.move_tilt]
+sources: [src.p01_audit, src.mem_preloq]

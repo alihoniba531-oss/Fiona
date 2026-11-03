@@ -1,0 +1,17 @@
+# 导演知识库 · 反例卡
+schema: kb.neg/v1
+id: neg.director_name_as_style
+title: 用导演名字代替手法
+version: 1
+status: draft
+updated: 2026-10-16
+category: prompt
+summary: 「王家卫风格」「诺兰感」不是镜头指令；写出那位导演对应的手法（负空间、实用光、对称、遮挡、色彩）。
+wrong: 王家卫风格，暧昧的氛围。
+why: 姓名不是可执行的镜头参数；真实人名还可能触发平台的人物相关审核（推断）。
+right: 霓虹灯作为画面里的实用光源，红绿撞色；前景玻璃上的雨痕遮挡半张脸；人物偏在画面一侧，大面积负空间。
+applies_to: {}
+level: info
+notes: 人名无法穷举，只作注入材料。
+see_refs: [grammar.cont_lighting]
+sources: [src.prop_asset]

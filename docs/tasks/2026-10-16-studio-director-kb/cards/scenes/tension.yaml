@@ -1,0 +1,223 @@
+# 导演知识库 · 场景模板卡
+schema: kb.scene/v1
+id: scene.tension
+title: 紧张蓄势
+version: 1
+status: draft
+updated: 2026-10-16
+definition: 危险逼近但还没发生：躲藏、潜行、等待、倒计时，靠拖延和声音制造压力。
+summary: >-
+  声音是主角，画面可以几乎不动。威胁只给局部（门缝下的影子、转动的门把），不让它完整入画。
+  时间要拉长，但每 3–5 秒要有一个新的小变化，否则就成了冻住的画面。
+tags:
+  pace: [slow, medium]
+  emotion: [tense, fear, mystery]
+  cast: [solo, duo, small_group]
+  realism: [realistic, anime, 3d]
+  setting: [interior, exterior, mixed]
+signals:
+  strong:
+    - 屏住呼吸、躲进柜子、脚步声逼近、门把转动、倒计时
+  weak:
+    - 「不敢出声 / 一动不动 / 越来越近」
+  counter:
+    - signal: 遮挡被揭开、看见了危险的真身
+      route_to_ref: scene.reveal
+    - signal: 本集最后一场，停在揭开前的一刻
+      route_to_ref: scene.cliffhanger
+    - signal: 躲不住了，开始逃
+      route_to_ref: scene.chase
+directing:
+  - rule: >-
+      先定信息差：让观众知道危险而角色不知道（桌下的炸弹），就给观众看威胁的局部；
+      两人都不知道危险在哪，就只给声音。
+    src: [src.avd]
+  - rule: 声音是主角：脚步的远近、门把的金属声、木地板的吱呀、呼吸。画面可以几乎不动。
+  - rule: 威胁只给局部：门缝下的影子、慢慢转动的门把、一双靴子；不让威胁完整入画。
+    see_refs: [grammar.size_extreme_closeup]
+  - rule: 时间拉长，但每 3–5 秒一个新的小变化：脚步停了、影子动了、灯闪了一下。
+    src: [src.sds]
+  - rule: 收束三选一：危险过去（释放）、被发现（转揭示、追逐或打斗）、停在悬念（结尾悬念）。
+beats:
+  - id: B1
+    name: 警觉
+    purpose: 角色察觉到异常
+    share: [0.15, 0.25]
+  - id: B2
+    name: 逼近
+    purpose: 危险一点点靠近
+    share: [0.35, 0.50]
+  - id: B3
+    name: 极限
+    purpose: 最近的一刻
+    share: [0.15, 0.25]
+  - id: B4
+    name: 释放
+    purpose: 危险过去，或者爆发
+    share: [0.10, 0.20]
+coverage:
+  - id: C1
+    beat: B1
+    shot: 角色猛然停住、侧耳听的近景，固定机位
+    size_refs: [grammar.size_close]
+    camera_ref: grammar.move_static
+    purpose: 警觉
+  - id: C2
+    beat: B2
+    shot: 主观视角：从藏身的缝隙里看出去
+    size_refs: [grammar.size_medium, grammar.size_full]
+    angle_ref: grammar.pos_pov
+    camera_ref: grammar.move_static
+    purpose: 和角色一起看
+  - id: C3
+    beat: B2
+    shot: 威胁的局部大特写：门缝下的影子、转动的门把
+    size_refs: [grammar.size_extreme_closeup]
+    camera_ref: grammar.move_static
+    purpose: 威胁靠近
+  - id: C4
+    beat: B3
+    shot: 眼睛的大特写，固定机位
+    size_refs: [grammar.size_extreme_closeup]
+    camera_ref: grammar.move_static
+    purpose: 极限时刻的紧张
+  - id: C5
+    beat: B3
+    shot: 深焦全景，交代藏身处和威胁之间的距离
+    size_refs: [grammar.size_full]
+    camera_ref: grammar.move_static
+    purpose: 让观众知道有多近
+    see_refs: [grammar.dof_deep]
+    optional: true
+  - id: C6
+    beat: B4
+    shot: 释放：空了的房间、威胁离开的背影
+    size_refs: [grammar.size_full]
+    camera_ref: grammar.move_static
+    purpose: 喘一口气，或接下一场
+pacing:
+  basis: 经验值；蓄势以慢档为主，被发现前的最后几秒变快。满 5 集后校准。
+  tiers:
+    fast:
+      shot_len_s: [2.0, 3.0]
+      shots_per_min: [20, 30]
+      gen_ratio: [1.4, 2.0]
+      use_when: 被发现前的最后几秒
+    medium:
+      shot_len_s: [3.0, 5.0]
+      shots_per_min: [12, 20]
+      gen_ratio: [1.2, 1.4]
+      use_when: 常规逼近
+    slow:
+      shot_len_s: [5.0, 8.0]
+      shots_per_min: [8, 12]
+      gen_ratio: [1.05, 1.25]
+      use_when: 长时间屏息等待
+generation:
+  min_gen_s: 4
+  strategy: per_shot
+  rules:
+    - 威胁的局部（门把、影子）一条一镜，动作要慢。
+    - 静止镜里安排微小变化：呼吸起伏、汗珠、光影移动。
+    - 主观视角的首帧要从遮挡的缝隙里构图（门缝、百叶）。
+camera:
+  default_refs: [grammar.move_static]
+  allowed: []
+  nonsensitive_only:
+    - ref: grammar.move_push_in
+      condition: 极缓地推向门、走廊尽头这类非人脸的对象
+  avoid:
+    - what: 眼睛大特写里的手持晃动
+      reason: 人脸敏感镜头一律固定机位
+      neg_refs: [neg.move_on_sensitive_shot]
+    - what: 拉远露出没有设定过的空间
+      reason: 模型会编出新的东西，可能提前泄露威胁
+sound:
+  items:
+    - 脚步由远及近，靠音量和混响的变化表现距离。
+    - 门把的金属声、木地板的吱呀做成 hard 同步点。
+    - 环境床几乎抽空，只留一个持续的低频；心跳声不要滥用。
+    - 极限点前后彻底静默 0.5–1 秒；释放时环境声回来。
+  see_refs: [grammar.cont_sound_state]
+ai_risks:
+  - id: R1
+    risk: 静止镜冻住
+    applies_to: {}
+    symptom: 画面完全不动，像一张图片
+    mitigation: 写成过程：呼吸起伏、汗珠滑落、光影慢慢移动
+    fallback: 缩短生成时长
+    severity: P2
+    src: [src.sds]
+  - id: R2
+    risk: 主观视角把角色本人画进了画面
+    applies_to: {}
+    symptom: 本该是角色看到的画面，却出现了角色自己
+    mitigation: 写明「画面里看不到 [角色] 本人，只有缝隙两侧的边缘」
+    fallback: 改成过肩背影
+    severity: P1
+    see_refs: [grammar.pos_pov]
+  - id: R3
+    risk: 眼睛大特写畸形或身份漂移
+    applies_to:
+      realism: [realistic]
+    symptom: 瞳孔变形、眼睛形状和定妆不同
+    mitigation: 固定机位；只写微动作（眨眼、瞳孔收缩）
+    fallback: 改成侧脸剪影
+    severity: P1
+  - id: R4
+    risk: Seedance 在恐惧情绪下让眼睛发光
+    applies_to:
+      providers: [seedance25]
+    symptom: 瞳孔出现非自然的光
+    mitigation: 写「正常人眼、不发光」；不写「极度惊恐」
+    fallback: 重出
+    severity: P2
+    neg_refs: [neg.emotion_glow_eyes]
+    src: [src.sd25_guide]
+  - id: R5
+    risk: 暗场镜被自动质检误判成坏片
+    applies_to: {}
+    symptom: 黑场检测满屏报警，慢推镜被冻帧检测误报
+    mitigation: 抽帧目视确认后再下结论，不要因此做全局提亮（蓝海囚笼的教训）
+    fallback: 无
+    severity: P2
+    src: [src.mem_lanhai]
+example:
+  title: 衣柜里
+  setup: 写实、室内、一人、慢到中档；万相 3.0、480P、16:9。女人听见有人进了屋，躲进衣柜，从百叶门缝往外看。
+  gens:
+    - id: G1
+      coverage_ref: scene.tension#C1
+      duration_s: 5
+      angle: 近景，固定
+      action: 女人在卧室里猛地停住，侧过头去听，手停在半空
+    - id: G2
+      coverage_ref: scene.tension#C2
+      duration_s: 6
+      angle: 主观视角，从衣柜百叶门缝看出去
+      video_prompt: >-
+        镜头固定不动。主观视角：从衣柜百叶门的缝隙看出去，画面两侧是百叶的木条边缘，看不到躲在柜里的人。
+        卧室门在画面中央，门把慢慢向下转动，停住，又慢慢回位。画面中无任何文字、字幕、水印。
+    - id: G3
+      coverage_ref: scene.tension#C3
+      duration_s: 5
+      angle: 门缝大特写，固定
+      action: 门缝下走廊的光里出现两只脚的影子，停住不动，过了一会儿慢慢移开
+    - id: G4
+      coverage_ref: scene.tension#C4
+      duration_s: 5
+      angle: 眼睛大特写，固定
+      action: 百叶缝隙里的黑暗中，一道细光横在女人的眼睛上，眼睛一眨不眨，睫毛轻轻发抖
+    - id: G5
+      coverage_ref: scene.tension#C6
+      duration_s: 5
+      angle: 主观视角全景，固定
+      action: 卧室门开着，门口空无一人，走廊的灯闪了一下后熄灭
+  shots:
+    - {id: E1, beat: B1, from: G1, in_s: 0.3, len_s: 3.5, mouth: none}
+    - {id: E2, beat: B2, from: G2, in_s: 0.3, len_s: 5.0}
+    - {id: E3, beat: B2, from: G3, in_s: 0.3, len_s: 4.0}
+    - {id: E4, beat: B3, from: G4, in_s: 0.3, len_s: 4.5, mouth: none}
+    - {id: E5, beat: B4, from: G5, in_s: 0.3, len_s: 4.5}
+  totals: 5 镜共 21.5 秒，约 14.0 镜/分，落在中档；生成 5 条共 26 秒，gen_ratio 约 1.21；万相 480P 约 ¥7.8。
+sources: [src.mem_lanhai, src.sd25_guide, src.sds, src.avd, src.film_grammar]

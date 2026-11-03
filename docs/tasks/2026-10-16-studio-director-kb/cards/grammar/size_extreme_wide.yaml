@@ -1,0 +1,37 @@
+# 导演知识库 · 镜头语法卡
+schema: kb.grammar/v1
+id: grammar.size_extreme_wide
+title: 大远景
+version: 1
+status: draft
+updated: 2026-10-16
+family: shot_size
+order: 1
+aliases: [极远景, 大全景, 超远景, extreme wide shot, EWS]
+summary: 人物极小或看不清，环境就是主角；用来立世界、立尺度，也是肖像闸和版权拦截最安全的景别。
+definition: 环境占满画面，人物不超过画高约 1/10，或者只是一个可辨认的小点、小剪影。
+framing: 人物不超过画高约 1/10；环境占满画面
+mouth_readable: none
+narrative_use:
+  - 开场或换场时交代世界、地形与时间
+  - 表现人物的孤独和渺小
+  - 收尾时拉开，给情绪留白
+  - 奇观镜头里给出尺度参照（小人对巨物）
+prompt:
+  write:
+    - 大远景，人物只占画面很小一部分（约画高 1/10），[环境] 占满画面
+    - 写出前、中、远三层的尺度锚点，例如「前景沙脊、中景两个小人影、远处连绵沙丘」
+  avoid:
+    - 「宏大史诗场面」「震撼大场面」这类没有尺度关系的形容
+provider_notes:
+  - providers: [seedance25]
+    realism: [realistic]
+    note: 远景、航拍里的小人物能过肖像闸（侠客行实测）；版权兜底时人物压到不超过画高 1/8
+    src: [src.mem_xiakexing, src.mem_copyright]
+  - providers: [wan30, seedance25, seedance20]
+    note: 480P 下远景细节（火星、雨丝、人群）容易糊，关键细节靠插入特写来补（推断，未实测）
+risks:
+  - risk: 人物太小，动作看不出来
+    mitigation: 只让人物做大轮廓的动作（走、跑、相向冲刺），细节交给下一镜
+see_refs: [grammar.size_wide, grammar.move_aerial, grammar.angle_top_down]
+sources: [src.film_grammar, src.sds, src.wan_t2v_guide, src.mem_xiakexing, src.mem_copyright, src.prop_asset]

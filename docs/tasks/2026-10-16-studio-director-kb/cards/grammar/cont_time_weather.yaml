@@ -1,0 +1,21 @@
+# 导演知识库 · 镜头语法卡
+schema: kb.grammar/v1
+id: grammar.cont_time_weather
+title: 时间与天气
+version: 1
+status: draft
+updated: 2026-10-16
+family: continuity
+aliases: [时间连续, 天气连续, time of day]
+summary: 时间段和天气跨镜延续（雨一直在下）；变化要有过渡，最好用声音交代。
+definition: 同一场景内，时间段、天气、季节的状态保持一致，或者按剧情明确变化。
+narrative_use:
+  - 维持同一时空的可信度
+  - 天气变化表达情绪转折（雨停、起风）
+prompt:
+  write:
+    - 清单 time_of_day 每镜填写；video_prompt 写延续的环境运动：「窗外雨丝持续落下」
+    - 天气变化用声音先行交代：雨声渐弱 → 画面里雨停
+  avoid: []
+see_refs: [grammar.cont_lighting, grammar.cont_sound_state]
+sources: [src.user_02, src.user_05]

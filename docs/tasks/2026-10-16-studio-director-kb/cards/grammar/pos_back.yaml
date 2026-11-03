@@ -1,0 +1,25 @@
+# 导演知识库 · 镜头语法卡
+schema: kb.grammar/v1
+id: grammar.pos_back
+title: 背面
+version: 1
+status: draft
+updated: 2026-10-16
+family: position
+aliases: [背影, 背拍, from behind]
+summary: 从人物背后拍；藏起面部、留悬念、表现前进与离开。肖像闸最安全，但只露标志性装束的背影可能撞版权。
+definition: 摄影机在人物身后，观众看到的是背影和人物面前的景象。
+narrative_use:
+  - 隐藏面部（人物不露正脸的项目，如观音入梦、Preloq）
+  - 离开、前进、面对未知
+  - 让观众和角色看同一个方向
+prompt:
+  write:
+    - 从 [人物] 身后拍，画面里只有背影，[人物] 面前是 [景象]
+  avoid: []
+provider_notes:
+  - providers: [seedance25]
+    note: 背影只露出近似知名 IP 的冠饰、披风等标志物时被拦过；要么做美术差异化，要么让人物缩到远景
+    src: [src.mem_copyright]
+see_refs: [grammar.pos_over_shoulder, grammar.move_follow]
+sources: [src.film_grammar, src.mem_copyright, src.mem_guanyin, src.mem_preloq]

@@ -1,0 +1,28 @@
+# 导演知识库 · 镜头语法卡
+schema: kb.grammar/v1
+id: grammar.pos_over_shoulder
+title: 过肩
+version: 1
+status: draft
+updated: 2026-10-16
+family: position
+aliases: [过肩镜头, OTS, over-the-shoulder]
+summary: 从一人肩后拍另一人；对话正反打的主力。前景的说话人嘴不可读，台词可以在后期自由摆放。
+definition: 前景是一个人虚化的肩和后脑，焦点在对面的人身上。
+narrative_use:
+  - 对话正反打
+  - 让说话人的嘴不可读，口型方案可以用 avoid
+  - 前景人物占画面越多，压迫感越强
+prompt:
+  write:
+    - 过肩近景，从 [A] 的右肩后方拍，前景是 [A] 虚化的右肩和后脑，焦点在 [B] 脸上，[B] 面朝画面左侧
+  avoid:
+    - 只写「OTS」或「过肩镜头」：不说从谁背后拍、焦点在谁身上，模型会随便选
+provider_notes:
+  - providers: [wan30, seedance25, seedance20]
+    note: 前景的肩和后脑也会被模型画出来，前景人物同样要绑定身份（binding id），否则发型、服色会变
+  - providers: [seedance25]
+    note: 过肩背影只露出近似知名 IP 的标志性装束时，被版权检测拦过（《战》G10）
+    src: [src.mem_copyright]
+see_refs: [grammar.axis_180, grammar.dof_shallow, grammar.size_medium_close]
+sources: [src.film_grammar, src.sds, src.mem_copyright, src.user_05]

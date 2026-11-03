@@ -1,0 +1,223 @@
+# 导演知识库 · 场景模板卡
+schema: kb.scene/v1
+id: scene.montage
+title: 过场蒙太奇
+version: 1
+status: draft
+updated: 2026-10-16
+definition: 用一串短镜压缩时间或并列同类信息（训练、旅途、筹备、时间流逝）。
+summary: >-
+  每镜拍一个「状态变化」的证据，讲变化而不是过程；同构图在不同时间重复最好懂。切点卡配乐节拍。
+  一镜一条生成，裁得又短，是成本最高的场景类型之一，报价时要单列。
+tags:
+  pace: [fast, medium, slow]
+  emotion: [joy, warm, tense, sad, calm]
+  cast: [none, solo, duo, small_group]
+  realism: [realistic, anime, 3d]
+  setting: [mixed, interior, exterior]
+signals:
+  strong:
+    - 「几天后 / 日复一日 / 一路上 / 从此」
+    - 列举式的动作或场景
+  weak:
+    - 没有台词，只有旁白或配乐
+    - 训练、旅途、筹备、四季更替
+  counter:
+    - signal: 只是一次换场
+      route_to_ref: scene.establishing
+    - signal: 一段连续的奔跑，镜与镜之间动作要接上
+      route_to_ref: scene.chase
+directing:
+  - rule: 每镜一个状态变化的证据：伤口结痂、动作从笨拙到熟练、窗外的树叶由绿变黄。蒙太奇讲变化，不讲过程。
+  - rule: 重复中求变：同一机位、同一动作，在不同时间重复（同构图），观众最容易读懂时间在流逝。
+    see_refs: [grammar.trans_match_graphic]
+  - rule: 用节奏连接：切点卡配乐节拍；镜长可以随配乐递减，越来越快，制造推进感。
+    src: [src.xiakexing_files]
+  - rule: 用匹配剪辑把跳跃的时空串起来：图形匹配、动作匹配。
+    see_refs: [grammar.trans_match_action]
+    src: [src.avd]
+  - rule: 一段蒙太奇控制在 15–30 秒；再长就失去压缩感。
+beats:
+  - id: B1
+    name: 起点
+    purpose: 初始状态
+    share: [0.15, 0.25]
+  - id: B2
+    name: 重复与递进
+    purpose: 变化一点点发生
+    share: [0.45, 0.65]
+  - id: B3
+    name: 终点
+    purpose: 变化完成，与起点对照
+    share: [0.15, 0.25]
+coverage:
+  - id: C1
+    beat: B1
+    shot: 代表初始状态的中景或特写
+    size_refs: [grammar.size_medium, grammar.size_closeup]
+    camera_ref: grammar.move_static
+    purpose: 起点
+  - id: C2
+    beat: B2
+    shot: 同构图在不同时间重复（换光线、季节、状态）
+    size_refs: [grammar.size_full]
+    camera_ref: grammar.move_static
+    purpose: 时间在流逝
+  - id: C3
+    beat: B2
+    shot: 变化证据的大特写：磨破的拳套、结痂的伤口、撕掉的日历
+    size_refs: [grammar.size_extreme_closeup]
+    camera_ref: grammar.move_static
+    purpose: 变化的证据
+  - id: C4
+    beat: B2
+    shot: 动作匹配串联：不同地点的同一个动作
+    size_refs: [grammar.size_medium]
+    camera_ref: grammar.move_static
+    purpose: 串起跳跃的时空
+    transition_refs: [grammar.trans_match_action]
+  - id: C5
+    beat: B3
+    shot: 与起点同构图，状态已经变了
+    size_refs: [grammar.size_medium]
+    camera_ref: grammar.move_static
+    purpose: 终点与起点对照
+    transition_refs: [grammar.trans_match_graphic]
+pacing:
+  basis: 经验值。快档下限 1.4 秒取万相官方短剧实践；短镜都要生成 4 秒再裁，所以 gen_ratio 偏高。满 5 集后校准。
+  src: [src.wan3_guide]
+  tiers:
+    fast:
+      shot_len_s: [1.4, 2.0]
+      shots_per_min: [30, 43]
+      gen_ratio: [2.0, 3.0]
+      use_when: 训练、筹备的高速段
+    medium:
+      shot_len_s: [2.0, 3.0]
+      shots_per_min: [20, 30]
+      gen_ratio: [1.4, 2.0]
+      use_when: 常规蒙太奇
+    slow:
+      shot_len_s: [3.0, 4.5]
+      shots_per_min: [13, 20]
+      gen_ratio: [1.15, 1.4]
+      use_when: 抒情的四季更替
+generation:
+  min_gen_s: 4
+  strategy: per_shot
+  routes:
+    - id: A
+      name: 一镜一条（默认）
+      how: 每条 4 秒，裁 1.5–3 秒用；一条里如果有两个可用瞬间，裁成两镜。
+    - id: B
+      name: 一条多镜头（可选，先跑探针）
+      how: 万相 3.0 或 Seedance 2.5 在一条里用时间戳写 4–6 个分镜。蒙太奇的镜间本来就不要求严格连续，比打斗更适合这种做法；但人物身份仍只能靠文字锁定。
+      src: [src.wan3_guide, src.sd25_guide]
+  rules:
+    - 报价时把蒙太奇单列，它的生成秒数通常是成片秒数的 1.5–3 倍。
+    - 同构图的重复镜共用一张底图，只在关键帧阶段改光线、季节和状态，不让视频模型去变。
+    - 能复用本集已生成素材的镜头优先复用（reuse）。
+  src: [src.user_02, src.plan]
+camera:
+  default_refs: [grammar.move_static]
+  allowed: []
+  nonsensitive_only:
+    - ref: grammar.move_truck
+      condition: 旅途、街景的横移
+    - ref: grammar.move_push_in
+      condition: 非人脸的物件缓慢推近
+    - ref: grammar.move_aerial
+      condition: 旅途的远景
+  avoid:
+    - what: 每镜换一种运镜
+      reason: 节奏会乱；蒙太奇的统一感来自重复的构图和节拍
+sound:
+  items:
+    - 配乐主导，切点卡节拍（侠客行按配乐起音卡点剪）。
+    - 每镜可以在节拍上叠一个点音效（撕日历、拳头击中沙袋）。
+    - 旁白要稀，一两句就够。
+    - 配乐的落点对准终点镜。
+  src: [src.xiakexing_files]
+ai_risks:
+  - id: R1
+    risk: 人物跨镜漂移（不同时间、不同服装）
+    applies_to: {}
+    symptom: 每镜像换了一个人
+    mitigation: 每镜绑定定妆；服装变化要先出对应的定妆版本
+    fallback: 多拍手、背影和物件
+    severity: P1
+    src: [src.user_02]
+  - id: R2
+    risk: 成本超出预期
+    applies_to: {}
+    symptom: 20 秒的蒙太奇花掉 40–60 秒的生成费
+    mitigation: 单列报价；优先复用已有素材
+    fallback: 减少镜数，拉长镜长
+    severity: P2
+    src: [src.plan]
+  - id: R3
+    risk: 同构图的几镜构图跑偏
+    applies_to: {}
+    symptom: 重复镜之间机位不一致，时间流逝的效果没了
+    mitigation: 从同一张底图派生关键帧
+    fallback: 后期裁切对齐
+    severity: P2
+  - id: R4
+    risk: 1.5 秒内看不清动作
+    applies_to: {}
+    symptom: 短镜里只有起势，没有结果
+    mitigation: 每镜只拍一个最清楚的瞬间，裁切窗口放在动作完成处
+    fallback: 拉长到 2.5 秒
+    severity: P2
+  - id: R5
+    risk: 日历、计分板上的文字是乱码
+    applies_to: {}
+    symptom: 数字错乱
+    mitigation: 文字和数字后期合成
+    fallback: 只拍撕下日历的动作，不拍数字
+    severity: P1
+    neg_refs: [neg.text_in_generated_frame]
+example:
+  title: 备赛七天
+  setup: 写实、混合场景、一人、中档；万相 3.0、480P、16:9。女拳手赛前一周的训练，起点和终点都是她在拳馆缠绷带。
+  gens:
+    - id: G1
+      coverage_ref: scene.montage#C1
+      duration_s: 4
+      angle: 中景，固定
+      action: 清晨的拳馆，女孩缠绷带，手指笨拙地打结，打了两次才打好
+    - id: G2
+      coverage_ref: scene.montage#C3
+      duration_s: 4
+      angle: 沙袋大特写，固定
+      action: 拳头两次击中沙袋，沙袋凹陷后弹回
+    - id: G3
+      coverage_ref: scene.montage#C2
+      duration_s: 4
+      angle: 全景，固定
+      action: 深夜的拳馆，女孩一个人在打沙袋，窗外一片漆黑
+    - id: G4
+      coverage_ref: scene.montage#C3
+      duration_s: 4
+      angle: 长椅大特写，固定
+      action: 磨破的拳套和渗血的绷带放在长椅上，汗水顺着皮面滑下
+    - id: G5
+      coverage_ref: scene.montage#C4
+      duration_s: 5
+      angle: 远景，横移
+      action: 清晨的河边，女孩向画面右侧跑步，呼出白气
+    - id: G6
+      coverage_ref: scene.montage#C5
+      duration_s: 5
+      angle: 与 G1 同构图的中景，固定
+      action: 清晨的拳馆，女孩一拉一扣，利落地缠好绷带，起身
+  shots:
+    - {id: E1, beat: B1, from: G1, in_s: 0.3, len_s: 3.0}
+    - {id: E2, beat: B2, from: G2, in_s: 0.3, len_s: 1.5}
+    - {id: E3, beat: B2, from: G3, in_s: 0.3, len_s: 2.0}
+    - {id: E4, beat: B2, from: G4, in_s: 0.3, len_s: 1.5}
+    - {id: E5, beat: B2, from: G5, in_s: 0.3, len_s: 2.5}
+    - {id: E6, beat: B2, from: G2, in_s: 2.0, len_s: 1.5, note: 同一条里的第二拳}
+    - {id: E7, beat: B3, from: G6, in_s: 0.3, len_s: 3.5}
+  totals: 7 镜共 15.5 秒，约 27.1 镜/分，落在中档；生成 6 条共 26 秒，gen_ratio 约 1.68；万相 480P 约 ¥7.8。
+sources: [src.user_02, src.plan, src.xiakexing_files, src.wan3_guide, src.sd25_guide, src.avd, src.film_grammar]

@@ -1,0 +1,27 @@
+# 导演知识库 · 镜头语法卡
+schema: kb.grammar/v1
+id: grammar.angle_high
+title: 高角度俯拍
+version: 1
+status: draft
+updated: 2026-10-16
+family: angle
+aliases: [俯拍, 高机位, high angle]
+summary: 机位高、向下拍；人物显得弱小、被审视。约 65° 俯拍还能用头发和俯角挡住脸，是过肖像闸的常用办法。
+definition: 摄影机高于被摄对象，向下拍摄；角度越大，脸越不可读。
+narrative_use:
+  - 人物被压制、被审视、陷入困境
+  - 交代人物和地面、桌面上物件的关系
+  - 把脸藏起来：约 65° 俯拍时头发和俯角会挡住面部
+prompt:
+  write:
+    - 约 65° 俯拍，从 [人物] 头顶斜上方拍，头发和俯角挡住脸
+    - 高角度俯拍，[人物] 在画面下半部，显得渺小
+  avoid: []
+provider_notes:
+  - providers: [seedance25]
+    realism: [realistic]
+    note: 侠客行 K07 双人脸特写被拒后，改「俯拍、头发遮脸」重出一次通过
+    src: [src.mem_xiakexing]
+see_refs: [grammar.angle_top_down, grammar.angle_low]
+sources: [src.film_grammar, src.sds, src.mem_xiakexing]
