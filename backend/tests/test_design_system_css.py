@@ -15,7 +15,7 @@ import pytest
 
 ROOT = Path(__file__).resolve().parents[2]
 FRONTEND = ROOT / "frontend"
-REQUIRED_PACKAGES = ["@tailwindcss/node", "@tailwindcss/oxide"]
+REQUIRED_PACKAGES = ["@tailwindcss/node", "@tailwindcss/oxide", "tailwindcss"]
 MIN_SCANNED_FILES = 130
 
 PROBE = r"""

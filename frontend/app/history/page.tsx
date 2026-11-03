@@ -41,6 +41,9 @@ function HistoryForAccount({ username }: { username: string }) {
   const [dateTo, setDateTo] = useState("");
   const [collapsed, setCollapsed] = useState<Record<string, boolean>>({});
   const searchRef = useRef<HTMLInputElement>(null);
+  const dateFromRef = useRef<HTMLInputElement>(null);
+  const dateToRef = useRef<HTMLInputElement>(null);
+  const [rawChip, setRawChip] = useState<"from" | "to" | null>(null);
 
   useEffect(() => {
     const request = beginRequest();
@@ -83,7 +86,11 @@ function HistoryForAccount({ username }: { username: string }) {
   };
 
   const openDatePicker = (input: HTMLInputElement) => {
-    try { input.showPicker(); } catch { /* 浏览器不支持或拒绝时，沿用原生点按 */ }
+    try { input.showPicker(); } catch {
+      // 浏览器不支持或拒绝时退回原生日期框：显出来并把焦点交给它，失焦后藏回去
+      setRawChip(input.dataset.chip === "to" ? "to" : "from");
+      input.focus();
+    }
   };
   const dayFace = (key: string) => (key ? formatBeijingDateLong(beijingDayStart(key)) || key : "不限");
 
@@ -217,29 +224,51 @@ function HistoryForAccount({ username }: { username: string }) {
               <label className={cn("chip relative h-auto min-h-10 w-full justify-between gap-2 px-3 py-1.5 has-[:focus-visible]:outline has-[:focus-visible]:outline-1 has-[:focus-visible]:outline-offset-2 has-[:focus-visible]:outline-[color:var(--ink)]", dateFrom && "chip-on")}>
                 <span aria-hidden="true">从</span>
                 <span aria-hidden="true" className="readout text-fs-13 text-[color:var(--ink)]">{dayFace(dateFrom)}</span>
+                <button
+                  type="button"
+                  aria-label={`从（开始日期）：${dayFace(dateFrom)}`}
+                  onClick={() => { if (dateFromRef.current) openDatePicker(dateFromRef.current); }}
+                  className="absolute inset-0 h-full w-full cursor-pointer opacity-0"
+                />
                 <input
+                  ref={dateFromRef}
                   type="date"
                   aria-label="从（开始日期）"
+                  aria-hidden="true"
+                  tabIndex={-1}
+                  data-chip="from"
                   value={dateFrom}
                   max={dateTo || "9999-12-31"}
                   onChange={e => { setDateFrom(e.target.value); setQuick("all"); }}
                   onClick={e => openDatePicker(e.currentTarget)}
                   onKeyDown={e => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); openDatePicker(e.currentTarget); } }}
-                  className="absolute inset-0 h-full w-full cursor-pointer opacity-0"
+                  onBlur={() => setRawChip(null)}
+                  className={cn("absolute inset-0 h-full w-full cursor-pointer", rawChip === "from" ? "opacity-100" : "opacity-0")}
                 />
               </label>
               <label className={cn("chip relative h-auto min-h-10 w-full justify-between gap-2 px-3 py-1.5 has-[:focus-visible]:outline has-[:focus-visible]:outline-1 has-[:focus-visible]:outline-offset-2 has-[:focus-visible]:outline-[color:var(--ink)]", dateTo && "chip-on")}>
                 <span aria-hidden="true">到</span>
                 <span aria-hidden="true" className="readout text-fs-13 text-[color:var(--ink)]">{dayFace(dateTo)}</span>
+                <button
+                  type="button"
+                  aria-label={`到（结束日期）：${dayFace(dateTo)}`}
+                  onClick={() => { if (dateToRef.current) openDatePicker(dateToRef.current); }}
+                  className="absolute inset-0 h-full w-full cursor-pointer opacity-0"
+                />
                 <input
+                  ref={dateToRef}
                   type="date"
                   aria-label="到（结束日期）"
+                  aria-hidden="true"
+                  tabIndex={-1}
+                  data-chip="to"
                   value={dateTo}
                   min={dateFrom || undefined} max="9999-12-31"
                   onChange={e => { setDateTo(e.target.value); setQuick("all"); }}
                   onClick={e => openDatePicker(e.currentTarget)}
                   onKeyDown={e => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); openDatePicker(e.currentTarget); } }}
-                  className="absolute inset-0 h-full w-full cursor-pointer opacity-0"
+                  onBlur={() => setRawChip(null)}
+                  className={cn("absolute inset-0 h-full w-full cursor-pointer", rawChip === "to" ? "opacity-100" : "opacity-0")}
                 />
               </label>
               {(dateFrom || dateTo) && (

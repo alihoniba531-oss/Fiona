@@ -509,12 +509,10 @@ html, * {
   .mount-frame { background:var(--mount); box-shadow:inset 0 0 0 1px var(--rim),inset 0 1px 0 var(--lip),inset 0 -1px 0 var(--lipdk),inset 0 -24px 30px -26px var(--pool),0 1px 2px var(--drop),0 26px 48px -34px var(--drop); }
   .mount-frame-reference { width:120px; padding:0; }
   .image-preview-dialog { background:var(--hi); box-shadow:inset 0 0 0 1px var(--rim),inset 0 1px 0 var(--lip),inset 0 -1px 0 var(--lipdk),0 1px 2px var(--drop),0 26px 48px -34px var(--drop); }
-  /* Safari 17.4 之前，::backdrop 取不到 :root 上的变量：var() 带上原来的遮罩色作兜底 */
-  .image-preview-dialog::backdrop { background:var(--scrim, rgba(31,41,38,.18)); }
-  .dark .image-preview-dialog::backdrop { background:var(--scrim, rgba(0,0,0,.45)); }
   .confirm-dialog { width:min(420px,calc(100vw - 32px)); max-width:none; margin:auto; border-radius:12px; padding:0; background:var(--hi); color:var(--ink); border:1px solid var(--carve); box-shadow:inset 0 0 0 1px var(--rim),inset 0 1px 0 var(--lip),inset 0 -1px 0 var(--lipdk),0 1px 2px var(--drop),0 26px 48px -34px var(--drop); }
-  .confirm-dialog::backdrop { background:var(--scrim, rgba(31,41,38,.18)); }
-  .dark .confirm-dialog::backdrop { background:var(--scrim, rgba(0,0,0,.45)); }
+  /* 所有 <dialog> 共用：Safari 17.4 之前 ::backdrop 取不到 :root 上的变量，var() 带上原来的遮罩色作兜底 */
+  .scrim-dialog::backdrop { background:var(--scrim, rgba(31,41,38,.18)); }
+  .dark .scrim-dialog::backdrop { background:var(--scrim, rgba(0,0,0,.45)); }
   @keyframes glaze-slide-in { from { transform:translateX(-100%); } to { transform:translateX(0); } }
   .glaze-slide-in { animation:glaze-slide-in 300ms cubic-bezier(.22,.61,.36,1); }
 

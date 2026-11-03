@@ -139,7 +139,7 @@ export function ConfirmProvider({ children }: { children: ReactNode }): ReactEle
   const dialog = (
     <dialog
       ref={dialogRef}
-      className="confirm-dialog"
+      className="confirm-dialog scrim-dialog"
       role={active?.kind === "confirm" ? "alertdialog" : undefined}
       aria-labelledby={active?.title ? titleId : undefined}
       aria-describedby={active ? bodyId : undefined}

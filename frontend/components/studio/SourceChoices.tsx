@@ -31,4 +31,4 @@ export function NovelSourceChoice({ book, selected = false, disabled = false, em
 export function SourceAspectPicker({ aspect, disabled, onChange }: { aspect: "16:9" | "9:16"; disabled: boolean; onChange: (value: "16:9" | "9:16") => void }) {
   return <fieldset className="my-5" disabled={disabled}><legend className="mb-2">画幅</legend><div className="flex flex-wrap gap-2">{(["16:9", "9:16"] as const).map(value => <button key={value} type="button" aria-pressed={aspect === value} className={`chip min-h-10 min-w-10 ${aspect === value ? "chip-on" : ""}`} onClick={() => onChange(value)}>{value}</button>)}</div></fieldset>;
 }
-export const sourceDialogClass = "m-auto max-h-[85dvh] w-[min(620px,calc(100vw-32px))] max-w-full overflow-y-auto rounded-2xl border border-[color:var(--carve)] bg-[color:var(--paper)] p-5 text-[color:var(--ink)] backdrop:bg-[color:var(--scrim)]";
+export const sourceDialogClass = "m-auto max-h-[85dvh] w-[min(620px,calc(100vw-32px))] max-w-full overflow-y-auto rounded-2xl border border-[color:var(--carve)] bg-[color:var(--paper)] p-5 text-[color:var(--ink)] scrim-dialog";

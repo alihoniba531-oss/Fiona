@@ -337,7 +337,7 @@ function GenerateAction({ project, refresh }: { project: SongProject; refresh: (
             setFailure("");
             setDialogOpen(false);
           }}
-          className="m-auto max-h-[85dvh] w-[min(560px,calc(100vw-32px))] max-w-full overflow-y-auto rounded-[10px] border border-[color:var(--carve)] bg-[color:var(--paper)] p-5 text-[color:var(--ink)] backdrop:bg-[color:var(--scrim)]"
+          className="m-auto max-h-[85dvh] w-[min(560px,calc(100vw-32px))] max-w-full overflow-y-auto rounded-[10px] border border-[color:var(--carve)] bg-[color:var(--paper)] p-5 text-[color:var(--ink)] scrim-dialog"
         >
           <div className="min-w-0 space-y-2 text-fs-15 leading-6">
             <p id={titleId} className="text-fs-16.5">确认生成试听</p>

@@ -8,7 +8,7 @@ import { brainStatusLabel, brainTaskLabel, getBrainGroup, hasBrainInflightJobs, 
 
 const tasks: BrainTask[] = ["read_through", "style_proposals", "bible_extract"];
 const providerLabels = { claude: "Claude", qwen: "千问", deepseek: "DeepSeek" };
-const dialogClass = "m-auto max-h-[85dvh] w-[min(620px,calc(100vw-32px))] max-w-full overflow-y-auto rounded-2xl border border-[color:var(--carve)] bg-[color:var(--paper)] p-6 text-[color:var(--ink)] backdrop:bg-[color:var(--scrim)] mobile:p-4";
+const dialogClass = "m-auto max-h-[85dvh] w-[min(620px,calc(100vw-32px))] max-w-full overflow-y-auto rounded-2xl border border-[color:var(--carve)] bg-[color:var(--paper)] p-6 text-[color:var(--ink)] scrim-dialog mobile:p-4";
 
 export function BrainProviderPicker({ providers, current, busy, onChange }: { providers: BrainProvider[]; current: BrainProviderId; busy: boolean; onChange: (id: BrainProviderId) => Promise<void> }) {
   return <fieldset disabled={busy} className="mt-4 min-w-0"><legend className="mb-2 text-fs-13">导演模型</legend>

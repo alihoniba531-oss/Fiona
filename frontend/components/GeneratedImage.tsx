@@ -167,7 +167,7 @@ export default function GeneratedImage({ imageUrl, width, height, model, variant
       {expanded && createPortal(
         <dialog ref={dialogRef} aria-label={`${imageLabel}预览`} onCancel={() => setExpanded(false)} onClose={() => setExpanded(false)}
           onClick={event => { if (event.target === event.currentTarget) setExpanded(false); }}
-          className="image-preview-dialog m-auto max-h-[94vh] max-w-[94vw] overflow-auto rounded-[8px] border p-0 text-[color:var(--ink)]"
+          className="image-preview-dialog scrim-dialog m-auto max-h-[94vh] max-w-[94vw] overflow-auto rounded-[8px] border p-0 text-[color:var(--ink)]"
           style={{ borderColor: "var(--carve)" }}>
           <div className="flex flex-wrap items-center justify-between gap-3 border-b px-4 py-3" style={{ borderColor: "var(--carve)" }}>
             <span className="text-fs-13">{imageLabel}</span>

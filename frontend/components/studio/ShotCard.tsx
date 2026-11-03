@@ -62,7 +62,7 @@ function ReleaseDialog({ busy, error, onClose, onConfirm }: { busy: boolean; err
   const ref = useRef<HTMLDialogElement>(null);
   const titleId = useId();
   useEffect(() => { const dialog = ref.current; dialog?.showModal(); return () => { dialog?.close(); }; }, []);
-  return <dialog ref={ref} aria-labelledby={titleId} onCancel={event => { if (busy) event.preventDefault(); else onClose(); }} className="m-auto max-h-[85dvh] w-[min(520px,calc(100vw-32px))] max-w-full overflow-y-auto rounded-2xl border border-[color:var(--carve)] bg-[color:var(--paper)] p-6 text-[color:var(--ink)] backdrop:bg-[color:var(--scrim)] mobile:p-4">
+  return <dialog ref={ref} aria-labelledby={titleId} onCancel={event => { if (busy) event.preventDefault(); else onClose(); }} className="m-auto max-h-[85dvh] w-[min(520px,calc(100vw-32px))] max-w-full overflow-y-auto rounded-2xl border border-[color:var(--carve)] bg-[color:var(--paper)] p-6 text-[color:var(--ink)] scrim-dialog mobile:p-4">
     <h2 id={titleId} className="text-fs-22 tracking-[.24em]">释放额度前再次确认</h2>
     <p className="my-5 text-fs-15 leading-[1.9]">请先在供应商控制台核对，确认这次任务没有扣费。释放额度后将结束这条不确定任务。</p>
     {error && <ErrorNotice message={error} />}

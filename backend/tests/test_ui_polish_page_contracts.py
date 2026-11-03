@@ -175,7 +175,7 @@ def test_chat_model_footer_label_and_layout():
 
 def test_page_readout_numbers_are_not_bold():
     source = PAGE.read_text()
-    assert source.count('className="readout font-normal"') == 2
+    assert source.count('className="readout font-normal"') == 4
     assert not re.search(r"<b[ >]|</b>", source)
 
 

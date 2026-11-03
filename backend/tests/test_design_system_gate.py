@@ -43,17 +43,8 @@ COLOR_UTILS = (
     r"(?:text|bg|border(?:-[trblxyse])?|ring(?:-offset)?|outline|fill|stroke|divide|placeholder|caret|accent|decoration|from|via|to)"
 )
 LEGACY = r"(?:amber-ink|rec-soft|rec|dim|glass-border|glass-strong|glass-hi|shadow|sidebar[\w-]*)"
-TYPE_WORDS = (
-    "number",
-    "string",
-    "undefined",
-    "null",
-    "boolean",
-    "any",
-    "unknown",
-    "React.",
-    "CSSProperties",
-    "Property.",
+TYPE_WORD_RX = re.compile(
+    r"(?:number|string|undefined|null|boolean|any|unknown|CSSProperties)(?![\w$])|React\.|Property\."
 )
 
 # 每条规则：(编号, 说明, 正则, 适用扩展名, 是否逐行扫描)
@@ -102,9 +93,10 @@ RULES = (
     ),
     (
         "F7",
-        '行内 fontSize / font 的值必须恰为 "var(--fs-*)" 之一',
+        '行内 fontSize / font 的值必须恰为 "var(--fs-*)" 之一；禁止 .style.fontSize = 与 setProperty("font-size")',
         re.compile(
             r"""(?<![\w$.-])(?:["']?(?:fontSize|font)["']?\s*:\s*(?P<val>[^,}\n]+)|fontSize\s*=\s*(?P<attr>"[^"]*"|'[^']*'|\{[^}]*\}))"""
+            r"""|\.style\.fontSize\s*=|\.setProperty\(\s*["']font(?:-size)?["']"""
         ),
         JS_EXTS,
         True,
@@ -263,7 +255,7 @@ def _count_hits(sources):
                             r"""\{?\s*["'`]""" + FSVAR + r"""["'`]\s*\}?""", val
                         ):
                             continue
-                        if val.startswith(TYPE_WORDS):
+                        if TYPE_WORD_RX.match(val):
                             continue
                         if rel == "frontend/components/Seal.tsx" and val == '"30"':
                             continue
@@ -516,12 +508,10 @@ def _token_layer(css_text):
         and _decls_of(body[0]).get("font-size") == ["var(--fs-16-5)"]
     )
 
-    # T8：两个对话框的遮罩用 var(--scrim)，带原来的颜色作兜底；旧版 Safari 的 ::backdrop 取不到 :root 变量。
+    # T8：所有对话框共用的遮罩用 var(--scrim)，带原来的颜色作兜底；旧版 Safari 的 ::backdrop 取不到 :root 变量。
     want_backdrop = {
-        ".image-preview-dialog::backdrop": "var(--scrim, rgba(31,41,38,.18))",
-        ".dark .image-preview-dialog::backdrop": "var(--scrim, rgba(0,0,0,.45))",
-        ".confirm-dialog::backdrop": "var(--scrim, rgba(31,41,38,.18))",
-        ".dark .confirm-dialog::backdrop": "var(--scrim, rgba(0,0,0,.45))",
+        ".scrim-dialog::backdrop": "var(--scrim, rgba(31,41,38,.18))",
+        ".dark .scrim-dialog::backdrop": "var(--scrim, rgba(0,0,0,.45))",
     }
     got_backdrop = {}
     for node, _ancestors in _walk(top):
@@ -529,7 +519,7 @@ def _token_layer(css_text):
             got_backdrop.setdefault(node["prelude"], []).extend(
                 _decls_of(node).get("background", [])
             )
-    res["T8 两个对话框的 ::backdrop 用 var(--scrim) 并带兜底色，昼夜各一条"] = (
+    res["T8 所有对话框共用 .scrim-dialog::backdrop，用 var(--scrim) 并带兜底色，昼夜各一条"] = (
         got_backdrop
         == {selector: [value] for selector, value in want_backdrop.items()}
     )
@@ -619,8 +609,26 @@ def test_selfcheck_source_rules():
         ("frontend/components/SelfCheck.tsx", "const style: { fontSize: number } = {};"),
         ("frontend/components/SelfCheck.tsx", '<div style={{ fontSize: "var(--fs-13)" }} />'),
         ("frontend/components/Seal.tsx", '<text fontSize="30">印</text>'),
+        ("frontend/components/SelfCheck.tsx", "fontSize?: string | number;"),
+        ("frontend/components/SelfCheck.tsx", 'const size: React.CSSProperties["fontSize"] = "var(--fs-13)";'),
     ]
     for rel, text in good_f7:
+        assert not _count_hits([(rel, text)])["F7"], f"自检失败：F7 好样本被误伤：{text!r}"
+
+    bad_f7 = [
+        ("frontend/components/SelfCheck.tsx", "const style = { fontSize: anySize };"),
+        ("frontend/components/SelfCheck.tsx", "const style = { fontSize: numberPx };"),
+        ("frontend/components/SelfCheck.tsx", "const style = { fontSize: nullableSize ?? 14 };"),
+        ("frontend/components/SelfCheck.tsx", 'el.style.fontSize = "14px";'),
+        ("frontend/components/SelfCheck.tsx", 'el.style.setProperty("font-size", "14px");'),
+        ("frontend/components/SelfCheck.tsx", "el.style.setProperty('font', '14px serif');"),
+    ]
+    for rel, text in bad_f7:
+        assert _count_hits([(rel, text)])["F7"], f"自检失败：F7 坏样本没有命中：{text!r}"
+    for rel, text in [
+        ("frontend/components/SelfCheck.tsx", 'el.style.fontWeight = "500";'),
+        ("frontend/components/SelfCheck.tsx", 'el.style.setProperty("--fs-x", "1");'),
+    ]:
         assert not _count_hits([(rel, text)])["F7"], f"自检失败：F7 好样本被误伤：{text!r}"
 
     # R3 只放行两处原文。
@@ -705,10 +713,8 @@ def _selfcheck_token_css():
 """
     dialogs = r"""
 @layer components {
-  .image-preview-dialog::backdrop { background:var(--scrim, rgba(31,41,38,.18)); }
-  .dark .image-preview-dialog::backdrop { background:var(--scrim, rgba(0,0,0,.45)); }
-  .confirm-dialog::backdrop { background:var(--scrim, rgba(31,41,38,.18)); }
-  .dark .confirm-dialog::backdrop { background:var(--scrim, rgba(0,0,0,.45)); }
+  .scrim-dialog::backdrop { background:var(--scrim, rgba(31,41,38,.18)); }
+  .dark .scrim-dialog::backdrop { background:var(--scrim, rgba(0,0,0,.45)); }
 }
 """
     guard = r"""
@@ -763,8 +769,41 @@ def test_selfcheck_token_layer():
     )
     assert not _token_layer(bad)["T7 body 规则块里 font-size: var(--fs-16-5)"]
 
-    # T8：遮罩的兜底色被去掉，旧版 Safari 的 ::backdrop 会变透明。
-    bad = css.replace("var(--scrim, rgba(31,41,38,.18))", "var(--scrim)").replace(
-        "var(--scrim, rgba(0,0,0,.45))", "var(--scrim)"
-    )
-    assert not _token_layer(bad)["T8 两个对话框的 ::backdrop 用 var(--scrim) 并带兜底色，昼夜各一条"]
+    # T8：公共遮罩类、昼夜颜色与兜底色必须完整；样本原样时通过。
+    t8_name = "T8 所有对话框共用 .scrim-dialog::backdrop，用 var(--scrim) 并带兜底色，昼夜各一条"
+    assert _token_layer(css)[t8_name], "自检失败：合法的 T8 样本未通过"
+
+    night_line = "  .dark .scrim-dialog::backdrop { background:var(--scrim, rgba(0,0,0,.45)); }\n"
+    bad_t8 = [
+        (
+            "两条兜底一起去掉",
+            css.replace("var(--scrim, rgba(31,41,38,.18))", "var(--scrim)").replace(
+                "var(--scrim, rgba(0,0,0,.45))", "var(--scrim)"
+            ),
+        ),
+        (
+            "只把 .dark 那条的兜底去掉",
+            css.replace("var(--scrim, rgba(0,0,0,.45))", "var(--scrim)"),
+        ),
+        (
+            "昼夜颜色对调",
+            css.replace(
+                "var(--scrim, rgba(31,41,38,.18))", "__T8_DAY__"
+            ).replace(
+                "var(--scrim, rgba(0,0,0,.45))", "var(--scrim, rgba(31,41,38,.18))"
+            ).replace(
+                "__T8_DAY__", "var(--scrim, rgba(0,0,0,.45))"
+            ),
+        ),
+        ("删掉 .dark .scrim-dialog::backdrop 那条", css.replace(night_line, "")),
+        (
+            "多一条 .image-preview-dialog::backdrop（HEAD 的写法）",
+            css.replace(
+                night_line,
+                night_line
+                + "  .image-preview-dialog::backdrop { background:var(--scrim, rgba(31,41,38,.18)); }\n",
+            ),
+        ),
+    ]
+    for label, bad in bad_t8:
+        assert not _token_layer(bad)[t8_name], f"自检失败：T8 坏样本没有拦住：{label}"

@@ -298,10 +298,21 @@ function weatherForecastCondition(forecast: WeatherForecastDay) {
     : [forecast.dayWeather, forecast.nightWeather].filter(Boolean).join("转");
 }
 
+const costHintSeenKey = (username: string) => `fiona_cost_hint_seen:${encodeURIComponent(username)}`;
+/** 该账号在本浏览器首次进聊天时返回 true 并记下；浏览器存储不可用时按首次处理。 */
+function markCostHintSeen(username: string): boolean {
+  try {
+    const key = costHintSeenKey(username);
+    if (localStorage.getItem(key) === "1") return false;
+    localStorage.setItem(key, "1");
+    return true;
+  } catch { return true; }
+}
+
 // ── main page ──
 
-function ChatModelFooter({ username, settingsOpen, chatMode, loading }: {
-  username: string; settingsOpen: boolean; chatMode: boolean; loading: boolean;
+function ChatModelFooter({ username, settingsOpen, chatMode, loading, balance }: {
+  username: string; settingsOpen: boolean; chatMode: boolean; loading: boolean; balance: number | null;
 }) {
   const [settings, setSettings] = useState<ChatModelSettings | null>(null);
   const [busy, setBusy] = useState<"toggle" | "effort" | null>(null);
@@ -311,6 +322,13 @@ function ChatModelFooter({ username, settingsOpen, chatMode, loading }: {
   const revision = useRef(0);
   const errorOwner = useRef<"refresh" | "operation" | null>(null);
   const effortGroup = useRef<HTMLDivElement>(null);
+  const [firstVisit, setFirstVisit] = useState(false);
+  const firstVisitDecided = useRef<boolean | null>(null);
+  useEffect(() => {
+    if (!username) return;
+    if (firstVisitDecided.current === null) firstVisitDecided.current = markCostHintSeen(username);
+    setFirstVisit(firstVisitDecided.current);
+  }, [username]);
   const refresh = useCallback(() => {
     const request = beginRequest();
     if (!request) return;
@@ -401,17 +419,22 @@ function ChatModelFooter({ username, settingsOpen, chatMode, loading }: {
       group.querySelector<HTMLButtonElement>('button[role="radio"][aria-checked="true"]')?.focus();
     }
   }, [busy, loading, config?.effort]);
+  const lowBalance = balance !== null && balance < 30;
+  const showCost = firstVisit || lowBalance;
+  const hasContent = (chatMode && !!config) || showCost || (chatMode && !!error);
   const label = config?.enabled
         ? `${modelDisplayName(config.model)} · 不扣草莓`
         : "平台模型 · 每条 10 颗草莓";
   const labelTitle = config?.enabled
         ? `聊天：${provider?.name ?? config.provider} · ${config.model}（自带 Key，不扣草莓）`
         : "平台模型 · 每条 10 颗草莓";
-  return <div className="flex min-w-0 flex-col items-end gap-1 max-md:w-full max-md:items-start xl:flex-1">
+  return <div className={cn("mt-2 flex min-w-0 items-center justify-between gap-3 border-t border-[color:var(--carve)] pt-2 text-fs-12 text-[color:var(--ink2)] shadow-[inset_0_1px_0_var(--etch)] xl:flex-nowrap max-md:mt-1 max-md:pt-1 max-md:text-fs-11", !hasContent && "max-md:hidden")}>
+    <span className="shrink-0 max-md:hidden">Enter 发送，Shift + Enter 换行</span>
+    <div className="flex min-w-0 flex-col items-end gap-1 max-md:w-full max-md:items-start xl:flex-1">
     {chatMode && config ? <div className="flex min-w-0 max-w-full items-center justify-end gap-x-2 gap-y-1 max-md:w-full max-md:justify-start xl:w-full xl:flex-nowrap">
       {config.enabled
         ? <span className="min-w-0 truncate" title={labelTitle}>{modelDisplayName(config.model)}<span className="max-md:hidden"> · 不扣草莓</span></span>
-        : <span className="min-w-0 truncate" title={labelTitle}>{label}</span>}
+        : showCost && <span className={cn("min-w-0 truncate", lowBalance && "text-[color:var(--seal)]")} title={labelTitle}>{label}{lowBalance && <>，还剩 <span className="readout font-normal">{balance}</span> 颗</>}</span>}
       {config.enabled && config.provider === "anthropic" && config.status === "ok" && <div ref={effortGroup} role="radiogroup" aria-label="思考强度"
         className="flex shrink-0 items-center gap-1"
         onKeyDown={event => {
@@ -437,12 +460,13 @@ function ChatModelFooter({ username, settingsOpen, chatMode, loading }: {
         onClick={() => void toggle()} className="btn btn-quiet h-7 shrink-0 px-2 text-fs-12 max-md:min-h-10">
         {busy === "toggle" ? "正在切换…" : config.enabled ? "改用平台" : "改用我的模型"}
       </button>
-    </div> : <span>每条消息消耗 <span className="readout font-normal">10</span> 颗草莓</span>}
+    </div> : showCost && <span className={cn(lowBalance && "text-[color:var(--seal)]")}>每条消息消耗 <span className="readout font-normal">10</span> 颗草莓{lowBalance && <>，还剩 <span className="readout font-normal">{balance}</span> 颗</>}</span>}
     {chatMode && error && <div className="flex items-center gap-2 text-[color:var(--seal)]">
       <span role="alert">{error}</span>
       {!settings && <button type="button" disabled={busy !== null || loading} onClick={refresh}
         className="btn btn-quiet h-7 shrink-0 px-2 text-fs-12 max-md:min-h-10">重试</button>}
     </div>}
+    </div>
   </div>;
 }
 
@@ -2775,10 +2799,7 @@ export default function ChatPage() {
                   </div>
                 </div>
                 {voiceText && <p className="mt-2 text-fs-12 text-[color:var(--ink2)]">{voiceText}</p>}
-                <div className="mt-2 flex min-w-0 items-center justify-between gap-3 border-t border-[color:var(--carve)] pt-2 text-fs-12 text-[color:var(--ink2)] shadow-[inset_0_1px_0_var(--etch)] xl:flex-nowrap max-md:mt-1 max-md:pt-1 max-md:text-fs-11">
-                  <span className="shrink-0 max-md:hidden">Enter 发送，Shift + Enter 换行</span>
-                  <ChatModelFooter key={username} username={username} settingsOpen={settingsOpen} chatMode={!imageMode && !hasReferenceImages} loading={isLoading} />
-                </div>
+                <ChatModelFooter key={username} username={username} settingsOpen={settingsOpen} chatMode={!imageMode && !hasReferenceImages} loading={isLoading} balance={strawberryBalance} />
               </div>
             </Glaze>
           </div>
