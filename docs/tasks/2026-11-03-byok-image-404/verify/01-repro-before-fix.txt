@@ -1,0 +1,24 @@
+=== timeline ===
+(0.034, 'sse', ['reply_model'])
+(0.034, 'sse', ['text'])
+(0.034, 'sse', ['message', 'source', 'status'])
+(0.035, 'file_persisted', '/uploads/generated_907984402283405daa6dbb4f1379fa46.png')
+(0.035, 'sse', ['generated_image'])
+(0.041, 'client_fetch_at_event', False, (404, 'application/json', 43))
+(0.041, 'sse', ['text'])
+(0.041, 'sse', ['speak', 'text'])
+(0.041, 'sse', ['text'])
+(0.041, 'sse', ['text'])
+(0.041, 'save_response_begin', '/uploads/generated_907984402283405daa6dbb4f1379fa46.png')
+(0.043, 'save_response_done', '/uploads/generated_907984402283405daa6dbb4f1379fa46.png')
+(0.043, 'sse', ['done'])
+(0.049, 'client_fetch_after_stream', True, (200, 'image/png', 139))
+=== results ===
+helper_at_event: False
+http_at_event: (404, 'application/json', 43)
+helper_after_stream: True
+http_after_stream: (200, 'image/png', 139)
+file_exists_after: True
+billable: True
+response_saved: True
+VERDICT: RACE_REPRODUCED

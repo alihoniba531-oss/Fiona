@@ -46,7 +46,7 @@ from utils import media
 from utils.background_tasks import create_background_task, shutdown_background_tasks
 from utils.request_limits import MAX_REQUEST_BODY_BYTES, RequestBodyLimitMiddleware
 from utils.slow_pool import shutdown_slow_pool
-from services.chat_service import shutdown_byok_pool
+from services.chat_service import is_pending_generated_image, shutdown_byok_pool
 
 if os.getenv("DEV_MODE", "0") == "1":
     import selectors as _selectors
@@ -236,7 +236,13 @@ _API_DOCS_PREFIXES = ("/docs", "/redoc", "/openapi.json")
 
 
 async def _can_view_generated_image(username: str, image_path: str) -> bool:
-    """Generated results and uploaded references inherit message ownership."""
+    """Generated results and uploaded references inherit message ownership.
+
+    An image the Claude agent has just shown to its owner is viewable before the
+    reply is persisted; the agent releases that claim when the turn ends.
+    """
+    if is_pending_generated_image(username, image_path):
+        return True
     import aiosqlite
     import database
 

@@ -90,6 +90,23 @@ _BILLABLE_TOOLS = frozenset({
 })
 
 
+# Generated images the Claude agent has already shown to the client but not yet persisted.
+# Process-local like the limits above; the agent releases every entry in its finally block.
+_PENDING_GENERATED_IMAGES: set[tuple[str, str]] = set()
+
+
+def claim_pending_generated_image(username: str, image_path: str) -> None:
+    _PENDING_GENERATED_IMAGES.add((username, image_path))
+
+
+def release_pending_generated_image(username: str, image_path: str) -> None:
+    _PENDING_GENERATED_IMAGES.discard((username, image_path))
+
+
+def is_pending_generated_image(username: str, image_path: str) -> bool:
+    return (username, image_path) in _PENDING_GENERATED_IMAGES
+
+
 def _without_safety(prompt: str) -> str:
     return prompt.replace(BASE_SAFETY_RULES.strip(), "").strip()
 
