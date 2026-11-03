@@ -37,7 +37,9 @@ def test_home_keeps_novel_iframe_mounted_when_drawer_closes():
     assert '"novel" | null' in source
     drawer = source.split('id="novel-drawer"', 1)[1].split("</Glaze>", 1)[0]
     assert "...drawerStyle(novelOpen)" in drawer
-    assert 'src="/novels?embed=1"' in drawer
+    assert "src={novelFrameSrc}" in drawer
+    assert 'const [novelFrameSrc, setNovelFrameSrc] = useState("/novels?embed=1")' in source
+    assert 'src="/novels?embed=1"' not in drawer
     assert "aria-hidden={!novelOpen}" in drawer and "inert={!novelOpen}" in drawer
     assert not re.search(r"novelOpen\s*&&\s*<iframe", drawer)
     assert 'event.origin !== window.location.origin' in source

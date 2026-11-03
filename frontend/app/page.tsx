@@ -519,8 +519,15 @@ export default function ChatPage() {
   const plazaOpen     = drawer === "plaza";
   const settingsOpen  = drawer === "settings";
   const novelOpen = drawer === "novel";
+  const [novelFrameSrc, setNovelFrameSrc] = useState("/novels?embed=1");
   const novelFrameRef = useRef<HTMLIFrameElement>(null);
   const novelPanelRef = useRef<HTMLElement>(null);
+  const openNovelAt = (path: string) => {
+    if (!/^\/novels\/new\?embed=1&draft=[0-9a-f-]{36}$/.test(path)
+      && !/^\/novels\/[0-9a-f-]{36}\?embed=1$/.test(path)) return;
+    setNovelFrameSrc(path);
+    setDrawer("novel");
+  };
   const studioOpen = drawer === "studio";
   const studioFrameRef = useRef<HTMLIFrameElement>(null);
   const studioPanelRef = useRef<HTMLElement>(null);
@@ -2149,6 +2156,7 @@ export default function ChatPage() {
               error: data.card.error,
               subtype: data.card.subtype,
               project_id: data.card.project_id,
+              draft_id: data.card.draft_id,
               weather: data.card.weather,
               items: data.card.items,
               sources: data.card.sources,
@@ -2164,6 +2172,7 @@ export default function ChatPage() {
               error: data.card.error,
               subtype: data.card.subtype,
               project_id: data.card.project_id,
+              draft_id: data.card.draft_id,
               weather: data.card.weather,
               items: data.card.items,
               sources: data.card.sources,
@@ -2652,6 +2661,7 @@ export default function ChatPage() {
                       onRetryImage={request => { void handleSend(request.prompt, request); }} onEditImage={handleSelectReferenceImage}
                       selectedReferenceImagePaths={selectedReferenceImagePaths}
                       onCompose={composeSongSection}
+                      onOpenNovel={openNovelAt}
                       songCardCompact={projectId => lastSongCardMessageId.get(projectId) !== msg.id}
                       imageRetryDisabled={conversationLocked || conversationLoading || !currentConversation || !!pendingImage || isReadingImage || isReadingReferences} />
                     </div>
@@ -2958,7 +2968,7 @@ export default function ChatPage() {
             className="w-6 h-6 flex items-center justify-center rounded text-[color:var(--ink2)] hover:bg-[color:var(--slip)] hover:text-[color:var(--ink)] max-md:h-10 max-md:w-10"
             title="收起书斋" aria-label="收起书斋"><X size={14} /></button>
         </div>
-        {username ? <iframe ref={novelFrameRef} title="书斋工作区" src="/novels?embed=1" className="min-h-0 w-full flex-1 border-0" />
+        {username ? <iframe ref={novelFrameRef} title="书斋工作区" src={novelFrameSrc} className="min-h-0 w-full flex-1 border-0" />
           : <div role="status" className="flex-1 p-5 text-fs-13 text-[color:var(--ink2)]">正在加载身份…</div>}
       </Glaze>
 

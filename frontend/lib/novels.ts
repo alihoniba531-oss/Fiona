@@ -6,11 +6,16 @@ export type NovelStatus = "setup_running" | "awaiting_setup" | "running" | "awai
 export type NovelAutomation = "per_batch" | "per_chapter" | "full_auto";
 export type NovelPanelMode = "critique" | "solo";
 export interface NovelTarget { min_chapters: number; max_chapters: number; chapter_words: number }
+export interface NovelDraft {
+  id: string; title: string; seed_idea: string; target: Partial<NovelTarget>;
+  novel_id: string | null; created_at: string;
+}
 export interface NovelCreateInput {
   seed_idea: string; agents: Record<string, string>; panel_mode: NovelPanelMode;
   automation: NovelAutomation; batch_size: number; target: NovelTarget;
   adaptation: { max_main_characters: number; max_scenes_per_chapter: number };
   drama_adaptation?: boolean;
+  draft_id?: string;
   budget_strawberries: number;
 }
 export interface NovelPatchInput { budget_strawberries?: number; automation?: NovelAutomation; batch_size?: number; agents?: Record<string, string> }
@@ -98,6 +103,7 @@ const json = (method: string, body: unknown, signal?: AbortSignal): RequestInit 
 
 export const listNovels = (signal?: AbortSignal) => apiJson<NovelSummary[]>(`${API_BASE}/novels`, { signal });
 export const getNovel = (id: string, signal?: AbortSignal) => apiJson<NovelDetail>(bookPath(id), { signal });
+export const getNovelDraft = (id: string, signal?: AbortSignal) => apiJson<NovelDraft>((API_BASE + "/novels/drafts/" + encodeURIComponent(id)), { signal });
 export const getNovelChapter = (id: string, chapter: number, signal?: AbortSignal) => apiJson<NovelChapter>(`${bookPath(id)}/chapters/${chapter}`, { signal });
 export async function getNovelBible(id: string, signal?: AbortSignal): Promise<NovelBible | null> {
   // A book still generating its setup legitimately has no bible yet.

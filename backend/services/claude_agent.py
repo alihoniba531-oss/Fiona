@@ -54,6 +54,21 @@ CLAUDE_CLIENT_TOOLS = [
 ]
 
 
+NOVEL_DRAFT_TOOL = _tool(
+    "draft_novel",
+    "把聊天里定下的小说设定写成书斋草稿；免费，不会开始写作。主人到书斋确认智能体与预算后才建书。",
+    {
+        "title": {"type": "string", "maxLength": 60},
+        "seed_idea": {"type": "string", "maxLength": 2000,
+                      "description": "故事思路：题材、时代、主角成长线、主要人物、风格；第一行写书名"},
+        "min_chapters": {"type": "integer", "minimum": 1, "maximum": 200},
+        "max_chapters": {"type": "integer", "minimum": 1, "maximum": 200},
+        "chapter_words": {"type": "integer", "minimum": 1000, "maximum": 4000},
+    },
+    ["title", "seed_idea"],
+)
+
+
 def _song_turn_enabled(ctx, state):
     """写歌只在开关开启、用户命中白名单且非危机轮时追加。"""
     if state.crisis or state.crisis_level is not None:
@@ -87,6 +102,9 @@ def client_tools_for_turn(ctx, state):
     from studio.gate import allow_studio
     if allow_studio(ctx.user, ctx.auth_method):
         tools.append(_tool("start_film", "将已完结小说建立短片工作室项目与快照；免费。", {"book": {"type": "string"}}, ["book"]))
+    from studio.sources import novel_create_enabled
+    if novel_create_enabled(ctx.user):
+        tools.append(NOVEL_DRAFT_TOOL)
     if song_enabled:
         tools = _append_song_tools(tools)
     return tools
@@ -455,6 +473,8 @@ async def _stream_claude_agent(ctx, state, deadline, release_user_lock):
     touched_song_project = None
     song_conversation_id = ctx.conversation_id
     song_card_sent = False
+    draft_written = False
+    draft_conversation_id = ctx.conversation_id
     persistence_failed = False
     platform_failure = False
 
@@ -701,6 +721,44 @@ async def _stream_claude_agent(ctx, state, deadline, release_user_lock):
                         else:
                             result_text = result.get("model_text", result.get("text", "")) if isinstance(result, dict) else result
                             if isinstance(result, dict) and not result.get("success"):
+                                state.trace["agent_tool_errors"] += 1
+                elif name == "draft_novel":
+                    # draft_novel 只写免费草稿，绝不在这里创建 novels 行。
+                    if draft_written:
+                        result_text = "本轮已写过一份草稿，请直接回答主人"
+                    else:
+                        from novel.drafts import count_open_drafts, create_draft, validate_draft_args
+                        clean, error = await validate_draft_args(args)
+                        if error:
+                            result_text = error
+                            state.trace["agent_tool_errors"] += 1
+                        else:
+                            try:
+                                if draft_conversation_id is None:
+                                    from agent_store import resolve_chat_conversation
+                                    resolved = await resolve_chat_conversation(ctx.user, None)
+                                    draft_conversation_id = resolved["conversation"]["id"]
+                                open_drafts = await count_open_drafts(ctx.user)
+                                if open_drafts >= 50:
+                                    result_text = "未使用的草稿太多，请先到书斋建书或删除"
+                                else:
+                                    draft = await create_draft(
+                                        ctx.user, draft_conversation_id, clean["title"], clean["seed_idea"], clean["target"],
+                                    )
+                                    draft_id = draft["id"]
+                                    card = {
+                                        "type": "card", "subtype": "novel_draft", "source": "书斋",
+                                        "points": [f"草稿《{clean['title']}》已送到书斋", "到书斋确认智能体与预算后开始写作"],
+                                        "draft_id": draft_id, "url": f"/novels/new?draft={draft_id}", "error": False,
+                                    }
+                                    result_text = "\n".join(card["points"])
+                                    draft_written = True
+                                    state.novel_draft_id = draft_id
+                                    state.full_response += "［卡片：" + chat._summarize_card_for_history(card) + "］"
+                                    delivered = True
+                                    yield chat._sse({"card": card, "append": True})
+                            except Exception:
+                                result_text = "书斋草稿暂时不可用"
                                 state.trace["agent_tool_errors"] += 1
                 elif name == "generate_image":
                     validated = validate_image_tool_call({"name": name, "arguments": args})

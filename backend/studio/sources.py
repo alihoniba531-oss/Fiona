@@ -37,6 +37,10 @@ def novel_chat_enabled(username: str) -> bool:
     return os.getenv('FIONA_NOVEL_CHAT', '0') == '1' and novel_access(username)
 
 
+def novel_create_enabled(username: str) -> bool:
+    return os.getenv('FIONA_NOVEL_CHAT_CREATE', '0') == '1' and novel_chat_enabled(username)
+
+
 async def _novel_call(function, *args):
     try:
         return await function(*args)

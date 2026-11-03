@@ -15,6 +15,7 @@ from pydantic import BaseModel, ConfigDict, Field, model_validator
 
 from .agent_pool import AGENTS
 from .billing import estimate_cost, get_prices
+from .drafts import consume_draft
 from .schemas import (ValidationError, compact, validate_decision,
                       validate_genre_contract, validate_setup, validate_volume_plan)
 from .store_db import get_db
@@ -68,6 +69,7 @@ class CreateNovel(Input):
     drama_adaptation: bool = False
     structure: Literal['v1', 'v2'] = 'v1'
     budget_strawberries: int = Field(ge=1, le=10_000_000)
+    draft_id: str | None = None
 
 
 class PatchNovel(Input):
@@ -208,7 +210,7 @@ async def create(username, data):
     cost = await estimate(username, data)
     if data.budget_strawberries < cost['per_chapter']['min']:
         fail('预算低于估算下限的一章份额', 422)
-    config = data.model_dump()
+    config = data.model_dump(exclude={'draft_id'})
     config.update(experiment='P1', critique_rounds=1, enable_arc_summaries=True, enable_context_compression=True)
     if config.get('structure')=='v2':
         config['volume_gate']=False
@@ -223,6 +225,9 @@ async def create(username, data):
         if not await row(db,'SELECT username FROM users WHERE username=?',(username,)):
             fail('账号不存在',404)
         await db.execute("INSERT INTO novels(id,username,seed_idea,status,config_json,budget_strawberries) VALUES(?,?,?,'setup_running',?,?)", (novel_id,username,data.seed_idea,encoded(config),data.budget_strawberries))
+        if data.draft_id and not await consume_draft(db, username, data.draft_id, novel_id):
+            await db.rollback()
+            fail('草稿不存在或已使用', 422)
         await db.commit()
     from .runner import start_novel
     await start_novel(novel_id, username)
@@ -773,6 +778,7 @@ async def delete(username,novel_id):
         await db.execute('BEGIN IMMEDIATE'); await owned(db,username,novel_id)
         for table in ('novel_notes','novel_steps','novel_chapters','novel_bible_versions'):
             await db.execute(f'DELETE FROM {table} WHERE novel_id=?',(novel_id,))
+        await db.execute('UPDATE novel_drafts SET novel_id=NULL, updated_at=CURRENT_TIMESTAMP WHERE owner_username=? AND novel_id=?',(username,novel_id))
         await db.execute('DELETE FROM novels WHERE id=? AND username=?',(novel_id,username)); await db.commit()
     return {'deleted':True}
 

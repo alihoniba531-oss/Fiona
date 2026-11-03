@@ -5,6 +5,7 @@ import { Volume2, Globe, LoaderCircle, RotateCcw, ArrowUpRight } from "lucide-re
 import { memo, useState, useEffect, useRef, useMemo } from "react";
 import GeneratedImage from "@/components/GeneratedImage";
 import SongProjectCard from "@/components/SongProjectCard";
+import NovelDraftCard from "@/components/NovelDraftCard";
 import { generatedImagePath, referenceImagePath, storedReferenceImagePaths, isLocalReferenceDataUrl, type ReferenceImageInput } from "@/lib/generatedImages";
 import { API_BASE as API } from "@/lib/config";
 import { openExternal, toSafeExternalUrl } from "@/lib/open";
@@ -94,6 +95,7 @@ export interface CardData {
   error?: boolean | string;
   subtype?: string;  // "weather" = 天气卡片专用渲染
   project_id?: string;  // "song_project" = 写歌项目卡片
+  draft_id?: string;  // "novel_draft" = 书斋草稿卡片
   weather?: WeatherData;
   items?: { title: string; url?: string }[];
   sources?: { title: string; url: string; site_name?: string; index?: number }[];
@@ -102,11 +104,16 @@ export interface CardData {
 interface ChatCardProps {
   card: CardData;
   onCompose?: (text: string) => void;
+  onOpenNovel?: (path: string) => void;
   songCardCompact?: (projectId: string) => boolean;
 }
 
 export function ChatCard(props: ChatCardProps) {
-  const { card, onCompose, songCardCompact } = props;
+  const { card, onCompose, onOpenNovel, songCardCompact } = props;
+  if (card.subtype === "novel_draft") {
+    if (!card.draft_id) return null;
+    return <NovelDraftCard draftId={card.draft_id} onOpenNovel={onOpenNovel} />;
+  }
   if (card.subtype === "song_project") {
     const projectId = card.project_id;
     if (!projectId) return null;
@@ -271,10 +278,11 @@ interface ChatBubbleProps {
   onEditImage?: (imageUrl: string) => void;
   selectedReferenceImagePaths?: string[];
   onCompose?: (text: string) => void;
+  onOpenNovel?: (path: string) => void;
   songCardCompact?: (projectId: string) => boolean;
 }
 
-function ChatBubble({ message, agentName = "Chloe", onDelete, onSpeak, onStopSpeak, speaking = false, speakDisabled = false, onConfirmTts, onDeclineTts, onRetryImage, imageRetryDisabled, onEditImage, selectedReferenceImagePaths = [], onCompose, songCardCompact }: ChatBubbleProps) {
+function ChatBubble({ message, agentName = "Chloe", onDelete, onSpeak, onStopSpeak, speaking = false, speakDisabled = false, onConfirmTts, onDeclineTts, onRetryImage, imageRetryDisabled, onEditImage, selectedReferenceImagePaths = [], onCompose, onOpenNovel, songCardCompact }: ChatBubbleProps) {
   const isUser = message.role === "user";
   const referenceUrls = useMemo(() => {
     if (!isUser) return [];
@@ -393,8 +401,8 @@ function ChatBubble({ message, agentName = "Chloe", onDelete, onSpeak, onStopSpe
           </div>
         )}
 
-        {message.cardData && <ChatCard card={message.cardData} onCompose={onCompose} songCardCompact={songCardCompact} />}
-        {message.cards?.map((card, index) => <ChatCard key={index} card={card} onCompose={onCompose} songCardCompact={songCardCompact} />)}
+        {message.cardData && <ChatCard card={message.cardData} onCompose={onCompose} onOpenNovel={onOpenNovel} songCardCompact={songCardCompact} />}
+        {message.cards?.map((card, index) => <ChatCard key={index} card={card} onCompose={onCompose} onOpenNovel={onOpenNovel} songCardCompact={songCardCompact} />)}
 
         {message.imageGenerationRetry && onRetryImage && <button type="button"
           disabled={imageRetryDisabled}

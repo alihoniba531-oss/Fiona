@@ -5,7 +5,7 @@ from urllib.parse import quote
 from fastapi import APIRouter, Depends, HTTPException, Path, Request, Response
 
 from auth_dep import get_current_user
-from novel import service
+from novel import drafts, service
 from rate_limit import limiter
 
 
@@ -41,6 +41,14 @@ async def create(request: Request,body: service.CreateNovel,user: str = Depends(
 @router.get('')
 async def list_books(user: str = Depends(workshop_user)):
     return await service.list_books(user)
+
+
+@router.get('/drafts/{draft_id}')
+async def draft(draft_id: str,user: str = Depends(workshop_user)):
+    result=await drafts.get_draft(user,draft_id)
+    if result is None:
+        raise HTTPException(404,'草稿不存在')
+    return result
 
 
 @router.get('/{novel_id}')

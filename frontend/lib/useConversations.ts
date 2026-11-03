@@ -14,6 +14,7 @@ interface StoredMessage {
   image_path: string | null;
   reference_image_paths?: string[];
   song_project_id?: string | null;
+  novel_draft_id?: string | null;
   created_at: string;
 }
 
@@ -53,21 +54,28 @@ function remember(owner: string, id: string | null) {
 }
 
 function toMessages(messages: StoredMessage[]): Message[] {
-  return messages.map(message => ({
-    id: `db-${message.id}`,
-    dbId: message.id,
-    role: message.role,
-    content: message.content,
-    timestamp: new Date(/[zZ]$|[+-]\d\d:\d\d$/.test(message.created_at)
-      ? message.created_at : `${message.created_at.replace(" ", "T")}Z`),
-    imageUrl: message.image_path ? `${API}${message.image_path}` : undefined,
-    referenceImageUrls: message.role === "user"
-      ? storedReferenceImagePaths(message.reference_image_paths, message.image_path).map(path => `${API}${path}`)
-      : undefined,
-    cards: message.role === "assistant" && message.song_project_id
-      ? [{ source: "写歌", points: [], subtype: "song_project", project_id: message.song_project_id }]
-      : undefined,
-  }));
+  return messages.map(message => {
+    const cards: NonNullable<Message["cards"]> = [];
+    if (message.role === "assistant" && message.song_project_id) {
+      cards.push({ source: "写歌", points: [], subtype: "song_project", project_id: message.song_project_id });
+    }
+    if (message.role === "assistant" && message.novel_draft_id) {
+      cards.push({ source: "书斋", points: [], subtype: "novel_draft", draft_id: message.novel_draft_id });
+    }
+    return {
+      id: `db-${message.id}`,
+      dbId: message.id,
+      role: message.role,
+      content: message.content,
+      timestamp: new Date(/[zZ]$|[+-]\d\d:\d\d$/.test(message.created_at)
+        ? message.created_at : `${message.created_at.replace(" ", "T")}Z`),
+      imageUrl: message.image_path ? `${API}${message.image_path}` : undefined,
+      referenceImageUrls: message.role === "user"
+        ? storedReferenceImagePaths(message.reference_image_paths, message.image_path).map(path => `${API}${path}`)
+        : undefined,
+      cards: cards.length > 0 ? cards : undefined,
+    };
+  });
 }
 
 export function useConversations(owner: string, enabled: boolean) {

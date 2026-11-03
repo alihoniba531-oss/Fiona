@@ -10,10 +10,13 @@ import Glaze from "@/components/Glaze";
 import NovelModelFields, { novelFieldClass } from "@/components/novel/NovelModelFields";
 import { EmptyState, ErrorNotice, LoadingState } from "@/components/novel/NovelStates";
 import { useNovelEmbedClose } from "@/components/novel/NovelShell";
-import { createNovel, estimateNovel, getNovelBalance, getNovelCatalog, novelErrorMessage, novelHref, novelModelLabel, novelModelOptions, type NovelAutomation, type NovelCatalog, type NovelCreateInput, type NovelEstimate, type NovelPanelMode } from "@/lib/novels";
+import { ApiError } from "@/lib/agents";
+import { createNovel, estimateNovel, getNovelBalance, getNovelCatalog, getNovelDraft, novelErrorMessage, novelHref, novelModelLabel, novelModelOptions, type NovelAutomation, type NovelCatalog, type NovelCreateInput, type NovelEstimate, type NovelPanelMode } from "@/lib/novels";
 import { useAccountIdentity, useAccountIdentityPending, useAccountRequest } from "@/lib/useAccountIdentity";
 
 type FieldErrors = Record<string, string>;
+type DraftNotice = { kind: "used"; title: string; novelId: string } | { kind: "missing" };
+const draftIdPattern = /^[0-9a-f-]{36}$/;
 const steps = ["思路与篇幅", "智能体与模型", "节奏与预算"];
 const rangeError = (value: number, min: number, max: number) => !Number.isInteger(value) || value < min || value > max;
 
@@ -38,12 +41,13 @@ export function defaultNovelAgents(catalog: NovelCatalog): Record<string, string
 }
 
 export default function NovelWizard() {
+  const draft = useSearchParams().get("draft");
   const embedded = useSearchParams().get("embed") === "1";
   const owner = useAccountIdentity();
   const identityPending = useAccountIdentityPending();
-  return <Wizard key={owner} owner={owner} identityPending={identityPending} embedded={embedded} />;
+  return <Wizard key={owner} owner={owner} identityPending={identityPending} embedded={embedded} draft={draft !== null && draftIdPattern.test(draft) ? draft : null} />;
 }
-function Wizard({ owner, embedded, identityPending = false }: { owner: string; embedded: boolean; identityPending?: boolean }) {
+function Wizard({ owner, embedded, identityPending = false, draft }: { owner: string; embedded: boolean; identityPending?: boolean; draft: string | null }) {
   useNovelEmbedClose(embedded);
   const router = useRouter();
   const [step, setStep] = useState(0);
@@ -51,6 +55,8 @@ function Wizard({ owner, embedded, identityPending = false }: { owner: string; e
   const [loading, setLoading] = useState(true);
   const [balance, setBalance] = useState<number | null>(null);
   const [error, setError] = useState("");
+  const [draftId, setDraftId] = useState<string | null>(null);
+  const [draftNotice, setDraftNotice] = useState<DraftNotice | null>(null);
   const [errors, setErrors] = useState<FieldErrors>({});
   const [busy, setBusy] = useState(false);
   const [seed, setSeed] = useState("");
@@ -87,15 +93,38 @@ function Wizard({ owner, embedded, identityPending = false }: { owner: string; e
     const request = beginData();
     if (!request) return;
     try {
-      const [nextCatalog, account] = await Promise.all([getNovelCatalog(request.signal), getNovelBalance(request.signal)]);
+      const [catalogResult, balanceResult, draftResult] = await Promise.allSettled([
+        getNovelCatalog(request.signal),
+        getNovelBalance(request.signal),
+        draft ? getNovelDraft(draft, request.signal) : Promise.resolve(null),
+      ]);
       if (!request.isCurrent()) return;
+      if (catalogResult.status === "rejected") throw catalogResult.reason;
+      if (balanceResult.status === "rejected") throw balanceResult.reason;
+      const nextCatalog = catalogResult.value;
+      const account = balanceResult.value;
       if (account.username !== owner) throw new Error("账号已变化，请重新打开建书向导。");
       setCatalog(nextCatalog); setBalance(account.balance); setError("");
       setAgents(current => Object.keys(current).length ? current : defaultNovelAgents(nextCatalog));
+      if (draft && draftResult.status === "rejected") {
+        const cause = draftResult.reason;
+        setDraftNotice(cause instanceof ApiError && (cause.status === 404 || cause.status === 403) ? { kind: "missing" } : null);
+      } else if (draft && draftResult.status === "fulfilled" && draftResult.value) {
+        const nextDraft = draftResult.value;
+        if (nextDraft.novel_id) setDraftNotice({ kind: "used", title: nextDraft.title, novelId: nextDraft.novel_id });
+        else {
+          setSeed(nextDraft.seed_idea);
+          const target = nextDraft.target ?? {};
+          if (target.min_chapters != null) setMinChapters(String(target.min_chapters));
+          if (target.max_chapters != null) setMaxChapters(String(target.max_chapters));
+          if (target.chapter_words != null) setChapterWords(String(target.chapter_words));
+          setDraftId(nextDraft.id);
+        }
+      }
     } catch (cause) {
       if (request.isCurrent()) setError(novelErrorMessage(cause, true));
     } finally { if (request.isCurrent()) setLoading(false); }
-  }, [beginData, owner]);
+  }, [beginData, owner, draft]);
   useEffect(() => {
     const timer = setTimeout(() => { void load(); }, 0);
     return () => clearTimeout(timer);
@@ -155,7 +184,7 @@ function Wizard({ owner, embedded, identityPending = false }: { owner: string; e
     if (!request) return;
     setBusy(true); setError("");
     try {
-      const book = await createNovel(input, request.signal);
+      const book = await createNovel({ ...input, draft_id: draftId ?? undefined }, request.signal);
       if (request.isCurrent()) router.push(novelHref(`/novels/${book.id}`, embedded));
     } catch (cause) { if (request.isCurrent()) setError(novelErrorMessage(cause)); }
     finally { if (request.isCurrent()) setBusy(false); }
@@ -180,6 +209,8 @@ function Wizard({ owner, embedded, identityPending = false }: { owner: string; e
       <div className="mx-auto max-w-[900px] px-9 pb-12 pt-6 mobile:px-4 mobile:pt-4">
         <div className="mb-4 flex flex-wrap items-center justify-between gap-2"><Link href={novelHref("/novels", embedded)} className="inline-flex min-h-10 items-center gap-1 text-fs-13 text-[color:var(--ink2)]"><ArrowLeft size={14} />回到书架</Link>{embedded && <a href="/novels/new" target="_blank" rel="noopener noreferrer" className="btn btn-quiet min-h-10 mobile:hidden">在新页面打开</a>}</div>
         <h1 className="text-fs-30 tracking-[.24em]">新建一本</h1>
+        {draftNotice?.kind === "used" && <p role="status" className="mt-3 text-fs-13 leading-[1.8] text-[color:var(--ink2)]">这份草稿已建成《{draftNotice.title}》<Link href={novelHref(`/novels/${draftNotice.novelId}`, embedded)} className="ml-2 underline">打开</Link></p>}
+        {draftNotice?.kind === "missing" && <p role="status" className="mt-3 text-fs-13 leading-[1.8] text-[color:var(--ink2)]">草稿不存在，可以直接新建。</p>}
         <ol aria-label="建书步骤" className="my-6 grid grid-cols-3 gap-2 border-b border-[color:var(--carve)] pb-5 mobile:gap-1">{steps.map((label, index) => <li key={label} aria-current={index === step ? "step" : undefined} className={`flex min-w-0 flex-wrap items-center gap-2 text-fs-15 mobile:gap-1 mobile:text-fs-12 ${index === step ? "text-[color:var(--ink)]" : "text-[color:var(--ink2)]"}`}><span className={`chip readout ${index === step ? "chip-on" : ""}`}>{index < step ? <Check size={12} /> : index + 1}</span><span>{label}</span></li>)}</ol>
         {!owner ? (identityPending ? <LoadingState>正在加载身份…</LoadingState> : <EmptyState>请登录后新建小说。</EmptyState>) : loading ? <LoadingState>正在加载智能体、模型和草莓余额…</LoadingState> : !catalog ? <ErrorNotice message={error || "模型目录暂不可用。"} retry={() => void load()} /> : <>
           {error && <div className="mb-4"><ErrorNotice message={error} /></div>}
