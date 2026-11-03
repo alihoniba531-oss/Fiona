@@ -1,0 +1,50 @@
+
+> frontend@0.1.0 build
+> next build
+
+▲ Next.js 16.4.3 (Turbopack)
+✓ Running next.config.ts took 41ms
+- Experiments (use with caution):
+  · proxyClientMaxBodySize: "25mb"
+
+  Creating an optimized production build ...
+(node:96025) [DEP0205] DeprecationWarning: `module.register()` is deprecated. Use `module.registerHooks()` instead.
+(Use `node --trace-deprecation ...` to show where the warning was created)
+✓ Compiled successfully in 397ms
+  Running TypeScript ...
+  Finished TypeScript in 3.8s ...
+  Collecting page data using 17 workers ...
+  Generating static pages using 17 workers (0/18) ...
+  Generating static pages using 17 workers (4/18) 
+  Generating static pages using 17 workers (8/18) 
+  Generating static pages using 17 workers (13/18) 
+✓ Generating static pages using 17 workers (18/18) in 180ms
+  Finalizing page optimization ...
+
+Route (app)
+┌ ○ /
+├ ○ /_not-found
+├ ○ /agents
+├ ƒ /agents/[id]
+├ ○ /agents/me
+├ ○ /community
+├ ○ /history
+├ ○ /login
+├ ○ /manifest.webmanifest
+├ ○ /match
+├ ○ /novels
+├ ƒ /novels/[id]
+├ ○ /novels/new
+├ ○ /plaza
+├ ○ /profile
+├ ○ /settings
+├ ○ /studio
+├ ƒ /studio/[id]
+└ ○ /studio/kb
+
+
+ƒ Proxy (Middleware)
+
+○  (Static)   prerendered as static content
+ƒ  (Dynamic)  server-rendered on demand
+

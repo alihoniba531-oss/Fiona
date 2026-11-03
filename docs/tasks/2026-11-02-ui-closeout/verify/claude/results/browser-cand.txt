@@ -1,0 +1,59 @@
+PASS m390/day 首次显示费用文字  每条消息消耗 10 颗草莓
+PASS m390/day 首次后已记标记  1
+PASS m390/day 再次打开不显示费用  None
+PASS m390/day 低余额显示并带余额  每条消息消耗 10 颗草莓，还剩 20 颗
+PASS m390/day 低余额朱色  rgb(168, 50, 42)
+PASS m390/day 首次是墨色不是朱色  rgb(86, 99, 94)
+PASS m390/day 非首次整行隐藏  rowVisible=False h=108.81
+PASS m390/day 非首次空闲高度 100–115  108.81
+PASS m390/day 首次空闲高度 ≈133  133.81
+PASS m390/night 首次显示费用文字  每条消息消耗 10 颗草莓
+PASS m390/night 首次后已记标记  1
+PASS m390/night 再次打开不显示费用  None
+PASS m390/night 低余额显示并带余额  每条消息消耗 10 颗草莓，还剩 20 颗
+PASS m390/night 低余额朱色  rgb(229, 111, 93)
+PASS m390/night 首次是墨色不是朱色  rgb(168, 161, 149)
+PASS m390/night 非首次整行隐藏  rowVisible=False h=108.81
+PASS m390/night 非首次空闲高度 100–115  108.81
+PASS m390/night 首次空闲高度 ≈133  133.81
+PASS m390 C 态有思考档与改用平台  {'tag': 'C-day-m390', 'h': 157.81, 'feeText': None, 'feeColor': None, 'leftText': None, 'hintVisible': False, 'rowVisible': True, 'rowH': 45, 'toggle': True, 'radiogroup': True}
+PASS m390 B 态有改用我的模型  {'tag': 'B-day-m390', 'h': 157.81, 'feeText': None, 'feeColor': None, 'leftText': None, 'hintVisible': False, 'rowVisible': True, 'rowH': 45, 'toggle': True, 'radiogroup': False}
+PASS m390 B/C 高度 ≈157  B=157.81 C=157.81
+PASS d1440/day 首次显示费用文字  每条消息消耗 10 颗草莓
+PASS d1440/day 首次后已记标记  1
+PASS d1440/day 再次打开不显示费用  None
+PASS d1440/day 低余额显示并带余额  每条消息消耗 10 颗草莓，还剩 20 颗
+PASS d1440/day 低余额朱色  rgb(168, 50, 42)
+PASS d1440/day 首次是墨色不是朱色  rgb(86, 99, 94)
+PASS d1440 桌面仍显示 Enter 提示  True
+PASS d1440 C 态有思考档与改用平台  {'tag': 'C-day-d1440', 'h': 147.81, 'feeText': None, 'feeColor': None, 'leftText': None, 'hintVisible': True, 'rowVisible': True, 'rowH': 37, 'toggle': True, 'radiogroup': True}
+PASS d1440 B 态有改用我的模型  {'tag': 'B-day-d1440', 'h': 147.81, 'feeText': None, 'feeColor': None, 'leftText': None, 'hintVisible': True, 'rowVisible': True, 'rowH': 37, 'toggle': True, 'radiogroup': False}
+PASS history/d1440 原生框不在 Tab 序列  False
+PASS history/d1440 Tab 落在两个 chip 按钮  ['从（开始日期）：不限', '到（结束日期）：不限']
+PASS history/d1440 原生框 aria-hidden 且 tabindex -1  [{'label': '从（开始日期）', 'hidden': 'true', 'tabindex': '-1', 'chip': 'from', 'opacity': '0'}, {'label': '到（结束日期）', 'hidden': 'true', 'tabindex': '-1', 'chip': 'to', 'opacity': '0'}]
+PASS history/d1440 Enter 调一次 showPicker  1
+PASS history/d1440 Space 再调一次  2
+PASS history/d1440 键盘聚焦时 chip 有墨线框  {'outlineStyle': 'solid', 'outlineWidth': '1px', 'outlineColor': 'rgb(31, 41, 38)', 'matches': True}
+PASS history/d1440 退回时原生框可见且有焦点  {'tag': 'INPUT', 'type': 'date', 'label': '从（开始日期）', 'chip': 'from', 'opacity': '1', 'tabindex': '-1'}
+PASS history/d1440 退回失焦后藏回  0
+PASS history/d1440 选日期后可访问名称带中文日期  从（开始日期）：2026年11月2日
+PASS history/d1440 指针点 chip 由原生框接到  {'tag': 'INPUT', 'type': 'date', 'label': '从（开始日期）', 'chip': 'from', 'opacity': '0', 'tabindex': '-1'} sp=1
+PASS history/m390 原生框不在 Tab 序列  False
+PASS history/m390 Tab 落在两个 chip 按钮  ['从（开始日期）：不限', '到（结束日期）：不限']
+PASS history/m390 原生框 aria-hidden 且 tabindex -1  [{'label': '从（开始日期）', 'hidden': 'true', 'tabindex': '-1', 'chip': 'from', 'opacity': '0'}, {'label': '到（结束日期）', 'hidden': 'true', 'tabindex': '-1', 'chip': 'to', 'opacity': '0'}]
+PASS history/m390 Enter 调一次 showPicker  1
+PASS history/m390 Space 再调一次  2
+PASS history/m390 键盘聚焦时 chip 有墨线框  {'outlineStyle': 'solid', 'outlineWidth': '1px', 'outlineColor': 'rgb(31, 41, 38)', 'matches': True}
+PASS history/m390 退回时原生框可见且有焦点  {'tag': 'INPUT', 'type': 'date', 'label': '从（开始日期）', 'chip': 'from', 'opacity': '1', 'tabindex': '-1'}
+PASS history/m390 退回失焦后藏回  0
+PASS history/m390 选日期后可访问名称带中文日期  从（开始日期）：2026年11月2日
+PASS history/m390 指针点 chip 由原生框接到  {'tag': 'INPUT', 'type': 'date', 'label': '从（开始日期）', 'chip': 'from', 'opacity': '0', 'tabindex': '-1'} sp=1
+PASS backdrop/day 主题生效  False
+PASS backdrop/day scrim-dialog 正常解析  rgba(31, 41, 38, 0.18)
+PASS backdrop/day scrim-dialog 变量失效仍是兜底色  rgba(31, 41, 38, 0.18)
+PASS backdrop/day 旧的任意值类已不存在（只剩浏览器默认遮罩）  rgba(0, 0, 0, 0.1)
+PASS backdrop/night 主题生效  True
+PASS backdrop/night scrim-dialog 正常解析  rgba(0, 0, 0, 0.45)
+PASS backdrop/night scrim-dialog 变量失效仍是兜底色  rgba(0, 0, 0, 0.45)
+PASS backdrop/night 旧的任意值类已不存在（只剩浏览器默认遮罩）  rgba(0, 0, 0, 0.1)
+== FAIL 0 / 58

@@ -1,0 +1,254 @@
+== 改动集合
+PASS 改动只在白名单内  []
+PASS 既有测试只动三个授权文件  ['backend/tests/test_design_system_css.py', 'backend/tests/test_design_system_gate.py', 'backend/tests/test_ui_polish_page_contracts.py']
+PASS 四个新测试文件都在  ['test_ui_closeout_cost_hint.py', 'test_ui_closeout_history_keyboard.py', 'test_ui_closeout_dialog_scrim.py', 'test_ui_closeout_structure_guards.py']
+PASS 其余既有测试零 diff  
+ backend/tests/test_design_system_css.py           |  2 +-
+ backend/tests/test_design_system_gate.py          | 95 ++++++++++++++++-------
+ backend/tests/test_ui_polish_page_contracts.py    |  2 +-
+ frontend/app/globals.css                          |  8 +-
+ frontend/app/history/page.tsx                     | 35 ++++++++-
+ frontend/app/page.tsx                             | 39 +++++++---
+ frontend/components/ConfirmDialog.tsx             |  2 +-
+ frontend/components/GeneratedImage.tsx            |  2 +-
+ frontend/components/SongProjectCard.tsx           |  2 +-
+ frontend/components/novel/NovelSettingsDialog.tsx |  2 +-
+ frontend/components/studio/BrainTrial.tsx         |  2 +-
+ frontend/components/studio/QuoteDialog.tsx        |  2 +-
+ frontend/components/studio/ShotCard.tsx           |  2 +-
+ frontend/components/studio/SourceChoices.tsx      |  2 +-
+ 14 files changed, 142 insertions(+), 55 deletions(-)
+
+-- 门禁文件的 hunk（人工核对只落在 T4 点名位置）
+diff --git a/backend/tests/test_design_system_css.py b/backend/tests/test_design_system_css.py
+index 82ed480..b247c66 100644
+--- a/backend/tests/test_design_system_css.py
++++ b/backend/tests/test_design_system_css.py
+@@ -18 +18 @@ FRONTEND = ROOT / "frontend"
+-REQUIRED_PACKAGES = ["@tailwindcss/node", "@tailwindcss/oxide"]
++REQUIRED_PACKAGES = ["@tailwindcss/node", "@tailwindcss/oxide", "tailwindcss"]
+diff --git a/backend/tests/test_design_system_gate.py b/backend/tests/test_design_system_gate.py
+index be623c8..889411e 100644
+--- a/backend/tests/test_design_system_gate.py
++++ b/backend/tests/test_design_system_gate.py
+@@ -46,11 +46,2 @@ LEGACY = r"(?:amber-ink|rec-soft|rec|dim|glass-border|glass-strong|glass-hi|shad
+-TYPE_WORDS = (
+-    "number",
+-    "string",
+-    "undefined",
+-    "null",
+-    "boolean",
+-    "any",
+-    "unknown",
+-    "React.",
+-    "CSSProperties",
+-    "Property.",
++TYPE_WORD_RX = re.compile(
++    r"(?:number|string|undefined|null|boolean|any|unknown|CSSProperties)(?![\w$])|React\.|Property\."
+@@ -105 +96 @@ RULES = (
+-        '行内 fontSize / font 的值必须恰为 "var(--fs-*)" 之一',
++        '行内 fontSize / font 的值必须恰为 "var(--fs-*)" 之一；禁止 .style.fontSize = 与 setProperty("font-size")',
+@@ -107,0 +99 @@ RULES = (
++            r"""|\.style\.fontSize\s*=|\.setProperty\(\s*["']font(?:-size)?["']"""
+@@ -266 +258 @@ def _count_hits(sources):
+-                        if val.startswith(TYPE_WORDS):
++                        if TYPE_WORD_RX.match(val):
+@@ -519 +511 @@ def _token_layer(css_text):
+-    # T8：两个对话框的遮罩用 var(--scrim)，带原来的颜色作兜底；旧版 Safari 的 ::backdrop 取不到 :root 变量。
++    # T8：所有对话框共用的遮罩用 var(--scrim)，带原来的颜色作兜底；旧版 Safari 的 ::backdrop 取不到 :root 变量。
+@@ -521,4 +513,2 @@ def _token_layer(css_text):
+-        ".image-preview-dialog::backdrop": "var(--scrim, rgba(31,41,38,.18))",
+-        ".dark .image-preview-dialog::backdrop": "var(--scrim, rgba(0,0,0,.45))",
+-        ".confirm-dialog::backdrop": "var(--scrim, rgba(31,41,38,.18))",
+-        ".dark .confirm-dialog::backdrop": "var(--scrim, rgba(0,0,0,.45))",
++        ".scrim-dialog::backdrop": "var(--scrim, rgba(31,41,38,.18))",
++        ".dark .scrim-dialog::backdrop": "var(--scrim, rgba(0,0,0,.45))",
+@@ -532 +522 @@ def _token_layer(css_text):
+-    res["T8 两个对话框的 ::backdrop 用 var(--scrim) 并带兜底色，昼夜各一条"] = (
++    res["T8 所有对话框共用 .scrim-dialog::backdrop，用 var(--scrim) 并带兜底色，昼夜各一条"] = (
+@@ -621,0 +612,2 @@ def test_selfcheck_source_rules():
++        ("frontend/components/SelfCheck.tsx", "fontSize?: string | number;"),
++        ("frontend/components/SelfCheck.tsx", 'const size: React.CSSProperties["fontSize"] = "var(--fs-13)";'),
+@@ -625,0 +618,16 @@ def test_selfcheck_source_rules():
++    bad_f7 = [
++        ("frontend/components/SelfCheck.tsx", "const style = { fontSize: anySize };"),
++        ("frontend/components/SelfCheck.tsx", "const style = { fontSize: numberPx };"),
++        ("frontend/components/SelfCheck.tsx", "const style = { fontSize: nullableSize ?? 14 };"),
++        ("frontend/components/SelfCheck.tsx", 'el.style.fontSize = "14px";'),
++        ("frontend/components/SelfCheck.tsx", 'el.style.setProperty("font-size", "14px");'),
++        ("frontend/components/SelfCheck.tsx", "el.style.setProperty('font', '14px serif');"),
++    ]
++    for rel, text in bad_f7:
++        assert _count_hits([(rel, text)])["F7"], f"自检失败：F7 坏样本没有命中：{text!r}"
++    for rel, text in [
++        ("frontend/components/SelfCheck.tsx", 'el.style.fontWeight = "500";'),
++        ("frontend/components/SelfCheck.tsx", 'el.style.setProperty("--fs-x", "1");'),
++    ]:
++        assert not _count_hits([(rel, text)])["F7"], f"自检失败：F7 好样本被误伤：{text!r}"
++
+@@ -708,4 +716,2 @@ def _selfcheck_token_css():
+-  .image-preview-dialog::backdrop { background:var(--scrim, rgba(31,41,38,.18)); }
+-  .dark .image-preview-dialog::backdrop { background:var(--scrim, rgba(0,0,0,.45)); }
+-  .confirm-dialog::backdrop { background:var(--scrim, rgba(31,41,38,.18)); }
+-  .dark .confirm-dialog::backdrop { background:var(--scrim, rgba(0,0,0,.45)); }
++  .scrim-dialog::backdrop { background:var(--scrim, rgba(31,41,38,.18)); }
++  .dark .scrim-dialog::backdrop { background:var(--scrim, rgba(0,0,0,.45)); }
+@@ -766,5 +772,38 @@ def test_selfcheck_token_layer():
+-    # T8：遮罩的兜底色被去掉，旧版 Safari 的 ::backdrop 会变透明。
+-    bad = css.replace("var(--scrim, rgba(31,41,38,.18))", "var(--scrim)").replace(
+-        "var(--scrim, rgba(0,0,0,.45))", "var(--scrim)"
+-    )
+-    assert not _token_layer(bad)["T8 两个对话框的 ::backdrop 用 var(--scrim) 并带兜底色，昼夜各一条"]
++    # T8：公共遮罩类、昼夜颜色与兜底色必须完整；样本原样时通过。
++    t8_name = "T8 所有对话框共用 .scrim-dialog::backdrop，用 var(--scrim) 并带兜底色，昼夜各一条"
++    assert _token_layer(css)[t8_name], "自检失败：合法的 T8 样本未通过"
++
++    night_line = "  .dark .scrim-dialog::backdrop { background:var(--scrim, rgba(0,0,0,.45)); }\n"
++    bad_t8 = [
++        (
++            "两条兜底一起去掉",
++            css.replace("var(--scrim, rgba(31,41,38,.18))", "var(--scrim)").replace(
++                "var(--scrim, rgba(0,0,0,.45))", "var(--scrim)"
++            ),
++        ),
++        (
++            "只把 .dark 那条的兜底去掉",
++            css.replace("var(--scrim, rgba(0,0,0,.45))", "var(--scrim)"),
++        ),
++        (
++            "昼夜颜色对调",
++            css.replace(
++                "var(--scrim, rgba(31,41,38,.18))", "__T8_DAY__"
++            ).replace(
++                "var(--scrim, rgba(0,0,0,.45))", "var(--scrim, rgba(31,41,38,.18))"
++            ).replace(
++                "__T8_DAY__", "var(--scrim, rgba(0,0,0,.45))"
++            ),
++        ),
++        ("删掉 .dark .scrim-dialog::backdrop 那条", css.replace(night_line, "")),
++        (
++            "多一条 .image-preview-dialog::backdrop（HEAD 的写法）",
++            css.replace(
++                night_line,
++                night_line
++                + "  .image-preview-dialog::backdrop { background:var(--scrim, rgba(31,41,38,.18)); }\n",
++            ),
++        ),
++    ]
++    for label, bad in bad_t8:
++        assert not _token_layer(bad)[t8_name], f"自检失败：T8 坏样本没有拦住：{label}"
+
+== 计数
+PASS frontend 里没有 backdrop: 变体  0
+PASS scrim-dialog 落在 8 个组件文件  ['frontend/components/ConfirmDialog.tsx', 'frontend/components/GeneratedImage.tsx', 'frontend/components/SongProjectCard.tsx', 'frontend/components/novel/NovelSettingsDialog.tsx', 'frontend/components/studio/BrainTrial.tsx', 'frontend/components/studio/QuoteDialog.tsx', 'frontend/components/studio/ShotCard.tsx', 'frontend/components/studio/SourceChoices.tsx']
+PASS globals.css 里 ::backdrop 规则恰 2 条  2
+PASS globals.css 两条 scrim 规则  
+PASS history: opacity-0 字面量恰 2  
+PASS history: tabIndex={-1} 恰 2  
+PASS history: <label className={cn("chip relative 恰 2  
+PASS history: openDatePicker(e.currentTarget) 恰 4  
+PASS page: 平台模型 · 每条 10 颗草莓 恰 2  
+PASS page: 每条消息消耗 字面量恰 1  
+PASS page: Enter 发送 恰 1  
+PASS page.tsx 保留 BOM  
+PASS 页脚行恰 1 行且含手机 token 与 max-md:hidden 守卫  1
+PASS 页脚行下一行是 Enter 提示 span  <span className="shrink-0 max-md:hidden">Enter 发送，Shift + Enter 换行</span>
+PASS page: readout font-normal 恰 4  4
+PASS page_contracts 只改了计数那一行  ['-    assert source.count(\'className="readout font-normal"\') == 2'] -> ['+    assert source.count(\'className="readout font-normal"\') == 4']
+== tsc / lint / build
+PASS tsc 退出码 0  
+PASS lint 0 错误、警告 ≤ 25  rc=0 errors=0 warnings=25
+SKIP build
+== pytest
+PASS 新测试可收集  19 collected
+PASS 新测试 + 相关既有测试在候选上全过  81 passed in 2.29s
+PASS 全量 pytest 0 failed 0 skipped  7855 passed, 35 warnings in 326.46s (0:05:26)
+PASS passed = 7836 + 19  passed=7855
+== HEAD 对照
+t;\n    transition-delay:0s !important;\n  }\n}\n'
+
+    def _backdrop_preludes(css):
+        source = _strip_css_comments(css)
+>       assert source.count("::backdrop") == 2, (
+            f"globals.css must have exactly two ::backdrop rules, found {source.count('::backdrop')}"
+        )
+E       AssertionError: globals.css must have exactly two ::backdrop rules, found 4
+E       assert 4 == 2
+E        +  where 4 = <built-in method count of str object at 0x790b690000>('::backdrop')
+E        +    where <built-in method count of str object at 0x790b690000> = '@import "tailwindcss";\n@import "tw-animate-css";\n@import "./shadcn-tailwind.css";\n@import "./fonts/noto-serif-sc.c...l-behavior:auto !important;\n    transition-duration:0.01ms !important;\n    transition-delay:0s !important;\n  }\n}\n'.count
+
+tests/test_ui_closeout_dialog_scrim.py:120: AssertionError
+__________________ test_no_backdrop_tailwind_variants_remain ___________________
+
+    def test_no_backdrop_tailwind_variants_remain():
+        sources = _source_map(ALL_SOURCE_EXTS)
+>       assert_no_backdrop_utility(sources)
+
+tests/test_ui_closeout_dialog_scrim.py:193: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+sources = {'frontend/app/agents/[id]/page.tsx': '"use client";\n\nimport Link from "next/link";\nimport { useParams } from "next...nityPage() {\n  return (\n    <Suspense fallback={null}>\n      <CommunityContent />\n    </Suspense>\n  );\n}\n', ...}
+
+    def assert_no_backdrop_utility(sources):
+        for rel, source in sources.items():
+            for match in BACKDROP_UTILITY.finditer(source):
+                line = source.count("\n", 0, match.start()) + 1
+>               raise AssertionError(
+                    f"{rel}:{line}: Tailwind backdrop: utility is forbidden: "
+                    f"{source[match.start():match.start() + 40]!r}"
+                )
+E               AssertionError: frontend/components/SongProjectCard.tsx:340: Tailwind backdrop: utility is forbidden: 'backdrop:bg-[color:var(--scrim)]"\n      '
+
+tests/test_ui_closeout_dialog_scrim.py:143: AssertionError
+_______________________________ test_token_layer _______________________________
+
+    def test_token_layer():
+        files = _scan_files()
+        assert len(files) >= 130, f"扫描文件数不足 130：只找到 {len(files)} 个"
+        css = (ROOT / "frontend/app/globals.css").read_text(encoding="utf-8")
+        result = _token_layer(css)
+        report = "\n".join(
+            f"{'PASS' if passed else 'FAIL'} {name}" for name, passed in result.items()
+        )
+>       assert all(result.values()), f"令牌层未通过：\n{report}"
+E       AssertionError: 令牌层未通过：
+E         PASS T1 10 个 --fs-* 只定义在别名 :root、各一次、值正确
+E         PASS T2 @theme inline 内登记 10 个 --text-fs-*、四档行高精确、块外没有
+E         PASS T3 四套主题逐块取值正确、键集合相同
+E         PASS T4 --seal-soft 只在别名 :root 定义一次，为 --stamp 的 12%
+E         PASS T5 手机输入框护栏：选择器三项、在顶层 @media (width < 48rem) 里、不进 @layer
+E         PASS T6 ::placeholder { color: var(--ink2) } 在第一个 @layer base 里
+E         PASS T7 body 规则块里 font-size: var(--fs-16-5)
+E         FAIL T8 所有对话框共用 .scrim-dialog::backdrop，用 var(--scrim) 并带兜底色，昼夜各一条
+E       assert False
+E        +  where False = all(dict_values([True, True, True, True, True, True, True, False]))
+E        +    where dict_values([True, True, True, True, True, True, True, False]) = <built-in method values of dict object at 0x107f304c0>()
+E        +      where <built-in method values of dict object at 0x107f304c0> = {'T1 10 个 --fs-* 只定义在别名 :root、各一次、值正确': True, 'T2 @theme inline 内登记 10 个 --text-fs-*、四档行高精确、块外没有': True, 'T3 四套主题逐块取值正确、键集合相同': True, 'T4 --seal-soft 只在别名 :root 定义一次，为 --stamp 的 12%': True, ...}.values
+
+tests/test_design_system_gate.py:556: AssertionError
+=========================== short test summary info ============================
+FAILED tests/test_ui_closeout_cost_hint.py::test_cost_hint_contract - Asserti...
+FAILED tests/test_ui_closeout_cost_hint.py::test_selfcheck_missing_show_cost_guard_is_rejected
+FAILED tests/test_ui_closeout_cost_hint.py::test_selfcheck_balance_digits_are_rejected_when_not_readout
+FAILED tests/test_ui_closeout_cost_hint.py::test_selfcheck_moved_enter_hint_is_rejected
+FAILED tests/test_ui_closeout_cost_hint.py::test_selfcheck_missing_bom_is_rejected
+FAILED tests/test_ui_closeout_history_keyboard.py::test_date_chip_keyboard_contract
+FAILED tests/test_ui_closeout_history_keyboard.py::test_date_inputs_pair_with_their_own_chips
+FAILED tests/test_ui_closeout_history_keyboard.py::test_date_buttons_pair_with_their_own_inputs
+FAILED tests/test_ui_closeout_history_keyboard.py::test_selfcheck_swapped_labels_are_rejected
+FAILED tests/test_ui_closeout_dialog_scrim.py::test_all_dialogs_use_scrim_dialog
+FAILED tests/test_ui_closeout_dialog_scrim.py::test_scrim_backdrop_rules_are_the_only_two
+FAILED tests/test_ui_closeout_dialog_scrim.py::test_no_backdrop_tailwind_variants_remain
+FAILED tests/test_design_system_gate.py::test_token_layer - AssertionError: ...
+13 failed, 13 passed in 1.54s
+
+PASS HEAD: cost_hint 失败  ['tests/test_ui_closeout_cost_hint.py::test_cost_hint_contract', 'tests/test_ui_closeout_cost_hint.py::test_selfcheck_missing_show_cost_guard_is_rejected', 'tests/test_ui_closeout_cost_hint.py::test_selfcheck_balance_digits_are_rejected_when_not_readout', 'tests/test_ui_closeout_cost_hint.py::test_selfcheck_moved_enter_hint_is_rejected', 'tests/test_ui_closeout_cost_hint.py::test_selfcheck_missing_bom_is_rejected']
+PASS HEAD: history_keyboard 失败  ['tests/test_ui_closeout_history_keyboard.py::test_date_chip_keyboard_contract', 'tests/test_ui_closeout_history_keyboard.py::test_date_inputs_pair_with_their_own_chips', 'tests/test_ui_closeout_history_keyboard.py::test_date_buttons_pair_with_their_own_inputs', 'tests/test_ui_closeout_history_keyboard.py::test_selfcheck_swapped_labels_are_rejected']
+PASS HEAD: dialog_scrim 失败  ['tests/test_ui_closeout_dialog_scrim.py::test_all_dialogs_use_scrim_dialog', 'tests/test_ui_closeout_dialog_scrim.py::test_scrim_backdrop_rules_are_the_only_two', 'tests/test_ui_closeout_dialog_scrim.py::test_no_backdrop_tailwind_variants_remain']
+PASS HEAD: structure_guards 通过  []
+PASS HEAD: gate::test_token_layer 失败（T8 对不上四条旧规则）  ['tests/test_design_system_gate.py::test_token_layer']
+PASS HEAD: gate 自检通过  
+PASS HEAD: css 测试通过  []
+PASS HEAD: 失败全是 AssertionError  
+== FAIL 0 / 34
+exit=0

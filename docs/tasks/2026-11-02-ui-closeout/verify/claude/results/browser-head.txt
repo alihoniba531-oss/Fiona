@@ -1,0 +1,28 @@
+PASS m390/day HEAD 常显费用  每条消息消耗 10 颗草莓 / 每条消息消耗 10 颗草莓
+PASS m390/day HEAD 低余额不带余额数  每条消息消耗 10 颗草莓
+PASS m390/day HEAD 空闲高度 ≈133  133.81
+PASS m390/night HEAD 常显费用  每条消息消耗 10 颗草莓 / 每条消息消耗 10 颗草莓
+PASS m390/night HEAD 低余额不带余额数  每条消息消耗 10 颗草莓
+PASS m390/night HEAD 空闲高度 ≈133  133.81
+PASS m390 C 态有思考档与改用平台  {'tag': 'C-day-m390', 'h': 157.81, 'feeText': None, 'feeColor': None, 'leftText': None, 'hintVisible': False, 'rowVisible': True, 'rowH': 45, 'toggle': True, 'radiogroup': True}
+PASS m390 B 态有改用我的模型  {'tag': 'B-day-m390', 'h': 157.81, 'feeText': '平台模型 · 每条 10 颗草莓', 'feeColor': 'rgb(86, 99, 94)', 'leftText': None, 'hintVisible': False, 'rowVisible': True, 'rowH': 45, 'toggle': True, 'radiogroup': False}
+PASS m390 B/C 高度 ≈157  B=157.81 C=157.81
+PASS d1440/day HEAD 常显费用  每条消息消耗 10 颗草莓 / 每条消息消耗 10 颗草莓
+PASS d1440/day HEAD 低余额不带余额数  每条消息消耗 10 颗草莓
+PASS d1440 C 态有思考档与改用平台  {'tag': 'C-day-d1440', 'h': 147.81, 'feeText': None, 'feeColor': None, 'leftText': None, 'hintVisible': True, 'rowVisible': True, 'rowH': 37, 'toggle': True, 'radiogroup': True}
+PASS d1440 B 态有改用我的模型  {'tag': 'B-day-d1440', 'h': 147.81, 'feeText': '平台模型 · 每条 10 颗草莓', 'feeColor': 'rgb(86, 99, 94)', 'leftText': None, 'hintVisible': True, 'rowVisible': True, 'rowH': 37, 'toggle': True, 'radiogroup': False}
+PASS history/d1440 HEAD 原生框在 Tab 序列（正控）  True
+PASS history/d1440 HEAD 没有 chip 按钮（正控）  []
+PASS history/d1440 指针点 chip 由原生框接到  {'tag': 'INPUT', 'type': 'date', 'label': '从（开始日期）', 'chip': None, 'opacity': '0', 'tabindex': None} sp=1
+PASS history/m390 HEAD 原生框在 Tab 序列（正控）  True
+PASS history/m390 HEAD 没有 chip 按钮（正控）  []
+PASS history/m390 指针点 chip 由原生框接到  {'tag': 'INPUT', 'type': 'date', 'label': '从（开始日期）', 'chip': None, 'opacity': '0', 'tabindex': None} sp=1
+PASS backdrop/day 主题生效  False
+PASS backdrop/day HEAD 任意值类正常解析（正控）  rgba(31, 41, 38, 0.18)
+PASS backdrop/day HEAD 任意值类变量失效即透明（正控）  rgba(0, 0, 0, 0)
+PASS backdrop/day HEAD confirm-dialog 有兜底  rgba(31, 41, 38, 0.18)
+PASS backdrop/night 主题生效  True
+PASS backdrop/night HEAD 任意值类正常解析（正控）  rgba(0, 0, 0, 0.45)
+PASS backdrop/night HEAD 任意值类变量失效即透明（正控）  rgba(0, 0, 0, 0)
+PASS backdrop/night HEAD confirm-dialog 有兜底  rgba(0, 0, 0, 0.45)
+== FAIL 0 / 27
