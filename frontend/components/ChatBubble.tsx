@@ -6,6 +6,7 @@ import { memo, useState, useEffect, useRef, useMemo } from "react";
 import GeneratedImage from "@/components/GeneratedImage";
 import SongProjectCard from "@/components/SongProjectCard";
 import NovelDraftCard from "@/components/NovelDraftCard";
+import NovelFeedbackCard from "@/components/NovelFeedbackCard";
 import { generatedImagePath, referenceImagePath, storedReferenceImagePaths, isLocalReferenceDataUrl, type ReferenceImageInput } from "@/lib/generatedImages";
 import { API_BASE as API } from "@/lib/config";
 import { openExternal, toSafeExternalUrl } from "@/lib/open";
@@ -96,6 +97,7 @@ export interface CardData {
   subtype?: string;  // "weather" = 天气卡片专用渲染
   project_id?: string;  // "song_project" = 写歌项目卡片
   draft_id?: string;  // "novel_draft" = 书斋草稿卡片
+  feedback_id?: string;  // "novel_feedback" = 修改意见卡
   weather?: WeatherData;
   items?: { title: string; url?: string }[];
   sources?: { title: string; url: string; site_name?: string; index?: number }[];
@@ -113,6 +115,10 @@ export function ChatCard(props: ChatCardProps) {
   if (card.subtype === "novel_draft") {
     if (!card.draft_id) return null;
     return <NovelDraftCard draftId={card.draft_id} onOpenNovel={onOpenNovel} />;
+  }
+  if (card.subtype === "novel_feedback") {
+    if (!card.feedback_id) return null;
+    return <NovelFeedbackCard feedbackId={card.feedback_id} onOpenNovel={onOpenNovel} />;
   }
   if (card.subtype === "song_project") {
     const projectId = card.project_id;

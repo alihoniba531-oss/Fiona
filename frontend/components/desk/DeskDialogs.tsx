@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useRef, type ReactNode } from "react";
+import { chapterReadingBody } from "@/components/novel/ChapterReader";
 import PlanEditor from "@/components/novel/PlanEditor";
 import { EmptyState, ErrorNotice, LoadingState } from "@/components/novel/NovelStates";
 import { sourceDialogClass } from "@/components/studio/SourceChoices";
@@ -79,10 +80,11 @@ export function DeskPlanDialog({ book, chapter, data, loading, error, busy, onAp
 export function DeskReaderDialog({ book, chapter, data, loading, error, onClose, onOpenNovel }: DeskReaderDialogProps) {
   const summaryTitle = book.bible?.dynamic.chapter_summaries.find(item => item.chapter === chapter)?.title;
   const chapterTitle = displayNovelChapterTitle(data?.title ?? summaryTitle) || "待定章名";
+  const body = data?.body ? chapterReadingBody(data.body) : "";
   let content: ReactNode;
   if (loading) content = <LoadingState>正在取回正文…</LoadingState>;
   else if (error) content = <ErrorNotice message={error} />;
-  else if (data?.body) content = <div className="whitespace-pre-wrap text-fs-16.5 leading-[1.9]">{data.body}</div>;
+  else if (body) content = <div className="whitespace-pre-wrap break-words text-fs-16.5 leading-[1.9]">{body}</div>;
   else content = <EmptyState>这一章还没有正文。</EmptyState>;
   return <DeskDialog labelledBy="desk-reader-dialog-title" onClose={onClose}>
     <div className="min-w-0">

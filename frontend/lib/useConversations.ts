@@ -15,6 +15,7 @@ interface StoredMessage {
   reference_image_paths?: string[];
   song_project_id?: string | null;
   novel_draft_id?: string | null;
+  novel_feedback_id?: string | null;
   created_at: string;
 }
 
@@ -61,6 +62,9 @@ function toMessages(messages: StoredMessage[]): Message[] {
     }
     if (message.role === "assistant" && message.novel_draft_id) {
       cards.push({ source: "书斋", points: [], subtype: "novel_draft", draft_id: message.novel_draft_id });
+    }
+    if (message.role === "assistant" && message.novel_feedback_id) {
+      cards.push({ source: "书斋", points: [], subtype: "novel_feedback", feedback_id: message.novel_feedback_id });
     }
     return {
       id: `db-${message.id}`,

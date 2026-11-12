@@ -109,7 +109,7 @@ export default function DeskChaptersView({ book, busy, gateError, onAction, onAd
           <span aria-hidden="true" className="readout text-fs-18 text-[color:var(--ink2)]">{chapter.chapter}</span>
           <div className="min-w-0">
             <button type="button" className="flex min-h-10 w-full min-w-0 items-center text-left text-fs-15" aria-label={`第 ${chapter.chapter} 章　${title}`} aria-expanded={isExpanded} onClick={() => setExpanded(current => current === chapter.chapter ? null : chapter.chapter)}>{title}</button>
-            {summary && <p className="line-clamp-2 text-fs-13 text-[color:var(--ink2)]">{summary}</p>}
+            {summary && <p className={`break-words text-fs-13 text-[color:var(--ink2)] ${isExpanded ? "" : "line-clamp-2"}`}>{summary}</p>}
             {isExpanded && <div className="mt-2 flex flex-wrap items-center gap-2">
               {chapter.chapter <= book.chapters_done && <button type="button" className="btn btn-quiet min-h-10" onClick={() => onOpenBody(chapter.chapter)}>读正文</button>}
               <button type="button" className="btn btn-quiet min-h-10" onClick={() => onAsk(deskAskPrefix({ title: book.title, chapter: chapter.chapter }))}>问分身</button>

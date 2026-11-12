@@ -254,7 +254,7 @@ Claude 自己决定天气、旅行、路线、热榜、生图工具，以及白�
 
 工具生图失败通过 image_failed 状态清除生成提示，失败原因回灌 Claude 后继续正常作答；工具来源的 done 不因缺图报错，面板生图及其重试行为保持原样。多步两段文字之间加两个换行，同样保存到正文。工具异常累加到 agent_tool_errors，成功保存的整轮仍执行画像提取等后续任务；模式判定、pending 或会话确认等平台侧失败沿用平台文案。尚未交付任何文字、平台卡片或图片就请求失败时，不补发来源卡，也不落库。全局槽等待超时显示「自带模型通道繁忙，请稍后再试」；预算耗尽时，完成的图片必须落库或清理，不能留下孤立文件。
 
-已知局限：历史图片不再发送原图，仅发送「［图中：摘要］」文字；镜子模式不带工具；危机轮不进入智能体模式。其余卡片不落库；写歌项目卡与书斋草稿卡例外：assistant 消息保存可空 `song_project_id` 与 `novel_draft_id`，刷新后分别按项目和草稿重建，其余卡片刷新后仅保留正文摘要和生成图。进入智能体路径即清除 pending，不读写工具补参；本轮只保存一条 assistant，按文字、卡片摘要和生图描述的交付顺序拼接。服务器端工具版本、结果块类型和 `usage.server_tool_use` 字段仍需作者用真实 Key 核实。
+已知局限：历史图片不再发送原图，仅发送「［图中：摘要］」文字；镜子模式不带工具；危机轮不进入智能体模式。其余卡片不落库；写歌项目卡、书斋草稿卡与修改意见卡例外：assistant 消息保存可空 `song_project_id`、`novel_draft_id` 与 `novel_feedback_id`，刷新后分别按项目、草稿和修改意见重建，其余卡片刷新后仅保留正文摘要和生成图。进入智能体路径即清除 pending，不读写工具补参；本轮只保存一条 assistant，按文字、卡片摘要和生图描述的交付顺序拼接。服务器端工具版本、结果块类型和 `usage.server_tool_use` 字段仍需作者用真实 Key 核实。
 
 在受控服务环境中设置 `FIONA_CLAUDE_AGENT=0` 可恢复旧 Claude 路由，无需修改用户 Key；默认开启。三个型号统一使用 `web_search_20250305`、`web_fetch_20250910`：带动态过滤的 `_20260209` 版本内部使用程序化工具调用，与本路径的 `disable_parallel_tool_use` 冲突，真实 Key 实测返回 400。
 
@@ -581,7 +581,7 @@ systemctl status fiona fiona-web
 
 当前 `npm run lint` 已恢复为绿色，但仍有非阻断警告。发布者必须人工查看 Lint 输出，不能把生产构建成功等同于所有维护债务已经清零。
 
-数据库兼容 DDL 会在后端启动时执行。既有迁移增加了 `users.session_version`、邀请码撤销/用量字段、`posts.owner_username`、`upload_cleanup_queue` 和可空列 `users.strawberry_refill_date`；写歌变更增加可空列 `messages.song_project_id`，并由 `init_db` 幂等创建 `song_projects`、`song_lyrics`、`song_versions`、`song_cleanup_queue` 四张表，不新增迁移版本号。兼容建表还包括 `retired_usernames(username TEXT PRIMARY KEY, retired_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP)` 和 `user_model_configs`（加密用户Key、模型配置、启用位与 `effort TEXT NOT NULL DEFAULT 'low'`）表；后者直接在 init_db 执行DDL，紧接着用容错 ALTER TABLE 补 `effort`，老库启动时自动补列、已有行取 low，不增加迁移版本号，五道迁移检查不变，并启用持久的 WAL 模式与统一的 SQLite busy timeout。新账号初始 `session_version` 为随机正整数，旧账号版本保持原值，不强制重新登录；删号事务记录退役用户名，之后的 `testerNN` 发码跳过它。后端启动还会回填可识别的旧帖子 owner，并重试队列中的文件清理。由于当前没有通用迁移和自动回滚，任何涉及 `database.py` 的发布都必须先同时备份数据库、上传目录、工作室目录和启用时的写歌目录；写歌目录 `FIONA_SONG_DIR` 尚未纳入备份脚本（P2），升级或回滚前须手工复制并按“定时备份”一节记录缺口。
+数据库兼容 DDL 会在后端启动时执行。既有迁移增加了 `users.session_version`、邀请码撤销/用量字段、`posts.owner_username`、`upload_cleanup_queue` 和可空列 `users.strawberry_refill_date`；写歌变更增加可空列 `messages.song_project_id`，并由 `init_db` 幂等创建 `song_projects`、`song_lyrics`、`song_versions`、`song_cleanup_queue` 四张表，不新增迁移版本号。书斋草稿与修改意见卡同样由 `init_db` 幂等创建 `novel_drafts`、`novel_feedback` 两张表，并补可空列 `messages.novel_draft_id`、`messages.novel_feedback_id`，不新增迁移版本号。兼容建表还包括 `retired_usernames(username TEXT PRIMARY KEY, retired_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP)` 和 `user_model_configs`（加密用户Key、模型配置、启用位与 `effort TEXT NOT NULL DEFAULT 'low'`）表；后者直接在 init_db 执行DDL，紧接着用容错 ALTER TABLE 补 `effort`，老库启动时自动补列、已有行取 low，不增加迁移版本号，五道迁移检查不变，并启用持久的 WAL 模式与统一的 SQLite busy timeout。新账号初始 `session_version` 为随机正整数，旧账号版本保持原值，不强制重新登录；删号事务记录退役用户名，之后的 `testerNN` 发码跳过它。后端启动还会回填可识别的旧帖子 owner，并重试队列中的文件清理。由于当前没有通用迁移和自动回滚，任何涉及 `database.py` 的发布都必须先同时备份数据库、上传目录、工作室目录和启用时的写歌目录；写歌目录 `FIONA_SONG_DIR` 尚未纳入备份脚本（P2），升级或回滚前须手工复制并按“定时备份”一节记录缺口。
 
 ## 邀请码、会话与草莓运维
 
@@ -862,6 +862,12 @@ find /var/lib/fiona/songs -type f -exec chmod 0600 {} +
 默认 `FIONA_NOVEL=0`。仅作者验收后设置 `FIONA_NOVEL=1`，并在 `FIONA_NOVEL_USERS` 以逗号列出允许账号；空名单拒绝所有人。接口均位于 `/novels`，要求登录与白名单，可建书、估价、查询进度/章节、确认立项/细纲、重定稿、暂停/继续、留言、改稿、确认/延长完结、导出 Markdown 和删除。
 
 可配置 `FIONA_NOVEL_MAX_RUNNING=3`、`FIONA_DAILY_NOVEL_CHAPTERS=30`；章节额度按北京时间换日，达到额度后用户手动恢复。`FIONA_NOVEL_PRICE_JSON` 必须完整包含以下三个规格的 input/output 数值（单位：草莓/千 token）：`dashscope:qwen3.8-max` 默认 1.80/5.40，`deepseek:deepseek-flash` 默认 0.33/1.30，`ark:doubao-seed-2-1-pro-260915` 默认 0.90/4.50。非法覆盖回落默认值并仅告警一次。开发模式、BYOK 和 fake 不计费。
+
+聊天侧另有三个开关，均调用时读取、默认 `0`、只有字面 `1` 开启，且都须命中上面的 `FIONA_NOVEL_USERS`：
+
+- `FIONA_NOVEL_CHAT`：聊天读小说，还须非危机轮；关闭时请求、提示词、SSE、历史与草莓流程不变。
+- `FIONA_NOVEL_CHAT_CREATE`：聊天建书写草稿，还须同时 `FIONA_NOVEL_CHAT=1`，每轮最多一份、未使用上限 50 份。
+- `FIONA_NOVEL_CHAT_FEEDBACK`：聊天修改意见卡，还须同时 `FIONA_NOVEL_CHAT=1`；工具只写卡片、不碰书斋业务表、不扣草莓，交留言与重新定稿都要作者在卡片上点按钮，关掉开关后已有卡片仍能读取和操作。
 
 平台分别使用服务器环境中的 DASHSCOPE_API_KEY、DEEPSEEK_API_KEY、ARK_API_KEY；不提供平台 Claude。Claude 只能使用用户已启用的 BYOK；仅 anthropic/dashscope/deepseek 预设和引擎已知型号开放。发布前应告知作者：思路、圣经、正文与留言会发送给所选的阿里云百炼、DeepSeek、火山方舟或用户自带厂商（可能含 Anthropic）。小说表不存 Key 或完整提示词，日志只含运行元数据。
 

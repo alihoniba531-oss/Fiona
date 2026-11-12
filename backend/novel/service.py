@@ -446,19 +446,217 @@ async def approve_plan(username,novel_id,data):
     return await detail(username,novel_id)
 
 
+async def _begin_redo(db,username,novel_id,text,expected_chapter=None) -> int:
+    book=await owned(db,username,novel_id,('awaiting_plan',))
+    current=await row(db,"SELECT * FROM novel_chapters WHERE novel_id=? AND status='awaiting_plan_approval' ORDER BY chapter DESC LIMIT 1",(novel_id,))
+    if not current or not current['meeting_json']:
+        fail('当前没有可重做的待批细纲，请刷新后重试')
+    if expected_chapter is not None and expected_chapter!=current['chapter']:
+        fail(f'第 {expected_chapter} 章细纲已经不在等你确认了')
+    meeting=json.loads(current['meeting_json']); meeting['_redo_note']=text; meeting['_redo_count']=meeting.get('_redo_count',0)+1
+    await db.execute("UPDATE novel_chapters SET status='planning',meeting_json=? WHERE novel_id=? AND chapter=?",(encoded(meeting),novel_id,current['chapter']))
+    await _activate(db,book,username)
+    return current['chapter']
+
+
 async def redo_plan(username,novel_id,data):
     async with get_db() as db:
         await db.execute('BEGIN IMMEDIATE')
-        book=await owned(db,username,novel_id,('awaiting_plan',))
-        current=await row(db,"SELECT * FROM novel_chapters WHERE novel_id=? AND status='awaiting_plan_approval' ORDER BY chapter DESC LIMIT 1",(novel_id,))
-        if not current or not current['meeting_json']:
-            fail('当前没有可重做的待批细纲，请刷新后重试')
-        meeting=json.loads(current['meeting_json']); meeting['_redo_note']=data.text; meeting['_redo_count']=meeting.get('_redo_count',0)+1
-        await db.execute("UPDATE novel_chapters SET status='planning',meeting_json=? WHERE novel_id=? AND chapter=?",(encoded(meeting),novel_id,current['chapter']))
-        await _activate(db,book,username); await db.commit()
+        await _begin_redo(db,username,novel_id,data.text)
+        await db.commit()
     from .runner import start_novel
     await start_novel(novel_id,username)
     return await detail(username,novel_id)
+
+
+def _note_key(value):
+    value=str(value)
+    return value[1:] if value.startswith('N') else value
+
+
+async def feedback_view(username,feedback_id) -> dict:
+    async with get_db() as db:
+        card=await row(db,'SELECT * FROM novel_feedback WHERE id=? AND owner_username=?',(feedback_id,username))
+        if not card:
+            fail('修改意见不存在',404)
+        note_row=None
+        if card['note_id'] is not None:
+            note_row=await row(db,'SELECT status,delivered_chapter,response_json FROM novel_notes WHERE id=? AND novel_id=?',(card['note_id'],card['novel_id']))
+        note=None
+        if card['note_id'] is not None:
+            status=delivered_chapter=adopted=note_response=None
+            if note_row is not None:
+                status=note_row['status']; delivered_chapter=note_row['delivered_chapter']
+                raw_response=note_row['response_json']
+                parsed_response=json.loads(raw_response) if status=='delivered' and raw_response else {}
+                adopted=parsed_response.get('adopted'); note_response=parsed_response.get('response')
+            note={'sent_at':card['note_sent_at'],'status':status,'delivered_chapter':delivered_chapter,
+                  'adopted':adopted,'response':note_response,'planned_chapter':None,
+                  'planned_adopted':None,'planned_response':None}
+        book_row=None; config={}; config_ok=False; max_chapters=None
+        if card['novel_id'] is not None:
+            book_row=await row(db,'SELECT status,chapters_done,config_json FROM novels WHERE id=? AND username=?',(card['novel_id'],username))
+        if book_row is not None:
+            try:
+                config=json.loads(book_row['config_json'])
+            except (TypeError,ValueError):
+                config={}
+            if isinstance(config,dict):
+                config_ok=True
+            else:
+                config={}
+            if config_ok:
+                try:
+                    max_chapters=int(config.get('target',{}).get('max_chapters',Target().max_chapters))
+                except (TypeError,ValueError,AttributeError):
+                    max_chapters=None
+        awaiting_chapter=None; awaiting_is_final=False
+        if book_row is not None and book_row['status']=='awaiting_plan':
+            pending=await row(db,"SELECT chapter,meeting_json FROM novel_chapters WHERE novel_id=? AND status='awaiting_plan_approval' ORDER BY chapter DESC LIMIT 1",(card['novel_id'],))
+            if pending is not None:
+                awaiting_chapter=pending['chapter']
+                try:
+                    pending_meeting=json.loads(pending['meeting_json'] or '{}')
+                except (TypeError,ValueError):
+                    pending_meeting=None
+                pending_decision=pending_meeting.get('decision') if isinstance(pending_meeting,dict) else None
+                awaiting_is_final=isinstance(pending_decision,dict) and pending_decision.get('ending_status')=='end'
+        pending_notes=0
+        if book_row is not None:
+            pending_count=await row(db,"SELECT COUNT(*) AS n FROM novel_notes WHERE novel_id=? AND status='pending'",(card['novel_id'],))
+            pending_notes=pending_count['n']
+        plan_row_status=None; redo_pending=False
+        if card['novel_id'] is not None and card['plan_chapter'] is not None:
+            plan_row=await row(db,'SELECT status,meeting_json FROM novel_chapters WHERE novel_id=? AND chapter=?',(card['novel_id'],card['plan_chapter']))
+            if plan_row is not None:
+                plan_row_status=plan_row['status']
+                if plan_row_status=='planning':
+                    try:
+                        plan_meeting=json.loads(plan_row['meeting_json'] or '{}')
+                    except (TypeError,ValueError):
+                        plan_meeting=None
+                    redo_pending=isinstance(plan_meeting,dict) and plan_meeting.get('_redo_note') is not None
+        if note is not None and note['status']=='pending' and book_row is not None:
+            chapters=await rows(db,"SELECT chapter,meeting_json FROM novel_chapters WHERE novel_id=? AND status IN ('awaiting_plan_approval','planning','writing') ORDER BY chapter DESC",(card['novel_id'],))
+            for item in chapters:
+                try:
+                    meeting=json.loads(item['meeting_json'] or '{}')
+                except (TypeError,ValueError):
+                    continue
+                if not isinstance(meeting,dict):
+                    continue
+                brief=meeting.get('brief')
+                user_notes=brief.get('user_notes') if isinstance(brief,dict) else None
+                if not isinstance(user_notes,list):
+                    continue
+                if not any(isinstance(entry,dict) and _note_key(entry.get('id'))==str(card['note_id']) for entry in user_notes):
+                    continue
+                note['planned_chapter']=item['chapter']
+                decision=meeting.get('decision')
+                responses=decision.get('user_note_responses') if isinstance(decision,dict) else None
+                if isinstance(responses,list):
+                    for entry in responses:
+                        if not isinstance(entry,dict) or _note_key(entry.get('note_id',entry.get('id')))!=str(card['note_id']):
+                            continue
+                        if isinstance(entry.get('adopted'),bool):
+                            note['planned_adopted']=entry['adopted']
+                        if isinstance(entry.get('response'),str):
+                            note['planned_response']=entry['response']
+                        break
+                break
+        automation=config.get('automation')
+        if not isinstance(automation,str):
+            automation='per_batch'
+        agents=config.get('agents')
+        if not isinstance(agents,dict):
+            agents={}
+        editor=agents.get('editor')
+        if editor=='byok:self':
+            redo_cost='own_model'
+        else:
+            from .billing import NovelBilling
+            redo_cost='free' if NovelBilling.is_free({'model':editor if isinstance(editor,str) else ''}) else 'strawberries'
+        book=None
+        if book_row is not None:
+            book={'status':book_row['status'],'chapters_done':book_row['chapters_done'],
+                  'max_chapters':max_chapters,'awaiting_chapter':awaiting_chapter,
+                  'awaiting_is_final':awaiting_is_final,'pending_notes':pending_notes,
+                  'automation':automation,'redo_cost':redo_cost,
+                  'plan_row_status':plan_row_status,'redo_pending':redo_pending}
+        result={'id':card['id'],'novel_id':card['novel_id'],'book_title':card['book_title'],
+                'next_chapters':card['next_chapters'],'current_plan':card['current_plan'],
+                'plan_chapter':card['plan_chapter']}
+        try:
+            written=json.loads(card['written_json'] or '[]')
+        except (TypeError,ValueError):
+            written=[]
+        result['written']=written if isinstance(written,list) else []
+        result.update(note=note,redo_started_at=card['redo_started_at'],book=book,created_at=card['created_at'])
+    return result
+
+
+async def send_feedback_note(username,feedback_id) -> dict:
+    async with get_db() as db:
+        await db.execute('BEGIN IMMEDIATE')
+        card=await row(db,'SELECT * FROM novel_feedback WHERE id=? AND owner_username=?',(feedback_id,username))
+        if not card:
+            fail('修改意见不存在',404)
+        if card['note_id'] is None:
+            if not (card['next_chapters'] or '').strip():
+                fail('这张卡没有要交给编辑部的内容')
+            novel_id=card['novel_id']
+            if novel_id is None:
+                fail('这本书已经删除')
+            book=await row(db,'SELECT status FROM novels WHERE id=? AND username=?',(novel_id,username))
+            if not book:
+                fail('这本书已经删除')
+            if book['status']=='completed':
+                fail('这本书已经完结，编辑部不会再读留言')
+            if book['status']=='failed':
+                fail('这本书处于失败状态，编辑部不会再读留言')
+            note_id=await _insert_pending_note(db,username,novel_id,card['next_chapters'])
+            await db.execute('UPDATE novel_feedback SET note_id=?, note_sent_at=CURRENT_TIMESTAMP, updated_at=CURRENT_TIMESTAMP WHERE id=? AND owner_username=? AND note_id IS NULL',(note_id,feedback_id,username))
+        await db.commit()
+    return await feedback_view(username,feedback_id)
+
+
+async def redo_feedback_plan(username,feedback_id) -> dict:
+    started=False; novel_id=None
+    async with get_db() as db:
+        await db.execute('BEGIN IMMEDIATE')
+        card=await row(db,'SELECT * FROM novel_feedback WHERE id=? AND owner_username=?',(feedback_id,username))
+        if not card:
+            fail('修改意见不存在',404)
+        if card['redo_started_at'] is None:
+            if not (card['current_plan'] or '').strip() or card['plan_chapter'] is None:
+                fail('这张卡没有重新定稿的要求')
+            novel_id=card['novel_id']
+            if novel_id is None:
+                fail('这本书已经删除')
+            book=await row(db,'SELECT status,config_json FROM novels WHERE id=? AND username=?',(novel_id,username))
+            if not book:
+                fail('这本书已经删除')
+            if book['status']!='awaiting_plan':
+                fail(f'第 {card["plan_chapter"]} 章细纲已经不在等你确认了')
+            try:
+                config=json.loads(book['config_json'])
+            except (TypeError,ValueError):
+                config={}
+            if not isinstance(config,dict):
+                config={}
+            automation=config.get('automation')
+            if not isinstance(automation,str):
+                automation='per_batch'
+            if automation!='per_chapter':
+                fail('这本书现在不是逐章确认，重新定稿后会直接写正文；请到书斋里操作')
+            await _begin_redo(db,username,novel_id,Note(text=card['current_plan']).text,expected_chapter=card['plan_chapter'])
+            await db.execute('UPDATE novel_feedback SET redo_started_at=CURRENT_TIMESTAMP, updated_at=CURRENT_TIMESTAMP WHERE id=? AND owner_username=? AND redo_started_at IS NULL',(feedback_id,username))
+            started=True
+        await db.commit()
+    if started:
+        from .runner import start_novel
+        await start_novel(novel_id,username)
+    return await feedback_view(username,feedback_id)
 
 
 async def volumes(username,novel_id):
@@ -639,13 +837,18 @@ async def patch(username,novel_id,data):
     return await detail(username,novel_id)
 
 
+async def _insert_pending_note(db,username,novel_id,text) -> int:
+    count=await row(db,"SELECT COUNT(*) AS n FROM novel_notes WHERE novel_id=? AND status='pending'",(novel_id,))
+    if count['n']>=5:
+        fail('待处理留言最多五条')
+    cursor=await db.execute("INSERT INTO novel_notes(novel_id,username,text,status) VALUES(?,?,?,'pending')",(novel_id,username,text))
+    return cursor.lastrowid
+
+
 async def note(username,novel_id,data):
     async with get_db() as db:
         await db.execute('BEGIN IMMEDIATE'); await owned(db,username,novel_id)
-        count=await row(db,"SELECT COUNT(*) AS n FROM novel_notes WHERE novel_id=? AND status='pending'",(novel_id,))
-        if count['n']>=5:
-            fail('待处理留言最多五条')
-        await db.execute("INSERT INTO novel_notes(novel_id,username,text,status) VALUES(?,?,?,'pending')",(novel_id,username,data.text)); await db.commit()
+        await _insert_pending_note(db,username,novel_id,data.text); await db.commit()
     return {'status':'pending'}
 
 
@@ -779,6 +982,7 @@ async def delete(username,novel_id):
         for table in ('novel_notes','novel_steps','novel_chapters','novel_bible_versions'):
             await db.execute(f'DELETE FROM {table} WHERE novel_id=?',(novel_id,))
         await db.execute('UPDATE novel_drafts SET novel_id=NULL, updated_at=CURRENT_TIMESTAMP WHERE owner_username=? AND novel_id=?',(username,novel_id))
+        await db.execute('UPDATE novel_feedback SET novel_id=NULL, updated_at=CURRENT_TIMESTAMP WHERE owner_username=? AND novel_id=?',(username,novel_id))
         await db.execute('DELETE FROM novels WHERE id=? AND username=?',(novel_id,username)); await db.commit()
     return {'deleted':True}
 

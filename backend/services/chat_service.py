@@ -790,6 +790,7 @@ class ChatState:
     crisis_resource_sent: bool = False
     song_project_id: str | None = None
     novel_draft_id: str | None = None
+    novel_feedback_id: str | None = None
 
 
 @dataclass
@@ -993,6 +994,7 @@ async def _save_response(ctx: ChatContext, state: ChatState, image_path: str | N
     state.response_saved = bool(await save_message(
         ctx.user, "assistant", state.full_response, image_path=image_path, conversation_id=ctx.conversation_id,
         song_project_id=state.song_project_id, novel_draft_id=state.novel_draft_id,
+        novel_feedback_id=state.novel_feedback_id,
     ))
     if not state.response_saved:
         raise RuntimeError("conversation no longer available")

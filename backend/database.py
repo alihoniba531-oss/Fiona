@@ -85,6 +85,28 @@ NOVEL_DRAFTS_DDL = """
 NOVEL_DRAFTS_INDEX = "CREATE INDEX IF NOT EXISTS idx_novel_drafts_owner ON novel_drafts(owner_username)"
 
 
+# 聊天修改意见卡：作者在卡片上点按钮才会交给编辑部或重新定稿细纲。
+NOVEL_FEEDBACK_DDL = """
+    CREATE TABLE IF NOT EXISTS novel_feedback (
+        id TEXT PRIMARY KEY,
+        owner_username TEXT NOT NULL,
+        conversation_id TEXT NOT NULL,
+        novel_id TEXT DEFAULT NULL,
+        book_title TEXT NOT NULL DEFAULT '',
+        next_chapters TEXT NOT NULL DEFAULT '',
+        current_plan TEXT NOT NULL DEFAULT '',
+        plan_chapter INTEGER DEFAULT NULL,
+        written_json TEXT NOT NULL DEFAULT '[]',
+        note_id INTEGER DEFAULT NULL,
+        note_sent_at TIMESTAMP DEFAULT NULL,
+        redo_started_at TIMESTAMP DEFAULT NULL,
+        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+        updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+    )
+"""
+NOVEL_FEEDBACK_INDEX = "CREATE INDEX IF NOT EXISTS idx_novel_feedback_owner ON novel_feedback(owner_username)"
+
+
 async def _safe_migrate(db, sql: str):
     """跑一句"老库迁移"DDL（ALTER TABLE / CREATE INDEX 等）。
     "列已存在 / 索引已存在"是这类语句的预期错（库已迁过），静默吞；
@@ -161,6 +183,7 @@ async def init_db():
         # 写歌：assistant 消息可指向本轮触达的 song_projects 行；旧查询都写列名，无影响。
         await _safe_migrate(db, "ALTER TABLE messages ADD COLUMN song_project_id TEXT DEFAULT NULL")
         await _safe_migrate(db, "ALTER TABLE messages ADD COLUMN novel_draft_id TEXT DEFAULT NULL")
+        await _safe_migrate(db, "ALTER TABLE messages ADD COLUMN novel_feedback_id TEXT DEFAULT NULL")
         # 用户性别 + 匹配偏好（老库迁移）
         await _safe_migrate(db, "ALTER TABLE users ADD COLUMN gender TEXT DEFAULT NULL")
         await _safe_migrate(db, "ALTER TABLE users ADD COLUMN match_pref TEXT DEFAULT 'both'")
@@ -334,6 +357,9 @@ async def init_db():
         # 聊天建书：书斋草稿是免费、未消费的建书输入；真正建书仍由主人在向导里发起。
         await db.execute(NOVEL_DRAFTS_DDL)
         await db.execute(NOVEL_DRAFTS_INDEX)
+        # 聊天修改意见卡：只记录分身写下的意见，交留言 / 重新定稿都要作者在卡片上点按钮。
+        await db.execute(NOVEL_FEEDBACK_DDL)
+        await db.execute(NOVEL_FEEDBACK_INDEX)
         from song.store import SONG_TABLES_DDL
         for song_table_ddl in SONG_TABLES_DDL:
             await db.execute(song_table_ddl)
@@ -507,6 +533,7 @@ async def clear_message_history(username: str) -> list[str]:
         upload_paths = await _queue_unreferenced_uploads(db, paths)
         await delete_user_song_data(db, username)
         await db.execute("DELETE FROM novel_drafts WHERE owner_username = ?", (username,))
+        await db.execute("DELETE FROM novel_feedback WHERE owner_username = ?", (username,))
         await db.commit()
         return upload_paths
 
@@ -531,6 +558,7 @@ async def save_message(
     new_reference_image_paths: list[str] | None = None,
     song_project_id: str | None = None,
     novel_draft_id: str | None = None,
+    novel_feedback_id: str | None = None,
 ):
     from agent_store import ResourceNotFound, _ensure_default_conversation, _owned_conversation
 
@@ -582,6 +610,19 @@ async def save_message(
                         stored_song_project_id = song_project_id
             except Exception:
                 stored_song_project_id = None
+        # 修改意见卡归属同样只做附加校验：不属于本人本会话就存 NULL。
+        stored_novel_feedback_id = None
+        if novel_feedback_id is not None:
+            try:
+                async with db.execute(
+                    """SELECT 1 FROM novel_feedback
+                       WHERE id = ? AND owner_username = ? AND conversation_id = ?""",
+                    (novel_feedback_id, username, conversation["id"]),
+                ) as cursor:
+                    if await cursor.fetchone() is not None:
+                        stored_novel_feedback_id = novel_feedback_id
+            except Exception:
+                stored_novel_feedback_id = None
         # 书斋草稿归属同样只做附加校验：不属于本人本会话就存 NULL。
         stored_novel_draft_id = None
         if novel_draft_id is not None:
@@ -596,9 +637,9 @@ async def save_message(
             except Exception:
                 stored_novel_draft_id = None
         await db.execute(
-            """INSERT INTO messages (username, role, content, image_path, conversation_id, agent_id, reference_image_paths, song_project_id, novel_draft_id)
-               VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)""",
-            (username, role, content, image_path, conversation["id"], conversation["agent_id"], _json.dumps(references) if references else None, stored_song_project_id, stored_novel_draft_id),
+            """INSERT INTO messages (username, role, content, image_path, conversation_id, agent_id, reference_image_paths, song_project_id, novel_draft_id, novel_feedback_id)
+               VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)""",
+            (username, role, content, image_path, conversation["id"], conversation["agent_id"], _json.dumps(references) if references else None, stored_song_project_id, stored_novel_draft_id, stored_novel_feedback_id),
         )
         await db.execute(
             "UPDATE conversations SET updated_at = CURRENT_TIMESTAMP WHERE id = ?",
@@ -986,6 +1027,7 @@ async def delete_account_data(username: str) -> dict:
         )
         song_audio_paths = await delete_user_song_data(db, username)
         await db.execute("DELETE FROM novel_drafts WHERE owner_username = ?", (username,))
+        await db.execute("DELETE FROM novel_feedback WHERE owner_username = ?", (username,))
         await db.execute("DELETE FROM users WHERE username = ?", (username,))
 
         # UUID 文件理论上不会共享；仍在事务内复核引用，避免误删异常旧数据。

@@ -69,6 +69,27 @@ NOVEL_DRAFT_TOOL = _tool(
 )
 
 
+NOVEL_FEEDBACK_TOOL = _tool(
+    "draft_novel_feedback",
+    "把你对作者某本书的修改意见做成聊天里的「修改意见卡」；免费，不会改动书斋里的任何内容，交给编辑部、重新定稿都要作者在卡片上点按钮。意见按用途分三类写：以后章节的要求、正等作者确认的这一章细纲的修改要求、已写章节的问题；同一条要求只写进一栏。前面对话里已经写过的意见直接整理，不必重读原文。不确定这本书现在的状态时先调用 list_novels，状态是「等你确认细纲」才填 current_plan。要改人物的外形、性格或动机（锁定设定），不要写进卡片的任何一栏，在回复里请作者到书斋的人物页修改：用留言或重新定稿去改，会被审校当成与锁定设定冲突；情节上的约束（例如某人物不能提前退场）照常写进 next_chapters。整张卡合计尽量不超过 1500 字。",
+    {
+        "book": {"type": "string", "description": "书名，和 read_novel 用的一样"},
+        "next_chapters": {"type": "string", "maxLength": 500,
+                          "description": "对还没写的章节的要求，最多 500 字。作者点「交给编辑部」后成为一条留言，编辑部只在下一次为新的一章规划细纲时参考一次，不会长期生效。只写以后要怎样写，不要写章号，也不要写「重写第几章」；多件事分点写，编辑部只能整条采纳或不采纳。"},
+        "current_plan": {"type": "string", "maxLength": 500,
+                         "description": "只在这本书正等作者确认细纲时填写，最多 500 字。你看不到这一版细纲（read_novel 只读已写好的章节），编辑部重新定稿时也看不到它，只会拿原来的讨论材料加上这段要求重新写一版。所以不要描述或引用细纲里的内容（例如「保留第二场」），只分点写这一章必须做到和必须避免的事，每条单独读得懂。"},
+        "written_chapters": {"type": "array", "maxItems": 10,
+                             "description": "已经写好的章节里的问题，最多 10 条，只给作者看；书斋不会自动修改，要作者自己去书斋改稿。需要在后面的章节里补救的，把补救要求另写进 next_chapters。",
+                             "items": {"type": "object",
+                                       "properties": {"chapter": {"type": "integer", "minimum": 1, "maximum": 300},
+                                                      "issue": {"type": "string", "maxLength": 200,
+                                                                "description": "这一章的问题和建议，最多 200 字"}},
+                                       "required": ["chapter", "issue"]}},
+    },
+    ["book"],
+)
+
+
 def _song_turn_enabled(ctx, state):
     """写歌只在开关开启、用户命中白名单且非危机轮时追加。"""
     if state.crisis or state.crisis_level is not None:
@@ -105,6 +126,9 @@ def client_tools_for_turn(ctx, state):
     from studio.sources import novel_create_enabled
     if novel_create_enabled(ctx.user):
         tools.append(NOVEL_DRAFT_TOOL)
+    from studio.sources import novel_feedback_enabled
+    if novel_feedback_enabled(ctx.user):
+        tools.append(NOVEL_FEEDBACK_TOOL)
     if song_enabled:
         tools = _append_song_tools(tools)
     return tools
@@ -475,6 +499,8 @@ async def _stream_claude_agent(ctx, state, deadline, release_user_lock):
     song_card_sent = False
     draft_written = False
     draft_conversation_id = ctx.conversation_id
+    feedback_written = False
+    feedback_conversation_id = ctx.conversation_id
     persistence_failed = False
     platform_failure = False
 
@@ -760,6 +786,68 @@ async def _stream_claude_agent(ctx, state, deadline, release_user_lock):
                             except Exception:
                                 result_text = "书斋草稿暂时不可用"
                                 state.trace["agent_tool_errors"] += 1
+                elif name == "draft_novel_feedback":
+                    # 修改意见卡只写免费记录；交留言与重新定稿都由作者在卡片上点按钮。
+                    if feedback_written:
+                        result_text = "本轮已写过一张修改意见卡，请直接回答主人"
+                    else:
+                        try:
+                            from studio import novel_chat
+                            from novel import service
+                            from novel.feedback import create_feedback, validate_feedback_args
+                            book, error = await novel_chat._resolve(ctx.user, args.get("book"))
+                            if error:
+                                result_text = error
+                                state.trace["agent_tool_errors"] += 1
+                            else:
+                                detail = await service.detail(ctx.user, book["id"])
+                                clean, error = validate_feedback_args(args, detail)
+                                if error:
+                                    result_text = error
+                                    state.trace["agent_tool_errors"] += 1
+                                else:
+                                    if feedback_conversation_id is None:
+                                        from agent_store import resolve_chat_conversation
+                                        resolved = await resolve_chat_conversation(ctx.user, None)
+                                        feedback_conversation_id = resolved["conversation"]["id"]
+                                    created = await create_feedback(
+                                        ctx.user, feedback_conversation_id, detail, clean,
+                                    )
+                                    card = {"type": "card", "subtype": "novel_feedback", "source": "书斋",
+                                            "points": [f"修改意见《{clean['title']}》", "交给编辑部、重新定稿都要作者在卡片上点按钮"],
+                                            "feedback_id": created["id"], "error": False}
+                                    feedback_written = True
+                                    state.novel_feedback_id = created["id"]
+                                    state.full_response += "［卡片：" + chat._summarize_card_for_history(card) + "］"
+                                    delivered = True
+                                    yield chat._sse({"card": card, "append": True})
+                                    K = clean["awaiting_chapter"]
+                                    S = clean["status"]
+                                    M = clean["max_chapters"]
+                                    A = clean["automation"]
+                                    F = created["awaiting_is_final"]
+                                    parts = [f"修改意见卡已放进聊天：《{clean['title']}》。卡片上的内容还没有生效，要等作者自己点按钮。"]
+                                    if clean["next_chapters"]:
+                                        if S == "awaiting_end":
+                                            parts.append("「以后的章节」要作者点「交给编辑部」才会交出；这本书正等作者确认完结，只有作者选择再写几章，编辑部才会看到。")
+                                        elif K is not None and (F or (M is not None and K >= M)):
+                                            parts.append(f"「以后的章节」要作者点「交给编辑部」才会交出；第 {K} 章会是这本书的最后一章，只有作者选择再写几章，编辑部才会看到。")
+                                        elif K is not None:
+                                            parts.append(f"「以后的章节」要作者点「交给编辑部」才会交出；这本书正等作者确认第 {K} 章细纲，交出后要到第 {K + 1} 章规划细纲时编辑部才会看到。")
+                                        else:
+                                            parts.append("「以后的章节」要作者点「交给编辑部」才会交出，编辑部只在下一次为新的一章规划细纲时参考一次。")
+                                        parts.append("留言只用一次，不会长期生效，交出后不能撤回。")
+                                    if clean["current_plan"]:
+                                        parts.append(f"「第 {K} 章细纲」要作者点「带着这些要求重新定稿」并在确认框里确认后才会重新定稿；编辑部看不到现在这一版细纲。")
+                                    if K is not None and not clean["current_plan"] and A == "per_chapter":
+                                        parts.append(f"如果有只针对第 {K} 章的要求，请告诉作者可以在书斋里直接改第 {K} 章细纲，或者下一轮再出一张带 current_plan 的卡。")
+                                    if clean["written"]:
+                                        parts.append("已写章节的问题只给作者看，书斋不会自动修改，要作者自己去书斋改稿：改最新写好的一章会重新归档（可能扣草莓）；改较早的章会让后面已写的章永久待复核、不能做成片，故事圣经与章节摘要也不会重算。")
+                                    parts.append("请如实告诉作者，不要说已经交给编辑部或已经改好。")
+                                    result_text = "".join(parts)
+                        except Exception:
+                            result_text = "修改意见卡暂时不可用"
+                            state.trace["agent_tool_errors"] += 1
                 elif name == "generate_image":
                     validated = validate_image_tool_call({"name": name, "arguments": args})
                     if image_success:

@@ -26,7 +26,7 @@ def novel_table_bytes():
             "AND (name='novels' OR name GLOB 'novel_*') ORDER BY name"
         )]
         assert set(tables) == {"novels", "novel_bible_versions", "novel_chapters",
-                               "novel_drafts", "novel_notes", "novel_steps"}
+                               "novel_drafts", "novel_feedback", "novel_notes", "novel_steps"}
         return {name: json.dumps(db.execute(f'SELECT * FROM "{name}" ORDER BY rowid').fetchall(),
                                  ensure_ascii=False, separators=(",", ":")).encode("utf-8")
                 for name in tables}
@@ -197,6 +197,9 @@ def test_chat_novel_access_cannot_import_or_call_writer_functions():
                     elif node.module == "novel.drafts":
                         assert {alias.name for alias in node.names} <= {
                             "validate_draft_args", "create_draft", "count_open_drafts"}, path
+                    elif node.module == "novel.feedback":
+                        assert {alias.name for alias in node.names} <= {
+                            "validate_feedback_args", "create_feedback"}, path
                     else:
                         assert False, path
             elif isinstance(node, ast.Import):

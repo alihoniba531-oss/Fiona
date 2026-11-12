@@ -100,9 +100,11 @@ export default function DeskEpisodesView({
   if (!candidate || projects.length === 0) {
     const title = bookTitle?.trim() ?? "";
     const subject = title ? `《${title}》` : "这本书";
+    const reason = candidate?.reason?.trim() ?? "";
+    const missingEnd = reason !== "" && !/[。！？.!?]$/.test(reason);
     const message = candidate?.eligible
       ? `这本书还没有短片项目。对分身说「把${subject}做成片」，或在书斋里点「做成片」。`
-      : `这本书还没有短片项目。${candidate?.reason?.trim() || ""}`;
+      : `这本书还没有短片项目。${reason}${missingEnd ? "。" : ""}`;
     return <EmptyState>{message}</EmptyState>;
   }
 

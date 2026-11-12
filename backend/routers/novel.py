@@ -51,6 +51,23 @@ async def draft(draft_id: str,user: str = Depends(workshop_user)):
     return result
 
 
+@router.get('/feedback/{feedback_id}')
+async def feedback(feedback_id: str,user: str = Depends(workshop_user)):
+    return await service.feedback_view(user,feedback_id)
+
+
+@router.post('/feedback/{feedback_id}/note')
+@limiter.limit('20/minute')
+async def send_feedback_note(request: Request,feedback_id: str,user: str = Depends(workshop_user)):
+    return await service.send_feedback_note(user,feedback_id)
+
+
+@router.post('/feedback/{feedback_id}/redo')
+@limiter.limit('20/minute')
+async def redo_feedback_plan(request: Request,feedback_id: str,user: str = Depends(workshop_user)):
+    return await service.redo_feedback_plan(user,feedback_id)
+
+
 @router.get('/{novel_id}')
 async def detail(novel_id: str,user: str = Depends(workshop_user)):
     return await service.detail(user,novel_id)
