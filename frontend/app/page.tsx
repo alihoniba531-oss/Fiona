@@ -13,6 +13,7 @@ import ChatScrollArea, { type ChatScrollHandle } from "@/components/ChatScrollAr
 import Signal from "@/components/Signal";
 import MyAgentWorkspace from "@/components/MyAgentWorkspace";
 import AgentExchangeWorkspace from "@/components/AgentExchangeWorkspace";
+import DeskDock from "@/components/desk/DeskDock";
 import { useConversations } from "@/lib/useConversations";
 import { formatChineseDate } from "@/lib/chineseDate";
 import { formatBeijingDateLong, formatBeijingDateTime, beijingDateKey } from "@/lib/beijingTime";
@@ -21,7 +22,7 @@ import ComposerImageMenu from "@/components/ComposerImageMenu";
 import VoiceButton from "@/components/VoiceButton";
 import {
   Volume2, VolumeX, ChevronDown, ChevronRight,
-  Trash2, X, Clock, Sparkles, PencilLine, ArrowLeft, ArrowRight, PanelLeft, AudioLines, ArrowDown,
+  Trash2, X, Clock, Sparkles, PencilLine, ArrowLeft, ArrowRight, PanelLeft, AudioLines, ArrowDown, ScrollText,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { apiFetch, getUsername as readStoredUsername } from "@/lib/auth";
@@ -31,6 +32,7 @@ import { readLocalReferenceImage, MAX_REFERENCE_FILE_BYTES, REFERENCE_FILE_TYPES
 import { useAccountRequest } from "@/lib/useAccountIdentity";
 import { CHAT_MODEL_REV_KEY, CLAUDE_EFFORTS, CHAT_MODEL_EFFORT_LABELS, CHAT_MODEL_EFFORT_TITLES, chatModelErrorMessage, getChatModel, modelDisplayName, setChatModelEnabled, setChatModelOptions, publishChatModelRevision, parseReplyModel, type ChatModelEffort, type ChatModelSettings } from "@/lib/chatModel";
 import { createLocalWatchPoller, appendLocalWatchMessages, localWatchNotificationsEnabled, type LocalWatchAlert } from "@/lib/localWatch";
+import { deskAutoOpens, deskSubjectFromCard, readDeskPrefs, updateDeskPrefs, type DeskSubject } from "@/lib/desk";
 import { stripMessageMarkdown } from "@/lib/messageMarkdown";
 import { splitTtsChunks } from "@/lib/ttsChunks";
 import { checkStudioAccess, createStudioNoticePoller, mergeStudioNotices, type StudioNotice } from "@/lib/studio";
@@ -480,6 +482,8 @@ export default function ChatPage() {
   // 右侧面板互斥，分身管理也在当前聊天页内打开。
   type DrawerName = "agent" | "exchange" | "plaza" | "settings" | "studio" | "novel" | null;
   const [drawer, setDrawer] = useState<DrawerName>(null);
+  const [deskOpen, setDeskOpen] = useState(false);
+  const [deskFocus, setDeskFocus] = useState<{ subject: DeskSubject; nonce: number } | null>(null);
   const [worldTab, setWorldTab] = useState<"plaza" | "match">("plaza");
   const [settingsTab, setSettingsTab] = useState<"settings" | "profile">("settings");
   const [conversationPickerOpen, setConversationPickerOpen] = useState(false);
@@ -527,6 +531,13 @@ export default function ChatPage() {
       && !/^\/novels\/[0-9a-f-]{36}\?embed=1$/.test(path)) return;
     setNovelFrameSrc(path);
     setDrawer("novel");
+  };
+  const openStudioAt = (projectId: string | null) => {
+    if (!studioAllowed) return;
+    setDrawer("studio");
+    if (projectId && /^[A-Za-z0-9_-]{1,64}$/.test(projectId)) {
+      studioFrameRef.current?.contentWindow?.location.replace(`/studio/${projectId}?embed=1`);
+    }
   };
   const studioOpen = drawer === "studio";
   const studioFrameRef = useRef<HTMLIFrameElement>(null);
@@ -621,6 +632,18 @@ export default function ChatPage() {
   }, [showHistory]);
   const [username, setUsername] = useState("");
   const [hydrated, setHydrated] = useState(false);
+  const setDeskOpenPersisted = useCallback((open: boolean) => {
+    setDeskOpen(open);
+    if (!username) return;
+    try { updateDeskPrefs(window.localStorage, username, { open }); } catch { /* 记忆失败不影响使用 */ }
+  }, [username]);
+  useEffect(() => {
+    if (!hydrated || !username) return;
+    const frame = window.requestAnimationFrame(() => {
+      try { setDeskOpen(readDeskPrefs(window.localStorage, username).open); } catch { /* 记忆失败按关闭处理 */ }
+    });
+    return () => window.cancelAnimationFrame(frame);
+  }, [hydrated, username]);
   const [localWatchInbox, setLocalWatchInbox] = useState<{ owner: string; alerts: LocalWatchAlert[] }>({ owner: "", alerts: [] });
   const [studioInbox, setStudioInbox] = useState<{ owner: string; notices: StudioNotice[] }>({ owner: "", notices: [] });
   const [studioAccess, setStudioAccess] = useState({ owner: "", allowed: false });
@@ -684,6 +707,10 @@ export default function ChatPage() {
   }, []);
   const composeSongSection = useCallback((text: string) => {
     setInput(text);
+    requestAnimationFrame(() => textareaRef.current?.focus());
+  }, []);
+  const askFromDesk = useCallback((prefix: string) => {
+    setInput(current => current.trim() ? `${prefix}${current}` : prefix);
     requestAnimationFrame(() => textareaRef.current?.focus());
   }, []);
   const fileInputRef = useRef<HTMLInputElement>(null);
@@ -2148,6 +2175,14 @@ export default function ChatPage() {
             await reader.cancel();
             throw new Error(data.error);
           }
+          const streamedCard = data.card;
+          if (streamedCard) {
+            const subject = deskSubjectFromCard(streamedCard);
+            if (subject) {
+              setDeskFocus({ subject, nonce: Date.now() });
+              if (deskAutoOpens(window.innerWidth)) setDeskOpenPersisted(true);
+            }
+          }
           if (data.card && data.append === true) {
             const card: CardData = {
               source: data.card.source || "网页",
@@ -2572,6 +2607,10 @@ export default function ChatPage() {
                 <span className="flex items-center gap-2 text-fs-12 text-[color:var(--ink2)]">
                   <span className="whitespace-nowrap max-md:hidden">{signalMode === "listening" ? "正在听" : signalMode === "speaking" ? "正在说" : "待命"}</span>
                 </span>
+                <button type="button" className={cn("chip max-md:h-10 max-md:w-10 max-md:justify-center max-md:px-0", deskOpen && "chip-on")}
+                  onClick={() => setDeskOpenPersisted(!deskOpen)} aria-label="案头" aria-pressed={deskOpen} aria-controls="desk-panel">
+                  <ScrollText size={13} className="md:hidden" /><span className="max-md:hidden">案头</span>
+                </button>
                 <button type="button" className={cn("chip max-md:h-10 max-md:w-10 max-md:justify-center max-md:px-0", voiceOn && "chip-on")}
                   onClick={() => {
                     if (voiceOn) {
@@ -2813,6 +2852,19 @@ export default function ChatPage() {
               </div>
             </Glaze>
           </div>
+          <DeskDock
+            owner={username}
+            open={deskOpen}
+            onOpenChange={setDeskOpenPersisted}
+            studioAllowed={studioAllowed}
+            composerHeight={composerHeight}
+            focus={deskFocus}
+            onAsk={askFromDesk}
+            onOpenNovel={openNovelAt}
+            onOpenNovelShelf={() => setDrawer("novel")}
+            onOpenStudio={openStudioAt}
+            onOpenSettings={() => { setSettingsTab("settings"); setDrawer("settings"); }}
+          />
         </div>
       </div>
 

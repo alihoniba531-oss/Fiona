@@ -142,6 +142,12 @@ Browser / Tauri WebView
 
 主页面目前会保留多个抽屉 iframe 的挂载状态。这是当前行为，不是推荐的长期架构；拆分和懒加载计划记录在 [PLAN.md](../PLAN.md)。
 
+### 案头（第一期）
+
+案头前端分三层：`frontend/lib/desk.ts` 是不依赖 React、不在模块顶层访问浏览器的纯函数（呈现方式、卡片定位、按账号偏好、章节标签、当前章、分集锁与默认项目）；`frontend/components/desk/` 的 `DeskFrame`、`DeskIdeaView`、`DeskChaptersView`、`DeskEpisodesView`、`DeskDialogs` 只接收 props 渲染，不发请求、不读 `localStorage`；`DeskDock` 是唯一容器，负责取数、轮询、聊天定位、记忆与对话框。
+
+数据全部走既有接口：书斋复用 `lib/novels.ts` 的 `listNovels`、`getNovel`、`getNovelChapter`、`addNovelNote`、`exportNovel` 和 `novelApi.action`，工作室复用 `lib/studio.ts` 的 `listStudioNovelSources` 与 `lib/studio-breakdown.ts` 的 `getStudioEpisodes`、`operateStudioEpisodes`、`approveStudioEpisodes`。案头只读展示，写操作仍走既有接口：批准细纲、重做、留言、继续、确认完结、修改/合并分集与批准方案都调用这些既有函数，校验、计费和提示不变，因此没有新增后端、数据表、接口、配置或依赖。所有请求经 `useAccountRequest` 发起：书目、详情、候选、分集方案、章节对话框、聊天定位、导出各用一个读作用域，写请求单独一个；关闭案头时读作用域失效且不再发 GET，`resize` 只在打开时监听。书在 `running`/`setup_running` 且页面可见时每 3 秒链式取详情，分集被拆解阻塞时每 5 秒；轮询在页面隐藏、案头关闭、细纲或正文对话框打开时暂停，写操作进行中不暂停。`page.tsx` 只新增头部开关、聊天面板后的挂载点、流式卡片定位和「问分身」回填。R1 后抽屉总宽 476px，抽屉与半屏用 `--paper` 不透明底，半屏默认高度取 45dvh 与可用高度的较小值；R2 后只有分集方案版本确实变化的 409 才显示汇总提示，其他 409 原样交给对话框，自动打开不再抢焦点；R3 后阶段标签用 `deskStageByKey` 支持竖排上下、横排左右和 Home/End，聊天卡片以 `handledFocusNonceRef` 保证每个 nonce 只定位一次；R4 后分集三个对话框也通知容器并参与定位避让，非冲突 409 只把确认按钮置灰（修改保存直接拒绝），取消/Esc 仍可关闭；细纲忙碌时关闭按钮禁用，收起后清空呈现方式，面板里的 X 收起会把焦点还给头部开关。
+
 ## FastAPI 后端
 
 后端入口是 `backend/main.py`，启动包装是 `backend/run.py`。业务路由按领域拆分：
