@@ -1,0 +1,6 @@
+FAIL M75 非冲突 409 刷新后不替换方案（只在真冲突时替换）  变红 0 条（非自检 0 条）  100 passed in 41.81s
+PASS M76 容器里任何 409 都当版本冲突  变红 1 条（非自检 1 条）  tests/test_desk_dock_races_frontend.py::test_non_conflict_409_keeps_reason_and_refreshes_locked_plan
+PASS M77 容器里任何 409 都不当版本冲突  变红 1 条（非自检 1 条）  tests/test_desk_dock_races_frontend.py::test_real_version_conflict_sets_notice_and_resolves
+PASS M30 page.tsx 去掉 BOM  变红 1 条（非自检 1 条）  tests/test_desk_contract_frontend.py::test_page_starts_with_utf8_bom_bytes
+PASS 还原后新测试重新全绿  100 passed in 41.77s
+== FAIL 1 / 5

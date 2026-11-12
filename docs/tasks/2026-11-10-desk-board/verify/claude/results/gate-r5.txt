@@ -1,0 +1,86 @@
+PASS G1 规格、返修单、复核报告与参考稿哈希未变（18 个文件）  review.md: OK
+06-fix-r2.md: OK
+07-fix-r3.md: OK
+08-review-r2.md: OK
+09-fix-r4.md: OK
+10-review-r3.md: OK
+11-fix-r5.md: OK
+design/Chapters.dc.html: OK
+design/Director.dc.html: OK
+design/Main.dc.html: OK
+design/Mobile.dc.html: OK
+design/Night.dc.html: OK
+design/README.md: OK
+design/States.dc.html: OK
+
+PASS G2 git status 扫到了改动（非空）  18
+PASS G2 改动全部在白名单内  []
+   改动清单： ['CLAUDE.md', 'PLAN.md', 'README.md', 'backend/tests/test_ui_closeout_dialog_scrim.py', 'docs/ARCHITECTURE.md', 'frontend/app/page.tsx', 'backend/tests/test_desk_contract_frontend.py', 'backend/tests/test_desk_dock_races_frontend.py', 'backend/tests/test_desk_logic_frontend.py', 'backend/tests/test_desk_views_frontend.py', 'docs/tasks/2026-11-10-desk-board/impl/主代理.md', 'frontend/components/desk/DeskChaptersView.tsx', 'frontend/components/desk/DeskDialogs.tsx', 'frontend/components/desk/DeskDock.tsx', 'frontend/components/desk/DeskEpisodesView.tsx', 'frontend/components/desk/DeskFrame.tsx', 'frontend/components/desk/DeskIdeaView.tsx', 'frontend/lib/desk.ts']
+PASS G3 backend/ 下只有授权的那一个既有测试被改  backend/tests/test_ui_closeout_dialog_scrim.py
+
+PASS G3 该测试只改一行：expected_count 13→14  (['-def assert_dialogs_have_scrim(sources, *, expected_count=13):'], ['+def assert_dialogs_have_scrim(sources, *, expected_count=14):'])
+PASS G3 新测试文件 4 个（含容器竞态用例）  ['backend/tests/test_desk_contract_frontend.py', 'backend/tests/test_desk_dock_races_frontend.py', 'backend/tests/test_desk_logic_frontend.py', 'backend/tests/test_desk_views_frontend.py']
+PASS G3 依赖文件未改  
+PASS G3 frontend 已跟踪文件只改了 page.tsx（可含 globals.css）  ['frontend/app/page.tsx']
+PASS G4 page.tsx 仍以 BOM 开头  
+PASS G4 字面量仍在：const openNovelAt = (path: string) => {  
+PASS G4 字面量仍在：onOpenNovel={openNovelAt}  
+PASS G4 字面量仍在：const [novelFrameSrc, setNovelFrameSrc]   
+PASS G4 字面量仍在：src={novelFrameSrc}  
+PASS G4 字面量仍在：studioAllowed ? <iframe  
+PASS G4 字面量仍在：key={username}  
+PASS G4 字面量仍在：src="/studio?embed=1"  
+PASS G4 aria-controls="desk-panel" 恰一次  1
+PASS G4 <DeskDock 恰一次  1
+PASS G4 案头开关在朗读按钮之前  (116218, 116879)
+PASS G4 DeskDock 挂在聊天面板之后、抽屉之前  (113765, 137718, 138340)
+PASS G4 page.tsx 有新增行  53
+PASS G4 流式卡片处改用 deskAutoOpens(window.innerWidth)  1
+PASS G4 page.tsx 删除的行不超过 3 行（应只有 import 行被替换）  ['-  Trash2, X, Clock, Sparkles, PencilLine, ArrowLeft, ArrowRight, PanelLeft, AudioLines, ArrowDown,']
+   page.tsx 新增 53 行；被替换的行： ['-  Trash2, X, Clock, Sparkles, PencilLine, ArrowLeft, ArrowRight, PanelLeft, AudioLines, ArrowDown,']
+PASS G5 globals.css 无删除、无新 ::backdrop、无新变量  ([], [])
+PASS G6 六个组件文件齐全  ['DeskChaptersView.tsx', 'DeskDialogs.tsx', 'DeskDock.tsx', 'DeskEpisodesView.tsx', 'DeskFrame.tsx', 'DeskIdeaView.tsx']
+PASS G6 扫描面非空且含 lib/desk.ts  7
+PASS G6 新代码不含 加粗类  []
+PASS G6 新代码不含 字重  []
+PASS G6 新代码不含 十六进制色  []
+PASS G6 新代码不含 rgb()  []
+PASS G6 新代码不含 印色/ink3/dim  []
+PASS G6 新代码不含 iframe  []
+PASS G6 新代码不含 fetch  []
+PASS G6 新代码不含 卡片堆叠  []
+PASS G6 新代码不含 任意字号  []
+PASS G6 自检：扫描器能抓到全部 9 类违规样本  9
+PASS G6 DeskDialogs.tsx 里 JSX <dialog 恰一次  1
+PASS G6 没有用 createElement 躲开对话框扫描  []
+PASS G6 自检：能抓到 createElement("dialog")  
+PASS G6 lib/desk.ts 导出三个新函数  
+PASS G6 分集对话框的 busy 不再含锁定状态  0
+PASS G6 DeskFrame 改用 deskStageByKey、不再用 useRovingTabs、标签带 data-stage  (1, 0, 3)
+PASS G4 page.tsx 与 R2 结束时逐字节相同（R3 没碰它）  d299d9c1acad64ea
+PASS G3 R5 只动了容器竞态测试：其余 16 个改动文件与 R4 逐字节相同  17
+PASS G3 R5 容器竞态测试确实改了：locked 初值为 false、输出并断言 beforeActive  4
+PASS G3 useRovingTabs.ts 与 useAccountIdentity.ts 未改  
+   DeskDock 里出现 window.localStorage 的行（人工确认都在 try 或安全封装里）： ['return window.localStorage;']
+PASS G6 lib/desk.ts 不 import react  6717
+PASS G6 视图 DeskFrame.tsx 是纯展示（不取数）  []
+PASS G6 视图 DeskIdeaView.tsx 是纯展示（不取数）  []
+PASS G6 视图 DeskChaptersView.tsx 是纯展示（不取数）  []
+PASS G6 视图 DeskEpisodesView.tsx 是纯展示（不取数）  []
+PASS G7 tsc --noEmit 退出 0  
+PASS G7 lint 0 errors 且 warnings ≤ 25  (0 errors, 25 warnings)
+PASS G7 npm run build 退出 0  
+
+
+ƒ Proxy (Middleware)
+
+○  (Static)   prerendered as static content
+ƒ  (Dynamic)  server-rendered on demand
+
+(node:6966) [DEP0205] DeprecationWarning: `module.register()` is deprecated. Use `module.registerHooks()` instead.
+(Use `node --trace-deprecation ...` to show where the warning was created)
+
+PASS G8 新测试全部通过、0 失败、0 跳过（R5 不新增用例，仍是 100 条）  100 passed in 42.66s
+PASS G9 全量 = 7911 + 100，0 失败、0 跳过  8011 passed, 35 warnings in 328.59s (0:05:28)
+== FAIL 0 / 56
+gate exit=0

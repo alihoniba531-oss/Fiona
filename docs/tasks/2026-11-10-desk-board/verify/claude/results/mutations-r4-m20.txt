@@ -1,0 +1,4 @@
+PASS M20 拆解未完成的提示文案改掉  变红 3 条（非自检 3 条）  tests/test_desk_views_frontend.py::test_episodes_edits_blocked_disables_approval[overrides0]
+PASS M30 page.tsx 去掉 BOM  变红 1 条（非自检 1 条）  tests/test_desk_contract_frontend.py::test_page_starts_with_utf8_bom_bytes
+PASS 还原后新测试重新全绿  100 passed in 41.79s
+== FAIL 0 / 3

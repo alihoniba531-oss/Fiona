@@ -1,0 +1,153 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<title>案头 · 回执、确认与空态</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link href="https://fonts.googleapis.com/css2?family=Noto+Serif+SC&amp;display=swap" rel="stylesheet">
+<style>
+body{margin:0;background:#E8EEEA}
+a{color:#56635E;text-decoration:none}a:hover{color:#1F2926}
+button{font:inherit;cursor:pointer}
+textarea{font:inherit}
+.v{writing-mode:vertical-rl;letter-spacing:.28em}
+.num{font-variant-numeric:tabular-nums}
+.stamp{display:inline-flex;align-items:center;justify-content:center;width:18px;height:18px;border:1px solid #A8322A;color:#A8322A;font-size:11px;line-height:1;border-radius:2px;flex:none}
+.quiet{background:transparent;border:1px solid rgba(31,41,38,0.26);color:#56635E;border-radius:8px}
+.quiet:hover{color:#1F2926;border-color:#1F2926}
+.ink{background:#1F2926;border:1px solid #1F2926;color:#F4F7F4;border-radius:8px}
+.ink:hover{opacity:.9}
+.link{background:transparent;border:0;padding:0;color:#56635E;font-size:12px}
+.link:hover{color:#1F2926}
+.frame{box-sizing:border-box;background:rgba(243,247,244,0.72);border:1px solid rgba(31,41,38,0.12);border-radius:10px;overflow:hidden}
+.cap{margin:0 0 10px;font-size:13px;color:#56635E}
+.ear{display:flex;align-items:center;justify-content:center;width:24px;height:72px;border:1px solid rgba(31,41,38,0.12);border-left:0;border-radius:0 6px 6px 0;background:transparent;color:#6F7C76;font-size:11px;padding:0}
+.bone{height:10px;border-radius:5px;background:rgba(31,41,38,0.12)}
+.chip{display:inline-flex;align-items:center;gap:10px;height:32px;padding:0 10px;border:1px solid rgba(31,41,38,0.26);border-radius:8px;font-size:12px;color:#56635E}
+</style>
+</helmet>
+<div style="width: 1200px; height: 844px; box-sizing: border-box; padding: 36px 40px; display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); grid-template-rows: repeat(2, minmax(0, 1fr)); gap: 36px 32px; font-family: 'Noto Serif SC', 'Songti SC', serif; font-size: 15px; line-height: 1.5; color: #1F2926; background: #E8EEEA">
+
+  <section aria-labelledby="cap-empty" style="min-width: 0; display: flex; flex-direction: column">
+    <p id="cap-empty" class="cap">空着的案头</p>
+    <div class="frame" style="flex: 1; display: flex">
+      <div style="flex: 1; min-width: 0; display: flex; flex-direction: column; padding: 16px 18px">
+        <div style="display: flex; align-items: center; gap: 12px"><span style="font-size: 12px; color: #56635E">案头</span><span style="flex: 1"></span><button type="button" aria-label="收起案头" class="link" style="font-size: 14px">×</button></div>
+        <p style="margin: 22px 0 6px; font-size: 18px">案头空着。</p>
+        <p style="margin: 0; font-size: 13px; color: #56635E; max-width: 240px">对分身说想写什么，案头就会立起来。也可以把一本已完结的书做成片。</p>
+        <div style="display: flex; flex-direction: column; align-items: flex-start; gap: 8px; margin-top: 18px">
+          <button type="button" class="ink" style="height: 36px; padding: 0 14px; font-size: 13px">新建一本</button>
+          <button type="button" class="quiet" style="height: 36px; padding: 0 12px; font-size: 13px">选一本已完结的书</button>
+        </div>
+      </div>
+      <nav aria-label="创作阶段" style="width: 36px; flex: none; display: flex; flex-direction: column; gap: 6px; padding-top: 52px">
+        <button type="button" class="ear v">立意</button>
+        <button type="button" class="ear v">章回</button>
+        <button type="button" class="ear v">分集</button>
+      </nav>
+    </div>
+  </section>
+
+  <section aria-labelledby="cap-loading" style="min-width: 0; display: flex; flex-direction: column">
+    <p id="cap-loading" class="cap">取回中</p>
+    <div class="frame" style="flex: 1; display: flex; flex-direction: column; padding: 16px 18px" aria-busy="true">
+      <div style="display: flex; align-items: center; gap: 12px"><span style="font-size: 12px; color: #56635E">案头</span><span style="flex: 1"></span><button type="button" aria-label="收起案头" class="link" style="font-size: 14px">×</button></div>
+      <h2 style="margin: 6px 0 2px; font-size: 22px; font-weight: 400; line-height: 1.3">《春山》</h2>
+      <p role="status" style="margin: 0; font-size: 13px; color: #56635E">正在从书斋取回分集…</p>
+      <div style="margin-top: 10px; height: 2px; background: rgba(31,41,38,0.12); border-radius: 1px; overflow: hidden"><div style="width: 40%; height: 100%; background: #93AFA4"></div></div>
+      <div aria-hidden="true" style="margin-top: 18px; display: flex; flex-direction: column; gap: 16px">
+        <div style="display: grid; grid-template-columns: 24px 1fr 48px; gap: 10px; align-items: center"><div class="bone" style="width: 16px"></div><div><div class="bone" style="width: 40%"></div><div class="bone" style="width: 85%; margin-top: 8px; opacity: .6"></div></div><div class="bone"></div></div>
+        <div style="display: grid; grid-template-columns: 24px 1fr 48px; gap: 10px; align-items: center"><div class="bone" style="width: 16px"></div><div><div class="bone" style="width: 32%"></div><div class="bone" style="width: 70%; margin-top: 8px; opacity: .6"></div></div><div class="bone"></div></div>
+        <div style="display: grid; grid-template-columns: 24px 1fr 48px; gap: 10px; align-items: center"><div class="bone" style="width: 16px"></div><div><div class="bone" style="width: 46%"></div><div class="bone" style="width: 78%; margin-top: 8px; opacity: .6"></div></div><div class="bone"></div></div>
+      </div>
+    </div>
+  </section>
+
+  <section aria-labelledby="cap-error" style="min-width: 0; display: flex; flex-direction: column">
+    <p id="cap-error" class="cap">报价没拿到</p>
+    <div class="frame" style="flex: 1; display: flex; flex-direction: column; padding: 16px 18px">
+      <div style="display: flex; align-items: center; gap: 12px"><span style="font-size: 12px; color: #56635E">案头</span><span style="flex: 1"></span><button type="button" aria-label="收起案头" class="link" style="font-size: 14px">×</button></div>
+      <h2 style="margin: 6px 0 2px; font-size: 22px; font-weight: 400; line-height: 1.3">《春山》</h2>
+      <p style="margin: 0; font-size: 13px; color: #56635E">短剧改编　八集　前四集已出</p>
+      <div style="flex: 1"></div>
+      <div role="alert" style="padding: 12px 0 0; border-top: 1px solid rgba(31,41,38,0.26)">
+        <p style="margin: 0; font-size: 13px; display: flex; gap: 8px; align-items: flex-start"><span class="stamp" aria-hidden="true" style="margin-top: 2px">阻</span><span>报价没拿到。工作室今天的额度已经用完，<span class="num">300</span> 元。明天再拆，或者先把前四集改顺。</span></p>
+        <div style="display: flex; gap: 10px; margin-top: 12px">
+          <button type="button" class="quiet" style="height: 36px; padding: 0 12px; font-size: 13px">再试一次</button>
+          <button type="button" class="ink" style="height: 36px; padding: 0 14px; font-size: 13px">先改前四集</button>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <section aria-labelledby="cap-confirm" style="min-width: 0; display: flex; flex-direction: column">
+    <p id="cap-confirm" class="cap">聊天里的花钱回执，确认只在案头</p>
+    <div class="frame" style="flex: 1; padding: 18px 18px; display: flex; flex-direction: column; gap: 18px">
+      <div style="display: flex; flex-direction: column; gap: 8px">
+        <span style="font-size: 12px; color: #56635E">Chloe</span>
+        <p style="margin: 0; font-size: 15px">前四集你看过了。第二批四集要 <span class="num">4.20</span> 元，你在案头底栏按一下确认，我就接着拆。</p>
+        <div class="chip" style="align-self: flex-start"><span class="stamp" aria-hidden="true">案</span><span>第二批拆解　<span class="num">4.20</span> 元　等你确认</span><a href="#desk" style="color: #1F2926">去确认</a></div>
+        <span style="font-size: 12px; color: #56635E"><span class="num">14:04</span> 　朗读　复制　删除</span>
+      </div>
+      <div style="display: flex; flex-direction: column; gap: 8px">
+        <span style="font-size: 12px; color: #56635E">Chloe</span>
+        <p style="margin: 0; font-size: 15px">收到确认，第二批开始拆了，大约两分钟。</p>
+        <div class="chip" style="align-self: flex-start"><span class="stamp" aria-hidden="true">定</span><span>第二批拆解已确认　已扣 <span class="num">4.20</span> 元</span></div>
+      </div>
+      <p style="margin: auto 0 0; font-size: 12px; color: #6F7C76">聊天气泡里没有扣费按钮：回执只能把人带到案头底栏，避免分身一句话就把钱花了。</p>
+    </div>
+  </section>
+
+  <section aria-labelledby="cap-quote" style="min-width: 0; display: flex; flex-direction: column">
+    <p id="cap-quote" class="cap">引用条与撤销</p>
+    <div class="frame" style="flex: 1; padding: 18px 18px; display: flex; flex-direction: column; gap: 16px">
+      <div style="display: inline-flex; align-items: center; gap: 10px; padding: 8px 12px; align-self: flex-start; background: #F4F7F4; border: 1px solid rgba(31,41,38,0.12); border-radius: 8px; font-size: 12px; color: #56635E; box-shadow: 0 6px 18px rgba(36,60,52,0.10)">
+        <span class="stamp" aria-hidden="true">撤</span>
+        <span>已撤销：第一场 镜 2 恢复为推轨</span>
+        <span class="num" style="color: #6F7C76">14:07</span>
+      </div>
+      <div style="box-sizing: border-box; padding: 10px 14px 12px; background: rgba(248,251,249,0.5); border: 1px solid rgba(255,255,255,0.4); border-radius: 10px; box-shadow: inset 0 1px 0 rgba(255,255,255,0.25), inset 0 -1px 0 rgba(52,86,74,0.14), 0 8px 24px rgba(36,60,52,0.08)">
+        <div style="display: flex; align-items: center; gap: 8px; margin-bottom: 6px">
+          <span style="display: inline-flex; align-items: center; gap: 6px; height: 28px; padding: 0 10px; border: 1px solid #1F2926; border-radius: 8px; font-size: 12px; color: #1F2926">第一场 · 镜 2 <button type="button" aria-label="移除引用" class="link">×</button></span>
+          <span style="font-size: 12px; color: #6F7C76">分身会带着这一镜回答</span>
+        </div>
+        <label for="composer-q" style="position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0)">说点什么</label>
+        <textarea id="composer-q" rows="2" style="display: block; width: 100%; box-sizing: border-box; resize: none; border: 0; background: transparent; outline: none; font-size: 15px; line-height: 1.5; color: #1F2926; padding: 2px 0">还是固定机位吧，刚才撤错了。</textarea>
+        <div style="display: flex; align-items: center; gap: 14px; margin-top: 8px">
+          <button type="button" class="link">图片</button>
+          <span style="flex: 1"></span>
+          <button type="button" class="link">语音</button>
+          <button type="button" class="ink" style="height: 32px; padding: 0 14px; font-size: 13px">发送</button>
+        </div>
+      </div>
+      <p style="margin: auto 0 0; font-size: 12px; color: #6F7C76">案头任何一行的「问分身」都会放进这样一条引用；回执上的「撤销」只回退分身刚改的那一处。</p>
+    </div>
+  </section>
+
+  <section aria-labelledby="cap-stamps" style="min-width: 0; display: flex; flex-direction: column">
+    <p id="cap-stamps" class="cap">五枚小印</p>
+    <div class="frame" style="flex: 1; padding: 18px 18px; display: flex; flex-direction: column; gap: 14px">
+      <div style="display: flex; align-items: flex-start; gap: 12px"><span class="stamp" aria-hidden="true" style="margin-top: 3px">案</span><div><p style="margin: 0; font-size: 15px">写入案头</p><p style="margin: 0; font-size: 12px; color: #56635E">分身把一批内容放到了案头，等你看。</p></div></div>
+      <div style="display: flex; align-items: flex-start; gap: 12px"><span class="stamp" aria-hidden="true" style="margin-top: 3px">改</span><div><p style="margin: 0; font-size: 15px">改了几处</p><p style="margin: 0; font-size: 12px; color: #56635E">分身按你的话改了，被改的行画一条朱线，可撤销。</p></div></div>
+      <div style="display: flex; align-items: flex-start; gap: 12px"><span class="stamp" aria-hidden="true" style="margin-top: 3px">定</span><div><p style="margin: 0; font-size: 15px">定稿或已确认</p><p style="margin: 0; font-size: 12px; color: #56635E">你通过了这一行，或确认了一笔花费。</p></div></div>
+      <div style="display: flex; align-items: flex-start; gap: 12px"><span class="stamp" aria-hidden="true" style="margin-top: 3px">停</span><div><p style="margin: 0; font-size: 15px">停下等你</p><p style="margin: 0; font-size: 12px; color: #56635E">写到约定的地方，分身停笔等你看。</p></div></div>
+      <div style="display: flex; align-items: flex-start; gap: 12px"><span class="stamp" aria-hidden="true" style="margin-top: 3px">阻</span><div><p style="margin: 0; font-size: 15px">走不下去</p><p style="margin: 0; font-size: 12px; color: #56635E">额度、报价或服务出了问题，案头底栏写明原因和下一步。</p></div></div>
+      <p style="margin: auto 0 0; font-size: 12px; color: #6F7C76">印只用朱红一色，大小一致，不做图标。</p>
+    </div>
+  </section>
+
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":1200,"height":844}}'>
+class Component extends DCLogic {
+  renderVals() {
+    return {};
+  }
+}
+</script>
+</body>
+</html>

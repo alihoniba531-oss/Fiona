@@ -1,0 +1,77 @@
+PASS M01 并排阈值 1440→1400  变红 1 条（非自检 1 条）  tests/test_desk_logic_frontend.py::test_desk_stages_default_prefs_and_mode
+PASS M02 抽屉阈值 768→700  变红 2 条（非自检 2 条）  tests/test_desk_logic_frontend.py::test_desk_stages_default_prefs_and_mode
+PASS M03 项目卡路径放行多段  变红 1 条（非自检 1 条）  tests/test_desk_logic_frontend.py::test_desk_subject_from_card_accepts_only_two_card_shapes
+PASS M04 出错的项目卡也定位  变红 1 条（非自检 1 条）  tests/test_desk_logic_frontend.py::test_desk_subject_from_card_accepts_only_two_card_shapes
+PASS M05 记忆里放行置灰阶段  变红 2 条（非自检 2 条）  tests/test_desk_logic_frontend.py::test_parse_desk_prefs_rejects_bad_values_and_returns_fresh_defaults
+PASS M06 open 非严格 true  变红 2 条（非自检 2 条）  tests/test_desk_logic_frontend.py::test_parse_desk_prefs_rejects_bad_values_and_returns_fresh_defaults
+PASS M07 空用户名也写记忆  变红 1 条（非自检 1 条）  tests/test_desk_logic_frontend.py::test_update_desk_prefs_merges_revalidates_and_swallows_storage_errors
+PASS M08 章号超过已完成章也算定稿  变红 1 条（非自检 1 条）  tests/test_desk_logic_frontend.py::test_chapter_tag_table_and_current_chapter_number
+PASS M09 待复核不再排除出当前章  变红 1 条（非自检 1 条）  tests/test_desk_logic_frontend.py::test_chapter_tag_table_and_current_chapter_number
+PASS M10 重新拆解中不锁编辑  变红 2 条（非自检 2 条）  tests/test_desk_logic_frontend.py::test_episode_locks_matches_breakdown_rules
+PASS M11 拆解未完成也能批准  变红 1 条（非自检 1 条）  tests/test_desk_logic_frontend.py::test_episode_locks_matches_breakdown_rules
+PASS M12 并列项目取靠后的  变红 1 条（非自检 1 条）  tests/test_desk_logic_frontend.py::test_latest_project_uses_max_created_at_and_keeps_first_on_ties
+PASS M13 引子丢掉冒号  变红 1 条（非自检 1 条）  tests/test_desk_logic_frontend.py::test_desk_ask_prefix_is_complete_and_follows_chapter_priority
+PASS M14 留言满 5 条不禁用输入框  变红 1 条（非自检 1 条）  tests/test_desk_views_frontend.py::test_chapter_notes_input_respects_pending_limit[5-True-\u5f85\u5904\u7406\u7559\u8a00
+PASS M15 所有章节标签都上朱色  变红 2 条（非自检 2 条）  tests/test_desk_views_frontend.py::test_chapter_tags_are_settled_only_for_done_chapter
+PASS M16 完结的书仍显示留言  变红 1 条（非自检 1 条）  tests/test_desk_views_frontend.py::test_completed_book_has_no_note_composer
+PASS M17 读正文不看已完成章数  变红 1 条（非自检 1 条）  tests/test_desk_views_frontend.py::test_chapter_expanded_unwritten_chapter_hides_read_body
+PASS M18 批准按钮不看 approvalBlocked  变红 2 条（非自检 2 条）  tests/test_desk_views_frontend.py::test_episodes_edits_blocked_disables_approval[overrides0]
+PASS M19 已批准仍可再批  变红 1 条（非自检 1 条）  tests/test_desk_views_frontend.py::test_episodes_approved_plan_shows_tag_and_disables_approval
+FAIL M20 拆解未完成的提示文案改掉  锚点次数不符（变异没装上）：[('frontend/components/desk/DeskEpisodesView.tsx', '拆解还没全部完成，暂时不能修改或批准，去工作室看进度。', 2, 1)]
+PASS M21 已批准标签不上朱色  变红 1 条（非自检 1 条）  tests/test_desk_views_frontend.py::test_episodes_approved_tag_has_seal_classes_and_pending_does_not
+PASS M22 最后一集也能合并  变红 1 条（非自检 1 条）  tests/test_desk_views_frontend.py::test_episodes_last_episode_merge_is_disabled_and_first_is_not
+PASS M23 置灰阶段不禁用  变红 2 条（非自检 2 条）  tests/test_desk_views_frontend.py::test_frame_renders_five_stage_tabs_and_only_one_selected
+PASS M24 每个阶段都 aria-selected  变红 2 条（非自检 2 条）  tests/test_desk_views_frontend.py::test_frame_renders_five_stage_tabs_and_only_one_selected
+PASS M25 置灰阶段的提示改掉  变红 2 条（非自检 2 条）  tests/test_desk_views_frontend.py::test_frame_renders_five_stage_tabs_and_only_one_selected
+PASS M26 头部开关丢 aria-controls  变红 1 条（非自检 1 条）  tests/test_desk_contract_frontend.py::test_desk_toggle_is_unique_and_precedes_voice_toggle
+PASS M27 视图里直接读 localStorage  变红 1 条（非自检 1 条）  tests/test_desk_contract_frontend.py::test_view_components_do_not_own_data_access[localStorage]
+PASS M28 新代码出现加粗类  变红 1 条（非自检 1 条）  tests/test_desk_contract_frontend.py::test_forbidden_patterns_absent_from_desk_sources[font-weight-class]
+PASS M31 抽屉方式面板不加纸色底  变红 1 条（非自检 1 条）  tests/test_desk_views_frontend.py::test_frame_uses_opaque_drawer_and_sheet_and_correct_width_and_height
+PASS M32 半屏方式面板不加纸色底  变红 1 条（非自检 1 条）  tests/test_desk_views_frontend.py::test_frame_uses_opaque_drawer_and_sheet_and_correct_width_and_height
+PASS M33 抽屉宽度退回 488  变红 1 条（非自检 1 条）  tests/test_desk_views_frontend.py::test_frame_uses_opaque_drawer_and_sheet_and_correct_width_and_height
+PASS M34 半屏高度退回 56dvh  变红 1 条（非自检 1 条）  tests/test_desk_views_frontend.py::test_frame_uses_opaque_drawer_and_sheet_and_correct_width_and_height
+PASS M35 冲突提示不渲染  变红 1 条（非自检 1 条）  tests/test_desk_views_frontend.py::test_episodes_notice_renders_alert_only_when_present
+PASS M36 空分集仍显示汇总与批准栏  变红 1 条（非自检 1 条）  tests/test_desk_views_frontend.py::test_episodes_empty_plan_only_shows_empty_state_and_studio_link
+PASS M37 对话框文件里多一处 <dialog 字面量  变红 1 条（非自检 1 条）  tests/test_desk_contract_frontend.py::test_desk_dialogs_use_one_jsx_dialog_and_no_create_element_dialog
+PASS M38 用 createElement 生成对话框（躲扫描）  变红 1 条（非自检 1 条）  tests/test_desk_contract_frontend.py::test_desk_dialogs_use_one_jsx_dialog_and_no_create_element_dialog
+PASS M39 任何 409 都算版本冲突  变红 1 条（非自检 1 条）  tests/test_desk_logic_frontend.py::test_is_revision_conflict_only_when_revision_really_changed
+PASS M40 手机宽度也自动打开  变红 1 条（非自检 1 条）  tests/test_desk_logic_frontend.py::test_desk_auto_opens_only_for_desktop_and_tablet_modes
+FAIL M41 写后刷新不先判所选书  变红 0 条（非自检 0 条）  100 passed in 41.87s
+PASS M42 候选与分集方案共用一个读作用域  变红 1 条（非自检 1 条）  tests/test_desk_dock_races_frontend.py::test_refresh_during_plan_poll_clears_candidate_loading
+FAIL M43 关闭时不让读请求失效且不拦链式刷新  变红 0 条（非自检 0 条）  100 passed in 41.87s
+PASS M44 竖排 tablist 丢 aria-orientation  变红 1 条（非自检 1 条）  tests/test_desk_views_frontend.py::test_frame_uses_opaque_drawer_and_sheet_and_correct_width_and_height
+PASS M45 章节行按钮丢 aria-label  变红 1 条（非自检 1 条）  tests/test_desk_views_frontend.py::test_chapter_expand_button_has_accessible_label
+PASS M46 分集行按钮丢 aria-label  变红 1 条（非自检 1 条）  tests/test_desk_views_frontend.py::test_episode_expand_button_has_accessible_label
+PASS M47 朱色从「已批准」标签挪到汇总行  变红 1 条（非自检 1 条）  tests/test_desk_views_frontend.py::test_episodes_approved_tag_has_seal_classes_and_pending_does_not
+PASS M48 没有 reason 时自拟后半句  变红 1 条（非自检 1 条）  tests/test_desk_views_frontend.py::test_episode_no_project_without_reason_has_no_invented_suffix
+PASS M49 取数时书名显示未命名  变红 1 条（非自检 1 条）  tests/test_desk_views_frontend.py::test_frame_loading_title_is_blank_not_unnamed
+PASS M50 聊天页不用 deskAutoOpens  变红 1 条（非自检 1 条）  tests/test_desk_contract_frontend.py::test_page_uses_desk_auto_opens_guard
+PASS M51 竖排上下键方向反了  变红 1 条（非自检 1 条）  tests/test_desk_logic_frontend.py::test_desk_stage_by_key_moves_only_between_enabled_stages_and_wraps
+PASS M52 竖排也认左右键  变红 1 条（非自检 1 条）  tests/test_desk_logic_frontend.py::test_desk_stage_by_key_moves_only_between_enabled_stages_and_wraps
+PASS M53 置灰阶段也能当方向键起点  变红 1 条（非自检 1 条）  tests/test_desk_logic_frontend.py::test_desk_stage_by_key_moves_only_between_enabled_stages_and_wraps
+PASS M54 卡片定位不记已处理（重开会再定位）  变红 1 条（非自检 1 条）  tests/test_desk_dock_races_frontend.py::test_locate_happens_only_once_per_card_nonce
+PASS M55 每个阶段标签都是 tabIndex 0  变红 2 条（非自检 2 条）  tests/test_desk_contract_frontend.py::test_desk_frame_stage_tabs_use_stage_key_helper_and_data_stage
+PASS M56 阶段标签丢 data-stage  变红 2 条（非自检 2 条）  tests/test_desk_contract_frontend.py::test_desk_frame_stage_tabs_use_stage_key_helper_and_data_stage
+PASS M57 修改对话框 busy 又把锁定算进去  变红 1 条（非自检 1 条）  tests/test_desk_views_frontend.py::test_locked_plan_dialogs_keep_cancel_enabled[edit-None]
+PASS M58 合并确认框 busy 又把锁定算进去  变红 1 条（非自检 1 条）  tests/test_desk_views_frontend.py::test_locked_plan_dialogs_keep_cancel_enabled[merge-\u786e\u8ba4\u5408\u5e76]
+PASS M59 批准确认框 busy 又把锁定算进去  变红 1 条（非自检 1 条）  tests/test_desk_views_frontend.py::test_locked_plan_dialogs_keep_cancel_enabled[approve-\u786e\u8ba4\u6279\u51c6]
+PASS M60 锁定时合并确认按钮不禁用  变红 1 条（非自检 1 条）  tests/test_desk_views_frontend.py::test_locked_plan_dialogs_keep_cancel_enabled[merge-\u786e\u8ba4\u5408\u5e76]
+PASS M61 锁定时批准确认按钮不禁用  变红 1 条（非自检 1 条）  tests/test_desk_views_frontend.py::test_locked_plan_dialogs_keep_cancel_enabled[approve-\u786e\u8ba4\u6279\u51c6]
+FAIL M62 锁定时修改保存仍发请求  变红 0 条（非自检 0 条）  88 passed in 7.14s
+PASS M63 面板里收起后不还焦点  变红 2 条（非自检 2 条）  tests/test_desk_dock_races_frontend.py::test_close_from_panel_restores_focus_after_restore_open
+PASS M64 分集对话框不通知容器  变红 1 条（非自检 1 条）  tests/test_desk_contract_frontend.py::test_desk_episode_dialogs_join_focus_guard_and_plan_close_is_busy_disabled
+FAIL M65 容器不把分集对话框并入判断  变红 0 条（非自检 0 条）  100 passed in 41.77s
+PASS M66 细纲对话框忙碌时关闭不禁用  变红 1 条（非自检 1 条）  tests/test_desk_contract_frontend.py::test_desk_episode_dialogs_join_focus_guard_and_plan_close_is_busy_disabled
+PASS M67 收起时不清空呈现方式  变红 1 条（非自检 1 条）  tests/test_desk_contract_frontend.py::test_desk_episode_dialogs_join_focus_guard_and_plan_close_is_busy_disabled
+PASS M68 aria-orientation 从 tablist 挪到外层容器  变红 1 条（非自检 1 条）  tests/test_desk_views_frontend.py::test_frame_uses_opaque_drawer_and_sheet_and_correct_width_and_height
+PASS M69 章回展开按钮的 aria-label 挪到整行  变红 1 条（非自检 1 条）  tests/test_desk_views_frontend.py::test_chapter_expand_button_has_accessible_label
+PASS M70 分集展开按钮的 aria-label 挪到整行  变红 1 条（非自检 1 条）  tests/test_desk_views_frontend.py::test_episode_expand_button_has_accessible_label
+PASS M71 选中态钉在第一个标签  变红 1 条（非自检 1 条）  tests/test_desk_views_frontend.py::test_stage_tabs_expose_exactly_one_tab_stop_in_both_orientations
+PASS M72 Home 跳到最后一个可用阶段  变红 1 条（非自检 1 条）  tests/test_desk_logic_frontend.py::test_desk_stage_by_key_moves_only_between_enabled_stages_and_wraps
+PASS M73 End 跳到第一个可用阶段  变红 1 条（非自检 1 条）  tests/test_desk_logic_frontend.py::test_desk_stage_by_key_moves_only_between_enabled_stages_and_wraps
+PASS M74 定位没回来就收起也算处理过（重开不再定位）  变红 1 条（非自检 1 条）  tests/test_desk_dock_races_frontend.py::test_locate_request_cancelled_by_close_retries_on_reopen
+PASS M29 新代码出现十六进制色  变红 1 条（非自检 1 条）  tests/test_desk_contract_frontend.py::test_forbidden_patterns_absent_from_desk_sources[hex-color]
+PASS M30 page.tsx 去掉 BOM  变红 1 条（非自检 1 条）  tests/test_desk_contract_frontend.py::test_page_starts_with_utf8_bom_bytes
+PASS 还原后新测试重新全绿  100 passed in 41.81s
+== FAIL 5 / 75
+mut exit=0

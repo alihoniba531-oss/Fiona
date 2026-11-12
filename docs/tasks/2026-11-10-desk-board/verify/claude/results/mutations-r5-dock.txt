@@ -1,0 +1,15 @@
+FAIL M41 写后刷新不先判所选书  变红 0 条（非自检 0 条）  100 passed in 41.84s
+PASS M42 候选与分集方案共用一个读作用域  变红 1 条（非自检 1 条）  tests/test_desk_dock_races_frontend.py::test_refresh_during_plan_poll_clears_candidate_loading
+FAIL M43 关闭时不让读请求失效且不拦链式刷新  变红 0 条（非自检 0 条）  100 passed in 42.68s
+PASS M54 卡片定位不记已处理（重开会再定位）  变红 1 条（非自检 1 条）  tests/test_desk_dock_races_frontend.py::test_locate_happens_only_once_per_card_nonce
+PASS M63 面板里收起后不还焦点  变红 2 条（非自检 2 条）  tests/test_desk_dock_races_frontend.py::test_close_from_panel_restores_focus_after_restore_open
+PASS M64 分集对话框不通知容器  变红 1 条（非自检 1 条）  tests/test_desk_contract_frontend.py::test_desk_episode_dialogs_join_focus_guard_and_plan_close_is_busy_disabled
+FAIL M65 容器不把分集对话框并入判断  变红 0 条（非自检 0 条）  100 passed in 41.76s
+PASS M67 收起时不清空呈现方式  变红 1 条（非自检 1 条）  tests/test_desk_contract_frontend.py::test_desk_episode_dialogs_join_focus_guard_and_plan_close_is_busy_disabled
+PASS M74 定位没回来就收起也算处理过（重开不再定位）  变红 1 条（非自检 1 条）  tests/test_desk_dock_races_frontend.py::test_locate_request_cancelled_by_close_retries_on_reopen
+PASS M75 非冲突 409 刷新后不替换方案（只在真冲突时替换）  变红 1 条（非自检 1 条）  tests/test_desk_dock_races_frontend.py::test_non_conflict_409_keeps_reason_and_refreshes_locked_plan
+PASS M76 容器里任何 409 都当版本冲突  变红 1 条（非自检 1 条）  tests/test_desk_dock_races_frontend.py::test_non_conflict_409_keeps_reason_and_refreshes_locked_plan
+PASS M77 容器里任何 409 都不当版本冲突  变红 1 条（非自检 1 条）  tests/test_desk_dock_races_frontend.py::test_real_version_conflict_sets_notice_and_resolves
+PASS M30 page.tsx 去掉 BOM  变红 1 条（非自检 1 条）  tests/test_desk_contract_frontend.py::test_page_starts_with_utf8_bom_bytes
+PASS 还原后新测试重新全绿  100 passed in 41.77s
+== FAIL 3 / 14

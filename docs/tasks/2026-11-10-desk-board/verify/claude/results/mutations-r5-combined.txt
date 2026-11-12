@@ -1,0 +1,6 @@
+A 去掉的写后判断处数: 4
+PASS A 两道保险都拆（应变红） → 1 failed, 11 passed in 34.84s ['test_write_then_switch_book_clears_loading_and_selects_new_book']
+B 中性化的 openRef 判断处数: 31
+PASS B 关闭保护全拆（应变红） → 1 failed, 11 passed in 34.87s ['test_close_stops_new_get_requests']
+已按原字节还原
+== FAIL 0 / 2

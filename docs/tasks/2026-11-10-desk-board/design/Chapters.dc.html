@@ -1,0 +1,255 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<title>案头 · 章回写作</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link href="https://fonts.googleapis.com/css2?family=Noto+Serif+SC&amp;display=swap" rel="stylesheet">
+<style>
+body{margin:0;background:#E8EEEA}
+a{color:#56635E;text-decoration:none}a:hover{color:#1F2926}
+button{font:inherit;cursor:pointer}
+textarea{font:inherit}
+.v{writing-mode:vertical-rl;letter-spacing:.28em}
+.num{font-variant-numeric:tabular-nums}
+.stamp{display:inline-flex;align-items:center;justify-content:center;width:18px;height:18px;border:1px solid #A8322A;color:#A8322A;font-size:11px;line-height:1;border-radius:2px;flex:none}
+.quiet{background:transparent;border:1px solid rgba(31,41,38,0.26);color:#56635E;border-radius:8px}
+.quiet:hover{color:#1F2926;border-color:#1F2926}
+.ink{background:#1F2926;border:1px solid #1F2926;color:#F4F7F4;border-radius:8px}
+.ink:hover{opacity:.9}
+.rail-btn{background:transparent;border:0;padding:0;color:#6F7C76;font-size:12px}
+.rail-btn:hover{color:#1F2926}
+.row{display:grid;grid-template-columns:36px 1fr 64px;column-gap:12px;padding:11px 0;border-bottom:1px solid rgba(31,41,38,0.12);align-items:start}
+.ear{display:flex;align-items:center;justify-content:center;width:28px;height:92px;border:1px solid rgba(31,41,38,0.12);border-left:0;border-radius:0 6px 6px 0;background:transparent;color:#6F7C76;font-size:12px;padding:0}
+.ear:hover{color:#1F2926}
+.link{background:transparent;border:0;padding:0;color:#56635E;font-size:12px}
+.link:hover{color:#1F2926}
+.chat-btn{background:transparent;border:0;padding:0;color:#56635E;font-size:12px}
+.chat-btn:hover{color:#1F2926}
+</style>
+</helmet>
+<div style="width: 1440px; height: 900px; box-sizing: border-box; display: flex; position: relative; overflow: hidden; font-family: 'Noto Serif SC', 'Songti SC', serif; font-size: 16.5px; line-height: 1.5; color: #1F2926; background: #E8EEEA">
+
+  <svg aria-hidden="true" viewBox="0 0 900 260" preserveAspectRatio="none" style="position: absolute; left: 52px; bottom: 0; width: 900px; height: 260px; opacity: 0.6">
+    <path d="M0 200 C120 150 200 120 320 160 C420 190 480 110 600 140 C700 165 780 120 900 170 L900 260 L0 260 Z" fill="#D5E0DA"></path>
+    <path d="M0 230 C150 190 260 200 380 215 C500 230 600 180 720 205 C800 220 860 210 900 215 L900 260 L0 260 Z" fill="#CCD9D2"></path>
+  </svg>
+
+  <nav aria-label="主导航" style="width: 52px; box-sizing: border-box; display: flex; flex-direction: column; align-items: center; padding: 14px 0 12px; gap: 10px; background: #F4F7F4; border-right: 1px solid rgba(31,41,38,0.12); position: relative; z-index: 1">
+    <svg role="img" aria-label="Fiona" width="22" height="22" viewBox="0 0 22 22" style="margin-bottom: 14px"><circle cx="8" cy="11" r="6" fill="none" stroke="#56635E" stroke-width="1.2"></circle><circle cx="14" cy="11" r="6" fill="none" stroke="#56635E" stroke-width="1.2"></circle></svg>
+    <button type="button" class="rail-btn v" style="color: #1F2926; border-left: 2px solid #A8322A; padding: 2px 0 2px 6px; margin-left: -8px">对话</button>
+    <button type="button" class="rail-btn v" style="padding: 2px 0">分身</button>
+    <button type="button" class="rail-btn v" style="padding: 2px 0">广场</button>
+    <button type="button" class="rail-btn v" style="padding: 2px 0">世界</button>
+    <button type="button" class="rail-btn v" style="padding: 2px 0">设置</button>
+    <button type="button" class="rail-btn v" style="padding: 2px 0">书斋</button>
+    <div style="flex: 1"></div>
+    <button type="button" aria-label="切换夜色" style="width: 26px; height: 26px; border-radius: 13px; border: 1px solid rgba(31,41,38,0.26); background: transparent; color: #56635E; font-size: 11px; padding: 0">夜</button>
+    <span class="num" style="font-size: 11px; color: #6F7C76">420</span>
+    <button type="button" aria-label="账号" style="width: 28px; height: 28px; border-radius: 14px; border: 0; background: #1F2926; color: #F4F7F4; font-size: 13px; padding: 0">N</button>
+  </nav>
+
+  <section aria-label="对话" style="flex: 1; min-width: 0; display: flex; flex-direction: column; position: relative; z-index: 1">
+    <header style="height: 52px; box-sizing: border-box; display: flex; align-items: center; gap: 10px; padding: 0 24px; border-bottom: 1px solid rgba(31,41,38,0.12)">
+      <span aria-hidden="true" style="width: 14px; height: 14px; background: #A8322A; border-radius: 2px; display: inline-block"></span>
+      <span style="font-size: 15px">Chloe</span>
+      <span style="font-size: 12px; color: #56635E">AI 分身 ｜ 仅你可见</span>
+      <div style="flex: 1"></div>
+      <button type="button" class="chat-btn">历史</button>
+      <button type="button" class="chat-btn">新建</button>
+      <span aria-hidden="true" style="width: 1px; height: 14px; background: rgba(31,41,38,0.26); margin: 0 4px"></span>
+      <button type="button" class="chat-btn">使命</button>
+      <button type="button" class="chat-btn">朗读</button>
+      <button type="button" class="chat-btn">免提</button>
+    </header>
+
+    <div style="flex: 1; min-height: 0; display: flex; flex-direction: column; justify-content: flex-end; padding: 24px 48px 16px; box-sizing: border-box">
+      <div style="width: 100%; max-width: 720px; margin: 0 auto; display: flex; flex-direction: column; gap: 22px">
+
+        <div style="display: flex; flex-direction: column; gap: 8px">
+          <span style="font-size: 12px; color: #56635E">Chloe</span>
+          <p style="margin: 0; font-size: 15px; max-width: 600px">第二章写完了，三千二百字。有两处我拿不准：父亲到底有没有出现在渡口，我写成了只有脚步声；船家的口音，我用了汴京腔。你在案头看一眼，通过了我接着写第三章。</p>
+          <div style="display: inline-flex; align-items: center; gap: 10px; height: 32px; padding: 0 10px; border: 1px solid rgba(31,41,38,0.26); border-radius: 8px; font-size: 12px; color: #56635E; align-self: flex-start">
+            <span class="stamp" aria-hidden="true">案</span>
+            <span>第二章《北岸脚步》等你确认</span>
+            <a href="#desk" style="color: #1F2926">去看</a>
+          </div>
+          <span style="font-size: 12px; color: #56635E"><span class="num">14:07</span> 　朗读　复制　删除</span>
+        </div>
+
+        <div style="display: flex; flex-direction: column; align-items: flex-end; gap: 6px">
+          <p style="margin: 0; max-width: 520px; padding: 10px 14px; background: #F4F7F4; border: 1px solid rgba(31,41,38,0.12); border-radius: 10px; font-size: 15px">脚步声留着。口音改成淮上的，别用汴京腔。</p>
+          <span style="font-size: 12px; color: #56635E"><span class="num">14:08</span> 　复制　删除</span>
+        </div>
+
+        <div style="display: flex; flex-direction: column; gap: 8px">
+          <span style="font-size: 12px; color: #56635E">Chloe</span>
+          <p style="margin: 0; font-size: 15px; max-width: 600px">改了。第二章里船家的三句台词换成淮上口音，父亲还是只有脚步声。第三章按细纲在写，大约五分钟，写完我再停下来等你。</p>
+          <div style="display: inline-flex; align-items: center; gap: 10px; height: 32px; padding: 0 10px; border: 1px solid rgba(31,41,38,0.26); border-radius: 8px; font-size: 12px; color: #56635E; align-self: flex-start">
+            <span class="stamp" aria-hidden="true">改</span>
+            <span>改了 3 处　第二章 · 船家台词</span>
+            <a href="#desk" style="color: #1F2926">在案头里看</a>
+            <button type="button" class="link">撤销</button>
+          </div>
+          <span style="font-size: 12px; color: #56635E"><span class="num">14:08</span> 　朗读　复制　删除</span>
+        </div>
+
+      </div>
+    </div>
+
+    <div style="padding: 0 48px 20px; box-sizing: border-box">
+      <div style="max-width: 720px; margin: 0 auto; box-sizing: border-box; padding: 10px 14px 12px; background: rgba(248,251,249,0.5); border: 1px solid rgba(255,255,255,0.4); border-radius: 10px; box-shadow: inset 0 1px 0 rgba(255,255,255,0.25), inset 0 -1px 0 rgba(52,86,74,0.14), 0 8px 24px rgba(36,60,52,0.08)">
+        <label for="composer" style="position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0)">说点什么</label>
+        <textarea id="composer" rows="1" placeholder="说点什么…" style="display: block; width: 100%; box-sizing: border-box; resize: none; border: 0; background: transparent; outline: none; font-size: 15px; line-height: 1.5; color: #1F2926; padding: 2px 0"></textarea>
+        <div style="display: flex; align-items: center; gap: 14px; margin-top: 8px">
+          <button type="button" class="chat-btn">图片</button>
+          <span style="flex: 1"></span>
+          <button type="button" class="chat-btn">语音</button>
+          <button type="button" class="ink" style="height: 32px; padding: 0 14px; font-size: 13px">发送</button>
+        </div>
+      </div>
+      <p style="max-width: 720px; margin: 8px auto 0; font-size: 11px; color: #6F7C76">Enter 发送，Shift + Enter 换行</p>
+    </div>
+  </section>
+
+  <aside id="desk" aria-label="案头" style="width: 488px; flex: none; display: flex; position: relative; z-index: 2">
+    <div style="width: 448px; box-sizing: border-box; display: flex; flex-direction: column; background: rgba(243,247,244,0.72); backdrop-filter: blur(16px) saturate(1.5); border-left: 1px solid rgba(31,41,38,0.12)">
+
+      <div style="padding: 16px 20px 10px; border-bottom: 1px solid rgba(31,41,38,0.12)">
+        <div style="display: flex; align-items: center; gap: 12px">
+          <span style="font-size: 12px; color: #56635E">案头</span>
+          <span style="flex: 1"></span>
+          <a href="#novel" style="font-size: 12px">在书斋打开</a>
+          <button type="button" aria-label="收起案头" class="link" style="font-size: 14px">×</button>
+        </div>
+        <h2 style="margin: 6px 0 2px; font-size: 22px; font-weight: 400; line-height: 1.3">《春山》</h2>
+        <p style="margin: 0; font-size: 13px; color: #56635E">章回　八章　已写 <span class="num">2</span> 章 <span class="num">6,400</span> 字　第三章写作中</p>
+      </div>
+
+      <div role="list" aria-label="章回" style="flex: 1; min-height: 0; padding: 0 20px; overflow: hidden">
+
+        <div role="listitem" class="row">
+          <span aria-hidden="true" style="font-size: 22px; line-height: 1.2; color: #6F7C76">一</span>
+          <div style="min-width: 0">
+            <p style="margin: 0; font-size: 15px">渡口</p>
+            <p style="margin: 2px 0 0; font-size: 13px; color: #56635E">清晨，雾。少年在渡口等船，听见北岸封渡的消息。</p>
+          </div>
+          <div style="display: flex; flex-direction: column; align-items: flex-end; gap: 6px">
+            <span class="num" style="font-size: 12px; color: #56635E">3,200 字</span>
+            <span class="stamp" role="img" aria-label="已通过">定</span>
+          </div>
+        </div>
+
+        <div role="listitem" class="row" style="background: rgba(244,247,244,0.7); margin: 0 -20px; padding-left: 20px; padding-right: 20px; border-bottom-color: rgba(31,41,38,0.26)">
+          <span aria-hidden="true" style="font-size: 22px; line-height: 1.2; color: #6F7C76">二</span>
+          <div style="min-width: 0">
+            <p style="margin: 0; font-size: 15px">北岸脚步</p>
+            <p style="margin: 2px 0 0; font-size: 13px; color: #56635E">父亲没有露面，只有脚步声。<span style="color: #1F2926; border-bottom: 1px solid #A8322A; padding-bottom: 1px">船家三句台词改成淮上口音。</span></p>
+            <div style="display: flex; align-items: center; gap: 12px; margin-top: 8px">
+              <button type="button" class="ink" style="height: 28px; padding: 0 12px; font-size: 12px">通过</button>
+              <button type="button" class="quiet" style="height: 28px; padding: 0 10px; font-size: 12px">退回重写</button>
+              <span style="flex: 1"></span>
+              <button type="button" class="link">读全文</button>
+              <button type="button" class="link">问分身</button>
+            </div>
+          </div>
+          <div style="display: flex; flex-direction: column; align-items: flex-end; gap: 6px">
+            <span class="num" style="font-size: 12px; color: #56635E">3,200 字</span>
+            <span style="font-size: 11px; color: #A8322A; white-space: nowrap">改 <span class="num">14:08</span></span>
+            <span style="font-size: 11px; color: #56635E; white-space: nowrap">等你确认</span>
+          </div>
+        </div>
+
+        <div role="listitem" class="row">
+          <span aria-hidden="true" style="font-size: 22px; line-height: 1.2; color: #6F7C76">三</span>
+          <div style="min-width: 0">
+            <p style="margin: 0; font-size: 15px">船家的价</p>
+            <p style="margin: 2px 0 0; font-size: 13px; color: #56635E">写作中　按细纲　约 <span class="num">5</span> 分钟</p>
+            <div role="progressbar" aria-label="写作进度" aria-valuenow="30" aria-valuemin="0" aria-valuemax="100" style="margin-top: 8px; height: 2px; background: rgba(31,41,38,0.12); border-radius: 1px; overflow: hidden">
+              <div style="width: 30%; height: 100%; background: #93AFA4"></div>
+            </div>
+          </div>
+          <div style="display: flex; flex-direction: column; align-items: flex-end; gap: 6px">
+            <span class="num" style="font-size: 12px; color: #56635E">960 字</span>
+          </div>
+        </div>
+
+        <div role="listitem" class="row">
+          <span aria-hidden="true" style="font-size: 22px; line-height: 1.2; color: #6F7C76">四</span>
+          <div style="min-width: 0">
+            <p style="margin: 0; font-size: 15px">一个人过江</p>
+            <label for="plan-4" style="display: block; margin-top: 4px; font-size: 12px; color: #56635E">细纲</label>
+            <textarea id="plan-4" rows="2" style="display: block; width: 100%; box-sizing: border-box; margin-top: 2px; padding: 6px 8px; border: 1px solid #1F2926; border-radius: 6px; background: #F4F7F4; font-size: 13px; line-height: 1.5; color: #1F2926; resize: none">江心回头，北岸起了火光。少年把母亲的信留在了岸上，船家一句话也没说。</textarea>
+            <div style="display: flex; align-items: center; gap: 12px; margin-top: 6px">
+              <span style="font-size: 11px; color: #6F7C76">改着看，自动保存；写到这章时按新细纲写</span>
+              <span style="flex: 1"></span>
+              <button type="button" class="link">问分身</button>
+            </div>
+          </div>
+          <div style="display: flex; flex-direction: column; align-items: flex-end; gap: 6px">
+            <span style="font-size: 11px; color: #56635E; white-space: nowrap">编辑中</span>
+          </div>
+        </div>
+
+        <div role="listitem" class="row">
+          <span aria-hidden="true" style="font-size: 22px; line-height: 1.2; color: #6F7C76">五</span>
+          <div style="min-width: 0">
+            <p style="margin: 0; font-size: 15px">南岸无人</p>
+            <p style="margin: 2px 0 0; font-size: 13px; color: #56635E">上岸，南岸渡口空无一人，只有一间关着门的当铺。</p>
+          </div>
+          <span style="font-size: 11px; color: #6F7C76; text-align: right">细纲</span>
+        </div>
+        <div role="listitem" class="row">
+          <span aria-hidden="true" style="font-size: 22px; line-height: 1.2; color: #6F7C76">六</span>
+          <div style="min-width: 0">
+            <p style="margin: 0; font-size: 15px">当铺</p>
+            <p style="margin: 2px 0 0; font-size: 13px; color: #56635E">少年典当了包袱里唯一值钱的东西。</p>
+          </div>
+          <span style="font-size: 11px; color: #6F7C76; text-align: right">细纲</span>
+        </div>
+        <div role="listitem" class="row" style="border-bottom: 0">
+          <span aria-hidden="true" style="font-size: 22px; line-height: 1.2; color: #6F7C76">七</span>
+          <div style="min-width: 0">
+            <p style="margin: 0; font-size: 15px">母亲的信</p>
+            <p style="margin: 2px 0 0; font-size: 13px; color: #56635E">信其实一直在他怀里，留在北岸的是另一封。</p>
+          </div>
+          <span style="font-size: 11px; color: #6F7C76; text-align: right">细纲</span>
+        </div>
+      </div>
+
+      <div style="padding: 14px 20px 16px; border-top: 1px solid rgba(31,41,38,0.12); background: rgba(244,247,244,0.7)">
+        <div style="display: flex; align-items: center; gap: 12px">
+          <div style="min-width: 0">
+            <p style="margin: 0; font-size: 13px">每章约 <span class="num">0.30</span> 元　已扣 <span class="num">0.60</span> 元</p>
+            <p style="margin: 2px 0 0; font-size: 12px; color: #56635E">写完第三章停下等你　今日还可用 <span class="num">299.40</span> 元</p>
+          </div>
+          <span style="flex: 1"></span>
+          <button type="button" class="quiet" style="height: 36px; padding: 0 12px; font-size: 13px">先停笔</button>
+          <button type="button" class="ink" style="height: 36px; padding: 0 14px; font-size: 13px">写到第四章再停</button>
+        </div>
+      </div>
+    </div>
+
+    <nav aria-label="创作阶段" style="width: 40px; flex: none; display: flex; flex-direction: column; gap: 8px; padding-top: 72px">
+      <button type="button" class="ear v" style="color: #56635E">立意</button>
+      <button type="button" class="ear v" aria-current="step" style="color: #1F2926; background: #F4F7F4; border-color: rgba(31,41,38,0.26); border-left: 0; box-shadow: inset 2px 0 0 #A8322A">章回</button>
+      <button type="button" class="ear v">分集</button>
+      <button type="button" class="ear v">分镜</button>
+      <button type="button" class="ear v">成片</button>
+    </nav>
+  </aside>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":1440,"height":900}}'>
+class Component extends DCLogic {
+  renderVals() {
+    return {};
+  }
+}
+</script>
+</body>
+</html>
