@@ -1,0 +1,28 @@
+# 派单方在实施方沙箱外跑的 R2 门禁（2026-11-12）
+new_exit=0
+listed_exit=0
+full_exit=0
+tsc_exit=0
+lint_exit=0
+build_exit=0
+nonode_exit=0
+done
+
+new: 253 passed, 35 warnings in 30.98s（收集 131 + 113 + 9）
+listed(25 个既有文件，与 r0、r1 相同 693): 693 passed, 37 warnings in 66.03s (0:01:06)
+full: 8264 passed, 37 warnings in 362.71s (0:06:02)（0 skipped；8011 + 253）
+tsc 输出字节数: 0
+lint: ✖ 25 problems (0 errors, 25 warnings)
+nonode:
+SKIPPED [93] tests/test_novel_chat_feedback_frontend.py:63: frontend dependencies unavailable: typescript, react, react-dom/server
+SKIPPED [9] tests/test_desk_views_frontend.py:36: frontend dependencies unavailable: typescript, react, react-dom/server
+151 passed, 102 skipped, 35 warnings in 6.20s
+
+# HEAD 7a17f64 导出 + 三个新测试文件（R2 版）
+212 failed, 41 passed；212 条失败全部为 AssertionError（无 FileNotFoundError）；41 条通过 = 开关矩阵 30 + note/redo_plan 路由不变 2 + skip 守卫自检 4 + 案头 O3 在 HEAD 已成立 5
+
+# 隔离界面走查（8063/3063 临时库，Playwright，1440/1280/390；产品代码 R2 未改，沿用 R1 走查）
+R1 代码 49/49 通过；新增 R1 段（直接改临时库 config_json 模拟作者在书斋改主编模型/改确认方式，不刷新卡片直接点）：在 R1 前代码上正控 6 项变红、其余 19 项通过
+
+# R2 正控
+派单方为 §4.7 新加的 9 个变异（F35–F41、B42、B43）在 R1 版测试上全部存活（证明缺口真实），R2 版测试结果见 mutations-r2-summary.txt

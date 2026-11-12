@@ -1,0 +1,20 @@
+POSITIVE-CONTROL exit=0 203 passed, 42 deselected, 35 warnings in 23.52s 24.0s
+F35  SURVIVED    16.7s P1 重读后不可用时不复位 | 82 passed, 25 deselected in 16.52s | []
+F37  SURVIVED    16.8s P1 重读失败时只漏复位 busyRef | 82 passed, 25 deselected in 16.58s | []
+F36  SURVIVED    16.8s P1 重读后不可用时只漏复位 busyRef | 82 passed, 25 deselected in 16.58s | []
+F38  SURVIVED    16.4s 确认框取消时只漏复位 busyRef | 82 passed, 25 deselected in 16.22s | []
+F39  SURVIVED    16.4s 可重新定稿不看是否已发起 | 82 passed, 25 deselected in 16.23s | []
+F40  SURVIVED    16.4s P1 重读被中止 reject 后不看是否已卸载 | 82 passed, 25 deselected in 16.23s | []
+B42  SURVIVED     6.7s 「已被读到」放宽成除 done 以外都算 | 113 passed, 16 deselected, 35 warnings in 6.04s | []
+B43  SURVIVED     6.7s P2 章号判断挪到书态检查之后 | 113 passed, 16 deselected, 35 warnings in 6.09s | []
+F41  SURVIVED    16.1s P1 重读失败直接显示原始报错 | 82 passed, 25 deselected in 15.96s | []
+TOTAL 9 {'SURVIVED': 9}
+NOT-KILLED F35 SURVIVED P1 重读后不可用时不复位 82 passed, 25 deselected in 16.52s
+NOT-KILLED F36 SURVIVED P1 重读后不可用时只漏复位 busyRef 82 passed, 25 deselected in 16.58s
+NOT-KILLED F37 SURVIVED P1 重读失败时只漏复位 busyRef 82 passed, 25 deselected in 16.58s
+NOT-KILLED F38 SURVIVED 确认框取消时只漏复位 busyRef 82 passed, 25 deselected in 16.22s
+NOT-KILLED F39 SURVIVED 可重新定稿不看是否已发起 82 passed, 25 deselected in 16.23s
+NOT-KILLED F40 SURVIVED P1 重读被中止 reject 后不看是否已卸载 82 passed, 25 deselected in 16.23s
+NOT-KILLED F41 SURVIVED P1 重读失败直接显示原始报错 82 passed, 25 deselected in 15.96s
+NOT-KILLED B42 SURVIVED 「已被读到」放宽成除 done 以外都算 113 passed, 16 deselected, 35 warnings in 6.04s
+NOT-KILLED B43 SURVIVED P2 章号判断挪到书态检查之后 113 passed, 16 deselected, 35 warnings in 6.09s

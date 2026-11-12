@@ -1,0 +1,935 @@
+{
+ "positive_control": "205 passed, 48 deselected, 35 warnings in 24.74s",
+ "rows": [
+  {
+   "id": "B1",
+   "desc": "开关函数不看 FIONA_NOVEL_CHAT_FEEDBACK",
+   "status": "KILLED",
+   "summary": "1 failed, 18 deselected in 0.96s",
+   "failed": [
+    "tests/test_novel_chat_feedback.py::test_switch_matrix_off_values_match_head[None-None-None-None-base0]"
+   ],
+   "secs": 1.3
+  },
+  {
+   "id": "B2",
+   "desc": "追加工具时不看开关",
+   "status": "KILLED",
+   "summary": "1 failed, 18 deselected in 3.59s",
+   "failed": [
+    "tests/test_novel_chat_feedback.py::test_switch_matrix_off_values_match_head[None-None-None-None-base0]"
+   ],
+   "secs": 4.0
+  },
+  {
+   "id": "B3",
+   "desc": "每轮一张的限制失效",
+   "status": "KILLED",
+   "summary": "1 failed, 77 passed, 18 deselected in 4.29s",
+   "failed": [
+    "tests/test_novel_chat_feedback.py::test_two_feedback_calls_in_one_turn_create_only_one"
+   ],
+   "secs": 4.8
+  },
+  {
+   "id": "B4",
+   "desc": "卡片摘要换回会过时的说法",
+   "status": "KILLED",
+   "summary": "1 failed, 69 passed, 18 deselected in 3.85s",
+   "failed": [
+    "tests/test_novel_chat_feedback.py::test_success_path_card_state_result_and_persistence[all-three-awaiting-plan]"
+   ],
+   "secs": 4.4
+  },
+  {
+   "id": "B5",
+   "desc": "回灌文本章号 K+1 写成 K+2",
+   "status": "KILLED",
+   "summary": "1 failed, 69 passed, 18 deselected in 3.85s",
+   "failed": [
+    "tests/test_novel_chat_feedback.py::test_success_path_card_state_result_and_persistence[all-three-awaiting-plan]"
+   ],
+   "secs": 4.4
+  },
+  {
+   "id": "B6",
+   "desc": "回灌文本不认 awaiting_is_final",
+   "status": "KILLED",
+   "summary": "1 failed, 75 passed, 18 deselected in 4.17s",
+   "failed": [
+    "tests/test_novel_chat_feedback.py::test_success_path_card_state_result_and_persistence[awaiting-plan-last-chapter]"
+   ],
+   "secs": 4.7
+  },
+  {
+   "id": "B7",
+   "desc": "第 4 句不看是否逐章确认",
+   "status": "KILLED",
+   "summary": "1 failed, 73 passed, 18 deselected in 1.36s",
+   "failed": [
+    "tests/test_novel_chat_feedback.py::test_success_path_card_state_result_and_persistence[awaiting-plan-per-batch-next-only]"
+   ],
+   "secs": 1.7
+  },
+  {
+   "id": "B8",
+   "desc": "不把卡片 id 交给落库",
+   "status": "KILLED",
+   "summary": "1 failed, 69 passed, 18 deselected in 1.25s",
+   "failed": [
+    "tests/test_novel_chat_feedback.py::test_success_path_card_state_result_and_persistence[all-three-awaiting-plan]"
+   ],
+   "secs": 1.7
+  },
+  {
+   "id": "B36",
+   "desc": "回灌文本不分等完结",
+   "status": "KILLED",
+   "summary": "1 failed, 71 passed, 18 deselected in 1.38s",
+   "failed": [
+    "tests/test_novel_chat_feedback.py::test_success_path_card_state_result_and_persistence[awaiting-end-next-only]"
+   ],
+   "secs": 1.9
+  },
+  {
+   "id": "B9",
+   "desc": "save_message 不核对卡片归属",
+   "status": "KILLED",
+   "summary": "1 failed, 80 passed, 18 deselected in 1.94s",
+   "failed": [
+    "tests/test_novel_chat_feedback.py::test_save_message_checks_feedback_owner_and_conversation"
+   ],
+   "secs": 2.4
+  },
+  {
+   "id": "B10",
+   "desc": "清空历史不删卡",
+   "status": "KILLED",
+   "summary": "1 failed, 108 passed, 18 deselected, 35 warnings in 4.41s",
+   "failed": [
+    "tests/test_novel_chat_feedback.py::test_clear_history_and_account_delete_remove_only_own_feedback"
+   ],
+   "secs": 5.1
+  },
+  {
+   "id": "B11",
+   "desc": "删号不删卡",
+   "status": "KILLED",
+   "summary": "1 failed, 108 passed, 18 deselected, 35 warnings in 4.42s",
+   "failed": [
+    "tests/test_novel_chat_feedback.py::test_clear_history_and_account_delete_remove_only_own_feedback"
+   ],
+   "secs": 5.1
+  },
+  {
+   "id": "B12",
+   "desc": "删会话不删卡",
+   "status": "KILLED",
+   "summary": "1 failed, 109 passed, 18 deselected, 35 warnings in 4.30s",
+   "failed": [
+    "tests/test_novel_chat_feedback.py::test_delete_conversation_removes_only_that_conversations_feedback"
+   ],
+   "secs": 4.9
+  },
+  {
+   "id": "B13",
+   "desc": "读消息不带卡片 id",
+   "status": "KILLED",
+   "summary": "1 failed, 69 passed, 18 deselected in 1.28s",
+   "failed": [
+    "tests/test_novel_chat_feedback.py::test_success_path_card_state_result_and_persistence[all-three-awaiting-plan]"
+   ],
+   "secs": 1.7
+  },
+  {
+   "id": "B14",
+   "desc": "INSERT 不写卡片 id",
+   "status": "KILLED",
+   "summary": "1 failed, 69 passed, 18 deselected in 1.28s",
+   "failed": [
+    "tests/test_novel_chat_feedback.py::test_success_path_card_state_result_and_persistence[all-three-awaiting-plan]"
+   ],
+   "secs": 1.7
+  },
+  {
+   "id": "B15",
+   "desc": "删书不把卡片 novel_id 置 NULL",
+   "status": "KILLED",
+   "summary": "1 failed, 110 passed, 18 deselected, 35 warnings in 4.56s",
+   "failed": [
+    "tests/test_novel_chat_feedback.py::test_delete_book_keeps_feedback_and_nulls_novel_id"
+   ],
+   "secs": 5.2
+  },
+  {
+   "id": "B16",
+   "desc": "已写章节不核对是否写好",
+   "status": "KILLED",
+   "summary": "1 failed, 50 passed, 18 deselected in 1.14s",
+   "failed": [
+    "tests/test_novel_chat_feedback.py::test_validate_feedback_args_errors[chapter-not-done]"
+   ],
+   "secs": 1.6
+  },
+  {
+   "id": "B17",
+   "desc": "多条错误用逗号连接",
+   "status": "KILLED",
+   "summary": "1 failed, 61 passed, 18 deselected in 1.15s",
+   "failed": [
+    "tests/test_novel_chat_feedback.py::test_validate_feedback_args_collects_all_errors_in_order"
+   ],
+   "secs": 1.6
+  },
+  {
+   "id": "B18",
+   "desc": "非逐章确认也收 current_plan",
+   "status": "KILLED",
+   "summary": "1 failed, 58 passed, 18 deselected in 1.14s",
+   "failed": [
+    "tests/test_novel_chat_feedback.py::test_validate_feedback_args_errors[current-per-batch]"
+   ],
+   "secs": 1.7
+  },
+  {
+   "id": "B19",
+   "desc": "500 字上限差一（=500 也报错）",
+   "status": "KILLED",
+   "summary": "1 failed, 64 passed, 18 deselected in 1.15s",
+   "failed": [
+    "tests/test_novel_chat_feedback.py::test_validate_feedback_args_accepts_each_upper_boundary[next]"
+   ],
+   "secs": 1.6
+  },
+  {
+   "id": "B20",
+   "desc": "建卡时 awaiting_is_final 恒为 False",
+   "status": "KILLED",
+   "summary": "1 failed, 75 passed, 18 deselected in 1.60s",
+   "failed": [
+    "tests/test_novel_chat_feedback.py::test_success_path_card_state_result_and_persistence[awaiting-plan-last-chapter]"
+   ],
+   "secs": 2.1
+  },
+  {
+   "id": "B21",
+   "desc": "视图不算 planned_chapter",
+   "status": "KILLED",
+   "summary": "1 failed, 87 passed, 18 deselected in 2.38s",
+   "failed": [
+    "tests/test_novel_chat_feedback.py::test_feedback_view_planned_read_from_in_progress_meeting[awaiting_plan_approval]"
+   ],
+   "secs": 2.9
+  },
+  {
+   "id": "B22",
+   "desc": "已写完（done）的章也算读到",
+   "status": "KILLED",
+   "summary": "1 failed, 87 passed, 18 deselected in 2.35s",
+   "failed": [
+    "tests/test_novel_chat_feedback.py::test_feedback_view_planned_read_from_in_progress_meeting[awaiting_plan_approval]"
+   ],
+   "secs": 2.8
+  },
+  {
+   "id": "B23",
+   "desc": "主编自带模型不算 own_model",
+   "status": "KILLED",
+   "summary": "1 failed, 91 passed, 18 deselected, 35 warnings in 2.98s",
+   "failed": [
+    "tests/test_novel_chat_feedback.py::test_feedback_view_book_flags_and_redo_cost"
+   ],
+   "secs": 3.6
+  },
+  {
+   "id": "B24",
+   "desc": "redo_pending 不看 _redo_note",
+   "status": "KILLED",
+   "summary": "1 failed, 92 passed, 18 deselected, 35 warnings in 3.10s",
+   "failed": [
+    "tests/test_novel_chat_feedback.py::test_feedback_view_plan_row_status_and_redo_pending"
+   ],
+   "secs": 3.7
+  },
+  {
+   "id": "B25",
+   "desc": "视图 awaiting_is_final 恒为 False",
+   "status": "KILLED",
+   "summary": "1 failed, 91 passed, 18 deselected, 35 warnings in 3.13s",
+   "failed": [
+    "tests/test_novel_chat_feedback.py::test_feedback_view_book_flags_and_redo_cost"
+   ],
+   "secs": 3.7
+  },
+  {
+   "id": "B26",
+   "desc": "交留言不幂等",
+   "status": "KILLED",
+   "summary": "1 failed, 93 passed, 18 deselected, 35 warnings in 3.37s",
+   "failed": [
+    "tests/test_novel_chat_feedback.py::test_send_feedback_note_http_atomic_idempotent_and_concurrent"
+   ],
+   "secs": 4.0
+  },
+  {
+   "id": "B27",
+   "desc": "完结的书也能交留言",
+   "status": "KILLED",
+   "summary": "1 failed, 95 passed, 18 deselected, 35 warnings in 3.50s",
+   "failed": [
+    "tests/test_novel_chat_feedback.py::test_send_feedback_note_http_rejections[completed]"
+   ],
+   "secs": 4.2
+  },
+  {
+   "id": "B28",
+   "desc": "重新定稿不核对章号",
+   "status": "KILLED",
+   "summary": "1 failed, 102 passed, 18 deselected, 35 warnings in 3.85s",
+   "failed": [
+    "tests/test_novel_chat_feedback.py::test_redo_feedback_plan_service_rejections"
+   ],
+   "secs": 4.5
+  },
+  {
+   "id": "B29",
+   "desc": "重新定稿不看逐章确认",
+   "status": "KILLED",
+   "summary": "1 failed, 102 passed, 18 deselected, 35 warnings in 3.90s",
+   "failed": [
+    "tests/test_novel_chat_feedback.py::test_redo_feedback_plan_service_rejections"
+   ],
+   "secs": 4.6
+  },
+  {
+   "id": "B30",
+   "desc": "重新定稿不幂等",
+   "status": "KILLED",
+   "summary": "1 failed, 101 passed, 18 deselected, 35 warnings in 3.73s",
+   "failed": [
+    "tests/test_novel_chat_feedback.py::test_redo_feedback_plan_service_success_and_idempotent"
+   ],
+   "secs": 4.3
+  },
+  {
+   "id": "B31",
+   "desc": "待下发上限 5 改 6",
+   "status": "KILLED",
+   "summary": "1 failed, 94 passed, 18 deselected, 35 warnings in 3.20s",
+   "failed": [
+    "tests/test_novel_chat_feedback.py::test_send_feedback_note_http_rejections[full]"
+   ],
+   "secs": 3.8
+  },
+  {
+   "id": "B32",
+   "desc": "不在等确认时不报卡片自己的文案",
+   "status": "KILLED",
+   "summary": "1 failed, 102 passed, 18 deselected, 35 warnings in 3.94s",
+   "failed": [
+    "tests/test_novel_chat_feedback.py::test_redo_feedback_plan_service_rejections"
+   ],
+   "secs": 4.6
+  },
+  {
+   "id": "B33",
+   "desc": "视图待下发数恒为 0",
+   "status": "KILLED",
+   "summary": "1 failed, 86 passed, 18 deselected in 2.49s",
+   "failed": [
+    "tests/test_novel_chat_feedback.py::test_feedback_view_pending_notes_counts_this_book_only"
+   ],
+   "secs": 3.0
+  },
+  {
+   "id": "B34",
+   "desc": "交留言路由改成 GET",
+   "status": "KILLED",
+   "summary": "1 failed, 90 passed, 47 deselected, 35 warnings in 3.26s",
+   "failed": [
+    "tests/test_novel_chat_feedback.py::test_feedback_view_http_note_read_by_next_plan"
+   ],
+   "secs": 3.9
+  },
+  {
+   "id": "B35",
+   "desc": "提交后不启动后台",
+   "status": "KILLED",
+   "summary": "1 failed, 101 passed, 18 deselected, 35 warnings in 4.03s",
+   "failed": [
+    "tests/test_novel_chat_feedback.py::test_redo_feedback_plan_service_success_and_idempotent"
+   ],
+   "secs": 4.7
+  },
+  {
+   "id": "F1",
+   "desc": "卡片不看逐章确认就给重新定稿按钮",
+   "status": "KILLED",
+   "summary": "1 failed, 21 passed, 29 deselected in 3.55s",
+   "failed": [
+    "tests/test_novel_chat_feedback_frontend.py::test_feedback_card_plan_section_states[not-per-chapter]"
+   ],
+   "secs": 3.7
+  },
+  {
+   "id": "F2",
+   "desc": "失败的书不先说不能再写（细纲一节）",
+   "status": "KILLED",
+   "summary": "1 failed, 22 passed, 29 deselected in 3.73s",
+   "failed": [
+    "tests/test_novel_chat_feedback_frontend.py::test_feedback_card_plan_section_states[book-failed]"
+   ],
+   "secs": 3.9
+  },
+  {
+   "id": "F3",
+   "desc": "已被读到但书失败时仍说写完会下发",
+   "status": "KILLED",
+   "summary": "1 failed, 35 passed, 29 deselected in 6.28s",
+   "failed": [
+    "tests/test_novel_chat_feedback_frontend.py::test_feedback_card_chapter_section_states[planned-failed]"
+   ],
+   "secs": 6.4
+  },
+  {
+   "id": "F4",
+   "desc": "最后一章判断不认 awaiting_is_final",
+   "status": "KILLED",
+   "summary": "1 failed, 40 passed, 29 deselected in 7.26s",
+   "failed": [
+    "tests/test_novel_chat_feedback_frontend.py::test_feedback_card_chapter_section_states[note-awaiting-final0]"
+   ],
+   "secs": 7.4
+  },
+  {
+   "id": "F5",
+   "desc": "已交待下发时章号写成 K",
+   "status": "KILLED",
+   "summary": "1 failed, 41 passed, 29 deselected in 7.43s",
+   "failed": [
+    "tests/test_novel_chat_feedback_frontend.py::test_feedback_card_chapter_section_states[note-awaiting-plan0]"
+   ],
+   "secs": 7.6
+  },
+  {
+   "id": "F6",
+   "desc": "交留言成功后不复位 busyRef",
+   "status": "KILLED",
+   "summary": "1 failed, 65 passed, 29 deselected in 14.73s",
+   "failed": [
+    "tests/test_novel_chat_feedback_frontend.py::test_feedback_card_note_success_then_redo_click_confirms_once"
+   ],
+   "secs": 14.9
+  },
+  {
+   "id": "F7",
+   "desc": "确认框费用句写死扣草莓",
+   "status": "KILLED",
+   "summary": "1 failed, 62 passed, 29 deselected in 13.94s",
+   "failed": [
+    "tests/test_novel_chat_feedback_frontend.py::test_feedback_card_redo_confirmation_costs[own_model]"
+   ],
+   "secs": 14.1
+  },
+  {
+   "id": "F8",
+   "desc": "旧页面后半句不看是否已发起重新定稿",
+   "status": "KILLED",
+   "summary": "1 failed, 59 passed, 29 deselected in 12.23s",
+   "failed": [
+    "tests/test_novel_chat_feedback_frontend.py::test_feedback_card_bottom_hint_and_novel_entry"
+   ],
+   "secs": 12.4
+  },
+  {
+   "id": "F9",
+   "desc": "确认框询问期间按钮已显示正在发起",
+   "status": "KILLED",
+   "summary": "1 failed, 61 passed, 29 deselected in 13.74s",
+   "failed": [
+    "tests/test_novel_chat_feedback_frontend.py::test_feedback_card_redo_confirmation_costs[strawberries]"
+   ],
+   "secs": 13.9
+  },
+  {
+   "id": "F10",
+   "desc": "404 不区分修改意见不存在",
+   "status": "KILLED",
+   "summary": "1 failed, 67 passed, 29 deselected in 15.24s",
+   "failed": [
+    "tests/test_novel_chat_feedback_frontend.py::test_feedback_card_read_states_and_retry"
+   ],
+   "secs": 15.4
+  },
+  {
+   "id": "F11",
+   "desc": "卸载后交留言失败仍显示错误并重拉",
+   "status": "KILLED",
+   "summary": "1 failed, 70 passed, 29 deselected in 16.43s",
+   "failed": [
+    "tests/test_novel_chat_feedback_frontend.py::test_feedback_card_unmount_aborts_pending_post_without_refetch_or_alert"
+   ],
+   "secs": 16.6
+  },
+  {
+   "id": "F12",
+   "desc": "满 5 条时按钮不关联原因（aria）",
+   "status": "KILLED",
+   "summary": "1 failed, 46 passed, 29 deselected in 8.50s",
+   "failed": [
+    "tests/test_novel_chat_feedback_frontend.py::test_feedback_card_chapter_section_states[pending-full]"
+   ],
+   "secs": 8.7
+  },
+  {
+   "id": "F13",
+   "desc": "第一节可用时底部不提示回书架",
+   "status": "KILLED",
+   "summary": "1 failed, 59 passed, 29 deselected in 12.31s",
+   "failed": [
+    "tests/test_novel_chat_feedback_frontend.py::test_feedback_card_bottom_hint_and_novel_entry"
+   ],
+   "secs": 12.5
+  },
+  {
+   "id": "F14",
+   "desc": "重新定稿请求路径错",
+   "status": "KILLED",
+   "summary": "1 failed, 83 passed, 29 deselected in 19.62s",
+   "failed": [
+    "tests/test_novel_chat_feedback_frontend.py::test_novel_feedback_request_paths_and_signal_passthrough"
+   ],
+   "secs": 19.8
+  },
+  {
+   "id": "F15",
+   "desc": "请求路径不编码 id",
+   "status": "KILLED",
+   "summary": "1 failed, 83 passed, 29 deselected in 19.65s",
+   "failed": [
+    "tests/test_novel_chat_feedback_frontend.py::test_novel_feedback_request_paths_and_signal_passthrough"
+   ],
+   "secs": 19.8
+  },
+  {
+   "id": "F16",
+   "desc": "刷新后不重建修改意见卡",
+   "status": "KILLED",
+   "summary": "1 failed, 8 passed, 29 deselected in 0.77s",
+   "failed": [
+    "tests/test_novel_chat_feedback_frontend.py::test_use_conversations_rebuilds_feedback_card_with_field_equality"
+   ],
+   "secs": 0.9
+  },
+  {
+   "id": "F17",
+   "desc": "ChatCard 不认 novel_feedback",
+   "status": "KILLED",
+   "summary": "1 failed, 7 passed, 29 deselected in 0.15s",
+   "failed": [
+    "tests/test_novel_chat_feedback_frontend.py::test_chat_card_renders_novel_feedback_with_feedback_id"
+   ],
+   "secs": 0.3
+  },
+  {
+   "id": "F18",
+   "desc": "第一个流式卡片块漏 feedback_id",
+   "status": "KILLED",
+   "summary": "1 failed, 5 passed, 29 deselected in 0.17s",
+   "failed": [
+    "tests/test_novel_chat_feedback_frontend.py::test_page_stream_cards_bind_feedback_id_in_both_blocks"
+   ],
+   "secs": 0.3
+  },
+  {
+   "id": "F19",
+   "desc": "满 5 条时按钮仍可点",
+   "status": "KILLED",
+   "summary": "1 failed, 46 passed, 29 deselected in 8.45s",
+   "failed": [
+    "tests/test_novel_chat_feedback_frontend.py::test_feedback_card_chapter_section_states[pending-full]"
+   ],
+   "secs": 8.6
+  },
+  {
+   "id": "F20",
+   "desc": "已下发标签用旧说法",
+   "status": "KILLED",
+   "summary": "1 failed, 30 passed, 29 deselected in 5.35s",
+   "failed": [
+    "tests/test_novel_chat_feedback_frontend.py::test_feedback_card_chapter_section_states[delivered-chapter]"
+   ],
+   "secs": 5.5
+  },
+  {
+   "id": "F21",
+   "desc": "自带模型费用句写成扣草莓",
+   "status": "KILLED",
+   "summary": "1 failed, 19 passed, 29 deselected in 3.32s",
+   "failed": [
+    "tests/test_novel_chat_feedback_frontend.py::test_feedback_card_plan_section_states[actionable-own-model]"
+   ],
+   "secs": 3.5
+  },
+  {
+   "id": "B37",
+   "desc": "「已被读到」不查 writing 状态",
+   "status": "KILLED",
+   "summary": "1 failed, 89 passed, 18 deselected in 2.65s",
+   "failed": [
+    "tests/test_novel_chat_feedback.py::test_feedback_view_planned_read_from_in_progress_meeting[writing]"
+   ],
+   "secs": 3.2
+  },
+  {
+   "id": "B38",
+   "desc": "「已被读到」只查等确认",
+   "status": "KILLED",
+   "summary": "1 failed, 88 passed, 18 deselected in 2.67s",
+   "failed": [
+    "tests/test_novel_chat_feedback.py::test_feedback_view_planned_read_from_in_progress_meeting[planning]"
+   ],
+   "secs": 3.2
+  },
+  {
+   "id": "B19b",
+   "desc": "current_plan 500 字上限差一",
+   "status": "KILLED",
+   "summary": "1 failed, 65 passed, 18 deselected in 1.26s",
+   "failed": [
+    "tests/test_novel_chat_feedback.py::test_validate_feedback_args_accepts_each_upper_boundary[current]"
+   ],
+   "secs": 1.8
+  },
+  {
+   "id": "B19c",
+   "desc": "已写章节 10 条上限差一",
+   "status": "KILLED",
+   "summary": "1 failed, 67 passed, 18 deselected in 1.22s",
+   "failed": [
+    "tests/test_novel_chat_feedback.py::test_validate_feedback_args_accepts_each_upper_boundary[written]"
+   ],
+   "secs": 1.7
+  },
+  {
+   "id": "B19d",
+   "desc": "issue 200 字上限差一",
+   "status": "KILLED",
+   "summary": "1 failed, 66 passed, 18 deselected in 1.18s",
+   "failed": [
+    "tests/test_novel_chat_feedback.py::test_validate_feedback_args_accepts_each_upper_boundary[issue]"
+   ],
+   "secs": 1.7
+  },
+  {
+   "id": "B33b",
+   "desc": "待下发数不看 pending",
+   "status": "KILLED",
+   "summary": "1 failed, 86 passed, 18 deselected in 2.48s",
+   "failed": [
+    "tests/test_novel_chat_feedback.py::test_feedback_view_pending_notes_counts_this_book_only"
+   ],
+   "secs": 3.0
+  },
+  {
+   "id": "B33c",
+   "desc": "待下发数不按书过滤",
+   "status": "KILLED",
+   "summary": "1 failed, 86 passed, 18 deselected in 2.36s",
+   "failed": [
+    "tests/test_novel_chat_feedback.py::test_feedback_view_pending_notes_counts_this_book_only"
+   ],
+   "secs": 2.9
+  },
+  {
+   "id": "B39",
+   "desc": "已写章节不看 chapters_done",
+   "status": "KILLED",
+   "summary": "1 failed, 68 passed, 18 deselected in 1.33s",
+   "failed": [
+    "tests/test_novel_chat_feedback.py::test_validate_feedback_args_rejects_done_chapter_past_chapters_done"
+   ],
+   "secs": 1.9
+  },
+  {
+   "id": "B40",
+   "desc": "回灌最后一章不认 K >= max_chapters",
+   "status": "KILLED",
+   "summary": "1 failed, 76 passed, 18 deselected in 1.84s",
+   "failed": [
+    "tests/test_novel_chat_feedback.py::test_success_path_card_state_result_and_persistence[awaiting-plan-last-chapter-at-max]"
+   ],
+   "secs": 2.4
+  },
+  {
+   "id": "B41",
+   "desc": "P2 去掉：没记章号的卡也能重新定稿",
+   "status": "KILLED",
+   "summary": "1 failed, 103 passed, 18 deselected, 35 warnings in 4.25s",
+   "failed": [
+    "tests/test_novel_chat_feedback.py::test_redo_feedback_plan_rejects_card_without_plan_chapter"
+   ],
+   "secs": 4.9
+  },
+  {
+   "id": "F22",
+   "desc": "最后一章不认 K >= max_chapters",
+   "status": "KILLED",
+   "summary": "1 failed, 53 passed, 29 deselected in 10.15s",
+   "failed": [
+    "tests/test_novel_chat_feedback_frontend.py::test_feedback_card_last_chapter_uses_max_chapters_branch"
+   ],
+   "secs": 10.3
+  },
+  {
+   "id": "F23",
+   "desc": "交留言不防连点",
+   "status": "KILLED",
+   "summary": "1 failed, 71 passed, 29 deselected in 16.89s",
+   "failed": [
+    "tests/test_novel_chat_feedback_frontend.py::test_feedback_card_double_click_note_sends_once"
+   ],
+   "secs": 17.1
+  },
+  {
+   "id": "F24",
+   "desc": "重新定稿不防连点",
+   "status": "KILLED",
+   "summary": "1 failed, 72 passed, 29 deselected in 17.13s",
+   "failed": [
+    "tests/test_novel_chat_feedback_frontend.py::test_feedback_card_double_click_redo_reads_confirms_and_posts_once"
+   ],
+   "secs": 17.3
+  },
+  {
+   "id": "F25",
+   "desc": "确认框返回后不看是否已卸载",
+   "status": "KILLED",
+   "summary": "1 failed, 74 passed, 29 deselected in 17.65s",
+   "failed": [
+    "tests/test_novel_chat_feedback_frontend.py::test_feedback_card_unmount_during_confirm_skips_post"
+   ],
+   "secs": 17.8
+  },
+  {
+   "id": "F26",
+   "desc": "「新细纲在书斋里等你确认」不核对章号",
+   "status": "KILLED",
+   "summary": "1 failed, 29 passed, 29 deselected in 5.14s",
+   "failed": [
+    "tests/test_novel_chat_feedback_frontend.py::test_feedback_card_plan_section_states[redo-done-awaiting-other-chapter]"
+   ],
+   "secs": 5.3
+  },
+  {
+   "id": "F27",
+   "desc": "可重新定稿不核对章号",
+   "status": "KILLED",
+   "summary": "1 failed, 28 passed, 29 deselected in 5.04s",
+   "failed": [
+    "tests/test_novel_chat_feedback_frontend.py::test_feedback_card_plan_section_states[not-awaiting-other-chapter]"
+   ],
+   "secs": 5.2
+  },
+  {
+   "id": "F28",
+   "desc": "P1 点击时不重新读取（沿用旧视图）",
+   "status": "KILLED",
+   "summary": "1 failed, 61 passed, 29 deselected in 13.91s",
+   "failed": [
+    "tests/test_novel_chat_feedback_frontend.py::test_feedback_card_redo_confirmation_costs[strawberries]"
+   ],
+   "secs": 14.1
+  },
+  {
+   "id": "F29",
+   "desc": "P1 费用句仍取点击前的视图",
+   "status": "KILLED",
+   "summary": "1 failed, 75 passed, 29 deselected in 17.44s",
+   "failed": [
+    "tests/test_novel_chat_feedback_frontend.py::test_feedback_card_redo_reread_uses_latest_cost_and_updates_card"
+   ],
+   "secs": 17.6
+  },
+  {
+   "id": "F30",
+   "desc": "P1 不对新视图判断能不能用",
+   "status": "KILLED",
+   "summary": "1 failed, 76 passed, 29 deselected in 18.09s",
+   "failed": [
+    "tests/test_novel_chat_feedback_frontend.py::test_feedback_card_redo_reread_unavailable_updates_card_without_dialog"
+   ],
+   "secs": 18.3
+  },
+  {
+   "id": "F31",
+   "desc": "P1 重新读取后不看是否已卸载",
+   "status": "KILLED",
+   "summary": "1 failed, 73 passed, 29 deselected in 17.33s",
+   "failed": [
+    "tests/test_novel_chat_feedback_frontend.py::test_feedback_card_unmount_before_reread_resolves_skips_confirm_and_redo"
+   ],
+   "secs": 17.5
+  },
+  {
+   "id": "F32",
+   "desc": "P1 重新读取失败后按钮不恢复",
+   "status": "KILLED",
+   "summary": "1 failed, 78 passed, 29 deselected in 18.75s",
+   "failed": [
+    "tests/test_novel_chat_feedback_frontend.py::test_feedback_card_redo_reread_failure_keeps_view_and_alerts[api500-None]"
+   ],
+   "secs": 18.9
+  },
+  {
+   "id": "F33",
+   "desc": "P1 重新读取失败不提示",
+   "status": "KILLED",
+   "summary": "1 failed, 78 passed, 29 deselected in 18.59s",
+   "failed": [
+    "tests/test_novel_chat_feedback_frontend.py::test_feedback_card_redo_reread_failure_keeps_view_and_alerts[api500-None]"
+   ],
+   "secs": 18.8
+  },
+  {
+   "id": "F34",
+   "desc": "P1 重新读取后不替换视图",
+   "status": "KILLED",
+   "summary": "1 failed, 75 passed, 29 deselected in 17.39s",
+   "failed": [
+    "tests/test_novel_chat_feedback_frontend.py::test_feedback_card_redo_reread_uses_latest_cost_and_updates_card"
+   ],
+   "secs": 17.6
+  },
+  {
+   "id": "F35",
+   "desc": "P1 重读后不可用时不复位",
+   "status": "KILLED",
+   "summary": "1 failed, 76 passed, 29 deselected in 16.01s",
+   "failed": [
+    "tests/test_novel_chat_feedback_frontend.py::test_feedback_card_redo_reread_unavailable_updates_card_without_dialog"
+   ],
+   "secs": 16.2
+  },
+  {
+   "id": "F36",
+   "desc": "P1 重读后不可用时只漏复位 busyRef",
+   "status": "KILLED",
+   "summary": "1 failed, 76 passed, 29 deselected in 17.52s",
+   "failed": [
+    "tests/test_novel_chat_feedback_frontend.py::test_feedback_card_redo_reread_unavailable_updates_card_without_dialog"
+   ],
+   "secs": 17.7
+  },
+  {
+   "id": "F37",
+   "desc": "P1 重读失败时只漏复位 busyRef",
+   "status": "KILLED",
+   "summary": "1 failed, 78 passed, 29 deselected in 18.02s",
+   "failed": [
+    "tests/test_novel_chat_feedback_frontend.py::test_feedback_card_redo_reread_failure_keeps_view_and_alerts[api500-None]"
+   ],
+   "secs": 18.2
+  },
+  {
+   "id": "F38",
+   "desc": "确认框取消时只漏复位 busyRef",
+   "status": "KILLED",
+   "summary": "1 failed, 61 passed, 29 deselected in 13.87s",
+   "failed": [
+    "tests/test_novel_chat_feedback_frontend.py::test_feedback_card_redo_confirmation_costs[strawberries]"
+   ],
+   "secs": 14.0
+  },
+  {
+   "id": "F39",
+   "desc": "可重新定稿不看是否已发起",
+   "status": "KILLED",
+   "summary": "1 failed, 77 passed, 29 deselected in 17.76s",
+   "failed": [
+    "tests/test_novel_chat_feedback_frontend.py::test_feedback_card_redo_reread_already_started_updates_card_without_dialog"
+   ],
+   "secs": 17.9
+  },
+  {
+   "id": "F40",
+   "desc": "P1 重读被中止 reject 后不看是否已卸载",
+   "status": "KILLED",
+   "summary": "1 failed, 82 passed, 29 deselected in 17.17s",
+   "failed": [
+    "tests/test_novel_chat_feedback_frontend.py::test_feedback_card_unmount_during_reread_aborts_and_skips_setters"
+   ],
+   "secs": 17.3
+  },
+  {
+   "id": "F41",
+   "desc": "P1 重读失败直接显示原始报错",
+   "status": "KILLED",
+   "summary": "1 failed, 80 passed, 29 deselected in 15.82s",
+   "failed": [
+    "tests/test_novel_chat_feedback_frontend.py::test_feedback_card_redo_reread_failure_keeps_view_and_alerts[type-Failed"
+   ],
+   "secs": 16.0
+  },
+  {
+   "id": "B42",
+   "desc": "「已被读到」放宽成除 done 以外都算",
+   "status": "KILLED",
+   "summary": "1 failed, 87 passed, 18 deselected in 2.24s",
+   "failed": [
+    "tests/test_novel_chat_feedback.py::test_feedback_view_planned_read_from_in_progress_meeting[awaiting_plan_approval]"
+   ],
+   "secs": 2.7
+  },
+  {
+   "id": "B43",
+   "desc": "P2 章号判断挪到书态检查之后",
+   "status": "KILLED",
+   "summary": "1 failed, 103 passed, 18 deselected, 35 warnings in 3.43s",
+   "failed": [
+    "tests/test_novel_chat_feedback.py::test_redo_feedback_plan_rejects_card_without_plan_chapter"
+   ],
+   "secs": 4.0
+  },
+  {
+   "id": "D1",
+   "desc": "读正文不去掉原始标题行",
+   "status": "KILLED",
+   "summary": "1 failed, 1 deselected in 0.26s",
+   "failed": [
+    "tests/test_desk_polish_frontend.py::test_reader_dialog_strips_original_title_line_and_keeps_body"
+   ],
+   "secs": 0.4
+  },
+  {
+   "id": "D2",
+   "desc": "展开后摘要仍截两行",
+   "status": "KILLED",
+   "summary": "1 failed, 1 passed, 1 deselected in 1.20s",
+   "failed": [
+    "tests/test_desk_polish_frontend.py::test_chapter_summary_clamps_only_while_collapsed"
+   ],
+   "secs": 1.4
+  },
+  {
+   "id": "D3",
+   "desc": "无项目原因不补句号",
+   "status": "KILLED",
+   "summary": "1 failed, 2 passed, 1 deselected in 1.40s",
+   "failed": [
+    "tests/test_desk_polish_frontend.py::test_no_project_reason_gets_one_ending_period[\\u77ed\\u7247\\u9879\\u76ee\\u8fd8\\u5728\\u51c6\\u5907\\u4e2d-\\u8fd9\\u672c\\u4e66\\u8fd8\\u6ca1\\u6709\\u77ed\\u7247\\u9879\\u76ee\\u3002\\u77ed\\u7247\\u9879\\u76ee\\u8fd8\\u5728\\u51c6\\u5907\\u4e2d\\u3002]"
+   ],
+   "secs": 1.5
+  },
+  {
+   "id": "D4",
+   "desc": "已有句号也再补一个",
+   "status": "KILLED",
+   "summary": "1 failed, 3 passed, 1 deselected in 1.55s",
+   "failed": [
+    "tests/test_desk_polish_frontend.py::test_no_project_reason_gets_one_ending_period[\\u77ed\\u7247\\u9879\\u76ee\\u8fd8\\u5728\\u51c6\\u5907\\u4e2d\\u3002-\\u8fd9\\u672c\\u4e66\\u8fd8\\u6ca1\\u6709\\u77ed\\u7247\\u9879\\u76ee\\u3002\\u77ed\\u7247\\u9879\\u76ee\\u8fd8\\u5728\\u51c6\\u5907\\u4e2d\\u3002]"
+   ],
+   "secs": 1.7
+  }
+ ]
+}
