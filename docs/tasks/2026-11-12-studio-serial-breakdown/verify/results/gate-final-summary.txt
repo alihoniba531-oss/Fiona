@@ -1,0 +1,14 @@
+88 passed, 35 warnings in 12.63s
+846 passed, 35 warnings in 65.78s (0:01:05)
+8352 passed, 37 warnings in 396.58s (0:06:36)
+66 passed, 22 skipped, 35 warnings in 10.15s
+new_exit=0
+newcollect_exit=0
+listed_exit=0
+full_exit=0
+fullcollect_exit=0
+tsc_exit=0
+lint_exit=0
+build_exit=0
+nonode_exit=0
+done

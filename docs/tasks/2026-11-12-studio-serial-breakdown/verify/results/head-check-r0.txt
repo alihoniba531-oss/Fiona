@@ -1,0 +1,2085 @@
+FFFFFF.F.F.FFF.FFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFF.FFFFEFFFFFFFFFF.FFFF [ 91%]
+FFF..FF                                                                  [100%]
+==================================== ERRORS ====================================
+_ ERROR at setup of test_views_continuable_changed_covered_and_stale[serial0] __
+
+workshop = (<starlette.testclient.TestClient object at 0x10e465150>, {'Authorization': 'Bearer <测试令牌> 5, 'title': '灯影', 'status': 'done', 'body': '第5章 正文开始。\n第5章第一场：阿禾在渡口等人。\n第5章第二场：船夫撑船离岸。\n', ...}], 'details': 1, ...})
+monkeypatch = <_pytest.monkeypatch.MonkeyPatch object at 0x10e75bc40>
+request = <SubRequest 'serial' for <Function test_views_continuable_changed_covered_and_stale[serial0]>>
+
+    @pytest.fixture
+    def serial(workshop, monkeypatch, request):
+        for name, value in {'FIONA_STUDIO_DAILY_CNY': '1000', 'FIONA_STUDIO_MAX_QUOTE_CNY': '100',
+                            'FIONA_STUDIO_BRAIN_MONTHLY_USD': '100'}.items():
+            monkeypatch.setenv(name, value)
+        options = getattr(request, 'param', None) or {}
+        client, auth, state = workshop
+        install_book(state, options.get('numbers', range(1, 6)), statuses=options.get('statuses'))
+>       project = novel_project(workshop)
+                  ^^^^^^^^^^^^^^^^^^^^^^^
+
+tests/test_studio_serial_continue.py:108: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+workshop = (<starlette.testclient.TestClient object at 0x10e465150>, {'Authorization': 'Bearer <测试令牌> 5, 'title': '灯影', 'status': 'done', 'body': '第5章 正文开始。\n第5章第一场：阿禾在渡口等人。\n第5章第二场：船夫撑船离岸。\n', ...}], 'details': 1, ...})
+body = {}
+
+    def novel_project(workshop, **body):
+        client, auth, _ = workshop
+        response = client.post('/studio/projects/from-novel', headers=auth, json={'book_id': 'book', **body})
+>       assert response.status_code == 201, response.text
+E       AssertionError: {"detail":"作品有待复核章节，请先在小说工坊完成复核"}
+E       assert 409 == 201
+E        +  where 409 = <Response [409 Conflict]>.status_code
+
+tests/test_studio_sources.py:82: AssertionError
+=================================== FAILURES ===================================
+_______________ test_serial_book_status_stays_eligible[running] ________________
+
+workshop = (<starlette.testclient.TestClient object at 0x10e2217f0>, {'Authorization': 'Bearer <测试令牌>': ['review_degraded'], ...}, {'chapter': 2, 'title': '山月', 'status': 'done', 'flags': [], ...}], 'details': 1, ...})
+status = 'running'
+
+    @pytest.mark.parametrize('status', ['running', 'awaiting_plan', 'paused', 'failed', 'setup_running'])
+    def test_serial_book_status_stays_eligible(workshop, status):
+        _, _, state = workshop
+        state['book']['status'] = status
+        book = candidate()
+>       assert book['eligible'] is True and book['reason'] is None
+E       assert (False is True)
+
+tests/test_studio_serial_sources.py:35: AssertionError
+____________ test_serial_book_status_stays_eligible[awaiting_plan] _____________
+
+workshop = (<starlette.testclient.TestClient object at 0x10dbe39d0>, {'Authorization': 'Bearer <测试令牌>': ['review_degraded'], ...}, {'chapter': 2, 'title': '山月', 'status': 'done', 'flags': [], ...}], 'details': 1, ...})
+status = 'awaiting_plan'
+
+    @pytest.mark.parametrize('status', ['running', 'awaiting_plan', 'paused', 'failed', 'setup_running'])
+    def test_serial_book_status_stays_eligible(workshop, status):
+        _, _, state = workshop
+        state['book']['status'] = status
+        book = candidate()
+>       assert book['eligible'] is True and book['reason'] is None
+E       assert (False is True)
+
+tests/test_studio_serial_sources.py:35: AssertionError
+________________ test_serial_book_status_stays_eligible[paused] ________________
+
+workshop = (<starlette.testclient.TestClient object at 0x10e25a710>, {'Authorization': 'Bearer <测试令牌>': ['review_degraded'], ...}, {'chapter': 2, 'title': '山月', 'status': 'done', 'flags': [], ...}], 'details': 1, ...})
+status = 'paused'
+
+    @pytest.mark.parametrize('status', ['running', 'awaiting_plan', 'paused', 'failed', 'setup_running'])
+    def test_serial_book_status_stays_eligible(workshop, status):
+        _, _, state = workshop
+        state['book']['status'] = status
+        book = candidate()
+>       assert book['eligible'] is True and book['reason'] is None
+E       assert (False is True)
+
+tests/test_studio_serial_sources.py:35: AssertionError
+________________ test_serial_book_status_stays_eligible[failed] ________________
+
+workshop = (<starlette.testclient.TestClient object at 0x10e3cc8a0>, {'Authorization': 'Bearer <测试令牌>': ['review_degraded'], ...}, {'chapter': 2, 'title': '山月', 'status': 'done', 'flags': [], ...}], 'details': 1, ...})
+status = 'failed'
+
+    @pytest.mark.parametrize('status', ['running', 'awaiting_plan', 'paused', 'failed', 'setup_running'])
+    def test_serial_book_status_stays_eligible(workshop, status):
+        _, _, state = workshop
+        state['book']['status'] = status
+        book = candidate()
+>       assert book['eligible'] is True and book['reason'] is None
+E       assert (False is True)
+
+tests/test_studio_serial_sources.py:35: AssertionError
+____________ test_serial_book_status_stays_eligible[setup_running] _____________
+
+workshop = (<starlette.testclient.TestClient object at 0x10e3cd5b0>, {'Authorization': 'Bearer <测试令牌>': ['review_degraded'], ...}, {'chapter': 2, 'title': '山月', 'status': 'done', 'flags': [], ...}], 'details': 1, ...})
+status = 'setup_running'
+
+    @pytest.mark.parametrize('status', ['running', 'awaiting_plan', 'paused', 'failed', 'setup_running'])
+    def test_serial_book_status_stays_eligible(workshop, status):
+        _, _, state = workshop
+        state['book']['status'] = status
+        book = candidate()
+>       assert book['eligible'] is True and book['reason'] is None
+E       assert (False is True)
+
+tests/test_studio_serial_sources.py:35: AssertionError
+____________ test_stale_chapter_imports_with_status_and_is_flagged _____________
+
+workshop = (<starlette.testclient.TestClient object at 0x10ddee570>, {'Authorization': 'Bearer <测试令牌>': ['review_degraded'], ...}, {'chapter': 2, 'title': '山月', 'status': 'done', 'flags': [], ...}], 'details': 1, ...})
+
+    def test_stale_chapter_imports_with_status_and_is_flagged(workshop):
+        _, _, state = workshop
+        state['book']['chapters'][0]['status'] = 'stale'
+        state['chapters'][0]['status'] = 'stale'
+        book = candidate()
+>       assert book['eligible'] is True and book['stale'] == [1]
+E       assert (False is True)
+
+tests/test_studio_serial_sources.py:46: AssertionError
+_ test_three_rejection_reasons[empty-\u4f5c\u54c1\u8fd8\u6ca1\u6709\u5199\u597d\u7684\u7ae0\u8282] _
+
+workshop = (<starlette.testclient.TestClient object at 0x10e386250>, {'Authorization': 'Bearer <测试令牌>': ['review_degraded'], ...}, {'chapter': 2, 'title': '山月', 'status': 'done', 'flags': [], ...}], 'details': 1, ...})
+monkeypatch = <_pytest.monkeypatch.MonkeyPatch object at 0x10e3dc500>
+problem = 'empty', reason = '作品还没有写好的章节'
+
+    @pytest.mark.parametrize('problem,reason', [
+        ('bible', '作品缺少故事圣经'),
+        ('empty', '作品还没有写好的章节'),
+        ('editing', '作品正在修改，请稍后再试'),
+    ])
+    def test_three_rejection_reasons(workshop, monkeypatch, problem, reason):
+        client, auth, state = workshop
+        if problem == 'bible':
+            state['bible'] = None
+        elif problem == 'empty':
+            state['book'].update(chapters_done=0, chapters=[])
+        else:
+            monkeypatch.setattr(sources, 'is_editing', lambda bid: True)
+        book = candidate()
+>       assert book['eligible'] is False and book['reason'] == reason
+E       AssertionError: assert (False is False and '作品没有章节' == '作品还没有写好的章节'
+E         
+E         - 作品还没有写好的章节
+E         ?   -  ---
+E         + 作品没有章节)
+
+tests/test_studio_serial_sources.py:67: AssertionError
+_________ test_rearchive_window_blocks_candidate_create_sync_and_drift _________
+
+workshop = (<starlette.testclient.TestClient object at 0x10e387130>, {'Authorization': 'Bearer <测试令牌>': ['review_degraded'], ...}, {'chapter': 2, 'title': '山月', 'status': 'done', 'flags': [], ...}], 'details': 3, ...})
+
+    def test_rearchive_window_blocks_candidate_create_sync_and_drift(workshop):
+        client, auth, state = workshop
+        project = novel_project(workshop)
+        state['book']['config']['_rearchive'] = 2
+        book = candidate()
+>       assert book['eligible'] is False and book['reason'] == '作品正在修改，请稍后再试'
+E       assert (True is False)
+
+tests/test_studio_serial_sources.py:78: AssertionError
+___________ test_invalid_chapter_range_rejects_before_reading[True] ____________
+
+workshop = (<starlette.testclient.TestClient object at 0x10e387240>, {'Authorization': 'Bearer <测试令牌>': ['review_degraded'], ...}, {'chapter': 2, 'title': '山月', 'status': 'done', 'flags': [], ...}], 'details': 2, ...})
+maximum = True
+
+    @pytest.mark.parametrize('maximum', [301, True])
+    def test_invalid_chapter_range_rejects_before_reading(workshop, maximum):
+        client, auth, state = workshop
+        state['book']['chapters_done'] = maximum
+        response = client.post('/studio/projects/from-novel', headers=auth, json={'book_id': 'book'})
+>       assert response.status_code == 409 and response.json()['detail'] == '作品章节范围无效'
+E       assert (201 == 409)
+E        +  where 201 = <Response [201 Created]>.status_code
+
+tests/test_studio_serial_sources.py:95: AssertionError
+__________ test_snapshot_ignores_in_progress_row_after_chapters_done ___________
+
+workshop = (<starlette.testclient.TestClient object at 0x10e386470>, {'Authorization': 'Bearer <测试令牌>': 'done', 'flags': [], ...}, {'chapter': 3, 'title': '下一章', 'status': 'planning', 'body': None}], 'details': 1, ...})
+
+    def test_snapshot_ignores_in_progress_row_after_chapters_done(workshop):
+        _, _, state = workshop
+        add_chapter(state, 3, status='planning', body=None)
+>       snapshot = run(sources.take_novel_snapshot('owner', 'book'))
+                   ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+tests/test_studio_serial_sources.py:103: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+tests/test_studio_serial_sources.py:13: in run
+    return asyncio.run(awaitable)
+           ^^^^^^^^^^^^^^^^^^^^^^
+/opt/homebrew/Cellar/python@3.14/3.14.6/Frameworks/Python.framework/Versions/3.14/lib/python3.14/asyncio/runners.py:205: in run
+    return runner.run(main)
+           ^^^^^^^^^^^^^^^^
+/opt/homebrew/Cellar/python@3.14/3.14.6/Frameworks/Python.framework/Versions/3.14/lib/python3.14/asyncio/runners.py:128: in run
+    return self._loop.run_until_complete(task)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+/opt/homebrew/Cellar/python@3.14/3.14.6/Frameworks/Python.framework/Versions/3.14/lib/python3.14/asyncio/base_events.py:719: in run_until_complete
+    return future.result()
+           ^^^^^^^^^^^^^^^
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+username = 'owner', book_id = 'book'
+
+    async def take_novel_snapshot(username, book_id):
+        _require_novel(username)
+        for attempt in range(2):
+            book = await _novel_call(service.detail, username, book_id)
+            bible = await _novel_call(service.bible, username, book_id)
+            eligible, reason = _eligibility(book, bible, is_editing(book_id))
+            if not eligible:
+>               raise HTTPException(409, reason)
+E               fastapi.exceptions.HTTPException: 409: 作品有尚未完成的章节
+
+studio/sources.py:149: HTTPException
+______________________ test_signature_ignores_updated_at _______________________
+
+workshop = (<starlette.testclient.TestClient object at 0x10d35b460>, {'Authorization': 'Bearer <测试令牌>': ['review_degraded'], ...}, {'chapter': 2, 'title': '山月', 'status': 'done', 'flags': [], ...}], 'details': 4, ...})
+monkeypatch = <_pytest.monkeypatch.MonkeyPatch object at 0x10e3a87d0>
+
+    def test_signature_ignores_updated_at(workshop, monkeypatch):
+        _, _, state = workshop
+        original = sources.service.detail
+    
+        async def changing(user, bid):
+            result = await original(user, bid)
+            if state['details'] >= 2:
+                result['updated_at'] = 'billed'
+            return result
+    
+        monkeypatch.setattr(sources.service, 'detail', changing)
+        snapshot = run(sources.take_novel_snapshot('owner', 'book'))
+>       assert state['details'] == 2 and len(state['range_calls']) == 1
+E       assert (4 == 2)
+
+tests/test_studio_serial_sources.py:121: AssertionError
+__________ test_signature_retries_when_covered_chapter_becomes_stale ___________
+
+workshop = (<starlette.testclient.TestClient object at 0x10e386580>, {'Authorization': 'Bearer <测试令牌>': ['review_degraded'], ...}, {'chapter': 2, 'title': '山月', 'status': 'done', 'flags': [], ...}], 'details': 3, ...})
+monkeypatch = <_pytest.monkeypatch.MonkeyPatch object at 0x10e26b330>
+
+    def test_signature_retries_when_covered_chapter_becomes_stale(workshop, monkeypatch):
+        _, _, state = workshop
+        original = sources.service.detail
+    
+        async def changing(user, bid):
+            result = await original(user, bid)
+            if state['details'] >= 2:
+                result['chapters'][0]['status'] = 'stale'
+            return result
+    
+        monkeypatch.setattr(sources.service, 'detail', changing)
+>       run(sources.take_novel_snapshot('owner', 'book'))
+
+tests/test_studio_serial_sources.py:152: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+tests/test_studio_serial_sources.py:13: in run
+    return asyncio.run(awaitable)
+           ^^^^^^^^^^^^^^^^^^^^^^
+/opt/homebrew/Cellar/python@3.14/3.14.6/Frameworks/Python.framework/Versions/3.14/lib/python3.14/asyncio/runners.py:205: in run
+    return runner.run(main)
+           ^^^^^^^^^^^^^^^^
+/opt/homebrew/Cellar/python@3.14/3.14.6/Frameworks/Python.framework/Versions/3.14/lib/python3.14/asyncio/runners.py:128: in run
+    return self._loop.run_until_complete(task)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+/opt/homebrew/Cellar/python@3.14/3.14.6/Frameworks/Python.framework/Versions/3.14/lib/python3.14/asyncio/base_events.py:719: in run_until_complete
+    return future.result()
+           ^^^^^^^^^^^^^^^
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+username = 'owner', book_id = 'book'
+
+    async def take_novel_snapshot(username, book_id):
+        _require_novel(username)
+        for attempt in range(2):
+            book = await _novel_call(service.detail, username, book_id)
+            bible = await _novel_call(service.bible, username, book_id)
+            eligible, reason = _eligibility(book, bible, is_editing(book_id))
+            if not eligible:
+>               raise HTTPException(409, reason)
+E               fastapi.exceptions.HTTPException: 409: 作品有待复核章节，请先在小说工坊完成复核
+
+studio/sources.py:149: HTTPException
+________ test_signature_retries_then_rejects_rearchive_on_second_detail ________
+
+workshop = (<starlette.testclient.TestClient object at 0x10e386f10>, {'Authorization': 'Bearer <测试令牌>': ['review_degraded'], ...}, {'chapter': 2, 'title': '山月', 'status': 'done', 'flags': [], ...}], 'details': 2, ...})
+monkeypatch = <_pytest.monkeypatch.MonkeyPatch object at 0x10e445a90>
+
+    def test_signature_retries_then_rejects_rearchive_on_second_detail(workshop, monkeypatch):
+        _, _, state = workshop
+        original = sources.service.detail
+    
+        async def changing(user, bid):
+            result = await original(user, bid)
+            if state['details'] >= 2:
+                result['config']['_rearchive'] = 1
+            return result
+    
+        monkeypatch.setattr(sources.service, 'detail', changing)
+>       with pytest.raises(HTTPException) as exc:
+             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+E       Failed: DID NOT RAISE HTTPException
+
+tests/test_studio_serial_sources.py:167: Failed
+________________ test_signature_ignores_row_after_chapters_done ________________
+
+workshop = (<starlette.testclient.TestClient object at 0x10e385f20>, {'Authorization': 'Bearer <测试令牌>': 'done', 'flags': [], ...}, {'chapter': 3, 'title': '下一章', 'status': 'planning', 'body': None}], 'details': 1, ...})
+monkeypatch = <_pytest.monkeypatch.MonkeyPatch object at 0x10e446b70>
+
+    def test_signature_ignores_row_after_chapters_done(workshop, monkeypatch):
+        _, _, state = workshop
+        add_chapter(state, 3, status='planning', body=None)
+        original = sources.service.detail
+    
+        async def changing(user, bid):
+            result = await original(user, bid)
+            if state['details'] >= 2:
+                result['chapters'][-1].update(status='writing', title='改过的下一章')
+            return result
+    
+        monkeypatch.setattr(sources.service, 'detail', changing)
+>       snapshot = run(sources.take_novel_snapshot('owner', 'book'))
+                   ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+tests/test_studio_serial_sources.py:185: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+tests/test_studio_serial_sources.py:13: in run
+    return asyncio.run(awaitable)
+           ^^^^^^^^^^^^^^^^^^^^^^
+/opt/homebrew/Cellar/python@3.14/3.14.6/Frameworks/Python.framework/Versions/3.14/lib/python3.14/asyncio/runners.py:205: in run
+    return runner.run(main)
+           ^^^^^^^^^^^^^^^^
+/opt/homebrew/Cellar/python@3.14/3.14.6/Frameworks/Python.framework/Versions/3.14/lib/python3.14/asyncio/runners.py:128: in run
+    return self._loop.run_until_complete(task)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+/opt/homebrew/Cellar/python@3.14/3.14.6/Frameworks/Python.framework/Versions/3.14/lib/python3.14/asyncio/base_events.py:719: in run_until_complete
+    return future.result()
+           ^^^^^^^^^^^^^^^
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+username = 'owner', book_id = 'book'
+
+    async def take_novel_snapshot(username, book_id):
+        _require_novel(username)
+        for attempt in range(2):
+            book = await _novel_call(service.detail, username, book_id)
+            bible = await _novel_call(service.bible, username, book_id)
+            eligible, reason = _eligibility(book, bible, is_editing(book_id))
+            if not eligible:
+>               raise HTTPException(409, reason)
+E               fastapi.exceptions.HTTPException: 409: 作品有尚未完成的章节
+
+studio/sources.py:149: HTTPException
+_____________ test_drift_ignores_in_progress_stale_and_serial_sync _____________
+
+workshop = (<starlette.testclient.TestClient object at 0x10e384380>, {'Authorization': 'Bearer <测试令牌>': 'done', 'flags': [], ...}, {'chapter': 3, 'title': '下一章', 'status': 'planning', 'body': None}], 'details': 3, ...})
+
+    def test_drift_ignores_in_progress_stale_and_serial_sync(workshop):
+        _, _, state = workshop
+        project = novel_project(workshop)
+        add_chapter(state, 3, status='planning', body=None)
+        drift = run(sources.source_status('owner', project['id']))['drift']
+>       assert drift['added'] == [] and drift['stale'] == [] and drift['chapters_done'] == 2
+E       assert ([3] == []
+E         
+E         Left contains one more item: 3
+E         Use -v to get more diff)
+
+tests/test_studio_serial_sources.py:195: AssertionError
+_____ test_source_status_snapshot_stale_is_empty_before_any_stale_chapter ______
+
+workshop = (<starlette.testclient.TestClient object at 0x10e387570>, {'Authorization': 'Bearer <测试令牌>': ['review_degraded'], ...}, {'chapter': 2, 'title': '山月', 'status': 'done', 'flags': [], ...}], 'details': 3, ...})
+
+    def test_source_status_snapshot_stale_is_empty_before_any_stale_chapter(workshop):
+        _, _, state = workshop
+        project = novel_project(workshop)
+>       assert run(sources.source_status('owner', project['id']))['snapshot']['stale'] == []
+               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+E       KeyError: 'stale'
+
+tests/test_studio_serial_sources.py:215: KeyError
+__________________ test_candidate_stale_and_snapshot_chapters __________________
+
+workshop = (<starlette.testclient.TestClient object at 0x10e387350>, {'Authorization': 'Bearer <测试令牌>': ['review_degraded'], ...}, {'chapter': 2, 'title': '山月', 'status': 'done', 'flags': [], ...}], 'details': 1, ...})
+
+    def test_candidate_stale_and_snapshot_chapters(workshop):
+        _, _, state = workshop
+        state['book']['chapters'][0]['status'] = 'stale'
+        state['chapters'][0]['status'] = 'stale'
+>       project = novel_project(workshop)
+                  ^^^^^^^^^^^^^^^^^^^^^^^
+
+tests/test_studio_serial_sources.py:228: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+workshop = (<starlette.testclient.TestClient object at 0x10e387350>, {'Authorization': 'Bearer <测试令牌>': ['review_degraded'], ...}, {'chapter': 2, 'title': '山月', 'status': 'done', 'flags': [], ...}], 'details': 1, ...})
+body = {}
+
+    def novel_project(workshop, **body):
+        client, auth, _ = workshop
+        response = client.post('/studio/projects/from-novel', headers=auth, json={'book_id': 'book', **body})
+>       assert response.status_code == 201, response.text
+E       AssertionError: {"detail":"作品有待复核章节，请先在小说工坊完成复核"}
+E       assert 409 == 201
+E        +  where 409 = <Response [409 Conflict]>.status_code
+
+tests/test_studio_sources.py:82: AssertionError
+______________ test_start_film_reuse_shows_snapshot_and_sync_hint ______________
+
+workshop = (<starlette.testclient.TestClient object at 0x10e464270>, {'Authorization': 'Bearer <测试令牌>': 'done', 'flags': [], ...}, {'chapter': 3, 'title': '下一章', 'status': 'done', 'body': '第三层正文'}], 'details': 3, ...})
+monkeypatch = <_pytest.monkeypatch.MonkeyPatch object at 0x10e3c9f60>
+
+    def test_start_film_reuse_shows_snapshot_and_sync_hint(workshop, monkeypatch):
+        _, _, state = workshop
+        project = novel_project(workshop)
+    
+        async def no_creation(*args, **kwargs):
+            pytest.fail('Must reuse an existing project without creating another one')
+    
+        monkeypatch.setattr(sources, 'create_novel_project', no_creation)
+        state['book']['chapters_done'] = 3
+        add_chapter(state, 3, status='done', body='第三层正文')
+        card = run(novel_chat.start_film('owner', '山月', 'jwt'))
+        assert card['url'] == '/studio/' + project['id']
+>       assert card['points'] == [
+            '《山月》',
+            '快照第 1 版 · 2 章',
+            '作品已写到第 3 章；到工作室来源面板同步后可以续拆',
+            '已有项目，打开即可继续',
+        ]
+E       AssertionError: assert ['《山月》', '3 章..., '已建项目，尚未花费'] == ['《山月》', '快照第...'已有项目，打开即可继续']
+E         
+E         At index 1 diff: '3 章 · 0.0012 万字 · 快照第 1 版' != '快照第 1 版 · 2 章'
+E         Right contains one more item: '已有项目，打开即可继续'
+E         Use -v to get more diff
+
+tests/test_studio_serial_sources.py:247: AssertionError
+_________ test_start_film_reuse_without_new_chapters_has_no_sync_hint __________
+
+workshop = (<starlette.testclient.TestClient object at 0x10e4647c0>, {'Authorization': 'Bearer <测试令牌>': ['review_degraded'], ...}, {'chapter': 2, 'title': '山月', 'status': 'done', 'flags': [], ...}], 'details': 3, ...})
+monkeypatch = <_pytest.monkeypatch.MonkeyPatch object at 0x10e47e970>
+
+    def test_start_film_reuse_without_new_chapters_has_no_sync_hint(workshop, monkeypatch):
+        project = novel_project(workshop)
+    
+        async def no_creation(*args, **kwargs):
+            pytest.fail('Must reuse an existing project without creating another one')
+    
+        monkeypatch.setattr(sources, 'create_novel_project', no_creation)
+        card = run(novel_chat.start_film('owner', '山月', 'jwt'))
+        assert card['url'] == '/studio/' + project['id']
+>       assert card['points'] == ['《山月》', '快照第 1 版 · 2 章', '已有项目，打开即可继续']
+E       AssertionError: assert ['《山月》', '2 章..., '已建项目，尚未花费'] == ['《山月》', '快照第...'已有项目，打开即可继续']
+E         
+E         At index 1 diff: '2 章 · 0.0012 万字 · 快照第 1 版' != '快照第 1 版 · 2 章'
+E         Use -v to get more diff
+
+tests/test_studio_serial_sources.py:264: AssertionError
+___________ test_batch_plan_default_output_and_continuation_offsets ____________
+
+    def test_batch_plan_default_output_and_continuation_offsets():
+        entries = _entries(range(1, 13))
+        manifest = _manifest(entries)
+        imported, plan = breakdown_material.batch_plan(manifest, entries)
+        units = [{'seq': number, 'chapter': number, 'scene_index': 1, 'label': f'第 {number} 章第 1 场',
+                  'location': '', 'summary': '', 'characters': [], 'est_seconds': None, 'change': '',
+                  'start': 0, 'end': 100} for number in range(1, 13)]
+        assert imported == {'characters': [], 'units': units,
+                            'synopsis': {'logline': '', 'theme': '', 'core_conflict': '',
+                                         'main_threads': '', 'arc_summaries': []},
+                            'foreshadowing': [], 'timeline': [], 'adaptation': {}}
+        expected = [_expected_map(1, entries[:10], 0),
+                    _expected_map(2, entries[10:], 1),
+                    _expected_plan(3, 0, entries[:10], [1], [1], 10),
+                    _expected_plan(4, 1, entries[10:], [1, 2, 3], [2], 2)]
+        assert plan == expected
+        # 默认参数与显式传入默认值逐项相等，说明新增参数没有改变旧行为。
+>       assert breakdown_material.batch_plan(manifest, entries, 1, 0, 0) == (imported, plan)
+               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+E       TypeError: batch_plan() takes 2 positional arguments but 5 were given
+
+tests/test_studio_serial_continue.py:323: TypeError
+_______ test_batch_plan_continuation_slice_only_new_chapters_and_offset ________
+
+    def test_batch_plan_continuation_slice_only_new_chapters_and_offset():
+        entries = _entries(range(1, 13))
+        manifest = _manifest(entries)
+        base = 5
+>       _, plan = breakdown_material.batch_plan(manifest, entries, start_chapter=6, segment_base=1, no_base=base)
+                  ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+E       TypeError: batch_plan() got an unexpected keyword argument 'start_chapter'
+
+tests/test_studio_serial_continue.py:335: TypeError
+___ test_batch_plan_secondary_sources_reject_continuation_arguments[kwargs0] ___
+
+kwargs = {'start_chapter': 2}
+
+    @pytest.mark.parametrize('kwargs', [{'start_chapter': 2}, {'segment_base': 1}, {'no_base': 1}])
+    def test_batch_plan_secondary_sources_reject_continuation_arguments(kwargs):
+        manifest = {'kind': 'paste'}
+        entries = [{'index': 1, 'chapter': 1, 'body': '文本', 'chars': 2, 'start': 0, 'end': 2}]
+        with pytest.raises(ValueError):
+>           breakdown_material.batch_plan(manifest, entries, **kwargs)
+E           TypeError: batch_plan() got an unexpected keyword argument 'start_chapter'
+
+tests/test_studio_serial_continue.py:376: TypeError
+___ test_batch_plan_secondary_sources_reject_continuation_arguments[kwargs1] ___
+
+kwargs = {'segment_base': 1}
+
+    @pytest.mark.parametrize('kwargs', [{'start_chapter': 2}, {'segment_base': 1}, {'no_base': 1}])
+    def test_batch_plan_secondary_sources_reject_continuation_arguments(kwargs):
+        manifest = {'kind': 'paste'}
+        entries = [{'index': 1, 'chapter': 1, 'body': '文本', 'chars': 2, 'start': 0, 'end': 2}]
+        with pytest.raises(ValueError):
+>           breakdown_material.batch_plan(manifest, entries, **kwargs)
+E           TypeError: batch_plan() got an unexpected keyword argument 'segment_base'
+
+tests/test_studio_serial_continue.py:376: TypeError
+___ test_batch_plan_secondary_sources_reject_continuation_arguments[kwargs2] ___
+
+kwargs = {'no_base': 1}
+
+    @pytest.mark.parametrize('kwargs', [{'start_chapter': 2}, {'segment_base': 1}, {'no_base': 1}])
+    def test_batch_plan_secondary_sources_reject_continuation_arguments(kwargs):
+        manifest = {'kind': 'paste'}
+        entries = [{'index': 1, 'chapter': 1, 'body': '文本', 'chars': 2, 'start': 0, 'end': 2}]
+        with pytest.raises(ValueError):
+>           breakdown_material.batch_plan(manifest, entries, **kwargs)
+E           TypeError: batch_plan() got an unexpected keyword argument 'no_base'
+
+tests/test_studio_serial_continue.py:376: TypeError
+____________________ test_continue_routes_quote_then_start _____________________
+
+serial = namespace(client=<starlette.testclient.TestClient object at 0x10e467130>, auth={'Authorization': 'Bearer <测试令牌>, 'breakdown_id': None, 'setup_json': None, 'setup_confirmed_at': None, 'style_json': None, 'style_group_id': None})
+
+    def test_continue_routes_quote_then_start(serial):
+        first_breakdown(serial)
+        sync_to(serial, range(1, 9), bodies={3: changed_body(3)})
+        root = f'/studio/projects/{serial.pid}/breakdown'
+        quoted = serial.client.post(root + '/continue/quote', headers=serial.auth)
+>       assert quoted.status_code == 200, quoted.text
+E       AssertionError: {"detail":"Not Found"}
+E       assert 404 == 200
+E        +  where 404 = <Response [404 Not Found]>.status_code
+
+tests/test_studio_serial_continue.py:391: AssertionError
+_________ test_continue_quote_rejects_non_novel_and_missing_breakdown __________
+
+serial = namespace(client=<starlette.testclient.TestClient object at 0x10e467350>, auth={'Authorization': 'Bearer <测试令牌>, 'breakdown_id': None, 'setup_json': None, 'setup_confirmed_at': None, 'style_json': None, 'style_group_id': None})
+
+    def test_continue_quote_rejects_non_novel_and_missing_breakdown(serial):
+        before = quote_count()
+        paste = run(sources.create_text_project(OWNER, 'paste', '贴文', '第1章 初见\n甲\n第2章 尾声\n乙'))
+        with pytest.raises(HTTPException) as error:
+>           run(breakdown.continue_quote(paste['id'], OWNER))
+                ^^^^^^^^^^^^^^^^^^^^^^^^
+E           AttributeError: module 'studio.breakdown' has no attribute 'continue_quote'
+
+tests/test_studio_serial_continue.py:414: AttributeError
+_______________ test_continue_quote_rejects_running_and_retired ________________
+
+serial = namespace(client=<starlette.testclient.TestClient object at 0x10e467790>, auth={'Authorization': 'Bearer <测试令牌>, 'breakdown_id': None, 'setup_json': None, 'setup_confirmed_at': None, 'style_json': None, 'style_group_id': None})
+
+    def test_continue_quote_rejects_running_and_retired(serial):
+        quote = run(breakdown.quote(serial.pid, OWNER))
+        run(breakdown.start(serial.pid, OWNER, quote['id']))
+        before = quote_count()
+        with pytest.raises(HTTPException) as error:
+>           run(breakdown.continue_quote(serial.pid, OWNER))
+                ^^^^^^^^^^^^^^^^^^^^^^^^
+E           AttributeError: module 'studio.breakdown' has no attribute 'continue_quote'
+
+tests/test_studio_serial_continue.py:431: AttributeError
+________________ test_continue_quote_rejects_unfinished_batches ________________
+
+serial = namespace(client=<starlette.testclient.TestClient object at 0x10e3849e0>, auth={'Authorization': 'Bearer <测试令牌>, 'breakdown_id': None, 'setup_json': None, 'setup_confirmed_at': None, 'style_json': None, 'style_group_id': None})
+
+    def test_continue_quote_rejects_unfinished_batches(serial):
+        first_breakdown(serial)
+        before = quote_count()
+        insert_queued_probe(serial, 'unfinished')
+        try:
+            with pytest.raises(HTTPException) as error:
+>               run(breakdown.continue_quote(serial.pid, OWNER))
+                    ^^^^^^^^^^^^^^^^^^^^^^^^
+E               AttributeError: module 'studio.breakdown' has no attribute 'continue_quote'
+
+tests/test_studio_serial_continue.py:450: AttributeError
+_______________ test_continue_quote_rejects_without_new_chapters _______________
+
+serial = namespace(client=<starlette.testclient.TestClient object at 0x10e3856a0>, auth={'Authorization': 'Bearer <测试令牌>, 'breakdown_id': None, 'setup_json': None, 'setup_confirmed_at': None, 'style_json': None, 'style_group_id': None})
+
+    def test_continue_quote_rejects_without_new_chapters(serial):
+        first_breakdown(serial)
+        before = quote_count()
+        with pytest.raises(HTTPException) as error:
+>           run(breakdown.continue_quote(serial.pid, OWNER))
+                ^^^^^^^^^^^^^^^^^^^^^^^^
+E           AttributeError: module 'studio.breakdown' has no attribute 'continue_quote'
+
+tests/test_studio_serial_continue.py:462: AttributeError
+______ test_continue_quote_only_new_chapters_and_ignores_target_episodes _______
+
+serial = namespace(client=<starlette.testclient.TestClient object at 0x10e3878a0>, auth={'Authorization': 'Bearer <测试令牌>, 'breakdown_id': None, 'setup_json': None, 'setup_confirmed_at': None, 'style_json': None, 'style_group_id': None})
+
+    def test_continue_quote_only_new_chapters_and_ignores_target_episodes(serial):
+        original = first_breakdown(serial, target_episodes=20, durations=(90, 120))
+        assert original['settings']['episode_seconds_min'] == 90
+        bid = project_row(serial.pid)['breakdown_id']
+        old_plan_chunk = next(chunk for chunk in chunks_of(bid) if chunk['task'] == 'episode_plan')
+        before_inputs = one('SELECT * FROM studio_jobs WHERE id=?', (old_plan_chunk['job_id'],))['params']['inputs']
+        assert before_inputs['suggested_episodes'] == 20
+        # 新章跨两个段，报价才会出现两个补全批；这样能分辨依赖是否被「大约几集」改写。
+        sync_to(serial, range(1, 17), bodies={3: changed_body(3)})
+>       quote = run(breakdown.continue_quote(serial.pid, OWNER))
+                    ^^^^^^^^^^^^^^^^^^^^^^^^
+E       AttributeError: module 'studio.breakdown' has no attribute 'continue_quote'
+
+tests/test_studio_serial_continue.py:481: AttributeError
+__________ test_continue_start_rejects_wrong_use_and_changed_snapshot __________
+
+serial = namespace(client=<starlette.testclient.TestClient object at 0x10e467df0>, auth={'Authorization': 'Bearer <测试令牌>, 'breakdown_id': None, 'setup_json': None, 'setup_confirmed_at': None, 'style_json': None, 'style_group_id': None})
+
+    def test_continue_start_rejects_wrong_use_and_changed_snapshot(serial):
+        full_quote = first_breakdown(serial)
+        bid = project_row(serial.pid)['breakdown_id']
+        sync_to(serial, range(1, 9), bodies={3: changed_body(3)})
+        baseline = counts_of(bid)
+        with pytest.raises(HTTPException) as error:
+>           run(breakdown.continue_start(serial.pid, OWNER, full_quote['id']))
+                ^^^^^^^^^^^^^^^^^^^^^^^^
+E           AttributeError: module 'studio.breakdown' has no attribute 'continue_start'
+
+tests/test_studio_serial_continue.py:520: AttributeError
+____________________ test_continue_start_confirms_once_only ____________________
+
+serial = namespace(client=<starlette.testclient.TestClient object at 0x10e467020>, auth={'Authorization': 'Bearer <测试令牌>, 'breakdown_id': None, 'setup_json': None, 'setup_confirmed_at': None, 'style_json': None, 'style_group_id': None})
+
+    def test_continue_start_confirms_once_only(serial):
+        first_breakdown(serial)
+        bid = project_row(serial.pid)['breakdown_id']
+        sync_to(serial, range(1, 9), bodies={3: changed_body(3)})
+>       quote = run(breakdown.continue_quote(serial.pid, OWNER))
+                    ^^^^^^^^^^^^^^^^^^^^^^^^
+E       AttributeError: module 'studio.breakdown' has no attribute 'continue_quote'
+
+tests/test_studio_serial_continue.py:542: AttributeError
+____________ test_continue_start_appends_round_and_keeps_old_state _____________
+
+serial = namespace(client=<starlette.testclient.TestClient object at 0x10e467ac0>, auth={'Authorization': 'Bearer <测试令牌>, 'breakdown_id': None, 'setup_json': None, 'setup_confirmed_at': None, 'style_json': None, 'style_group_id': None})
+
+    def test_continue_start_appends_round_and_keeps_old_state(serial):
+        first_breakdown(serial)
+        bid = project_row(serial.pid)['breakdown_id']
+        old_units = units_of(bid)
+        old_bible = many('SELECT * FROM studio_bible WHERE breakdown_id=?', (bid,))
+        old_chunks = chunks_of(bid)
+        old_project = project_row(serial.pid)
+        old_settings = breakdown_row(bid)['settings_json']
+        old_manifest = breakdown_row(bid)['imported']['_manifest']
+        expected_basis = {str(item['chapter']): {'snapshot_no': 1, 'sha256': item['sha256'],
+                                                 'title': item['title'], 'status': item['status']}
+                          for item in old_manifest['chapters']}
+        sync_to(serial, range(1, 9), bodies={3: changed_body(3)},
+                characters=[{'id': 'C2', 'name': '阿禾', 'role': 'main', 'appearance': ''},
+                            {'id': 'C3', 'name': '渔夫', 'role': 'supporting', 'appearance': ''}])
+>       _, current = start_continuation(serial)
+                     ^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+tests/test_studio_serial_continue.py:571: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+serial = namespace(client=<starlette.testclient.TestClient object at 0x10e467ac0>, auth={'Authorization': 'Bearer <测试令牌>, 'breakdown_id': None, 'setup_json': None, 'setup_confirmed_at': None, 'style_json': None, 'style_group_id': None})
+
+    def start_continuation(serial):
+>       quote = run(breakdown.continue_quote(serial.pid, OWNER))
+                    ^^^^^^^^^^^^^^^^^^^^^^^^
+E       AttributeError: module 'studio.breakdown' has no attribute 'continue_quote'
+
+tests/test_studio_serial_continue.py:227: AttributeError
+_____ test_continuation_execution_reads_bound_snapshot_and_keeps_old_units _____
+
+serial = namespace(client=<starlette.testclient.TestClient object at 0x10e466030>, auth={'Authorization': 'Bearer <测试令牌>, 'breakdown_id': None, 'setup_json': None, 'setup_confirmed_at': None, 'style_json': None, 'style_group_id': None})
+
+    def test_continuation_execution_reads_bound_snapshot_and_keeps_old_units(serial):
+        first_breakdown(serial)
+        bid = project_row(serial.pid)['breakdown_id']
+        old_units = units_of(bid)
+        old_map = next(chunk for chunk in chunks_of(bid) if chunk['task'] == 'novel_complete')
+        sync_to(serial, range(1, 9), bodies={3: changed_body(3)})
+>       start_continuation(serial)
+
+tests/test_studio_serial_continue.py:626: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+serial = namespace(client=<starlette.testclient.TestClient object at 0x10e466030>, auth={'Authorization': 'Bearer <测试令牌>, 'breakdown_id': None, 'setup_json': None, 'setup_confirmed_at': None, 'style_json': None, 'style_group_id': None})
+
+    def start_continuation(serial):
+>       quote = run(breakdown.continue_quote(serial.pid, OWNER))
+                    ^^^^^^^^^^^^^^^^^^^^^^^^
+E       AttributeError: module 'studio.breakdown' has no attribute 'continue_quote'
+
+tests/test_studio_serial_continue.py:227: AttributeError
+__________________ test_continuation_never_suggests_episodes ___________________
+
+serial = namespace(client=<starlette.testclient.TestClient object at 0x10e466360>, auth={'Authorization': 'Bearer <测试令牌>, 'breakdown_id': None, 'setup_json': None, 'setup_confirmed_at': None, 'style_json': None, 'style_group_id': None})
+monkeypatch = <_pytest.monkeypatch.MonkeyPatch object at 0x10e4b4ec0>
+
+    def test_continuation_never_suggests_episodes(serial, monkeypatch):
+        first_breakdown(serial, target_episodes=20)
+        bid = project_row(serial.pid)['breakdown_id']
+        old_plan_chunk = next(chunk for chunk in chunks_of(bid) if chunk['task'] == 'episode_plan')
+        old_inputs = one('SELECT * FROM studio_jobs WHERE id=?', (old_plan_chunk['job_id'],))['params']['inputs']
+        assert old_inputs['suggested_episodes'] == 20
+        sync_to(serial, range(1, 9), bodies={3: changed_body(3)})
+>       start_continuation(serial)
+
+tests/test_studio_serial_continue.py:661: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+serial = namespace(client=<starlette.testclient.TestClient object at 0x10e466360>, auth={'Authorization': 'Bearer <测试令牌>, 'breakdown_id': None, 'setup_json': None, 'setup_confirmed_at': None, 'style_json': None, 'style_group_id': None})
+
+    def start_continuation(serial):
+>       quote = run(breakdown.continue_quote(serial.pid, OWNER))
+                    ^^^^^^^^^^^^^^^^^^^^^^^^
+E       AttributeError: module 'studio.breakdown' has no attribute 'continue_quote'
+
+tests/test_studio_serial_continue.py:227: AttributeError
+__________ test_continuation_chains_published_last_and_round_outputs ___________
+
+serial = namespace(client=<starlette.testclient.TestClient object at 0x10e466690>, auth={'Authorization': 'Bearer <测试令牌>, 'breakdown_id': None, 'setup_json': None, 'setup_confirmed_at': None, 'style_json': None, 'style_group_id': None})
+
+    def test_continuation_chains_published_last_and_round_outputs(serial):
+        first_breakdown(serial)
+        project = project_row(serial.pid)
+        edited = run(breakdown_plan.operate_episodes(serial.pid, OWNER, {
+            'expected_revision': project['plan_revision'], 'op': 'edit', 'no': 2,
+            'fields': {'title': '作者改过的末集', 'hook': '作者改过的钩子'}}))
+        last = next(episode for episode in edited['episodes'] if episode['no'] == 2)
+        sync_to(serial, range(1, 17), bodies={3: changed_body(3)})
+>       start_continuation(serial)
+
+tests/test_studio_serial_continue.py:701: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+serial = namespace(client=<starlette.testclient.TestClient object at 0x10e466690>, auth={'Authorization': 'Bearer <测试令牌>, 'breakdown_id': None, 'setup_json': None, 'setup_confirmed_at': None, 'style_json': None, 'style_group_id': None})
+
+    def start_continuation(serial):
+>       quote = run(breakdown.continue_quote(serial.pid, OWNER))
+                    ^^^^^^^^^^^^^^^^^^^^^^^^
+E       AttributeError: module 'studio.breakdown' has no attribute 'continue_quote'
+
+tests/test_studio_serial_continue.py:227: AttributeError
+____ test_continuation_previous_episode_falls_back_to_new_last_after_delete ____
+
+serial = namespace(client=<starlette.testclient.TestClient object at 0x10e467f00>, auth={'Authorization': 'Bearer <测试令牌>, 'breakdown_id': None, 'setup_json': None, 'setup_confirmed_at': None, 'style_json': None, 'style_group_id': None})
+
+    def test_continuation_previous_episode_falls_back_to_new_last_after_delete(serial):
+        first_breakdown(serial)
+        project = project_row(serial.pid)
+        remaining = run(breakdown_plan.operate_episodes(serial.pid, OWNER, {
+            'expected_revision': project['plan_revision'], 'op': 'delete', 'no': 2}))
+        last = remaining['episodes'][-1]
+        sync_to(serial, range(1, 9), bodies={3: changed_body(3)})
+>       start_continuation(serial)
+
+tests/test_studio_serial_continue.py:720: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+serial = namespace(client=<starlette.testclient.TestClient object at 0x10e467f00>, auth={'Authorization': 'Bearer <测试令牌>, 'breakdown_id': None, 'setup_json': None, 'setup_confirmed_at': None, 'style_json': None, 'style_group_id': None})
+
+    def start_continuation(serial):
+>       quote = run(breakdown.continue_quote(serial.pid, OWNER))
+                    ^^^^^^^^^^^^^^^^^^^^^^^^
+E       AttributeError: module 'studio.breakdown' has no attribute 'continue_quote'
+
+tests/test_studio_serial_continue.py:227: AttributeError
+___________ test_continuity_recognizes_workshop_registered_character ___________
+
+serial = namespace(client=<starlette.testclient.TestClient object at 0x10e4669c0>, auth={'Authorization': 'Bearer <测试令牌>, 'breakdown_id': None, 'setup_json': None, 'setup_confirmed_at': None, 'style_json': None, 'style_group_id': None})
+
+    def test_continuity_recognizes_workshop_registered_character(serial):
+        serial.script['characters'][1] = [{'name': '阿禾', 'role': '同伴', 'first_chapter': 1, 'excerpt': ''}]
+        first_breakdown(serial)
+        bid = project_row(serial.pid)['breakdown_id']
+        rows, _ = _continuity_counts(bid, '阿禾')
+        assert len(rows) == 1
+        bible_id = rows[0]['id']
+        assert rows[0]['ref_id'] is None
+        state = run(casting.state(serial.pid, OWNER))
+        item = next(entry for entry in state['items'] if entry['bible_id'] == bible_id)
+        sql("UPDATE studio_items SET status='approved' WHERE id=?", (item['id'],))
+        sync_to(serial, range(1, 9), bodies={3: changed_body(3)},
+                characters=[{'id': 'C2', 'name': '阿禾', 'role': 'main', 'appearance': ''}])
+>       start_continuation(serial)
+
+tests/test_studio_serial_continue.py:759: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+serial = namespace(client=<starlette.testclient.TestClient object at 0x10e4669c0>, auth={'Authorization': 'Bearer <测试令牌>, 'breakdown_id': None, 'setup_json': None, 'setup_confirmed_at': None, 'style_json': None, 'style_group_id': None})
+
+    def start_continuation(serial):
+>       quote = run(breakdown.continue_quote(serial.pid, OWNER))
+                    ^^^^^^^^^^^^^^^^^^^^^^^^
+E       AttributeError: module 'studio.breakdown' has no attribute 'continue_quote'
+
+tests/test_studio_serial_continue.py:227: AttributeError
+________________ test_continuity_keeps_author_renamed_character ________________
+
+serial = namespace(client=<starlette.testclient.TestClient object at 0x10e465480>, auth={'Authorization': 'Bearer <测试令牌>, 'breakdown_id': None, 'setup_json': None, 'setup_confirmed_at': None, 'style_json': None, 'style_group_id': None})
+
+    def test_continuity_keeps_author_renamed_character(serial):
+        serial.script['characters'][1] = [{'name': '阿禾', 'role': '同伴', 'first_chapter': 1, 'excerpt': ''}]
+        first_breakdown(serial)
+        bid = project_row(serial.pid)['breakdown_id']
+        rows, _ = _continuity_counts(bid, '阿禾')
+        bible_id = rows[0]['id']
+        run(breakdown_plan.patch_bible(bible_id, OWNER, {'name': '禾生'}))
+        serial.script['characters'] = {6: [{'name': '禾生', 'role': '同伴', 'first_chapter': 6, 'excerpt': ''}]}
+        sync_to(serial, range(1, 9), bodies={3: changed_body(3)},
+                characters=[{'id': 'C2', 'name': '阿禾', 'role': 'main', 'appearance': ''}])
+>       start_continuation(serial)
+
+tests/test_studio_serial_continue.py:788: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+serial = namespace(client=<starlette.testclient.TestClient object at 0x10e465480>, auth={'Authorization': 'Bearer <测试令牌>, 'breakdown_id': None, 'setup_json': None, 'setup_confirmed_at': None, 'style_json': None, 'style_group_id': None})
+
+    def start_continuation(serial):
+>       quote = run(breakdown.continue_quote(serial.pid, OWNER))
+                    ^^^^^^^^^^^^^^^^^^^^^^^^
+E       AttributeError: module 'studio.breakdown' has no attribute 'continue_quote'
+
+tests/test_studio_serial_continue.py:227: AttributeError
+________________ test_continuity_keeps_author_created_character ________________
+
+serial = namespace(client=<starlette.testclient.TestClient object at 0x10e3879b0>, auth={'Authorization': 'Bearer <测试令牌>, 'breakdown_id': None, 'setup_json': None, 'setup_confirmed_at': None, 'style_json': None, 'style_group_id': None})
+
+    def test_continuity_keeps_author_created_character(serial):
+        first_breakdown(serial)
+        bid = project_row(serial.pid)['breakdown_id']
+        created = run(breakdown_plan.create_bible(OWNER, {'project_id': serial.pid, 'kind': 'character',
+                                                          'name': '船夫'}))
+        assert len(active_bible(bid, 'character', '船夫')) == 1
+        serial.script['characters'] = {6: [{'name': '船夫', 'role': '摆渡人', 'first_chapter': 6, 'excerpt': ''}]}
+        sync_to(serial, range(1, 9), bodies={3: changed_body(3)})
+>       start_continuation(serial)
+
+tests/test_studio_serial_continue.py:811: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+serial = namespace(client=<starlette.testclient.TestClient object at 0x10e3879b0>, auth={'Authorization': 'Bearer <测试令牌>, 'breakdown_id': None, 'setup_json': None, 'setup_confirmed_at': None, 'style_json': None, 'style_group_id': None})
+
+    def start_continuation(serial):
+>       quote = run(breakdown.continue_quote(serial.pid, OWNER))
+                    ^^^^^^^^^^^^^^^^^^^^^^^^
+E       AttributeError: module 'studio.breakdown' has no attribute 'continue_quote'
+
+tests/test_studio_serial_continue.py:227: AttributeError
+____________ test_continuity_duplicate_active_names_warn_and_insert ____________
+
+serial = namespace(client=<starlette.testclient.TestClient object at 0x10e386140>, auth={'Authorization': 'Bearer <测试令牌>, 'breakdown_id': None, 'setup_json': None, 'setup_confirmed_at': None, 'style_json': None, 'style_group_id': None})
+
+    def test_continuity_duplicate_active_names_warn_and_insert(serial):
+        first_breakdown(serial)
+        bid = project_row(serial.pid)['breakdown_id']
+        first = run(breakdown_plan.create_bible(OWNER, {'project_id': serial.pid, 'kind': 'character',
+                                                        'name': '船夫'}))
+        second = run(breakdown_plan.create_bible(OWNER, {'project_id': serial.pid, 'kind': 'character',
+                                                         'name': '船夫'}))
+        serial.script['characters'] = {6: [{'name': '船夫', 'role': '摆渡人', 'first_chapter': 6, 'excerpt': ''}]}
+        sync_to(serial, range(1, 9), bodies={3: changed_body(3)})
+>       start_continuation(serial)
+
+tests/test_studio_serial_continue.py:834: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+serial = namespace(client=<starlette.testclient.TestClient object at 0x10e386140>, auth={'Authorization': 'Bearer <测试令牌>, 'breakdown_id': None, 'setup_json': None, 'setup_confirmed_at': None, 'style_json': None, 'style_group_id': None})
+
+    def start_continuation(serial):
+>       quote = run(breakdown.continue_quote(serial.pid, OWNER))
+                    ^^^^^^^^^^^^^^^^^^^^^^^^
+E       AttributeError: module 'studio.breakdown' has no attribute 'continue_quote'
+
+tests/test_studio_serial_continue.py:227: AttributeError
+____ test_continuation_publish_keeps_edits_marks_new_and_clears_on_approve _____
+
+serial = namespace(client=<starlette.testclient.TestClient object at 0x10e464c00>, auth={'Authorization': 'Bearer <测试令牌>, 'breakdown_id': None, 'setup_json': None, 'setup_confirmed_at': None, 'style_json': None, 'style_group_id': None})
+
+    def test_continuation_publish_keeps_edits_marks_new_and_clears_on_approve(serial):
+        first_breakdown(serial)
+        project = project_row(serial.pid)
+        edited = run(breakdown_plan.operate_episodes(serial.pid, OWNER, {
+            'expected_revision': project['plan_revision'], 'op': 'edit', 'no': 1,
+            'fields': {'title': '作者定的第一集', 'notes': '作者备注：开场要慢'}}))
+        old_first = edited['episodes'][0]
+        before_revision = edited['plan_revision']
+        sync_to(serial, range(1, 9), bodies={3: changed_body(3)})
+>       start_continuation(serial)
+
+tests/test_studio_serial_continue.py:873: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+serial = namespace(client=<starlette.testclient.TestClient object at 0x10e464c00>, auth={'Authorization': 'Bearer <测试令牌>, 'breakdown_id': None, 'setup_json': None, 'setup_confirmed_at': None, 'style_json': None, 'style_group_id': None})
+
+    def start_continuation(serial):
+>       quote = run(breakdown.continue_quote(serial.pid, OWNER))
+                    ^^^^^^^^^^^^^^^^^^^^^^^^
+E       AttributeError: module 'studio.breakdown' has no attribute 'continue_quote'
+
+tests/test_studio_serial_continue.py:227: AttributeError
+____________ test_continuation_partial_does_not_publish_until_retry ____________
+
+serial = namespace(client=<starlette.testclient.TestClient object at 0x10e4648d0>, auth={'Authorization': 'Bearer <测试令牌>, 'breakdown_id': None, 'setup_json': None, 'setup_confirmed_at': None, 'style_json': None, 'style_group_id': None})
+
+    def test_continuation_partial_does_not_publish_until_retry(serial):
+        first_breakdown(serial)
+        bid = project_row(serial.pid)['breakdown_id']
+        before = run(breakdown_plan.get_episodes(serial.pid, OWNER))
+        assert before['plan_revision'] == 1 and len(before['episodes']) == 2
+        sync_to(serial, range(1, 9), bodies={3: changed_body(3)})
+        serial.script['fail'] = (lambda task, inputs, repair:
+                                 task == 'novel_complete' and inputs['chapters'][0]['chapter'] == 6)
+>       start_continuation(serial)
+
+tests/test_studio_serial_continue.py:916: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+serial = namespace(client=<starlette.testclient.TestClient object at 0x10e4648d0>, auth={'Authorization': 'Bearer <测试令牌>, 'breakdown_id': None, 'setup_json': None, 'setup_confirmed_at': None, 'style_json': None, 'style_group_id': None})
+
+    def start_continuation(serial):
+>       quote = run(breakdown.continue_quote(serial.pid, OWNER))
+                    ^^^^^^^^^^^^^^^^^^^^^^^^
+E       AttributeError: module 'studio.breakdown' has no attribute 'continue_quote'
+
+tests/test_studio_serial_continue.py:227: AttributeError
+________ test_second_continuation_after_approval_appends_only_new_round ________
+
+serial = namespace(client=<starlette.testclient.TestClient object at 0x10e465bf0>, auth={'Authorization': 'Bearer <测试令牌>, 'breakdown_id': None, 'setup_json': None, 'setup_confirmed_at': None, 'style_json': None, 'style_group_id': None})
+
+    def test_second_continuation_after_approval_appends_only_new_round(serial):
+        first_breakdown(serial)
+        sync_to(serial, range(1, 9), bodies={3: changed_body(3)})
+>       start_continuation(serial)
+
+tests/test_studio_serial_continue.py:936: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+serial = namespace(client=<starlette.testclient.TestClient object at 0x10e465bf0>, auth={'Authorization': 'Bearer <测试令牌>, 'breakdown_id': None, 'setup_json': None, 'setup_confirmed_at': None, 'style_json': None, 'style_group_id': None})
+
+    def start_continuation(serial):
+>       quote = run(breakdown.continue_quote(serial.pid, OWNER))
+                    ^^^^^^^^^^^^^^^^^^^^^^^^
+E       AttributeError: module 'studio.breakdown' has no attribute 'continue_quote'
+
+tests/test_studio_serial_continue.py:227: AttributeError
+_____________ test_two_rounds_before_approval_mark_both_rounds_new _____________
+
+serial = namespace(client=<starlette.testclient.TestClient object at 0x10e464f30>, auth={'Authorization': 'Bearer <测试令牌>, 'breakdown_id': None, 'setup_json': None, 'setup_confirmed_at': None, 'style_json': None, 'style_group_id': None})
+
+    def test_two_rounds_before_approval_mark_both_rounds_new(serial):
+        first_breakdown(serial)
+        sync_to(serial, range(1, 9), bodies={3: changed_body(3)})
+>       start_continuation(serial)
+
+tests/test_studio_serial_continue.py:961: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+serial = namespace(client=<starlette.testclient.TestClient object at 0x10e464f30>, auth={'Authorization': 'Bearer <测试令牌>, 'breakdown_id': None, 'setup_json': None, 'setup_confirmed_at': None, 'style_json': None, 'style_group_id': None})
+
+    def start_continuation(serial):
+>       quote = run(breakdown.continue_quote(serial.pid, OWNER))
+                    ^^^^^^^^^^^^^^^^^^^^^^^^
+E       AttributeError: module 'studio.breakdown' has no attribute 'continue_quote'
+
+tests/test_studio_serial_continue.py:227: AttributeError
+___________ test_continuing_view_hides_new_units_and_shows_new_cast ____________
+
+serial = namespace(client=<starlette.testclient.TestClient object at 0x10e466ad0>, auth={'Authorization': 'Bearer <测试令牌>, 'breakdown_id': None, 'setup_json': None, 'setup_confirmed_at': None, 'style_json': None, 'style_group_id': None})
+
+    def test_continuing_view_hides_new_units_and_shows_new_cast(serial):
+        first_breakdown(serial, approve=True)
+        previous = run(breakdown_plan.get_episodes(serial.pid, OWNER))
+        assert previous['g0_approved'] is True
+        sync_to(serial, range(1, 9), bodies={3: changed_body(3)},
+                characters=[{'id': 'C2', 'name': '阿禾', 'role': 'main', 'appearance': ''},
+                            {'id': 'C3', 'name': '渔夫', 'role': 'supporting', 'appearance': ''}])
+>       start_continuation(serial)
+
+tests/test_studio_serial_continue.py:986: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+serial = namespace(client=<starlette.testclient.TestClient object at 0x10e466ad0>, auth={'Authorization': 'Bearer <测试令牌>, 'breakdown_id': None, 'setup_json': None, 'setup_confirmed_at': None, 'style_json': None, 'style_group_id': None})
+
+    def start_continuation(serial):
+>       quote = run(breakdown.continue_quote(serial.pid, OWNER))
+                    ^^^^^^^^^^^^^^^^^^^^^^^^
+E       AttributeError: module 'studio.breakdown' has no attribute 'continue_quote'
+
+tests/test_studio_serial_continue.py:227: AttributeError
+_________ test_continuation_partial_blocks_ops_approve_quote_and_sync __________
+
+serial = namespace(client=<starlette.testclient.TestClient object at 0x10e466470>, auth={'Authorization': 'Bearer <测试令牌>, 'breakdown_id': None, 'setup_json': None, 'setup_confirmed_at': None, 'style_json': None, 'style_group_id': None})
+
+    def test_continuation_partial_blocks_ops_approve_quote_and_sync(serial):
+        first_breakdown(serial, approve=True)
+        project = project_row(serial.pid)
+        sync_to(serial, range(1, 9), bodies={3: changed_body(3)})
+        serial.script['fail'] = (lambda task, inputs, repair:
+                                 task == 'novel_complete' and inputs['chapters'][0]['chapter'] == 6)
+>       start_continuation(serial)
+
+tests/test_studio_serial_continue.py:1016: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+serial = namespace(client=<starlette.testclient.TestClient object at 0x10e466470>, auth={'Authorization': 'Bearer <测试令牌>, 'breakdown_id': None, 'setup_json': None, 'setup_confirmed_at': None, 'style_json': None, 'style_group_id': None})
+
+    def start_continuation(serial):
+>       quote = run(breakdown.continue_quote(serial.pid, OWNER))
+                    ^^^^^^^^^^^^^^^^^^^^^^^^
+E       AttributeError: module 'studio.breakdown' has no attribute 'continue_quote'
+
+tests/test_studio_serial_continue.py:227: AttributeError
+______ test_cancel_guard_running_and_partial_then_full_rebreakdown[qwen] _______
+
+serial = namespace(client=<starlette.testclient.TestClient object at 0x10e464d10>, auth={'Authorization': 'Bearer <测试令牌>, 'breakdown_id': None, 'setup_json': None, 'setup_confirmed_at': None, 'style_json': None, 'style_group_id': None})
+provider = 'qwen'
+
+    @pytest.mark.parametrize('provider', ['qwen', 'claude'])
+    def test_cancel_guard_running_and_partial_then_full_rebreakdown(serial, provider):
+        run(brain_jobs.patch_project(serial.pid, OWNER, provider))
+        first_breakdown(serial)
+        bid = project_row(serial.pid)['breakdown_id']
+        sync_to(serial, range(1, 9), bodies={3: changed_body(3)})
+>       start_continuation(serial)
+
+tests/test_studio_serial_continue.py:1064: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+serial = namespace(client=<starlette.testclient.TestClient object at 0x10e464d10>, auth={'Authorization': 'Bearer <测试令牌>, 'breakdown_id': None, 'setup_json': None, 'setup_confirmed_at': None, 'style_json': None, 'style_group_id': None})
+
+    def start_continuation(serial):
+>       quote = run(breakdown.continue_quote(serial.pid, OWNER))
+                    ^^^^^^^^^^^^^^^^^^^^^^^^
+E       AttributeError: module 'studio.breakdown' has no attribute 'continue_quote'
+
+tests/test_studio_serial_continue.py:227: AttributeError
+_____ test_cancel_guard_running_and_partial_then_full_rebreakdown[claude] ______
+
+serial = namespace(client=<starlette.testclient.TestClient object at 0x10e465040>, auth={'Authorization': 'Bearer <测试令牌>, 'breakdown_id': None, 'setup_json': None, 'setup_confirmed_at': None, 'style_json': None, 'style_group_id': None})
+provider = 'claude'
+
+    @pytest.mark.parametrize('provider', ['qwen', 'claude'])
+    def test_cancel_guard_running_and_partial_then_full_rebreakdown(serial, provider):
+        run(brain_jobs.patch_project(serial.pid, OWNER, provider))
+        first_breakdown(serial)
+        bid = project_row(serial.pid)['breakdown_id']
+        sync_to(serial, range(1, 9), bodies={3: changed_body(3)})
+>       start_continuation(serial)
+
+tests/test_studio_serial_continue.py:1064: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+serial = namespace(client=<starlette.testclient.TestClient object at 0x10e465040>, auth={'Authorization': 'Bearer <测试令牌>, 'breakdown_id': None, 'setup_json': None, 'setup_confirmed_at': None, 'style_json': None, 'style_group_id': None})
+
+    def start_continuation(serial):
+>       quote = run(breakdown.continue_quote(serial.pid, OWNER))
+                    ^^^^^^^^^^^^^^^^^^^^^^^^
+E       AttributeError: module 'studio.breakdown' has no attribute 'continue_quote'
+
+tests/test_studio_serial_continue.py:227: AttributeError
+_________________ test_cancel_guard_after_recovery_to_partial __________________
+
+serial = namespace(client=<starlette.testclient.TestClient object at 0x10e4667a0>, auth={'Authorization': 'Bearer <测试令牌>, 'breakdown_id': None, 'setup_json': None, 'setup_confirmed_at': None, 'style_json': None, 'style_group_id': None})
+
+    def test_cancel_guard_after_recovery_to_partial(serial):
+        first_breakdown(serial)
+        bid = project_row(serial.pid)['breakdown_id']
+        sync_to(serial, range(1, 9), bodies={3: changed_body(3)})
+>       start_continuation(serial)
+
+tests/test_studio_serial_continue.py:1117: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+serial = namespace(client=<starlette.testclient.TestClient object at 0x10e4667a0>, auth={'Authorization': 'Bearer <测试令牌>, 'breakdown_id': None, 'setup_json': None, 'setup_confirmed_at': None, 'style_json': None, 'style_group_id': None})
+
+    def start_continuation(serial):
+>       quote = run(breakdown.continue_quote(serial.pid, OWNER))
+                    ^^^^^^^^^^^^^^^^^^^^^^^^
+E       AttributeError: module 'studio.breakdown' has no attribute 'continue_quote'
+
+tests/test_studio_serial_continue.py:227: AttributeError
+________ test_legacy_breakdown_without_continuation_keys_continues_once ________
+
+serial = namespace(client=<starlette.testclient.TestClient object at 0x10e27d260>, auth={'Authorization': 'Bearer <测试令牌>, 'breakdown_id': None, 'setup_json': None, 'setup_confirmed_at': None, 'style_json': None, 'style_group_id': None})
+
+    def test_legacy_breakdown_without_continuation_keys_continues_once(serial):
+        first_breakdown(serial)
+        bid = project_row(serial.pid)['breakdown_id']
+        legacy_keys = ('_covered_through', '_chapter_basis', '_published_chunk_ids', '_published_max_seq')
+        update_imported(bid, lambda imported: [imported.pop(key, None) for key in legacy_keys])
+        view = run(breakdown.get_current(serial.pid, OWNER))
+>       assert view['covered_through'] == 5
+               ^^^^^^^^^^^^^^^^^^^^^^^
+E       KeyError: 'covered_through'
+
+tests/test_studio_serial_continue.py:1146: KeyError
+_____________ test_views_continuable_requires_completed_breakdown ______________
+
+serial = namespace(client=<starlette.testclient.TestClient object at 0x10e467bd0>, auth={'Authorization': 'Bearer <测试令牌>, 'breakdown_id': None, 'setup_json': None, 'setup_confirmed_at': None, 'style_json': None, 'style_group_id': None})
+
+    def test_views_continuable_requires_completed_breakdown(serial):
+        quote = run(breakdown.quote(serial.pid, OWNER))
+        started = run(breakdown.start(serial.pid, OWNER, quote['id']))
+        assert started['status'] == 'running'
+>       assert run(breakdown.get_current(serial.pid, OWNER))['continuable'] is False
+               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+E       KeyError: 'continuable'
+
+tests/test_studio_serial_continue.py:1224: KeyError
+__________________ test_quote_and_start_continuation_requests __________________
+
+    def test_quote_and_start_continuation_requests():
+>       assert probe(r"""
+    const lib=load('lib/studio-breakdown.ts');
+    const calls=[];agents.apiJson=async(url,init={})=>{calls.push({url,method:init.method,body:init.body});return {};};
+    await lib.quoteStudioContinuation('p');
+    await lib.startStudioContinuation('p','q');
+    assert.equal(calls.length,2);
+    assert.equal(calls[0].url,'/api/studio/projects/p/breakdown/continue/quote');
+    assert.equal(calls[0].method,'POST');
+    assert.deepEqual(JSON.parse(calls[0].body),{});
+    assert.equal(calls[1].url,'/api/studio/projects/p/breakdown/continue/start');
+    assert.equal(calls[1].method,'POST');
+    assert.deepEqual(JSON.parse(calls[1].body),{quote_id:'q'});
+    process.stdout.write('true');
+    """, SOURCE_DRIVER) is True
+
+tests/test_studio_serial_frontend.py:69: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+script = "\nconst lib=load('lib/studio-breakdown.ts');\nconst calls=[];agents.apiJson=async(url,init={})=>{calls.push({url,meth...calls[1].method,'POST');\nassert.deepEqual(JSON.parse(calls[1].body),{quote_id:'q'});\nprocess.stdout.write('true');\n"
+driver = "\nconst fs=require('fs'), path=require('path'), assert=require('assert/strict');\nconst root=process.argv[1], fronten...lt,{owner:env.owner,projectId:'project-1',onQuote:()=>{},...props});return mount(outer.tree.type,outer.tree.props);}\n"
+
+    def probe(script, driver=DRIVER):
+        missing = [name for name, entry in DEPENDENCIES.items() if not (ROOT / "frontend/node_modules" / entry).is_file()]
+        if missing:
+            pytest.skip("frontend dependencies unavailable: " + ", ".join(missing))
+        if not shutil.which("node"):
+            pytest.skip("node is unavailable")
+        result = subprocess.run(["node", "-e", driver + "\n(async()=>{\n" + script + "\n})().catch(e=>{process.stderr.write(e.stack);process.exitCode=1;});", str(ROOT)], cwd=ROOT, capture_output=True, text=True, timeout=30, check=False)
+>       assert result.returncode == 0, result.stderr
+E       AssertionError: TypeError: lib.quoteStudioContinuation is not a function
+E             at [eval]:79:11
+E             at [eval]:90:3
+E             at runScriptInThisContext (node:internal/vm:219:10)
+E             at node:internal/process/execution:483:12
+E             at [eval]-wrapper:6:24
+E             at runScriptInContext (node:internal/process/execution:481:60)
+E             at evalFunction (node:internal/process/execution:315:30)
+E             at evalTypeScript (node:internal/process/execution:327:3)
+E             at node:internal/main/eval_string:71:3
+E       assert 1 == 0
+E        +  where 1 = CompletedProcess(args=['node', '-e', "\nconst fs=require('fs'), path=require('path'), assert=require('assert/strict');...on:315:30)\n    at evalTypeScript (node:internal/process/execution:327:3)\n    at node:internal/main/eval_string:71:3').returncode
+
+tests/test_studio_sources_frontend.py:25: AssertionError
+_______________ test_stage_continue_quote_is_wired_and_confirmed _______________
+
+    def test_stage_continue_quote_is_wired_and_confirmed():
+>       assert probe(_stage_continue_setup(SERIAL_VIEW, SERIAL_QUOTE, "({...serialView,status:'running',continuing:true})") + r"""
+    const page=mount(load('components/studio/BreakdownStage.tsx').default,props);await flush();
+    assert.equal(breakdownReads,1);
+    await named(page,'BreakdownPanel').props.onContinue();await flush();
+    let modal=named(page,'BreakdownQuoteDialog');assert(modal);
+    assert.deepEqual(modal.props.continueRange,{from:6,to:8});
+    assert.equal(modal.props.targetMin,undefined);
+    assert.equal(modal.props.affectsApproved,undefined);
+    assert.equal(modal.props.replacesPartial,undefined);
+    assert.equal(posts.length,1);
+    assert.equal(posts[0].url,'/api/studio/projects/p/breakdown/continue/quote');
+    assert.deepEqual(posts[0].body,{});
+    await modal.props.onConfirm();await flush();
+    assert.equal(posts.length,2);
+    assert(posts[1].url.endsWith('/breakdown/continue/start'),posts[1].url);
+    assert.deepEqual(posts[1].body,{quote_id:'cq1'});
+    assert(text(page.tree).includes('续拆已开始。'));
+    page.close();process.stdout.write('true');
+    """, SOURCE_DRIVER) is True
+
+tests/test_studio_serial_frontend.py:110: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+script = "\nconst project={id:'p',title:'渡船',brain_provider:'qwen',source_kind:'paste',snapshot_no:2,episode_seconds_min:180,ep...[1].body,{quote_id:'cq1'});\nassert(text(page.tree).includes('续拆已开始。'));\npage.close();process.stdout.write('true');\n"
+driver = "\nconst fs=require('fs'), path=require('path'), assert=require('assert/strict');\nconst root=process.argv[1], fronten...lt,{owner:env.owner,projectId:'project-1',onQuote:()=>{},...props});return mount(outer.tree.type,outer.tree.props);}\n"
+
+    def probe(script, driver=DRIVER):
+        missing = [name for name, entry in DEPENDENCIES.items() if not (ROOT / "frontend/node_modules" / entry).is_file()]
+        if missing:
+            pytest.skip("frontend dependencies unavailable: " + ", ".join(missing))
+        if not shutil.which("node"):
+            pytest.skip("node is unavailable")
+        result = subprocess.run(["node", "-e", driver + "\n(async()=>{\n" + script + "\n})().catch(e=>{process.stderr.write(e.stack);process.exitCode=1;});", str(ROOT)], cwd=ROOT, capture_output=True, text=True, timeout=30, check=False)
+>       assert result.returncode == 0, result.stderr
+E       AssertionError: TypeError: named(...).props.onContinue is not a function
+E             at [eval]:106:42
+E       assert 1 == 0
+E        +  where 1 = CompletedProcess(args=['node', '-e', "\nconst fs=require('fs'), path=require('path'), assert=require('assert/strict');...ad'], returncode=1, stdout='', stderr='TypeError: named(...).props.onContinue is not a function\n    at [eval]:106:42').returncode
+
+tests/test_studio_sources_frontend.py:25: AssertionError
+______ test_stage_continue_quote_409_shows_backend_message_and_refreshes _______
+
+    def test_stage_continue_quote_409_shows_backend_message_and_refreshes():
+>       assert probe(_stage_continue_setup(SERIAL_VIEW, SERIAL_QUOTE) + r"""
+    const original=agents.apiJson;
+    agents.apiJson=async(url,init={})=>{
+      if((init.method??'GET')==='POST'&&url.endsWith('/breakdown/continue/quote')){
+        posts.push({url,body:JSON.parse(init.body??'{}')});
+        throw new ApiError('续拆报价已失效，请重新报价',409);
+      }
+      return original(url,init);
+    };
+    const page=mount(load('components/studio/BreakdownStage.tsx').default,props);await flush();
+    const before=breakdownReads;
+    await named(page,'BreakdownPanel').props.onContinue();await flush();
+    assert.equal(posts.length,1);
+    assert(breakdownReads>before);
+    assert(error(page).includes('续拆报价已失效，请重新报价'),error(page));
+    page.close();process.stdout.write('true');
+    """, SOURCE_DRIVER) is True
+
+tests/test_studio_serial_frontend.py:132: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+script = "\nconst project={id:'p',title:'渡船',brain_provider:'qwen',source_kind:'paste',snapshot_no:2,episode_seconds_min:180,ep...ads>before);\nassert(error(page).includes('续拆报价已失效，请重新报价'),error(page));\npage.close();process.stdout.write('true');\n"
+driver = "\nconst fs=require('fs'), path=require('path'), assert=require('assert/strict');\nconst root=process.argv[1], fronten...lt,{owner:env.owner,projectId:'project-1',onQuote:()=>{},...props});return mount(outer.tree.type,outer.tree.props);}\n"
+
+    def probe(script, driver=DRIVER):
+        missing = [name for name, entry in DEPENDENCIES.items() if not (ROOT / "frontend/node_modules" / entry).is_file()]
+        if missing:
+            pytest.skip("frontend dependencies unavailable: " + ", ".join(missing))
+        if not shutil.which("node"):
+            pytest.skip("node is unavailable")
+        result = subprocess.run(["node", "-e", driver + "\n(async()=>{\n" + script + "\n})().catch(e=>{process.stderr.write(e.stack);process.exitCode=1;});", str(ROOT)], cwd=ROOT, capture_output=True, text=True, timeout=30, check=False)
+>       assert result.returncode == 0, result.stderr
+E       AssertionError: TypeError: named(...).props.onContinue is not a function
+E             at [eval]:114:42
+E       assert 1 == 0
+E        +  where 1 = CompletedProcess(args=['node', '-e', "\nconst fs=require('fs'), path=require('path'), assert=require('assert/strict');...ad'], returncode=1, stdout='', stderr='TypeError: named(...).props.onContinue is not a function\n    at [eval]:114:42').returncode
+
+tests/test_studio_sources_frontend.py:25: AssertionError
+_ test_stage_continue_account_switch_does_not_request_and_plan_gets_continuing _
+
+    def test_stage_continue_account_switch_does_not_request_and_plan_gets_continuing():
+>       assert probe(_stage_continue_setup(SERIAL_VIEW) + r"""
+    const page=mount(load('components/studio/BreakdownStage.tsx').default,props);await flush();
+    assert.equal(named(page,'EpisodePlan').props.continuing,false);
+    page.close();
+    serialView.continuing=true;serialView.status='running';serialView.chunks=[{...chunk,status:'running'}];
+    const active=mount(load('components/studio/BreakdownStage.tsx').default,props);await flush();
+    assert.equal(named(active,'EpisodePlan').props.continuing,true);
+    env.owner='other';
+    await named(active,'BreakdownPanel').props.onContinue();await flush();
+    assert.equal(posts.length,0);
+    active.close();process.stdout.write('true');
+    """, SOURCE_DRIVER) is True
+
+tests/test_studio_serial_frontend.py:152: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+script = "\nconst project={id:'p',title:'渡船',brain_provider:'qwen',source_kind:'paste',snapshot_no:2,episode_seconds_min:180,ep...nel').props.onContinue();await flush();\nassert.equal(posts.length,0);\nactive.close();process.stdout.write('true');\n"
+driver = "\nconst fs=require('fs'), path=require('path'), assert=require('assert/strict');\nconst root=process.argv[1], fronten...lt,{owner:env.owner,projectId:'project-1',onQuote:()=>{},...props});return mount(outer.tree.type,outer.tree.props);}\n"
+
+    def probe(script, driver=DRIVER):
+        missing = [name for name, entry in DEPENDENCIES.items() if not (ROOT / "frontend/node_modules" / entry).is_file()]
+        if missing:
+            pytest.skip("frontend dependencies unavailable: " + ", ".join(missing))
+        if not shutil.which("node"):
+            pytest.skip("node is unavailable")
+        result = subprocess.run(["node", "-e", driver + "\n(async()=>{\n" + script + "\n})().catch(e=>{process.stderr.write(e.stack);process.exitCode=1;});", str(ROOT)], cwd=ROOT, capture_output=True, text=True, timeout=30, check=False)
+>       assert result.returncode == 0, result.stderr
+E       AssertionError: AssertionError [ERR_ASSERTION]: Expected values to be strictly equal:
+E         + actual - expected
+E         
+E         + undefined
+E         - false
+E         
+E             at [eval]:105:8
+E       assert 1 == 0
+E        +  where 1 = CompletedProcess(args=['node', '-e', "\nconst fs=require('fs'), path=require('path'), assert=require('assert/strict');...ASSERTION]: Expected values to be strictly equal:\n+ actual - expected\n\n+ undefined\n- false\n\n    at [eval]:105:8').returncode
+
+tests/test_studio_sources_frontend.py:25: AssertionError
+________ test_panel_continuable_block_wording_and_outdated_replacement _________
+
+    def test_panel_continuable_block_wording_and_outdated_replacement():
+>       assert probe(BREAKDOWN_SETUP + r"""
+    env.mode='ssr';const Panel=load('components/studio/BreakdownPanel.tsx').default;
+    const view={...breakdown,status:'done',outdated:1,continuable:true,covered_through:5,continue_from:6,continue_to:8,changed_covered:[],stale_chapters:[],continuations:[],continuing:false,chunks:[{...chunk,status:'succeeded'}]};
+    const render=value=>renderToStaticMarkup(realReact.createElement(Panel,{project,breakdown:value,providers,busy:false,onQuote:async()=>{},onContinue:async()=>{},onRetry:async()=>{},onRelease:async()=>{},onCancel:async()=>{}}));
+    const html=render(view);
+    for(const value of ['已拆到第 5 章；作品已同步到第 8 章，可以续拆第 6–8 章。','续拆只为新增章节付费，已拆的部分、你改过的分集和已定的妆都保留；续拆完成后分集方案要重新批准一次。','>续拆第 6–8 章</button>','>重新拆解</button>'])assert(html.includes(value),value);
+    const primary=(html.match(/<button[^>]*>续拆第 6–8 章<\/button>/)||[])[0];assert(primary,html);
+    assert(primary.includes('data-serial=""'),primary);
+    assert(primary.includes('class="btn btn-primary min-h-10"'),primary);
+    assert(!html.includes('拆解基于快照'),'outdated block must be replaced');
+    const single=render({...view,continue_from:6,continue_to:6});
+    assert(single.includes('可以续拆第 6 章。'));assert(single.includes('>续拆第 6 章</button>'));assert(!single.includes('续拆第 6–6 章'));
+    env.mode='hooks';cache.clear();
+    const HookPanel=load('components/studio/BreakdownPanel.tsx').default;
+    const panel=mount(HookPanel,{project,breakdown:view,providers,busy:false,onQuote:async()=>{},onContinue:async()=>{},onRetry:async()=>{},onRelease:async()=>{},onCancel:async()=>{}});
+    all(panel.tree,node=>node.type==='input')[0].props.onChange({target:{value:'500'}});await flush();
+    assert.equal(button(panel,'续拆第 6–8 章').props.disabled,false);
+    assert.equal(button(panel,'重新拆解').props.disabled,true);
+    panel.close();
+    const blockedProviders=providers.map(item=>item.id==='qwen'?{...item,available:false}:item);
+    const blocked=mount(HookPanel,{project,breakdown:view,providers:blockedProviders,busy:false,onQuote:async()=>{},onContinue:async()=>{},onRetry:async()=>{},onRelease:async()=>{},onCancel:async()=>{}});
+    assert.equal(button(blocked,'续拆第 6–8 章').props.disabled,true);
+    blocked.close();
+    process.stdout.write('true');
+    """, SOURCE_DRIVER) is True
+
+tests/test_studio_serial_frontend.py:167: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+script = "\nconst project={id:'p',title:'渡船',brain_provider:'qwen',source_kind:'paste',snapshot_no:2,episode_seconds_min:180,ep...});\nassert.equal(button(blocked,'续拆第 6–8 章').props.disabled,true);\nblocked.close();\nprocess.stdout.write('true');\n"
+driver = "\nconst fs=require('fs'), path=require('path'), assert=require('assert/strict');\nconst root=process.argv[1], fronten...lt,{owner:env.owner,projectId:'project-1',onQuote:()=>{},...props});return mount(outer.tree.type,outer.tree.props);}\n"
+
+    def probe(script, driver=DRIVER):
+        missing = [name for name, entry in DEPENDENCIES.items() if not (ROOT / "frontend/node_modules" / entry).is_file()]
+        if missing:
+            pytest.skip("frontend dependencies unavailable: " + ", ".join(missing))
+        if not shutil.which("node"):
+            pytest.skip("node is unavailable")
+        result = subprocess.run(["node", "-e", driver + "\n(async()=>{\n" + script + "\n})().catch(e=>{process.stderr.write(e.stack);process.exitCode=1;});", str(ROOT)], cwd=ROOT, capture_output=True, text=True, timeout=30, check=False)
+>       assert result.returncode == 0, result.stderr
+E       AssertionError: AssertionError [ERR_ASSERTION]: 已拆到第 5 章；作品已同步到第 8 章，可以续拆第 6–8 章。
+E             at [eval]:90:149
+E             at [eval]:110:3
+E             at runScriptInThisContext (node:internal/vm:219:10)
+E             at node:internal/process/execution:483:12
+E             at [eval]-wrapper:6:24
+E             at runScriptInContext (node:internal/process/execution:481:60)
+E             at evalFunction (node:internal/process/execution:315:30)
+E             at evalTypeScript (node:internal/process/execution:327:3)
+E             at node:internal/main/eval_string:71:3
+E       assert 1 == 0
+E        +  where 1 = CompletedProcess(args=['node', '-e', '\nconst fs=require(\'fs\'), path=require(\'path\'), assert=require(\'assert/stri...on:315:30)\n    at evalTypeScript (node:internal/process/execution:327:3)\n    at node:internal/main/eval_string:71:3').returncode
+
+tests/test_studio_sources_frontend.py:25: AssertionError
+_ test_panel_changed_covered_line_only_when_nonempty_even_when_not_continuable _
+
+    def test_panel_changed_covered_line_only_when_nonempty_even_when_not_continuable():
+>       assert probe(BREAKDOWN_SETUP + r"""
+    env.mode='ssr';const Panel=load('components/studio/BreakdownPanel.tsx').default;
+    const render=value=>renderToStaticMarkup(realReact.createElement(Panel,{project,breakdown:value,providers,busy:false,onQuote:async()=>{},onContinue:async()=>{},onRetry:async()=>{},onRelease:async()=>{},onCancel:async()=>{}}));
+    const changed={...breakdown,status:'done',continuable:false,outdated:0,changed_covered:[3,4,7],stale_chapters:[],continuations:[],continuing:false,chunks:[{...chunk,status:'succeeded'}]};
+    const line='第 3–4、7 章在拆解之后改过，续拆不会重拆它们；需要时可以整本重新拆解（会生成新的总表，已定的妆要重新定）。';
+    assert(render(changed).includes(line));
+    assert(render({...changed,changed_covered:[]}).includes('在拆解之后改过')===false);
+    const continuable=render({...changed,continuable:true,outdated:1,continue_from:6,continue_to:8,covered_through:5});
+    assert(continuable.includes(line),'changed line belongs inside the continuation block');
+    assert(continuable.indexOf(line)>continuable.indexOf('续拆只为新增章节付费'));
+    process.stdout.write('true');
+    """, SOURCE_DRIVER) is True
+
+tests/test_studio_serial_frontend.py:195: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+script = "\nconst project={id:'p',title:'渡船',brain_provider:'qwen',source_kind:'paste',snapshot_no:2,episode_seconds_min:180,ep...uation block');\nassert(continuable.indexOf(line)>continuable.indexOf('续拆只为新增章节付费'));\nprocess.stdout.write('true');\n"
+driver = "\nconst fs=require('fs'), path=require('path'), assert=require('assert/strict');\nconst root=process.argv[1], fronten...lt,{owner:env.owner,projectId:'project-1',onQuote:()=>{},...props});return mount(outer.tree.type,outer.tree.props);}\n"
+
+    def probe(script, driver=DRIVER):
+        missing = [name for name, entry in DEPENDENCIES.items() if not (ROOT / "frontend/node_modules" / entry).is_file()]
+        if missing:
+            pytest.skip("frontend dependencies unavailable: " + ", ".join(missing))
+        if not shutil.which("node"):
+            pytest.skip("node is unavailable")
+        result = subprocess.run(["node", "-e", driver + "\n(async()=>{\n" + script + "\n})().catch(e=>{process.stderr.write(e.stack);process.exitCode=1;});", str(ROOT)], cwd=ROOT, capture_output=True, text=True, timeout=30, check=False)
+>       assert result.returncode == 0, result.stderr
+E       AssertionError: AssertionError [ERR_ASSERTION]: The expression evaluated to a falsy value:
+E         
+E           assert(render(changed).includes(line))
+E         
+E             at [eval]:90:1
+E             at [eval]:97:3
+E             at runScriptInThisContext (node:internal/vm:219:10)
+E             at node:internal/process/execution:483:12
+E             at [eval]-wrapper:6:24
+E             at runScriptInContext (node:internal/process/execution:481:60)
+E             at evalFunction (node:internal/process/execution:315:30)
+E             at evalTypeScript (node:internal/process/execution:327:3)
+E             at node:internal/main/eval_string:71:3
+E       assert 1 == 0
+E        +  where 1 = CompletedProcess(args=['node', '-e', "\nconst fs=require('fs'), path=require('path'), assert=require('assert/strict');...on:315:30)\n    at evalTypeScript (node:internal/process/execution:327:3)\n    at node:internal/main/eval_string:71:3').returncode
+
+tests/test_studio_sources_frontend.py:25: AssertionError
+_____ test_panel_stale_done_and_continuing_lines_have_their_own_conditions _____
+
+    def test_panel_stale_done_and_continuing_lines_have_their_own_conditions():
+>       assert probe(BREAKDOWN_SETUP + r"""
+    env.mode='ssr';const Panel=load('components/studio/BreakdownPanel.tsx').default;
+    const base={...breakdown,outdated:0,continuable:false,changed_covered:[],chunks:[{...chunk,status:'succeeded'}]};
+    const render=value=>renderToStaticMarkup(realReact.createElement(Panel,{project,breakdown:value,providers,busy:false,onQuote:async()=>{},onContinue:async()=>{},onRetry:async()=>{},onRelease:async()=>{},onCancel:async()=>{}}));
+    const done=render({...base,status:'done',covered_through:8,stale_chapters:[2,5],continuations:[{round:1,from:6,to:8,snapshot_no:2}],continuing:false});
+    assert(done.includes('第 2、5 章拆解时在书斋里标为待复核，拆解按快照里的原文进行。'));
+    assert(done.includes('已续拆 1 次，拆到第 8 章。'));
+    assert(!done.includes('正在续拆'));
+    const active=render({...base,status:'running',covered_through:5,stale_chapters:[],continuations:[{round:1,from:4,to:5,snapshot_no:2}],continuing:true});
+    assert(active.includes('正在续拆第 4–5 章。'));
+    assert(!active.includes('已续拆 1 次'));
+    const one=render({...base,status:'running',continuations:[{round:1,from:4,to:4,snapshot_no:2}],continuing:true});
+    assert(one.includes('正在续拆第 4 章。'));
+    const empty=render({...base,status:'done',covered_through:5,stale_chapters:[],continuations:[],continuing:false});
+    for(const value of ['拆解时在书斋里标为待复核','已续拆 ','正在续拆'])assert(!empty.includes(value),value);
+    process.stdout.write('true');
+    """, SOURCE_DRIVER) is True
+
+tests/test_studio_serial_frontend.py:210: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+script = "\nconst project={id:'p',title:'渡船',brain_provider:'qwen',source_kind:'paste',snapshot_no:2,episode_seconds_min:180,ep...r(const value of ['拆解时在书斋里标为待复核','已续拆 ','正在续拆'])assert(!empty.includes(value),value);\nprocess.stdout.write('true');\n"
+driver = "\nconst fs=require('fs'), path=require('path'), assert=require('assert/strict');\nconst root=process.argv[1], fronten...lt,{owner:env.owner,projectId:'project-1',onQuote:()=>{},...props});return mount(outer.tree.type,outer.tree.props);}\n"
+
+    def probe(script, driver=DRIVER):
+        missing = [name for name, entry in DEPENDENCIES.items() if not (ROOT / "frontend/node_modules" / entry).is_file()]
+        if missing:
+            pytest.skip("frontend dependencies unavailable: " + ", ".join(missing))
+        if not shutil.which("node"):
+            pytest.skip("node is unavailable")
+        result = subprocess.run(["node", "-e", driver + "\n(async()=>{\n" + script + "\n})().catch(e=>{process.stderr.write(e.stack);process.exitCode=1;});", str(ROOT)], cwd=ROOT, capture_output=True, text=True, timeout=30, check=False)
+>       assert result.returncode == 0, result.stderr
+E       AssertionError: AssertionError [ERR_ASSERTION]: The expression evaluated to a falsy value:
+E         
+E           assert(done.includes('第 2、5 章拆解时在书斋里标为待复核，拆解按快照里的原文进行。'))
+E         
+E             at [eval]:90:1
+E             at [eval]:102:3
+E             at runScriptInThisContext (node:internal/vm:219:10)
+E             at node:internal/process/execution:483:12
+E             at [eval]-wrapper:6:24
+E             at runScriptInContext (node:internal/process/execution:481:60)
+E             at evalFunction (node:internal/process/execution:315:30)
+E             at evalTypeScript (node:internal/process/execution:327:3)
+E             at node:internal/main/eval_string:71:3
+E       assert 1 == 0
+E        +  where 1 = CompletedProcess(args=['node', '-e', "\nconst fs=require('fs'), path=require('path'), assert=require('assert/strict');...on:315:30)\n    at evalTypeScript (node:internal/process/execution:327:3)\n    at node:internal/main/eval_string:71:3").returncode
+
+tests/test_studio_sources_frontend.py:25: AssertionError
+______ test_panel_continuing_hides_cancel_and_partial_note_is_conditional ______
+
+    def test_panel_continuing_hides_cancel_and_partial_note_is_conditional():
+>       assert probe(BREAKDOWN_SETUP + r"""
+    env.mode='ssr';const Panel=load('components/studio/BreakdownPanel.tsx').default;
+    const base={...breakdown,outdated:0,continuable:false,changed_covered:[],stale_chapters:[],continuations:[],chunks:[{...chunk,status:'succeeded'}]};
+    const render=value=>renderToStaticMarkup(realReact.createElement(Panel,{project,breakdown:value,providers,busy:false,onQuote:async()=>{},onContinue:async()=>{},onRetry:async()=>{},onRelease:async()=>{},onCancel:async()=>{}}));
+    const cancelHidden='>取消拆解</button>',continuingNote='续拆进行中不能取消，失败的批次可以单批重跑。';
+    const partialNote='续拆有批次未完成：完成前不能同步新章，也不能修改或批准分集方案。单批重跑读的是本轮的快照，在书斋里改原文对重跑无效；重跑仍失败时，只能整本重新拆解（会生成新的总表，已定的妆要重新定）。';
+    for(const status of ['running','partial']){
+     const html=render({...base,status,continuing:true,chunks:[{...chunk,status:status==='partial'?'failed':'running'}]});
+     assert(!html.includes(cancelHidden),status+' must hide cancel');
+     assert(html.includes(continuingNote),status+' must explain cancellation is unavailable');
+     assert.equal(html.includes(partialNote),status==='partial',status+' partial note');
+    }
+    const running=render({...base,status:'running',continuing:false,chunks:[{...chunk,status:'running'}]});
+    assert(running.includes(cancelHidden));
+    assert(!running.includes(continuingNote));
+    const done=render({...base,status:'done',continuing:true,chunks:[{...chunk,status:'succeeded'}]});
+    assert(!done.includes(partialNote));
+    const partialOnly=render({...base,status:'partial',continuing:false,chunks:[{...chunk,status:'failed'}]});
+    assert(!partialOnly.includes(partialNote));
+    process.stdout.write('true');
+    """, SOURCE_DRIVER) is True
+
+tests/test_studio_serial_frontend.py:230: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+script = "\nconst project={id:'p',title:'渡船',brain_provider:'qwen',source_kind:'paste',snapshot_no:2,episode_seconds_min:180,ep...e,chunks:[{...chunk,status:'failed'}]});\nassert(!partialOnly.includes(partialNote));\nprocess.stdout.write('true');\n"
+driver = "\nconst fs=require('fs'), path=require('path'), assert=require('assert/strict');\nconst root=process.argv[1], fronten...lt,{owner:env.owner,projectId:'project-1',onQuote:()=>{},...props});return mount(outer.tree.type,outer.tree.props);}\n"
+
+    def probe(script, driver=DRIVER):
+        missing = [name for name, entry in DEPENDENCIES.items() if not (ROOT / "frontend/node_modules" / entry).is_file()]
+        if missing:
+            pytest.skip("frontend dependencies unavailable: " + ", ".join(missing))
+        if not shutil.which("node"):
+            pytest.skip("node is unavailable")
+        result = subprocess.run(["node", "-e", driver + "\n(async()=>{\n" + script + "\n})().catch(e=>{process.stderr.write(e.stack);process.exitCode=1;});", str(ROOT)], cwd=ROOT, capture_output=True, text=True, timeout=30, check=False)
+>       assert result.returncode == 0, result.stderr
+E       AssertionError: AssertionError [ERR_ASSERTION]: running must hide cancel
+E             at [eval]:93:2
+E             at [eval]:106:3
+E             at runScriptInThisContext (node:internal/vm:219:10)
+E             at node:internal/process/execution:483:12
+E             at [eval]-wrapper:6:24
+E             at runScriptInContext (node:internal/process/execution:481:60)
+E             at evalFunction (node:internal/process/execution:315:30)
+E             at evalTypeScript (node:internal/process/execution:327:3)
+E             at node:internal/main/eval_string:71:3
+E       assert 1 == 0
+E        +  where 1 = CompletedProcess(args=['node', '-e', "\nconst fs=require('fs'), path=require('path'), assert=require('assert/strict');...on:315:30)\n    at evalTypeScript (node:internal/process/execution:327:3)\n    at node:internal/main/eval_string:71:3').returncode
+
+tests/test_studio_sources_frontend.py:25: AssertionError
+________ test_quote_dialog_continue_mode_suppresses_whole_book_prompts _________
+
+    def test_quote_dialog_continue_mode_suppresses_whole_book_prompts():
+>       assert probe(BREAKDOWN_SETUP + r"""
+    env.mode='ssr';const Dialog=load('components/studio/BreakdownQuoteDialog.tsx').default;
+    const props={quote:{...costQuote,continue_from:6,continue_to:8},continueRange:{from:6,to:8},targetMin:120,targetMax:180,affectsApproved:true,replacesPartial:true,busy:false,onConfirm:async()=>{},onClose:()=>{}};
+    const html=renderToStaticMarkup(realReact.createElement(Dialog,props));
+    for(const value of ['续拆报价','确认续拆','只拆第 6–8 章。','新增的集会追加到分集方案末尾，方案会退回待批准。','确认后不能取消；有批次失败时可以单批重跑。','导演模型：千问','共 <span class="readout">4</span> 批','预估费用','报价剩余有效时间'])assert(html.includes(value),value);
+    for(const value of ['每集目标时长将保存为 120–180 秒','当前已批准方案的目标时长将发生变化','上一次拆解未执行的批次将取消并释放预留','确认拆解报价','确认开始'])assert(!html.includes(value),value);
+    const single=renderToStaticMarkup(realReact.createElement(Dialog,{...props,continueRange:{from:6,to:6}}));
+    assert(single.includes('只拆第 6 章。'));assert(!single.includes('第 6–6 章'));
+    assert(single.includes('续拆报价'));assert(single.includes('确认续拆'));
+    process.stdout.write('true');
+    """, SOURCE_DRIVER) is True
+
+tests/test_studio_serial_frontend.py:254: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+script = "\nconst project={id:'p',title:'渡船',brain_provider:'qwen',source_kind:'paste',snapshot_no:2,episode_seconds_min:180,ep...cludes('第 6–6 章'));\nassert(single.includes('续拆报价'));assert(single.includes('确认续拆'));\nprocess.stdout.write('true');\n"
+driver = "\nconst fs=require('fs'), path=require('path'), assert=require('assert/strict');\nconst root=process.argv[1], fronten...lt,{owner:env.owner,projectId:'project-1',onQuote:()=>{},...props});return mount(outer.tree.type,outer.tree.props);}\n"
+
+    def probe(script, driver=DRIVER):
+        missing = [name for name, entry in DEPENDENCIES.items() if not (ROOT / "frontend/node_modules" / entry).is_file()]
+        if missing:
+            pytest.skip("frontend dependencies unavailable: " + ", ".join(missing))
+        if not shutil.which("node"):
+            pytest.skip("node is unavailable")
+        result = subprocess.run(["node", "-e", driver + "\n(async()=>{\n" + script + "\n})().catch(e=>{process.stderr.write(e.stack);process.exitCode=1;});", str(ROOT)], cwd=ROOT, capture_output=True, text=True, timeout=30, check=False)
+>       assert result.returncode == 0, result.stderr
+E       AssertionError: AssertionError [ERR_ASSERTION]: 续拆报价
+E             at [eval]:89:165
+E             at [eval]:96:3
+E             at runScriptInThisContext (node:internal/vm:219:10)
+E             at node:internal/process/execution:483:12
+E             at [eval]-wrapper:6:24
+E             at runScriptInContext (node:internal/process/execution:481:60)
+E             at evalFunction (node:internal/process/execution:315:30)
+E             at evalTypeScript (node:internal/process/execution:327:3)
+E             at node:internal/main/eval_string:71:3
+E       assert 1 == 0
+E        +  where 1 = CompletedProcess(args=['node', '-e', '\nconst fs=require(\'fs\'), path=require(\'path\'), assert=require(\'assert/stri...on:315:30)\n    at evalTypeScript (node:internal/process/execution:327:3)\n    at node:internal/main/eval_string:71:3').returncode
+
+tests/test_studio_sources_frontend.py:25: AssertionError
+_______ test_episode_plan_added_tags_only_on_new_episodes_in_both_views ________
+
+    def test_episode_plan_added_tags_only_on_new_episodes_in_both_views():
+>       assert probe(BREAKDOWN_SETUP + r"""
+    env.mode='ssr';const Plan=load('components/studio/EpisodePlan.tsx').default;
+    const episodes=[...plan.episodes,...[3,4,5].map(no=>({...plan.episodes[1],id:'ep'+no,no,title:'第'+no+'集',unit_from:no,unit_to:no,notes:'',warnings:[],target_min:null,target_max:null}))];
+    const render=value=>renderToStaticMarkup(realReact.createElement(Plan,{plan:value,busy:false,onOperate:async()=>{},onApprove:async()=>{},onExport:async()=>{}}));
+    const html=render({...plan,episodes,appended_from:3,continuing:false});
+    assert(html.includes('第 3–5 集是这次续拆新增的，看过后重新批准分集方案。'));
+    const table=html.slice(html.indexOf('data-testid="episode-table"'),html.indexOf('data-testid="episode-cards"'));
+    const cards=html.slice(html.indexOf('data-testid="episode-cards"'));
+    const tag='<span class="tag" data-serial="">新增</span>';
+    assert.equal((table.match(new RegExp(tag.replace(/[.*+?^${}()|[\]\\]/g,'\\$&'),'g'))||[]).length,3);
+    assert.equal((cards.match(new RegExp(tag.replace(/[.*+?^${}()|[\]\\]/g,'\\$&'),'g'))||[]).length,3);
+    for(const [label,region] of [['table',table],['cards',cards]]){
+      const chunks=region.split(label==='table'?'<tr':'<article').slice(1);
+      for(const chunk of chunks){
+        if(!chunk.includes('新增'))continue;
+        const no=label==='table'?(chunk.match(/<td class="readout p-3">(\d+)<\/td>/)||[])[1]:(chunk.match(/第 (\d+) 集 ·/)||[])[1];
+        assert(no!=null,label+' row has no number');
+        assert(Number(no)>=3,label+' tagged a non-new episode '+no);
+      }
+    }
+    const single=render({...plan,episodes,appended_from:5,continuing:false});
+    assert(single.includes('第 5 集是这次续拆新增的，看过后重新批准分集方案。'));
+    assert(!single.includes('第 5–5 集'));
+    assert.equal((single.match(new RegExp(tag.replace(/[.*+?^${}()|[\]\\]/g,'\\$&'),'g'))||[]).length,2);
+    const none=render({...plan,episodes,appended_from:null,continuing:false});
+    assert(!none.includes('这次续拆新增的'));
+    assert(!none.includes(tag));
+    process.stdout.write('true');
+    """, SOURCE_DRIVER) is True
+
+tests/test_studio_serial_frontend.py:278: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+script = "\nconst project={id:'p',title:'渡船',brain_provider:'qwen',source_kind:'paste',snapshot_no:2,episode_seconds_min:180,ep...continuing:false});\nassert(!none.includes('这次续拆新增的'));\nassert(!none.includes(tag));\nprocess.stdout.write('true');\n"
+driver = "\nconst fs=require('fs'), path=require('path'), assert=require('assert/strict');\nconst root=process.argv[1], fronten...lt,{owner:env.owner,projectId:'project-1',onQuote:()=>{},...props});return mount(outer.tree.type,outer.tree.props);}\n"
+
+    def probe(script, driver=DRIVER):
+        missing = [name for name, entry in DEPENDENCIES.items() if not (ROOT / "frontend/node_modules" / entry).is_file()]
+        if missing:
+            pytest.skip("frontend dependencies unavailable: " + ", ".join(missing))
+        if not shutil.which("node"):
+            pytest.skip("node is unavailable")
+        result = subprocess.run(["node", "-e", driver + "\n(async()=>{\n" + script + "\n})().catch(e=>{process.stderr.write(e.stack);process.exitCode=1;});", str(ROOT)], cwd=ROOT, capture_output=True, text=True, timeout=30, check=False)
+>       assert result.returncode == 0, result.stderr
+E       AssertionError: AssertionError [ERR_ASSERTION]: The expression evaluated to a falsy value:
+E         
+E           assert(html.includes('第 3–5 集是这次续拆新增的，看过后重新批准分集方案。'))
+E         
+E             at [eval]:90:1
+E             at [eval]:114:3
+E             at runScriptInThisContext (node:internal/vm:219:10)
+E             at node:internal/process/execution:483:12
+E             at [eval]-wrapper:6:24
+E             at runScriptInContext (node:internal/process/execution:481:60)
+E             at evalFunction (node:internal/process/execution:315:30)
+E             at evalTypeScript (node:internal/process/execution:327:3)
+E             at node:internal/main/eval_string:71:3
+E       assert 1 == 0
+E        +  where 1 = CompletedProcess(args=['node', '-e', '\nconst fs=require(\'fs\'), path=require(\'path\'), assert=require(\'assert/stri...on:315:30)\n    at evalTypeScript (node:internal/process/execution:327:3)\n    at node:internal/main/eval_string:71:3").returncode
+
+tests/test_studio_sources_frontend.py:25: AssertionError
+______________ test_episode_plan_continuing_and_partial_sentences ______________
+
+    def test_episode_plan_continuing_and_partial_sentences():
+>       assert probe(BREAKDOWN_SETUP + r"""
+    env.mode='ssr';const Plan=load('components/studio/EpisodePlan.tsx').default;
+    const continuingSentence='续拆进行中，完成后新增的集会追加到方案末尾，已有的集保持不变；完成前暂不能修改或批准分集方案。';
+    const oldSentence='拆解尚未全部完成，补跑完成后分集方案会按新结果重新生成。';
+    const render=(value,extra={})=>renderToStaticMarkup(realReact.createElement(Plan,{plan:value,busy:false,...extra,onOperate:async()=>{},onApprove:async()=>{},onExport:async()=>{}}));
+    const active=render({...plan,appended_from:null},{continuing:true});
+    assert(active.includes(continuingSentence));
+    assert(!active.includes('按新结果重新生成'));
+    const partialHtml=render({...plan,appended_from:null},{partial:true});
+    assert(partialHtml.includes(oldSentence));
+    assert(!partialHtml.includes(continuingSentence));
+    const activePartial=render({...plan,appended_from:null},{partial:true,continuing:true});
+    assert(activePartial.includes(continuingSentence));
+    assert(!activePartial.includes('按新结果重新生成'));
+    process.stdout.write('true');
+    """, SOURCE_DRIVER) is True
+
+tests/test_studio_serial_frontend.py:310: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+script = "\nconst project={id:'p',title:'渡船',brain_provider:'qwen',source_kind:'paste',snapshot_no:2,episode_seconds_min:180,ep...ePartial.includes(continuingSentence));\nassert(!activePartial.includes('按新结果重新生成'));\nprocess.stdout.write('true');\n"
+driver = "\nconst fs=require('fs'), path=require('path'), assert=require('assert/strict');\nconst root=process.argv[1], fronten...lt,{owner:env.owner,projectId:'project-1',onQuote:()=>{},...props});return mount(outer.tree.type,outer.tree.props);}\n"
+
+    def probe(script, driver=DRIVER):
+        missing = [name for name, entry in DEPENDENCIES.items() if not (ROOT / "frontend/node_modules" / entry).is_file()]
+        if missing:
+            pytest.skip("frontend dependencies unavailable: " + ", ".join(missing))
+        if not shutil.which("node"):
+            pytest.skip("node is unavailable")
+        result = subprocess.run(["node", "-e", driver + "\n(async()=>{\n" + script + "\n})().catch(e=>{process.stderr.write(e.stack);process.exitCode=1;});", str(ROOT)], cwd=ROOT, capture_output=True, text=True, timeout=30, check=False)
+>       assert result.returncode == 0, result.stderr
+E       AssertionError: AssertionError [ERR_ASSERTION]: The expression evaluated to a falsy value:
+E         
+E           assert(active.includes(continuingSentence))
+E         
+E             at [eval]:91:1
+E             at [eval]:101:3
+E             at runScriptInThisContext (node:internal/vm:219:10)
+E             at node:internal/process/execution:483:12
+E             at [eval]-wrapper:6:24
+E             at runScriptInContext (node:internal/process/execution:481:60)
+E             at evalFunction (node:internal/process/execution:315:30)
+E             at evalTypeScript (node:internal/process/execution:327:3)
+E             at node:internal/main/eval_string:71:3
+E       assert 1 == 0
+E        +  where 1 = CompletedProcess(args=['node', '-e', "\nconst fs=require('fs'), path=require('path'), assert=require('assert/strict');...on:315:30)\n    at evalTypeScript (node:internal/process/execution:327:3)\n    at node:internal/main/eval_string:71:3').returncode
+
+tests/test_studio_sources_frontend.py:25: AssertionError
+___________ test_source_panel_drift_snapshot_stale_and_serial_hints ____________
+
+    def test_source_panel_drift_snapshot_stale_and_serial_hints():
+>       assert probe(SOURCE_SETUP + r"""
+    const Panel=load('components/studio/SourcePanel.tsx').default;
+    async function show(state){
+      agents.apiJson=async()=>state;
+      const panel=mount(Panel,{owner:env.owner,projectId:'project',onChanged:async()=>{}});await flush();
+      const value=text(panel.tree);const serials=all(panel.tree,n=>n.props&&Object.prototype.hasOwnProperty.call(n.props,'data-serial')).length;panel.close();
+      return {text:value,serials};
+    }
+    const snapshot={no:2,created_at:'2026-10-16T00:00:00Z',chapters:6,chars:9000,flagged:[],stale:[2,4]};
+    const changed=await show({kind:'novel',title:'春山',snapshot:{...snapshot,stale:[]},drift:{state:'changed',changed:[3],bible_changed:true,eligible:true,stale:[2,4],book_status:'running'}});
+    assert(changed.text.includes('原作有改动：第 3 章内容变化，故事圣经已更新，第 2、4 章待复核'),changed.text);
+    assert(!changed.text.includes('快照中第 2、4 章待复核。'));
+    const unchanged=await show({kind:'novel',title:'春山',snapshot,drift:{state:'unchanged',eligible:true,book_status:'running'}});
+    assert(unchanged.text.includes('快照中第 2、4 章待复核。'));
+    assert(unchanged.text.includes('作品还在写，同步只收已写好的章节。'));
+    assert(unchanged.serials>0);
+    const unavailable=await show({kind:'novel',title:'春山',snapshot,drift:{state:'unavailable'}});
+    assert(unavailable.text.includes('快照中第 2、4 章待复核。'));
+    assert(!unavailable.text.includes('作品还在写'));
+    const empty=await show({kind:'novel',title:'春山',snapshot:{...snapshot,stale:[]},drift:{state:'unchanged',eligible:true,book_status:'completed'}});
+    assert(!empty.text.includes('待复核。'));
+    assert(!empty.text.includes('作品还在写'));
+    const paste=await show({kind:'paste',title:'粘贴',snapshot:{...snapshot,stale:[]},drift:{state:'not_applicable'}});
+    assert(!paste.text.includes('作品还在写'));
+    const completed=await show({kind:'novel',title:'春山',snapshot:{...snapshot,stale:[]},drift:{state:'unchanged',book_status:'completed'}});
+    assert(!completed.text.includes('作品还在写'));
+    process.stdout.write('true');
+    """, SOURCE_DRIVER) is True
+
+tests/test_studio_serial_frontend.py:329: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+script = "\nconst candidate={id:'book-1',title:'春山',status:'completed',chapters_done:6,words_done:15000,completed_at:'2026-10-1...e:'unchanged',book_status:'completed'}});\nassert(!completed.text.includes('作品还在写'));\nprocess.stdout.write('true');\n"
+driver = "\nconst fs=require('fs'), path=require('path'), assert=require('assert/strict');\nconst root=process.argv[1], fronten...lt,{owner:env.owner,projectId:'project-1',onQuote:()=>{},...props});return mount(outer.tree.type,outer.tree.props);}\n"
+
+    def probe(script, driver=DRIVER):
+        missing = [name for name, entry in DEPENDENCIES.items() if not (ROOT / "frontend/node_modules" / entry).is_file()]
+        if missing:
+            pytest.skip("frontend dependencies unavailable: " + ", ".join(missing))
+        if not shutil.which("node"):
+            pytest.skip("node is unavailable")
+        result = subprocess.run(["node", "-e", driver + "\n(async()=>{\n" + script + "\n})().catch(e=>{process.stderr.write(e.stack);process.exitCode=1;});", str(ROOT)], cwd=ROOT, capture_output=True, text=True, timeout=30, check=False)
+>       assert result.returncode == 0, result.stderr
+E       AssertionError: AssertionError [ERR_ASSERTION]: 作品来源重新检查falsefalse小说工坊春山快照第 2 版 · 2026/10/15 20:00:006 章 · 9,000 字falsefalse原作有改动：第 3 章内容变化，故事圣经已更新同步falsefalse
+E             at [eval]:91:1
+E       assert 1 == 0
+E        +  where 1 = CompletedProcess(args=['node', '-e', "\nconst fs=require('fs'), path=require('path'), assert=require('assert/strict');...alse小说工坊春山快照第 2 版 · 2026/10/15 20:00:006 章 · 9,000 字falsefalse原作有改动：第 3 章内容变化，故事圣经已更新同步falsefalse\n    at [eval]:91:1').returncode
+
+tests/test_studio_sources_frontend.py:25: AssertionError
+__________ test_source_choices_serial_hints_and_snapshot_chapter_hint __________
+
+    def test_source_choices_serial_hints_and_snapshot_chapter_hint():
+>       assert probe(SOURCE_SETUP + r"""
+    env.mode='ssr';const mod=load('components/studio/SourceChoices.tsx');
+    const serial={...candidate,status:'running',chapters_done:5,stale:[3,5],eligible:true};
+    const hints=renderToStaticMarkup(realReact.createElement(mod.SerialSourceHints,{book:serial}));
+    assert(hints.includes('第 3、5 章待复核，会照常收进快照。'));
+    assert(hints.includes('连载中，只收已写好的 5 章。'));
+    const completedHints=renderToStaticMarkup(realReact.createElement(mod.SerialSourceHints,{book:{...serial,status:'completed'}}));
+    assert(completedHints.includes('待复核，会照常收进快照。'));
+    assert(!completedHints.includes('连载中'));
+    const serialOnly=renderToStaticMarkup(realReact.createElement(mod.SerialSourceHints,{book:{...serial,stale:[]}}));
+    assert(serialOnly.includes('连载中，只收已写好的 5 章。'));
+    assert(!serialOnly.includes('待复核'));
+    const noHints=renderToStaticMarkup(realReact.createElement(mod.SerialSourceHints,{book:{...serial,status:'completed',stale:[]}}));
+    assert.equal(noHints,'');
+    const ineligible=renderToStaticMarkup(realReact.createElement(mod.SerialSourceHints,{book:{...serial,stale:[],eligible:false}}));
+    assert.equal(ineligible,'');
+    const projects=[{id:'old',title:'旧项目',snapshot_no:1,created_at:'2026-10-16T00:00:00Z',snapshot_chapters:2}];
+    const behind=renderToStaticMarkup(realReact.createElement(mod.ExistingSourceProjects,{projects,embedded:true,chaptersDone:5}));
+    assert(behind.includes('快照到第 2 章，到来源面板同步后可以续拆'));
+    const current=renderToStaticMarkup(realReact.createElement(mod.ExistingSourceProjects,{projects,embedded:true,chaptersDone:2}));
+    assert(!current.includes('快照到第'));
+    const unknown=renderToStaticMarkup(realReact.createElement(mod.ExistingSourceProjects,{projects,embedded:true}));
+    assert(!unknown.includes('快照到第'));
+    const nullChapters=renderToStaticMarkup(realReact.createElement(mod.ExistingSourceProjects,{projects:[{...projects[0],snapshot_chapters:null}],embedded:true,chaptersDone:5}));
+    assert(!nullChapters.includes('快照到第'));
+    const fractionalChapters=renderToStaticMarkup(realReact.createElement(mod.ExistingSourceProjects,{projects:[{...projects[0],snapshot_chapters:2.5}],embedded:true,chaptersDone:5}));
+    assert(!fractionalChapters.includes('快照到第'));
+    process.stdout.write('true');
+    """, SOURCE_DRIVER) is True
+
+tests/test_studio_serial_frontend.py:360: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+script = "\nconst candidate={id:'book-1',title:'春山',status:'completed',chapters_done:6,words_done:15000,completed_at:'2026-10-1...2.5}],embedded:true,chaptersDone:5}));\nassert(!fractionalChapters.includes('快照到第'));\nprocess.stdout.write('true');\n"
+driver = "\nconst fs=require('fs'), path=require('path'), assert=require('assert/strict');\nconst root=process.argv[1], fronten...lt,{owner:env.owner,projectId:'project-1',onQuote:()=>{},...props});return mount(outer.tree.type,outer.tree.props);}\n"
+
+    def probe(script, driver=DRIVER):
+        missing = [name for name, entry in DEPENDENCIES.items() if not (ROOT / "frontend/node_modules" / entry).is_file()]
+        if missing:
+            pytest.skip("frontend dependencies unavailable: " + ", ".join(missing))
+        if not shutil.which("node"):
+            pytest.skip("node is unavailable")
+        result = subprocess.run(["node", "-e", driver + "\n(async()=>{\n" + script + "\n})().catch(e=>{process.stderr.write(e.stack);process.exitCode=1;});", str(ROOT)], cwd=ROOT, capture_output=True, text=True, timeout=30, check=False)
+>       assert result.returncode == 0, result.stderr
+E       AssertionError: Error: Element type is invalid: expected a string (for built-in components) or a class/function (for composite components) but got: undefined. You likely forgot to export your component from the file it's defined in, or you might have mixed up default and named imports.
+E             at renderElement (<基线 135253f 导出>/frontend/node_modules/react-dom/cjs/react-dom-server-legacy.node.development.js:6119:15)
+E             at retryNode (<基线 135253f 导出>/frontend/node_modules/react-dom/cjs/react-dom-server-legacy.node.development.js:6417:31)
+E             at performWork (<基线 135253f 导出>/frontend/node_modules/react-dom/cjs/react-dom-server-legacy.node.development.js:7435:17)
+E             at startWork (<基线 135253f 导出>/frontend/node_modules/react-dom/cjs/react-dom-server-legacy.node.development.js:8270:7)
+E             at renderToStringImpl (<基线 135253f 导出>/frontend/node_modules/react-dom/cjs/react-dom-server-legacy.node.development.js:8380:7)
+E             at process.env.NODE_ENV.exports.renderToStaticMarkup (<基线 135253f 导出>/frontend/node_modules/react-dom/cjs/react-dom-server-legacy.node.development.js:9861:14)
+E             at [eval]:84:13
+E             at [eval]:110:3
+E             at runScriptInThisContext (node:internal/vm:219:10)
+E             at node:internal/process/execution:483:12
+E       assert 1 == 0
+E        +  where 1 = CompletedProcess(args=['node', '-e', "\nconst fs=require('fs'), path=require('path'), assert=require('assert/strict');... [eval]:110:3\n    at runScriptInThisContext (node:internal/vm:219:10)\n    at node:internal/process/execution:483:12").returncode
+
+tests/test_studio_sources_frontend.py:25: AssertionError
+________ test_novel_film_dialog_serial_candidate_shows_both_hint_lines _________
+
+    def test_novel_film_dialog_serial_candidate_shows_both_hint_lines():
+>       assert probe(SOURCE_SETUP + r"""
+    const Film=load('components/novel/NovelFilmDialog.tsx').default;
+    function deepText(node){
+      if(Array.isArray(node))return node.map(deepText).join('');
+      if(node==null||node===false||node===true)return '';
+      if(typeof node!=='object')return String(node);
+      if(typeof node.type==='function')return deepText(node.type(node.props));
+      if(typeof node.type!=='string')return '';
+      return deepText(node.props?.children);
+    }
+    const serial={...candidate,status:'running',chapters_done:6,stale:[3,5],eligible:true,
+      projects:[{id:'old',title:'已有项目',snapshot_no:1,created_at:'2026-10-16T00:00:00Z',snapshot_chapters:2}]};
+    agents.apiJson=async url=>url.endsWith('/novels')?{enabled:true,books:[serial]}:[];
+    const dialog=mount(Film,{owner:env.owner,bookId:'book-1',bookTitle:'春山',embedded:true,onClose:()=>{}});await flush();
+    const body=deepText(dialog.tree);
+    assert(body.includes('第 3、5 章待复核，会照常收进快照。'),body);
+    assert(body.includes('连载中，只收已写好的 6 章。'),body);
+    assert(body.includes('快照到第 2 章，到来源面板同步后可以续拆'),body);
+    assert.equal(named(dialog,'ExistingSourceProjects').props.chaptersDone,6);
+    dialog.close();process.stdout.write('true');
+    """, SOURCE_DRIVER) is True
+
+tests/test_studio_serial_frontend.py:392: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+script = "\nconst candidate={id:'book-1',title:'春山',status:'completed',chapters_done:6,words_done:15000,completed_at:'2026-10-1...rt.equal(named(dialog,'ExistingSourceProjects').props.chaptersDone,6);\ndialog.close();process.stdout.write('true');\n"
+driver = "\nconst fs=require('fs'), path=require('path'), assert=require('assert/strict');\nconst root=process.argv[1], fronten...lt,{owner:env.owner,projectId:'project-1',onQuote:()=>{},...props});return mount(outer.tree.type,outer.tree.props);}\n"
+
+    def probe(script, driver=DRIVER):
+        missing = [name for name, entry in DEPENDENCIES.items() if not (ROOT / "frontend/node_modules" / entry).is_file()]
+        if missing:
+            pytest.skip("frontend dependencies unavailable: " + ", ".join(missing))
+        if not shutil.which("node"):
+            pytest.skip("node is unavailable")
+        result = subprocess.run(["node", "-e", driver + "\n(async()=>{\n" + script + "\n})().catch(e=>{process.stderr.write(e.stack);process.exitCode=1;});", str(ROOT)], cwd=ROOT, capture_output=True, text=True, timeout=30, check=False)
+>       assert result.returncode == 0, result.stderr
+E       AssertionError: AssertionError [ERR_ASSERTION]: 做成片为《春山》建立工作室项目，并保存原文快照。已有工作室项目已有项目 · 2026-10-15 20:00 · 快照第 1 版打开1 章带有标记第 3 章 渡口：字数超出范围、审阅降级、审阅问题待处理、锁定设定冲突、偏离细纲项目标题画幅16:99:16建立项目和快照不花费草莓。再建一个取消
+E             at [eval]:96:1
+E       assert 1 == 0
+E        +  where 1 = CompletedProcess(args=['node', '-e', "\nconst fs=require('fs'), path=require('path'), assert=require('assert/strict');...20:00 · 快照第 1 版打开1 章带有标记第 3 章 渡口：字数超出范围、审阅降级、审阅问题待处理、锁定设定冲突、偏离细纲项目标题画幅16:99:16建立项目和快照不花费草莓。再建一个取消\n    at [eval]:96:1').returncode
+
+tests/test_studio_sources_frontend.py:25: AssertionError
+__________________ test_create_project_dialog_new_empty_state __________________
+
+    def test_create_project_dialog_new_empty_state():
+>       assert probe(SOURCE_SETUP + r"""
+    agents.apiJson=async url=>url.endsWith('/novels')?{enabled:true,books:[]}:[];
+    const dialog=mount(load('components/studio/CreateProjectDialog.tsx').CreateProjectDialog,{owner:env.owner,busy:false,onCreate:async()=>{},onClose:()=>{}});await flush();
+    button(dialog,'小说工坊').props.onClick();await flush();
+    assert(text(dialog.tree).includes('没有找到符合书名的作品。只有有故事圣经、至少写好一章、且不在修改中的作品可以导入；连载中的书只收已写好的章节。'));
+    dialog.close();process.stdout.write('true');
+    """, SOURCE_DRIVER) is True
+
+tests/test_studio_serial_frontend.py:416: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+script = "\nconst candidate={id:'book-1',title:'春山',status:'completed',chapters_done:6,words_done:15000,completed_at:'2026-10-1....includes('没有找到符合书名的作品。只有有故事圣经、至少写好一章、且不在修改中的作品可以导入；连载中的书只收已写好的章节。'));\ndialog.close();process.stdout.write('true');\n"
+driver = "\nconst fs=require('fs'), path=require('path'), assert=require('assert/strict');\nconst root=process.argv[1], fronten...lt,{owner:env.owner,projectId:'project-1',onQuote:()=>{},...props});return mount(outer.tree.type,outer.tree.props);}\n"
+
+    def probe(script, driver=DRIVER):
+        missing = [name for name, entry in DEPENDENCIES.items() if not (ROOT / "frontend/node_modules" / entry).is_file()]
+        if missing:
+            pytest.skip("frontend dependencies unavailable: " + ", ".join(missing))
+        if not shutil.which("node"):
+            pytest.skip("node is unavailable")
+        result = subprocess.run(["node", "-e", driver + "\n(async()=>{\n" + script + "\n})().catch(e=>{process.stderr.write(e.stack);process.exitCode=1;});", str(ROOT)], cwd=ROOT, capture_output=True, text=True, timeout=30, check=False)
+>       assert result.returncode == 0, result.stderr
+E       AssertionError: AssertionError [ERR_ASSERTION]: The expression evaluated to a falsy value:
+E         
+E           assert(text(dialog.tree).includes('没有找到符合书名的作品。只有有故事圣经、至少写好一章、且不在修改中的作品可以导入；连载中的书只收已写好的章节。'))
+E         
+E             at [eval]:85:1
+E       assert 1 == 0
+E        +  where 1 = CompletedProcess(args=['node', '-e', "\nconst fs=require('fs'), path=require('path'), assert=require('assert/strict');...  assert(text(dialog.tree).includes('没有找到符合书名的作品。只有有故事圣经、至少写好一章、且不在修改中的作品可以导入；连载中的书只收已写好的章节。'))\n\n    at [eval]:85:1").returncode
+
+tests/test_studio_sources_frontend.py:25: AssertionError
+____ test_novel_workbench_serial_book_requests_studio_and_shows_film_button ____
+
+    def test_novel_workbench_serial_book_requests_studio_and_shows_film_button():
+>       assert probe(r"""
+    env.book.status='running';
+    env.book.chapters_done=3;
+    env.book.chapters=env.book.chapters.slice(0,3).map(chapter=>({...chapter,status:'completed'}));
+    const page=await screen('components/novel/NovelWorkbench.tsx',{id:env.book.id,embedded:true});
+    assert.equal(env.calls.filter(call=>call==='GET /api/studio/access').length,1,JSON.stringify(env.calls));
+    assert(all(page.tree,node=>node.type==='button'&&node.props.children==='做成片').length===1);
+    assert.equal(named(page,'GateBanner').props.onMakeFilm,undefined);
+    page.close();process.stdout.write('true');
+    """, NOVEL_DRIVER) is True
+
+tests/test_studio_serial_frontend.py:426: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+script = "\nenv.book.status='running';\nenv.book.chapters_done=3;\nenv.book.chapters=env.book.chapters.slice(0,3).map(chapter=>...=1);\nassert.equal(named(page,'GateBanner').props.onMakeFilm,undefined);\npage.close();process.stdout.write('true');\n"
+driver = "\nconst fs = require('fs'), path = require('path'), assert = require('assert/strict');\nconst root = process.argv[1],...e==='button'&&n.props['aria-controls']===controls)[0];assert(button,controls);button.props.onClick();await flush();}\n"
+
+    def probe(script, driver=DRIVER):
+        missing = [name for name, entry in DEPENDENCIES.items() if not (ROOT / "frontend/node_modules" / entry).is_file()]
+        if missing:
+            pytest.skip("frontend dependencies unavailable: " + ", ".join(missing))
+        if not shutil.which("node"):
+            pytest.skip("node is unavailable")
+        result = subprocess.run(["node", "-e", driver + "\n(async()=>{\n" + script + "\n})().catch(e=>{process.stderr.write(e.stack);process.exitCode=1;});", str(ROOT)], cwd=ROOT, capture_output=True, text=True, timeout=30, check=False)
+>       assert result.returncode == 0, result.stderr
+E       AssertionError: AssertionError [ERR_ASSERTION]: ["GET /api/novels/r1-book","GET /api/novels/r1-book/chapters/3","GET /api/novels/r1-book/bible","GET /api/novels/r1-book/notes"]
+E         
+E         0 !== 1
+E         
+E             at [eval]:118:8
+E       assert 1 == 0
+E        +  where 1 = CompletedProcess(args=['node', '-e', "\nconst fs = require('fs'), path = require('path'), assert = require('assert/str...1-book/chapters/3","GET /api/novels/r1-book/bible","GET /api/novels/r1-book/notes"]\n\n0 !== 1\n\n    at [eval]:118:8').returncode
+
+tests/test_studio_sources_frontend.py:25: AssertionError
+________ test_format_chapter_ranges_empty_single_consecutive_and_mixed _________
+
+    def test_format_chapter_ranges_empty_single_consecutive_and_mixed():
+>       assert probe(r"""
+    const lib=load('lib/studio-breakdown.ts');
+    assert.equal(lib.formatChapterRanges([]),'');
+    assert.equal(lib.formatChapterRanges([3]),'第 3 章');
+    assert.equal(lib.formatChapterRanges([5,3,4]),'第 3–5 章');
+    assert.equal(lib.formatChapterRanges([10,6,5,1,3,2,2]),'第 1–3、5–6、10 章');
+    process.stdout.write('true');
+    """, SOURCE_DRIVER) is True
+
+tests/test_studio_serial_frontend.py:464: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+script = "\nconst lib=load('lib/studio-breakdown.ts');\nassert.equal(lib.formatChapterRanges([]),'');\nassert.equal(lib.formatC...第 3–5 章');\nassert.equal(lib.formatChapterRanges([10,6,5,1,3,2,2]),'第 1–3、5–6、10 章');\nprocess.stdout.write('true');\n"
+driver = "\nconst fs=require('fs'), path=require('path'), assert=require('assert/strict');\nconst root=process.argv[1], fronten...lt,{owner:env.owner,projectId:'project-1',onQuote:()=>{},...props});return mount(outer.tree.type,outer.tree.props);}\n"
+
+    def probe(script, driver=DRIVER):
+        missing = [name for name, entry in DEPENDENCIES.items() if not (ROOT / "frontend/node_modules" / entry).is_file()]
+        if missing:
+            pytest.skip("frontend dependencies unavailable: " + ", ".join(missing))
+        if not shutil.which("node"):
+            pytest.skip("node is unavailable")
+        result = subprocess.run(["node", "-e", driver + "\n(async()=>{\n" + script + "\n})().catch(e=>{process.stderr.write(e.stack);process.exitCode=1;});", str(ROOT)], cwd=ROOT, capture_output=True, text=True, timeout=30, check=False)
+>       assert result.returncode == 0, result.stderr
+E       AssertionError: TypeError: lib.formatChapterRanges is not a function
+E             at [eval]:78:18
+E             at [eval]:84:3
+E             at runScriptInThisContext (node:internal/vm:219:10)
+E             at node:internal/process/execution:483:12
+E             at [eval]-wrapper:6:24
+E             at runScriptInContext (node:internal/process/execution:481:60)
+E             at evalFunction (node:internal/process/execution:315:30)
+E             at evalTypeScript (node:internal/process/execution:327:3)
+E             at node:internal/main/eval_string:71:3
+E       assert 1 == 0
+E        +  where 1 = CompletedProcess(args=['node', '-e', "\nconst fs=require('fs'), path=require('path'), assert=require('assert/strict');...on:315:30)\n    at evalTypeScript (node:internal/process/execution:327:3)\n    at node:internal/main/eval_string:71:3').returncode
+
+tests/test_studio_sources_frontend.py:25: AssertionError
+______ test_new_serial_elements_have_regular_weight_and_no_bold_ancestors ______
+
+    def test_new_serial_elements_have_regular_weight_and_no_bold_ancestors():
+        probe_result = probe(BREAKDOWN_SETUP + r"""
+    function esc(value){return String(value).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');}
+    const voids=['area','br','col','embed','hr','img','input','link','meta','source','track','wbr'];
+    function expand(node){
+      if(Array.isArray(node))return node.map(expand).filter(item=>item!=null);
+      if(node==null||node===false||node===true)return null;
+      if(typeof node==='string'||typeof node==='number')return node;
+      const type=node.type,props=node.props??{};
+      if(typeof type==='function')return expand(type(props));
+      if(typeof type!=='string')return null;
+      return {type,props:{...props,children:expand(props.children)}};
+    }
+    function attrsText(props){
+      const pairs=[];
+      for(const [key,value] of Object.entries(props??{})){
+        if(['children','ref','key','style'].includes(key))continue;
+        if(key==='className'){pairs.push(['class',String(value)]);continue;}
+        if(typeof value==='string'||typeof value==='number'){pairs.push([key,String(value)]);continue;}
+        if(value===true)pairs.push([key,'']);
+      }
+      return pairs.map(([key,value])=>` ${key}="${esc(value)}"`).join('');
+    }
+    function toHtml(node){
+      const expanded=expand(node);
+      if(expanded==null)return '';
+      if(Array.isArray(expanded))return expanded.map(toHtml).join('');
+      if(typeof expanded!=='object')return esc(expanded);
+      const {type,props={}}=expanded;
+      const children=toHtml(props.children);
+      return voids.includes(type)?`<${type}${attrsText(props)}/>`:`<${type}${attrsText(props)}>${children}</${type}>`;
+    }
+    env.mode='ssr';cache.clear();
+    const Panel=load('components/studio/BreakdownPanel.tsx').default;
+    const Dialog=load('components/studio/BreakdownQuoteDialog.tsx').default;
+    const Plan=load('components/studio/EpisodePlan.tsx').default;
+    const Choices=load('components/studio/SourceChoices.tsx');
+    const view={...breakdown,status:'done',outdated:1,continuable:true,covered_through:5,continue_from:6,continue_to:8,changed_covered:[3,4],stale_chapters:[2],continuations:[{round:1,from:4,to:5,snapshot_no:2}],continuing:false,chunks:[{...chunk,status:'succeeded'}]};
+    const renderPanel=value=>renderToStaticMarkup(realReact.createElement(Panel,{project,breakdown:value,providers,busy:false,onQuote:async()=>{},onContinue:async()=>{},onRetry:async()=>{},onRelease:async()=>{},onCancel:async()=>{}}));
+    const panelHtml=renderPanel(view);
+    const continuingHtml=renderPanel({...breakdown,status:'partial',outdated:0,continuable:false,covered_through:5,continue_from:null,continue_to:null,changed_covered:[],stale_chapters:[],continuations:[{round:1,from:6,to:8,snapshot_no:2}],continuing:true,chunks:[{...chunk,status:'failed'}]});
+    const dialogHtml=renderToStaticMarkup(realReact.createElement(Dialog,{quote:{...costQuote,continue_from:6,continue_to:8},continueRange:{from:6,to:8},targetMin:120,targetMax:180,affectsApproved:true,replacesPartial:true,busy:false,onConfirm:async()=>{},onClose:()=>{}}));
+    const episodes=[...plan.episodes,...[3,4,5].map(no=>({...plan.episodes[1],id:'ep'+no,no,title:'第'+no+'集',unit_from:no,unit_to:no,notes:'',warnings:[],target_min:null,target_max:null}))];
+    const planHtml=renderToStaticMarkup(realReact.createElement(Plan,{plan:{...plan,episodes,appended_from:3,continuing:true},partial:true,busy:false,onOperate:async()=>{},onApprove:async()=>{},onExport:async()=>{}}));
+    const candidate={id:'book-1',title:'春山',status:'running',chapters_done:6,words_done:15000,completed_at:null,updated_at:'2026-10-16T00:00:00Z',drama_adaptation:false,eligible:true,reason:null,flagged:[],stale:[3,5],projects:[{id:'old',title:'已有项目',snapshot_no:1,created_at:'2026-10-16T00:00:00Z',snapshot_chapters:2}]};
+    const choicesHtml=renderToStaticMarkup(realReact.createElement(Choices.NovelSourceChoice,{book:candidate,embedded:true,onSelect:()=>{}}));
+    env.mode='hooks';cache.clear();
+    const sourceState={kind:'novel',title:'春山',snapshot:{no:2,created_at:'2026-10-16T00:00:00Z',chapters:6,chars:9000,flagged:[],stale:[2,4]},drift:{state:'unchanged',eligible:true,book_status:'running'}};
+    agents.apiJson=async()=>sourceState;
+    const source=mount(load('components/studio/SourcePanel.tsx').default,{owner:env.owner,projectId:'project',onChanged:async()=>{}});await flush();
+    const sourceHtml=toHtml(source.tree);source.close();
+    agents.apiJson=async url=>url.endsWith('/novels')?{enabled:true,books:[candidate]}:[];
+    const film=mount(load('components/novel/NovelFilmDialog.tsx').default,{owner:env.owner,bookId:'book-1',bookTitle:'春山',embedded:true,onClose:()=>{}});await flush();
+    const filmHtml=toHtml(film.tree);film.close();
+    process.stdout.write(JSON.stringify({panel:[panelHtml,continuingHtml],dialog:dialogHtml,plan:planHtml,choices:choicesHtml,source:sourceHtml,film:filmHtml}));
+    """, SOURCE_DRIVER)
+        for label, html in probe_result.items():
+            for index, value in enumerate(html if isinstance(html, list) else [html]):
+>               assert_regular_weight(f"{label}[{index}]" if isinstance(html, list) else label, value)
+
+tests/test_studio_serial_frontend.py:532: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+label = 'panel[0]'
+html = '<div class="glaze glaze-panel min-w-0 rounded-2xl p-4 @[640px]:p-5"><span aria-hidden="true" class="glaze-layer glaze...pace-y-2 pb-3 text-fs-13"><ul class="list-disc space-y-1 pl-5"><li>原文未找到锚点</li></ul></div></details></div></div></div>'
+
+    def assert_regular_weight(label, html):
+        parser = SerialWeightParser()
+        parser.feed(html)
+        parser.close()
+>       assert parser.count > 0, f"{label}: no data-serial elements were rendered"
+E       AssertionError: panel[0]: no data-serial elements were rendered
+E       assert 0 > 0
+E        +  where 0 = <test_studio_serial_frontend.SerialWeightParser object at 0x10e222a50>.count
+
+tests/test_studio_serial_frontend.py:63: AssertionError
+=============================== warnings summary ===============================
+tests/test_studio_serial_sources.py: 35 warnings
+  <基线 135253f 导出>/backend/.venv/lib/python3.14/site-packages/slowapi/extension.py:720: DeprecationWarning: 'asyncio.iscoroutinefunction' is deprecated and slated for removal in Python 3.16; use inspect.iscoroutinefunction() instead
+    if asyncio.iscoroutinefunction(func):
+
+-- Docs: https://docs.pytest.org/en/stable/how-to/capture-warnings.html
+=========================== short test summary info ============================
+FAILED tests/test_studio_serial_sources.py::test_serial_book_status_stays_eligible[running]
+FAILED tests/test_studio_serial_sources.py::test_serial_book_status_stays_eligible[awaiting_plan]
+FAILED tests/test_studio_serial_sources.py::test_serial_book_status_stays_eligible[paused]
+FAILED tests/test_studio_serial_sources.py::test_serial_book_status_stays_eligible[failed]
+FAILED tests/test_studio_serial_sources.py::test_serial_book_status_stays_eligible[setup_running]
+FAILED tests/test_studio_serial_sources.py::test_stale_chapter_imports_with_status_and_is_flagged
+FAILED tests/test_studio_serial_sources.py::test_three_rejection_reasons[empty-\u4f5c\u54c1\u8fd8\u6ca1\u6709\u5199\u597d\u7684\u7ae0\u8282]
+FAILED tests/test_studio_serial_sources.py::test_rearchive_window_blocks_candidate_create_sync_and_drift
+FAILED tests/test_studio_serial_sources.py::test_invalid_chapter_range_rejects_before_reading[True]
+FAILED tests/test_studio_serial_sources.py::test_snapshot_ignores_in_progress_row_after_chapters_done
+FAILED tests/test_studio_serial_sources.py::test_signature_ignores_updated_at
+FAILED tests/test_studio_serial_sources.py::test_signature_retries_when_covered_chapter_becomes_stale
+FAILED tests/test_studio_serial_sources.py::test_signature_retries_then_rejects_rearchive_on_second_detail
+FAILED tests/test_studio_serial_sources.py::test_signature_ignores_row_after_chapters_done
+FAILED tests/test_studio_serial_sources.py::test_drift_ignores_in_progress_stale_and_serial_sync
+FAILED tests/test_studio_serial_sources.py::test_source_status_snapshot_stale_is_empty_before_any_stale_chapter
+FAILED tests/test_studio_serial_sources.py::test_candidate_stale_and_snapshot_chapters
+FAILED tests/test_studio_serial_sources.py::test_start_film_reuse_shows_snapshot_and_sync_hint
+FAILED tests/test_studio_serial_sources.py::test_start_film_reuse_without_new_chapters_has_no_sync_hint
+FAILED tests/test_studio_serial_continue.py::test_batch_plan_default_output_and_continuation_offsets
+FAILED tests/test_studio_serial_continue.py::test_batch_plan_continuation_slice_only_new_chapters_and_offset
+FAILED tests/test_studio_serial_continue.py::test_batch_plan_secondary_sources_reject_continuation_arguments[kwargs0]
+FAILED tests/test_studio_serial_continue.py::test_batch_plan_secondary_sources_reject_continuation_arguments[kwargs1]
+FAILED tests/test_studio_serial_continue.py::test_batch_plan_secondary_sources_reject_continuation_arguments[kwargs2]
+FAILED tests/test_studio_serial_continue.py::test_continue_routes_quote_then_start
+FAILED tests/test_studio_serial_continue.py::test_continue_quote_rejects_non_novel_and_missing_breakdown
+FAILED tests/test_studio_serial_continue.py::test_continue_quote_rejects_running_and_retired
+FAILED tests/test_studio_serial_continue.py::test_continue_quote_rejects_unfinished_batches
+FAILED tests/test_studio_serial_continue.py::test_continue_quote_rejects_without_new_chapters
+FAILED tests/test_studio_serial_continue.py::test_continue_quote_only_new_chapters_and_ignores_target_episodes
+FAILED tests/test_studio_serial_continue.py::test_continue_start_rejects_wrong_use_and_changed_snapshot
+FAILED tests/test_studio_serial_continue.py::test_continue_start_confirms_once_only
+FAILED tests/test_studio_serial_continue.py::test_continue_start_appends_round_and_keeps_old_state
+FAILED tests/test_studio_serial_continue.py::test_continuation_execution_reads_bound_snapshot_and_keeps_old_units
+FAILED tests/test_studio_serial_continue.py::test_continuation_never_suggests_episodes
+FAILED tests/test_studio_serial_continue.py::test_continuation_chains_published_last_and_round_outputs
+FAILED tests/test_studio_serial_continue.py::test_continuation_previous_episode_falls_back_to_new_last_after_delete
+FAILED tests/test_studio_serial_continue.py::test_continuity_recognizes_workshop_registered_character
+FAILED tests/test_studio_serial_continue.py::test_continuity_keeps_author_renamed_character
+FAILED tests/test_studio_serial_continue.py::test_continuity_keeps_author_created_character
+FAILED tests/test_studio_serial_continue.py::test_continuity_duplicate_active_names_warn_and_insert
+FAILED tests/test_studio_serial_continue.py::test_continuation_publish_keeps_edits_marks_new_and_clears_on_approve
+FAILED tests/test_studio_serial_continue.py::test_continuation_partial_does_not_publish_until_retry
+FAILED tests/test_studio_serial_continue.py::test_second_continuation_after_approval_appends_only_new_round
+FAILED tests/test_studio_serial_continue.py::test_two_rounds_before_approval_mark_both_rounds_new
+FAILED tests/test_studio_serial_continue.py::test_continuing_view_hides_new_units_and_shows_new_cast
+FAILED tests/test_studio_serial_continue.py::test_continuation_partial_blocks_ops_approve_quote_and_sync
+FAILED tests/test_studio_serial_continue.py::test_cancel_guard_running_and_partial_then_full_rebreakdown[qwen]
+FAILED tests/test_studio_serial_continue.py::test_cancel_guard_running_and_partial_then_full_rebreakdown[claude]
+FAILED tests/test_studio_serial_continue.py::test_cancel_guard_after_recovery_to_partial
+FAILED tests/test_studio_serial_continue.py::test_legacy_breakdown_without_continuation_keys_continues_once
+FAILED tests/test_studio_serial_continue.py::test_views_continuable_requires_completed_breakdown
+FAILED tests/test_studio_serial_frontend.py::test_quote_and_start_continuation_requests
+FAILED tests/test_studio_serial_frontend.py::test_stage_continue_quote_is_wired_and_confirmed
+FAILED tests/test_studio_serial_frontend.py::test_stage_continue_quote_409_shows_backend_message_and_refreshes
+FAILED tests/test_studio_serial_frontend.py::test_stage_continue_account_switch_does_not_request_and_plan_gets_continuing
+FAILED tests/test_studio_serial_frontend.py::test_panel_continuable_block_wording_and_outdated_replacement
+FAILED tests/test_studio_serial_frontend.py::test_panel_changed_covered_line_only_when_nonempty_even_when_not_continuable
+FAILED tests/test_studio_serial_frontend.py::test_panel_stale_done_and_continuing_lines_have_their_own_conditions
+FAILED tests/test_studio_serial_frontend.py::test_panel_continuing_hides_cancel_and_partial_note_is_conditional
+FAILED tests/test_studio_serial_frontend.py::test_quote_dialog_continue_mode_suppresses_whole_book_prompts
+FAILED tests/test_studio_serial_frontend.py::test_episode_plan_added_tags_only_on_new_episodes_in_both_views
+FAILED tests/test_studio_serial_frontend.py::test_episode_plan_continuing_and_partial_sentences
+FAILED tests/test_studio_serial_frontend.py::test_source_panel_drift_snapshot_stale_and_serial_hints
+FAILED tests/test_studio_serial_frontend.py::test_source_choices_serial_hints_and_snapshot_chapter_hint
+FAILED tests/test_studio_serial_frontend.py::test_novel_film_dialog_serial_candidate_shows_both_hint_lines
+FAILED tests/test_studio_serial_frontend.py::test_create_project_dialog_new_empty_state
+FAILED tests/test_studio_serial_frontend.py::test_novel_workbench_serial_book_requests_studio_and_shows_film_button
+FAILED tests/test_studio_serial_frontend.py::test_format_chapter_ranges_empty_single_consecutive_and_mixed
+FAILED tests/test_studio_serial_frontend.py::test_new_serial_elements_have_regular_weight_and_no_bold_ancestors
+70 failed, 8 passed, 35 warnings, 1 error in 12.82s
+exit=1
