@@ -394,7 +394,7 @@ export default function NovelFeedbackCard({
           <li key={index} className="break-words">第 {item.chapter} 章 {displayNovelChapterTitle(item.title) || "待定章名"}：{item.issue}</li>
         ))}
       </ol>
-      <p className="mt-2 break-words text-fs-12 text-[color:var(--ink2)]">这些章节不会自动修改，要改就在书斋里打开这一章，点「改稿」自己改。改最新写好的一章会重新归档（再调用一次档案员，可能扣草莓），完成前不会开始下一章，已经出来、等你确认的下一章细纲也不会跟着重做。改较早的章节会把它后面已写好的章永久标成「待复核」，有待复核章节的书不能做成片；故事圣经和章节摘要也不会重算，编辑部之后仍按旧记录规划。可以再交一条留言说明改了什么，但留言只在下一次规划细纲时参考一次。</p>
+      <p className="mt-2 break-words text-fs-12 text-[color:var(--ink2)]">这些章节不会自动修改，要改就在书斋里打开这一章，点「改稿」自己改。改最新写好的一章会重新归档（再调用一次档案员，可能扣草莓），完成前不会开始下一章，已经出来、等你确认的下一章细纲也不会跟着重做。改较早的章节会把它后面已写好的章永久标成「待复核」（短片工作室照收，会标出待复核）；故事圣经和章节摘要也不会重算，编辑部之后仍按旧记录规划。可以再交一条留言说明改了什么，但留言只在下一次规划细纲时参考一次。</p>
     </section>}
 
     {showBottom && <div className="border-t px-4 py-3" style={{ borderColor: "var(--carve)" }}>

@@ -3,6 +3,7 @@
 import Link from "next/link";
 import { novelStatusLabel, type NovelDetail } from "@/lib/novels";
 import { studioHref, studioSourceFlagLabel, type StudioFlaggedChapter, type StudioNovelCandidate } from "@/lib/studio";
+import { formatChapterRanges } from "@/lib/studio-breakdown";
 
 export function SourceFlags({ chapters }: { chapters: StudioFlaggedChapter[] }) {
   if (!chapters.length) return null;
@@ -15,17 +16,27 @@ export function sourceProjectCreatedDate(value: string): string {
   const pad = (number: number) => String(number).padStart(2, "0");
   return `${date.getFullYear()}-${pad(date.getMonth() + 1)}-${pad(date.getDate())} ${pad(date.getHours())}:${pad(date.getMinutes())}`;
 }
-export function ExistingSourceProjects({ projects, embedded, primary = false }: { projects: StudioNovelCandidate["projects"]; embedded: boolean; primary?: boolean }) {
+export function ExistingSourceProjects({ projects, embedded, primary = false, chaptersDone }: { projects: StudioNovelCandidate["projects"]; embedded: boolean; primary?: boolean; chaptersDone?: number }) {
   if (!projects.length) return null;
   const ordered = [...projects].sort((left, right) => right.created_at.localeCompare(left.created_at));
-  return <div className="mt-2 space-y-2 text-fs-13"><p className="text-[color:var(--ink2)]">已有工作室项目</p>{ordered.map((project, index) => <div key={project.id} className="flex min-w-0 flex-wrap items-center gap-2"><span className="min-w-0 break-words">{project.title} · <time dateTime={project.created_at} suppressHydrationWarning>{sourceProjectCreatedDate(project.created_at)}</time> · 快照第 {project.snapshot_no ?? 0} 版</span><Link className={`btn ${primary && index === 0 ? "btn-primary" : "btn-quiet"} min-h-10`} href={studioHref(`/studio/${encodeURIComponent(project.id)}`, embedded)}>打开</Link></div>)}</div>;
+  return <div className="mt-2 space-y-2 text-fs-13"><p className="text-[color:var(--ink2)]">已有工作室项目</p>{ordered.map((project, index) => { const snapshotChapters = project.snapshot_chapters; const behind = typeof snapshotChapters === "number" && Number.isInteger(snapshotChapters) && chaptersDone != null && snapshotChapters < chaptersDone; return <div key={project.id} className="flex min-w-0 flex-wrap items-center gap-2"><span className="min-w-0 break-words">{project.title} · <time dateTime={project.created_at} suppressHydrationWarning>{sourceProjectCreatedDate(project.created_at)}</time> · 快照第 {project.snapshot_no ?? 0} 版</span>{behind && <span className="min-w-0 break-words text-[color:var(--ink2)]" data-serial="">快照到第 {snapshotChapters!} 章，到来源面板同步后可以续拆</span>}<Link className={`btn ${primary && index === 0 ? "btn-primary" : "btn-quiet"} min-h-10`} href={studioHref(`/studio/${encodeURIComponent(project.id)}`, embedded)}>打开</Link></div>; })}</div>;
+}
+export function SerialSourceHints({ book }: { book: StudioNovelCandidate }) {
+  const stale = book.stale ?? [];
+  const serial = book.status !== "completed" && book.eligible;
+  if (!stale.length && !serial) return null;
+  return <div className="mt-2 min-w-0 space-y-1" data-serial="">
+    {stale.length > 0 && <p className="text-fs-13" data-serial="">{formatChapterRanges(stale)}待复核，会照常收进快照。</p>}
+    {serial && <p className="text-fs-13" data-serial="">连载中，只收已写好的 {book.chapters_done} 章。</p>}
+  </div>;
 }
 export function NovelSourceChoice({ book, selected = false, disabled = false, embedded, onSelect }: { book: StudioNovelCandidate; selected?: boolean; disabled?: boolean; embedded: boolean; onSelect?: () => void }) {
   return <article className={`ceramic-card min-w-0 rounded-xl p-3 ${book.eligible ? "" : "text-[color:var(--ink2)]"} ${selected ? "ring-1 ring-[color:var(--ink)]" : ""}`}>
     <div className="flex min-w-0 flex-wrap items-start gap-2"><button type="button" className={`chip h-auto min-h-10 max-w-full whitespace-normal break-words py-2 text-left leading-relaxed ${selected ? "chip-on" : ""}`} aria-pressed={selected} disabled={disabled || !book.eligible || !onSelect} onClick={onSelect}>{book.title}</button>{book.drama_adaptation && <span className="tag">改编短剧</span>}</div>
     <p className="readout mt-2 text-fs-13">{novelStatusLabel({ status: book.status as NovelDetail["status"], pause_reason: null })} · {book.chapters_done} 章 · {book.words_done.toLocaleString()} 字</p>
     <p className="mt-2 text-fs-13">{book.eligible ? "可以建立快照" : book.reason || "暂时不能导入"}</p>
-    <SourceFlags chapters={book.flagged} /><ExistingSourceProjects projects={book.projects} embedded={embedded} />
+    <SerialSourceHints book={book} />
+    <SourceFlags chapters={book.flagged} /><ExistingSourceProjects projects={book.projects} embedded={embedded} chaptersDone={book.chapters_done} />
   </article>;
 }
 export function SourceAspectPicker({ aspect, disabled, onChange }: { aspect: "16:9" | "9:16"; disabled: boolean; onChange: (value: "16:9" | "9:16") => void }) {

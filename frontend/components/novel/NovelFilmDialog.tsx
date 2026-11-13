@@ -6,7 +6,7 @@ import { novelFieldClass } from "./NovelModelFields";
 import { EmptyState, ErrorNotice, LoadingState } from "./NovelStates";
 import { useAccountRequest } from "@/lib/useAccountIdentity";
 import { createStudioFromNovel, listStudioNovelSources, studioErrorMessage, studioHref, type StudioNovelCandidate, type StudioProject } from "@/lib/studio";
-import { ExistingSourceProjects, SourceAspectPicker, SourceFlags, sourceDialogClass } from "@/components/studio/SourceChoices";
+import { ExistingSourceProjects, SerialSourceHints, SourceAspectPicker, SourceFlags, sourceDialogClass } from "@/components/studio/SourceChoices";
 
 export default function NovelFilmDialog({ owner, bookId, bookTitle, embedded, onClose }: { owner: string; bookId: string; bookTitle: string; embedded: boolean; onClose: () => void }) {
   const router = useRouter();
@@ -45,7 +45,7 @@ export default function NovelFilmDialog({ owner, bookId, bookTitle, embedded, on
     <h2 id="novel-film-title" className="mb-4 text-fs-22 tracking-[.24em]">做成片</h2><p className="mb-4 break-words">为《{bookTitle}》建立工作室项目，并保存原文快照。</p>
     {loading && <LoadingState>正在检查作品…</LoadingState>}{error && <ErrorNotice message={error} retry={() => void load()} />}
     {!loading && !error && !book && <EmptyState>作品不存在或无权访问。</EmptyState>}
-    {book && <><ExistingSourceProjects projects={book.projects} embedded={embedded} primary /><SourceFlags chapters={book.flagged} />{!book.eligible && <p role="status" className="mt-3 text-fs-13 text-[color:var(--seal)]">{book.reason || "作品暂不满足导入条件"}</p>}</>}
+    {book && <><ExistingSourceProjects projects={book.projects} embedded={embedded} primary chaptersDone={book.chapters_done} /><SourceFlags chapters={book.flagged} /><SerialSourceHints book={book} />{!book.eligible && <p role="status" className="mt-3 text-fs-13 text-[color:var(--seal)]">{book.reason || "作品暂不满足导入条件"}</p>}</>}
     <label className="mt-4 block space-y-2"><span>项目标题</span><input id="novel-film-project-title" maxLength={200} value={title} disabled={busy} onChange={event => setTitle(event.target.value)} className={novelFieldClass} /></label>
     <SourceAspectPicker aspect={aspect} disabled={busy} onChange={setAspect} />
     <p className="mb-4 text-fs-13 text-[color:var(--ink2)]">建立项目和快照不花费草莓。</p>

@@ -139,19 +139,34 @@ def test_eligibility_rejects_with_reason(workshop, monkeypatch, problem, reason)
     client, auth, state = workshop
     if problem == 'running':
         state['book']['status'] = 'running'
-    elif problem in ('planning', 'stale'):
-        state['book']['chapters'][0]['status'] = problem
+    elif problem == 'planning':
+        state['book']['chapters'].append({'chapter': 3, 'title': '下一章', 'status': 'planning'})
+        state['chapters'].append({'chapter': 3, 'title': '下一章', 'status': 'planning', 'body': None})
+    elif problem == 'stale':
+        state['book']['chapters'][0]['status'] = 'stale'
+        state['chapters'][0]['status'] = 'stale'
     elif problem == 'bible':
         state['bible'] = None
     elif problem == 'empty':
-        state['book']['chapters'] = []
+        state['book'].update(chapters_done=0, chapters=[])
     else:
         monkeypatch.setattr(sources, 'is_editing', lambda bid: True)
     candidate = client.get('/studio/sources/novels', headers=auth).json()['books'][0]
-    assert not candidate['eligible'] and reason in candidate['reason']
-    response = client.post('/studio/projects/from-novel', headers=auth, json={'book_id': 'book'})
-    assert response.status_code == 409 and reason in response.json()['detail']
-    assert sql('SELECT * FROM studio_projects') == []
+    if problem in ('running', 'planning', 'stale'):
+        assert candidate['eligible'] and candidate['reason'] is None
+        project = novel_project(workshop)
+        manifest = json.loads(storage.resolve_path(f"{project['id']}/source/snap-0001/snapshot.json").read_text())
+        if problem == 'planning':
+            assert [item['chapter'] for item in manifest['chapters']] == [1, 2]
+            assert state['range_calls'] == [(1, 2)]
+        elif problem == 'stale':
+            assert manifest['chapters'][0]['status'] == 'stale'
+    else:
+        expected = '还没有写好的章节' if problem == 'empty' else reason
+        assert not candidate['eligible'] and expected in candidate['reason']
+        response = client.post('/studio/projects/from-novel', headers=auth, json={'book_id': 'book'})
+        assert response.status_code == 409 and expected in response.json()['detail']
+        assert sql('SELECT * FROM studio_projects') == []
 
 
 def test_candidate_flags_projects_and_exact_title_search(workshop, monkeypatch):
@@ -174,9 +189,10 @@ def test_candidate_flags_projects_and_exact_title_search(workshop, monkeypatch):
     monkeypatch.setattr(sources.service, 'detail', detail)
     assert [item['id'] for item in run(sources.list_candidates('owner'))['books']] == ['drama', 'book']
     assert [item['id'] for item in run(sources.find_candidates('owner', ' 山月 '))['books']] == ['book']
-    state['book'].update(title=None, status='setup_running')
+    state['book'].update(title=None, status='setup_running', chapters_done=0, chapters=[])
     untitled = next(item for item in run(sources.list_candidates('owner'))['books'] if item['id'] == 'book')
     assert untitled['title'] == '未命名小说' and not untitled['eligible']
+    assert untitled['reason'] == '作品还没有写好的章节'
 
 
 def test_consistent_snapshot_retries_once(workshop, monkeypatch):
@@ -185,12 +201,12 @@ def test_consistent_snapshot_retries_once(workshop, monkeypatch):
     async def changing(user, bid):
         result = await original(user, bid)
         if state['details'] >= 2:
-            result['updated_at'] = 'new'
+            result['bible_version'] = state['book']['bible_version'] + 1
         return result
     monkeypatch.setattr(sources.service, 'detail', changing)
     snapshot = run(sources.take_novel_snapshot('owner', 'book'))
     assert state['details'] == 4 and len(state['range_calls']) == 2
-    assert snapshot['manifest']['book']['updated_at'] == 'new'
+    assert snapshot['manifest']['book']['bible_version'] == 4
 
 
 def test_continuous_change_rejected(workshop, monkeypatch):
@@ -198,7 +214,7 @@ def test_continuous_change_rejected(workshop, monkeypatch):
     original = sources.service.detail
     async def changing(user, bid):
         result = await original(user, bid)
-        result['updated_at'] = str(state['details'])
+        result['bible_version'] = 100 + state['details']
         return result
     monkeypatch.setattr(sources.service, 'detail', changing)
     with pytest.raises(HTTPException, match='409') as exc:
@@ -241,7 +257,7 @@ def test_drift_detect_sync_archive_and_delete_source(workshop):
     state['book']['bible_version'] = 4
     status = run(sources.source_status('owner', project['id']))
     assert status['drift'] == {'state': 'changed', 'changed': [1, 2], 'added': [3], 'removed': [], 'bible_changed': True,
-                              'book_status': 'completed', 'eligible': True, 'reason': None}
+                              'book_status': 'completed', 'eligible': True, 'reason': None, 'stale': [], 'chapters_done': 3}
     assert sql('SELECT * FROM studio_snapshots') == before
     status = run(sources.sync_source('owner', project['id'], 1))
     assert status['snapshot']['no'] == 2 and status['drift']['state'] == 'unchanged'
@@ -261,11 +277,12 @@ def test_drift_detect_sync_archive_and_delete_source(workshop):
 def test_sync_rejects_ineligible_and_busy_brain(workshop, monkeypatch):
     _, _, state = workshop
     project = novel_project(workshop)
-    state['book']['chapters'][0]['status'] = 'stale'
+    original_bible = state['bible']
+    state['bible'] = None
     with pytest.raises(HTTPException) as exc:
         run(sources.sync_source('owner', project['id'], 1))
-    assert '待复核' in exc.value.detail
-    state['book']['chapters'][0]['status'] = 'done'
+    assert '故事圣经' in exc.value.detail
+    state['bible'] = original_bible
     original = store._one
     async def busy(db, query, args=()):
         return {'id': 'busy'} if "kind='brain'" in query else await original(db, query, args)

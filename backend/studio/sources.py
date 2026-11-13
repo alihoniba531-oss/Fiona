@@ -59,18 +59,11 @@ def _require_novel(username):
 
 
 def _eligibility(book, canonical_bible, editing=False):
-    chapters = book.get('chapters') or []
-    if book.get('status') != 'completed':
-        return False, '作品尚未完结'
     if canonical_bible is None:
         return False, '作品缺少故事圣经'
-    if not chapters:
-        return False, '作品没有章节'
-    if any(item.get('status') == 'stale' for item in chapters):
-        return False, '作品有待复核章节，请先在小说工坊完成复核'
-    if any(item.get('status') != 'done' for item in chapters):
-        return False, '作品有尚未完成的章节'
-    if editing:
+    if (book.get('chapters_done') or 0) < 1:
+        return False, '作品还没有写好的章节'
+    if editing or (book.get('config') or {}).get('_rearchive') is not None:
         return False, '作品正在修改，请稍后再试'
     return True, None
 
@@ -84,16 +77,22 @@ async def _candidate(username, book):
     detail = await _novel_call(service.detail, username, book['id'])
     bible = await _novel_call(service.bible, username, book['id'])
     eligible, reason = _eligibility(detail, bible, is_editing(book['id']))
+    chapters_done = detail.get('chapters_done') or 0
+    stale = sorted(item['chapter'] for item in detail.get('chapters') or []
+                   if isinstance(item.get('chapter'), int) and item['chapter'] <= chapters_done
+                   and item.get('status') == 'stale')
     async with store.connection() as db:
-        projects = await store._many(db, """SELECT id,title,snapshot_no,created_at FROM studio_projects
-            WHERE owner=? AND source_kind='novel' AND source_ref=? AND archived=0
-            ORDER BY created_at DESC,id DESC""", (username, book['id']))
+        projects = await store._many(db, """SELECT p.id,p.title,p.snapshot_no,p.created_at,
+            s.chapters AS snapshot_chapters FROM studio_projects p
+            LEFT JOIN studio_snapshots s ON s.project_id=p.id AND s.no=p.snapshot_no
+            WHERE p.owner=? AND p.source_kind='novel' AND p.source_ref=? AND p.archived=0
+            ORDER BY p.created_at DESC,p.id DESC""", (username, book['id']))
     return {**{key: detail.get(key) for key in ('id', 'title', 'status', 'chapters_done', 'words_done',
                                               'completed_at', 'updated_at')},
             'title': detail.get('title') or '未命名小说',
             'drama_adaptation': bool((detail.get('config') or {}).get('drama_adaptation', False)),
             'eligible': eligible, 'reason': reason, 'flagged': _flagged(detail.get('chapters') or []),
-            'projects': projects}
+            'stale': stale, 'projects': projects}
 
 
 async def _candidates(username, books):
@@ -124,9 +123,8 @@ def _bounded(chapters):
 
 
 async def _all_chapters(username, book):
-    numbers = [item['chapter'] for item in book.get('chapters') or []]
-    maximum = max(numbers + [book.get('chapters_done') or 0])
-    if maximum > 300 or any(type(number) is not int or number < 1 for number in numbers):
+    maximum = book.get('chapters_done') or 0
+    if type(maximum) is not int or not 0 <= maximum <= 300:
         raise HTTPException(409, '作品章节范围无效')
     chapters = []
     for start in range(1, maximum + 1, 50):
@@ -135,8 +133,11 @@ async def _all_chapters(username, book):
 
 
 def _signature(book):
-    return (book.get('updated_at'), book.get('bible_version'), book.get('status'),
-            tuple((ch.get('chapter'), ch.get('status')) for ch in book.get('chapters') or []))
+    chapters_done = book.get('chapters_done') or 0
+    return (book.get('bible_version'), book.get('chapters_done'),
+            (book.get('config') or {}).get('_rearchive'),
+            tuple((ch.get('chapter'), ch.get('status')) for ch in book.get('chapters') or []
+                  if isinstance(ch.get('chapter'), int) and ch['chapter'] <= chapters_done))
 
 
 async def take_novel_snapshot(username, book_id):
@@ -465,6 +466,22 @@ async def _finish_task(task):
     return task.result(), cancelled
 
 
+async def _continuation_in_progress(db, project, owner):
+    """续拆进行中的拆解不能再同步新章（owner 隔离由项目与拆解查询共同保证）。"""
+    bid = project.get('breakdown_id')
+    if not bid:
+        return False
+    breakdown = await store._one(db, 'SELECT status,import_json FROM studio_breakdowns WHERE id=? AND owner=?',
+                                 (bid, owner))
+    if breakdown is None or breakdown['status'] not in {'running', 'partial'}:
+        return False
+    try:
+        imported = json.loads(breakdown.get('import_json') or '{}')
+    except (TypeError, ValueError):
+        return False
+    return isinstance(imported, dict) and bool(imported.get('_continuations'))
+
+
 async def _save_snapshot(username, pid, no, snapshot, expected_no):
     rel_dir, committed = None, False
     try:
@@ -483,6 +500,8 @@ async def _save_snapshot(username, pid, no, snapshot, expected_no):
             if expected_no and await store._one(db, """SELECT id FROM studio_jobs WHERE project_id=? AND owner=?
                 AND kind='brain' AND status IN ('queued','submitting','submitted','running') LIMIT 1""", (pid, username)):
                 raise HTTPException(409, '导演模型任务进行中，完成后再同步')
+            if await _continuation_in_progress(db, project, username):
+                raise HTTPException(409, '续拆进行中，完成后再同步')
             await db.execute('''INSERT INTO studio_snapshots(id,project_id,owner,no,kind,ref_id,title,bible_version,
                 chapters,chars,manifest_sha256,rel_dir,created_at) VALUES(?,?,?,?,?,?,?,?,?,?,?,?,?)''',
                 (str(uuid.uuid4()), pid, username, no, manifest['kind'], manifest['ref_id'], manifest['title'],
@@ -565,6 +584,7 @@ async def source_status(username, pid):
     manifest = await asyncio.to_thread(_read_manifest, row)
     snapshot = {key: row[key] for key in ('id', 'no', 'created_at', 'chapters', 'chars')}
     snapshot['flagged'] = _flagged(manifest['chapters'])
+    snapshot['stale'] = sorted(item['chapter'] for item in manifest['chapters'] if item.get('status') == 'stale')
     result = {'kind': row['kind'], 'title': row['title'], 'snapshot': snapshot,
               'drift': {'state': 'not_applicable'}}
     if row['kind'] != 'novel':
@@ -592,9 +612,14 @@ def _compare_drift(row, manifest, book, chapters, eligible, reason):
                      or old[number]['sha256'] != hashlib.sha256((current[number].get('body') or '').encode('utf-8')).hexdigest())
     added, removed = sorted(current.keys() - old.keys()), sorted(old.keys() - current.keys())
     bible_changed = row['bible_version'] != book.get('bible_version')
+    chapters_done = book.get('chapters_done') or 0
+    stale = sorted(item['chapter'] for item in chapters
+                   if item.get('chapter') is not None and item['chapter'] <= chapters_done
+                   and item.get('status') == 'stale')
     return {'state': 'changed' if changed or added or removed or bible_changed else 'unchanged',
                        'changed': changed, 'added': added, 'removed': removed, 'bible_changed': bible_changed,
-                       'book_status': book['status'], 'eligible': eligible, 'reason': reason}
+                       'book_status': book['status'], 'eligible': eligible, 'reason': reason,
+                       'stale': stale, 'chapters_done': chapters_done}
 
 
 async def sync_source(username, pid, expected_no):
@@ -607,6 +632,8 @@ async def sync_source(username, pid, expected_no):
         if await store._one(db, """SELECT id FROM studio_jobs WHERE project_id=? AND owner=? AND kind='brain'
             AND status IN ('queued','submitting','submitted','running') LIMIT 1""", (pid, username)):
             raise HTTPException(409, '导演模型任务进行中，完成后再同步')
+        if await _continuation_in_progress(db, project, username):
+            raise HTTPException(409, '续拆进行中，完成后再同步')
     snapshot = await take_novel_snapshot(username, row['ref_id'])
     await _save_snapshot(username, pid, expected_no + 1, snapshot, expected_no)
     return await source_status(username, pid)

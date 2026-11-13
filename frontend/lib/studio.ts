@@ -11,15 +11,15 @@ export interface StudioFlaggedChapter { chapter: number; title: string; flags: s
 export interface StudioNovelCandidate {
   id: string; title: string; status: string; chapters_done: number; words_done: number;
   completed_at: string | null; updated_at: string; drama_adaptation: boolean; eligible: boolean; reason: string | null;
-  flagged: StudioFlaggedChapter[]; projects: Pick<StudioProject, "id" | "title" | "snapshot_no" | "created_at">[];
+  flagged: StudioFlaggedChapter[]; stale?: number[]; projects: (Pick<StudioProject, "id" | "title" | "snapshot_no" | "created_at"> & { snapshot_chapters?: number | null })[];
 }
 export interface StudioNovelSources { enabled: boolean; books: StudioNovelCandidate[] }
 export interface StudioExchangeSource { id: string; title: string; completed_at: string; chars: number; artifact_status: string }
 export interface StudioSourceStatus {
   kind: StudioSourceKind | null; title?: string;
-  snapshot?: { no: number; title?: string; created_at: string; chapters: number; chars: number; flagged?: StudioFlaggedChapter[] };
+  snapshot?: { no: number; title?: string; created_at: string; chapters: number; chars: number; flagged?: StudioFlaggedChapter[]; stale?: number[] };
   flagged?: StudioFlaggedChapter[];
-  drift?: { state: "not_applicable" | "unchanged" | "changed" | "unavailable"; changed?: number[]; added?: number[]; removed?: number[]; bible_changed?: boolean; book_status?: string; eligible?: boolean; reason?: string | null };
+  drift?: { state: "not_applicable" | "unchanged" | "changed" | "unavailable"; changed?: number[]; added?: number[]; removed?: number[]; bible_changed?: boolean; book_status?: string; eligible?: boolean; reason?: string | null; stale?: number[]; chapters_done?: number };
 }
 export type StudioCreateInput = { title: string; aspect: StudioProject["aspect"] } & (
   { kind: "blank" } | { kind: "novel"; book_id: string } | { kind: "exchange"; exchange_id: string }

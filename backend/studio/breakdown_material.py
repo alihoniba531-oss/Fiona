@@ -80,8 +80,10 @@ def structured_import(manifest):
             'adaptation': locked.get('adaptation') or (manifest.get('config') or {}).get('adaptation') or {}}
 
 
-def batch_plan(manifest, entries):
+def batch_plan(manifest, entries, start_chapter=1, segment_base=0, no_base=0):
     novel = manifest['kind'] == 'novel'
+    if not novel and (start_chapter != 1 or segment_base != 0 or no_base != 0):
+        raise ValueError('次要来源不支持续拆参数')
     imported = structured_import(manifest) if novel else {'characters': [], 'units': [], 'synopsis': {}}
     chunks, maps, segments = [], [], {}
     def add(task, source, inputs, depends=(), estimate_units=0):
@@ -90,8 +92,12 @@ def batch_plan(manifest, entries):
         chunks.append(row)
         return row['no']
     if novel:
+        if start_chapter > 1:
+            entries = [entry for entry in entries if entry['chapter'] >= start_chapter]
         groups, current, chars = [], [], 0
         fragments = []
+        def segment_of(chapter):
+            return segment_base + (chapter - start_chapter) // 10
         for entry in entries:
             start = 0
             while start < len(entry['body']):
@@ -107,14 +113,14 @@ def batch_plan(manifest, entries):
         for entry in fragments:
             if current and (len(current) >= 10 or chars + len(entry['body']) > 24000
                             or entry['chapter'] == current[-1]['chapter']
-                            or (entry['chapter'] - 1) // 10 != (current[0]['chapter'] - 1) // 10):
+                            or segment_of(entry['chapter']) != segment_of(current[0]['chapter'])):
                 groups.append(current); current, chars = [], 0
             current.append(entry); chars += len(entry['body'])
         if current:
             groups.append(current)
         for group in groups:
             first, last = group[0]['chapter'], group[-1]['chapter']
-            segment = (first - 1) // 10
+            segment = segment_of(first)
             count = sum(1 for unit in imported['units'] if first <= unit['chapter'] <= last)
             offsets = {str(entry['chapter']): entry['_chapter_offset'] for entry in group}
             fragment_label = (f"（章内字符 {group[0]['_chapter_offset']}–{group[0]['_chapter_offset'] + len(group[0]['body'])}）"
@@ -142,8 +148,13 @@ def batch_plan(manifest, entries):
                 maps.append(number); segments.setdefault(segment, []).append(number)
         synopsis = add('synopsis', {'label': '全书梗概'}, {}, maps)
     previous = None
+    last_chapter = max((entry['chapter'] for entry in entries), default=0)
     for segment, dependencies in sorted(segments.items()):
-        first, last = segment * (10 if novel else 5) + 1, min((segment + 1) * (10 if novel else 5), len(entries))
+        first = start_chapter + (segment - segment_base) * (10 if novel else 5)
+        # 默认参数下沿用旧的“entries 条数”终点，保证既有输出逐字节不变；
+        # 续拆时 entries 从新章开始，终点取本批实际最大章号。
+        last = min(first + (9 if novel else 4),
+                   len(entries) if start_chapter == 1 and segment_base == 0 else last_chapter)
         # seq is global: every earlier completion must settle before this segment
         # is numbered, including batches whose scene count changed from the outline.
         deps = [number for number in maps if chunks[number - 1]['source']['segment'] <= segment]
@@ -156,6 +167,12 @@ def batch_plan(manifest, entries):
                        'chapter_to' if novel else 'block_to': last,
                        'map_nos': dependencies, 'label': f"第 {first}–{last} {'章' if novel else '块'} · 分集"},
                        {}, deps, count)
+    if no_base:
+        for row in chunks:
+            row['no'] += no_base
+            row['depends'] = [number + no_base for number in row['depends']]
+            if 'map_nos' in row['source']:
+                row['source']['map_nos'] = [number + no_base for number in row['source']['map_nos']]
     return imported, chunks
 
 

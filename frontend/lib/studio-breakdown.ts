@@ -14,12 +14,16 @@ export interface BreakdownChunk {
 export interface BreakdownQuote {
   id: string; provider: BrainProviderId; expires_at: string; total_min: number; total_max: number;
   currency: "CNY" | "USD"; task_counts: Partial<Record<BreakdownTask, number>>; total_chunks: number;
+  continue_from?: number; continue_to?: number;
 }
 export interface StudioBreakdown {
   id: string; status: BreakdownStatus; snapshot_no: number; outdated: boolean | number; chunks: BreakdownChunk[];
   retry_needed?: { label: string; status: ChunkStatus }[]; blocked_segments?: string[];
   synopsis: Record<string, unknown> | null; units_count: number; total_cost?: number | BrainCost | null;
   totals?: Partial<Record<"CNY" | "USD", number>>; settings?: Record<string, unknown>;
+  covered_through: number; continuable: boolean; continue_from: number | null; continue_to: number | null;
+  changed_covered: number[]; stale_chapters: number[]; continuations: { round: number; from: number; to: number; snapshot_no: number }[];
+  continuing: boolean;
 }
 export type BibleKind = "character" | "location" | "prop";
 export interface StudioBibleEntry {
@@ -39,6 +43,7 @@ export interface StudioEpisodePlan {
   episodes: StudioEpisode[]; units: StudioUnit[]; unassigned: UnassignedUnits[]; uncovered?: UnassignedUnits[];
   plan_revision: number; plan_approved_revision: number | null; g0_approved: boolean; total_seconds: number;
   status?: BreakdownStatus; breakdown_id?: string | null; active_breakdown_id?: string | null; active_breakdown_status?: BreakdownStatus | null; rebreakdown_pending?: boolean; settings?: { episode_seconds_min?: number; episode_seconds_max?: number; target_min?: number; target_max?: number };
+  appended_from: number | null; continuing: boolean;
 }
 export interface EpisodeFields { title?: string; change?: string; hook?: string; notes?: string; target_min?: number | null; target_max?: number | null }
 export type EpisodeOperation = { expected_revision: number } & (
@@ -56,6 +61,8 @@ export const patchStudioSynopsis = (id: string, synopsis: Record<string, unknown
 export const patchEpisodeSettings = (id: string, input: { episode_seconds_min: number; episode_seconds_max: number }, signal?: AbortSignal) => apiJson(`${project(id)}`, { ...post(input, signal), method: "PATCH" });
 export const quoteStudioBreakdown = (id: string, targetEpisodes?: number, signal?: AbortSignal, settings?: { episode_seconds_min: number; episode_seconds_max: number }) => apiJson<BreakdownQuote>(`${project(id)}/breakdown/quote`, post({ ...(targetEpisodes === undefined ? {} : { target_episodes: targetEpisodes }), ...settings }, signal));
 export const startStudioBreakdown = (id: string, quoteId: string, signal?: AbortSignal) => apiJson<StudioBreakdown>(`${project(id)}/breakdown/start`, post({ quote_id: quoteId }, signal));
+export const quoteStudioContinuation = (id: string, signal?: AbortSignal) => apiJson<BreakdownQuote>(`${project(id)}/breakdown/continue/quote`, post({}, signal));
+export const startStudioContinuation = (id: string, quoteId: string, signal?: AbortSignal) => apiJson<StudioBreakdown>(`${project(id)}/breakdown/continue/start`, post({ quote_id: quoteId }, signal));
 export const quoteBreakdownRetry = (bid: string, cid: string, provider: BrainProviderId, signal?: AbortSignal) => apiJson<BreakdownQuote>(`${chunk(bid, cid)}/retry/quote`, post({ provider }, signal));
 export const retryBreakdownChunk = (bid: string, cid: string, quoteId: string, signal?: AbortSignal) => apiJson(`${chunk(bid, cid)}/retry`, post({ quote_id: quoteId }, signal));
 export const cancelStudioBreakdown = (bid: string, signal?: AbortSignal) => apiJson(`${breakdown(bid)}/cancel`, post({}, signal));
@@ -96,4 +103,13 @@ export function formatEpisodeRanges(nos: number[]): string {
   for (const no of sorted.slice(1)) { if (no === end + 1) end = no; else { ranges.push(start === end ? String(start) : `${start}–${end}`); start = end = no; } }
   ranges.push(start === end ? String(start) : `${start}–${end}`);
   return `第 ${ranges.join("、")} 集`;
+}
+export function formatChapterRanges(nos: number[]): string {
+  const sorted = [...new Set(nos)].sort((left, right) => left - right);
+  if (!sorted.length) return "";
+  const ranges: string[] = [];
+  let start = sorted[0], end = start;
+  for (const no of sorted.slice(1)) { if (no === end + 1) end = no; else { ranges.push(start === end ? String(start) : `${start}–${end}`); start = end = no; } }
+  ranges.push(start === end ? String(start) : `${start}–${end}`);
+  return `第 ${ranges.join("、")} 章`;
 }

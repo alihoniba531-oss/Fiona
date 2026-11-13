@@ -116,7 +116,7 @@ await named(page,'GateBanner').props.onAction('continue');await flush();assert.e
 
 
 def test_incomplete_workbench_never_requests_studio():
-    assert probe(r"""env.book.status='awaiting_review';const page=await screen('components/novel/NovelWorkbench.tsx',{id:env.book.id});assert(!env.calls.some(c=>c.includes('/studio/')));assert(!all(page.tree,n=>n.type==='button'&&n.props.children==='做成片').length);assert.equal(named(page,'GateBanner').props.onMakeFilm,undefined);page.close();process.stdout.write('true');""", NOVEL_DRIVER) is True
+    assert probe(r"""env.book.status='awaiting_review';env.book.chapters_done=0;env.book.chapters=[];const page=await screen('components/novel/NovelWorkbench.tsx',{id:env.book.id});assert(!env.calls.some(c=>c.includes('/studio/')));assert(!all(page.tree,n=>n.type==='button'&&n.props.children==='做成片').length);assert.equal(named(page,'GateBanner').props.onMakeFilm,undefined);page.close();process.stdout.write('true');""", NOVEL_DRIVER) is True
 
 
 def test_request_helpers_use_multipart_and_expected_no():

@@ -3,7 +3,7 @@
 import { useState } from "react";
 import Glaze from "@/components/Glaze";
 import { type BrainProvider, type BrainProviderId, type StudioProject } from "@/lib/studio";
-import { brainProviderName, breakdownTaskLabel, chunkStatusLabel, formatBreakdownMoney, type BreakdownChunk, type StudioBreakdown } from "@/lib/studio-breakdown";
+import { brainProviderName, breakdownTaskLabel, chunkStatusLabel, formatBreakdownMoney, formatChapterRanges, type BreakdownChunk, type StudioBreakdown } from "@/lib/studio-breakdown";
 import BreakdownDialog, { breakdownFieldClass } from "./BreakdownDialog";
 
 export function BreakdownChunkRow({ chunk, providers, busy, onRetry, onRelease }: { chunk: BreakdownChunk; providers: BrainProvider[]; busy: boolean; onRetry: (chunk: BreakdownChunk, provider: BrainProviderId) => Promise<void>; onRelease: (chunk: BreakdownChunk) => Promise<void> }) {
@@ -22,9 +22,9 @@ export function BreakdownChunkRow({ chunk, providers, busy, onRetry, onRelease }
     {releasing && <BreakdownDialog title="释放不确定批次" confirmLabel="确认未扣费，释放" busy={busy} onClose={() => setReleasing(false)} onConfirm={async () => { await onRelease(chunk); setReleasing(false); }}><p>这次请求可能已扣费。请核对服务商账单，只有确认未扣费后才能释放本批预留。</p></BreakdownDialog>}
   </details>;
 }
-export default function BreakdownPanel({ project, breakdown, providers, busy, onQuote, onSettings, onRetry, onRelease, onCancel }: {
+export default function BreakdownPanel({ project, breakdown, providers, busy, onQuote, onContinue, onSettings, onRetry, onRelease, onCancel }: {
   project: StudioProject; breakdown: StudioBreakdown | null; providers: BrainProvider[]; busy: boolean;
-  onQuote: (min: number, max: number, target?: number) => Promise<void>; onSettings?: (min: number, max: number) => Promise<void>;
+  onQuote: (min: number, max: number, target?: number) => Promise<void>; onContinue: () => Promise<void>; onSettings?: (min: number, max: number) => Promise<void>;
   onRetry: (chunk: BreakdownChunk, provider: BrainProviderId) => Promise<void>;
   onRelease: (chunk: BreakdownChunk) => Promise<void>; onCancel: () => Promise<void>;
 }) {
@@ -41,9 +41,20 @@ export default function BreakdownPanel({ project, breakdown, providers, busy, on
   const retryNeeded = breakdown?.retry_needed ?? chunks.filter(item => ["failed", "rejected", "invalid_output", "released", "uncertain"].includes(item.status)).map(item => ({ label: item.source?.label || `第 ${item.no} 批`, status: item.status }));
   const blockedSegments = breakdown?.blocked_segments ?? chunks.filter(item => item.task === "episode_plan" && item.status === "blocked").map(item => item.source?.label || `第 ${item.no} 批`);
   const percent = chunks.length ? complete / chunks.length * 100 : 0;
+  const continuing = !!breakdown?.continuing;
+  const changedCovered = breakdown?.changed_covered ?? [];
+  const staleChapters = breakdown?.stale_chapters ?? [];
+  const continuations = breakdown?.continuations ?? [];
+  const lastContinuation = continuations[continuations.length - 1];
+  const continuationRange = (from: number, to: number) => from === to ? `第 ${from} 章` : `第 ${from}–${to} 章`;
   return <Glaze variant="panel" lens={false} className="min-w-0 rounded-2xl p-4 @[640px]:p-5">
     <h2 className="mb-4 text-fs-22 tracking-[.2em]">拆解</h2>
-    {breakdown?.outdated ? <div role="status" className="ceramic-card mb-4 min-w-0 space-y-2 rounded-xl p-3"><p>拆解基于快照第 {breakdown.snapshot_no} 版，作品已同步到第 {project.snapshot_no ?? breakdown.snapshot_no} 版。</p><button type="button" className="btn btn-quiet min-h-10" disabled={busy || active || !valid} onClick={() => void onQuote(Number(min), Number(max), target ? Number(target) : undefined)}>重新拆解</button></div> : null}
+    {breakdown?.continuable ? <div className="ceramic-card mb-4 min-w-0 space-y-2 rounded-xl p-3" data-serial="">
+      <p data-serial="">已拆到第 {breakdown.covered_through} 章；作品已同步到第 {breakdown.continue_to} 章，可以续拆{continuationRange(breakdown.continue_from!, breakdown.continue_to!)}。</p>
+      <p data-serial="">续拆只为新增章节付费，已拆的部分、你改过的分集和已定的妆都保留；续拆完成后分集方案要重新批准一次。</p>
+      {changedCovered.length > 0 && <p className="text-fs-13 text-[color:var(--ink2)]" data-serial="">{formatChapterRanges(changedCovered)}在拆解之后改过，续拆不会重拆它们；需要时可以整本重新拆解（会生成新的总表，已定的妆要重新定）。</p>}
+      <div className="flex min-w-0 flex-wrap gap-2" data-serial=""><button type="button" data-serial="" className="btn btn-primary min-h-10" disabled={busy || active || providers.find(item => item.id === project.brain_provider)?.available === false} onClick={() => void onContinue()}>续拆{continuationRange(breakdown.continue_from!, breakdown.continue_to!)}</button><button type="button" data-serial="" className="btn btn-quiet min-h-10" disabled={busy || active || !valid} onClick={() => void onQuote(Number(min), Number(max), target ? Number(target) : undefined)}>重新拆解</button></div>
+    </div> : breakdown?.outdated ? <div role="status" className="ceramic-card mb-4 min-w-0 space-y-2 rounded-xl p-3"><p>拆解基于快照第 {breakdown.snapshot_no} 版，作品已同步到第 {project.snapshot_no ?? breakdown.snapshot_no} 版。</p><button type="button" className="btn btn-quiet min-h-10" disabled={busy || active || !valid} onClick={() => void onQuote(Number(min), Number(max), target ? Number(target) : undefined)}>重新拆解</button></div> : null}
     <fieldset disabled={busy || active} className="min-w-0 space-y-3">
       <legend className="mb-2 text-fs-13 text-[color:var(--ink2)]">每集目标时长</legend>
       <div className="flex min-w-0 flex-wrap items-end gap-3"><label className="block w-28 min-w-0 space-y-1 text-fs-13"><span className="whitespace-nowrap">最短秒数</span><input type="number" min={60} max={900} step={1} value={min} className={breakdownFieldClass} onChange={event => setMin(event.target.value)} /></label><label className="block w-28 min-w-0 space-y-1 text-fs-13"><span className="whitespace-nowrap">最长秒数</span><input type="number" min={60} max={900} step={1} value={max} className={breakdownFieldClass} onChange={event => setMax(event.target.value)} /></label><label className="block w-28 min-w-0 space-y-1 text-fs-13"><span className="whitespace-nowrap">大约几集</span><input type="number" min={1} max={300} step={1} placeholder="可不填" value={target} className={breakdownFieldClass} onChange={event => setTarget(event.target.value)} /></label><p className="readout pb-2 text-fs-13 text-[color:var(--ink2)]">约 {(Number(min) / 60).toFixed(1)}–{(Number(max) / 60).toFixed(1)} 分钟</p></div>
@@ -51,10 +62,11 @@ export default function BreakdownPanel({ project, breakdown, providers, busy, on
       {onSettings && <button type="button" className="btn btn-quiet min-h-10" disabled={busy || active || !validTimes || Number(min) === (project.episode_seconds_min ?? 180) && Number(max) === (project.episode_seconds_max ?? 240)} onClick={() => void onSettings(Number(min), Number(max))}>保存时长</button>}
       <p className="text-fs-13">当前导演模型：{brainProviderName(project.brain_provider)} <span className="text-[color:var(--ink2)]">（在页面顶部更换）</span></p>
       {!valid && <p role="status" className="text-fs-13">请填写有效的时长区间与集数（1–300）。</p>}
-      <button type="button" className="btn btn-primary min-h-10" disabled={busy || active || !valid || providers.find(item => item.id === project.brain_provider)?.available === false} onClick={() => void onQuote(Number(min), Number(max), target ? Number(target) : undefined)}>{busy ? "处理中…" : breakdown ? "重新报价拆解" : "报价"}</button>
+      <button type="button" className={breakdown?.continuable ? "btn btn-quiet min-h-10" : "btn btn-primary min-h-10"} disabled={busy || active || !valid || providers.find(item => item.id === project.brain_provider)?.available === false} onClick={() => void onQuote(Number(min), Number(max), target ? Number(target) : undefined)}>{busy ? "处理中…" : breakdown ? "重新报价拆解" : "报价"}</button>
     </fieldset>
-    {breakdown && <div className="mt-5 min-w-0 space-y-3"><div className="flex min-w-0 flex-wrap items-center justify-between gap-2"><p role="status">{({ draft: "待开始", running: "正在拆解", partial: "部分完成", done: "拆解完成", cancelled: "已取消" })[breakdown.status]} · {complete}/{chunks.length} 批完成 · {breakdown.units_count} 个场景单元</p>{canCancel && <button type="button" className="btn btn-quiet min-h-10" disabled={busy} onClick={() => setCancelling(true)}>取消拆解</button>}</div><div role="progressbar" aria-label="拆解总进度" aria-valuemin={0} aria-valuemax={chunks.length} aria-valuenow={complete} className="h-1.5 w-full overflow-hidden rounded-full bg-[color:var(--slip)]"><div className="h-full rounded-full bg-[color:var(--ink2)] transition-[width]" style={{ width: `${percent}%` }} /></div>
+    {breakdown && <div className="mt-5 min-w-0 space-y-3"><div className="flex min-w-0 flex-wrap items-center justify-between gap-2"><div className="min-w-0 space-y-1" data-serial=""><p role="status">{({ draft: "待开始", running: "正在拆解", partial: "部分完成", done: "拆解完成", cancelled: "已取消" })[breakdown.status]} · {complete}/{chunks.length} 批完成 · {breakdown.units_count} 个场景单元</p>{staleChapters.length > 0 && <p className="text-fs-13 text-[color:var(--ink2)]" data-serial="">{formatChapterRanges(staleChapters)}拆解时在书斋里标为待复核，拆解按快照里的原文进行。</p>}{continuations.length > 0 && breakdown.status === "done" && <p className="text-fs-13 text-[color:var(--ink2)]" data-serial="">已续拆 {continuations.length} 次，拆到第 {breakdown.covered_through} 章。</p>}{continuing && lastContinuation && <p className="text-fs-13 text-[color:var(--ink2)]" data-serial="">正在续拆{continuationRange(lastContinuation.from, lastContinuation.to)}。</p>}</div>{continuing ? <p className="text-fs-13 text-[color:var(--ink2)]" data-serial="">续拆进行中不能取消，失败的批次可以单批重跑。</p> : canCancel && <button type="button" className="btn btn-quiet min-h-10" disabled={busy} onClick={() => setCancelling(true)}>取消拆解</button>}</div>{!breakdown.continuable && changedCovered.length > 0 && <p className="text-fs-13 text-[color:var(--ink2)]" data-serial="">{formatChapterRanges(changedCovered)}在拆解之后改过，续拆不会重拆它们；需要时可以整本重新拆解（会生成新的总表，已定的妆要重新定）。</p>}<div role="progressbar" aria-label="拆解总进度" aria-valuemin={0} aria-valuemax={chunks.length} aria-valuenow={complete} className="h-1.5 w-full overflow-hidden rounded-full bg-[color:var(--slip)]"><div className="h-full rounded-full bg-[color:var(--ink2)] transition-[width]" style={{ width: `${percent}%` }} /></div>
       {breakdown.status === "partial" && <p role="status" className="text-fs-13">以下批次需要重跑：{retryNeeded.map(item => `${item.label}（${chunkStatusLabel(item.status)}${item.status === "uncertain" ? "，需先核账释放" : ""}）`).join("、") || "请检查失败的前置批次"}；{blockedSegments.length ? `完成后「${blockedSegments.join("、")}」会自动继续。` : ""}完成前不能批准分集方案。</p>}
+      {continuing && breakdown.status === "partial" && <p className="text-fs-13 text-[color:var(--ink2)]" data-serial="">续拆有批次未完成：完成前不能同步新章，也不能修改或批准分集方案。单批重跑读的是本轮的快照，在书斋里改原文对重跑无效；重跑仍失败时，只能整本重新拆解（会生成新的总表，已定的妆要重新定）。</p>}
       {breakdown.totals && <p className="readout text-fs-13">已结算：{Object.entries(breakdown.totals).map(([currency, amount]) => formatBreakdownMoney(Number(amount), currency as "CNY" | "USD")).join(" / ")}</p>}
       <div className="min-w-0 space-y-2">{chunks.map(chunk => <BreakdownChunkRow key={`${chunk.id}:${chunk.status}`} chunk={chunk} providers={providers} busy={busy} onRetry={onRetry} onRelease={onRelease} />)}</div>
     </div>}

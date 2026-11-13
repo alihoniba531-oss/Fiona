@@ -145,7 +145,7 @@ NOVEL_INTENT_PROMPT = """
 【作者的小说工坊（仅本人作品，免费）】
   novel_list     列出自己的小说 params: (无)
   novel_read     读取小说当前原文章节 params: book(书名), chapter(章号如\"3\"或\"3-5\"，默认\"1\"), offset(非负整数，可选)
-  novel_to_film  把已完结小说建立短片工作室项目 params: book(书名)
+  novel_to_film  把小说建立短片工作室项目（连载中的书只收已写好的章节） params: book(书名)
 缺少书名时 missing=[book]，不得猜测书名。
 \"我有哪些小说\" → novel_list
 \"把《春山》第3章念给我听\" → novel_read, book=春山, chapter=3

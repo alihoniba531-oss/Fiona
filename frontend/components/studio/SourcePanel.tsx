@@ -4,6 +4,7 @@ import { useCallback, useEffect, useRef, useState } from "react";
 import { EmptyState, ErrorNotice, LoadingState } from "@/components/novel/NovelStates";
 import { useAccountRequest } from "@/lib/useAccountIdentity";
 import { formatStudioDate, getStudioSource, studioErrorMessage, studioSourceKindLabel, syncStudioSource, type StudioSourceStatus } from "@/lib/studio";
+import { formatChapterRanges } from "@/lib/studio-breakdown";
 import { SourceFlags, sourceDialogClass } from "./SourceChoices";
 
 export function studioDriftSummary(drift: NonNullable<StudioSourceStatus["drift"]>): string {
@@ -12,6 +13,7 @@ export function studioDriftSummary(drift: NonNullable<StudioSourceStatus["drift"
   if (drift.added?.length) parts.push(`新增第 ${drift.added.join("、")} 章`);
   if (drift.removed?.length) parts.push(`移除第 ${drift.removed.join("、")} 章`);
   if (drift.bible_changed) parts.push("故事圣经已更新");
+  if (drift.stale?.length) parts.push(`${formatChapterRanges(drift.stale)}待复核`);
   return `原作有改动：${parts.join("，") || "作品信息已更新"}`;
 }
 export default function SourcePanel({ projectId, owner, busy: externalBusy = false, onChanged }: { projectId: string; owner: string; busy?: boolean; onChanged: () => Promise<unknown> }) {
@@ -50,9 +52,11 @@ export default function SourcePanel({ projectId, owner, busy: externalBusy = fal
     {source?.kind === null && <EmptyState>这个项目没有关联作品</EmptyState>}
     {source?.kind && <div className="min-w-0 space-y-3 break-words"><div className="flex flex-wrap items-center gap-2"><span className="tag">{studioSourceKindLabel(source.kind)}</span><h3 className="text-fs-18">{source.title || source.snapshot?.title}</h3></div>
       {source.snapshot && <><p className="readout text-fs-13">快照第 {source.snapshot.no} 版 · {formatStudioDate(source.snapshot.created_at)}</p><p className="readout text-fs-13">{source.snapshot.chapters} {source.kind === "novel" ? "章" : "块"} · {source.snapshot.chars.toLocaleString()} 字</p></>}
+      {source.kind === "novel" && source.snapshot?.stale?.length ? <p className="text-fs-13 text-[color:var(--ink2)]" data-serial="">快照中{formatChapterRanges(source.snapshot.stale)}待复核。</p> : null}
       {source.kind === "novel" && <SourceFlags chapters={source.snapshot?.flagged ?? source.flagged ?? []} />}
       {drift?.state === "unchanged" && <p role="status" className="text-fs-13 text-[color:var(--ink2)]">原作与快照一致。</p>}
       {drift?.state === "unavailable" && <p role="status" className="text-fs-13 text-[color:var(--ink2)]">原作已无法访问，快照仍可正常使用</p>}
+      {source.kind === "novel" && typeof drift?.book_status === "string" && drift.book_status !== "completed" ? <p className="text-fs-13 text-[color:var(--ink2)]" data-serial="">作品还在写，同步只收已写好的章节。</p> : null}
       {drift?.state === "changed" && <div className="ceramic-card space-y-3 rounded-xl p-3"><p role="status">{studioDriftSummary(drift)}</p><button type="button" className="btn min-h-10" disabled={busy || drift.eligible === false} onClick={() => setConfirm(true)}>同步</button></div>}
       {drift?.eligible === false && drift.state !== "unavailable" && <p role="status" className="text-fs-13 text-[color:var(--seal)]">原作当前不能同步：{drift.reason || "暂不满足导入条件"}</p>}
     </div>}

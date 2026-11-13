@@ -113,7 +113,7 @@ def test_film_admission_and_reuses_project(catalog, monkeypatch, method, owner, 
     monkeypatch.setattr(catalog.sources, "create_novel_project", no_creation)
     card = asyncio.run(catalog.sources.start_film("author", "春山", method))
     if allowed:
-        assert card == {"type": "card", "subtype": "studio_project", "source": "短片工作室", "url": "/studio/existing", "points": ["《春山》", "3 章 · 1 万字 · 快照第 2 版", "已建项目，尚未花费"]}
+        assert card == {"type": "card", "subtype": "studio_project", "source": "短片工作室", "url": "/studio/existing", "points": ["《春山》", "快照第 2 版", "已有项目，打开即可继续"]}
     else:
         assert "权限" in card["error"] and "url" not in card
 

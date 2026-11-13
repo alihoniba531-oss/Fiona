@@ -404,6 +404,18 @@ async def start_breakdown(pid: str, body: BreakdownStartBody, user: str = Depend
     return await breakdown.start(pid, user, body.quote_id)
 
 
+@router.post("/projects/{pid}/breakdown/continue/quote")
+async def continue_quote_breakdown(pid: str, user: str = Depends(studio_user)):
+    from studio import breakdown
+    return await breakdown.continue_quote(pid, user)
+
+
+@router.post("/projects/{pid}/breakdown/continue/start")
+async def continue_start_breakdown(pid: str, body: BreakdownStartBody, user: str = Depends(studio_user)):
+    from studio import breakdown
+    return await breakdown.continue_start(pid, user, body.quote_id)
+
+
 @router.get("/projects/{pid}/breakdown")
 async def current_breakdown(pid: str, user: str = Depends(studio_user)):
     from studio import breakdown

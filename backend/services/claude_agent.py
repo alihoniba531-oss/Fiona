@@ -122,7 +122,7 @@ def client_tools_for_turn(ctx, state):
     ]
     from studio.gate import allow_studio
     if allow_studio(ctx.user, ctx.auth_method):
-        tools.append(_tool("start_film", "将已完结小说建立短片工作室项目与快照；免费。", {"book": {"type": "string"}}, ["book"]))
+        tools.append(_tool("start_film", "将小说建立短片工作室项目与快照，连载中的书只收已写好的章节；已有项目时直接打开，不会自动同步新章；免费。", {"book": {"type": "string"}}, ["book"]))
     from studio.sources import novel_create_enabled
     if novel_create_enabled(ctx.user):
         tools.append(NOVEL_DRAFT_TOOL)
@@ -842,7 +842,7 @@ async def _stream_claude_agent(ctx, state, deadline, release_user_lock):
                                     if K is not None and not clean["current_plan"] and A == "per_chapter":
                                         parts.append(f"如果有只针对第 {K} 章的要求，请告诉作者可以在书斋里直接改第 {K} 章细纲，或者下一轮再出一张带 current_plan 的卡。")
                                     if clean["written"]:
-                                        parts.append("已写章节的问题只给作者看，书斋不会自动修改，要作者自己去书斋改稿：改最新写好的一章会重新归档（可能扣草莓）；改较早的章会让后面已写的章永久待复核、不能做成片，故事圣经与章节摘要也不会重算。")
+                                        parts.append("已写章节的问题只给作者看，书斋不会自动修改，要作者自己去书斋改稿：改最新写好的一章会重新归档（可能扣草莓）；改较早的章会让后面已写的章永久待复核（短片工作室照收，会标出待复核），故事圣经与章节摘要也不会重算。")
                                     parts.append("请如实告诉作者，不要说已经交给编辑部或已经改好。")
                                     result_text = "".join(parts)
                         except Exception:

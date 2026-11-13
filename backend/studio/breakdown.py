@@ -155,6 +155,66 @@ async def quote(pid, owner, target_episodes=None, episode_seconds_min=None, epis
         return await _write_quote(db, pid, owner, payload)
 
 
+def _continuation_quote_payload(project, snapshot, manifest, entries, option, breakdown, covered, last,
+                                segment_base, no_base):
+    _, plan = batch_plan(manifest, entries, start_chapter=covered + 1, segment_base=segment_base, no_base=no_base)
+    settings = breakdown.get('settings') or {}
+    minimum = settings.get('episode_seconds_min', project.get('episode_seconds_min', 180))
+    maximum = settings.get('episode_seconds_max', project.get('episode_seconds_max', 240))
+    items = []
+    for chunk in plan:
+        inputs = chunk['inputs']
+        if not inputs:
+            count = chunk['estimate_units'] if chunk['task'] == 'episode_plan' else len(entries)
+            inputs = {'estimated_material': '字' * (count * 400), 'target_min': minimum, 'target_max': maximum}
+        item = brain_jobs._quote_item(option['id'], option['model'], chunk['task'], inputs)
+        chunk['item'] = item
+        chunk.pop('inputs', None)
+        items.append(item)
+    return {'kind': 'breakdown_continue', 'breakdown_id': breakdown['id'], 'snapshot_no': snapshot['no'],
+            'covered_through': covered, 'continue_from': covered + 1, 'continue_to': last,
+            'provider': option['id'], 'settings': {**settings, 'target_episodes': None},
+            'plan': plan, 'items': items}
+
+
+async def continue_quote(pid, owner):
+    project, row = await sources._current_snapshot(owner, pid)
+    if row is None or row['kind'] != 'novel':
+        raise HTTPException(409, '只有小说工坊来源可以续拆')
+    manifest = await asyncio.to_thread(sources._read_manifest, row)
+    async with store.connection() as db:
+        project = await store._project(db, pid, owner)
+        bid = project.get('breakdown_id')
+        breakdown = await _one(db, 'SELECT * FROM studio_breakdowns WHERE id=? AND owner=?', (bid, owner)) if bid else None
+        if breakdown is None:
+            raise HTTPException(409, '还没有拆解，请先拆解')
+        if _retired(breakdown):
+            raise HTTPException(409, '拆解已被替代或取消')
+        if breakdown['status'] != 'done':
+            raise HTTPException(409, '拆解尚未全部完成，不能续拆')
+        if await _one(db, """SELECT id FROM studio_jobs WHERE group_id=? AND owner=? AND status IN
+                ('uncertain','running','submitting','submitted','queued') LIMIT 1""", (breakdown['id'], owner)):
+            raise HTTPException(409, '拆解还有未结束的批次')
+        chunks = await _chunks(db, breakdown['id'])
+    covered = _covered_through(breakdown)
+    last = max((item['chapter'] for item in manifest['chapters']), default=0)
+    if last <= covered:
+        raise HTTPException(409, '没有新写好的章节可以续拆，请先在来源面板同步')
+    segment_base = max((chunk['source'].get('segment', -1) for chunk in chunks), default=-1) + 1
+    no_base = max((chunk['no'] for chunk in chunks), default=0)
+    _, entries = await _locked_snapshot(pid, owner, row['no'], indices=range(covered + 1, last + 1))
+    option = await _option(project['brain_provider'], owner)
+    payload = await asyncio.to_thread(_continuation_quote_payload, project, row, manifest, entries,
+                                      option, breakdown, covered, last, segment_base, no_base)
+    async with store.connection(transaction=True) as db:
+        await store._project(db, pid, owner)
+        await spend.check_brain_budget(db, owner, brain_jobs._totals(payload['items']))
+        public = await _write_quote(db, pid, owner, payload)
+    public['continue_from'] = covered + 1
+    public['continue_to'] = last
+    return public
+
+
 async def _confirmed_quote(db, qid, pid, owner, kind):
     row = await _one(db, 'SELECT * FROM studio_quotes WHERE id=? AND project_id=? AND owner=?', (qid, pid, owner))
     if row is None:
@@ -217,6 +277,38 @@ async def _cancel_unexecuted(db, breakdown, owner):
 def _retired(breakdown):
     """这次拆解已被取消，或已被新拆解替代：不再执行批次、物化、调度或发布方案。"""
     return breakdown['status'] == 'cancelled' or bool(breakdown.get('superseded_by'))
+
+
+def _covered_through(breakdown):
+    imported = breakdown.get('imported') or {}
+    value = imported.get('_covered_through')
+    if type(value) is int:
+        return value
+    chapters = (imported.get('_manifest') or {}).get('chapters') or []
+    return max((item.get('chapter') for item in chapters if type(item.get('chapter')) is int), default=0)
+
+
+def _chapter_basis(breakdown):
+    imported = breakdown.get('imported') or {}
+    saved = imported.get('_chapter_basis')
+    if isinstance(saved, dict):
+        return saved
+    chapters = (imported.get('_manifest') or {}).get('chapters') or []
+    return {str(item['chapter']): {'snapshot_no': breakdown.get('snapshot_no'), 'sha256': item.get('sha256'),
+                                   'title': item.get('title'), 'status': item.get('status')}
+            for item in chapters if type(item.get('chapter')) is int}
+
+
+def _published_max_seq(breakdown, units):
+    imported = breakdown.get('imported') or {}
+    value = imported.get('_published_max_seq')
+    if type(value) is int:
+        return value
+    return max((unit.get('seq') for unit in units if type(unit.get('seq')) is int), default=0)
+
+
+def _continuing(breakdown):
+    return bool((breakdown.get('imported') or {}).get('_continuations')) and breakdown.get('status') in {'running', 'partial'}
 
 
 async def start(pid, owner, quote_id):
@@ -285,6 +377,113 @@ async def start(pid, owner, quote_id):
     return await get_current(pid, owner)
 
 
+def _continued_import(imported, breakdown, manifest, payload, pre_max_seq, pre_bible_ids, chunks, quote_id):
+    result = dict(imported)
+    result.update(structured_import(manifest))
+    basis = dict(_chapter_basis(breakdown))
+    for chapter in manifest['chapters']:
+        key = str(chapter['chapter'])
+        if chapter['chapter'] > payload['covered_through'] and key not in basis:
+            basis[key] = {'snapshot_no': payload['snapshot_no'], 'sha256': chapter.get('sha256'),
+                          'title': chapter.get('title'), 'status': chapter.get('status')}
+    result['_chapter_basis'] = basis
+    result['_manifest'] = manifest
+    result['_covered_through'] = payload['continue_to']
+    if type(result.get('_published_max_seq')) is not int:
+        result['_published_max_seq'] = pre_max_seq
+    frozen = result.get('_frozen_bible_ids')
+    result['_frozen_bible_ids'] = sorted(set(frozen) | set(pre_bible_ids)) if isinstance(frozen, list) else pre_bible_ids
+    continuations = list(result.get('_continuations') or [])
+    continuations.append({'round': len(continuations) + 1, 'snapshot_no': payload['snapshot_no'],
+                          'from': payload['continue_from'], 'to': payload['continue_to'], 'quote_id': quote_id,
+                          'started_at': store.utcnow(), 'pre_max_seq': pre_max_seq})
+    result['_continuations'] = continuations
+    if '_published_chunk_ids' not in result:
+        result['_published_chunk_ids'] = [chunk['id'] for chunk in chunks
+                                          if chunk['task'] == 'episode_plan' and chunk['status'] == 'succeeded']
+    return result
+
+
+async def continue_start(pid, owner, quote_id):
+    _, snapshot_row = await sources._current_snapshot(owner, pid)
+    manifest = None
+    if snapshot_row is not None and snapshot_row['kind'] == 'novel':
+        manifest = await asyncio.to_thread(sources._read_manifest, snapshot_row)
+    scheduled = []
+    async with store.connection(transaction=True) as db:
+        # 项目、拆解、批、job 与旧 imported 全部在本写事务内重读，校验顺序固定。
+        project = await store._project(db, pid, owner)
+        raw_quote = await _one(db, 'SELECT * FROM studio_quotes WHERE id=? AND project_id=? AND owner=?',
+                               (quote_id, pid, owner))
+        preview = raw_quote['items'] if raw_quote else None
+        if not isinstance(preview, dict) or preview.get('kind') != 'breakdown_continue':
+            raise HTTPException(409, '报价用途不匹配')
+        bid = preview.get('breakdown_id')
+        breakdown = await _one(db, 'SELECT * FROM studio_breakdowns WHERE id=? AND owner=?', (bid, owner)) if bid else None
+        if (project.get('breakdown_id') != bid or breakdown is None or _retired(breakdown)
+                or breakdown['status'] != 'done'):
+            raise HTTPException(409, '拆解已更新，请重新报价')
+        if await _one(db, """SELECT id FROM studio_jobs WHERE group_id=? AND owner=? AND status IN
+                ('uncertain','running','submitting','submitted','queued') LIMIT 1""", (bid, owner)):
+            raise HTTPException(409, '拆解还有未结束的批次')
+        if project['snapshot_no'] != preview['snapshot_no']:
+            raise HTTPException(409, '作品快照已更新，请重新报价')
+        if _covered_through(breakdown) != preview['covered_through']:
+            raise HTTPException(409, '拆解已更新，请重新报价')
+        payload = await _confirmed_quote(db, quote_id, pid, owner, 'breakdown_continue')
+        if manifest is None or payload['snapshot_no'] != project['snapshot_no']:
+            raise HTTPException(409, '作品快照已更新，请重新报价')
+        chunks = await _chunks(db, bid)
+        job_rows = await _many(db, 'SELECT * FROM studio_jobs WHERE group_id=? AND owner=?', (bid, owner))
+        jobs_by_id = {job['id']: job for job in job_rows}
+        units_rows = await _many(db, 'SELECT seq FROM studio_units WHERE breakdown_id=?', (bid,))
+        pre_max_seq = max((row['seq'] for row in units_rows), default=0)
+        bible_rows = await _many(db, 'SELECT id FROM studio_bible WHERE breakdown_id=?', (bid,))
+        pre_bible_ids = sorted(row['id'] for row in bible_rows)
+        imported = _continued_import(breakdown['imported'], breakdown, manifest, payload, pre_max_seq,
+                                     pre_bible_ids, chunks, quote_id)
+        breakdown['imported'] = imported
+        round_no = len(imported['_continuations'])
+        old_snapshot_no = breakdown['snapshot_no']
+        for chunk in chunks:
+            if chunk['source'].get('snapshot_no') is None:
+                chunk['source'] = {**chunk['source'], 'snapshot_no': old_snapshot_no}
+                await db.execute('UPDATE studio_chunks SET source_json=? WHERE id=?',
+                                 (await _json(chunk['source']), chunk['id']))
+        ids = {chunk['no']: str(uuid.uuid4()) for chunk in payload['plan']}
+        new_chunks, stamp = [], store.utcnow()
+        for chunk in payload['plan']:
+            cid, blocked = ids[chunk['no']], bool(chunk['depends'])
+            source = {**chunk['source'], '_item': chunk['item'], 'snapshot_no': payload['snapshot_no'],
+                      'round': round_no}
+            job = await _new_chunk_job(db, bid, cid, pid, owner, chunk['item'], {}, quote_id)
+            await db.execute('''INSERT INTO studio_chunks(id,breakdown_id,project_id,owner,no,task,source_json,
+                depends_on_json,status,job_id,provider,result_json,warnings_json,created_at,updated_at)
+                VALUES(?,?,?,?,?,?,?,?,?,?,?,NULL,'[]',?,?)''',
+                (cid, bid, pid, owner, chunk['no'], chunk['task'], await _json(source),
+                 await _json([ids[no] for no in chunk['depends']]), 'blocked' if blocked else 'queued',
+                 job['id'], payload['provider'], stamp, stamp))
+            new_chunks.append({'id': cid, 'no': chunk['no'], 'task': chunk['task'], 'source': source,
+                               'status': 'blocked' if blocked else 'queued'})
+            if not blocked:
+                scheduled.append(job['id'])
+        material_chunks = [*chunks, *new_chunks]
+        for chunk in material_chunks:
+            if chunk['task'] in {'novel_complete', 'text_map'} and chunk['status'] == 'succeeded':
+                job = jobs_by_id.get(chunk['job_id'])
+                chunk['inputs'] = ((job or {}).get('params') or {}).get('inputs') or await _source_inputs(breakdown, chunk)
+        units, bible, warning_map = await asyncio.to_thread(_materialize, breakdown, material_chunks)
+        await _insert_units(db, bid, units)
+        await _insert_bible(db, breakdown, bible)
+        imported['_chunk_material_warnings'] = warning_map
+        await db.execute('''UPDATE studio_breakdowns SET snapshot_no=?,outdated=0,status='running',
+            import_json=?,updated_at=? WHERE id=?''',
+            (payload['snapshot_no'], await _json(imported), store.utcnow(), bid))
+    for jid in scheduled:
+        brain_jobs._schedule(jid)
+    return await get_current(pid, owner)
+
+
 def _materialize(breakdown, chunks):
     imported, units, warnings = breakdown['imported'], [], {}
     manifest = imported['_manifest']
@@ -329,7 +528,7 @@ def _materialize(breakdown, chunks):
     return units, bible, warnings
 
 
-def _dependency_input(breakdown, chunk, chunks, units):
+def _dependency_input(breakdown, chunk, chunks, units, published_last=None):
     source, settings = chunk['source'], breakdown['settings']
     if chunk['task'] == 'synopsis':
         return {'summaries': [{'block': item['source']['block_no'], 'summary': item['output']['summary']}
@@ -339,31 +538,99 @@ def _dependency_input(breakdown, chunk, chunks, units):
         selected = [unit for unit in units if source['chapter_from'] <= unit['chapter'] <= source['chapter_to']]
     else:
         selected = [unit for unit in units if source['block_from'] <= unit['chapter'] <= source['block_to']]
-    previous = next((item['output']['episodes'][-1] for item in reversed(chunks)
-                     if item['task'] == 'episode_plan' and item['no'] < chunk['no'] and item['status'] == 'succeeded'), None)
+    round_no = source.get('round') or 0
+    earlier = [item for item in chunks if item['task'] == 'episode_plan' and item['no'] < chunk['no']
+               and (item['source'].get('round') or 0) == round_no] if round_no >= 1 else []
+    if round_no >= 1:
+        previous = (next((item['output']['episodes'][-1] for item in reversed(earlier)
+                          if item['status'] == 'succeeded'), None) if earlier else published_last)
+    else:
+        previous = next((item['output']['episodes'][-1] for item in reversed(chunks)
+                         if item['task'] == 'episode_plan' and item['no'] < chunk['no'] and item['status'] == 'succeeded'), None)
     result = {'units': [{key: unit.get(key) for key in ('seq', 'label', 'location', 'summary', 'characters', 'est_seconds', 'change')}
                         for unit in selected],
               'target_min': settings['episode_seconds_min'], 'target_max': settings['episode_seconds_max'],
               'synopsis': breakdown.get('synopsis', {}), 'previous_episode': previous,
               'foreshadowing': breakdown['imported'].get('foreshadowing', []),
               'adaptation': breakdown['imported'].get('adaptation', {})}
-    if settings.get('target_episodes'):
+    if round_no == 0 and settings.get('target_episodes'):
         total = sum(unit.get('est_seconds') or 0 for unit in units)
         segment = sum(unit.get('est_seconds') or 0 for unit in selected)
         result['suggested_episodes'] = max(1, round(settings['target_episodes'] * segment / total)) if total else 1
     return result
 
 
+def _needs_published_last(chunk, chunks):
+    """续拆本轮第一个分集批要以已发布方案的末集衔接，后续段仍取本轮上一批输出。"""
+    round_no = chunk['source'].get('round') or 0
+    if chunk['task'] != 'episode_plan' or round_no < 1:
+        return False
+    return not any(item['task'] == 'episode_plan' and item['no'] < chunk['no']
+                   and (item['source'].get('round') or 0) == round_no for item in chunks)
+
+
+async def _published_last(db, breakdown):
+    return await _one(db, '''SELECT title,unit_from,unit_to,change,hook FROM studio_episodes
+        WHERE breakdown_id=? ORDER BY no DESC LIMIT 1''', (breakdown['id'],))
+
+
 async def _insert_bible(db, breakdown, bible):
     # Deterministic IDs preserve author edits while later batches finish.
     bid, stamp = breakdown['id'], store.utcnow()
-    author_edits = breakdown['imported'].get('_bible_author_edits', {})
-    desired, generated = {}, set(breakdown['imported'].get('_generated_bible_ids', []))
-    for item in bible:
-        identifier = str(uuid.uuid5(uuid.UUID(bid), item['kind'] + ':' + (item.get('ref_id') or item['name'])))
+    imported = breakdown['imported']
+    author_edits = imported.get('_bible_author_edits', {})
+    continuing = bool(imported.get('_continuations'))
+    alias = imported.setdefault('_bible_id_alias', {}) if continuing else {}
+    frozen = set(imported.get('_frozen_bible_ids') or []) if continuing else set()
+    rows = await _many(db, 'SELECT * FROM studio_bible WHERE breakdown_id=?', (bid,))
+    row_by_id = {row['id']: row for row in rows}
+    active_by_kind = {}
+    for row in rows:
+        row['_alias_names'] = {normalize_name(value) for value in
+                               [row['name'], *json.loads(row.get('aliases_json') or '[]')] if value}
+        if not row.get('archived') and not row.get('merged_into'):
+            active_by_kind.setdefault(row['kind'], []).append(row)
+    merge_warnings = imported.setdefault('_bible_merge_warnings', [])
+
+    def identifier_for(item):
+        key = item['kind'] + ':' + (item.get('ref_id') or item['name'])
+        derived = str(uuid.uuid5(uuid.UUID(bid), key))
+        if not continuing:
+            return key, derived, derived
+        target_id = alias.get(key)
+        target = row_by_id.get(target_id) if target_id else None
+        if (target is not None and target.get('breakdown_id') == bid
+                and not target.get('archived') and not target.get('merged_into')):
+            return key, derived, target_id
+        if derived in row_by_id:
+            return key, derived, derived
+        names = {normalize_name(value) for value in [item['name'], *item.get('aliases', [])] if value}
+        matches = []
+        for row in active_by_kind.get(item['kind'], []):
+            if row.get('ref_id') and item.get('ref_id'):
+                matched = row['ref_id'] == item['ref_id']
+            else:
+                matched = bool(row['_alias_names'] & names)
+            if matched:
+                matches.append(row)
+        if len(matches) == 1:
+            alias[key] = matches[0]['id']
+            return key, derived, matches[0]['id']
+        if len(matches) > 1:
+            merge_warnings.append(f"{item['name']} 与总表里多个同类条目重名，请手动合并")
+        return key, derived, derived
+
+    decisions = [(item, *identifier_for(item)) for item in bible]
+    desired, generated = {}, set(imported.get('_generated_bible_ids', []))
+    for item, key, derived, identifier in decisions:
         desired[identifier] = item
+
+    # 确定性 ID 的条目照旧新增或补齐；转向已有活动条目的只补空值、不改名字。
+    for item, key, derived, identifier in decisions:
+        if identifier != derived:
+            continue
         generated.add(identifier)
-        existing = await _one(db, 'SELECT * FROM studio_bible WHERE id=?', (identifier,))
+        existing = row_by_id.get(identifier)
         aliases = await _json(item.get('aliases', []))
         if existing:
             edited = set(author_edits.get(identifier, []))
@@ -377,12 +644,13 @@ async def _insert_bible(db, breakdown, bible):
                 updates['excerpt'] = item['excerpt']
             if ('appearance' not in edited and existing['appearance_source'] != 'author'
                     and not existing.get('appearance') and item.get('appearance')):
-                updates.update(appearance=item['appearance'], appearance_source=item.get('appearance_source', 'excerpt'))
+                updates.update(appearance=item.get('appearance'), appearance_source=item.get('appearance_source', 'excerpt'))
                 if 'needs_author' not in edited:
                     updates['needs_author'] = 0
             if updates:
                 await db.execute('UPDATE studio_bible SET ' + ','.join(field + '=?' for field in updates) + ' WHERE id=?',
                                  (*updates.values(), identifier))
+                existing.update(updates)
             continue
         await db.execute('''INSERT INTO studio_bible(id,project_id,owner,breakdown_id,kind,name,aliases_json,role,
             description,appearance,appearance_source,excerpt,needs_author,first_unit,episodes_json,ref_id,
@@ -391,13 +659,46 @@ async def _insert_bible(db, breakdown, bible):
              aliases, item.get('role', ''), item.get('description', ''), item.get('appearance', ''),
              item.get('appearance_source', 'none'), item.get('excerpt', ''), int(item.get('needs_author', False)),
              item.get('first_unit'), item.get('ref_id'), stamp))
+        row_by_id[identifier] = await _one(db, 'SELECT * FROM studio_bible WHERE id=?', (identifier,))
+
+    for item, key, derived, identifier in decisions:
+        if identifier == derived:
+            continue
+        existing = row_by_id.get(identifier)
+        if existing is None:
+            continue
+        edited = set(author_edits.get(identifier, []))
+        updates = {}
+        if not existing.get('ref_id') and item.get('ref_id'):
+            updates['ref_id'] = item['ref_id']
+        for field in ('role', 'description', 'excerpt'):
+            if not existing.get(field) and item.get(field):
+                updates[field] = item[field]
+        if ('appearance' not in edited and existing.get('appearance_source') != 'author'
+                and not existing.get('appearance') and item.get('appearance')):
+            updates.update(appearance=item.get('appearance'), appearance_source=item.get('appearance_source', 'excerpt'))
+            if 'needs_author' not in edited:
+                updates['needs_author'] = 0
+        if existing.get('first_unit') is None and item.get('first_unit') is not None:
+            updates['first_unit'] = item['first_unit']
+        if 'aliases' not in edited:
+            current_aliases = json.loads(existing.get('aliases_json') or '[]')
+            merged_aliases = list(dict.fromkeys([*current_aliases,
+                *[name for name in item.get('aliases', []) if name != existing['name']]]))
+            if merged_aliases != current_aliases:
+                updates['aliases_json'] = await _json(merged_aliases)
+        if updates:
+            await db.execute('UPDATE studio_bible SET ' + ','.join(field + '=?' for field in updates) + ' WHERE id=?',
+                             (*updates.values(), identifier))
+            existing.update(updates)
 
     # A later completed earlier batch can change the canonical display name.
     # Retire obsolete generated IDs instead of leaving duplicate active rows.
     existing_rows = await _many(db, 'SELECT * FROM studio_bible WHERE breakdown_id=?', (bid,))
     by_id = {row['id']: row for row in existing_rows}
-    merge_warnings = breakdown['imported'].setdefault('_bible_merge_warnings', [])
     for old in existing_rows:
+        if continuing and (old['id'] in frozen or old['id'] in alias.values()):
+            continue
         try:
             automatic = old['id'] in generated or uuid.UUID(old['id']).version == 5
         except ValueError:
@@ -432,10 +733,10 @@ async def _insert_bible(db, breakdown, bible):
                 author_edits[target_id] = sorted(edits)
             await db.execute('UPDATE studio_bible SET merged_into=?,updated_at=? WHERE id=?', (target_id, stamp, old['id']))
             break
-    breakdown['imported']['_generated_bible_ids'] = sorted(generated)
-    breakdown['imported']['_bible_author_edits'] = author_edits
-    breakdown['imported']['_bible_merge_warnings'] = list(dict.fromkeys(merge_warnings))
-    await db.execute('UPDATE studio_breakdowns SET import_json=? WHERE id=?', (await _json(breakdown['imported']), bid))
+    imported['_generated_bible_ids'] = sorted(generated)
+    imported['_bible_author_edits'] = author_edits
+    imported['_bible_merge_warnings'] = list(dict.fromkeys(merge_warnings))
+    await db.execute('UPDATE studio_breakdowns SET import_json=? WHERE id=?', (await _json(imported), bid))
 
 
 async def _stored_units(db, bid):
@@ -447,7 +748,8 @@ async def _source_inputs(breakdown, chunk):
     """Read only this batch's immutable snapshot slices when they are needed."""
     source = chunk['source']
     indices = source.get('indices') if chunk['task'] == 'novel_complete' else [source.get('index') or source['block_no']]
-    manifest, entries = await _locked_snapshot(breakdown['project_id'], breakdown['owner'], breakdown['snapshot_no'], indices=indices)
+    snapshot_no = source.get('snapshot_no') or breakdown['snapshot_no']
+    manifest, entries = await _locked_snapshot(breakdown['project_id'], breakdown['owner'], snapshot_no, indices=indices)
     def assemble():
         by_index = {entry['index']: entry for entry in entries}
         if chunk['task'] == 'text_map':
@@ -484,8 +786,10 @@ async def prepare_job(jid, owner):
         if not all(item['status'] == 'succeeded' for item in chunks if item['id'] in chunk['depends_on']):
             raise HTTPException(409, '拆解依赖尚未完成')
         units = await _stored_units(db, breakdown['id'])
+        published_last = (await _published_last(db, breakdown)
+                          if _needs_published_last(chunk, chunks) else None)
     inputs = (await _source_inputs(breakdown, chunk) if chunk['task'] in {'novel_complete', 'text_map'} else
-              await asyncio.to_thread(_dependency_input, breakdown, chunk, chunks, units))
+              await asyncio.to_thread(_dependency_input, breakdown, chunk, chunks, units, published_last))
     async with store.connection(transaction=True) as db:
         async with db.execute("UPDATE studio_jobs SET params_json=?,input_chars=?,updated_at=? WHERE id=? AND status='queued'",
                               (await _json({'inputs': inputs, 'breakdown_chunk': cid}),
@@ -578,14 +882,38 @@ async def refresh(bid, owner, *, dispatch=True):
         episodes = [episode for chunk in chunks if chunk['task'] == 'episode_plan' and chunk['status'] == 'succeeded'
                     for episode in chunk['output']['episodes']]
         status = _status(breakdown, chunks)
-        encoded = await _json(episodes)
-        fingerprint = await asyncio.to_thread(lambda: hashlib.sha256(encoded.encode()).hexdigest())
         imported = breakdown['imported']
-        if not _retired(breakdown) and episodes and status in {'done', 'partial'} \
-                and imported.get('_published_fingerprint') != fingerprint:
+        if not _retired(breakdown):
             from .breakdown_plan import publish_plan
-            await publish_plan(db, bid, episodes, reason='generated' if status == 'done' else 'partial')
-            imported['_published_fingerprint'] = fingerprint
+            if imported.get('_continuations'):
+                if status == 'done':
+                    published_ids = set(imported.get('_published_chunk_ids') or [])
+                    pending = [chunk for chunk in chunks if chunk['task'] == 'episode_plan'
+                               and chunk['status'] == 'succeeded' and chunk['id'] not in published_ids]
+                    if pending:
+                        existing = await _many(db, '''SELECT title,unit_from,unit_to,change,hook,target_min,
+                            target_max,notes FROM studio_episodes WHERE breakdown_id=? ORDER BY no''', (bid,))
+                        new = [episode for chunk in sorted(pending, key=lambda item: item['no'])
+                               for episode in (chunk.get('output') or {}).get('episodes', [])]
+                        await publish_plan(db, bid, [*existing, *new], reason='continued')
+                        imported['_published_chunk_ids'] = [*imported.get('_published_chunk_ids', []),
+                                                            *[chunk['id'] for chunk in pending]]
+                        first_new = (imported['_continuations'][-1].get('pre_max_seq') or 0) + 1
+                        appended = imported.get('_appended_from_unit')
+                        imported['_appended_from_unit'] = (first_new if type(appended) is not int
+                                                           else min(appended, first_new))
+                        async with db.execute('SELECT MAX(seq) FROM studio_units WHERE breakdown_id=?', (bid,)) as cursor:
+                            imported['_published_max_seq'] = (await cursor.fetchone())[0] or 0
+            else:
+                encoded = await _json(episodes)
+                fingerprint = await asyncio.to_thread(lambda: hashlib.sha256(encoded.encode()).hexdigest())
+                if episodes and status in {'done', 'partial'} \
+                        and imported.get('_published_fingerprint') != fingerprint:
+                    await publish_plan(db, bid, episodes, reason='generated' if status == 'done' else 'partial')
+                    imported['_published_fingerprint'] = fingerprint
+                    imported['_published_chunk_ids'] = [
+                        chunk['id'] for chunk in chunks
+                        if chunk['task'] == 'episode_plan' and chunk['status'] == 'succeeded']
         await db.execute('UPDATE studio_breakdowns SET status=?,import_json=?,synopsis_json=?,updated_at=? WHERE id=?',
                          (status, await _json(imported), await _json(breakdown.get('synopsis', {})), store.utcnow(), bid))
     if dispatch:
@@ -609,6 +937,9 @@ async def get_current(pid, owner):
         await refresh(breakdown['id'], owner)
     async with store.connection() as db:
         breakdown = await _breakdown(db, breakdown['id'], owner)
+        project = await store._project(db, pid, owner)
+        snapshot = await _one(db, 'SELECT * FROM studio_snapshots WHERE project_id=? AND owner=? AND no=?',
+                              (pid, owner, project['snapshot_no'])) if project.get('snapshot_no') else None
         chunks, charges, public = await _chunks(db, breakdown['id']), [], []
         all_jobs = await _many(db, "SELECT * FROM studio_jobs WHERE group_id=? AND owner=? AND kind='brain'", (breakdown['id'], owner))
         for job in all_jobs:
@@ -624,6 +955,40 @@ async def get_current(pid, owner):
         async with db.execute('SELECT COUNT(*) FROM studio_units WHERE breakdown_id=?', (breakdown['id'],)) as cursor:
             count = (await cursor.fetchone())[0]
     totals = brain_jobs._totals(charges)
+    imported = breakdown['imported']
+    covered_through = _covered_through(breakdown)
+    continuing = _continuing(breakdown)
+    warnings = [*imported.get('_chunk_material_warnings', {}).get('__breakdown__', []),
+                *imported.get('_bible_merge_warnings', [])]
+    manifest = None
+    if snapshot is not None:
+        try:
+            manifest = await asyncio.to_thread(sources._read_manifest, snapshot)
+        except (HTTPException, OSError, ValueError):
+            warnings.append('当前快照无法读取，暂不能续拆，请到来源面板重新检查')
+    current_chapters = {str(item['chapter']): item for item in (manifest or {}).get('chapters') or []
+                        if type(item.get('chapter')) is int}
+    changed_covered, stale_chapters = [], []
+    for key, info in _chapter_basis(breakdown).items():
+        try:
+            number = int(key)
+        except (TypeError, ValueError):
+            continue
+        if number > covered_through:
+            continue
+        current = current_chapters.get(key)
+        if manifest is not None and (current is None or current.get('title') != info.get('title')
+                                     or current.get('sha256') != info.get('sha256')):
+            changed_covered.append(number)
+        if info.get('status') == 'stale':
+            stale_chapters.append(number)
+    changed_covered.sort()
+    stale_chapters.sort()
+    active_jobs = any(job['status'] in {'uncertain', 'running', 'submitting', 'submitted', 'queued'}
+                      for job in all_jobs)
+    continuable = bool(manifest is not None and snapshot is not None and snapshot['kind'] == 'novel'
+                       and not _retired(breakdown) and breakdown['status'] == 'done' and not active_jobs
+                       and (snapshot.get('chapters') or 0) > covered_through)
     return {key: breakdown[key] for key in ('id', 'status', 'snapshot_no', 'provider', 'quote_id')} | {
         'outdated': bool(breakdown['outdated']), 'settings': breakdown['settings'], 'synopsis': breakdown['synopsis'],
         'chunks': public, 'units_count': count, 'unit_count': count, 'totals': totals, 'total_cost': totals,
@@ -631,8 +996,14 @@ async def get_current(pid, owner):
                          if chunk['status'] in RETRYABLE | {'uncertain'}],
         'blocked_segments': [chunk['source']['label'] for chunk in chunks
                              if chunk['task'] == 'episode_plan' and chunk['status'] == 'blocked'],
-        'warnings': [*breakdown['imported'].get('_chunk_material_warnings', {}).get('__breakdown__', []),
-                     *breakdown['imported'].get('_bible_merge_warnings', [])]}
+        'warnings': warnings,
+        'covered_through': covered_through, 'continuable': continuable,
+        'continue_from': covered_through + 1 if continuable else None,
+        'continue_to': (snapshot.get('chapters') or 0) if continuable else None,
+        'changed_covered': changed_covered, 'stale_chapters': stale_chapters,
+        'continuations': [{key: item.get(key) for key in ('round', 'from', 'to', 'snapshot_no')}
+                          for item in imported.get('_continuations') or [] if isinstance(item, dict)],
+        'continuing': continuing}
 
 
 async def retry_quote(bid, cid, owner, provider):
@@ -653,7 +1024,9 @@ async def retry_quote(bid, cid, owner, provider):
     else:
         async with store.connection() as db:
             chunks, units = await _chunks(db, bid), await _stored_units(db, bid)
-        inputs = await asyncio.to_thread(_dependency_input, breakdown, chunk, chunks, units)
+            published_last = (await _published_last(db, breakdown)
+                              if _needs_published_last(chunk, chunks) else None)
+        inputs = await asyncio.to_thread(_dependency_input, breakdown, chunk, chunks, units, published_last)
     item = await asyncio.to_thread(brain_jobs._quote_item, provider, option['model'], chunk['task'], inputs)
     payload = {'kind': 'breakdown_retry', 'breakdown_id': bid, 'chunk_id': cid, 'previous_job_id': chunk['job_id'],
                'provider': provider, 'items': [item]}
@@ -691,6 +1064,9 @@ async def retry(bid, cid, owner, quote_id, provider=None):
 async def cancel(bid, owner):
     async with store.connection(transaction=True) as db:
         breakdown = await _breakdown(db, bid, owner)
+        if _continuing(breakdown):
+            # 整本重新拆解仍走 start，那里会取消本轮未执行的批并释放预留。
+            raise HTTPException(409, '续拆进行中不能取消，可以等它完成或单批重跑')
         await _cancel_unexecuted(db, breakdown, owner)
     return await get_current(breakdown['project_id'], owner)
 

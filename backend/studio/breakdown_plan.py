@@ -141,14 +141,39 @@ def _present_episodes(project, breakdown, episodes, units):
             'settings': {'episode_seconds_min': default_min, 'episode_seconds_max': default_max}}
 
 
+def _imported(breakdown):
+    value = breakdown.get('imported')
+    if isinstance(value, dict):
+        return value
+    try:
+        return json.loads(breakdown.get('import_json') or '{}')
+    except (TypeError, ValueError):
+        return {}
+
+
 async def get_episodes(pid, owner):
+    from .breakdown import _continuing, _published_max_seq
+
     async with store.connection() as db:
         await db.execute('BEGIN')
         project, active = await _current(db, pid, owner)
         project, breakdown = await _published(db, project, active)
         episodes = await _episode_rows(db, breakdown['id'], owner) if breakdown else []
         units = await _units(db, breakdown['id']) if breakdown else []
+        if breakdown:
+            breakdown = {**breakdown, 'imported': _imported(breakdown)}
+        continuing = bool(breakdown and _continuing(breakdown))
+        if breakdown and breakdown['imported'].get('_continuations'):
+            max_seq = _published_max_seq(breakdown, units)
+            units = [unit for unit in units if unit['seq'] <= max_seq]
     result = await asyncio.to_thread(_present_episodes, project, breakdown, episodes, units)
+    appended_from = None
+    if breakdown is not None and not result['g0_approved']:
+        marker = breakdown['imported'].get('_appended_from_unit')
+        if type(marker) is int:
+            appended_from = next((episode['no'] for episode in result['episodes']
+                                  if episode['unit_to'] >= marker), None)
+    result.update(continuing=continuing, appended_from=appended_from)
     return _activity(result, breakdown, active)
 
 
@@ -353,6 +378,11 @@ async def approve(pid, owner, expected_revision):
             raise HTTPException(409, '至少需要一集才能批准')
         await db.execute('UPDATE studio_projects SET plan_approved_revision=?,updated_at=? WHERE id=? AND owner=?',
                          (project['plan_revision'], store.utcnow(), pid, owner))
+        imported = dict(_imported(breakdown))
+        if imported.get('_appended_from_unit') is not None:
+            imported['_appended_from_unit'] = None
+            await db.execute('UPDATE studio_breakdowns SET import_json=?,updated_at=? WHERE id=?',
+                             (store._json(imported), store.utcnow(), breakdown['id']))
     return await get_episodes(pid, owner)
 
 
@@ -639,6 +669,8 @@ def _render_export(project, breakdown, bible, plan):
 
 
 async def export_markdown(pid, owner):
+    from .breakdown import _published_max_seq
+
     async with store.connection() as db:
         await db.execute('BEGIN')
         project, active = await _current(db, pid, owner)
@@ -647,6 +679,10 @@ async def export_markdown(pid, owner):
             raise HTTPException(404, '项目还没有拆解')
         episodes = await _episode_rows(db, breakdown['id'], owner)
         units = await _units(db, breakdown['id'])
+        decoded = {**breakdown, 'imported': _imported(breakdown)}
+        if decoded['imported'].get('_continuations'):
+            max_seq = _published_max_seq(decoded, units)
+            units = [unit for unit in units if unit['seq'] <= max_seq]
         rows = await store._many(db, '''SELECT b.*,u.label AS first_appearance FROM studio_bible b
             LEFT JOIN studio_units u ON u.breakdown_id=b.breakdown_id AND u.seq=b.first_unit
             WHERE b.breakdown_id=? AND b.owner=? AND b.archived=0 AND b.merged_into IS NULL ORDER BY b.kind,b.first_unit,b.name''',

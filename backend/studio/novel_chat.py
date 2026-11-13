@@ -124,7 +124,19 @@ async def start_film(username, book, auth_method=None):
         if not candidate.get("eligible"):
             return {**card, "error": candidate.get("reason") or "作品尚未满足做成片条件。"}
         projects = candidate.get("projects") or []
-        project = projects[0] if projects else await sources.create_novel_project(username, candidate["id"])
+        if projects:
+            project = projects[0]
+            snapshot_chapters = project.get("snapshot_chapters")
+            points = [f"《{candidate['title']}》"]
+            if type(snapshot_chapters) is int:
+                points.append(f"快照第 {project['snapshot_no']} 版 · {snapshot_chapters} 章")
+            else:
+                points.append(f"快照第 {project['snapshot_no']} 版")
+            if type(snapshot_chapters) is int and snapshot_chapters < (candidate.get("chapters_done") or 0):
+                points.append(f"作品已写到第 {candidate['chapters_done']} 章；到工作室来源面板同步后可以续拆")
+            points.append("已有项目，打开即可继续")
+            return {**card, "url": "/studio/" + project["id"], "points": points}
+        project = await sources.create_novel_project(username, candidate["id"])
         return {**card, "url": "/studio/" + project["id"], "points": [
             f"《{candidate['title']}》",
             f"{candidate.get('chapters_done', 0)} 章 · {candidate.get('words_done', 0) / 10000:g} 万字 · 快照第 {project['snapshot_no']} 版",

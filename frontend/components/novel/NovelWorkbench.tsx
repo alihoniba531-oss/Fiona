@@ -80,8 +80,9 @@ function AccountWorkbench({ owner, id, embedded, identityPending = false }: { ow
   const { beginRequest: beginStudio } = useAccountRequest(owner);
   const confirm = useConfirm();
   const completed = book?.status === "completed";
+  const filmReady = (book?.chapters_done ?? 0) >= 1;
   useEffect(() => {
-    if (!completed) return;
+    if (!filmReady) return;
     void Promise.resolve().then(async () => {
       if (studioChecked.current) return;
       const request = beginStudio(); if (!request) return;
@@ -89,7 +90,7 @@ function AccountWorkbench({ owner, id, embedded, identityPending = false }: { ow
       try { const allowed = await checkStudioAccess(request.signal); if (request.isCurrent()) setStudioAllowed(allowed); }
       catch { if (request.isCurrent()) setStudioAllowed(false); }
     });
-  }, [beginStudio, completed]);
+  }, [beginStudio, filmReady]);
 
   const load = useCallback(async (force = false, refresh: RefreshOptions = {}) => {
     if (mutating.current && !force) return;
@@ -291,7 +292,7 @@ function AccountWorkbench({ owner, id, embedded, identityPending = false }: { ow
                   {book.status === "paused" && <button type="button" className="btn min-h-10" disabled={!!busy} onClick={() => { void act("resume").catch(() => undefined); }}>{busy === "resume" ? "继续中…" : "继续"}</button>}
                   <button type="button" className="btn min-h-10" disabled={!!busy} onClick={() => setSettings({ resumeAfter: false })}>调整</button>
                   <button type="button" className="btn min-h-10" disabled={!!busy} onClick={() => void download()}>{busy === "export" ? "导出中…" : "导出"}</button>
-                  {completed && studioAllowed && <button type="button" className="btn min-h-10" disabled={!!busy} onClick={() => setFilmDialog(true)}>做成片</button>}
+                  {filmReady && studioAllowed && <button type="button" className="btn min-h-10" disabled={!!busy} onClick={() => setFilmDialog(true)}>做成片</button>}
                   <details className="relative"><summary className="btn min-h-10 cursor-pointer list-none">更多</summary><div className="ceramic-card absolute right-0 z-20 mt-2 w-40 p-2"><button type="button" className="btn btn-danger min-h-10 w-full" disabled={!!busy} onClick={() => void remove()}>{busy === "delete" ? "删除中…" : "删除这本书"}</button></div></details>
                   {embedded && <a href={`/novels/${encodeURIComponent(id)}`} target="_blank" rel="noopener noreferrer" className="btn btn-quiet min-h-10">在新页面打开</a>}
                 </div>
@@ -319,7 +320,7 @@ function AccountWorkbench({ owner, id, embedded, identityPending = false }: { ow
                 </aside>
               </div>
               </div>
-              {filmDialog && completed && studioAllowed && <NovelFilmDialog owner={owner} bookId={id} bookTitle={book.title || "未命名作品"} embedded={embedded} onClose={() => setFilmDialog(false)} />}
+              {filmDialog && filmReady && studioAllowed && <NovelFilmDialog owner={owner} bookId={id} bookTitle={book.title || "未命名作品"} embedded={embedded} onClose={() => setFilmDialog(false)} />}
               {settings && <NovelSettingsDialog book={book} catalog={catalog} catalogError={catalogError} busy={!!busy} resumeAfter={settings.resumeAfter} onSave={saveSettings} onClose={() => setSettings(null)} />}
             </>}
           </>}
