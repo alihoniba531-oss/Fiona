@@ -1,0 +1,56 @@
+$ FLAKE_PROBE_STALL=twist_designer:0.002  (pause 2 ms before the third call is issued)
+F                                                                        [100%]
+=================================== FAILURES ===================================
+_ test_failed_parallel_phase_cancels_and_drains_siblings_before_return[critique] _
+tests/test_novel_workflow.py:221: in test_failed_parallel_phase_cancels_and_drains_siblings_before_return
+    asyncio.run(still_running_event_loop())
+<python3.14>/asyncio/runners.py:205: in run
+    return runner.run(main)
+           ^^^^^^^^^^^^^^^^
+<python3.14>/asyncio/runners.py:128: in run
+    return self._loop.run_until_complete(task)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+<python3.14>/asyncio/base_events.py:719: in run_until_complete
+    return future.result()
+           ^^^^^^^^^^^^^^^
+tests/test_novel_workflow.py:213: in still_running_event_loop
+    assert started == {"plot_architect", "character_advocate", "twist_designer"}
+E   AssertionError: assert {'character_a...ot_architect'} == {'character_a...ist_designer'}
+E     
+E     Extra items in the right set:
+E     'twist_designer'
+E     Use -v to get more diff
+=========================== short test summary info ============================
+FAILED tests/test_novel_workflow.py::test_failed_parallel_phase_cancels_and_drains_siblings_before_return[critique]
+1 failed in 0.09s
+exit code: 1
+{"test": "s_siblings_before_return[critique]", "outcome": "failed", "stall": "twist_designer:0.002", "mutation": null, "gc_count": [102, 0, 4], "issued": {"plot_architect": 0, "character_advocate": 40, "twist_designer": 72}, "timer_due": [0, 38, 2088], "at_model": {"plot_architect": 2145, "character_advocate": 2239}, "wake_late": 1137, "gc": [], "threads": 1, "tracked_objects": 48745, "load1": 2.4, "loop": ["_UnixSelectorEventLoop"]}
+
+$ FLAKE_PROBE_STALL=character_advocate:0.002  (pause 2 ms before the second call is issued)
+F                                                                        [100%]
+=================================== FAILURES ===================================
+_ test_failed_parallel_phase_cancels_and_drains_siblings_before_return[critique] _
+tests/test_novel_workflow.py:221: in test_failed_parallel_phase_cancels_and_drains_siblings_before_return
+    asyncio.run(still_running_event_loop())
+<python3.14>/asyncio/runners.py:205: in run
+    return runner.run(main)
+           ^^^^^^^^^^^^^^^^
+<python3.14>/asyncio/runners.py:128: in run
+    return self._loop.run_until_complete(task)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+<python3.14>/asyncio/base_events.py:719: in run_until_complete
+    return future.result()
+           ^^^^^^^^^^^^^^^
+tests/test_novel_workflow.py:213: in still_running_event_loop
+    assert started == {"plot_architect", "character_advocate", "twist_designer"}
+E   AssertionError: assert {'plot_architect'} == {'character_a...ist_designer'}
+E     
+E     Extra items in the right set:
+E     'twist_designer'
+E     'character_advocate'
+E     Use -v to get more diff
+=========================== short test summary info ============================
+FAILED tests/test_novel_workflow.py::test_failed_parallel_phase_cancels_and_drains_siblings_before_return[critique]
+1 failed in 0.09s
+exit code: 1
+{"test": "s_siblings_before_return[critique]", "outcome": "failed", "stall": "character_advocate:0.002", "mutation": null, "gc_count": [102, 0, 4], "issued": {"plot_architect": 0, "character_advocate": 36, "twist_designer": 2386}, "timer_due": [0, 2321, 2386], "at_model": {"plot_architect": 2432}, "wake_late": 1425, "gc": [], "threads": 1, "tracked_objects": 48745, "load1": 2.4, "loop": ["_UnixSelectorEventLoop"]}

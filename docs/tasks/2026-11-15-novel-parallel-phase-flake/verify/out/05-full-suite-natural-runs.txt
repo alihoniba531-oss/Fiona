@@ -1,0 +1,67 @@
+# Full suite on baseline 19e4bd1, from backend/. Three natural runs; the target cases passed in all three.
+$ .venv/bin/python -m pytest -q -p no:cacheprovider     (no probe)
+8552 passed, 47 warnings in 563.30s (0:09:23)
+
+$ PYTHONPATH=<verify> FLAKE_PROBE_OUT=<dir> FLAKE_PROBE_EXIT_AFTER=test_failed_parallel_phase_cancels .venv/bin/python -m pytest -q -p no:cacheprovider -p flake_probe     (two runs, B1 and B2; the session ends after the target cases)
+B1: 5600 passed, 47 warnings in 392.25s (0:06:32)
+B2: 5600 passed, 47 warnings in 391.35s (0:06:31)
+
+$ summarize.py on the six records (times in microseconds; see summarize.py for the columns)
+{"test": "cancelled_and_drained_if_one_fails", "outcome": "passed", "stall": null, "mutation": null, "gc_count": [153, 9, 48], "issued": {"plot_architect": 0, "character_advocate": 34, "twist_designer": 60}, "timer_due": [0, 32, 57], "at_model": {"plot_architect": 1268, "character_advocate": 1345, "twist_designer": 1413}, "wake_late": 261, "gc": [], "threads": 4, "tracked_objects": 964611, "load1": 5.1, "loop": ["_UnixSelectorEventLoop"]}
+{"test": "s_siblings_before_return[proposal]", "outcome": "passed", "stall": null, "mutation": null, "gc_count": [1461, 10, 52], "issued": {"plot_architect": 0, "character_advocate": 33, "twist_designer": 55}, "timer_due": [0, 29, 50], "at_model": {"plot_architect": 1279, "character_advocate": 1357, "twist_designer": 1416}, "wake_late": 270, "gc": [], "threads": 4, "tracked_objects": 972993, "load1": 5.4, "loop": ["_UnixSelectorEventLoop"]}
+{"test": "s_siblings_before_return[critique]", "outcome": "passed", "stall": null, "mutation": null, "gc_count": [1844, 10, 52], "issued": {"plot_architect": 0, "character_advocate": 36, "twist_designer": 68}, "timer_due": [0, 35, 66], "at_model": {"plot_architect": 1273, "character_advocate": 1365, "twist_designer": 1443}, "wake_late": 267, "gc": [], "threads": 4, "tracked_objects": 973434, "load1": 5.4, "loop": ["_UnixSelectorEventLoop"]}
+{"test": "cancelled_and_drained_if_one_fails", "outcome": "passed", "stall": null, "mutation": null, "gc_count": [153, 10, 48], "issued": {"plot_architect": 0, "character_advocate": 33, "twist_designer": 59}, "timer_due": [0, 31, 56], "at_model": {"plot_architect": 1284, "character_advocate": 1365, "twist_designer": 1433}, "wake_late": 277, "gc": [], "threads": 4, "tracked_objects": 965808, "load1": 5.1, "loop": ["_UnixSelectorEventLoop"]}
+{"test": "s_siblings_before_return[proposal]", "outcome": "passed", "stall": null, "mutation": null, "gc_count": [1452, 11, 52], "issued": {"plot_architect": 0, "character_advocate": 33, "twist_designer": 57}, "timer_due": [0, 29, 52], "at_model": {"plot_architect": 1283, "character_advocate": 1372, "twist_designer": 1435}, "wake_late": 274, "gc": [], "threads": 4, "tracked_objects": 974186, "load1": 5.4, "loop": ["_UnixSelectorEventLoop"]}
+{"test": "s_siblings_before_return[critique]", "outcome": "passed", "stall": null, "mutation": null, "gc_count": [1835, 11, 52], "issued": {"plot_architect": 0, "character_advocate": 34, "twist_designer": 62}, "timer_due": [0, 32, 60], "at_model": {"plot_architect": 1278, "character_advocate": 1379, "twist_designer": 1456}, "wake_late": 272, "gc": [], "threads": 4, "tracked_objects": 974627, "load1": 5.4, "loop": ["_UnixSelectorEventLoop"]}
+
+# Collector state and full timeline of the [critique] case in each run (microseconds since the test body began).
+B1 test_all_advisor_calls_are_cancelled_and_drained_if_one_fails: counters before the test [153, 9, 48] (thresholds [2000, 10, 10]), tracked objects 964611, max RSS 939 MB, threads ['MainThread', 'fiona-byok-dns_0', 'fiona-dns_0', 'fiona-dns_1']
+B1 test_failed_parallel_phase_cancels_and_drains_siblings_before_return[proposal]: counters before the test [1461, 10, 52] (thresholds [2000, 10, 10]), tracked objects 972993, max RSS 939 MB, threads ['MainThread', 'fiona-byok-dns_0', 'fiona-dns_0', 'fiona-dns_1']
+B1 test_failed_parallel_phase_cancels_and_drains_siblings_before_return[critique]: counters before the test [1844, 10, 52] (thresholds [2000, 10, 10]), tracked objects 973434, max RSS 939 MB, threads ['MainThread', 'fiona-byok-dns_0', 'fiona-dns_0', 'fiona-dns_1']
+       277  call issued (enters router): 01-proposal-plot_architect.json
+       289  timer scheduled, due at 1288
+       316  call issued (enters router): 01-proposal-character_advocate.json
+       321  timer scheduled, due at 1321
+       340  call issued (enters router): 01-proposal-twist_designer.json
+       345  timer scheduled, due at 1345
+      1543  gc_start (generation 0)
+      1874  gc_stop (generation 0)
+      1901  call reaches the model: 01-proposal-plot_architect.json
+      2098  call reaches the model: 01-proposal-character_advocate.json
+      2226  call reaches the model: 01-proposal-twist_designer.json
+      2451  call issued (enters router): 02-critique-plot_architect.json
+      2458  timer scheduled, due at 3457
+      2487  call issued (enters router): 02-critique-character_advocate.json
+      2493  timer scheduled, due at 3492
+      2519  call issued (enters router): 02-critique-twist_designer.json
+      2524  timer scheduled, due at 3524
+      3724  call reaches the model: 02-critique-plot_architect.json
+      3816  call reaches the model: 02-critique-character_advocate.json
+      3890  timer scheduled, due at 10003889
+      3893  call reaches the model: 02-critique-twist_designer.json
+      3964  timer scheduled, due at 10003963
+B2 test_all_advisor_calls_are_cancelled_and_drained_if_one_fails: counters before the test [153, 10, 48] (thresholds [2000, 10, 10]), tracked objects 965808, max RSS 939 MB, threads ['MainThread', 'fiona-byok-dns_0', 'fiona-dns_0', 'fiona-dns_1']
+B2 test_failed_parallel_phase_cancels_and_drains_siblings_before_return[proposal]: counters before the test [1452, 11, 52] (thresholds [2000, 10, 10]), tracked objects 974186, max RSS 939 MB, threads ['MainThread', 'fiona-byok-dns_0', 'fiona-dns_0', 'fiona-dns_1']
+B2 test_failed_parallel_phase_cancels_and_drains_siblings_before_return[critique]: counters before the test [1835, 11, 52] (thresholds [2000, 10, 10]), tracked objects 974627, max RSS 939 MB, threads ['MainThread', 'fiona-byok-dns_0', 'fiona-dns_0', 'fiona-dns_1']
+       258  call issued (enters router): 01-proposal-plot_architect.json
+       269  timer scheduled, due at 1268
+       292  call issued (enters router): 01-proposal-character_advocate.json
+       298  timer scheduled, due at 1297
+       315  call issued (enters router): 01-proposal-twist_designer.json
+       320  timer scheduled, due at 1320
+      1456  call reaches the model: 01-proposal-plot_architect.json
+      1481  gc_start (generation 1)
+      1920  gc_stop (generation 1)
+      2076  call reaches the model: 01-proposal-character_advocate.json
+      2193  call reaches the model: 01-proposal-twist_designer.json
+      2401  call issued (enters router): 02-critique-plot_architect.json
+      2407  timer scheduled, due at 3407
+      2435  call issued (enters router): 02-critique-character_advocate.json
+      2440  timer scheduled, due at 3439
+      2463  call issued (enters router): 02-critique-twist_designer.json
+      2468  timer scheduled, due at 3467
+      3679  call reaches the model: 02-critique-plot_architect.json
+      3780  call reaches the model: 02-critique-character_advocate.json
+      3852  timer scheduled, due at 10003851
+      3857  call reaches the model: 02-critique-twist_designer.json
+      3925  timer scheduled, due at 10003924

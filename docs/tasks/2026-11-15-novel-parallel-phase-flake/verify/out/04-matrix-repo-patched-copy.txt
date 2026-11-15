@@ -1,0 +1,23 @@
+# In a throwaway copy of 19e4bd1 with verify/proposed-change.patch applied (the task worktree itself is untouched).
+$ git diff --numstat
+6	1	backend/tests/test_novel_r5_deliberation.py
+9	3	backend/tests/test_novel_workflow.py
+$ git diff -U0 | grep -cE '^[-+][^-+].*assert '
+0
+$ .venv/bin/python -m pytest -q -p no:cacheprovider tests/test_novel_workflow.py tests/test_novel_r5_deliberation.py
+75 passed in 0.35s
+$ .venv/bin/python ../docs/tasks/2026-11-15-novel-parallel-phase-flake/verify/run_matrix.py repo
+form: repo
+  no pause                                 | 3 passed | 3 passed | 3 passed
+  pause 0.2 ms before twist_designer       | 3 passed | 3 passed | 3 passed | 3 passed | 3 passed
+  pause 2 ms before twist_designer         | 3 passed | 3 passed | 3 passed
+  pause 20 ms before twist_designer        | 3 passed | 3 passed | 3 passed
+  pause 2 ms before character_advocate     | 3 passed | 3 passed | 3 passed
+  pause 20 ms before character_advocate    | 3 passed | 3 passed | 3 passed
+  pause 2 ms before plot_architect         | 3 passed | 3 passed | 3 passed
+  broken: cancels but does not wait        | 3 failed
+  broken: plain gather                     | 3 failed
+  broken: runs the calls one by one        | 3 failed
+  broken: waits but does not cancel        | 3 failed
+VERDICT: SOUND
+exit code: 0

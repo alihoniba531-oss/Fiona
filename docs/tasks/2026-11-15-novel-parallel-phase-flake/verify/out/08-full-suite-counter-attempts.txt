@@ -1,0 +1,24 @@
+# Attempts to make the interpreter's own collection fall inside the gap in the real full suite (baseline 19e4bd1).
+# Each line is one full-suite run from backend/ up to the target case, with only the allocation counter at the start
+# of the [critique] test body changed (FLAKE_PROBE_GC_COUNT). No pause is injected.
+#   mode keep  : counter moved, young generation left as earlier tests left it (collection has its natural length)
+#   mode 0 / 1 : young generations collected first, counter refilled with empty lists (short collection)
+# landing = (start, length, generation) in microseconds relative to the first critique call being issued; the gap is
+# roughly +5 to +80. None of the ten runs put the collection inside the gap, so none of them is a full-suite failure.
+# What they do show: left alone, the collection that happens inside this case takes 296-384 us in the full suite
+# (331 and 439 us in the two unmodified runs, see 05-full-suite-natural-runs.txt), against 115-260 us in a
+# single-file process (06-gc-sweep-single-process.txt).
+# "counter found" is the value the run arrived with; n/a for C1 and C2, where the two target cases before it had
+# already had their counter reset by the probe.
+
+run    | mode | counter set | counter found | outcome | landing
+C1     | 0    |        1725 |           n/a | passed  | [(1316, 79, 0)]
+C2     | 1    |        1725 |           n/a | passed  | [(-465, 56, 1)]
+D1668  | keep |        1668 |          1779 | passed  | [(1280, 305, 0)]
+D1672  | keep |        1672 |          1774 | passed  | [(1273, 337, 0)]
+D1676  | keep |        1676 |          1765 | passed  | [(1287, 343, 0)]
+D1680  | keep |        1680 |          1743 | passed  | [(1266, 343, 0)]
+E1736  | keep |        1736 |          1780 | passed  | [(1184, 356, 0)]
+E1740  | keep |        1740 |          1750 | passed  | [(1201, 384, 0)]
+E1744  | keep |        1744 |          1762 | passed  | [(1173, 296, 0)]
+E1748  | keep |        1748 |          1766 | passed  | [(1141, 325, 0)]

@@ -1,0 +1,55 @@
+--- a/backend/tests/test_novel_workflow.py
++++ b/backend/tests/test_novel_workflow.py
+@@ -181,6 +181,7 @@
+ @pytest.mark.parametrize("phase", ["proposal", "critique"])
+ def test_failed_parallel_phase_cancels_and_drains_siblings_before_return(workshop, phase):
+     started, cancelled, running = set(), set(), set()
++    all_started = asyncio.Event()
+ 
+     async def delayed_failure(request, _index):
+         if FakeLLM.payload(request)["task"] != phase:
+@@ -188,11 +189,16 @@
+         role = request["role"]
+         started.add(role)
+         running.add(role)
++        if len(started) == 3:
++            all_started.set()
+         try:
+             if role == "plot_architect":
+-                # Let all three requests start, then fail without waiting for
+-                # the siblings' deliberately slow local model responses.
+-                await asyncio.sleep(0)
++                # Fail once all three requests have reached the model, without
++                # waiting for the siblings' deliberately slow responses. Yielding
++                # to the loop once is not enough: the router's 1 ms timers need
++                # not fire in the same iteration. The timeout only keeps a
++                # regression from hanging the suite.
++                await asyncio.wait_for(all_started.wait(), timeout=5)
+                 raise StepFailed()
+             await asyncio.sleep(10)
+         except asyncio.CancelledError:
+--- a/backend/tests/test_novel_r5_deliberation.py
++++ b/backend/tests/test_novel_r5_deliberation.py
+@@ -204,6 +204,7 @@
+ 
+ def test_all_advisor_calls_are_cancelled_and_drained_if_one_fails(workshop):
+     started, cancelled, running = set(), set(), set()
++    all_started = asyncio.Event()
+ 
+     async def broken_advisor(request, _index):
+         if FakeLLM.payload(request)["task"] != "critique_plan":
+@@ -211,9 +212,13 @@
+         role = request["role"]
+         started.add(role)
+         running.add(role)
++        if len(started) == 3:
++            all_started.set()
+         try:
+             if role == "plot_architect":
+-                await asyncio.sleep(0)
++                # Fail once all three advisors have reached the model; one yield
++                # does not guarantee that (see test_novel_workflow).
++                await asyncio.wait_for(all_started.wait(), timeout=5)
+                 raise StepFailed()
+             await asyncio.sleep(10)
+         except asyncio.CancelledError:

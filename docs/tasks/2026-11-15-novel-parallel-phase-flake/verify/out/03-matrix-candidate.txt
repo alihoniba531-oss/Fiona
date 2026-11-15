@@ -1,0 +1,15 @@
+$ .venv/bin/python ../docs/tasks/2026-11-15-novel-parallel-phase-flake/verify/run_matrix.py candidate     (proposed form, verify/candidate_parallel_phase.py)
+form: candidate
+  no pause                                 | 3 passed | 3 passed | 3 passed
+  pause 0.2 ms before twist_designer       | 3 passed | 3 passed | 3 passed | 3 passed | 3 passed
+  pause 2 ms before twist_designer         | 3 passed | 3 passed | 3 passed
+  pause 20 ms before twist_designer        | 3 passed | 3 passed | 3 passed
+  pause 2 ms before character_advocate     | 3 passed | 3 passed | 3 passed
+  pause 20 ms before character_advocate    | 3 passed | 3 passed | 3 passed
+  pause 2 ms before plot_architect         | 3 passed | 3 passed | 3 passed
+  broken: cancels but does not wait        | 3 failed
+  broken: plain gather                     | 3 failed
+  broken: runs the calls one by one        | 3 failed
+  broken: waits but does not cancel        | 3 failed
+VERDICT: SOUND
+exit code: 0

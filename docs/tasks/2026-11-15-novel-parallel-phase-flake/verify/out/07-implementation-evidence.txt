@@ -1,0 +1,16 @@
+# The situation of the flaky runs, made deterministic: twist_designer is still inside the router (issued, counted in
+# router.active, not yet at the model) when plot_architect fails. Case: test_sibling_still_inside_router_is_cancelled_and_drained
+# in verify/candidate_parallel_phase.py. Run from backend/.
+
+$ PYTHONPATH=../docs/tasks/2026-11-15-novel-parallel-phase-flake/verify:tests .venv/bin/python -m pytest -q -p no:cacheprovider ../docs/tasks/2026-11-15-novel-parallel-phase-flake/verify/candidate_parallel_phase.py -k still_inside_router     (real _gather_phase, three runs)
+1 passed, 3 deselected in 0.08s
+1 passed, 3 deselected in 0.08s
+1 passed, 3 deselected in 0.08s
+
+# Same case with _gather_phase swapped for a broken variant (FLAKE_PROBE_OUT=<dir> FLAKE_PROBE_TARGETS=still_inside_router FLAKE_PROBE_MUTATION=<name> ... -p flake_probe --tb=line):
+no_drain: 1 failed, 3 deselected in 0.05s | E   assert 2 == 0
+   probe records written: 1
+plain_gather: 1 failed, 3 deselected in 0.06s | E   assert 2 == 0
+   probe records written: 1
+no_cancel: 1 failed, 3 deselected in 10.05s | E   AssertionError: assert 'twist_designer' not in {'character_advocate', 'plot_architect', 'twist_designer'}
+   probe records written: 1

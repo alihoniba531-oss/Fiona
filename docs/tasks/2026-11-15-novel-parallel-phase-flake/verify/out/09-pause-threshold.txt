@@ -1,0 +1,16 @@
+# Baseline 19e4bd1. The three cases, ten runs per pause length; the pause is a synchronous time.sleep at the entry of
+# the named role's router call (FLAKE_PROBE_STALL), i.e. just before that call schedules its 1 ms timer.
+# Each cell: case-runs failed / case-runs executed (3 cases x 10 runs = 30).
+
+pause before        | length  | failed / executed
+twist_designer      | 0.05 ms | 0 / 30
+twist_designer      | 0.1 ms  | 0 / 30
+twist_designer      | 0.15 ms | 2 / 30
+twist_designer      | 0.2 ms  | 25 / 30
+twist_designer      | 0.3 ms  | 30 / 30
+twist_designer      | 0.5 ms  | 30 / 30
+twist_designer      | 2 ms    | 30 / 30
+character_advocate  | 0.3 ms  | 30 / 30
+character_advocate  | 2 ms    | 30 / 30
+plot_architect      | 2 ms    | 0 / 30
+plot_architect      | 20 ms   | 0 / 30
