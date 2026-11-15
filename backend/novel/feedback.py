@@ -9,6 +9,7 @@ import json
 from uuid import uuid4
 
 import aiosqlite
+from utils import db_txn
 
 import database
 
@@ -155,7 +156,7 @@ async def create_feedback(username, conversation_id, book, clean) -> dict:
     feedback_id = str(uuid4())
     written_json = json.dumps(clean["written"], ensure_ascii=False)
     awaiting_is_final = False
-    async with aiosqlite.connect(database.DB_PATH, timeout=database.SQLITE_BUSY_TIMEOUT) as db:
+    async with db_txn.connect(database.DB_PATH, timeout=database.SQLITE_BUSY_TIMEOUT) as db:
         await db.execute(
             """INSERT INTO novel_feedback
                (id, owner_username, conversation_id, novel_id, book_title,

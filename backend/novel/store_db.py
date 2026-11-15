@@ -14,6 +14,7 @@ import hashlib
 import json
 
 import aiosqlite
+from utils import db_txn
 
 from .run_store import utc_now
 
@@ -83,7 +84,7 @@ def _json(value):
 async def get_db():
     """Resolve the configured database at call time, including test isolation."""
     import database
-    async with aiosqlite.connect(database.DB_PATH, timeout=database.SQLITE_BUSY_TIMEOUT) as db:
+    async with db_txn.connect(database.DB_PATH, timeout=database.SQLITE_BUSY_TIMEOUT) as db:
         db.row_factory = aiosqlite.Row
         yield db
 

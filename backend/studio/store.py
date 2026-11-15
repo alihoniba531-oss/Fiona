@@ -12,6 +12,7 @@ import sqlite3
 import uuid
 
 import aiosqlite
+from utils import db_txn
 from fastapi import HTTPException
 
 from . import pricing
@@ -312,7 +313,7 @@ async def migrate_schema(db) -> None:
 async def connection(*, transaction: bool = False):
     """每次取动态 DB_PATH；写事务序列化确认、预留、抢占和结算。"""
     import database
-    async with aiosqlite.connect(database.DB_PATH, timeout=database.SQLITE_BUSY_TIMEOUT) as db:
+    async with db_txn.connect(database.DB_PATH, timeout=database.SQLITE_BUSY_TIMEOUT) as db:
         db.row_factory = aiosqlite.Row
         await db.execute("PRAGMA foreign_keys=ON")
         if transaction:

@@ -6,6 +6,7 @@
 import json
 import time
 import aiosqlite
+from utils import db_txn
 from contextlib import asynccontextmanager
 import database
 
@@ -20,7 +21,7 @@ async def log_event(
 ) -> None:
     """写一条事件。失败只打日志，不抛。"""
     try:
-        async with aiosqlite.connect(database.DB_PATH, timeout=database.SQLITE_BUSY_TIMEOUT) as db:
+        async with db_txn.connect(database.DB_PATH, timeout=database.SQLITE_BUSY_TIMEOUT) as db:
             if username is not None:
                 await db.execute("BEGIN IMMEDIATE")
                 async with db.execute(

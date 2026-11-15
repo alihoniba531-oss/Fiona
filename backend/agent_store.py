@@ -7,6 +7,7 @@ import json
 from uuid import uuid4
 
 import aiosqlite
+from utils import db_txn
 
 import database
 
@@ -177,7 +178,7 @@ async def migrate_avatar_schema(db):
 
 
 async def get_my_agent(username):
-    async with aiosqlite.connect(database.DB_PATH, timeout=database.SQLITE_BUSY_TIMEOUT) as db:
+    async with db_txn.connect(database.DB_PATH, timeout=database.SQLITE_BUSY_TIMEOUT) as db:
         await db.execute("BEGIN IMMEDIATE")
         agent = await _ensure_agent(db, username)
         await db.commit()
@@ -188,7 +189,7 @@ async def update_my_agent(username, updates):
     allowed = {"display_name", "bio", "personality", "avatar_emoji", "is_public"}
     if set(updates) - allowed:
         raise ValueError("Unsupported agent fields")
-    async with aiosqlite.connect(database.DB_PATH, timeout=database.SQLITE_BUSY_TIMEOUT) as db:
+    async with db_txn.connect(database.DB_PATH, timeout=database.SQLITE_BUSY_TIMEOUT) as db:
         await db.execute("BEGIN IMMEDIATE")
         agent = await _ensure_agent(db, username)
         if updates:
@@ -206,7 +207,7 @@ async def update_my_agent(username, updates):
 
 
 async def get_memory_snapshot(username, conversation_id=None):
-    async with aiosqlite.connect(database.DB_PATH, timeout=database.SQLITE_BUSY_TIMEOUT) as db:
+    async with db_txn.connect(database.DB_PATH, timeout=database.SQLITE_BUSY_TIMEOUT) as db:
         await db.execute("BEGIN IMMEDIATE")
         await _ensure_agent(db, username)
         if conversation_id is not None:
@@ -224,7 +225,7 @@ async def get_memory_snapshot(username, conversation_id=None):
 
 async def update_memory(username, profile, expected_revision=None, conversation_id=None):
     """Private memory never enters the legacy social profile used by matching."""
-    async with aiosqlite.connect(database.DB_PATH, timeout=database.SQLITE_BUSY_TIMEOUT) as db:
+    async with db_txn.connect(database.DB_PATH, timeout=database.SQLITE_BUSY_TIMEOUT) as db:
         cursor = await db.execute(
             """UPDATE agents SET private_memory_json = ?, memory_revision = memory_revision + 1
                WHERE owner_username = ? AND EXISTS (
@@ -242,7 +243,7 @@ async def update_memory(username, profile, expected_revision=None, conversation_
 
 
 async def clear_memory(username):
-    async with aiosqlite.connect(database.DB_PATH, timeout=database.SQLITE_BUSY_TIMEOUT) as db:
+    async with db_txn.connect(database.DB_PATH, timeout=database.SQLITE_BUSY_TIMEOUT) as db:
         await db.execute("BEGIN IMMEDIATE")
         await _ensure_agent(db, username)
         await db.execute(
@@ -256,7 +257,7 @@ async def clear_memory(username):
 
 
 async def list_public_agents(limit=30, offset=0):
-    async with aiosqlite.connect(database.DB_PATH, timeout=database.SQLITE_BUSY_TIMEOUT) as db:
+    async with db_txn.connect(database.DB_PATH, timeout=database.SQLITE_BUSY_TIMEOUT) as db:
         db.row_factory = aiosqlite.Row
         async with db.execute(
             """SELECT a.* FROM agents a JOIN users u ON u.username = a.owner_username
@@ -267,7 +268,7 @@ async def list_public_agents(limit=30, offset=0):
 
 
 async def get_agent_for_viewer(agent_id, username):
-    async with aiosqlite.connect(database.DB_PATH, timeout=database.SQLITE_BUSY_TIMEOUT) as db:
+    async with db_txn.connect(database.DB_PATH, timeout=database.SQLITE_BUSY_TIMEOUT) as db:
         row = await _one(
             db,
             """SELECT a.* FROM agents a JOIN users u ON u.username = a.owner_username
@@ -281,7 +282,7 @@ async def get_agent_for_viewer(agent_id, username):
 
 
 async def resolve_chat_conversation(username, conversation_id=None):
-    async with aiosqlite.connect(database.DB_PATH, timeout=database.SQLITE_BUSY_TIMEOUT) as db:
+    async with db_txn.connect(database.DB_PATH, timeout=database.SQLITE_BUSY_TIMEOUT) as db:
         await db.execute("BEGIN IMMEDIATE")
         if conversation_id is None:
             context = await _ensure_default_conversation(db, username)
@@ -294,7 +295,7 @@ async def resolve_chat_conversation(username, conversation_id=None):
 
 
 async def list_conversations(username):
-    async with aiosqlite.connect(database.DB_PATH, timeout=database.SQLITE_BUSY_TIMEOUT) as db:
+    async with db_txn.connect(database.DB_PATH, timeout=database.SQLITE_BUSY_TIMEOUT) as db:
         await db.execute("BEGIN IMMEDIATE")
         await _ensure_default_conversation(db, username)
         db.row_factory = aiosqlite.Row
@@ -311,7 +312,7 @@ async def list_conversations(username):
 
 
 async def create_conversation(username, title=None, agent_id=None):
-    async with aiosqlite.connect(database.DB_PATH, timeout=database.SQLITE_BUSY_TIMEOUT) as db:
+    async with db_txn.connect(database.DB_PATH, timeout=database.SQLITE_BUSY_TIMEOUT) as db:
         await db.execute("BEGIN IMMEDIATE")
         agent = await _ensure_agent(db, username)
         if agent_id is not None and agent_id != agent["id"]:
@@ -328,7 +329,7 @@ async def create_conversation(username, title=None, agent_id=None):
 
 
 async def get_conversation_messages(username, conversation_id, limit=100):
-    async with aiosqlite.connect(database.DB_PATH, timeout=database.SQLITE_BUSY_TIMEOUT) as db:
+    async with db_txn.connect(database.DB_PATH, timeout=database.SQLITE_BUSY_TIMEOUT) as db:
         # One consistent snapshot across ownership, content and agent reads.
         await db.execute("BEGIN")
         conversation = await _owned_conversation(db, username, conversation_id)
@@ -354,7 +355,7 @@ async def get_conversation_messages(username, conversation_id, limit=100):
 async def delete_conversation(username, conversation_id):
     from song.store import delete_conversation_song_data
 
-    async with aiosqlite.connect(database.DB_PATH, timeout=database.SQLITE_BUSY_TIMEOUT) as db:
+    async with db_txn.connect(database.DB_PATH, timeout=database.SQLITE_BUSY_TIMEOUT) as db:
         await db.execute("BEGIN IMMEDIATE")
         conversation = await _owned_conversation(db, username, conversation_id)
         async with db.execute(

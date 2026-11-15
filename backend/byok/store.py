@@ -7,6 +7,7 @@ import os
 import re
 import unicodedata
 import aiosqlite
+from utils import db_txn
 import database
 
 from .crypto import decrypt_key, encrypt_key, ensure_available
@@ -33,7 +34,7 @@ _PUBLIC_FIELDS = ("provider", "base_url", "model", "key_last4", "enabled", "effo
 
 
 async def _read_row(username: str) -> dict | None:
-    async with aiosqlite.connect(database.DB_PATH, timeout=database.SQLITE_BUSY_TIMEOUT) as db:
+    async with db_txn.connect(database.DB_PATH, timeout=database.SQLITE_BUSY_TIMEOUT) as db:
         db.row_factory = aiosqlite.Row
         async with db.execute("SELECT * FROM user_model_configs WHERE username = ?", (username,)) as cursor:
             row = await cursor.fetchone()
@@ -72,7 +73,7 @@ async def get_public_status(username: str) -> dict | None:
     """
     from . import crypto
     columns = ",".join(_PUBLIC_FIELDS)
-    async with aiosqlite.connect(database.DB_PATH, timeout=database.SQLITE_BUSY_TIMEOUT) as db:
+    async with db_txn.connect(database.DB_PATH, timeout=database.SQLITE_BUSY_TIMEOUT) as db:
         db.row_factory = aiosqlite.Row
         async with db.execute(f"""SELECT {columns},key_id,
                 length(key_ciphertext) AS ciphertext_bytes,
@@ -176,7 +177,7 @@ async def prepare_config(username: str, *, provider=None, model=None, base_url=N
 async def save_config(username: str, *, provider, model, base_url=None, api_key=None) -> dict:
     config = await prepare_config(username, provider=provider, model=model, base_url=base_url, api_key=api_key)
     ciphertext, identifier = encrypt_key(config["api_key"], username, config["provider"], config["base_url"])
-    async with aiosqlite.connect(database.DB_PATH, timeout=database.SQLITE_BUSY_TIMEOUT) as db:
+    async with db_txn.connect(database.DB_PATH, timeout=database.SQLITE_BUSY_TIMEOUT) as db:
         await db.execute("BEGIN IMMEDIATE")
         if not await database._users_exist(db, username):
             raise UserDeletedError
@@ -204,7 +205,7 @@ async def update_options(username: str, *, enabled=None, effort=None) -> dict:
         raise ConfigurationError("请求格式不正确")
     if enabled:
         ensure_available()
-    async with aiosqlite.connect(database.DB_PATH, timeout=database.SQLITE_BUSY_TIMEOUT) as db:
+    async with db_txn.connect(database.DB_PATH, timeout=database.SQLITE_BUSY_TIMEOUT) as db:
         await db.execute("BEGIN IMMEDIATE")
         db.row_factory = aiosqlite.Row
         async with db.execute("SELECT * FROM user_model_configs WHERE username = ?", (username,)) as cursor:
@@ -233,6 +234,6 @@ async def set_enabled(username: str, enabled: bool) -> dict:
 
 
 async def delete_config(username: str) -> None:
-    async with aiosqlite.connect(database.DB_PATH, timeout=database.SQLITE_BUSY_TIMEOUT) as db:
+    async with db_txn.connect(database.DB_PATH, timeout=database.SQLITE_BUSY_TIMEOUT) as db:
         await db.execute("DELETE FROM user_model_configs WHERE username = ?", (username,))
         await db.commit()

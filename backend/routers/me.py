@@ -147,8 +147,9 @@ async def list_users(request: Request):
     if os.getenv("DEV_MODE", "0") != "1" or not is_loopback_client(request):
         raise HTTPException(status_code=404, detail="Not Found")
     import aiosqlite
+    from utils import db_txn
     from database import DB_PATH, SQLITE_BUSY_TIMEOUT
-    async with aiosqlite.connect(DB_PATH, timeout=SQLITE_BUSY_TIMEOUT) as db:
+    async with db_txn.connect(DB_PATH, timeout=SQLITE_BUSY_TIMEOUT) as db:
         db.row_factory = aiosqlite.Row
         async with db.execute("SELECT username FROM users ORDER BY created_at") as cursor:
             rows = await cursor.fetchall()

@@ -34,6 +34,7 @@ from slowapi import _rate_limit_exceeded_handler
 from slowapi.errors import RateLimitExceeded
 from auth_dep import is_loopback_client
 import aiosqlite
+from utils import db_txn
 import database
 from database import get_pending_upload_cleanup, init_db, mark_upload_cleanup_done
 from rate_limit import limiter
@@ -252,7 +253,7 @@ async def _can_view_generated_image(username: str, image_path: str) -> bool:
     import aiosqlite
     import database
 
-    async with aiosqlite.connect(database.DB_PATH, timeout=database.SQLITE_BUSY_TIMEOUT) as db:
+    async with db_txn.connect(database.DB_PATH, timeout=database.SQLITE_BUSY_TIMEOUT) as db:
         return await database.message_references_image(db, image_path, username=username)
 
 
@@ -390,7 +391,7 @@ async def _check_health() -> list[str]:
         if not os.access(database.DB_PATH, os.W_OK):
             raise PermissionError("database is not writable")
         uri = Path(database.DB_PATH).resolve().as_uri() + "?mode=rw"
-        async with aiosqlite.connect(uri, uri=True, timeout=1.0) as db:
+        async with db_txn.connect(uri, uri=True, timeout=1.0) as db:
             try:
                 async with db.execute("SELECT version FROM schema_migrations") as cursor:
                     versions = {row[0] for row in await cursor.fetchall()}

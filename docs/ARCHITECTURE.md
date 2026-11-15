@@ -240,6 +240,12 @@ Browser / Tauri WebView
 
 `20260905_official_agent_exchanges_v2` 事务重建交流主表，保留原有 ID、记录和索引，增加 `kind`（旧数据默认 `peer`），让官方体验的 `recipient_username` 为 NULL。数据库约束保证 peer 有接收账号、official 没有接收账号。官方体验只授权发起者，额度按发起者计算，不对共享官方角色设置用户额度；创建和读取都不要求自己的名片公开，也不改变公开状态。仅把本人基础名片快照与当前讨论送入模型，体验不会被其他使用同一官方角色的账号读取。
 
+### 数据库连接与取消保护
+
+- 后端打开数据库连接一律用 `utils.db_txn.connect`（`backend/utils/db_txn.py`），不要直接调 `aiosqlite.connect`。
+- `utils.db_txn.connect` 在有异常离开 `async with` 时先回滚再关闭。被取消的写事务如果只关闭不回滚，未取完的游标会让连接继续占着写锁，紧随其后的收尾写库就会报 `database is locked`。
+- 需要「调用方被取消也要跑完」的操作用 `utils.db_txn.drain` 包住，它会等操作结束再把取消交还调用方。
+
 ## 主创与审稿协作
 
 V4 事务迁移为交流增加 `workflow_version/artifact/artifact_status/completion_reason`，为消息增加 `stage/review_json`。旧记录字段默认空，保留旧流程与下载结果；新官方交流采用 `draft_review_v1`。个人分身通过 main 槽提交完整初稿与修订稿，官方模型通过 official 槽独立审稿。新流程的最多 99 次为调用上限，批准后原子保留已经审过的正文并完成，不额外调用摘要模型改写成品。

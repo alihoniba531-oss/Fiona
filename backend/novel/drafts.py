@@ -9,6 +9,7 @@ import json
 from uuid import uuid4
 
 import aiosqlite
+from utils import db_txn
 
 import database
 
@@ -54,7 +55,7 @@ async def create_draft(username: str, conversation_id: str, title: str, seed_ide
     """插入一份草稿，返回与 :func:`get_draft` 相同形状的字典。"""
     draft_id = str(uuid4())
     target_json = json.dumps(target if isinstance(target, dict) else {}, ensure_ascii=False)
-    async with aiosqlite.connect(database.DB_PATH, timeout=database.SQLITE_BUSY_TIMEOUT) as db:
+    async with db_txn.connect(database.DB_PATH, timeout=database.SQLITE_BUSY_TIMEOUT) as db:
         await db.execute(
             """INSERT INTO novel_drafts
                (id, owner_username, conversation_id, title, seed_idea, target_json)
@@ -70,7 +71,7 @@ async def create_draft(username: str, conversation_id: str, title: str, seed_ide
 
 async def get_draft(username: str, draft_id: str) -> dict | None:
     """只返回 owner_username 匹配的草稿；不存在或非本人返回 None。"""
-    async with aiosqlite.connect(database.DB_PATH, timeout=database.SQLITE_BUSY_TIMEOUT) as db:
+    async with db_txn.connect(database.DB_PATH, timeout=database.SQLITE_BUSY_TIMEOUT) as db:
         db.row_factory = aiosqlite.Row
         async with db.execute(
             """SELECT id, title, seed_idea, target_json, novel_id, created_at
@@ -96,7 +97,7 @@ async def get_draft(username: str, draft_id: str) -> dict | None:
 
 async def count_open_drafts(username: str) -> int:
     """该用户尚未消费的草稿数；已建书的草稿不算。"""
-    async with aiosqlite.connect(database.DB_PATH, timeout=database.SQLITE_BUSY_TIMEOUT) as db:
+    async with db_txn.connect(database.DB_PATH, timeout=database.SQLITE_BUSY_TIMEOUT) as db:
         async with db.execute(
             "SELECT COUNT(*) FROM novel_drafts WHERE owner_username = ? AND novel_id IS NULL",
             (username,),

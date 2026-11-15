@@ -10,6 +10,7 @@ import logging
 import os
 
 import aiosqlite
+from utils import db_txn
 
 from .fake_llm import input_characters
 from .run_store import utc_now
@@ -170,19 +171,7 @@ class NovelBilling:
         Shield the whole transaction, including connection cleanup, and consume
         its result before propagating cancellation to the calling worker.
         """
-        task = asyncio.create_task(operation)
-        cancelled = False
-        while True:
-            try:
-                result = await asyncio.shield(task)
-                break
-            except asyncio.CancelledError:
-                if task.done() and task.cancelled():
-                    raise
-                cancelled = True
-        if cancelled:
-            raise asyncio.CancelledError
-        return result
+        return await db_txn.drain(operation)
 
     async def reserve(self, call):
         if self.is_free(call):
@@ -199,7 +188,7 @@ class NovelBilling:
     async def _reserve_transaction(self, call, amount):
         import database
         async with self._lock:
-            async with aiosqlite.connect(database.DB_PATH, timeout=database.SQLITE_BUSY_TIMEOUT) as db:
+            async with db_txn.connect(database.DB_PATH, timeout=database.SQLITE_BUSY_TIMEOUT) as db:
                 await db.execute("BEGIN IMMEDIATE")
                 book = await self._active(db)
                 if book["spent_strawberries"] + book["reserved_strawberries"] + amount >= book["budget_strawberries"] * .8:
@@ -243,7 +232,7 @@ class NovelBilling:
     async def _finish_transaction(self, call, charge, *, step_record=None):
         import database
         async with self._lock:
-            async with aiosqlite.connect(database.DB_PATH, timeout=database.SQLITE_BUSY_TIMEOUT) as db:
+            async with db_txn.connect(database.DB_PATH, timeout=database.SQLITE_BUSY_TIMEOUT) as db:
                 await db.execute("BEGIN IMMEDIATE")
                 await self._active(db)
                 cursor = await db.execute("SELECT strawberries_reserved,billing_status FROM novel_steps "
@@ -279,7 +268,7 @@ class NovelBilling:
     async def _refund_reserved_transaction(self):
         import database
         async with self._lock:
-            async with aiosqlite.connect(database.DB_PATH, timeout=database.SQLITE_BUSY_TIMEOUT) as db:
+            async with db_txn.connect(database.DB_PATH, timeout=database.SQLITE_BUSY_TIMEOUT) as db:
                 await db.execute("BEGIN IMMEDIATE")
                 db.row_factory = aiosqlite.Row
                 cursor = await db.execute("SELECT COALESCE(SUM(strawberries_reserved),0) AS amount FROM novel_steps "

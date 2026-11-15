@@ -1,4 +1,5 @@
 import aiosqlite
+from utils import db_txn
 import os
 import re
 import secrets
@@ -154,7 +155,7 @@ async def _peer_room_is_accepted(db, room_id: str, sender: str) -> bool:
 
 
 async def init_db():
-    async with aiosqlite.connect(DB_PATH, timeout=SQLITE_BUSY_TIMEOUT) as db:
+    async with db_txn.connect(DB_PATH, timeout=SQLITE_BUSY_TIMEOUT) as db:
         await db.execute("PRAGMA journal_mode=WAL")
         await db.execute("""
             CREATE TABLE IF NOT EXISTS users (
@@ -427,7 +428,7 @@ async def init_db():
         await migrate_workflow_exchanges_schema(db)
 
 async def get_or_create_user(username: str) -> dict:
-    async with aiosqlite.connect(DB_PATH, timeout=SQLITE_BUSY_TIMEOUT) as db:
+    async with db_txn.connect(DB_PATH, timeout=SQLITE_BUSY_TIMEOUT) as db:
         db.row_factory = aiosqlite.Row
         await db.execute(
             "INSERT OR IGNORE INTO users (username, session_version) VALUES (?, ?)",
@@ -496,7 +497,7 @@ async def _queue_unreferenced_uploads(db, paths: list[str]) -> list[str]:
 
 async def delete_message_for_user(message_id: int, username: str) -> dict:
     """原子校验消息归属、删除记录，并登记不再被引用的附件。"""
-    async with aiosqlite.connect(DB_PATH, timeout=SQLITE_BUSY_TIMEOUT) as db:
+    async with db_txn.connect(DB_PATH, timeout=SQLITE_BUSY_TIMEOUT) as db:
         await db.execute("BEGIN IMMEDIATE")
         async with db.execute(
             "SELECT username, image_path, reference_image_paths FROM messages WHERE id = ?", (message_id,)
@@ -525,7 +526,7 @@ async def clear_message_history(username: str) -> list[str]:
     """
     from song.store import delete_user_song_data
 
-    async with aiosqlite.connect(DB_PATH, timeout=SQLITE_BUSY_TIMEOUT) as db:
+    async with db_txn.connect(DB_PATH, timeout=SQLITE_BUSY_TIMEOUT) as db:
         await db.execute("BEGIN IMMEDIATE")
         async with db.execute(
             "SELECT image_path, reference_image_paths FROM messages WHERE username = ?",
@@ -542,7 +543,7 @@ async def clear_message_history(username: str) -> list[str]:
 
 
 async def get_pending_match_owner(match_id: int) -> str | None:
-    async with aiosqlite.connect(DB_PATH, timeout=SQLITE_BUSY_TIMEOUT) as db:
+    async with db_txn.connect(DB_PATH, timeout=SQLITE_BUSY_TIMEOUT) as db:
         async with db.execute(
             "SELECT username FROM pending_matches WHERE id = ?", (match_id,)
         ) as cursor:
@@ -565,7 +566,7 @@ async def save_message(
 ):
     from agent_store import ResourceNotFound, _ensure_default_conversation, _owned_conversation
 
-    async with aiosqlite.connect(DB_PATH, timeout=SQLITE_BUSY_TIMEOUT) as db:
+    async with db_txn.connect(DB_PATH, timeout=SQLITE_BUSY_TIMEOUT) as db:
         await db.execute("BEGIN IMMEDIATE")
         try:
             if conversation_id is None:
@@ -663,7 +664,7 @@ async def save_message(
 
 async def get_messages(username: str, limit: int = 100, conversation_id: str | None = None) -> list[dict]:
     """With an ID, read only that owned conversation; None retains legacy account scope."""
-    async with aiosqlite.connect(DB_PATH, timeout=SQLITE_BUSY_TIMEOUT) as db:
+    async with db_txn.connect(DB_PATH, timeout=SQLITE_BUSY_TIMEOUT) as db:
         await db.execute("BEGIN")
         if conversation_id is not None:
             from agent_store import _owned_conversation
@@ -699,7 +700,7 @@ async def set_message_image_summary(
         else (truncated, username, image_path)
     )
     try:
-        async with aiosqlite.connect(DB_PATH, timeout=SQLITE_BUSY_TIMEOUT) as db:
+        async with db_txn.connect(DB_PATH, timeout=SQLITE_BUSY_TIMEOUT) as db:
             cursor = await db.execute(
                 f"""UPDATE messages SET image_summary = ?
                     WHERE username = ? AND image_path = ?{condition} AND role = 'user'""",
@@ -713,7 +714,7 @@ async def set_message_image_summary(
 
 async def count_messages(username: str, conversation_id: str | None = None) -> int:
     """该用户的消息总数，用于成长阶段路由（区别于注入上下文的截断窗口）"""
-    async with aiosqlite.connect(DB_PATH, timeout=SQLITE_BUSY_TIMEOUT) as db:
+    async with db_txn.connect(DB_PATH, timeout=SQLITE_BUSY_TIMEOUT) as db:
         await db.execute("BEGIN")
         if conversation_id is not None:
             from agent_store import _owned_conversation
@@ -728,7 +729,7 @@ async def count_messages(username: str, conversation_id: str | None = None) -> i
 
 async def create_invite(code: str, username: str, note: str | None = None) -> bool:
     """登记一个邀请码→用户名。已存在则不覆盖，返回是否新建。"""
-    async with aiosqlite.connect(DB_PATH, timeout=SQLITE_BUSY_TIMEOUT) as db:
+    async with db_txn.connect(DB_PATH, timeout=SQLITE_BUSY_TIMEOUT) as db:
         cur = await db.execute(
             "INSERT OR IGNORE INTO invite_codes (code, username, note) VALUES (?, ?, ?)",
             (code, username, note),
@@ -743,7 +744,7 @@ async def create_tester_invites(count: int) -> list[tuple[str, str]]:
         raise ValueError("count must be 1..200")
     alphabet = "ABCDEFGHJKMNPQRSTUVWXYZ23456789"
     created: list[tuple[str, str]] = []
-    async with aiosqlite.connect(DB_PATH, timeout=SQLITE_BUSY_TIMEOUT) as db:
+    async with db_txn.connect(DB_PATH, timeout=SQLITE_BUSY_TIMEOUT) as db:
         await db.execute("BEGIN IMMEDIATE")
         async with db.execute(
             "SELECT username FROM users WHERE username LIKE 'tester%' "
@@ -784,7 +785,7 @@ async def create_tester_invites(count: int) -> list[tuple[str, str]]:
 
 async def redeem_invite(code: str) -> str | None:
     """原子兑换一个未撤销的邀请码；记录首次/最近使用时间和使用次数。"""
-    async with aiosqlite.connect(DB_PATH, timeout=SQLITE_BUSY_TIMEOUT) as db:
+    async with db_txn.connect(DB_PATH, timeout=SQLITE_BUSY_TIMEOUT) as db:
         db.row_factory = aiosqlite.Row
         await db.execute("BEGIN IMMEDIATE")
         async with db.execute(
@@ -803,7 +804,7 @@ async def redeem_invite(code: str) -> str | None:
 
 async def revoke_invite(code: str) -> bool:
     """撤销邀请码并使其绑定账号的现有会话失效。"""
-    async with aiosqlite.connect(DB_PATH, timeout=SQLITE_BUSY_TIMEOUT) as db:
+    async with db_txn.connect(DB_PATH, timeout=SQLITE_BUSY_TIMEOUT) as db:
         db.row_factory = aiosqlite.Row
         await db.execute("BEGIN IMMEDIATE")
         async with db.execute(
@@ -824,7 +825,7 @@ async def revoke_invite(code: str) -> bool:
 
 async def rotate_invite(old_code: str, new_code: str) -> bool:
     """把邀请码原子轮换为新码，保留绑定用户名和备注。"""
-    async with aiosqlite.connect(DB_PATH, timeout=SQLITE_BUSY_TIMEOUT) as db:
+    async with db_txn.connect(DB_PATH, timeout=SQLITE_BUSY_TIMEOUT) as db:
         db.row_factory = aiosqlite.Row
         await db.execute("BEGIN IMMEDIATE")
         async with db.execute(
@@ -857,7 +858,7 @@ async def rotate_invite(old_code: str, new_code: str) -> bool:
 
 async def list_invites() -> list[dict]:
     """列出邀请码状态，供本机管理脚本使用。"""
-    async with aiosqlite.connect(DB_PATH, timeout=SQLITE_BUSY_TIMEOUT) as db:
+    async with db_txn.connect(DB_PATH, timeout=SQLITE_BUSY_TIMEOUT) as db:
         db.row_factory = aiosqlite.Row
         async with db.execute(
             """SELECT code, username, note, redeemed_at, revoked_at,
@@ -869,7 +870,7 @@ async def list_invites() -> list[dict]:
 
 
 async def get_session_version(username: str) -> int | None:
-    async with aiosqlite.connect(DB_PATH, timeout=SQLITE_BUSY_TIMEOUT) as db:
+    async with db_txn.connect(DB_PATH, timeout=SQLITE_BUSY_TIMEOUT) as db:
         async with db.execute(
             "SELECT session_version FROM users WHERE username = ?",
             (username,),
@@ -885,7 +886,7 @@ async def is_session_valid(username: str, session_version: int) -> bool:
 
 async def revoke_user_sessions(username: str) -> bool:
     """撤销用户此前签发的全部 JWT。"""
-    async with aiosqlite.connect(DB_PATH, timeout=SQLITE_BUSY_TIMEOUT) as db:
+    async with db_txn.connect(DB_PATH, timeout=SQLITE_BUSY_TIMEOUT) as db:
         cursor = await db.execute(
             "UPDATE users SET session_version = session_version + 1 WHERE username = ?",
             (username,),
@@ -914,7 +915,7 @@ async def delete_account_data(username: str) -> dict:
         hashlib.md5(("fiona_plaza_" + username).encode()).hexdigest()[:8],
     )
 
-    async with aiosqlite.connect(DB_PATH, timeout=SQLITE_BUSY_TIMEOUT) as db:
+    async with db_txn.connect(DB_PATH, timeout=SQLITE_BUSY_TIMEOUT) as db:
         db.row_factory = aiosqlite.Row
         await db.execute("BEGIN IMMEDIATE")
 
@@ -1050,7 +1051,7 @@ async def delete_account_data(username: str) -> dict:
 
 
 async def get_pending_upload_cleanup() -> list[str]:
-    async with aiosqlite.connect(DB_PATH, timeout=SQLITE_BUSY_TIMEOUT) as db:
+    async with db_txn.connect(DB_PATH, timeout=SQLITE_BUSY_TIMEOUT) as db:
         async with db.execute(
             "SELECT path FROM upload_cleanup_queue ORDER BY created_at"
         ) as cursor:
@@ -1061,7 +1062,7 @@ async def get_pending_upload_cleanup() -> list[str]:
 async def mark_upload_cleanup_done(paths: list[str]) -> None:
     if not paths:
         return
-    async with aiosqlite.connect(DB_PATH, timeout=SQLITE_BUSY_TIMEOUT) as db:
+    async with db_txn.connect(DB_PATH, timeout=SQLITE_BUSY_TIMEOUT) as db:
         await db.executemany(
             "DELETE FROM upload_cleanup_queue WHERE path = ?",
             [(path,) for path in paths],
@@ -1069,7 +1070,7 @@ async def mark_upload_cleanup_done(paths: list[str]) -> None:
         await db.commit()
 
 async def get_profile(username: str) -> dict:
-    async with aiosqlite.connect(DB_PATH, timeout=SQLITE_BUSY_TIMEOUT) as db:
+    async with db_txn.connect(DB_PATH, timeout=SQLITE_BUSY_TIMEOUT) as db:
         db.row_factory = aiosqlite.Row
         async with db.execute("SELECT profile_json FROM users WHERE username = ?", (username,)) as cursor:
             row = await cursor.fetchone()
@@ -1082,7 +1083,7 @@ async def get_profile(username: str) -> dict:
 
 async def update_profile(username: str, profile: dict) -> bool:
     """Update the legacy social profile. New private chats use agent_store.update_memory."""
-    async with aiosqlite.connect(DB_PATH, timeout=SQLITE_BUSY_TIMEOUT) as db:
+    async with db_txn.connect(DB_PATH, timeout=SQLITE_BUSY_TIMEOUT) as db:
         cursor = await db.execute(
             "UPDATE users SET profile_json = ? WHERE username = ?",
             (_json.dumps(profile, ensure_ascii=False), username),
@@ -1092,7 +1093,7 @@ async def update_profile(username: str, profile: dict) -> bool:
 
 async def get_all_profiles() -> list[dict]:
     """返回所有用户的 username + profile_json + gender，用于匹配"""
-    async with aiosqlite.connect(DB_PATH, timeout=SQLITE_BUSY_TIMEOUT) as db:
+    async with db_txn.connect(DB_PATH, timeout=SQLITE_BUSY_TIMEOUT) as db:
         db.row_factory = aiosqlite.Row
         async with db.execute("SELECT username, profile_json, gender FROM users") as cursor:
             rows = await cursor.fetchall()
@@ -1113,7 +1114,7 @@ async def get_all_profiles() -> list[dict]:
 
 async def get_user_settings(username: str) -> dict:
     """获取用户性别 + 匹配偏好"""
-    async with aiosqlite.connect(DB_PATH, timeout=SQLITE_BUSY_TIMEOUT) as db:
+    async with db_txn.connect(DB_PATH, timeout=SQLITE_BUSY_TIMEOUT) as db:
         db.row_factory = aiosqlite.Row
         async with db.execute(
             "SELECT gender, match_pref FROM users WHERE username = ?", (username,)
@@ -1133,7 +1134,7 @@ async def update_user_settings(username: str, gender, match_pref: str):
         gender = None
     if match_pref not in ("male", "female", "both"):
         match_pref = "both"
-    async with aiosqlite.connect(DB_PATH, timeout=SQLITE_BUSY_TIMEOUT) as db:
+    async with db_txn.connect(DB_PATH, timeout=SQLITE_BUSY_TIMEOUT) as db:
         await db.execute(
             "UPDATE users SET gender = ?, match_pref = ? WHERE username = ?",
             (gender, match_pref, username)
@@ -1142,7 +1143,7 @@ async def update_user_settings(username: str, gender, match_pref: str):
 
 async def was_recently_matched(user_a: str, user_b: str, days: int = 30) -> bool:
     """检查两人在 days 天内是否已经推荐过"""
-    async with aiosqlite.connect(DB_PATH, timeout=SQLITE_BUSY_TIMEOUT) as db:
+    async with db_txn.connect(DB_PATH, timeout=SQLITE_BUSY_TIMEOUT) as db:
         async with db.execute(
             """SELECT id FROM matches
                WHERE ((user_a=? AND user_b=?) OR (user_a=? AND user_b=?))
@@ -1153,7 +1154,7 @@ async def was_recently_matched(user_a: str, user_b: str, days: int = 30) -> bool
     return row is not None
 
 async def save_match(user_a: str, user_b: str):
-    async with aiosqlite.connect(DB_PATH, timeout=SQLITE_BUSY_TIMEOUT) as db:
+    async with db_txn.connect(DB_PATH, timeout=SQLITE_BUSY_TIMEOUT) as db:
         await db.execute("BEGIN IMMEDIATE")
         if user_a == user_b or not await _users_exist(db, user_a, user_b):
             await db.rollback()
@@ -1178,7 +1179,7 @@ async def update_match_response(me: str, peer: str, response: str):
     """记录 me 对 (me ↔ peer) 这对匹配的态度。response = 'accept' / 'reject'。
     根据 matches 行实际 user_a/user_b 的顺序更新对应列；不存在时拒绝，
     防止任意用户绕过推荐流程制造连接关系。"""
-    async with aiosqlite.connect(DB_PATH, timeout=SQLITE_BUSY_TIMEOUT) as db:
+    async with db_txn.connect(DB_PATH, timeout=SQLITE_BUSY_TIMEOUT) as db:
         await db.execute("BEGIN IMMEDIATE")
         if not await _users_exist(db, me, peer):
             await db.rollback()
@@ -1200,7 +1201,7 @@ async def update_match_response(me: str, peer: str, response: str):
         return True
 
 async def save_peer_message(room_id: str, sender: str, content: str):
-    async with aiosqlite.connect(DB_PATH, timeout=SQLITE_BUSY_TIMEOUT) as db:
+    async with db_txn.connect(DB_PATH, timeout=SQLITE_BUSY_TIMEOUT) as db:
         await db.execute("BEGIN IMMEDIATE")
         if not await _peer_room_is_accepted(db, room_id, sender):
             await db.rollback()
@@ -1213,7 +1214,7 @@ async def save_peer_message(room_id: str, sender: str, content: str):
         return True
 
 async def get_peer_messages(room_id: str, limit: int = 100) -> list[dict]:
-    async with aiosqlite.connect(DB_PATH, timeout=SQLITE_BUSY_TIMEOUT) as db:
+    async with db_txn.connect(DB_PATH, timeout=SQLITE_BUSY_TIMEOUT) as db:
         db.row_factory = aiosqlite.Row
         async with db.execute(
             "SELECT id, sender, content, created_at FROM peer_messages WHERE room_id=? ORDER BY created_at DESC LIMIT ?",
@@ -1237,7 +1238,7 @@ async def save_pending_match(
                  'layer2' = 画像级（用户每次画像更新后批量算）。
     用于 _has_recent_layer2_match 判断 24h 冷却时区分两类，
     避免 B 端收到的 layer1 卡误判为 layer2 占位，让 B 自己的 layer2 跑不起来。"""
-    async with aiosqlite.connect(DB_PATH, timeout=SQLITE_BUSY_TIMEOUT) as db:
+    async with db_txn.connect(DB_PATH, timeout=SQLITE_BUSY_TIMEOUT) as db:
         await db.execute("BEGIN IMMEDIATE")
         if not await _users_exist(db, username, peer_username):
             await db.rollback()
@@ -1265,7 +1266,7 @@ async def save_pending_match(
 
 async def get_pending_matches_for_user(username: str, limit: int = 5) -> list[dict]:
     """拉未看过的匹配，按新到老。附带对方的招呼内容（若已接受并留招呼）。"""
-    async with aiosqlite.connect(DB_PATH, timeout=SQLITE_BUSY_TIMEOUT) as db:
+    async with db_txn.connect(DB_PATH, timeout=SQLITE_BUSY_TIMEOUT) as db:
         db.row_factory = aiosqlite.Row
         # 只拉 2 小时内的卡片，超时的视为自动过期不再展示
         async with db.execute(
@@ -1289,7 +1290,7 @@ async def get_pending_matches_for_user(username: str, limit: int = 5) -> list[di
         # 查对方是否已接受并留了招呼
         peer = d["peer_username"]
         d["peer_greeting"] = None
-        async with aiosqlite.connect(DB_PATH, timeout=SQLITE_BUSY_TIMEOUT) as db:
+        async with db_txn.connect(DB_PATH, timeout=SQLITE_BUSY_TIMEOUT) as db:
             db.row_factory = aiosqlite.Row
             async with db.execute(
                 """SELECT user_a, greeting_a, greeting_b FROM matches
@@ -1313,7 +1314,7 @@ async def get_pending_matches_for_user(username: str, limit: int = 5) -> list[di
 async def save_greeting(me: str, peer: str, text: str):
     """保存 me 给 peer 的打招呼内容，写入最新一条 matches 行对应方向的列。
     matches 行不存在时拒绝，避免通过问候文本隐式创建任意关系。"""
-    async with aiosqlite.connect(DB_PATH, timeout=SQLITE_BUSY_TIMEOUT) as db:
+    async with db_txn.connect(DB_PATH, timeout=SQLITE_BUSY_TIMEOUT) as db:
         await db.execute("BEGIN IMMEDIATE")
         if not await _users_exist(db, me, peer):
             await db.rollback()
@@ -1342,7 +1343,7 @@ async def upsert_user_state(
     interest_anchor: str,
 ):
     """底色探针结果持久化（一人一行 upsert）"""
-    async with aiosqlite.connect(DB_PATH, timeout=SQLITE_BUSY_TIMEOUT) as db:
+    async with db_txn.connect(DB_PATH, timeout=SQLITE_BUSY_TIMEOUT) as db:
         await db.execute("BEGIN IMMEDIATE")
         if not await _users_exist(db, username):
             await db.rollback()
@@ -1365,7 +1366,7 @@ async def upsert_user_state(
 
 async def get_user_state(username: str) -> dict | None:
     """读取用户当前底色，不存在返回 None"""
-    async with aiosqlite.connect(DB_PATH, timeout=SQLITE_BUSY_TIMEOUT) as db:
+    async with db_txn.connect(DB_PATH, timeout=SQLITE_BUSY_TIMEOUT) as db:
         db.row_factory = aiosqlite.Row
         async with db.execute(
             "SELECT * FROM user_states WHERE username = ?", (username,)
@@ -1375,7 +1376,7 @@ async def get_user_state(username: str) -> dict | None:
 
 
 async def mark_pending_match_seen(match_id: int):
-    async with aiosqlite.connect(DB_PATH, timeout=SQLITE_BUSY_TIMEOUT) as db:
+    async with db_txn.connect(DB_PATH, timeout=SQLITE_BUSY_TIMEOUT) as db:
         await db.execute(
             "UPDATE pending_matches SET seen = 1 WHERE id = ?", (match_id,)
         )
@@ -1384,7 +1385,7 @@ async def mark_pending_match_seen(match_id: int):
 
 async def get_recent_user_messages(username: str, limit: int = 5) -> list[dict]:
     """取该 user 最近 N 条 user 角色的消息（用于跨用户搜索）"""
-    async with aiosqlite.connect(DB_PATH, timeout=SQLITE_BUSY_TIMEOUT) as db:
+    async with db_txn.connect(DB_PATH, timeout=SQLITE_BUSY_TIMEOUT) as db:
         db.row_factory = aiosqlite.Row
         async with db.execute(
             """SELECT content, created_at FROM messages
@@ -1398,7 +1399,7 @@ async def get_recent_user_messages(username: str, limit: int = 5) -> list[dict]:
 
 async def get_accepted_matches(username: str) -> list[str]:
     """返回接受了和 username 匹配的对方用户名列表"""
-    async with aiosqlite.connect(DB_PATH, timeout=SQLITE_BUSY_TIMEOUT) as db:
+    async with db_txn.connect(DB_PATH, timeout=SQLITE_BUSY_TIMEOUT) as db:
         db.row_factory = aiosqlite.Row
         async with db.execute(
             """SELECT user_a, user_b, response_a, response_b FROM matches
@@ -1433,7 +1434,7 @@ async def save_post(
     owner_username: str,
 ) -> int | None:
     """保存广场帖子，返回新帖 id"""
-    async with aiosqlite.connect(DB_PATH, timeout=SQLITE_BUSY_TIMEOUT) as db:
+    async with db_txn.connect(DB_PATH, timeout=SQLITE_BUSY_TIMEOUT) as db:
         await db.execute("BEGIN IMMEDIATE")
         if not await _users_exist(db, owner_username):
             await db.rollback()
@@ -1473,7 +1474,7 @@ async def get_posts(
         )"""
         params.append(tag)
     params.extend((limit, offset))
-    async with aiosqlite.connect(DB_PATH, timeout=SQLITE_BUSY_TIMEOUT) as db:
+    async with db_txn.connect(DB_PATH, timeout=SQLITE_BUSY_TIMEOUT) as db:
         db.row_factory = aiosqlite.Row
         async with db.execute(
             f"""SELECT id, anon_id, media_path, media_type, caption, tags_json, likes, created_at
@@ -1513,7 +1514,7 @@ async def get_recommended_posts(
         )"""
         params.append(tag)
     params.extend((limit, offset))
-    async with aiosqlite.connect(DB_PATH, timeout=SQLITE_BUSY_TIMEOUT) as db:
+    async with db_txn.connect(DB_PATH, timeout=SQLITE_BUSY_TIMEOUT) as db:
         db.row_factory = aiosqlite.Row
         async with db.execute(
             f"""SELECT id, anon_id, media_path, media_type, caption, tags_json, likes, created_at,
@@ -1552,7 +1553,7 @@ async def get_recommended_posts(
 
 async def get_post(post_id: int) -> dict | None:
     """按 id 直查一条广场帖子。"""
-    async with aiosqlite.connect(DB_PATH, timeout=SQLITE_BUSY_TIMEOUT) as db:
+    async with db_txn.connect(DB_PATH, timeout=SQLITE_BUSY_TIMEOUT) as db:
         db.row_factory = aiosqlite.Row
         async with db.execute(
             """SELECT id, anon_id, media_path, media_type, caption, tags_json, likes, created_at
@@ -1574,7 +1575,7 @@ async def like_post(post_id: int, username: str) -> tuple[int, bool]:
     """给帖子点赞（按登录用户去重），返回（最新 likes 数，本次是否新点赞）。
     先 INSERT OR IGNORE 进 post_likes;只有确实是新插入(rowcount>0)才给 posts.likes +1，
     所以同一用户重复点赞幂等、不再加数。"""
-    async with aiosqlite.connect(DB_PATH, timeout=SQLITE_BUSY_TIMEOUT) as db:
+    async with db_txn.connect(DB_PATH, timeout=SQLITE_BUSY_TIMEOUT) as db:
         await db.execute("BEGIN IMMEDIATE")
         if not await _users_exist(db, username):
             await db.rollback()
@@ -1624,7 +1625,7 @@ async def update_time_tag_prefs(username: str, tags: list, time_slot: str = "", 
     if not username or not tags:
         return
     slot = time_slot or get_time_slot()
-    async with aiosqlite.connect(DB_PATH, timeout=SQLITE_BUSY_TIMEOUT) as db:
+    async with db_txn.connect(DB_PATH, timeout=SQLITE_BUSY_TIMEOUT) as db:
         await db.execute("BEGIN IMMEDIATE")
         if not await _users_exist(db, username):
             await db.rollback()
@@ -1643,7 +1644,7 @@ async def get_time_tag_prefs(username: str, time_slot: str = "") -> dict[str, fl
     if not username:
         return {}
     slot = time_slot or get_time_slot()
-    async with aiosqlite.connect(DB_PATH, timeout=SQLITE_BUSY_TIMEOUT) as db:
+    async with db_txn.connect(DB_PATH, timeout=SQLITE_BUSY_TIMEOUT) as db:
         db.row_factory = aiosqlite.Row
         async with db.execute(
             "SELECT tag, score FROM user_time_tag_prefs WHERE username=? AND time_slot=?",
@@ -1657,7 +1658,7 @@ async def get_all_time_tag_prefs(username: str) -> dict[str, dict[str, float]]:
     """返回用户所有时段的标签权重 {time_slot: {tag: score}}（用于前端展示）"""
     if not username:
         return {}
-    async with aiosqlite.connect(DB_PATH, timeout=SQLITE_BUSY_TIMEOUT) as db:
+    async with db_txn.connect(DB_PATH, timeout=SQLITE_BUSY_TIMEOUT) as db:
         db.row_factory = aiosqlite.Row
         async with db.execute(
             "SELECT time_slot, tag, score FROM user_time_tag_prefs WHERE username=? ORDER BY time_slot, score DESC",
@@ -1674,7 +1675,7 @@ async def update_tag_prefs(username: str, tags: list, delta: float = 1.0):
     """用户点赞/互动后，更新全局标签权重 + 当前时段权重"""
     if not username or not tags:
         return
-    async with aiosqlite.connect(DB_PATH, timeout=SQLITE_BUSY_TIMEOUT) as db:
+    async with db_txn.connect(DB_PATH, timeout=SQLITE_BUSY_TIMEOUT) as db:
         await db.execute("BEGIN IMMEDIATE")
         if not await _users_exist(db, username):
             await db.rollback()
@@ -1694,7 +1695,7 @@ async def save_otp(phone: str, code: str, ttl_seconds: int = 300):
     """保存/覆盖 OTP，ttl_seconds 内有效"""
     from datetime import timedelta
     expires = datetime.now() + timedelta(seconds=ttl_seconds)
-    async with aiosqlite.connect(DB_PATH, timeout=SQLITE_BUSY_TIMEOUT) as db:
+    async with db_txn.connect(DB_PATH, timeout=SQLITE_BUSY_TIMEOUT) as db:
         await db.execute(
             """INSERT INTO otp_codes (phone, code, expires_at)
                VALUES (?, ?, ?)
@@ -1706,7 +1707,7 @@ async def save_otp(phone: str, code: str, ttl_seconds: int = 300):
 
 async def check_and_consume_otp(phone: str, code: str) -> bool:
     """验证 OTP 并删除（一次性）。正确且未过期返回 True。"""
-    async with aiosqlite.connect(DB_PATH, timeout=SQLITE_BUSY_TIMEOUT) as db:
+    async with db_txn.connect(DB_PATH, timeout=SQLITE_BUSY_TIMEOUT) as db:
         async with db.execute(
             "SELECT code, expires_at FROM otp_codes WHERE phone = ?", (phone,)
         ) as cursor:
@@ -1731,7 +1732,7 @@ async def check_and_consume_otp(phone: str, code: str) -> bool:
 
 async def get_or_create_user_by_phone(phone: str) -> dict:
     """用手机号查找或创建用户，返回用户行"""
-    async with aiosqlite.connect(DB_PATH, timeout=SQLITE_BUSY_TIMEOUT) as db:
+    async with db_txn.connect(DB_PATH, timeout=SQLITE_BUSY_TIMEOUT) as db:
         db.row_factory = aiosqlite.Row
         # username 与 phone 都有唯一约束；INSERT OR IGNORE 让并发首登幂等。
         await db.execute(
@@ -1764,7 +1765,7 @@ async def _apply_daily_refill(db, username: str, amount: int) -> None:
 
 
 async def get_strawberry_balance(username: str) -> int:
-    async with aiosqlite.connect(DB_PATH, timeout=SQLITE_BUSY_TIMEOUT) as db:
+    async with db_txn.connect(DB_PATH, timeout=SQLITE_BUSY_TIMEOUT) as db:
         refill = strawberry_daily_refill()
         if refill:
             await db.execute("BEGIN IMMEDIATE")
@@ -1782,7 +1783,7 @@ async def reserve_strawberries(username: str, amount: int) -> int | None:
     """Refill if due, then atomically reserve only when funds cover the full price."""
     if amount <= 0:
         raise ValueError("amount must be positive")
-    async with aiosqlite.connect(DB_PATH, timeout=SQLITE_BUSY_TIMEOUT) as db:
+    async with db_txn.connect(DB_PATH, timeout=SQLITE_BUSY_TIMEOUT) as db:
         await db.execute("BEGIN IMMEDIATE")
         await _apply_daily_refill(db, username, strawberry_daily_refill())
         async with db.execute(
@@ -1800,7 +1801,7 @@ async def refund_strawberries(username: str, amount: int) -> int:
     """Restore a reservation; deleted accounts remain deleted."""
     if amount <= 0:
         raise ValueError("amount must be positive")
-    async with aiosqlite.connect(DB_PATH, timeout=SQLITE_BUSY_TIMEOUT) as db:
+    async with db_txn.connect(DB_PATH, timeout=SQLITE_BUSY_TIMEOUT) as db:
         async with db.execute(
             """UPDATE users SET strawberry_balance = strawberry_balance + ?
                WHERE username = ? RETURNING strawberry_balance""",
@@ -1813,7 +1814,7 @@ async def refund_strawberries(username: str, amount: int) -> int:
 
 async def add_strawberry(username: str, amount: int) -> int:
     """充草莓，返回充后余额"""
-    async with aiosqlite.connect(DB_PATH, timeout=SQLITE_BUSY_TIMEOUT) as db:
+    async with db_txn.connect(DB_PATH, timeout=SQLITE_BUSY_TIMEOUT) as db:
         await db.execute(
             "UPDATE users SET strawberry_balance = strawberry_balance + ? WHERE username = ?",
             (amount, username)
@@ -1830,7 +1831,7 @@ async def get_tag_prefs(username: str) -> dict[str, float]:
     """返回用户的标签权重字典 {tag: score}"""
     if not username:
         return {}
-    async with aiosqlite.connect(DB_PATH, timeout=SQLITE_BUSY_TIMEOUT) as db:
+    async with db_txn.connect(DB_PATH, timeout=SQLITE_BUSY_TIMEOUT) as db:
         db.row_factory = aiosqlite.Row
         async with db.execute(
             "SELECT tag, score FROM user_tag_prefs WHERE username = ?", (username,)
@@ -1841,7 +1842,7 @@ async def get_tag_prefs(username: str) -> dict[str, float]:
 
 async def get_all_messages(username: str) -> list[dict]:
     """取全部历史消息（用于聊天记录展示）"""
-    async with aiosqlite.connect(DB_PATH, timeout=SQLITE_BUSY_TIMEOUT) as db:
+    async with db_txn.connect(DB_PATH, timeout=SQLITE_BUSY_TIMEOUT) as db:
         db.row_factory = aiosqlite.Row
         async with db.execute(
             "SELECT id, role, content, image_path, reference_image_paths, created_at FROM messages WHERE username = ? ORDER BY created_at ASC",
@@ -1891,7 +1892,7 @@ def _watch_rule(row):
 
 
 async def create_watch_device(username: str, token_hash: str, name: str) -> dict:
-    async with aiosqlite.connect(DB_PATH, timeout=SQLITE_BUSY_TIMEOUT) as db:
+    async with db_txn.connect(DB_PATH, timeout=SQLITE_BUSY_TIMEOUT) as db:
         db.row_factory = aiosqlite.Row
         await db.execute("BEGIN IMMEDIATE")
         if not await _users_exist(db, username):
@@ -1907,21 +1908,21 @@ async def create_watch_device(username: str, token_hash: str, name: str) -> dict
 
 
 async def list_watch_devices(username: str) -> list[dict]:
-    async with aiosqlite.connect(DB_PATH, timeout=SQLITE_BUSY_TIMEOUT) as db:
+    async with db_txn.connect(DB_PATH, timeout=SQLITE_BUSY_TIMEOUT) as db:
         db.row_factory = aiosqlite.Row
         async with db.execute("SELECT id,name,created_at,last_seen_at,revoked FROM watch_devices WHERE username=? ORDER BY id", (username,)) as cursor:
             return [dict(row) for row in await cursor.fetchall()]
 
 
 async def revoke_watch_device(username: str, device_id: int) -> bool:
-    async with aiosqlite.connect(DB_PATH, timeout=SQLITE_BUSY_TIMEOUT) as db:
+    async with db_txn.connect(DB_PATH, timeout=SQLITE_BUSY_TIMEOUT) as db:
         cursor = await db.execute("UPDATE watch_devices SET revoked=1 WHERE id=? AND username=?", (device_id, username))
         await db.commit()
         return cursor.rowcount > 0
 
 
 async def authenticate_watch_device(token_hash: str) -> dict | None:
-    async with aiosqlite.connect(DB_PATH, timeout=SQLITE_BUSY_TIMEOUT) as db:
+    async with db_txn.connect(DB_PATH, timeout=SQLITE_BUSY_TIMEOUT) as db:
         db.row_factory = aiosqlite.Row
         await db.execute("BEGIN IMMEDIATE")
         async with db.execute("SELECT d.id,d.username FROM watch_devices d JOIN users u ON u.username=d.username WHERE d.token_hash=? AND d.revoked=0", (token_hash,)) as cursor:
@@ -1934,7 +1935,7 @@ async def authenticate_watch_device(token_hash: str) -> dict | None:
 
 
 async def list_watch_rules(username: str, *, enabled_only=False) -> list[dict]:
-    async with aiosqlite.connect(DB_PATH, timeout=SQLITE_BUSY_TIMEOUT) as db:
+    async with db_txn.connect(DB_PATH, timeout=SQLITE_BUSY_TIMEOUT) as db:
         db.row_factory = aiosqlite.Row
         sql = "SELECT * FROM watch_rules WHERE username=?" + (" AND enabled=1" if enabled_only else "") + " ORDER BY id"
         async with db.execute(sql, (username,)) as cursor:
@@ -1942,7 +1943,7 @@ async def list_watch_rules(username: str, *, enabled_only=False) -> list[dict]:
 
 
 async def get_watch_rule(username: str, rule_id: int) -> dict | None:
-    async with aiosqlite.connect(DB_PATH, timeout=SQLITE_BUSY_TIMEOUT) as db:
+    async with db_txn.connect(DB_PATH, timeout=SQLITE_BUSY_TIMEOUT) as db:
         db.row_factory = aiosqlite.Row
         async with db.execute("SELECT * FROM watch_rules WHERE username=? AND id=?", (username, rule_id)) as cursor:
             row = await cursor.fetchone()
@@ -1952,7 +1953,7 @@ async def get_watch_rule(username: str, rule_id: int) -> dict | None:
 async def create_watch_rule(username: str, values: dict) -> dict:
     fields = ("name", "app_match", "title_match", "kind", "params", "interval_seconds", "cooldown_seconds", "enabled", "conversation_id")
     params = [(_json.dumps(values[key], ensure_ascii=False) if key == "params" else values[key]) for key in fields]
-    async with aiosqlite.connect(DB_PATH, timeout=SQLITE_BUSY_TIMEOUT) as db:
+    async with db_txn.connect(DB_PATH, timeout=SQLITE_BUSY_TIMEOUT) as db:
         db.row_factory = aiosqlite.Row
         await db.execute("BEGIN IMMEDIATE")
         if not await _users_exist(db, username):
@@ -1970,7 +1971,7 @@ async def create_watch_rule(username: str, values: dict) -> dict:
 async def update_watch_rule(username: str, rule_id: int, values: dict) -> dict | None:
     fields = ("name", "app_match", "title_match", "kind", "params", "interval_seconds", "cooldown_seconds", "enabled", "conversation_id")
     params = [(_json.dumps(values[key], ensure_ascii=False) if key == "params" else values[key]) for key in fields]
-    async with aiosqlite.connect(DB_PATH, timeout=SQLITE_BUSY_TIMEOUT) as db:
+    async with db_txn.connect(DB_PATH, timeout=SQLITE_BUSY_TIMEOUT) as db:
         db.row_factory = aiosqlite.Row
         await db.execute("BEGIN IMMEDIATE")
         cursor = await db.execute("UPDATE watch_rules SET " + ",".join(key + "=?" for key in fields) + ",updated_at=CURRENT_TIMESTAMP WHERE username=? AND id=?", [*params, username, rule_id])
@@ -1983,14 +1984,14 @@ async def update_watch_rule(username: str, rule_id: int, values: dict) -> dict |
 
 
 async def delete_watch_rule(username: str, rule_id: int) -> bool:
-    async with aiosqlite.connect(DB_PATH, timeout=SQLITE_BUSY_TIMEOUT) as db:
+    async with db_txn.connect(DB_PATH, timeout=SQLITE_BUSY_TIMEOUT) as db:
         cursor = await db.execute("DELETE FROM watch_rules WHERE username=? AND id=?", (username, rule_id))
         await db.commit()
         return cursor.rowcount > 0
 
 
 async def latest_watch_alert_time(username: str, rule_id: int) -> str | None:
-    async with aiosqlite.connect(DB_PATH, timeout=SQLITE_BUSY_TIMEOUT) as db:
+    async with db_txn.connect(DB_PATH, timeout=SQLITE_BUSY_TIMEOUT) as db:
         async with db.execute("SELECT created_at FROM watch_alerts WHERE username=? AND rule_id=? ORDER BY id DESC LIMIT 1", (username, rule_id)) as cursor:
             row = await cursor.fetchone()
         return row[0] if row else None
@@ -2012,7 +2013,7 @@ async def save_watch_alert(username: str, rule: dict, summary: str, content: str
         except ResourceNotFound:
             return None
     target = context["conversation"]["id"]
-    async with aiosqlite.connect(DB_PATH, timeout=SQLITE_BUSY_TIMEOUT) as db:
+    async with db_txn.connect(DB_PATH, timeout=SQLITE_BUSY_TIMEOUT) as db:
         async with db.execute("SELECT COALESCE(MAX(id),0) FROM messages WHERE username=?", (username,)) as cursor:
             before_id = (await cursor.fetchone())[0]
     private_content = WatchPrivateText(content)
@@ -2022,7 +2023,7 @@ async def save_watch_alert(username: str, rule: dict, summary: str, content: str
             return None
         context = await resolve_chat_conversation(username)
         target = context["conversation"]["id"]
-    async with aiosqlite.connect(DB_PATH, timeout=SQLITE_BUSY_TIMEOUT) as db:
+    async with db_txn.connect(DB_PATH, timeout=SQLITE_BUSY_TIMEOUT) as db:
         db.row_factory = aiosqlite.Row
         await db.execute("BEGIN IMMEDIATE")
         async with db.execute("SELECT id,conversation_id FROM messages WHERE username=? AND role='assistant' AND conversation_id=? AND content=? AND id>? ORDER BY id LIMIT 1", (username, target, private_content, before_id)) as cursor:
@@ -2037,7 +2038,7 @@ async def save_watch_alert(username: str, rule: dict, summary: str, content: str
 
 
 async def list_watch_alerts(username: str, after: int = 0) -> list[dict]:
-    async with aiosqlite.connect(DB_PATH, timeout=SQLITE_BUSY_TIMEOUT) as db:
+    async with db_txn.connect(DB_PATH, timeout=SQLITE_BUSY_TIMEOUT) as db:
         db.row_factory = aiosqlite.Row
         async with db.execute("""SELECT a.id,COALESCE(r.name,'已删除规则') AS rule_name,
                 a.summary,a.created_at,a.conversation_id,a.message_id
@@ -2055,7 +2056,7 @@ async def authenticate_watch_device_throttled(token_hash: str) -> dict | None:
     stale = """(last_seen_at IS NULL OR strftime('%s', last_seen_at) IS NULL
         OR CAST(strftime('%s', 'now') AS INTEGER)
              - CAST(strftime('%s', last_seen_at) AS INTEGER) >= 60)"""
-    async with aiosqlite.connect(DB_PATH, timeout=SQLITE_BUSY_TIMEOUT) as db:
+    async with db_txn.connect(DB_PATH, timeout=SQLITE_BUSY_TIMEOUT) as db:
         db.row_factory = aiosqlite.Row
         async with db.execute("""SELECT d.id,d.username,""" + stale + """ AS needs_touch
             FROM watch_devices d JOIN users u ON u.username=d.username
@@ -2080,7 +2081,7 @@ async def authenticate_watch_device_throttled(token_hash: str) -> dict | None:
 
 async def list_watch_alerts_with_content(username: str, after: int = 0) -> list[dict]:
     """Return the stored assistant body, without rebuilding labels from rules."""
-    async with aiosqlite.connect(DB_PATH, timeout=SQLITE_BUSY_TIMEOUT) as db:
+    async with db_txn.connect(DB_PATH, timeout=SQLITE_BUSY_TIMEOUT) as db:
         db.row_factory = aiosqlite.Row
         async with db.execute("""SELECT a.id,COALESCE(r.name,'已删除规则') AS rule_name,
                 a.summary,a.created_at,a.conversation_id,a.message_id,
@@ -2122,7 +2123,7 @@ async def save_studio_notice(username: str, job: dict, summary: str, content: st
         _pending_studio_messages.pop(pending_key, None)
         return None
     target = context["conversation"]["id"]
-    async with aiosqlite.connect(DB_PATH, timeout=SQLITE_BUSY_TIMEOUT) as db:
+    async with db_txn.connect(DB_PATH, timeout=SQLITE_BUSY_TIMEOUT) as db:
         db.row_factory = aiosqlite.Row
         await db.execute("BEGIN IMMEDIATE")
         async with db.execute("SELECT * FROM studio_notices WHERE username=? AND job_id=?", (username, job["id"])) as cursor:
@@ -2162,13 +2163,13 @@ async def save_studio_notice(username: str, job: dict, summary: str, content: st
                 return None
             pending["target"] = context["conversation"]["id"]
             # Persist the fallback target before a message can be committed there.
-            async with aiosqlite.connect(DB_PATH, timeout=SQLITE_BUSY_TIMEOUT) as db:
+            async with db_txn.connect(DB_PATH, timeout=SQLITE_BUSY_TIMEOUT) as db:
                 await db.execute("UPDATE studio_notice_pending SET target=? WHERE job_id=? AND username=?",
                                  (pending["target"], job["id"], username))
                 await db.commit()
             if not await save_message(username, "assistant", pending["content"], conversation_id=pending["target"]):
                 return None
-    async with aiosqlite.connect(DB_PATH, timeout=SQLITE_BUSY_TIMEOUT) as db:
+    async with db_txn.connect(DB_PATH, timeout=SQLITE_BUSY_TIMEOUT) as db:
         db.row_factory = aiosqlite.Row
         await db.execute("BEGIN IMMEDIATE")
         message = await _studio_notice_message(db, username, pending)
@@ -2193,7 +2194,7 @@ async def save_studio_notice(username: str, job: dict, summary: str, content: st
 
 
 async def list_studio_notices_with_content(username: str, after: int = 0) -> list[dict]:
-    async with aiosqlite.connect(DB_PATH, timeout=SQLITE_BUSY_TIMEOUT) as db:
+    async with db_txn.connect(DB_PATH, timeout=SQLITE_BUSY_TIMEOUT) as db:
         db.row_factory = aiosqlite.Row
         async with db.execute("""SELECT n.id,n.project_id,COALESCE(p.title,'已删除项目') AS project_title,
                 n.job_id,n.summary,n.created_at,n.conversation_id,n.message_id,

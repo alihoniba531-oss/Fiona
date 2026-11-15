@@ -133,6 +133,7 @@ npm run build
 ## 工作约定
 
 - 优先修复可复现问题，避免无关重构。
+- 后端代码不直接调 `aiosqlite.connect`，一律用 `utils.db_txn.connect`，有测试拦截。
 - 不提交 `.env`、数据库、上传文件、备份或 `fiona.config.json`。
 - 代码改变模型、路由、端口、环境变量、数据位置或部署方式时，同步更新 README、架构/部署文档和 PLAN。
 - 只有作者明确要求时才提交 Git commit。

@@ -4,6 +4,7 @@ from contextlib import asynccontextmanager
 from uuid import uuid4
 
 import aiosqlite
+from utils import db_txn
 
 import database
 import rate_limit
@@ -407,7 +408,7 @@ async def delete_exchanges_for_user(db, username):
 
 async def recover_interrupted_exchanges():
     """Called only on process startup, never by a routine schema initialization."""
-    async with aiosqlite.connect(database.DB_PATH, timeout=database.SQLITE_BUSY_TIMEOUT) as db:
+    async with db_txn.connect(database.DB_PATH, timeout=database.SQLITE_BUSY_TIMEOUT) as db:
         await db.execute("BEGIN IMMEDIATE")
         # A request could have completed upstream before the process died. Charge
         # its full reserved allowance as estimated usage rather than replay it.
@@ -432,7 +433,7 @@ async def recover_interrupted_exchanges():
 async def create_exchange(username, target_agent_id, topic, max_turns=6):
     if get_official_agent(target_agent_id) is not None:
         raise ResourceNotFound("Resource not found")
-    async with aiosqlite.connect(database.DB_PATH, timeout=database.SQLITE_BUSY_TIMEOUT) as db:
+    async with db_txn.connect(database.DB_PATH, timeout=database.SQLITE_BUSY_TIMEOUT) as db:
         await db.execute("BEGIN IMMEDIATE")
         initiator = await _public_identity(db, username=username)
         recipient = await _public_identity(db, agent_id=target_agent_id)
@@ -465,7 +466,7 @@ async def create_official_exchange(username, official_agent_id, topic, max_turns
     official = get_official_agent(official_agent_id)
     if official is None:
         raise ResourceNotFound("Resource not found")
-    async with aiosqlite.connect(database.DB_PATH, timeout=database.SQLITE_BUSY_TIMEOUT) as db:
+    async with db_txn.connect(database.DB_PATH, timeout=database.SQLITE_BUSY_TIMEOUT) as db:
         await db.execute("BEGIN IMMEDIATE")
         initiator = await _public_identity(db, username=username)
         if initiator is None:
@@ -502,7 +503,7 @@ async def create_official_exchange(username, official_agent_id, topic, max_turns
 
 
 async def list_exchanges(username, limit=50, offset=0):
-    async with aiosqlite.connect(database.DB_PATH, timeout=database.SQLITE_BUSY_TIMEOUT) as db:
+    async with db_txn.connect(database.DB_PATH, timeout=database.SQLITE_BUSY_TIMEOUT) as db:
         db.row_factory = aiosqlite.Row
         async with db.execute("""SELECT * FROM agent_exchanges
             WHERE initiator_username = ? OR (kind = 'peer' AND recipient_username = ?)
@@ -511,7 +512,7 @@ async def list_exchanges(username, limit=50, offset=0):
 
 
 async def exchange_details(username, exchange_id):
-    async with aiosqlite.connect(database.DB_PATH, timeout=database.SQLITE_BUSY_TIMEOUT) as db:
+    async with db_txn.connect(database.DB_PATH, timeout=database.SQLITE_BUSY_TIMEOUT) as db:
         await db.execute("BEGIN")
         row = await _participant_row(db, exchange_id, username)
         return {"exchange": _serialize(row, username), "messages": await _messages(db, exchange_id)}
@@ -519,7 +520,7 @@ async def exchange_details(username, exchange_id):
 
 async def transition_exchange(username, exchange_id, action):
     """Return details and a run token only for the one transaction accepting it."""
-    async with aiosqlite.connect(database.DB_PATH, timeout=database.SQLITE_BUSY_TIMEOUT) as db:
+    async with db_txn.connect(database.DB_PATH, timeout=database.SQLITE_BUSY_TIMEOUT) as db:
         await db.execute("BEGIN IMMEDIATE")
         row = await _participant_row(db, exchange_id, username)
         run_token = None
@@ -556,7 +557,7 @@ async def transition_exchange(username, exchange_id, action):
 
 
 async def load_running_exchange(exchange_id, run_token):
-    async with aiosqlite.connect(database.DB_PATH, timeout=database.SQLITE_BUSY_TIMEOUT) as db:
+    async with db_txn.connect(database.DB_PATH, timeout=database.SQLITE_BUSY_TIMEOUT) as db:
         await db.execute("BEGIN IMMEDIATE")
         row = await _one(db, "SELECT * FROM agent_exchanges WHERE id = ? AND status = 'running' AND run_token = ?", (exchange_id, run_token))
         if row is None:
@@ -584,7 +585,7 @@ async def exchange_running_checker(exchange_id, run_token):
     Each SELECT runs outside a long-lived transaction so a stop committed by
     another connection is visible at the next poll.
     """
-    async with aiosqlite.connect(database.DB_PATH, timeout=database.SQLITE_BUSY_TIMEOUT) as db:
+    async with db_txn.connect(database.DB_PATH, timeout=database.SQLITE_BUSY_TIMEOUT) as db:
         async def is_running():
             row = await _one(db, "SELECT 1 FROM agent_exchanges WHERE id = ? AND status = 'running' AND run_token = ?", (exchange_id, run_token))
             return row is not None
@@ -601,7 +602,7 @@ async def is_exchange_running(exchange_id, run_token):
 async def reserve_model_call(
     exchange_id, run_token, expected_turn_count, kind, input_limit, output_limit, *, provider="", model="",
 ):
-    async with aiosqlite.connect(database.DB_PATH, timeout=database.SQLITE_BUSY_TIMEOUT) as db:
+    async with db_txn.connect(database.DB_PATH, timeout=database.SQLITE_BUSY_TIMEOUT) as db:
         await db.execute("BEGIN IMMEDIATE")
         row = await _one(db, "SELECT * FROM agent_exchanges WHERE id = ? AND status = 'running' AND run_token = ?", (exchange_id, run_token))
         if row is None or row["turn_count"] != expected_turn_count or row["inflight_call_id"] is not None:
@@ -694,7 +695,7 @@ def _workflow_summary(finalize):
 
 async def finish_model_call(exchange_id, run_token, call_id, expected_turn_count, result=None, error=None):
     """Settle usage even after a stop; publish content only under the original authorization."""
-    async with aiosqlite.connect(database.DB_PATH, timeout=database.SQLITE_BUSY_TIMEOUT) as db:
+    async with db_txn.connect(database.DB_PATH, timeout=database.SQLITE_BUSY_TIMEOUT) as db:
         await db.execute("BEGIN IMMEDIATE")
         row = await _one(db, "SELECT * FROM agent_exchanges WHERE id = ?", (exchange_id,))
         call = await _one(db, "SELECT * FROM agent_exchange_calls WHERE id = ? AND exchange_id = ? AND status = 'reserved'", (call_id, exchange_id))
@@ -757,7 +758,7 @@ async def finish_model_call(exchange_id, run_token, call_id, expected_turn_count
 
 
 async def stop_running_exchange(exchange_id, run_token, reason):
-    async with aiosqlite.connect(database.DB_PATH, timeout=database.SQLITE_BUSY_TIMEOUT) as db:
+    async with db_txn.connect(database.DB_PATH, timeout=database.SQLITE_BUSY_TIMEOUT) as db:
         await db.execute("""UPDATE agent_exchanges SET status = 'stopped', run_token = NULL, error = ?,
             updated_at = CURRENT_TIMESTAMP WHERE id = ? AND status = 'running' AND run_token = ?""",
             (reason, exchange_id, run_token))
@@ -766,7 +767,7 @@ async def stop_running_exchange(exchange_id, run_token, reason):
 
 async def stop_and_discard_reserved_calls(exchange_id, run_token, reason):
     """Atomically release a cancelled run, even if reservation never returned its ID."""
-    async with aiosqlite.connect(database.DB_PATH, timeout=database.SQLITE_BUSY_TIMEOUT) as db:
+    async with db_txn.connect(database.DB_PATH, timeout=database.SQLITE_BUSY_TIMEOUT) as db:
         await db.execute("BEGIN IMMEDIATE")
         row = await _one(db, "SELECT status, run_token FROM agent_exchanges WHERE id = ?", (exchange_id,))
         # A participant stop clears run_token first. An exchange never restarts,

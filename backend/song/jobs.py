@@ -25,6 +25,7 @@ from datetime import datetime, timezone
 from uuid import uuid4
 
 import aiosqlite
+from utils import db_txn
 
 import database
 from song import config, media, volc
@@ -177,7 +178,7 @@ async def usage_counts(user: str) -> tuple[int, int]:
     """返回 (在途版本数, 今天非 rejected 版本数)；供路由算 can_generate。"""
     inflight_marks = ",".join("?" for _ in INFLIGHT_STATUSES)
     parameters = [user, *sorted(INFLIGHT_STATUSES)]
-    async with aiosqlite.connect(
+    async with db_txn.connect(
         database.DB_PATH, timeout=database.SQLITE_BUSY_TIMEOUT
     ) as db:
         async with db.execute(
@@ -199,7 +200,7 @@ async def get_version(version_id: str, *, owner_username: str) -> dict | None:
     """按 owner 读取版本行（含项目标题），不存在与无权都返回 None。"""
     if not isinstance(version_id, str) or not version_id:
         return None
-    async with aiosqlite.connect(
+    async with db_txn.connect(
         database.DB_PATH, timeout=database.SQLITE_BUSY_TIMEOUT
     ) as db:
         db.row_factory = aiosqlite.Row
@@ -225,7 +226,7 @@ async def create_generation(
     created_day = _today_shanghai()
     version_id = uuid4().hex
 
-    async with aiosqlite.connect(
+    async with db_txn.connect(
         database.DB_PATH, timeout=database.SQLITE_BUSY_TIMEOUT
     ) as db:
         db.row_factory = aiosqlite.Row
@@ -340,7 +341,7 @@ async def submit_version(version_id: str) -> None:
     """把 queued 版本提交给火山；仅当原子改到 submitting 时才发请求。"""
     params = None
     changed = 0
-    async with aiosqlite.connect(
+    async with db_txn.connect(
         database.DB_PATH, timeout=database.SQLITE_BUSY_TIMEOUT
     ) as db:
         db.row_factory = aiosqlite.Row
@@ -414,7 +415,7 @@ async def _mark_submit_terminal(version_id: str, status: str, code) -> None:
 # ---------------------------------------------------------------- 退款
 async def refund_version(version_id: str) -> bool:
     """退款一次：标记 refunded 与加回草莓在同一事务；返回是否真的退回。"""
-    async with aiosqlite.connect(
+    async with db_txn.connect(
         database.DB_PATH, timeout=database.SQLITE_BUSY_TIMEOUT
     ) as db:
         db.row_factory = aiosqlite.Row
@@ -461,7 +462,7 @@ async def reconcile_refunds() -> int:
     refunded = 0
     marks = ",".join("?" for _ in REFUNDABLE_TERMINAL_STATUSES)
     try:
-        async with aiosqlite.connect(
+        async with db_txn.connect(
             database.DB_PATH, timeout=database.SQLITE_BUSY_TIMEOUT
         ) as db:
             db.row_factory = aiosqlite.Row
@@ -490,7 +491,7 @@ async def reconcile_refunds() -> int:
 async def _execute_guarded(sql: str, parameters: tuple) -> int:
     """带 ``users`` 存在检查的写库；返回影响行数。"""
     guarded_sql = sql + f" AND {_exists_user_clause()}" if "WHERE" in sql else sql
-    async with aiosqlite.connect(
+    async with db_txn.connect(
         database.DB_PATH, timeout=database.SQLITE_BUSY_TIMEOUT
     ) as db:
         await db.execute("BEGIN IMMEDIATE")
@@ -505,7 +506,7 @@ async def _execute_guarded(sql: str, parameters: tuple) -> int:
 
 
 async def _due_versions(now: float) -> list[dict]:
-    async with aiosqlite.connect(
+    async with db_txn.connect(
         database.DB_PATH, timeout=database.SQLITE_BUSY_TIMEOUT
     ) as db:
         db.row_factory = aiosqlite.Row
@@ -754,7 +755,7 @@ async def recover_on_startup() -> None:
     now = time.time()
     submitting: list[str] = []
     queued: list[str] = []
-    async with aiosqlite.connect(
+    async with db_txn.connect(
         database.DB_PATH, timeout=database.SQLITE_BUSY_TIMEOUT
     ) as db:
         db.row_factory = aiosqlite.Row

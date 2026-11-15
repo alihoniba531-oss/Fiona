@@ -11,6 +11,7 @@ import json
 from uuid import uuid4
 
 import aiosqlite
+from utils import db_txn
 
 import database
 
@@ -192,7 +193,7 @@ async def create_project(
     structure,
 ) -> dict:
     project_id = uuid4().hex
-    async with aiosqlite.connect(database.DB_PATH, timeout=database.SQLITE_BUSY_TIMEOUT) as db:
+    async with db_txn.connect(database.DB_PATH, timeout=database.SQLITE_BUSY_TIMEOUT) as db:
         db.row_factory = aiosqlite.Row
         await db.execute("BEGIN IMMEDIATE")
         await db.execute(
@@ -223,7 +224,7 @@ async def update_project(
     brief,
     structure,
 ) -> dict | None:
-    async with aiosqlite.connect(database.DB_PATH, timeout=database.SQLITE_BUSY_TIMEOUT) as db:
+    async with db_txn.connect(database.DB_PATH, timeout=database.SQLITE_BUSY_TIMEOUT) as db:
         db.row_factory = aiosqlite.Row
         await db.execute("BEGIN IMMEDIATE")
         if await _fetch_project_row(db, project_id, owner_username, conversation_id) is None:
@@ -249,7 +250,7 @@ async def update_project(
 
 async def get_project(project_id, *, owner_username, conversation_id=None) -> dict | None:
     """conversation_id=None 表示不校验会话（仍校验 owner）。"""
-    async with aiosqlite.connect(database.DB_PATH, timeout=database.SQLITE_BUSY_TIMEOUT) as db:
+    async with db_txn.connect(database.DB_PATH, timeout=database.SQLITE_BUSY_TIMEOUT) as db:
         db.row_factory = aiosqlite.Row
         await db.execute("BEGIN")
         row = await _fetch_project_row(db, project_id, owner_username, conversation_id)
@@ -258,7 +259,7 @@ async def get_project(project_id, *, owner_username, conversation_id=None) -> di
 
 
 async def get_latest_project_for_conversation(owner_username, conversation_id) -> dict | None:
-    async with aiosqlite.connect(database.DB_PATH, timeout=database.SQLITE_BUSY_TIMEOUT) as db:
+    async with db_txn.connect(database.DB_PATH, timeout=database.SQLITE_BUSY_TIMEOUT) as db:
         db.row_factory = aiosqlite.Row
         async with db.execute(
             """SELECT * FROM song_projects
@@ -280,7 +281,7 @@ async def save_lyrics(
     check,
     changed_section_ids,
 ) -> dict:
-    async with aiosqlite.connect(database.DB_PATH, timeout=database.SQLITE_BUSY_TIMEOUT) as db:
+    async with db_txn.connect(database.DB_PATH, timeout=database.SQLITE_BUSY_TIMEOUT) as db:
         db.row_factory = aiosqlite.Row
         await db.execute("BEGIN IMMEDIATE")
         project = await fetch_project(db, project_id, owner_username, conversation_id)
@@ -318,7 +319,7 @@ async def save_lyrics(
 
 async def get_lyrics(project_id, revision=None) -> dict | None:
     """revision=None 返回最新一稿；否则返回指定稿号。"""
-    async with aiosqlite.connect(database.DB_PATH, timeout=database.SQLITE_BUSY_TIMEOUT) as db:
+    async with db_txn.connect(database.DB_PATH, timeout=database.SQLITE_BUSY_TIMEOUT) as db:
         db.row_factory = aiosqlite.Row
         if revision is None:
             sql = "SELECT * FROM song_lyrics WHERE project_id = ? ORDER BY revision DESC LIMIT 1"
@@ -334,7 +335,7 @@ async def get_lyrics(project_id, revision=None) -> dict | None:
 async def list_versions(project_id, limit=10) -> list[dict]:
     if not isinstance(limit, int) or isinstance(limit, bool) or limit < 1:
         limit = 10
-    async with aiosqlite.connect(database.DB_PATH, timeout=database.SQLITE_BUSY_TIMEOUT) as db:
+    async with db_txn.connect(database.DB_PATH, timeout=database.SQLITE_BUSY_TIMEOUT) as db:
         db.row_factory = aiosqlite.Row
         async with db.execute(
             """SELECT * FROM song_versions WHERE project_id = ?

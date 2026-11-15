@@ -16,6 +16,7 @@ import logging
 import os
 
 import aiosqlite
+from utils import db_txn
 
 from novel.billing import (
     InsufficientStrawberries,
@@ -116,7 +117,7 @@ class DiscussBilling:
     async def _reserve_transaction(self, call, amount):
         import database
         async with self._lock:
-            async with aiosqlite.connect(database.DB_PATH, timeout=database.SQLITE_BUSY_TIMEOUT) as db:
+            async with db_txn.connect(database.DB_PATH, timeout=database.SQLITE_BUSY_TIMEOUT) as db:
                 await db.execute("BEGIN IMMEDIATE")
                 group = await self._active(db)
                 if (group["spent_strawberries"] + group["reserved_strawberries"] + amount
@@ -170,7 +171,7 @@ class DiscussBilling:
     async def _finish_transaction(self, call, charge, *, step_record=None):
         import database
         async with self._lock:
-            async with aiosqlite.connect(database.DB_PATH, timeout=database.SQLITE_BUSY_TIMEOUT) as db:
+            async with db_txn.connect(database.DB_PATH, timeout=database.SQLITE_BUSY_TIMEOUT) as db:
                 await db.execute("BEGIN IMMEDIATE")
                 await self._active(db)
                 cursor = await db.execute(
@@ -213,7 +214,7 @@ class DiscussBilling:
         import database
         from .store import refund_reserved_on_connection
         async with self._lock:
-            async with aiosqlite.connect(database.DB_PATH, timeout=database.SQLITE_BUSY_TIMEOUT) as db:
+            async with db_txn.connect(database.DB_PATH, timeout=database.SQLITE_BUSY_TIMEOUT) as db:
                 await db.execute("BEGIN IMMEDIATE")
                 amount = await refund_reserved_on_connection(db, self.username, self.group_id)
                 await db.commit()
@@ -232,7 +233,7 @@ class DiscussBilling:
     async def _reserve_fixed_transaction(self, step_key, role, amount):
         import database
         async with self._lock:
-            async with aiosqlite.connect(database.DB_PATH, timeout=database.SQLITE_BUSY_TIMEOUT) as db:
+            async with db_txn.connect(database.DB_PATH, timeout=database.SQLITE_BUSY_TIMEOUT) as db:
                 await db.execute("BEGIN IMMEDIATE")
                 group = await self._active(db)
                 if (group["spent_strawberries"] + group["reserved_strawberries"] + amount
@@ -268,7 +269,7 @@ class DiscussBilling:
     async def _settle_fixed_transaction(self, step_key, step_record):
         import database
         async with self._lock:
-            async with aiosqlite.connect(database.DB_PATH, timeout=database.SQLITE_BUSY_TIMEOUT) as db:
+            async with db_txn.connect(database.DB_PATH, timeout=database.SQLITE_BUSY_TIMEOUT) as db:
                 await db.execute("BEGIN IMMEDIATE")
                 await self._active(db)
                 async with db.execute(
@@ -305,7 +306,7 @@ class DiscussBilling:
     async def _refund_fixed_transaction(self, step_key):
         import database
         async with self._lock:
-            async with aiosqlite.connect(database.DB_PATH, timeout=database.SQLITE_BUSY_TIMEOUT) as db:
+            async with db_txn.connect(database.DB_PATH, timeout=database.SQLITE_BUSY_TIMEOUT) as db:
                 await db.execute("BEGIN IMMEDIATE")
                 await self._active(db)
                 async with db.execute(

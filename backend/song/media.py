@@ -26,6 +26,7 @@ from pathlib import Path
 from urllib.parse import urlsplit
 
 import aiosqlite
+from utils import db_txn
 import httpx
 
 import database
@@ -365,7 +366,7 @@ async def drain_cleanup_queue() -> None:
     if not db_path.exists():
         return
     try:
-        async with aiosqlite.connect(database.DB_PATH, timeout=database.SQLITE_BUSY_TIMEOUT) as db:
+        async with db_txn.connect(database.DB_PATH, timeout=database.SQLITE_BUSY_TIMEOUT) as db:
             try:
                 async with db.execute("SELECT path FROM song_cleanup_queue") as cursor:
                     rows = [row[0] for row in await cursor.fetchall()]
@@ -393,7 +394,7 @@ async def _referenced_audio_paths() -> tuple[set[Path], bool]:
     if not db_path.exists():
         return refs, False
     try:
-        async with aiosqlite.connect(database.DB_PATH, timeout=database.SQLITE_BUSY_TIMEOUT) as db:
+        async with db_txn.connect(database.DB_PATH, timeout=database.SQLITE_BUSY_TIMEOUT) as db:
             async with db.execute(
                 "SELECT audio_rel_path FROM song_versions "
                 "WHERE audio_rel_path IS NOT NULL AND audio_rel_path <> ''"
