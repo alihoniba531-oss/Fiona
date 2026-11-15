@@ -1,0 +1,381 @@
+扫描目录: backend  有连接操作的函数 473 个；自己开连接的 319 个，其中写事务 202 个，其中有风险标记的 91 个；接收连接的辅助函数 154 个
+
+=== agent_store.py: 写事务 10，有风险标记 8
+  [W1      ] get_my_agent:179  B ( ( Sw ) Sw Sw D Sw ) C
+  [W1      ] update_my_agent:187  B ( ( Sw ) Sw Sw D Sw ) D ( D ) Sw C
+  [W1      ] get_memory_snapshot:208  B ( ( Sw ) Sw Sw D Sw ) ( Sw ) Sw C
+  [ok      ] update_memory:225  D C
+  [W1      ] clear_memory:244  B ( ( Sw ) Sw Sw D Sw ) D D C
+  [W1      ] resolve_chat_conversation:283  B ( ( ( Sw ) Sw Sw D Sw ) Sw D Sw ) ( Sw ) Sw C
+  [W1      ] list_conversations:296  B ( ( ( Sw ) Sw Sw D Sw ) Sw D Sw ) Sw C
+  [W1      ] create_conversation:313  B ( ( Sw ) Sw Sw D Sw ) D ( Sw ) C
+  [ok      ] get_conversation_messages:330  b ( Sw ) Sw Sw C
+  [W1      ] delete_conversation:354  B ( Sw ) Sw D D ( ( Sw ) ( Sw ) D D D ( D ) ) D D ( ( Sw ) Sw D ) C
+
+=== byok/store.py: 写事务 3，有风险标记 2
+  [W1      ] save_config:176  A B ( Sw ) D C A
+  [W1      ] update_options:198  B Sw D C A
+  [ok      ] delete_config:235  D C
+
+=== database.py: 写事务 44，有风险标记 28
+  [H?,W1,W1?] init_db:156  D0 D D D D D D D D D D D D D D D D D D D D D D D D D D D D D D D D D D D D D D D D D D X X D D D D X X X H? X D D D D D D D Sw D C ( B D~ Sw~ C~ D~ D~ D~ D~ Sw~ D~ D~ Sw~ ( ( ( Sw~ ) Sw~ Sw~ D~ Sw~ ) Sw~ D~ Sw~ ) D~ Sw~ D~ C~ K ) ( B D~ Sw~ C~ D~ D~ D~ D~ D~ D~ D~ C~ K ) ( B Sw~ C~ D~ Sw~ D~ Sw~ Sw~ Sw~ D~ D~ D~ D~ D~ D~ C~ K ) ( B Sw~ C~ Sw~ D~ Sw~ D~ Sw~ Sw~ Sw~ D~ D~ X~ D~ D~ D~ C~ K ) ( B Sw~ C~ D~ D~ D~ C~ K )
+  [ok      ] get_or_create_user:429  D C Sw
+  [W1      ] delete_message_for_user:497  B Sw K K D ( ( Sw ) Sw D ) C
+  [W1      ] clear_message_history:520  B Sw D ( ( Sw ) Sw D ) ( ( Sw ) ( Sw ) D D D D ( D ) ) D D C
+  [W1      ] save_message:552  B ( ( ( Sw~ ) Sw~ Sw~ D~ Sw~ ) Sw~ D~ Sw~ ) ( Sw~ ) K K K ( Sw ) K Sw Sw Sw D D D C
+  [ok      ] set_message_image_summary:682  D C
+  [ok      ] create_invite:729  D C
+  [W1      ] create_tester_invites:740  B Sw Sw D C
+  [W1      ] redeem_invite:785  B Rw C
+  [W1      ] revoke_invite:804  B Rw D C
+  [W1      ] rotate_invite:825  B Sw K D~ K D D C
+  [ok      ] revoke_user_sessions:886  D C
+  [W1      ] delete_account_data:897  A A B Sw K Sw Sw Sw Sw D D D D D D D D D D ( D D ) D D D D D D D D D D D D D Sw D D D D D D ( ( Sw ) ( Sw ) D D D D ( D ) ) D D D D ( ( Sw ) Sw D ) C
+  [ok      ] mark_upload_cleanup_done:1061  D C
+  [ok      ] update_profile:1083  D C
+  [ok      ] update_user_settings:1130  D C
+  [W1      ] save_match:1155  B ( Sw ) K Sw K D C
+  [W1      ] update_match_response:1177  B ( Sw ) K Sw D K C
+  [W1      ] save_peer_message:1202  B ( ( Sw ) Sw ) K D C
+  [W1      ] save_pending_match:1225  B ( Sw ) K Sw K D C
+  [W1      ] save_greeting:1313  B ( Sw ) K Sw D K C
+  [W1      ] upsert_user_state:1337  B ( Sw ) K D C
+  [ok      ] mark_pending_match_seen:1377  D C
+  [W1      ] save_post:1427  B ( Sw ) K D C
+  [W1      ] like_post:1573  B ( Sw ) K Sw K D D C Sw
+  [W1      ] update_time_tag_prefs:1622  B ( Sw ) K D C
+  [W1      ] update_tag_prefs:1673  B ( Sw ) K D C A
+  [ok      ] save_otp:1693  D C
+  [ok      ] check_and_consume_otp:1707  Sw D C D C
+  [ok      ] get_or_create_user_by_phone:1732  D C Sw Sw
+  [W1      ] get_strawberry_balance:1766  B ( D ) Sw C
+  [W1      ] reserve_strawberries:1781  B ( D ) Rw C
+  [W1      ] refund_strawberries:1799  Rw C
+  [ok      ] add_strawberry:1814  D C Sw
+  [W1      ] create_watch_device:1893  B ( Sw ) Sw D Sw C
+  [ok      ] revoke_watch_device:1916  D C
+  [W1      ] authenticate_watch_device:1923  B Sw D C
+  [ok      ] list_watch_rules:1936  X
+  [W1      ] create_watch_rule:1952  B ( Sw ) Sw D Sw C
+  [W1      ] update_watch_rule:1970  B D Sw C
+  [ok      ] delete_watch_rule:1985  D C
+  [W1      ] save_watch_alert:1999  A A Sw A A A B Sw ( Sw ) D Sw C
+  [ok      ] authenticate_watch_device_throttled:2049  Sw D C Sw
+  [W1      ] save_studio_notice:2109  A B Sw Sw Sw Sw D Sw C ( Sw ) A A D C A B ( Sw ) ( Sw ) Sw D Sw D C
+
+=== discuss/billing.py: 写事务 6，有风险标记 6
+  [W1      ] DiscussBilling._reserve_transaction:116  B ( S ) ( D ) R D D C
+  [W1      ] DiscussBilling._finish_transaction:170  B ( S ) S D D D ( D ) C
+  [W1      ] DiscussBilling._refund_reserved_transaction:212  B S D D D C
+  [W1      ] DiscussBilling._reserve_fixed_transaction:248  B ( S ) ( D ) R D D C
+  [W1      ] DiscussBilling._settle_fixed_transaction:284  B ( S ) Sw D D ( D ) C
+  [W1      ] DiscussBilling._refund_fixed_transaction:321  B ( S ) Sw D D D C
+
+=== discuss/service.py: 写事务 7，有风险标记 1
+  [ok      ] update_plan.operation:703  ( ( Sw ) ) H? H? H? ( D )
+  [H?,W1   ] start.operation:726  ( ( Sw ) ) H? H? H? ( D ) ( D ) Sw H?
+  [ok      ] pause.operation:791  ( ( Sw ) ) H? ( D )
+  [ok      ] resume.operation:811  ( ( Sw ) ) H? H? H? H? Sw H? ( D )
+  [ok      ] continue_group.operation:851  ( ( Sw ) ) H? H? Sw H? H? H? H? Sw H? ( D )
+  [ok      ] accept.operation:909  ( ( Sw ) ) H? H? H? ( D )
+  [ok      ] close.operation:933  ( ( Sw ) ) H? H? ( D )
+
+=== discuss/store.py: 写事务 5，有风险标记 0
+  [ok      ] run_write.transaction:154  B ( ( D! ) ) K C
+  [ok      ] has_active_group:332  X
+  [ok      ] list_messages:364  ( X )
+  [ok      ] unread_notes:369  ( X )
+  [ok      ] notes_for:374  ( X )
+
+=== exchange_store.py: 写事务 9，有风险标记 7
+  [ok      ] recover_interrupted_exchanges:408  B D D D C
+  [W1      ] create_exchange:432  B ( Sw ) ( Sw ) Sw ( Sw ) D ( Sw ) C
+  [W1      ] create_official_exchange:464  B ( Sw ) Sw Sw ( Sw ) ( Sw ) D ( Sw ) C
+  [W1      ] transition_exchange:520  B ( Sw ) ( ( Sw ) ( Sw ) ) ( D ) C ( Sw ) D D ( D ) ( Sw ) ( Sw ) C
+  [W1      ] load_running_exchange:558  B Sw ( ( Sw ) ( Sw ) ) ( D ) C ( Sw ) C
+  [W1      ] reserve_model_call:601  B Sw ( ( Sw ) ( Sw ) ) ( D ) C ( D ) C D D C
+  [W1      ] finish_model_call:695  B Sw Sw ( ( Sw ) ( Sw ) ) ( D ) D D D ( D ) D D D D D C
+  [ok      ] stop_running_exchange:759  D C
+  [W1      ] stop_and_discard_reserved_calls:767  B Sw K D Sw D D D C
+
+=== manage_strawberries.py: 写事务 1，有风险标记 1
+  [W1      ] main:21  A Sw Sw A A A A Rw C
+
+=== novel/billing.py: 写事务 3，有风险标记 3
+  [W1      ] NovelBilling._reserve_transaction:199  B ( S ) ( D ) R D D C
+  [W1      ] NovelBilling._finish_transaction:243  B ( S ) S D D D ( D ) C
+  [W1      ] NovelBilling._refund_reserved_transaction:279  B S D D D C
+
+=== novel/drafts.py: 写事务 1，有风险标记 0
+  [ok      ] create_draft:53  D C A
+
+=== novel/feedback.py: 写事务 1，有风险标记 0
+  [ok      ] create_feedback:153  D C Sw
+
+=== novel/runner.py: 写事务 8，有风险标记 6
+  [W1      ] _start_novel_locked:105  Sw A A B Sw D C
+  [ok      ] cancel_novel:139  A A A D C
+  [ok      ] recover_interrupted_novels:176  Sw Sw A A D C
+  [W1      ] _pause:196  B Sw Sw! D! C!
+  [W1      ] _run:209  A A A A A A A A B Sw D! C! A D C
+  [W1      ] _advance:259  A Sw A A Sw A Sw B Sw D! C! A Sw Sw Sw Sw A B Sw Sw! D! C! A A A A A B Sw Sw! D! C! A
+  [W1      ] _ensure_volume:387  B Sw D! C! B Sw Sw! D! C! A B Sw Sw! D! D! C!
+  [W1      ] _rearchive:502  Sw Sw Sw Sw A A Sw B Sw D! D! D! C!
+
+=== novel/service.py: 写事务 16，有风险标记 16
+  [W1      ] create:209  A B ( Sw ) Sw D ( D ) K C A A
+  [W1      ] update_character:346  B ( Sw ) Sw D D C
+  [W1      ] approve_setup:376  B ( Sw ) ( Sw ) ( Sw ) D D ( ( Sw ) Sw D ) C A A
+  [W1      ] approve_plan:419  B ( Sw ) Sw Sw ( Sw ) D ( ( Sw ) Sw D ) C A A
+  [W1      ] redo_plan:462  B ( ( Sw ) Sw D ( ( Sw ) Sw D ) ) C A A
+  [W1      ] send_feedback_note:598  B Sw Sw ( Sw D ) D C A
+  [W1      ] redo_feedback_plan:623  B Sw Sw ( ( Sw ) Sw D ( ( Sw ) Sw D ) ) D C A A
+  [W1      ] approve_volume:685  B ( Sw ) ( ( Sw ) ) D D D ( ( Sw ) Sw D ) C A A
+  [W1      ] redo_volume:716  B ( Sw ) ( ( Sw ) ) D ( ( Sw ) Sw D ) C A A
+  [W1      ] upgrade_structure:736  ( Sw ) A B ( Sw ) ( Sw ) D C A A B Sw ( Sw! ) D! C! A D C A
+  [W1      ] patch:822  B ( Sw ) A D C A  等待外部:['validate_selection']
+  [W1      ] note:848  B ( Sw ) ( Sw D ) C
+  [W1      ] transition:855  ( Sw ) A D C B ( Sw ) ( Sw ) D Sw D D ( ( Sw ) Sw D ) D C A A
+  [W1      ] reject_end:907  B ( Sw ) ( Sw ) D D D Sw D ( ( Sw ) Sw D ) C A A
+  [W1      ] edit_chapter:946  ( Sw ) Sw A B ( Sw ) Sw D Sw D ( Sw ) D D C A
+  [W1      ] delete:976  ( Sw ) A B ( Sw ) D D D D C
+
+=== novel/store_db.py: 写事务 6，有风险标记 6
+  [H?,W1   ] DbStepStore.transaction:135  B ( H? Sw ) K K C
+  [W1      ] DbStepStore.write_step:197  B Sw ( D! ) C!
+  [W1      ] DbStepStore.append_usage:205  B Sw D! C!
+  [W1      ] DbStepStore.commit_setup:252  B Sw D! D! C!
+  [W1      ] DbStepStore.save_plan:268  B Sw D! D! C!
+  [W1      ] DbStepStore.commit_chapter:284  B Sw Sw! D! D! D! D! C!
+
+=== scripts/fix_matches.py: 写事务 1，有风险标记 0
+  [ok      ] fix:7  D D C Sw
+
+=== song/jobs.py: 写事务 5，有风险标记 0
+  [ok      ] create_generation:218  B ( ( X! ) ) Sw! C! ( Sw! ) Sw! Sw! ( D! ) D! D! Sw! C! K
+  [ok      ] submit_version:339  B Sw! D! C! K A A A A A A A A A A
+  [ok      ] refund_version:415  B Sw! K! D! C! D! C! K
+  [ok      ] _execute_guarded:490  B X! C! K
+  [ok      ] recover_on_startup:752  B Sw! D! Sw! D! C! K A
+
+=== song/media.py: 写事务 1，有风险标记 0
+  [ok      ] drain_cleanup_queue:358  Sw D C
+
+=== song/store.py: 写事务 5，有风险标记 3
+  [W1?     ] create_project:186  B D ( ( X ) ) C
+  [W1?     ] update_project:217  B ( X ) K D ( ( X ) ) C
+  [ok      ] get_project:250  b ( X ) C
+  [W1,W1?  ] save_lyrics:273  B ( ( X ) ) K K D D ( ( X ) ) ( Sw ) C
+  [ok      ] get_lyrics:319  X
+
+=== studio/brain_jobs.py: 写事务 4，有风险标记 0
+  [ok      ] patch_project:37  B! ( Sw! ) D! ( Sw! ) C!
+  [ok      ] quote_trial:97  A B! ( Sw! ) ( ( Sw! ) ( H?! Sw! ) ) C!
+  [ok      ] start_trial:141  A B! ( Sw! ) ( ( Sw! ) ( H?! Sw! ) ) ( D! ) ( A D! D! ( X! A ) ) C!  等待外部:['asyncio.to_thread', 'decode_job_row']
+  [ok      ] _execute_brain:267  A A B! ( ( Sw! ) ( H?! Sw! ) ) ( D! ) ( A D! D! ( X! A ) ) C! A A B! Sw! ( Sw! A D! ) ( X! A ) C! A A A A A A A A B! ( X! A ) Sw! A D! ( X! A ) ( Sw! A D! ) ( ( Sw! ) ( H?! Sw! ) ) ( A D! D! ( X! A ) ) ( Sw! A D! ) C! A A A  等待外部:['asyncio.to_thread', 'decode_job_row', 'asyncio.to_thread']
+
+=== studio/breakdown.py: 写事务 9，有风险标记 0
+  [ok      ] quote:141  A A A B! ( Sw! ) ( ( Sw! ) ( H?! Sw! ) ) ( A D! A ) C!  等待外部:['_json', 'asyncio.to_thread']
+  [ok      ] continue_quote:180  A A ( Sw ) Sw A Sw A ( Sw A ) A A A B! ( Sw! ) ( ( Sw! ) ( H?! Sw! ) ) ( A D! A ) C!  等待外部:['_json', 'asyncio.to_thread']
+  [ok      ] start:314  B! ( Sw! ) ( Sw! A ( Sw! ) ) Sw! A Sw! A Sw! A A A ( ( Sw! A ) ( Sw! A ) ( ( Sw! ) A D! C! B! ( Sw! ) ( Sw! ) D! Sw! D! D! ( ( Sw! ) Sw! D! ) D! C! A A ) D! D! ) ( Sw! A ( ( Sw! ) ( H?! Sw! ) ) D! ) D! A A A D! ( ( A D! D! ( X! A ) ) ) D! A A ( D! A D! ) A ( Sw! A A D! D! Sw! A A D! Sw! A A D! D! D! A ) D! C! A  等待外部:['asyncio.to_thread', 'asyncio.to_thread', 'asyncio.to_thread']
+  [ok      ] continue_start:407  A A B! ( Sw! ) Sw! A Sw! A Sw! A ( Sw! A ( ( Sw! ) ( H?! Sw! ) ) D! ) ( Sw! A ) Sw! A Sw! A Sw! A D! A ( ( A D! D! ( X! A ) ) ) D! A A A A ( D! A D! ) ( Sw! A A D! D! Sw! A A D! Sw! A A D! D! D! A ) D! A C! A  等待外部:['asyncio.to_thread', 'asyncio.to_thread', 'asyncio.to_thread']
+  [ok      ] prepare_job:773  ( Sw A ) Sw A ( Sw A ( Sw ) ) ( Sw A ) ( Sw A A ) ( Sw A ) A A B! D! A A C!  等待外部:['_json', 'asyncio.to_thread']
+  [ok      ] refresh:838  B! ( Sw! A ( Sw! ) ) ( Sw! A ) Sw! A A A A ( D! A D! ) ( Sw! A A D! D! Sw! A A D! Sw! A A D! D! D! A ) D! A A D! Sw! A ( Sw! ( Sw! ) ( Sw! A A ) A D! ( D! ) ( Sw! ( Sw! A A ) A D! D! ) ( Sw! A Sw! A ( Sw! A A ) A D! ) ) Sw! A A ( Sw! ( Sw! ) ( Sw! A A ) A D! ( D! ) ( Sw! ( Sw! A A ) A D! D! ) ( Sw! A Sw! A ( Sw! A A ) A D! ) ) D! A A C!  等待外部:['asyncio.to_thread', 'asyncio.to_thread', 'asyncio.to_thread']
+  [ok      ] retry_quote:1009  ( Sw A ( Sw ) ) ( Sw A ) ( Sw A ) A A ( Sw A ) ( Sw A A ) ( Sw A ) A A B! ( Sw! A ( Sw! ) ) ( ( Sw! ) ( H?! Sw! ) ) ( A D! A ) C!  等待外部:['asyncio.to_thread', '_json', 'asyncio.to_thread']
+  [ok      ] retry:1039  B! ( Sw! A ( Sw! ) ) ( Sw! A ) ( Sw! A ( ( Sw! ) ( H?! Sw! ) ) D! ) ( Sw! A ) D! A ( ( A D! D! ( X! A ) ) ) D! D! C! A  等待外部:['asyncio.to_thread', 'asyncio.to_thread', 'asyncio.to_thread']
+  [ok      ] cancel:1064  B! ( Sw! A ( Sw! ) ) ( ( Sw! A ) ( Sw! A ) ( ( Sw! ) A D! C! B! ( Sw! ) ( Sw! ) D! Sw! D! D! ( ( Sw! ) Sw! D! ) D! C! A A ) D! D! ) C! A  等待外部:['asyncio.to_thread', 'asyncio.to_thread', 'asyncio.to_thread']
+
+=== studio/breakdown_plan.py: 写事务 8，有风险标记 0
+  [ok      ] operate_episodes:347  B! ( ( Sw! ) ( Sw! ( Sw! ) ) ) ( Sw! A ( Sw! ( Sw! ) ) ) ( Sw! A ) ( Sw! A A ) A D! ( D! ) ( Sw! ( Sw! A A ) A D! D! ) ( Sw! A Sw! A ( Sw! A A ) A D! ) C! A  等待外部:['asyncio.to_thread', 'asyncio.to_thread', 'asyncio.to_thread']
+  [ok      ] approve:367  B! ( ( Sw! ) ( Sw! ( Sw! ) ) ) ( Sw! A ( Sw! ( Sw! ) ) ) ( Sw! A ) D! D! C! A  等待外部:['asyncio.to_thread', 'asyncio.to_thread']
+  [ok      ] patch_project:389  B! ( Sw! ) ( Sw! ( Sw! ) ) ( Sw! A ( Sw! ( Sw! ) ) ) ( Sw! A ) ( Sw! A A ) A D! ( Sw! ) ( Sw! ( Sw! A A ) A D! D! ) ( Sw! A Sw! A ( Sw! A A ) A D! ) ( Sw! ) C!  等待外部:['asyncio.to_thread', 'asyncio.to_thread', 'asyncio.to_thread']
+  [ok      ] patch_synopsis:431  A B! ( ( Sw! ) ( Sw! ( Sw! ) ) ) A A D! C!  等待外部:['asyncio.to_thread', 'asyncio.to_thread']
+  [ok      ] patch_bible:490  B! ( Sw! ( Sw! ) ) A D! ( ( Sw! ( Sw! ) ) D! A ) ( Sw! A Sw! A ( Sw! A A ) A D! ) ( Sw! ( Sw! ) ) C!  等待外部:['asyncio.to_thread', 'asyncio.to_thread', 'asyncio.to_thread']
+  [ok      ] create_bible:516  B! ( ( Sw! ) ( Sw! ( Sw! ) ) ) D! ( Sw! A Sw! A ( Sw! A A ) A D! ) ( Sw! ( Sw! ) ) C!  等待外部:['asyncio.to_thread', 'asyncio.to_thread', 'asyncio.to_thread']
+  [ok      ] archive_bible:534  B! ( Sw! ( Sw! ) ) D! C!
+  [ok      ] merge_bible:542  B! ( Sw! ( Sw! ) ) ( Sw! ( Sw! ) ) D! D! ( ( Sw! ( Sw! ) ) D! A ) ( Sw! A Sw! A ( Sw! A A ) A D! ) ( Sw! ( Sw! ) ) C!  等待外部:['asyncio.to_thread', 'asyncio.to_thread', 'asyncio.to_thread']
+
+=== studio/casting.py: 写事务 14，有风险标记 0
+  [ok      ] state:335  A A B! ( Sw! A D! ) ( Sw! A Sw! Sw! D! ) C! ( Sw A Sw A Sw A ) ( ( Sw A ) ) ( Sw A Sw A )  等待外部:['asyncio.to_thread', 'asyncio.to_thread']
+  [ok      ] put_setup:363  A B! ( Sw! ) D! C! A
+  [ok      ] quote_style:410  A A A A B! ( Sw! ) ( ( Sw! ) ( H?! Sw! ) ) D! C!
+  [ok      ] start_style:431  A A B! ( Sw! ) Sw! ( ( Sw! ) ( H?! Sw! ) ) D! D! ( A D! D! ( X! A ) ) C! A  等待外部:['asyncio.to_thread', 'decode_job_row']
+  [ok      ] put_style:473  A A ( ( Sw A ) ) B! ( Sw! ) D! C! A
+  [ok      ] quote_looks:541  A A A ( Sw A ) ( ( Sw ) Sw ) A B! ( Sw! ) ( ( Sw! ) ( H?! Sw! ) ) D! C!
+  [ok      ] start_looks:629  A A B! ( Sw! ) Sw! ( Sw! A ) ( ( Sw! ) ( H?! Sw! ) ) ( ( ( Sw! ) Sw! ) ) D! ( A D! D! ( X! A ) ) D! ( X! A ) C! A  等待外部:['asyncio.to_thread', 'asyncio.to_thread', 'decode_job_row']
+  [ok      ] quote_sheets:744  A A B! ( Sw! ) ( Sw! A Sw! Sw! D! ) ( ( Sw! ) Sw! ) ( ( Sw! ) ) ( ( ( Sw! ) ) ) D! C!  等待外部:['asyncio.to_thread']
+  [ok      ] start_sheets:809  A A B! ( Sw! ) ( Sw! A Sw! Sw! D! ) Sw! ( ( ( Sw! ) ) ) ( ( ( Sw! ) Sw! ) ( Sw! ) ) D! ( ( Sw! ) ( ( Sw! ) ) ( D! ) D! ( X! A ) ) C! A  等待外部:['asyncio.to_thread', 'decode_job_row']
+  [ok      ] patch_item:846  B! ( Sw! ) Sw! ( Sw! A Sw! Sw! D! ) ( Sw! ) ( Sw! ) D! ( Sw! ) ( Sw! Sw! Sw! A ) C!  等待外部:['asyncio.to_thread', 'asyncio.to_thread']
+  [ok      ] approve_item:919  B! ( Sw! ) Sw! D! ( Sw! ) ( Sw! Sw! Sw! A ) C!  等待外部:['asyncio.to_thread']
+  [ok      ] set_status:932  B! ( Sw! ) D! ( Sw! ) ( Sw! Sw! Sw! A ) C!  等待外部:['asyncio.to_thread']
+  [ok      ] archive_asset:942  B! Sw! Sw! D! C!
+  [ok      ] approve_voice:1070  B! ( Sw! ) Sw! D! ( Sw! ) ( Sw! Sw! Sw! A ) C!  等待外部:['asyncio.to_thread']
+
+=== studio/casting_jobs.py: 写事务 2，有风险标记 0
+  [ok      ] create_jobs:330  B! ( ( Sw! ) ( ( Sw! ) ) ( D! ) D! ( X! A ) ) C!  等待外部:['decode_job_row']
+  [ok      ] _commit_asset:530  B Sw! A ( ( Sw! ) Sw! D! D! Sw! ) C! K A A  等待外部:['save']
+
+=== studio/director_kb/stats.py: 写事务 1，有风险标记 0
+  [ok      ] accumulate:68  B! Sw! D! C!
+
+=== studio/kb_trial.py: 写事务 10，有风险标记 1
+  [ok      ] list_exemplars:178  A ( X A )  等待外部:['asyncio.to_thread']
+  [ok      ] patch_exemplar:201  A B! Sw! D! Sw! C!
+  [ok      ] set_review_provider:281  A B! ( Sw! ) Sw! D! C!
+  [ok      ] quote:451  A A A A B! ( Sw! ) ( ( Sw! ) ( H?! Sw! ) ) D! C!
+  [ok      ] _activate:497  B! ( X! A ) D! C!  等待外部:['decode_job_row']
+  [ok      ] _activate_review:507  B! ( X! A ) D! C!  等待外部:['decode_job_row']
+  [ok      ] _cancel_placeholder:518  B! ( X! A ) ( ( Sw! ) A D! C! B! ( Sw! ) ( Sw! ) D! Sw! D! D! ( ( Sw! ) Sw! D! ) D! C! A A ) C!  等待外部:['decode_job_row', 'cancel_novel']
+  [ok      ] _cancel_quote_placeholders:528  B! D! C!
+  [W1      ] _final_attempt:554  ( X A ) Sw A  等待外部:['decode_job_row', 'asyncio.to_thread']
+  [ok      ] start:647  B! ( Sw! ) Sw! ( ( Sw! ) ( H?! Sw! ) ) D! ( A D! D! ( X! A ) ) D! ( A D! D! ( X! A ) ) D! D! C!  等待外部:['asyncio.to_thread', 'decode_job_row', 'asyncio.to_thread']
+
+=== studio/notices.py: 写事务 1，有风险标记 0
+  [ok      ] initialize_notice_cutoff:124  B! Sw! D! D! D! C!
+
+=== studio/sources.py: 写事务 2，有风险标记 1
+  [W1      ] _save_snapshot:485  A B ( Sw ) Sw ( Sw ) D D D C A A
+  [ok      ] _rollback_empty_project:525  B! D! C!
+
+=== studio/store.py: 写事务 18，有风险标记 1
+  [ok      ] connection:312  D0 B C! K
+  [ok      ] create_project:389  B! Sw! D! ( Sw! ) C!
+  [ok      ] set_review_provider:427  B! D! C!
+  [ok      ] create_exemplar:466  B! D! Sw! C!
+  [ok      ] list_exemplars:515  X
+  [ok      ] update_exemplar:542  B! Sw! D! Sw! C!
+  [ok      ] create_asset:629  B! ( ( Sw! ) Sw! D! D! Sw! ) C!
+  [ok      ] save_uploaded_asset:634  B ( Sw! ) Sw! K! A ( ( Sw! ) Sw! D! D! Sw! ) C! A A K
+  [ok      ] create_quote:700  B! ( Sw! ) Sw! D! Sw! ( H?! ( Sw! ) ) C!
+  [ok      ] confirm_quote:740  B! Sw! ( Sw! ) ( ( Sw! ) ) D! Sw! D! ( X! A ) D! C!  等待外部:['decode_job_row']
+  [ok      ] get_job:788  ( X A )  等待外部:['decode_job_row']
+  [W1      ] cas_job:811  B! H?! C! ( X A ) ( ( Sw ) A D C B ( Sw ) ( Sw ) D Sw D D ( ( Sw ) Sw D ) D C A A ) ( ( Sw ) A D C B ( Sw ) ( Sw ) D Sw D D ( ( Sw ) Sw D ) D C A A ) Sw X  等待外部:['decode_job_row', 'cancel_novel']
+  [ok      ] claim_next_job:871  B! Sw! Sw! ( B! H?! C! ( X! A ) ( ( Sw! ) A D! C! B! ( Sw! ) ( Sw! ) D! Sw! D! D! ( ( Sw! ) Sw! D! ) D! C! A A ) ( ( Sw! ) A D! C! B! ( Sw! ) ( Sw! ) D! Sw! D! D! ( ( Sw! ) Sw! D! ) D! C! A A ) Sw! X! ) ( X! A ) C!  等待外部:['decode_job_row', 'cancel_novel', 'decode_job_row']
+  [ok      ] cancel_job:911  B! ( ( X! A ) ) ( B! H?! C! ( X! A ) ( ( Sw! ) A D! C! B! ( Sw! ) ( Sw! ) D! Sw! D! D! ( ( Sw! ) Sw! D! ) D! C! A A ) ( ( Sw! ) A D! C! B! ( Sw! ) ( Sw! ) D! Sw! D! D! ( ( Sw! ) Sw! D! ) D! C! A A ) Sw! X! ) ( X! A ) C!  等待外部:['decode_job_row', 'decode_job_row', 'cancel_novel']
+  [ok      ] recheck_job:919  B! ( ( X! A ) ) ( B! H?! C! ( X! A ) ( ( Sw! ) A D! C! B! ( Sw! ) ( Sw! ) D! Sw! D! D! ( ( Sw! ) Sw! D! ) D! C! A A ) ( ( Sw! ) A D! C! B! ( Sw! ) ( Sw! ) D! Sw! D! D! ( ( Sw! ) Sw! D! ) D! C! A A ) Sw! X! ) ( X! A ) C!  等待外部:['decode_job_row', 'decode_job_row', 'cancel_novel']
+  [ok      ] link_task:929  B! ( ( X! A ) ) ( B! H?! C! ( X! A ) ( ( Sw! ) A D! C! B! ( Sw! ) ( Sw! ) D! Sw! D! D! ( ( Sw! ) Sw! D! ) D! C! A A ) ( ( Sw! ) A D! C! B! ( Sw! ) ( Sw! ) D! Sw! D! D! ( ( Sw! ) Sw! D! ) D! C! A A ) Sw! X! ) ( X! A ) C!  等待外部:['decode_job_row', 'decode_job_row', 'cancel_novel']
+  [ok      ] release_job:948  B! ( ( X! A ) ) ( B! H?! C! ( X! A ) ( ( Sw! ) A D! C! B! ( Sw! ) ( Sw! ) D! Sw! D! D! ( ( Sw! ) Sw! D! ) D! C! A A ) ( ( Sw! ) A D! C! B! ( Sw! ) ( Sw! ) D! Sw! D! D! ( ( Sw! ) Sw! D! ) D! C! A A ) Sw! X! ) ( X! A ) C!  等待外部:['decode_job_row', 'decode_job_row', 'cancel_novel']
+  [ok      ] finish_download:963  B! ( X! A ) Sw! ( ( Sw! ) Sw! D! D! Sw! ) ( B! H?! C! ( X! A ) ( ( Sw! ) A D! C! B! ( Sw! ) ( Sw! ) D! Sw! D! D! ( ( Sw! ) Sw! D! ) D! C! A A ) ( ( Sw! ) A D! C! B! ( Sw! ) ( Sw! ) D! Sw! D! D! ( ( Sw! ) Sw! D! ) D! C! A A ) Sw! X! ) C!  等待外部:['decode_job_row', 'decode_job_row', 'cancel_novel']
+
+=== trace.py: 写事务 1，有风险标记 1
+  [W1      ] log_event:13  B Sw K D C
+
+=== 接收连接的辅助函数里含取行语句的（被写事务调用时要看调用方有没有保护）
+  agent_store.py:_one:24  X
+  agent_store.py:_ensure_agent:50  ( Sw ) Sw Sw D Sw
+  agent_store.py:_ensure_default_conversation:71  ( ( Sw ) Sw Sw D Sw ) Sw D Sw
+  agent_store.py:_owned_conversation:88  Sw
+  agent_store.py:migrate_avatar_schema:102  B D~ Sw~ C~ D~ D~ D~ D~ Sw~ D~ D~ Sw~ ( ( ( Sw~ ) Sw~ Sw~ D~ Sw~ ) Sw~ D~ Sw~ ) D~ Sw~ D~ C~ K
+  analyze.py:fetch_events:33  X
+  analyze.py:main:75  S ( X )
+  database.py:_safe_migrate:110  X
+  database.py:_users_exist:123  Sw
+  database.py:_peer_room_is_accepted:136  ( Sw ) Sw
+  database.py:message_references_image:460  Sw
+  database.py:_queue_unreferenced_uploads:477  ( Sw ) Sw D
+  database.py:_studio_notice_message:2101  Sw
+  exchange_store.py:migrate_exchanges_schema:52  B D~ Sw~ C~ D~ D~ D~ D~ D~ D~ D~ C~ K
+  exchange_store.py:migrate_official_exchanges_schema:127  B Sw~ C~ D~ Sw~ D~ Sw~ Sw~ Sw~ D~ D~ D~ D~ D~ D~ C~ K
+  exchange_store.py:migrate_extended_official_exchanges_schema:196  B Sw~ C~ Sw~ D~ Sw~ D~ Sw~ Sw~ Sw~ D~ D~ X~ D~ D~ D~ C~ K
+  exchange_store.py:migrate_workflow_exchanges_schema:270  B Sw~ C~ D~ D~ D~ C~ K
+  exchange_store.py:_public_identity:304  Sw
+  exchange_store.py:_participant_row:311  Sw
+  exchange_store.py:_messages:344  Sw
+  exchange_store.py:_allowed:357  ( Sw ) ( Sw )
+  exchange_store.py:_count_participation:375  Sw
+  intent_router.py:get_novel_read_position:164  S D C
+  intent_router.py:get_pending:336  S D C
+  migrate.py:_inventory:23  S S S S S S S
+  mode_switcher.py:get_user_mode:190  S D C
+  discuss/billing.py:DiscussBilling._active:93  S
+  discuss/runner.py:_row:43  X
+  discuss/runner.py:_rows:49  X
+  discuss/runner.py:start_group.claim_token:77  Sw D
+  discuss/service.py:create_group.operation:476  Sw H? Sw H? Sw H? ( D )
+  discuss/store.py:_fetch_group:169  Sw
+  discuss/store.py:_fetch_message:177  Sw
+  discuss/store.py:_fetch_messages:185  X
+  discuss/store.py:_count_unread:201  Sw
+  discuss/store.py:get_group_on_connection:253  ( Sw )
+  discuss/store.py:delete_group.operation:294  Sw D D D
+  discuss/store.py:post_user_note.operation:344  ( Sw ) ( Sw ) D ( Sw )
+  discuss/store.py:claim_notes.operation:381  D ( X )
+  discuss/store.py:_register_source:403  Sw Sw D
+  discuss/store.py:register_source.operation:428  ( Sw Sw D )
+  discuss/store.py:register_sources.operation:439  ( Sw Sw D )
+  discuss/store.py:DiscussStepStore.transaction.guarded:551  ( H? Sw ) ( ( D ) )
+  discuss/store.py:DiscussStepStore.save_output.operation:691  Sw Sw D D
+  novel/billing.py:NovelBilling._active:155  S
+  novel/runner.py:_row:71  X
+  novel/runner.py:_rows:77  X
+  novel/service.py:row:141  X
+  novel/service.py:rows:147  X
+  novel/service.py:owned:152  Sw
+  novel/service.py:check_active:161  Sw
+  novel/service.py:_latest_bible:315  Sw
+  novel/service.py:_activate:320  ( Sw ) Sw D
+  novel/service.py:_begin_redo:449  ( Sw ) Sw D ( ( Sw ) Sw D )
+  novel/service.py:_pending_volume:672  ( Sw )
+  novel/service.py:_insert_pending_note:840  Sw D
+  scripts/studio_import_exemplars.py:_check_owner:166  S
+  services/claude_agent.py:_stream_claude_agent:426  A A A A X A A A A A A A A A A A A
+  song/store.py:_fetch_project_row:159  X
+  song/store.py:fetch_project:170  ( X )
+  song/store.py:fetch_latest_lyrics:176  Sw
+  song/store.py:_project_ids_for_user:361  Sw
+  song/store.py:_project_ids_for_conversation:368  Sw
+  song/store.py:_audio_paths_for_projects:376  Sw
+  song/store.py:delete_user_song_data:393  ( Sw ) ( Sw ) D D D D ( D )
+  song/store.py:delete_conversation_song_data:414  ( Sw ) ( Sw ) D D D ( D )
+  studio/brain_jobs.py:_insert_job:105  A D D ( X A )
+  studio/brain_jobs.py:transition:165  Sw A D
+  studio/breakdown.py:_one:42  X A
+  studio/breakdown.py:_many:49  X A
+  studio/breakdown.py:_job:55  Sw A
+  studio/breakdown.py:_breakdown:60  Sw A ( Sw )
+  studio/breakdown.py:_chunks:68  Sw A
+  studio/breakdown.py:_confirmed_quote:218  Sw A ( ( Sw ) ( H? Sw ) ) D
+  studio/breakdown.py:_new_chunk_job:235  ( A D D ( X A ) )
+  studio/breakdown.py:_cancel_unexecuted:263  ( Sw A ) ( Sw A ) ( ( Sw ) A D C B ( Sw ) ( Sw ) D Sw D D ( ( Sw ) Sw D ) D C A A ) D D
+  studio/breakdown.py:_published_last:572  Sw A
+  studio/breakdown.py:_insert_bible:577  Sw A A D D Sw A A D Sw A A D D D A
+  studio/breakdown.py:_stored_units:742  Sw A A
+  studio/breakdown_plan.py:_breakdown:42  Sw ( Sw )
+  studio/breakdown_plan.py:_current:50  ( Sw ) ( Sw ( Sw ) )
+  studio/breakdown_plan.py:_published:58  Sw A ( Sw ( Sw ) )
+  studio/breakdown_plan.py:_units:90  Sw A A
+  studio/breakdown_plan.py:_episode_rows:95  Sw A
+  studio/breakdown_plan.py:recompute_bible_episodes:219  Sw A Sw A ( Sw A A ) A D
+  studio/breakdown_plan.py:_revision:228  Sw ( Sw A A ) A D D
+  studio/breakdown_plan.py:publish_plan:244  Sw ( Sw ) ( Sw A A ) A D ( D ) ( Sw ( Sw A A ) A D D ) ( Sw A Sw A ( Sw A A ) A D )
+  studio/breakdown_plan.py:_bible_item:470  Sw ( Sw )
+  studio/breakdown_plan.py:_record_bible_edits:479  ( Sw ( Sw ) ) D A
+  studio/casting.py:_sync_items:96  Sw A D
+  studio/casting.py:_load_items:166  Sw A Sw A Sw A
+  studio/casting.py:_project_jobs:219  Sw A Sw A
+  studio/casting.py:_style_rows:230  Sw A
+  studio/casting.py:_style_block:248  ( Sw A )
+  studio/casting.py:_apply_look_results:278  Sw A Sw Sw D
+  studio/casting.py:_look_inflight_ids:531  Sw A
+  studio/casting.py:_revalidate_look_item:608  ( ( Sw ) Sw )
+  studio/casting.py:_item_or_404:683  Sw
+  studio/casting.py:_item_with_bible:690  ( Sw ) Sw
+  studio/casting.py:_reference_assets:698  Sw
+  studio/casting.py:_sheet_plan:713  ( Sw )
+  studio/casting.py:_revalidate_sheet_item:790  ( ( Sw ) Sw ) ( Sw )
+  studio/casting.py:_single_item:907  Sw Sw Sw A
+  studio/casting_jobs.py:transition:231  Sw X
+  studio/casting_jobs.py:prepare_jobs:282  ( Sw ) ( ( Sw ) ) ( D ) D ( X A )
+  studio/sources.py:_continuation_in_progress:469  Sw
+  studio/spend.py:committed:30  Sw
+  studio/spend.py:check_reservation:59  ( Sw )
+  studio/spend.py:check_quote_budget:69  ( ( Sw ) )
+  studio/spend.py:check_brain_budget:112  ( Sw ) ( H? Sw )
+  studio/store.py:migrate_schema:270  Sw Sw D Sw X
+  studio/store.py:_one:333  X
+  studio/store.py:_many:338  X
+  studio/store.py:_project:366  Sw
+  studio/store.py:_get_job:374  X A
+  studio/store.py:good_exemplars_for_retrieval:570  S
+  studio/store.py:_create_asset:599  ( Sw ) Sw D D Sw
+  studio/store.py:_owned_job:904  ( X A )

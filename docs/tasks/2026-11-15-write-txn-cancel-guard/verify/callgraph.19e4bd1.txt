@@ -1,0 +1,98 @@
+!! 入口不存在: ('studio/scheduler.py', 'Scheduler._guard')
+!! 入口不存在: ('studio/scheduler.py', 'Scheduler._poll')
+!! 入口不存在: ('studio/scheduler.py', 'Scheduler._download')
+!! 入口不存在: ('studio/scheduler.py', 'Scheduler._submit')
+!! 入口不存在: ('studio/scheduler.py', 'Scheduler.tick')
+写事务函数 202 个，其中带风险标记 91 个
+
+=== 聊天流式回复·客户端断开(anyio 取消): 能走到写事务 23 个，其中带风险标记 13 个
+  [W1       ] agent_store.py:get_memory_snapshot:208   ← extractor.extract_and_update ← chat_service._normal_followups ← chat_service.stream_normal ← chat_service.run_chat
+  [W1       ] agent_store.py:resolve_chat_conversation:283   ← chat_service._ensure_active_conversation ← chat_service.run_chat
+  [ok       ] agent_store.py:update_memory:225   ← extractor.extract_and_update ← chat_service._normal_followups ← chat_service.stream_normal ← chat_service.run_chat
+  [W1       ] database.py:refund_strawberries:1799   ← chat_service.run_chat
+  [W1       ] database.py:save_match:1155   ← conversation_matcher.detect_and_save ← chat_service._normal_followups ← chat_service.stream_normal ← chat_service.run_chat
+  [W1       ] database.py:save_message:552   ← chat_service._save_response ← chat_service._stream_image_execution ← chat_service.run_chat
+  [W1       ] database.py:save_pending_match:1225   ← conversation_matcher.detect_and_save ← chat_service._normal_followups ← chat_service.stream_normal ← chat_service.run_chat
+  [ok       ] database.py:set_message_image_summary:682   ← chat_service.stream_image ← chat_service.run_chat
+  [ok       ] database.py:update_profile:1083   ← extractor.extract_and_update ← chat_service._normal_followups ← chat_service.stream_normal ← chat_service.run_chat
+  [W1       ] database.py:update_time_tag_prefs:1622   ← extractor.extract_and_update ← chat_service._normal_followups ← chat_service.stream_normal ← chat_service.run_chat
+  [W1       ] database.py:upsert_user_state:1337   ← state_probe.run_state_probe ← conversation_matcher.detect_and_save ← chat_service._normal_followups ← chat_service.stream_normal ← chat_service.run_chat
+  [ok       ] novel/drafts.py:create_draft:53   ← claude_agent._stream_claude_agent ← claude_agent.stream_claude_agent ← chat_service.stream_claude_agent ← chat_service.run_chat
+  [ok       ] novel/feedback.py:create_feedback:153   ← claude_agent._stream_claude_agent ← claude_agent.stream_claude_agent ← chat_service.stream_claude_agent ← chat_service.run_chat
+  [W1?      ] song/store.py:create_project:186   ← tools._save_brief ← tools.execute ← claude_agent._stream_claude_agent ← claude_agent.stream_claude_agent ← chat_service.stream_claude_agent
+  [ok       ] song/store.py:get_lyrics:319   ← claude_agent._song_project_block ← claude_agent._agent_messages ← claude_agent._stream_claude_agent ← claude_agent.stream_claude_agent ← chat_service.stream_claude_agent
+  [ok       ] song/store.py:get_project:250   ← tools._owned_project ← tools._get_status ← tools.execute ← claude_agent._stream_claude_agent ← claude_agent.stream_claude_agent
+  [W1,W1?   ] song/store.py:save_lyrics:273   ← tools._revise_section ← tools.execute ← claude_agent._stream_claude_agent ← claude_agent.stream_claude_agent ← chat_service.stream_claude_agent
+  [W1?      ] song/store.py:update_project:217   ← tools._save_brief ← tools.execute ← claude_agent._stream_claude_agent ← claude_agent.stream_claude_agent ← chat_service.stream_claude_agent
+  [ok       ] studio/sources.py:_rollback_empty_project:525   ← sources._create_with_snapshot ← sources.create_novel_project ← novel_chat.start_film ← sources.start_film ← chat_service.execute_intent
+  [W1       ] studio/sources.py:_save_snapshot:485   ← sources._create_with_snapshot ← sources.create_novel_project ← novel_chat.start_film ← sources.start_film ← chat_service.execute_intent
+  [ok       ] studio/store.py:connection:312   ← store.get_project ← sources._create_with_snapshot ← sources.create_novel_project ← novel_chat.start_film ← sources.start_film
+  [ok       ] studio/store.py:create_project:389   ← sources._create_with_snapshot ← sources.create_novel_project ← novel_chat.start_film ← sources.start_film ← chat_service.execute_intent
+  [W1       ] trace.py:log_event:13   ← chat_service.run_chat
+
+=== 书斋写作任务·暂停/删除/改稿/关停(task.cancel): 能走到写事务 10 个，其中带风险标记 10 个
+  [W1       ] novel/billing.py:NovelBilling._refund_reserved_transaction:279   ← billing.NovelBilling.refund_reserved ← runner._run
+  [W1       ] novel/runner.py:_advance:259   ← runner._run
+  [W1       ] novel/runner.py:_ensure_volume:387   ← runner._advance ← runner._run
+  [W1       ] novel/runner.py:_pause:196   ← runner._run
+  [W1       ] novel/runner.py:_rearchive:502   ← runner._advance ← runner._run
+  [W1       ] novel/runner.py:_run:209   ← 
+  [W1       ] novel/store_db.py:DbStepStore.commit_chapter:284   ← runner._advance ← runner._run
+  [W1       ] novel/store_db.py:DbStepStore.commit_setup:252   ← runner._advance ← runner._run
+  [W1       ] novel/store_db.py:DbStepStore.save_plan:268   ← runner._advance ← runner._run
+  [H?,W1    ] novel/store_db.py:DbStepStore.transaction:135   ← store_db.DbStepStore.commit_setup ← runner._advance ← runner._run
+
+=== 讨论群任务·暂停/删除/关停(task.cancel): 能走到写事务 8 个，其中带风险标记 6 个
+  [W1       ] agent_store.py:get_memory_snapshot:208   ← avatar.build_avatar_system ← avatar.system_for ← engine._avatar_try ← engine.run_rounds ← runner._run
+  [W1       ] agent_store.py:get_my_agent:179   ← avatar.build_avatar_system ← avatar.system_for ← engine._avatar_try ← engine.run_rounds ← runner._run
+  [W1       ] discuss/billing.py:DiscussBilling._refund_fixed_transaction:321   ← billing.DiscussBilling.refund_fixed ← research.run_search ← engine.run_rounds.investigate ← engine.run_rounds ← runner._run
+  [W1       ] discuss/billing.py:DiscussBilling._refund_reserved_transaction:212   ← billing.DiscussBilling.refund_reserved ← runner._cleanup ← runner._run
+  [W1       ] discuss/billing.py:DiscussBilling._reserve_fixed_transaction:248   ← billing.DiscussBilling.reserve_fixed ← research.run_search ← engine.run_rounds.investigate ← engine.run_rounds ← runner._run
+  [W1       ] discuss/billing.py:DiscussBilling._settle_fixed_transaction:284   ← billing.DiscussBilling.settle_fixed ← research.run_search ← engine.run_rounds.investigate ← engine.run_rounds ← runner._run
+  [ok       ] discuss/store.py:notes_for:374   ← engine._claimed_notes ← engine.run_rounds ← runner._run
+  [ok       ] discuss/store.py:run_write.transaction:154   ← store.run_write ← runner._cleanup ← runner._run
+
+=== 分身交流任务·停止/关停(task.cancel): 能走到写事务 5 个，其中带风险标记 4 个
+  [W1       ] exchange_store.py:finish_model_call:695   ← exchange_service.run_exchange
+  [W1       ] exchange_store.py:load_running_exchange:558   ← exchange_service.run_exchange
+  [W1       ] exchange_store.py:reserve_model_call:601   ← exchange_service.run_exchange
+  [W1       ] exchange_store.py:stop_and_discard_reserved_calls:767   ← exchange_service._settle_cancelled_exchange ← exchange_service.run_exchange
+  [ok       ] exchange_store.py:stop_running_exchange:759   ← exchange_service.run_exchange
+
+=== 工作室调度的作业·关停(task.cancel): 能走到写事务 14 个，其中带风险标记 4 个
+  [W1       ] agent_store.py:resolve_chat_conversation:283   ← database.save_studio_notice ← notices.write_job_notice ← notices.retry_pending_notices ← scheduler.StudioScheduler.tick ← scheduler.run_scheduler
+  [W1       ] database.py:save_message:552   ← database.save_studio_notice ← notices.write_job_notice ← notices.retry_pending_notices ← scheduler.StudioScheduler.tick ← scheduler.run_scheduler
+  [W1       ] database.py:save_studio_notice:2109   ← notices.write_job_notice ← notices.retry_pending_notices ← scheduler.StudioScheduler.tick ← scheduler.run_scheduler
+  [ok       ] studio/brain_jobs.py:_execute_brain:267   ← brain_jobs.run_brain ← brain_jobs._background ← brain_jobs._schedule ← brain_jobs.dispatch_queued ← scheduler.StudioScheduler.tick
+  [ok       ] studio/breakdown.py:prepare_job:773   ← brain_jobs._background ← brain_jobs._schedule ← brain_jobs.dispatch_queued ← scheduler.StudioScheduler.tick ← scheduler.run_scheduler
+  [ok       ] studio/breakdown.py:refresh:838   ← breakdown.refresh_for_job ← brain_jobs._background ← brain_jobs._schedule ← brain_jobs.dispatch_queued ← scheduler.StudioScheduler.tick
+  [ok       ] studio/casting_jobs.py:_commit_asset:530   ← casting_jobs._commit_image ← casting_jobs._run_image ← casting_jobs.execute ← casting_jobs._schedule ← casting_jobs.dispatch_queued
+  [ok       ] studio/notices.py:initialize_notice_cutoff:124   ← scheduler.run_scheduler
+  [W1       ] studio/store.py:cas_job:811   ← scheduler.StudioScheduler._submit ← scheduler.StudioScheduler.tick ← scheduler.run_scheduler
+  [ok       ] studio/store.py:claim_next_job:871   ← scheduler.StudioScheduler.tick ← scheduler.run_scheduler
+  [ok       ] studio/store.py:connection:312   ← notices.initialize_notice_cutoff ← scheduler.run_scheduler
+  [ok       ] studio/store.py:create_project:389   ← brain_jobs._execute_brain ← brain_jobs.run_brain ← brain_jobs._background ← brain_jobs._schedule ← brain_jobs.dispatch_queued
+  [ok       ] studio/store.py:finish_download:963   ← scheduler.StudioScheduler._download ← scheduler.StudioScheduler.tick ← scheduler.run_scheduler
+  [ok       ] studio/store.py:get_job:788   ← brain_jobs._background ← brain_jobs._schedule ← brain_jobs.dispatch_queued ← scheduler.StudioScheduler.tick ← scheduler.run_scheduler
+
+=== 写歌轮询器·关停(task.cancel): 能走到写事务 3 个，其中带风险标记 0 个
+  [ok       ] song/jobs.py:_execute_guarded:490   ← jobs._postpone_version ← jobs.poll_once ← jobs.run_poller
+  [ok       ] song/jobs.py:refund_version:415   ← jobs.reconcile_refunds ← jobs.run_poller
+  [ok       ] song/media.py:drain_cleanup_queue:358   ← jobs.run_poller
+
+=== 上传清理·关停(task.cancel): 能走到写事务 1 个，其中带风险标记 0 个
+  [ok       ] database.py:mark_upload_cleanup_done:1061   ← main._run_upload_cleanup_once ← main._run_upload_cleanup_periodically
+
+=== 上述入口都走不到、但带风险标记的写事务 57 个（只从普通接口或启动流程调用）
+  agent_store.py: 5 个  clear_memory, create_conversation, delete_conversation, list_conversations, update_my_agent
+  byok/store.py: 2 个  save_config, update_options
+  database.py: 21 个  authenticate_watch_device, clear_message_history, create_tester_invites, create_watch_device, create_watch_rule, delete_account_data, delete_message_for_user, get_strawberry_balance, init_db, like_post, redeem_invite, reserve_strawberries ...
+  discuss/billing.py: 2 个  DiscussBilling._finish_transaction, DiscussBilling._reserve_transaction
+  discuss/service.py: 1 个  start.operation
+  exchange_store.py: 3 个  create_exchange, create_official_exchange, transition_exchange
+  manage_strawberries.py: 1 个  main
+  novel/billing.py: 2 个  NovelBilling._finish_transaction, NovelBilling._reserve_transaction
+  novel/runner.py: 1 个  _start_novel_locked
+  novel/service.py: 16 个  approve_plan, approve_setup, approve_volume, create, delete, edit_chapter, note, patch, redo_feedback_plan, redo_plan, redo_volume, reject_end ...
+  novel/store_db.py: 2 个  DbStepStore.append_usage, DbStepStore.write_step
+  studio/kb_trial.py: 1 个  _final_attempt

@@ -1,0 +1,60 @@
+
+## A. 取消经 anyio 取消域投递（delivered 窗口 = 结果已交回、任务未唤醒）
+  a_select_plain                                             取消点  5  残留写锁  0  取消未送达  0  没测到  0
+  b_select_with                                              取消点  6  残留写锁  0  取消未送达  0  没测到  0
+  c_select_multi_fetchone                                    取消点  5  残留写锁  2  取消未送达  0  没测到  0   <== k=2 execute SELECT v FROM t; k=3 fetchone
+  d_dml_only                                                 取消点  4  残留写锁  0  取消未送达  0  没测到  0
+  e_implicit_dml_then_select                                 取消点  4  残留写锁  0  取消未送达  0  没测到  0
+  f_select_only                                              取消点  2  残留写锁  0  取消未送达  0  没测到  0
+  g_returning                                                取消点  4  残留写锁  0  取消未送达  0  没测到  0
+  h_execute_fetchall                                         取消点  4  残留写锁  0  取消未送达  0  没测到  0
+  i_select_then_implicit_dml                                 取消点  4  残留写锁  0  取消未送达  0  没测到  0
+
+## B. 被取消的任务对象被拿着时写锁挂多久（写法 a_select_plain，取消落在 SELECT 的 delivered 窗口）
+  gather 返回: CancelledError
+  gather 之后、任务对象仍被局部变量引用: LOCKED
+  任务对象只被一个列表（例如任务登记表）引用: LOCKED
+  任务对象已无人引用（未做垃圾回收）: free
+  垃圾回收之后: free
+
+## C. 修法一：连接层统一回滚（原生取消 delivered / queued，以及 anyio 取消）
+  a_select_plain [delivered]                                 取消点  5  残留写锁  0  取消未送达  0  没测到  0
+  a_select_plain [queued]                                    取消点  5  残留写锁  0  取消未送达  0  没测到  0
+  a_select_plain [anyio]                                     取消点  5  残留写锁  0  取消未送达  0  没测到  0
+  b_select_with [delivered]                                  取消点  6  残留写锁  0  取消未送达  0  没测到  0
+  b_select_with [queued]                                     取消点  6  残留写锁  0  取消未送达  0  没测到  0
+  b_select_with [anyio]                                      取消点  6  残留写锁  0  取消未送达  0  没测到  0
+  c_select_multi_fetchone [delivered]                        取消点  5  残留写锁  0  取消未送达  0  没测到  0
+  c_select_multi_fetchone [queued]                           取消点  5  残留写锁  0  取消未送达  0  没测到  0
+  c_select_multi_fetchone [anyio]                            取消点  5  残留写锁  0  取消未送达  0  没测到  0
+  d_dml_only [delivered]                                     取消点  4  残留写锁  0  取消未送达  0  没测到  0
+  d_dml_only [queued]                                        取消点  4  残留写锁  0  取消未送达  0  没测到  0
+  d_dml_only [anyio]                                         取消点  4  残留写锁  0  取消未送达  0  没测到  0
+  e_implicit_dml_then_select [delivered]                     取消点  4  残留写锁  0  取消未送达  0  没测到  0
+  e_implicit_dml_then_select [queued]                        取消点  4  残留写锁  0  取消未送达  0  没测到  0
+  e_implicit_dml_then_select [anyio]                         取消点  4  残留写锁  0  取消未送达  0  没测到  0
+  f_select_only [delivered]                                  取消点  2  残留写锁  0  取消未送达  0  没测到  0
+  f_select_only [queued]                                     取消点  2  残留写锁  0  取消未送达  0  没测到  0
+  f_select_only [anyio]                                      取消点  2  残留写锁  0  取消未送达  0  没测到  0
+  g_returning [delivered]                                    取消点  4  残留写锁  0  取消未送达  0  没测到  0
+  g_returning [queued]                                       取消点  4  残留写锁  0  取消未送达  0  没测到  0
+  g_returning [anyio]                                        取消点  4  残留写锁  0  取消未送达  0  没测到  0
+  h_execute_fetchall [delivered]                             取消点  4  残留写锁  0  取消未送达  0  没测到  0
+  h_execute_fetchall [queued]                                取消点  4  残留写锁  0  取消未送达  0  没测到  0
+  h_execute_fetchall [anyio]                                 取消点  4  残留写锁  0  取消未送达  0  没测到  0
+  i_select_then_implicit_dml [delivered]                     取消点  4  残留写锁  0  取消未送达  0  没测到  0
+  i_select_then_implicit_dml [queued]                        取消点  4  残留写锁  0  取消未送达  0  没测到  0
+  i_select_then_implicit_dml [anyio]                         取消点  4  残留写锁  0  取消未送达  0  没测到  0
+  修法一残留写锁合计: 0
+
+## D. 修法二：整个事务放进受保护任务（外层被取消，事务照常跑完）
+  a_select_plain                                             取消点  5  残留写锁  0  取消未送达  0  没测到  0
+  b_select_with                                              取消点  6  残留写锁  0  取消未送达  0  没测到  0
+  c_select_multi_fetchone                                    取消点  5  残留写锁  0  取消未送达  0  没测到  0
+  d_dml_only                                                 取消点  4  残留写锁  0  取消未送达  0  没测到  0
+  e_implicit_dml_then_select                                 取消点  4  残留写锁  0  取消未送达  0  没测到  0
+  f_select_only                                              取消点  2  残留写锁  0  取消未送达  0  没测到  0
+  g_returning                                                取消点  4  残留写锁  0  取消未送达  0  没测到  0
+  h_execute_fetchall                                         取消点  4  残留写锁  0  取消未送达  0  没测到  0
+  i_select_then_implicit_dml                                 取消点  4  残留写锁  0  取消未送达  0  没测到  0
+  修法二残留写锁合计: 0

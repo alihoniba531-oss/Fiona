@@ -1,0 +1,143 @@
+python 3.14.6 sqlite 3.53.3 aiosqlite 0.22.1
+
+## a_select_plain
+  delivered k=1 [execute BEGIN IMMEDIATE                             ] cleanup=free   after_del=free   after_gc=free   cancelled=True  committed=False
+  delivered k=2 [execute SELECT v FROM t WHERE id=1                  ] cleanup=LOCKED after_del=free   after_gc=free   cancelled=True  committed=False  <== 写锁残留
+  delivered k=3 [fetchone                                            ] cleanup=free   after_del=free   after_gc=free   cancelled=True  committed=False
+  delivered k=4 [execute UPDATE t SET v=v+100 WHERE id=1             ] cleanup=free   after_del=free   after_gc=free   cancelled=True  committed=False
+  delivered k=5 [commit                                              ] cleanup=free   after_del=free   after_gc=free   cancelled=True  committed=True 
+  queued    k=1 [execute BEGIN IMMEDIATE                             ] cleanup=free   after_del=free   after_gc=free   cancelled=True  committed=False
+  queued    k=2 [execute SELECT v FROM t WHERE id=1                  ] cleanup=free   after_del=free   after_gc=free   cancelled=True  committed=False
+  queued    k=3 [fetchone                                            ] cleanup=free   after_del=free   after_gc=free   cancelled=True  committed=False
+  queued    k=4 [execute UPDATE t SET v=v+100 WHERE id=1             ] cleanup=free   after_del=free   after_gc=free   cancelled=True  committed=False
+  queued    k=5 [commit                                              ] cleanup=free   after_del=free   after_gc=free   cancelled=True  committed=True 
+
+## b_select_with
+  delivered k=1 [execute BEGIN IMMEDIATE                             ] cleanup=free   after_del=free   after_gc=free   cancelled=True  committed=False
+  delivered k=2 [execute SELECT v FROM t WHERE id=1                  ] cleanup=LOCKED after_del=free   after_gc=free   cancelled=True  committed=False  <== 写锁残留
+  delivered k=3 [fetchone                                            ] cleanup=free   after_del=free   after_gc=free   cancelled=True  committed=False
+  delivered k=4 [close                                               ] cleanup=free   after_del=free   after_gc=free   cancelled=True  committed=False
+  delivered k=5 [execute UPDATE t SET v=v+100 WHERE id=1             ] cleanup=free   after_del=free   after_gc=free   cancelled=True  committed=False
+  delivered k=6 [commit                                              ] cleanup=free   after_del=free   after_gc=free   cancelled=True  committed=True 
+  queued    k=1 [execute BEGIN IMMEDIATE                             ] cleanup=free   after_del=free   after_gc=free   cancelled=True  committed=False
+  queued    k=2 [execute SELECT v FROM t WHERE id=1                  ] cleanup=free   after_del=free   after_gc=free   cancelled=True  committed=False
+  queued    k=3 [fetchone                                            ] cleanup=free   after_del=free   after_gc=free   cancelled=True  committed=False
+  queued    k=4 [close                                               ] cleanup=free   after_del=free   after_gc=free   cancelled=True  committed=False
+  queued    k=5 [execute UPDATE t SET v=v+100 WHERE id=1             ] cleanup=free   after_del=free   after_gc=free   cancelled=True  committed=False
+  queued    k=6 [commit                                              ] cleanup=free   after_del=free   after_gc=free   cancelled=True  committed=True 
+
+## c_select_multi_fetchone
+  delivered k=1 [execute BEGIN IMMEDIATE                             ] cleanup=free   after_del=free   after_gc=free   cancelled=True  committed=False
+  delivered k=2 [execute SELECT v FROM t                             ] cleanup=LOCKED after_del=free   after_gc=free   cancelled=True  committed=False  <== 写锁残留
+  delivered k=3 [fetchone                                            ] cleanup=LOCKED after_del=free   after_gc=free   cancelled=True  committed=False  <== 写锁残留
+  delivered k=4 [execute UPDATE t SET v=v+100 WHERE id=1             ] cleanup=LOCKED after_del=free   after_gc=free   cancelled=True  committed=False  <== 写锁残留
+  delivered k=5 [commit                                              ] cleanup=free   after_del=free   after_gc=free   cancelled=True  committed=True 
+  queued    k=1 [execute BEGIN IMMEDIATE                             ] cleanup=free   after_del=free   after_gc=free   cancelled=True  committed=False
+  queued    k=2 [execute SELECT v FROM t                             ] cleanup=free   after_del=free   after_gc=free   cancelled=True  committed=False
+  queued    k=3 [fetchone                                            ] cleanup=LOCKED after_del=free   after_gc=free   cancelled=True  committed=False  <== 写锁残留
+  queued    k=4 [execute UPDATE t SET v=v+100 WHERE id=1             ] cleanup=LOCKED after_del=free   after_gc=free   cancelled=True  committed=False  <== 写锁残留
+  queued    k=5 [commit                                              ] cleanup=free   after_del=free   after_gc=free   cancelled=True  committed=True 
+
+## d_dml_only
+  delivered k=1 [execute BEGIN IMMEDIATE                             ] cleanup=free   after_del=free   after_gc=free   cancelled=True  committed=False
+  delivered k=2 [execute UPDATE t SET v=v+100 WHERE id=1             ] cleanup=free   after_del=free   after_gc=free   cancelled=True  committed=False
+  delivered k=3 [execute UPDATE t SET v=v+100 WHERE id=2             ] cleanup=free   after_del=free   after_gc=free   cancelled=True  committed=False
+  delivered k=4 [commit                                              ] cleanup=free   after_del=free   after_gc=free   cancelled=True  committed=True 
+  queued    k=1 [execute BEGIN IMMEDIATE                             ] cleanup=free   after_del=free   after_gc=free   cancelled=True  committed=False
+  queued    k=2 [execute UPDATE t SET v=v+100 WHERE id=1             ] cleanup=free   after_del=free   after_gc=free   cancelled=True  committed=False
+  queued    k=3 [execute UPDATE t SET v=v+100 WHERE id=2             ] cleanup=free   after_del=free   after_gc=free   cancelled=True  committed=False
+  queued    k=4 [commit                                              ] cleanup=free   after_del=free   after_gc=free   cancelled=True  committed=True 
+
+## e_implicit_dml_then_select
+  delivered k=1 [execute UPDATE t SET v=v+100 WHERE id=1             ] cleanup=free   after_del=free   after_gc=free   cancelled=True  committed=False
+  delivered k=2 [execute SELECT v FROM t WHERE id=1                  ] cleanup=LOCKED after_del=free   after_gc=free   cancelled=True  committed=False  <== 写锁残留
+  delivered k=3 [fetchone                                            ] cleanup=free   after_del=free   after_gc=free   cancelled=True  committed=False
+  delivered k=4 [commit                                              ] cleanup=free   after_del=free   after_gc=free   cancelled=True  committed=True 
+  queued    k=1 [execute UPDATE t SET v=v+100 WHERE id=1             ] cleanup=free   after_del=free   after_gc=free   cancelled=True  committed=False
+  queued    k=2 [execute SELECT v FROM t WHERE id=1                  ] cleanup=free   after_del=free   after_gc=free   cancelled=True  committed=False
+  queued    k=3 [fetchone                                            ] cleanup=free   after_del=free   after_gc=free   cancelled=True  committed=False
+  queued    k=4 [commit                                              ] cleanup=free   after_del=free   after_gc=free   cancelled=True  committed=True 
+
+## f_select_only
+  delivered k=1 [execute SELECT v FROM t WHERE id=1                  ] cleanup=free   after_del=free   after_gc=free   cancelled=True  committed=False
+  delivered k=2 [fetchone                                            ] cleanup=free   after_del=free   after_gc=free   cancelled=True  committed=False
+  queued    k=1 [execute SELECT v FROM t WHERE id=1                  ] cleanup=free   after_del=free   after_gc=free   cancelled=True  committed=False
+  queued    k=2 [fetchone                                            ] cleanup=free   after_del=free   after_gc=free   cancelled=True  committed=False
+
+## g_returning
+  delivered k=1 [execute BEGIN IMMEDIATE                             ] cleanup=free   after_del=free   after_gc=free   cancelled=True  committed=False
+  delivered k=2 [execute UPDATE t SET v=v+100 WHERE id=1 RETURN      ] cleanup=LOCKED after_del=free   after_gc=free   cancelled=True  committed=False  <== 写锁残留
+  delivered k=3 [fetchone                                            ] cleanup=free   after_del=free   after_gc=free   cancelled=True  committed=False
+  delivered k=4 [commit                                              ] cleanup=free   after_del=free   after_gc=free   cancelled=True  committed=True 
+  queued    k=1 [execute BEGIN IMMEDIATE                             ] cleanup=free   after_del=free   after_gc=free   cancelled=True  committed=False
+  queued    k=2 [execute UPDATE t SET v=v+100 WHERE id=1 RETURN      ] cleanup=free   after_del=free   after_gc=free   cancelled=True  committed=False
+  queued    k=3 [fetchone                                            ] cleanup=free   after_del=free   after_gc=free   cancelled=True  committed=False
+  queued    k=4 [commit                                              ] cleanup=free   after_del=free   after_gc=free   cancelled=True  committed=True 
+
+## h_execute_fetchall
+  delivered k=1 [execute BEGIN IMMEDIATE                             ] cleanup=free   after_del=free   after_gc=free   cancelled=True  committed=False
+  delivered k=2 [_execute_fetchall SELECT v FROM t                   ] cleanup=free   after_del=free   after_gc=free   cancelled=True  committed=False
+  delivered k=3 [execute UPDATE t SET v=v+100 WHERE id=1             ] cleanup=free   after_del=free   after_gc=free   cancelled=True  committed=False
+  delivered k=4 [commit                                              ] cleanup=free   after_del=free   after_gc=free   cancelled=True  committed=True 
+  queued    k=1 [execute BEGIN IMMEDIATE                             ] cleanup=free   after_del=free   after_gc=free   cancelled=True  committed=False
+  queued    k=2 [_execute_fetchall SELECT v FROM t                   ] cleanup=free   after_del=free   after_gc=free   cancelled=True  committed=False
+  queued    k=3 [execute UPDATE t SET v=v+100 WHERE id=1             ] cleanup=free   after_del=free   after_gc=free   cancelled=True  committed=False
+  queued    k=4 [commit                                              ] cleanup=free   after_del=free   after_gc=free   cancelled=True  committed=True 
+
+## i_select_then_implicit_dml
+  delivered k=1 [execute SELECT v FROM t WHERE id=1                  ] cleanup=free   after_del=free   after_gc=free   cancelled=True  committed=False
+  delivered k=2 [fetchone                                            ] cleanup=free   after_del=free   after_gc=free   cancelled=True  committed=False
+  delivered k=3 [execute UPDATE t SET v=v+100 WHERE id=1             ] cleanup=free   after_del=free   after_gc=free   cancelled=True  committed=False
+  delivered k=4 [commit                                              ] cleanup=free   after_del=free   after_gc=free   cancelled=True  committed=True 
+  queued    k=1 [execute SELECT v FROM t WHERE id=1                  ] cleanup=free   after_del=free   after_gc=free   cancelled=True  committed=False
+  queued    k=2 [fetchone                                            ] cleanup=free   after_del=free   after_gc=free   cancelled=True  committed=False
+  queued    k=3 [execute UPDATE t SET v=v+100 WHERE id=1             ] cleanup=free   after_del=free   after_gc=free   cancelled=True  committed=False
+  queued    k=4 [commit                                              ] cleanup=free   after_del=free   after_gc=free   cancelled=True  committed=True 
+
+## a_select_plain+rollback[BaseException]
+  delivered k=1 [execute BEGIN IMMEDIATE                             ] cleanup=free   after_del=free   after_gc=free   cancelled=True  committed=False
+  delivered k=2 [execute SELECT v FROM t WHERE id=1                  ] cleanup=free   after_del=free   after_gc=free   cancelled=True  committed=False
+  delivered k=3 [fetchone                                            ] cleanup=free   after_del=free   after_gc=free   cancelled=True  committed=False
+  delivered k=4 [execute UPDATE t SET v=v+100 WHERE id=1             ] cleanup=free   after_del=free   after_gc=free   cancelled=True  committed=False
+  delivered k=5 [commit                                              ] cleanup=free   after_del=free   after_gc=free   cancelled=True  committed=True 
+  queued    k=1 [execute BEGIN IMMEDIATE                             ] cleanup=free   after_del=free   after_gc=free   cancelled=True  committed=False
+  queued    k=2 [execute SELECT v FROM t WHERE id=1                  ] cleanup=free   after_del=free   after_gc=free   cancelled=True  committed=False
+  queued    k=3 [fetchone                                            ] cleanup=free   after_del=free   after_gc=free   cancelled=True  committed=False
+  queued    k=4 [execute UPDATE t SET v=v+100 WHERE id=1             ] cleanup=free   after_del=free   after_gc=free   cancelled=True  committed=False
+  queued    k=5 [commit                                              ] cleanup=free   after_del=free   after_gc=free   cancelled=True  committed=True 
+
+## a_select_plain+rollback[Exception]
+  delivered k=1 [execute BEGIN IMMEDIATE                             ] cleanup=free   after_del=free   after_gc=free   cancelled=True  committed=False
+  delivered k=2 [execute SELECT v FROM t WHERE id=1                  ] cleanup=LOCKED after_del=free   after_gc=free   cancelled=True  committed=False  <== 写锁残留
+  delivered k=3 [fetchone                                            ] cleanup=free   after_del=free   after_gc=free   cancelled=True  committed=False
+  delivered k=4 [execute UPDATE t SET v=v+100 WHERE id=1             ] cleanup=free   after_del=free   after_gc=free   cancelled=True  committed=False
+  delivered k=5 [commit                                              ] cleanup=free   after_del=free   after_gc=free   cancelled=True  committed=True 
+  queued    k=1 [execute BEGIN IMMEDIATE                             ] cleanup=free   after_del=free   after_gc=free   cancelled=True  committed=False
+  queued    k=2 [execute SELECT v FROM t WHERE id=1                  ] cleanup=free   after_del=free   after_gc=free   cancelled=True  committed=False
+  queued    k=3 [fetchone                                            ] cleanup=free   after_del=free   after_gc=free   cancelled=True  committed=False
+  queued    k=4 [execute UPDATE t SET v=v+100 WHERE id=1             ] cleanup=free   after_del=free   after_gc=free   cancelled=True  committed=False
+  queued    k=5 [commit                                              ] cleanup=free   after_del=free   after_gc=free   cancelled=True  committed=True 
+
+## c_select_multi_fetchone+rollback[BaseException]
+  delivered k=1 [execute BEGIN IMMEDIATE                             ] cleanup=free   after_del=free   after_gc=free   cancelled=True  committed=False
+  delivered k=2 [execute SELECT v FROM t                             ] cleanup=free   after_del=free   after_gc=free   cancelled=True  committed=False
+  delivered k=3 [fetchone                                            ] cleanup=free   after_del=free   after_gc=free   cancelled=True  committed=False
+  delivered k=4 [execute UPDATE t SET v=v+100 WHERE id=1             ] cleanup=free   after_del=free   after_gc=free   cancelled=True  committed=False
+  delivered k=5 [commit                                              ] cleanup=free   after_del=free   after_gc=free   cancelled=True  committed=True 
+  queued    k=1 [execute BEGIN IMMEDIATE                             ] cleanup=free   after_del=free   after_gc=free   cancelled=True  committed=False
+  queued    k=2 [execute SELECT v FROM t                             ] cleanup=free   after_del=free   after_gc=free   cancelled=True  committed=False
+  queued    k=3 [fetchone                                            ] cleanup=free   after_del=free   after_gc=free   cancelled=True  committed=False
+  queued    k=4 [execute UPDATE t SET v=v+100 WHERE id=1             ] cleanup=free   after_del=free   after_gc=free   cancelled=True  committed=False
+  queued    k=5 [commit                                              ] cleanup=free   after_del=free   after_gc=free   cancelled=True  committed=True 
+
+## g_returning+rollback[BaseException]
+  delivered k=1 [execute BEGIN IMMEDIATE                             ] cleanup=free   after_del=free   after_gc=free   cancelled=True  committed=False
+  delivered k=2 [execute UPDATE t SET v=v+100 WHERE id=1 RETURN      ] cleanup=free   after_del=free   after_gc=free   cancelled=True  committed=False
+  delivered k=3 [fetchone                                            ] cleanup=free   after_del=free   after_gc=free   cancelled=True  committed=False
+  delivered k=4 [commit                                              ] cleanup=free   after_del=free   after_gc=free   cancelled=True  committed=True 
+  queued    k=1 [execute BEGIN IMMEDIATE                             ] cleanup=free   after_del=free   after_gc=free   cancelled=True  committed=False
+  queued    k=2 [execute UPDATE t SET v=v+100 WHERE id=1 RETURN      ] cleanup=free   after_del=free   after_gc=free   cancelled=True  committed=False
+  queued    k=3 [fetchone                                            ] cleanup=free   after_del=free   after_gc=free   cancelled=True  committed=False
+  queued    k=4 [commit                                              ] cleanup=free   after_del=free   after_gc=free   cancelled=True  committed=True 
+
+TOTAL cancel points with residual write lock: 10

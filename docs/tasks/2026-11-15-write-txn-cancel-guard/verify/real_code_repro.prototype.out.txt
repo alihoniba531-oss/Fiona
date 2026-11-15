@@ -1,0 +1,93 @@
+
+## 书斋：写作任务正在记步骤用量（DbStepStore.append_usage），此时被暂停/删除
+   取消点 7 个；之后执行 cancel_novel 的下一步 NovelBilling.refund_reserved：失败 0 个
+   k=1  [execute BEGIN IMMEDIATE                                     ] 取消送达=True  收尾写库=ok
+   k=2  [execute SELECT 1 FROM novels n JOIN users u ON u.usern      ] 取消送达=True  收尾写库=ok
+   k=3  [fetchone                                                    ] 取消送达=True  收尾写库=ok
+   k=4  [close                                                       ] 取消送达=True  收尾写库=ok
+   k=5  [execute INSERT INTO novel_steps (novel_id,username,ste      ] 取消送达=True  收尾写库=ok
+   k=6  [commit                                                      ] 取消送达=True  收尾写库=ok
+   k=7  [close                                                       ] 取消送达=True  收尾写库=ok
+
+## 分身交流：任务正在预留一次模型调用（exchange_store.reserve_model_call），此时被停止
+   取消点 10 个；之后执行 取消后的结算 stop_and_discard_reserved_calls：失败 0 个
+   k=1  [execute BEGIN IMMEDIATE                                     ] 取消送达=True  收尾写库=ok
+   k=2  [execute SELECT * FROM agent_exchanges WHERE id = ? AND      ] 取消送达=True  收尾写库=ok
+   k=3  [fetchone                                                    ] 取消送达=True  收尾写库=ok
+   k=4  [close                                                       ] 取消送达=True  收尾写库=ok
+   k=5  [execute SELECT a.id, a.owner_username, a.display_name,      ] 取消送达=True  收尾写库=ok
+   k=6  [fetchone                                                    ] 取消送达=True  收尾写库=ok
+   k=7  [close                                                       ] 取消送达=True  收尾写库=ok
+   k=8  [execute UPDATE agent_exchanges SET status = 'stopped',      ] 取消送达=True  收尾写库=ok
+   k=9  [commit                                                      ] 取消送达=True  收尾写库=ok
+   k=10 [close                                                       ] 取消送达=True  收尾写库=ok
+
+## 聊天（Claude 智能体）：正在确认会话（agent_store.resolve_chat_conversation），客户端断开
+   取消点 22 个；之后执行 run_chat 收尾里的 refund_strawberries：失败 0 个
+   k=1  [execute BEGIN IMMEDIATE                                     ] 取消送达=True  收尾写库=ok
+   k=2  [execute SELECT COUNT(*) FROM users WHERE username IN (      ] 取消送达=True  收尾写库=ok
+   k=3  [fetchone                                                    ] 取消送达=True  收尾写库=ok
+   k=4  [close                                                       ] 取消送达=True  收尾写库=ok
+   k=5  [execute SELECT * FROM agents WHERE owner_username = ?       ] 取消送达=True  收尾写库=ok
+   k=6  [fetchone                                                    ] 取消送达=True  收尾写库=ok
+   k=7  [close                                                       ] 取消送达=True  收尾写库=ok
+   k=8  [execute SELECT profile_json FROM users WHERE username       ] 取消送达=True  收尾写库=ok
+   k=9  [fetchone                                                    ] 取消送达=True  收尾写库=ok
+   k=10 [close                                                       ] 取消送达=True  收尾写库=ok
+   k=11 [execute INSERT INTO agents (id, owner_username, privat      ] 取消送达=True  收尾写库=ok
+   k=12 [execute SELECT * FROM agents WHERE id = ?                   ] 取消送达=True  收尾写库=ok
+   k=13 [fetchone                                                    ] 取消送达=True  收尾写库=ok
+   k=14 [close                                                       ] 取消送达=True  收尾写库=ok
+   k=15 [execute SELECT * FROM conversations WHERE owner_userna      ] 取消送达=True  收尾写库=ok
+   k=16 [fetchone                                                    ] 取消送达=True  收尾写库=ok
+   k=17 [close                                                       ] 取消送达=True  收尾写库=ok
+   k=18 [execute INSERT INTO conversations (id, owner_username,      ] 取消送达=True  收尾写库=ok
+   k=19 [execute SELECT * FROM conversations WHERE id = ?            ] 取消送达=True  收尾写库=ok
+   k=20 [fetchone                                                    ] 取消送达=True  收尾写库=ok
+   k=21 [close                                                       ] 取消送达=True  收尾写库=ok
+   k=22 [commit                                                      ] 取消送达=True  收尾写库=ok
+
+## 聊天后处理/讨论群分身：读取私有记忆（agent_store.get_memory_snapshot）
+   取消点 12 个；之后执行 refund_strawberries：失败 0 个
+   k=1  [execute BEGIN IMMEDIATE                                     ] 取消送达=True  收尾写库=ok
+   k=2  [execute SELECT COUNT(*) FROM users WHERE username IN (      ] 取消送达=True  收尾写库=ok
+   k=3  [fetchone                                                    ] 取消送达=True  收尾写库=ok
+   k=4  [close                                                       ] 取消送达=True  收尾写库=ok
+   k=5  [execute SELECT * FROM agents WHERE owner_username = ?       ] 取消送达=True  收尾写库=ok
+   k=6  [fetchone                                                    ] 取消送达=True  收尾写库=ok
+   k=7  [close                                                       ] 取消送达=True  收尾写库=ok
+   k=8  [execute SELECT private_memory_json, memory_revision FR      ] 取消送达=True  收尾写库=ok
+   k=9  [fetchone                                                    ] 取消送达=True  收尾写库=ok
+   k=10 [close                                                       ] 取消送达=True  收尾写库=ok
+   k=11 [commit                                                      ] 取消送达=True  收尾写库=ok
+   k=12 [close                                                       ] 取消送达=True  收尾写库=ok
+
+## 保存消息（database.save_message）
+   取消点 15 个；之后执行 refund_strawberries：失败 0 个
+   k=1  [execute BEGIN IMMEDIATE                                     ] 取消送达=True  收尾写库=ok
+   k=2  [execute SELECT COUNT(*) FROM users WHERE username IN (      ] 取消送达=True  收尾写库=ok
+   k=3  [fetchone                                                    ] 取消送达=True  收尾写库=ok
+   k=4  [close                                                       ] 取消送达=True  收尾写库=ok
+   k=5  [execute SELECT * FROM agents WHERE owner_username = ?       ] 取消送达=True  收尾写库=ok
+   k=6  [fetchone                                                    ] 取消送达=True  收尾写库=ok
+   k=7  [close                                                       ] 取消送达=True  收尾写库=ok
+   k=8  [execute SELECT * FROM conversations WHERE owner_userna      ] 取消送达=True  收尾写库=ok
+   k=9  [fetchone                                                    ] 取消送达=True  收尾写库=ok
+   k=10 [close                                                       ] 取消送达=True  收尾写库=ok
+   k=11 [execute INSERT INTO messages (username, role, content,      ] 取消送达=True  收尾写库=ok
+   k=12 [execute UPDATE conversations SET updated_at = CURRENT_      ] 取消送达=True  收尾写库=ok
+   k=13 [execute UPDATE conversations SET title = ?, auto_title      ] 取消送达=True  收尾写库=ok
+   k=14 [commit                                                      ] 取消送达=True  收尾写库=ok
+   k=15 [close                                                       ] 取消送达=True  收尾写库=ok
+
+## 写埋点（trace.log_event）
+   取消点 7 个；之后执行 refund_strawberries：失败 0 个
+   k=1  [execute BEGIN IMMEDIATE                                     ] 取消送达=True  收尾写库=ok
+   k=2  [execute SELECT 1 FROM users WHERE username = ?              ] 取消送达=True  收尾写库=ok
+   k=3  [fetchone                                                    ] 取消送达=True  收尾写库=ok
+   k=4  [close                                                       ] 取消送达=True  收尾写库=ok
+   k=5  [execute INSERT INTO events (username, event_type, name      ] 取消送达=True  收尾写库=ok
+   k=6  [commit                                                      ] 取消送达=True  收尾写库=ok
+   k=7  [close                                                       ] 取消送达=True  收尾写库=ok
+
+REAL_CODE_REPRO cancel_points=73 follow_up_failed=0
