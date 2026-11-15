@@ -204,6 +204,7 @@ def test_absent_panel_mode_and_explicit_merge_have_identical_protocol(workshop, 
 
 def test_all_advisor_calls_are_cancelled_and_drained_if_one_fails(workshop):
     started, cancelled, running = set(), set(), set()
+    all_started = asyncio.Event()
 
     async def broken_advisor(request, _index):
         if FakeLLM.payload(request)["task"] != "critique_plan":
@@ -211,9 +212,13 @@ def test_all_advisor_calls_are_cancelled_and_drained_if_one_fails(workshop):
         role = request["role"]
         started.add(role)
         running.add(role)
+        if len(started) == 3:
+            all_started.set()
         try:
             if role == "plot_architect":
-                await asyncio.sleep(0)
+                # Fail once all three advisors have reached the model; one yield
+                # does not guarantee that (see test_novel_workflow).
+                await asyncio.wait_for(all_started.wait(), timeout=5)
                 raise StepFailed()
             await asyncio.sleep(10)
         except asyncio.CancelledError:
