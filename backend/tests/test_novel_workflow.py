@@ -181,6 +181,7 @@ def test_concurrency_is_limited_to_three(workshop):
 @pytest.mark.parametrize("phase", ["proposal", "critique"])
 def test_failed_parallel_phase_cancels_and_drains_siblings_before_return(workshop, phase):
     started, cancelled, running = set(), set(), set()
+    all_started = asyncio.Event()
 
     async def delayed_failure(request, _index):
         if FakeLLM.payload(request)["task"] != phase:
@@ -188,11 +189,17 @@ def test_failed_parallel_phase_cancels_and_drains_siblings_before_return(worksho
         role = request["role"]
         started.add(role)
         running.add(role)
+        if len(started) == 3:
+            all_started.set()
         try:
             if role == "plot_architect":
-                # Let all three requests start, then fail without waiting for
-                # the siblings' deliberately slow local model responses.
-                await asyncio.sleep(0)
+                # Fail only once all three requests have reached the model, and
+                # without waiting for the siblings' deliberately slow responses.
+                # Waiting on an event instead of yielding once keeps this
+                # independent of how the router's per-request timers interleave
+                # on a busy machine; the timeout only stops a regression from
+                # hanging the suite.
+                await asyncio.wait_for(all_started.wait(), timeout=5)
                 raise StepFailed()
             await asyncio.sleep(10)
         except asyncio.CancelledError:
