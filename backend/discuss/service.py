@@ -733,6 +733,7 @@ async def start(username: str, group_id: str, body: StartGroup) -> dict:
             await _rollback_fail(db, REVISION_CONFLICT)
         await discuss_store.update_group_on_connection(
             db, username, group_id, status="running", stop_reason=None, last_error=None)
+        await discuss_store.refund_reserved_on_connection(db, username, group_id)
         await discuss_store.consume_notes_start(db, username, group_id)
         async with db.execute(
             "SELECT 1 FROM discuss_groups WHERE username=? "
@@ -742,7 +743,6 @@ async def start(username: str, group_id: str, body: StartGroup) -> dict:
             if await cursor.fetchone() is not None:
                 await _rollback_fail(db, ACTIVE_GROUP)
     await discuss_store.run_write(operation)
-    await billing.DiscussBilling(username, group_id).refund_reserved()
     await runner.start_group(group_id, username)
     return await detail(username, group_id)
 
@@ -831,8 +831,8 @@ async def resume(username: str, group_id: str, body: ResumeGroup) -> dict:
             db, username, group_id,
             status=status, budget_strawberries=budget,
             stop_reason=None, last_error=None, run_token=None)
+        await discuss_store.refund_reserved_on_connection(db, username, group_id)
     await discuss_store.run_write(operation)
-    await billing.DiscussBilling(username, group_id).refund_reserved()
     await runner.start_group(group_id, username)
     return await detail(username, group_id)
 
@@ -892,8 +892,8 @@ async def continue_group(username: str, group_id: str, body: ContinueGroup) -> d
             status="running", max_rounds=max_rounds, budget_strawberries=budget,
             config_json=_encoded(config_data),
             stop_reason=None, last_error=None, run_token=None)
+        await discuss_store.refund_reserved_on_connection(db, username, group_id)
     await discuss_store.run_write(operation)
-    await billing.DiscussBilling(username, group_id).refund_reserved()
     await runner.start_group(group_id, username)
     return await detail(username, group_id)
 
@@ -916,8 +916,8 @@ async def accept(username: str, group_id: str) -> dict:
             await _rollback_fail(db, "还没有成果可以接受")
         await discuss_store.update_group_on_connection(
             db, username, group_id, status="done", stop_reason="accepted_by_user")
+        await discuss_store.refund_reserved_on_connection(db, username, group_id)
     await discuss_store.run_write(operation)
-    await billing.DiscussBilling(username, group_id).refund_reserved()
     return await detail(username, group_id)
 
 
@@ -928,7 +928,9 @@ async def close(username: str, group_id: str) -> dict:
     if group.get("status") in ("planning", "running"):
         _fail(CLOSE_RUNNING)
     if group.get("status") == "closed":
-        await billing.DiscussBilling(username, group_id).refund_reserved()
+        async def refund_only(db):
+            await discuss_store.refund_reserved_on_connection(db, username, group_id)
+        await discuss_store.run_write(refund_only)
         return await detail(username, group_id)
     async def operation(db):
         current = await discuss_store.get_group_on_connection(db, username, group_id)
@@ -939,8 +941,8 @@ async def close(username: str, group_id: str) -> dict:
         if current.get("status") != "closed":
             await discuss_store.update_group_on_connection(
                 db, username, group_id, status="closed", stop_reason="user")
+        await discuss_store.refund_reserved_on_connection(db, username, group_id)
     await discuss_store.run_write(operation)
-    await billing.DiscussBilling(username, group_id).refund_reserved()
     return await detail(username, group_id)
 
 

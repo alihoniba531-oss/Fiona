@@ -1277,3 +1277,211 @@ def test_pause_during_paid_avatar_memory_error_keeps_spent(monkeypatch, tmp_path
         assert group["reserved_strawberries"] == 0
         assert balance == 10000 - spent_at_block
     asyncio.run(scenario())
+
+
+# ── 验收后小单：退款并进状态事务 ─────────────────────────────
+
+def test_start_refund_failure_rolls_back_state_and_tasks(monkeypatch, tmp_path):
+    """A/start：退款函数抛错时状态、预扣、余额全不变，且不起任务。"""
+    async def scenario():
+        group_id, _fake = await paid_planning(monkeypatch, tmp_path, balance=10000)
+        stale = await reserve_stale_step(group_id)
+        await discuss_store.update_group(USER, group_id, status="awaiting_start")
+        before_group, before_balance, before_steps = await snapshot(group_id)
+        before_stale = next(
+            row for row in before_steps
+            if row["step_key"] == "r00/00-stale-reservation")
+
+        async def boom(db, username, gid):
+            raise RuntimeError("simulated refund failure")
+
+        monkeypatch.setattr(
+            discuss_store, "refund_reserved_on_connection", boom)
+        current = await discuss_store.get_group(USER, group_id)
+        with pytest.raises(RuntimeError, match="simulated refund failure"):
+            await discuss_service.start(
+                USER, group_id,
+                discuss_service.StartGroup(expected_revision=current["plan_revision"]))
+
+        group, balance, steps = await snapshot(group_id)
+        stale_row = next(
+            row for row in steps
+            if row["step_key"] == "r00/00-stale-reservation")
+        assert (group["status"], group["run_token"]) == (
+            before_group["status"], before_group["run_token"])
+        assert group["reserved_strawberries"] == before_group["reserved_strawberries"] == stale
+        assert balance == before_balance
+        assert (stale_row["status"], stale_row["billing_status"]) == (
+            before_stale["status"], before_stale["billing_status"])
+        assert group_id not in discuss_runner.TASKS
+    asyncio.run(scenario())
+
+
+def test_accept_refund_failure_rolls_back_state(monkeypatch, tmp_path):
+    """A/accept：退款函数抛错时 accept 的状态和预扣都不变。"""
+    async def scenario():
+        group_id, _fake = await paid_planning(monkeypatch, tmp_path, balance=10000)
+        stale = await reserve_stale_step(group_id)
+        await discuss_store.update_group(
+            USER, group_id, status="paused", stop_reason="user", output_version=1)
+        before_group, before_balance, _ = await snapshot(group_id)
+
+        async def boom(db, username, gid):
+            raise RuntimeError("simulated refund failure")
+
+        monkeypatch.setattr(
+            discuss_store, "refund_reserved_on_connection", boom)
+        with pytest.raises(RuntimeError, match="simulated refund failure"):
+            await discuss_service.accept(USER, group_id)
+
+        group, balance, steps = await snapshot(group_id)
+        stale_row = next(
+            row for row in steps
+            if row["step_key"] == "r00/00-stale-reservation")
+        assert (group["status"], group["stop_reason"]) == ("paused", "user")
+        assert group["reserved_strawberries"] == before_group["reserved_strawberries"] == stale
+        assert balance == before_balance
+        assert stale_row["billing_status"] == "reserved"
+    asyncio.run(scenario())
+
+
+def test_closed_group_close_refunds_once(monkeypatch, tmp_path):
+    """A/close：已 closed 且有残留预扣时退一次，重复 close 不再变。"""
+    async def scenario():
+        group_id, _fake = await paid_planning(monkeypatch, tmp_path, balance=10000)
+        base, _, _ = await snapshot(group_id)
+        spent_before = base["spent_strawberries"]
+        stale = await reserve_stale_step(group_id)
+        await discuss_store.update_group(USER, group_id, status="closed")
+
+        first = await discuss_service.close(USER, group_id)
+        assert first["status"] == "closed"
+        after_first = await user_balance()
+        assert after_first == 10000 - spent_before
+
+        second = await discuss_service.close(USER, group_id)
+        assert second["status"] == "closed"
+        assert await user_balance() == after_first
+    asyncio.run(scenario())
+
+
+# ── 门禁补单：resume/continue/close 退款原子性 ────────────────
+
+def test_resume_refund_failure_rolls_back_state(monkeypatch, tmp_path):
+    """V14b：resume 的退款仍在状态事务里，失败时所有字段不变。"""
+    async def scenario():
+        group_id, _fake = await paid_planning(monkeypatch, tmp_path, balance=10000)
+        stale = await reserve_stale_step(group_id)
+        before_group, before_balance, before_steps = await snapshot(group_id)
+        before_step = next(
+            row for row in before_steps
+            if row["step_key"] == "r00/00-stale-reservation")
+
+        calls = []
+
+        async def fake_start(*args, **kwargs):
+            calls.append((args, kwargs))
+
+        monkeypatch.setattr(discuss_runner, "start_group", fake_start)
+
+        async def boom(db, username, gid):
+            raise RuntimeError("simulated refund failure")
+
+        monkeypatch.setattr(
+            discuss_store, "refund_reserved_on_connection", boom)
+        with pytest.raises(RuntimeError, match="simulated refund failure"):
+            await discuss_service.resume(
+                USER, group_id, discuss_service.ResumeGroup())
+
+        group, balance, steps = await snapshot(group_id)
+        step = next(row for row in steps
+                    if row["step_key"] == "r00/00-stale-reservation")
+        assert (group["status"], group["stop_reason"], group["run_token"],
+                group["budget_strawberries"], group["reserved_strawberries"]) == (
+            before_group["status"], before_group["stop_reason"],
+            before_group["run_token"], before_group["budget_strawberries"],
+            before_group["reserved_strawberries"])
+        assert group["reserved_strawberries"] == stale
+        assert step["billing_status"] == before_step["billing_status"] == "reserved"
+        assert balance == before_balance
+        assert calls == []
+        assert group_id not in discuss_runner.TASKS
+    asyncio.run(scenario())
+
+
+def test_continue_refund_failure_rolls_back_state(monkeypatch, tmp_path):
+    """V14c：continue 的退款仍在状态事务里，失败时所有字段不变。"""
+    async def scenario():
+        group_id, _fake = await paid_planning(monkeypatch, tmp_path, balance=10000)
+        stale = await reserve_stale_step(group_id)
+        await discuss_store.update_group(
+            USER, group_id, status="awaiting_user", stop_reason="rounds_exhausted")
+        before_group, before_balance, before_steps = await snapshot(group_id)
+        before_step = next(
+            row for row in before_steps
+            if row["step_key"] == "r00/00-stale-reservation")
+
+        calls = []
+
+        async def fake_start(*args, **kwargs):
+            calls.append((args, kwargs))
+
+        monkeypatch.setattr(discuss_runner, "start_group", fake_start)
+
+        async def boom(db, username, gid):
+            raise RuntimeError("simulated refund failure")
+
+        monkeypatch.setattr(
+            discuss_store, "refund_reserved_on_connection", boom)
+        with pytest.raises(RuntimeError, match="simulated refund failure"):
+            await discuss_service.continue_group(
+                USER, group_id, discuss_service.ContinueGroup(add_rounds=1))
+
+        group, balance, steps = await snapshot(group_id)
+        step = next(row for row in steps
+                    if row["step_key"] == "r00/00-stale-reservation")
+        assert (group["status"], group["stop_reason"], group["run_token"],
+                group["budget_strawberries"], group["max_rounds"],
+                group["reserved_strawberries"]) == (
+            before_group["status"], before_group["stop_reason"],
+            before_group["run_token"], before_group["budget_strawberries"],
+            before_group["max_rounds"], before_group["reserved_strawberries"])
+        assert group["reserved_strawberries"] == stale
+        assert step["billing_status"] == before_step["billing_status"] == "reserved"
+        assert balance == before_balance
+        assert calls == []
+        assert group_id not in discuss_runner.TASKS
+    asyncio.run(scenario())
+
+
+def test_close_refund_failure_rolls_back_state(monkeypatch, tmp_path):
+    """V14d：close 未结束分支的退款在事务里，失败时状态不变成 closed。"""
+    async def scenario():
+        group_id, _fake = await paid_planning(monkeypatch, tmp_path, balance=10000)
+        stale = await reserve_stale_step(group_id)
+        before_group, before_balance, before_steps = await snapshot(group_id)
+        before_step = next(
+            row for row in before_steps
+            if row["step_key"] == "r00/00-stale-reservation")
+
+        async def boom(db, username, gid):
+            raise RuntimeError("simulated refund failure")
+
+        monkeypatch.setattr(
+            discuss_store, "refund_reserved_on_connection", boom)
+        with pytest.raises(RuntimeError, match="simulated refund failure"):
+            await discuss_service.close(USER, group_id)
+
+        group, balance, steps = await snapshot(group_id)
+        step = next(row for row in steps
+                    if row["step_key"] == "r00/00-stale-reservation")
+        assert (group["status"], group["stop_reason"],
+                group["reserved_strawberries"]) == (
+            before_group["status"], before_group["stop_reason"],
+            before_group["reserved_strawberries"])
+        assert group["status"] != "closed"
+        assert group["reserved_strawberries"] == stale
+        assert step["billing_status"] == before_step["billing_status"] == "reserved"
+        assert balance == before_balance
+        assert group_id not in discuss_runner.TASKS
+    asyncio.run(scenario())

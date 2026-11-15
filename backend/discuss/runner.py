@@ -286,22 +286,29 @@ async def _run(group_id, username, token, *, recovering=False):
         raise
     except RunNoLongerActive:
         pass
-    except InsufficientStrawberries:
-        await _pause(store, "insufficient_strawberries")
-    except DiscussBudgetExceeded:
-        await _pause(store, "budget")
-    except ByokUnavailable:
-        await _pause(store, "byok_unavailable",
-                     last_error="自带模型当前不可用，请到设置里检查后再继续")
-    except engine.SearchUnavailable:
-        await _pause(store, "search_unavailable")
-    except StepFailed:
-        await _pause(store, "server_restart_failed" if recovering else "step_failed")
     except Exception as error:
-        # Exception text may contain prompts or a provider's response body.
-        logger.warning("group_id=%s status=%s type=%s", group_id,
-                       "paused" if recovering else "failed", type(error).__name__)
-        await _pause(store, "server_restart_failed" if recovering else "error")
+        current = asyncio.current_task()
+        if current is not None and current.cancelling():
+            # A protected write may finish with a normal exception after the
+            # caller was cancelled.  The author's pause (or a shutdown) owns
+            # the final state; do not persist a failure stop reason first.
+            raise asyncio.CancelledError() from error
+        if isinstance(error, InsufficientStrawberries):
+            await _pause(store, "insufficient_strawberries")
+        elif isinstance(error, DiscussBudgetExceeded):
+            await _pause(store, "budget")
+        elif isinstance(error, ByokUnavailable):
+            await _pause(store, "byok_unavailable",
+                         last_error="自带模型当前不可用，请到设置里检查后再继续")
+        elif isinstance(error, engine.SearchUnavailable):
+            await _pause(store, "search_unavailable")
+        elif isinstance(error, StepFailed):
+            await _pause(store, "server_restart_failed" if recovering else "step_failed")
+        else:
+            # Exception text may contain prompts or a provider's response body.
+            logger.warning("group_id=%s status=%s type=%s", group_id,
+                           "paused" if recovering else "failed", type(error).__name__)
+            await _pause(store, "server_restart_failed" if recovering else "error")
     finally:
         await _cleanup(group_id, username, token, router)
         WORKING.pop(group_id, None)

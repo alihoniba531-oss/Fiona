@@ -211,27 +211,11 @@ class DiscussBilling:
 
     async def _refund_reserved_transaction(self):
         import database
+        from .store import refund_reserved_on_connection
         async with self._lock:
             async with aiosqlite.connect(database.DB_PATH, timeout=database.SQLITE_BUSY_TIMEOUT) as db:
                 await db.execute("BEGIN IMMEDIATE")
-                db.row_factory = aiosqlite.Row
-                cursor = await db.execute(
-                    "SELECT COALESCE(SUM(strawberries_reserved),0) AS amount FROM discuss_steps "
-                    "WHERE group_id=? AND username=? AND billing_status='reserved'",
-                    (self.group_id, self.username))
-                amount = (await cursor.fetchone())["amount"]
-                now = utc_now()
-                await db.execute(
-                    "UPDATE users SET strawberry_balance=strawberry_balance+? WHERE username=?",
-                    (amount, self.username))
-                await db.execute(
-                    "UPDATE discuss_groups SET reserved_strawberries=0,updated_at=? "
-                    "WHERE id=? AND username=?",
-                    (now, self.group_id, self.username))
-                await db.execute(
-                    "UPDATE discuss_steps SET billing_status='refunded',status='interrupted',"
-                    "updated_at=? WHERE group_id=? AND username=? AND billing_status='reserved'",
-                    (now, self.group_id, self.username))
+                amount = await refund_reserved_on_connection(db, self.username, self.group_id)
                 await db.commit()
         return amount
 

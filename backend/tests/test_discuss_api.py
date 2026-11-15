@@ -1288,3 +1288,12 @@ def test_create_group_rejects_duplicate_names_with_role_override(workshop):
         ],
     }, headers=HEADERS)
     assert response.status_code == 422, response.text
+
+
+def test_catalog_notice_ends_with_search_fee_sentence(workshop):
+    """C：目录接口的 notice 以联网搜索另扣草莓一句结尾。"""
+    client, _ = workshop
+    response = client.get("/discuss/catalog", headers=HEADERS)
+    assert response.status_code == 200, response.text
+    notice = response.json()["notice"]
+    assert notice.endswith("联网搜索按次另扣草莓，与成员用哪个模型无关。")

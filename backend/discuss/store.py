@@ -208,6 +208,35 @@ async def _count_unread(db, username, group_id):
     return int(row[0])
 
 
+async def refund_reserved_on_connection(db, username, group_id):
+    """Refund every reserved step of one group on the caller's connection.
+
+    The caller owns the surrounding BEGIN IMMEDIATE transaction, so the
+    refund commits or rolls back with the state change that triggered it.
+    """
+    async with db.execute(
+        "SELECT COALESCE(SUM(strawberries_reserved),0) AS amount FROM discuss_steps "
+        "WHERE group_id=? AND username=? AND billing_status='reserved'",
+        (group_id, username),
+    ) as cursor:
+        row = await cursor.fetchone()
+    amount = int(row[0] or 0)
+    now = utc_now()
+    if amount > 0:
+        await db.execute(
+            "UPDATE users SET strawberry_balance=strawberry_balance+? WHERE username=?",
+            (amount, username),
+        )
+    await db.execute(
+        "UPDATE discuss_groups SET reserved_strawberries=0,updated_at=? "
+        "WHERE id=? AND username=?", (now, group_id, username))
+    await db.execute(
+        "UPDATE discuss_steps SET billing_status='refunded',status='interrupted',"
+        "updated_at=? WHERE group_id=? AND username=? AND billing_status='reserved'",
+        (now, group_id, username))
+    return amount
+
+
 def _group_update(fields):
     """Build the whitelisted UPDATE assignment list for a group row."""
     fields = dict(fields)
@@ -292,21 +321,7 @@ async def update_group(username, group_id, **fields):
 
 async def delete_group(username, group_id):
     async def operation(db):
-        async with db.execute(
-            "SELECT COALESCE(SUM(strawberries_reserved),0) AS amount FROM discuss_steps "
-            "WHERE group_id=? AND username=? AND billing_status='reserved'",
-            (group_id, username),
-        ) as cursor:
-            row = await cursor.fetchone()
-        reserved = int(row["amount"] or 0)
-        if reserved > 0:
-            # Refund an in-flight reservation before its step row is deleted.
-            # Only rows still marked reserved are counted; settled or refunded
-            # rows were already accounted for and must not be refunded twice.
-            await db.execute(
-                "UPDATE users SET strawberry_balance=strawberry_balance+? WHERE username=?",
-                (reserved, username),
-            )
+        await refund_reserved_on_connection(db, username, group_id)
         for table in ("discuss_outputs", "discuss_sources", "discuss_steps", "discuss_messages"):
             await db.execute(
                 f"DELETE FROM {table} WHERE group_id=? AND username=?", (group_id, username)

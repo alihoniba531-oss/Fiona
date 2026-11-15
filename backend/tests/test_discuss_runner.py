@@ -1069,3 +1069,122 @@ def test_cancelled_start_group_does_not_clear_other_token(world, monkeypatch):
         assert group_id not in runner.TASKS
 
     asyncio.run(flow())
+
+
+# ── 验收后小单：取消优先于同时发生的失败 ─────────────────────
+
+def test_pause_during_protected_write_error_keeps_paused(world, monkeypatch):
+    """B/Q5：受保护写库在取消后以普通异常结束，不写 failed/error。"""
+    import sqlite3
+
+    from discuss import service as discuss_service
+
+    group_id = _new_group_id()
+
+    async def flow():
+        await _create_group(group_id)
+        entered, release = asyncio.Event(), asyncio.Event()
+        original = discuss_store.DiscussStepStore.post_message
+        fired = [False]
+
+        async def blocked(self, *args, **kwargs):
+            if not fired[0]:
+                fired[0] = True
+                entered.set()
+
+                async def write_then_fail():
+                    await release.wait()
+                    raise sqlite3.OperationalError("simulated write failure")
+
+                inner = asyncio.create_task(write_then_fail())
+                try:
+                    return await asyncio.shield(inner)
+                except asyncio.CancelledError:
+                    try:
+                        await asyncio.shield(inner)
+                    except sqlite3.OperationalError:
+                        raise
+                    raise
+            return await original(self, *args, **kwargs)
+
+        monkeypatch.setattr(
+            discuss_store.DiscussStepStore, "post_message", blocked)
+        task = await runner.start_group(group_id, USER)
+        await asyncio.wait_for(entered.wait(), 5)
+        pause_task = asyncio.create_task(discuss_service.pause(USER, group_id))
+        await asyncio.sleep(0.05)
+        release.set()
+        result = await pause_task
+        assert (result["status"], result["stop_reason"]) == ("paused", "user")
+        await asyncio.gather(task, return_exceptions=True)
+
+    asyncio.run(flow())
+
+
+def test_pause_during_avatar_insufficient_keeps_paused(world, monkeypatch):
+    """B/Q2：分身读库在取消后抛余额不足，不写 insufficient_strawberries。"""
+    import agent_store
+    from novel.billing import InsufficientStrawberries
+    from discuss import service as discuss_service
+
+    group_id = _new_group_id()
+
+    async def flow():
+        await _create_group(group_id, avatar=True)
+        await runner.start_group(group_id, USER)
+        await _wait_for(group_id, ("awaiting_start",))
+        task0 = runner.TASKS.get(group_id)
+        if task0 is not None:
+            await asyncio.gather(task0, return_exceptions=True)
+
+        entered, release = asyncio.Event(), asyncio.Event()
+        original = agent_store.get_memory_snapshot
+        fired = [False]
+
+        async def failing(username, conversation_id=None):
+            if not fired[0]:
+                fired[0] = True
+                entered.set()
+                await release.wait()
+                raise InsufficientStrawberries()
+            return await original(username, conversation_id)
+
+        monkeypatch.setattr(agent_store, "get_memory_snapshot", failing)
+        group = await discuss_store.get_group(USER, group_id)
+        await discuss_service.start(
+            USER, group_id,
+            discuss_service.StartGroup(expected_revision=group["plan_revision"]))
+        task = runner.TASKS.get(group_id)
+        await asyncio.wait_for(entered.wait(), 5)
+        pause_task = asyncio.create_task(discuss_service.pause(USER, group_id))
+        await asyncio.sleep(0.05)
+        release.set()
+        result = await pause_task
+        assert (result["status"], result["stop_reason"]) == ("paused", "user")
+        if task is not None:
+            await asyncio.gather(task, return_exceptions=True)
+
+    asyncio.run(flow())
+
+
+# ── 门禁补单：非恢复模式的意外异常仍记 failed/error ───────────
+
+def test_unexpected_error_without_cancel_is_failed_error(world, monkeypatch):
+    """V17：没有取消时，run_planning 的普通异常记 failed/error。"""
+    group_id = _new_group_id()
+
+    async def fail_planning(store, router):
+        raise RuntimeError("boom without cancellation")
+
+    monkeypatch.setattr(runner.engine, "run_planning", fail_planning)
+
+    async def flow():
+        await _create_group(group_id)
+        task = await runner.start_group(group_id, USER)
+        await _wait_for(group_id, ("failed",))
+        await asyncio.gather(task, return_exceptions=True)
+        group = await discuss_store.get_group(USER, group_id)
+        assert (group["status"], group["stop_reason"]) == ("failed", "error")
+        assert group["run_token"] is None
+
+    asyncio.run(flow())
