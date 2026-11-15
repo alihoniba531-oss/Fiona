@@ -1,0 +1,21 @@
+{
+  "status": "awaiting_user",
+  "stop_reason": "rounds_exhausted",
+  "round": 3,
+  "output_version": 2,
+  "sources": 300,
+  "model_steps": 33,
+  "repaired_steps": [
+    "r02/13-note-market",
+    "r03/20-critique-critic"
+  ],
+  "failed_steps": [],
+  "searches": 45,
+  "input_tokens": 110501,
+  "output_tokens": 21697,
+  "model_strawberries": 206,
+  "search_strawberries": 90,
+  "checks_passed": 30,
+  "checks_total": 30,
+  "failed_checks": []
+}
