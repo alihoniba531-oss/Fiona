@@ -363,6 +363,9 @@ async def init_db():
         from song.store import SONG_TABLES_DDL
         for song_table_ddl in SONG_TABLES_DDL:
             await db.execute(song_table_ddl)
+        from discuss.store import DISCUSS_TABLES_DDL
+        for discuss_table_ddl in DISCUSS_TABLES_DDL:
+            await db.execute(discuss_table_ddl)
         from studio.store import STUDIO_TABLES_DDL, migrate_schema as migrate_studio_schema
         for studio_table_ddl in STUDIO_TABLES_DDL:
             await db.execute(studio_table_ddl)
@@ -903,6 +906,8 @@ async def delete_account_data(username: str) -> dict:
     from novel.runner import cancel_user_tasks
     from song.store import delete_user_song_data
     await cancel_user_tasks(username)
+    from discuss.runner import cancel_user_tasks as cancel_discuss_tasks
+    await cancel_discuss_tasks(username)
 
     aliases = (
         anonymous_id(username, "plaza-author", length=12),
@@ -1028,6 +1033,8 @@ async def delete_account_data(username: str) -> dict:
         song_audio_paths = await delete_user_song_data(db, username)
         await db.execute("DELETE FROM novel_drafts WHERE owner_username = ?", (username,))
         await db.execute("DELETE FROM novel_feedback WHERE owner_username = ?", (username,))
+        for discuss_table in ("discuss_outputs", "discuss_sources", "discuss_steps", "discuss_messages", "discuss_groups"):
+            await db.execute(f"DELETE FROM {discuss_table} WHERE username = ?", (username,))
         await db.execute("DELETE FROM users WHERE username = ?", (username,))
 
         # UUID 文件理论上不会共享；仍在事务内复核引用，避免误删异常旧数据。

@@ -39,6 +39,7 @@ from database import get_pending_upload_cleanup, init_db, mark_upload_cleanup_do
 from rate_limit import limiter
 from routers import agent_exchanges, agents, auth, cards, chat, chat_model, conversations, hot, image_models, match, me, peer, plaza, voice
 from routers import novel
+from routers import discuss
 from routers import local_watch
 from routers import songs
 from routers import studio
@@ -136,6 +137,8 @@ async def lifespan(app: FastAPI):
     await recover_interrupted_exchanges()
     from novel.runner import recover_interrupted_novels
     await recover_interrupted_novels()
+    from discuss.runner import recover_interrupted_groups
+    await recover_interrupted_groups()
     from studio.recovery import recover_studio_jobs
     from studio.scheduler import run_scheduler
     from studio.config import get_settings
@@ -158,6 +161,8 @@ async def lifespan(app: FastAPI):
     finally:
         from novel.runner import shutdown_novel_tasks
         await shutdown_novel_tasks()
+        from discuss.runner import shutdown_discuss_tasks
+        await shutdown_discuss_tasks()
         await shutdown_background_tasks()
         shutdown_slow_pool()
         shutdown_byok_pool()
@@ -199,6 +204,7 @@ app.include_router(agents.router)
 app.include_router(conversations.router)
 app.include_router(agent_exchanges.router)
 app.include_router(novel.router)
+app.include_router(discuss.router)
 app.include_router(local_watch.router)
 app.include_router(songs.router)
 app.include_router(studio.router)

@@ -220,6 +220,12 @@ OpenAI 兼容模型客户端默认 60 秒超时、最多重试 1 次，可通过
 | `FIONA_SONG_EXPLICIT_WATERMARK` | 火山显式水印默认 `1`，只有字面 `0` 关闭；隐式标识另写 ID3v2.4 `TXXX:AIGC` |
 | `FIONA_AIGC_PRODUCER` | 隐式标识中的服务提供者名称，默认 `Fiona`，1–40 个可见字符 |
 | `VOLC_MUSIC_ACCESS_KEY` / `VOLC_MUSIC_SECRET_KEY` | 火山子账号 AK/SK，只从环境变量读取；缺任一则生成返回 409「写歌服务未配置」且不发请求，不写入数据库/日志/响应 |
+| `FIONA_DISCUSS` | 讨论群（第一期，仅后端）的总开关，默认 `0`，只有字面 `1` 开启；关闭时所有 `/discuss/*` 返回 404 |
+| `FIONA_DISCUSS_USERS` | 讨论群白名单，逗号分隔、去空白后精确匹配，默认空表示无人可用 |
+| `FIONA_DISCUSS_MAX_RUNNING` | 全站同时在跑的群数，默认 `2`，合法 `1–10`，非法值回落默认并只告警一次 |
+| `FIONA_DAILY_DISCUSS_GROUPS` | 每人每个上海自然日新建群数，默认 `5`，合法 `1–50`，`DEV_MODE` 不豁免 |
+| `FIONA_DISCUSS_SEARCH_STRAWBERRIES` | 每次联网搜索扣的草莓数，默认 `2`，合法 `0–50` |
+| `FIONA_DISCUSS_PRICE_JSON` | 整表覆盖讨论群价目，单位草莓/千 token，须恰好包含三个平台模型；未设置时用默认价目 |
 | `FIONA_DAILY_WEATHER` | 每账号每个北京时间自然日天气查询次数，默认 `30`；正整数，非法值回落默认并只告警一次，调用时读取 |
 | `FIONA_AMAP_ENABLED` | 高德地图 MCP 天气默认开启（`1`），只有字面 `0` 关闭；关闭时返回“天气服务暂未开启”，不发请求，调用时读取 |
 | `FIONA_AMAP_TIMEOUT_SECONDS` | 天气 MCP 请求总预算，默认 `8` 秒，合法范围 `1–30` 的有限浮点数；空串、非数字、`nan`、`inf` 和越界值回落 `8`，调用时读取 |
@@ -740,7 +746,7 @@ journalctl -u fiona | grep '\[song\]' | tail -50
 systemctl --failed
 ```
 
-可在 `fiona.service`、`fiona-web.service` 和 `fiona-backup.service` 的 `[Unit]` drop-in 中设置 `OnFailure=fiona-alert@%n.service`，由作者配置对应的通知 oneshot unit；凭据放在受控环境文件，不写进仓库。后端启动失败退出 3、备份步骤失败非零退出，便于 systemd 记录 failed 并触发通知。发布前由作者手动在 **DashScope、DeepSeek、火山方舟和火山 AI 音乐控制台设置消费告警**，并确认通知接收人和阈值；写歌按秒后付费，需单独核对 AI 音乐账单、公共资源池 QPS 和应用层每日上限。
+可在 `fiona.service`、`fiona-web.service` 和 `fiona-backup.service` 的 `[Unit]` drop-in 中设置 `OnFailure=fiona-alert@%n.service`，由作者配置对应的通知 oneshot unit；凭据放在受控环境文件，不写进仓库。后端启动失败退出 3、备份步骤失败非零退出，便于 systemd 记录 failed 并触发通知。发布前由作者手动在 **DashScope、DeepSeek、火山方舟和火山 AI 音乐控制台设置消费告警**，并确认通知接收人和阈值；写歌按秒后付费，需单独核对 AI 音乐账单、公共资源池 QPS 和应用层每日上限。讨论群开启后会调用千问、DeepSeek、豆包和千问搜索，也要纳入这几家控制台的消费告警。
 
 systemd < 254 时，服务自动重启期间不会进入 failed 状态。仅设 `RestartSec=3` 可能一直重启，无法触发 `OnFailure`。在自动重启的后端和前端 unit 的 `[Unit]` 中配置 `StartLimitIntervalSec=300`、`StartLimitBurst=5`，限制 300 秒内最多启动 5 次，后续重试被拒绝后进入 failed；用 `systemctl daemon-reload` 应用配置，再在目标机验证启动失败通知。外部 GET 拨测仍须独立启用。
 

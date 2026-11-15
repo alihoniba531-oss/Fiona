@@ -101,10 +101,15 @@ Browser / Tauri WebView
         ├── /api/*         → FastAPI :8000（移除 /api 前缀）
         └── /uploads/*     → FastAPI :8000/uploads/*
                                   │
-                    ┌─────────────┼─────────────┐
-                    ▼             ▼             ▼
-                  SQLite       DashScope      外部网页/热点源
-                fiona.db       Qwen 系列      搜索与卡片抓取
+                    ┌─────────────┼─────────────┬─────────────┐
+                    ▼             ▼             ▼             ▼
+                  SQLite      阿里云百炼      DeepSeek      火山方舟
+                fiona.db    Qwen 系列与      DeepSeek      豆包
+                            千问搜索          模型           模型
+                                  │
+                                  ▼
+                            外部网页/热点源
+                            搜索与卡片抓取
 ```
 
 开发环境仍使用相同的相对 `/api` 地址，但由 `frontend/next.config.ts` 直接 rewrite 到本机 FastAPI。`npm run dev` 默认只监听回环地址，额外开发来源需显式设置 `FIONA_ALLOWED_DEV_ORIGINS`。
@@ -529,3 +534,19 @@ WO3a R1：模型输出被max_tokens/length截断时按实际usage结算为invali
 试拆报价只能确认 1 次、15 分钟过期，按 brain 任务口径预留并受单次与全工作室当日额度约束。带与不带知识库各发 1 次 `shot_plan`；`review_provider` 默认 `qwen`（qwen3.8-max），可设 `claude` / `deepseek` / `off`。非 `off` 时两种模式各发 1 次 `cross_review`，审核调用单发、不重试，费用并入试拆报价；审核失败只写进结果的 `review`，不影响试拆状态。前端 `/studio/kb` 有语法、场景模板、模型能力、反例、案例库、节奏统计、试拆对比 7 个页签，试拆页左右并排展示镜头表、模板 id、注入字数、lint 警告与审核结论，390px 宽度不横向滚动。
 
 知识库页面、卡片、案例与统计都在本地，运行时不访问任何外部网络资源。本期只做知识库与试拆，正式接入逐集拆镜在 WO4。
+
+## 讨论群（第一期，仅后端）
+
+`backend/discuss/` 是后端引擎：`config.py` 读开关与上限，`roles.py` 放角色池、默认模型与提示词，`schemas.py` 做结构校验和截断，`store.py` 管五张表和 `DiscussStepStore`，`billing.py` 管预扣与结算，`research.py` 调搜索并登记来源，`avatar.py` 拼分身的系统提示，`engine.py` 走流程，`runner.py` 跑后台任务、取消与恢复，`service.py` 和 `routers/discuss.py` 提供 `/discuss` 接口。
+
+五张 SQLite 表由 `init_db` 幂等建表，不新增迁移版本：`discuss_groups` 存群状态、方案、预算与运行令牌，`discuss_messages` 存群消息与作者插话，`discuss_sources` 存来源登记，`discuss_steps` 存步骤缓存、产物与计费，`discuss_outputs` 存每版成果和验收结论。后台写库都带 `run_token` 与账号存在检查，旧任务不能覆盖新状态；删群和删号会清掉对应行。
+
+流程与步骤键：立项是 `r00/01-plan-host`，主持人点将并写方案；分身进群时再加 `r00/02-brief-avatar`。每一轮依次是 `rNN/10-queries-{role}` 列问题、`rNN/11-search-{role}-{i}` 搜索、`rNN/13-note-{role}` 写笔记，然后是 `rNN/20-critique-critic` 质疑、`rNN/30-decide-host` 裁决、`rNN/40-draft-writer` 撰稿、可选的 `rNN/41-view-avatar` 看稿、`rNN/50-accept-acceptor` 验收和 `rNN/60-rework-host` 返工安排。没有拿到事实的调研成员会留一条 `notice`，步骤键是 `rNN/14-empty-{role}`。每个模型步骤是一次 `LLMRouter.call`，完成后的结果写成一条群消息，用步骤键去重；搜索步骤不产生消息。进度以 `planning`、`awaiting_start`、`running`、`paused`、`awaiting_user`、`done`、`closed`、`failed` 表示。
+
+续跑靠步骤缓存：`run_rounds` 每次都从第 1 轮重放，已成功的步骤直接读 `discuss_steps`，不重复调用模型；暂停、继续和重启恢复都走这一条路径。每轮结束或流程结束的状态与消息写入带令牌守卫。
+
+来源登记：搜索只返回标题、站点和网址，网址按 `url.split("#")[0].rstrip("/").lower()` 去重，同一个群内分配递增编号，对外写作 `S1`、`S2`。笔记和成果只能引用登记表里的编号，模型自己写的网址不登记、不下发；不同调研者搜到同一个网址会得到同一个编号，导出时只列成果引用到的来源。
+
+计费：`DiscussBilling` 在每次模型调用前预扣、按实际 usage 结算或退款，搜索按固定草莓数单独预扣；预算判断用 `spent + reserved + 本次预扣 > budget`，群停下来后预留清零。`DEV_MODE=1`、`byok:self` 和 `fake:*` 免费。
+
+隐私：诉求、补充材料与成员发言发给各成员所用模型的厂商（阿里云百炼、DeepSeek、火山方舟，或作者自带的厂商）；搜索问题与任务目标发给阿里云百炼。分身进群时，分身资料与私有长期记忆发给分身所用模型的厂商，分身说出的话会进入群聊上下文、被其他成员的模型厂商看到。Key 只在调用时读取，不写库、日志或响应；日志只记 ID、状态与错误类型。联网搜索按次另扣草莓，与成员用哪个模型无关。

@@ -49,7 +49,7 @@ os.environ.setdefault("FIONA_NOVEL_CHAT", "0")
 @pytest.fixture(autouse=True)
 def _offline_studio_tests(monkeypatch, request):
     """只隔离工作室测试的外网；回环和其他测试原有的网络桩保持可用。"""
-    if not request.node.path.name.startswith("test_studio_"):
+    if not request.node.path.name.startswith(("test_studio_", "test_discuss_")):
         return
     import socket
 
