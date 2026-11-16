@@ -18,7 +18,7 @@ PAGE = ROOT / "frontend/app/page.tsx"
 GLOBALS = ROOT / "frontend/app/globals.css"
 CHAT_MODEL = ROOT / "frontend/lib/chatModel.ts"
 
-DRAWER_IDS = ("agent", "exchange", "plaza", "settings", "novel", "studio")
+DRAWER_IDS = ("agent", "exchange", "plaza", "settings", "novel", "studio", "discuss")
 
 
 def balanced_block(source, marker, start=0):
@@ -100,9 +100,9 @@ def test_voice_button_props_preserve_recording_logic():
         assert fragment in source
 
 
-def test_page_drawers_append_drawer_panel_exactly_six_times():
+def test_page_drawers_append_drawer_panel_exactly_seven_times():
     source = PAGE.read_text()
-    assert source.count("drawer-panel") == 6
+    assert source.count("drawer-panel") == 7
     for drawer in DRAWER_IDS:
         match = re.search(
             rf'id="{drawer}-drawer"([\s\S]{{0,800}}?)className="([^"]*)"', source
@@ -114,6 +114,7 @@ def test_page_drawers_append_drawer_panel_exactly_six_times():
     assert source.index('id="plaza-drawer"') < source.index('id="settings-drawer"')
     assert source.index('id="settings-drawer"') < source.index('id="novel-drawer"')
     assert source.index('id="novel-drawer"') < source.index('id="studio-drawer"')
+    assert source.index('id="studio-drawer"') < source.index('id="discuss-drawer"')
 
 
 def test_globals_css_smooths_drawer_materials_on_mobile_only():

@@ -246,3 +246,7 @@ WO3e 导演知识库：`studio.director_kb` 读取 `backend/studio/director_kb/c
 ## 讨论群（第一期）
 
 讨论群（第一期，仅后端）只有引擎与接口，默认关闭：`FIONA_DISCUSS=1` 且用户名命中 `FIONA_DISCUSS_USERS` 才开放，全部 `/discuss/*` 走 `discuss_user`。入口 `backend/discuss/`（流程 `engine.py`、后台 `runner.py`、存储 `store.py`、计费 `billing.py`、搜索 `research.py`）和 `backend/routers/discuss.py`。状态为 `planning`、`awaiting_start`、`running`、`paused`、`awaiting_user`、`done`、`closed`、`failed`；暂停、继续或重启都从第 1 轮重放，已完成的步骤命中 `discuss_steps` 缓存，不重复调模型。隐私：诉求、材料与成员发言发给各成员所用模型的厂商（阿里云百炼、DeepSeek、火山方舟或作者自带的厂商），搜索问题与任务目标发给阿里云百炼；分身进群时资料与私有长期记忆发给分身所用模型的厂商，其发言会进入群聊上下文、被其他成员的模型厂商看到；Key 只在调用时读取，不写库、日志或响应。联网搜索按次另扣草莓，与成员用哪个模型无关。细节见 `docs/ARCHITECTURE.md`。
+
+## 讨论群界面（第二期）
+
+入口文件：书签与抽屉在 `frontend/components/Sidebar.tsx` 和 `frontend/app/page.tsx`，三个页面在 `frontend/app/discuss/`，部件在 `frontend/components/discuss/`，类型与请求在 `frontend/lib/discuss.ts`。两条约定：侧栏不自己请求访问检查，权限由主页传入；凡是按状态决定显示什么，都写在 `frontend/lib/discussLogic.ts` 里。

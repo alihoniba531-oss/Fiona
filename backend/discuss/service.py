@@ -607,6 +607,8 @@ async def detail(username: str, group_id: str, after: int = 0) -> dict:
         "created_at": group.get("created_at"),
         "updated_at": group.get("updated_at"),
         "plan": plan,
+        "answers": (config_data.get("answers")
+                    if isinstance(config_data.get("answers"), str) else ""),
         "members": members,
         "messages": rendered,
         "output": output,

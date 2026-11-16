@@ -36,6 +36,9 @@ export default function Sidebar({
   onStudioClick,
   studioActive,
   studioAccessAllowed,
+  onDiscussClick,
+  discussActive,
+  discussAccessAllowed,
   onBalanceChange,
 }: {
   onHistoryClick?: () => void;
@@ -53,6 +56,9 @@ export default function Sidebar({
   onStudioClick?: () => void;
   studioActive?: boolean;
   studioAccessAllowed?: boolean;
+  onDiscussClick?: () => void;
+  discussActive?: boolean;
+  discussAccessAllowed?: boolean;
   onBalanceChange?: (balance: number | null) => void;
 }) {
   const pathname = usePathname();
@@ -108,19 +114,23 @@ export default function Sidebar({
 
   const shared = !!onChatClick;
   const studioAllowed = studioAccessAllowed ?? (studioAccess.owner === username && studioAccess.allowed);
-  const desktopNavItems = studioAllowed
-    ? [...navItems, { href: "/studio", label: "工作室" }] : navItems;
+  const discussAllowed = discussAccessAllowed === true;
+  const desktopNavItems = [
+    ...navItems,
+    ...(studioAllowed ? [{ href: "/studio", label: "工作室" }] : []),
+    ...(discussAllowed ? [{ href: "/discuss", label: "讨论群" }] : []),
+  ];
   const items = desktopNavItems.map(({href,label}) => {
-    const drawerActive=(href === "/agents/me" && agentActive) || (href === "/agents" && exchangeActive) || (href === "/plaza" && plazaActive) || (href === "/settings" && settingsActive) || (href === "/novels" && novelActive) || (href === "/studio" && studioActive);
-    const anyDrawer=!!(agentActive || exchangeActive || plazaActive || settingsActive || novelActive || studioActive);
-    const active=!!drawerActive || (href === "/" && pathname === "/" && !anyDrawer) || (href !== "/" && (pathname === href || (href === "/novels" && pathname.startsWith("/novels/")) || (href === "/studio" && pathname.startsWith("/studio/"))));
-    const callback=href === "/" ? onChatClick : href === "/agents/me" ? onAgentClick : href === "/agents" ? onExchangeClick : href === "/plaza" ? onPlazaClick : href === "/novels" ? onNovelClick : href === "/studio" ? onStudioClick : onSettingsClick;
-    const drawerId=href === "/agents/me" ? "agent-drawer" : href === "/agents" ? "exchange-drawer" : href === "/plaza" ? "plaza-drawer" : href === "/settings" ? "settings-drawer" : href === "/novels" ? "novel-drawer" : href === "/studio" ? "studio-drawer" : undefined;
+    const drawerActive=(href === "/agents/me" && agentActive) || (href === "/agents" && exchangeActive) || (href === "/plaza" && plazaActive) || (href === "/settings" && settingsActive) || (href === "/novels" && novelActive) || (href === "/studio" && studioActive) || (href === "/discuss" && discussActive);
+    const anyDrawer=!!(agentActive || exchangeActive || plazaActive || settingsActive || novelActive || studioActive || discussActive);
+    const active=!!drawerActive || (href === "/" && pathname === "/" && !anyDrawer) || (href !== "/" && (pathname === href || (href === "/novels" && pathname.startsWith("/novels/")) || (href === "/studio" && pathname.startsWith("/studio/")) || (href === "/discuss" && pathname.startsWith("/discuss/"))));
+    const callback=href === "/" ? onChatClick : href === "/agents/me" ? onAgentClick : href === "/agents" ? onExchangeClick : href === "/plaza" ? onPlazaClick : href === "/novels" ? onNovelClick : href === "/studio" ? onStudioClick : href === "/discuss" ? onDiscussClick : onSettingsClick;
+    const drawerId=href === "/agents/me" ? "agent-drawer" : href === "/agents" ? "exchange-drawer" : href === "/plaza" ? "plaza-drawer" : href === "/settings" ? "settings-drawer" : href === "/novels" ? "novel-drawer" : href === "/studio" ? "studio-drawer" : href === "/discuss" ? "discuss-drawer" : undefined;
     return {href,label,active,callback,drawerActive,drawerId};
   });
   const desktop = <aside className={cn(shared && "relative z-[2] my-3 ml-3", "bookmark-sidebar flex min-h-0 w-[var(--nav-w)] shrink-0 flex-col items-center border-r border-[color:var(--carve)] py-[22px] max-md:hidden")} aria-label="主导航">
     <svg width="30" height="30" viewBox="0 0 36 36" role="img" aria-label="Chloe"><circle cx="14" cy="18" r="8" fill="none" stroke="var(--ink)" strokeWidth="1.4"/><circle cx="22" cy="18" r="8" fill="none" stroke="var(--ink)" strokeWidth="1.4"/></svg>
-    <nav className="mt-10 flex flex-col items-center gap-2.5">
+    <nav className="mt-10 flex min-h-0 flex-1 flex-col items-center gap-2.5 overflow-y-auto [scrollbar-width:none]! [&::-webkit-scrollbar]:hidden!">
       {items.map(({href,label,active,callback,drawerActive,drawerId}) => {
         const classes=cn("bookmark-nav flex min-h-16 w-10 items-center justify-center border-l-[1.5px] py-2.5 pl-[9px] text-fs-15 tracking-[.32em] [writing-mode:vertical-rl]",active ? "border-[color:var(--ink)] font-medium text-[color:var(--ink)]":"border-transparent text-[color:var(--ink2)] hover:text-[color:var(--ink)]");
         return callback ? <button key={href} type="button" onClick={callback} aria-expanded={drawerId ? !!drawerActive:undefined}
@@ -128,7 +138,7 @@ export default function Sidebar({
           : <Link key={href} href={href} aria-current={active ? "page":undefined} className={classes} title={label}>{label}</Link>;
       })}
     </nav>
-    <div className="mt-auto flex flex-col items-center pt-6">
+    <div className="flex shrink-0 flex-col items-center pt-6">
       <button type="button" onClick={toggleTheme} className="grid h-10 w-10 place-items-center rounded-full border border-[color:var(--rule2)] text-fs-13 text-[color:var(--ink2)] hover:text-[color:var(--ink)]" title={dark ? "切换浅色":"切换深色"} aria-label={dark ? "切换浅色":"切换深色"}>
         <span className="theme-day">夜</span><span className="theme-night">昼</span>
       </button>
@@ -139,7 +149,7 @@ export default function Sidebar({
     </div>
   </aside>;
   const mobile = <nav aria-label="主导航" className={cn("mobile-tabbar fixed inset-x-0 bottom-0 z-[70] flex h-[calc(var(--tabbar-h)+env(safe-area-inset-bottom))] items-start pb-[env(safe-area-inset-bottom)] md:hidden", shared && "border-t border-[color:var(--carve)]")}>
-    {items.filter(item => item.href !== "/studio").map(({href,label,active,callback,drawerActive,drawerId}) => {
+    {items.filter(item => item.href !== "/studio" && item.href !== "/discuss").map(({href,label,active,callback,drawerActive,drawerId}) => {
       const classes=cn("flex h-[var(--tabbar-h)] min-w-0 flex-1 flex-col items-center justify-center gap-1.5 whitespace-nowrap text-fs-15 tracking-[.2em]",active ? "font-medium text-[color:var(--ink)]":"text-[color:var(--ink2)] hover:text-[color:var(--ink)]");
       const content=<><span aria-hidden="true" className={cn("h-[1.5px] w-4",active ? "bg-[color:var(--ink)]":"bg-transparent")}/>{label}</>;
       return callback ? <button key={href} type="button" onClick={callback} aria-expanded={drawerId ? !!drawerActive:undefined}

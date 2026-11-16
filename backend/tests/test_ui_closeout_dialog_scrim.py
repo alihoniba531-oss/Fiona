@@ -114,7 +114,7 @@ def _dialog_classes(sources):
     return dialogs
 
 
-def assert_dialogs_have_scrim(sources, *, expected_count=14):
+def assert_dialogs_have_scrim(sources, *, expected_count=15):
     dialogs = _dialog_classes(sources)
     assert len(dialogs) == expected_count, (
         f"expected {expected_count} dialog tags, found {len(dialogs)}"

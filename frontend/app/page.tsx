@@ -36,6 +36,7 @@ import { deskAutoOpens, deskSubjectFromCard, readDeskPrefs, updateDeskPrefs, typ
 import { stripMessageMarkdown } from "@/lib/messageMarkdown";
 import { splitTtsChunks } from "@/lib/ttsChunks";
 import { checkStudioAccess, createStudioNoticePoller, mergeStudioNotices, type StudioNotice } from "@/lib/studio";
+import { checkDiscussAccess } from "@/lib/discuss";
 
 import { API_BASE as API, WS_BASE } from "@/lib/config";
 
@@ -480,7 +481,7 @@ export default function ChatPage() {
   const [input, setInput] = useState("");
   const [isLoading, setIsLoading] = useState(false);
   // 右侧面板互斥，分身管理也在当前聊天页内打开。
-  type DrawerName = "agent" | "exchange" | "plaza" | "settings" | "studio" | "novel" | null;
+  type DrawerName = "agent" | "exchange" | "plaza" | "settings" | "discuss" | "studio" | "novel" | null;
   const [drawer, setDrawer] = useState<DrawerName>(null);
   const [deskOpen, setDeskOpen] = useState(false);
   const [deskFocus, setDeskFocus] = useState<{ subject: DeskSubject; nonce: number } | null>(null);
@@ -508,10 +509,10 @@ export default function ChatPage() {
     setDrawer(null);
     closeMobilePanelsFromNavigation();
   };
-  const focusVisibleDrawerTrigger = (id: string) => {
+  const focusVisibleDrawerTrigger = useCallback((id: string) => {
     Array.from(document.querySelectorAll<HTMLButtonElement>(`button[aria-controls="${id}"]`))
       .find(button => button.getClientRects().length > 0)?.focus();
-  };
+  }, []);
   const agentOpen     = drawer === "agent";
   const agentPanelRef = useRef<HTMLElement>(null);
   const exchangeOpen = drawer === "exchange";
@@ -542,10 +543,14 @@ export default function ChatPage() {
   const studioOpen = drawer === "studio";
   const studioFrameRef = useRef<HTMLIFrameElement>(null);
   const studioPanelRef = useRef<HTMLElement>(null);
+  const discussOpen = drawer === "discuss";
+  const discussFrameRef = useRef<HTMLIFrameElement>(null);
+  const discussPanelRef = useRef<HTMLElement>(null);
   useEffect(() => {
     if (novelOpen) novelPanelRef.current?.focus();
     if (studioOpen) studioPanelRef.current?.focus();
-  }, [novelOpen, studioOpen]);
+    if (discussOpen) discussPanelRef.current?.focus();
+  }, [novelOpen, studioOpen, discussOpen]);
   useEffect(() => {
     const openNovelSettings = (event: MessageEvent) => {
       if (event.origin !== window.location.origin || event.source !== novelFrameRef.current?.contentWindow) return;
@@ -572,6 +577,16 @@ export default function ChatPage() {
     window.addEventListener("message", closeStudio);
     return () => window.removeEventListener("message", closeStudio);
   }, []);
+  useEffect(() => {
+    const closeDiscuss = (event: MessageEvent) => {
+      if (event.origin !== window.location.origin || event.source !== discussFrameRef.current?.contentWindow) return;
+      if (event.data?.type !== "fiona-discuss-close") return;
+      setDrawer(current => current === "discuss" ? null : current);
+      focusVisibleDrawerTrigger("discuss-drawer");
+    };
+    window.addEventListener("message", closeDiscuss);
+    return () => window.removeEventListener("message", closeDiscuss);
+  }, [focusVisibleDrawerTrigger]);
   const anyDrawerOpen = drawer !== null;
   useEffect(() => {
     if (!conversationPickerOpen) return;
@@ -663,6 +678,23 @@ export default function ChatPage() {
       setDrawer(current => current === "studio" ? null : current);
     });
   }, [hydrated, username, beginStudioAccessRequest]);
+  const [discussAccess, setDiscussAccess] = useState({ owner: "", allowed: false });
+  const discussAllowed = discussAccess.owner === username && discussAccess.allowed;
+  const { beginRequest: beginDiscussAccessRequest } = useAccountRequest(username);
+  useEffect(() => {
+    if (!hydrated) return;
+    const request = beginDiscussAccessRequest();
+    if (!request) return;
+    void checkDiscussAccess(request.signal).then(allowed => {
+      if (!request.isCurrent()) return;
+      setDiscussAccess({ owner: username, allowed });
+      if (!allowed) setDrawer(current => current === "discuss" ? null : current);
+    }).catch(() => {
+      if (!request.isCurrent()) return;
+      setDiscussAccess({ owner: username, allowed: false });
+      setDrawer(current => current === "discuss" ? null : current);
+    });
+  }, [hydrated, username, beginDiscussAccessRequest]);
   const {
     agent, conversations, current: currentConversation, messages, setMessages,
     loading: conversationLoading, error: conversationError, reload: reloadConversations,
@@ -2515,6 +2547,9 @@ export default function ChatPage() {
           onStudioClick={() => { if (studioAllowed) toggleDrawer("studio"); }}
           studioActive={studioOpen}
           studioAccessAllowed={studioAllowed}
+          onDiscussClick={() => { if (discussAllowed) toggleDrawer("discuss"); }}
+          discussActive={discussOpen}
+          discussAccessAllowed={discussAllowed}
           onBalanceChange={setStrawberryBalance}
         />
 
@@ -3054,6 +3089,37 @@ export default function ChatPage() {
             title="收起工作室" aria-label="收起工作室"><X size={14} /></button>
         </div>
         {studioAllowed ? <iframe key={username} ref={studioFrameRef} title="短片工作室工作区" src="/studio?embed=1" className="min-h-0 w-full flex-1 border-0" />
+          : <div role="status" className="flex-1 p-5 text-fs-13 text-[color:var(--ink2)]">暂未开放</div>}
+      </Glaze>
+
+      {/* 讨论群仅在当前账号通过访问检查后挂载，关闭后保留工作区状态。 */}
+      <Glaze variant="panel"
+        id="discuss-drawer"
+        ref={discussPanelRef}
+        tabIndex={-1}
+        aria-label="讨论群"
+        aria-hidden={!discussOpen}
+        inert={!discussOpen}
+        onKeyDown={event => {
+          if (event.key === "Escape") { closeDrawer(); focusVisibleDrawerTrigger("discuss-drawer"); }
+        }}
+        lens={false}
+        backdrop={false}
+        className="fixed top-3 bottom-3 right-3 z-[55] flex flex-col overflow-hidden outline-none max-md:left-0 max-md:top-0 max-md:right-0 max-md:bottom-[calc(var(--tabbar-h)+env(safe-area-inset-bottom))]! max-md:w-screen! max-md:rounded-none max-md:pt-[env(safe-area-inset-top)] drawer-panel"
+        style={{
+          width: "calc((100vw - var(--rail-w) - 12px) * 2 / 3)",
+          borderLeft: "1px solid var(--rule)",
+          ...drawerStyle(discussOpen),
+          willChange: "transform",
+        }}
+      >
+        <div className="flex shrink-0 items-center justify-between border-b px-4 py-2" style={{ background: "var(--hi)", borderColor: "var(--rule)" }}>
+          <span className="text-fs-12 tracking-[.24em] text-[color:var(--ink2)]">讨论群</span>
+          <button type="button" onClick={() => { closeDrawer(); focusVisibleDrawerTrigger("discuss-drawer"); }}
+            className="flex h-10 w-10 items-center justify-center rounded text-[color:var(--ink2)] hover:bg-[color:var(--slip)] hover:text-[color:var(--ink)]"
+            title="收起讨论群" aria-label="收起讨论群"><X size={14} /></button>
+        </div>
+        {discussAllowed ? <iframe key={username} ref={discussFrameRef} title="讨论群工作区" src="/discuss?embed=1" className="min-h-0 w-full flex-1 border-0" />
           : <div role="status" className="flex-1 p-5 text-fs-13 text-[color:var(--ink2)]">暂未开放</div>}
       </Glaze>
 

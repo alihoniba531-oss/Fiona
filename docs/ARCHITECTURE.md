@@ -556,3 +556,11 @@ WO3a R1：模型输出被max_tokens/length截断时按实际usage结算为invali
 计费：`DiscussBilling` 在每次模型调用前预扣、按实际 usage 结算或退款，搜索按固定草莓数单独预扣；预算判断用 `spent + reserved + 本次预扣 > budget`，群停下来后预留清零。`DEV_MODE=1`、`byok:self` 和 `fake:*` 免费。
 
 隐私：诉求、补充材料与成员发言发给各成员所用模型的厂商（阿里云百炼、DeepSeek、火山方舟，或作者自带的厂商）；搜索问题与任务目标发给阿里云百炼。分身进群时，分身资料与私有长期记忆发给分身所用模型的厂商，分身说出的话会进入群聊上下文、被其他成员的模型厂商看到。Key 只在调用时读取，不写库、日志或响应；日志只记 ID、状态与错误类型。联网搜索按次另扣草莓，与成员用哪个模型无关。
+
+### 界面
+
+讨论群界面（第二期）在 `/discuss` 提供群列表，`/discuss/new` 新建，`/discuss/{id}` 是群聊页；三个页面都是客户端组件，外壳在 `frontend/components/discuss/DiscussShell.tsx`，其余部件也在 `frontend/components/discuss/`，类型与请求在 `frontend/lib/discuss.ts`，按状态的判断在 `frontend/lib/discussLogic.ts`。
+
+主页侧栏只在电脑上、且访问检查通过后追加「讨论群」书签，抽屉里用 iframe 挂 `/discuss?embed=1`，`key` 用当前账号；嵌入页按 Esc 通过 `postMessage` 发 `fiona-discuss-close`，主页同时核对 `event.origin` 与 `event.source` 才关抽屉，关闭后 iframe 不卸载。书签只出现在主页和讨论群自己的页面，其他独立页面不显示。
+
+列表和群聊页在群处于 `planning` 或 `running`、且页面可见时每 3 秒刷新一次；群聊页按消息 `id` 增量读取，列表直接重读。文档渲染先用 `splitDiscussDocument` 拆表格与普通块，普通块交给 `parseMessageMarkdown`，所有文字再经 `splitDiscussCitations` 切出来源编号；编号在来源表里有可解析的 http(s) 网址时渲染成新标签页链接（`rel="noopener noreferrer"`），否则是纯文字标记。全程不用 `dangerouslySetInnerHTML`。
