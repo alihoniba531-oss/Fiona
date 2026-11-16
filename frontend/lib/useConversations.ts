@@ -16,6 +16,8 @@ interface StoredMessage {
   song_project_id?: string | null;
   novel_draft_id?: string | null;
   novel_feedback_id?: string | null;
+  discuss_task_id?: string | null;
+  discuss_note_id?: string | null;
   created_at: string;
 }
 
@@ -65,6 +67,12 @@ function toMessages(messages: StoredMessage[]): Message[] {
     }
     if (message.role === "assistant" && message.novel_feedback_id) {
       cards.push({ source: "书斋", points: [], subtype: "novel_feedback", feedback_id: message.novel_feedback_id });
+    }
+    if (message.role === "assistant" && message.discuss_task_id) {
+      cards.push({ source: "讨论群", points: [], subtype: "discuss_task", task_id: message.discuss_task_id });
+    }
+    if (message.role === "assistant" && message.discuss_note_id) {
+      cards.push({ source: "讨论群", points: [], subtype: "discuss_note", note_id: message.discuss_note_id });
     }
     return {
       id: `db-${message.id}`,

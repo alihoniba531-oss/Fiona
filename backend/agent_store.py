@@ -336,7 +336,7 @@ async def get_conversation_messages(username, conversation_id, limit=100):
         agent = await _one(db, "SELECT * FROM agents WHERE id = ?", (conversation["agent_id"],))
         db.row_factory = aiosqlite.Row
         async with db.execute(
-            """SELECT id, role, content, image_path, reference_image_paths, created_at, conversation_id, agent_id, song_project_id, novel_draft_id, novel_feedback_id
+            """SELECT id, role, content, image_path, reference_image_paths, created_at, conversation_id, agent_id, song_project_id, novel_draft_id, novel_feedback_id, discuss_task_id, discuss_note_id
                FROM messages WHERE username = ? AND conversation_id = ?
                ORDER BY created_at DESC, id DESC LIMIT ?""",
             (username, conversation_id, limit + 1),
@@ -378,6 +378,14 @@ async def delete_conversation(username, conversation_id):
         )
         await db.execute(
             "DELETE FROM novel_feedback WHERE owner_username = ? AND conversation_id = ?",
+            (username, conversation_id),
+        )
+        await db.execute(
+            "DELETE FROM discuss_task_cards WHERE owner_username = ? AND conversation_id = ?",
+            (username, conversation_id),
+        )
+        await db.execute(
+            "DELETE FROM discuss_note_cards WHERE owner_username = ? AND conversation_id = ?",
             (username, conversation_id),
         )
         upload_paths = await database._queue_unreferenced_uploads(db, paths)

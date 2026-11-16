@@ -123,8 +123,8 @@ def test_eight_privacy_paragraphs_appear_once_and_stay_unadorned():
     details_start = source.index("<details")
     details_end = source.index("</details>")
     fold = source[details_start:details_end]
-    assert fold.count("<p>") == 7
-    assert fold.count("</p>") == 7
+    assert fold.count("<p>") == 8
+    assert fold.count("</p>") == 8
     for paragraph in ALL_PARAGRAPHS:
         assert source.count(paragraph) == 1
     assert f"<p>{FIRST}</p>" not in source

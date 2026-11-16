@@ -8,6 +8,7 @@ import sqlite3
 from datetime import datetime, timedelta, timezone
 
 import database
+from discuss import config as discuss_config
 from llm import MAIN_EXTRA_BODY, MAIN_MODEL
 from utils.city_name import normalize_city
 
@@ -153,6 +154,32 @@ NOVEL_INTENT_PROMPT = """
 \"把《春山》做成片\" → novel_to_film, book=春山
 """
 
+DISCUSS_INTENTS = frozenset({"discuss_list", "discuss_read"})
+DISCUSS_INTENT_PROMPT = """
+
+【作者的讨论群（仅本人，免费）】
+  discuss_list     列出作者自己的讨论群 params: (无)
+  discuss_read     读作者某个讨论群的进展或最新成果 params: group(群名或其中几个字，不知道哪个群时留空，不得猜测), part(progress 看进展/到哪一步/谁说了什么；output 看成果/报告/结论), offset(续读位置，一般省略，『继续读』由系统接着上次的位置读，仅 output)
+不知道哪个群时 group 留空，不得猜测群名。
+\"我有哪些讨论群\" → discuss_list
+\"东南亚短剧那个群到哪一步了\" → discuss_read, group=东南亚短剧, part=progress
+\"把《东南亚短剧》的成果念给我听\" → discuss_read, group=东南亚短剧, part=output
+\"讨论群有什么报告或结论\" → discuss_read, group=, part=output
+\"东南亚短剧的结论是什么\" → discuss_read, group=东南亚短剧, part=output
+"""
+
+
+def _discuss_offset(value) -> int:
+    """0 以上的真整数或纯数字字符串，其余（含 bool）一律当 0。"""
+    if type(value) is int and value >= 0:
+        return value
+    if isinstance(value, str) and re.fullmatch(r"[0-9]+", value):
+        try:
+            return int(value)
+        except ValueError:  # 超长数字串（Python 整数转换上限）
+            return 0
+    return 0
+
 
 def novel_intents_enabled(username: str | None, crisis: bool = False) -> bool:
     if crisis or username is None or os.getenv("FIONA_NOVEL_CHAT", "0") != "1":
@@ -194,6 +221,82 @@ def set_novel_read_position(username: StateKey, data: dict | None):
                  (now + timedelta(minutes=30)).isoformat(), now.isoformat()),
             )
         conn.commit()
+
+
+def get_discuss_read_position(username: StateKey) -> dict | None:
+    """读回讨论群续读位置；已过期 / payload 损坏或结构不对 → 当作不存在并删掉。"""
+    state_key, _owner = _slot_identity(username)
+    with _slot_conn() as conn:
+        row = conn.execute(
+            "SELECT payload_json, expires_at FROM chat_slot_state WHERE state_key=? AND kind='discuss_read'",
+            (state_key,),
+        ).fetchone()
+        if row is None:
+            return None
+        try:
+            value = json.loads(row[0])
+        except (TypeError, ValueError):
+            value = None
+        if not isinstance(value, dict) or _is_expired(row[1], datetime.now(timezone.utc)):
+            conn.execute("DELETE FROM chat_slot_state WHERE state_key=? AND kind='discuss_read'", (state_key,))
+            conn.commit()
+            return None
+        return value
+
+
+def set_discuss_read_position(username: StateKey, data: dict | None):
+    """写入/删除讨论群续读位置，TTL 30 分钟，与小说续读位置并存。"""
+    state_key, owner = _slot_identity(username)
+    now = datetime.now(timezone.utc)
+    with _slot_conn() as conn:
+        if data is None:
+            conn.execute("DELETE FROM chat_slot_state WHERE state_key=? AND kind='discuss_read'", (state_key,))
+        else:
+            conn.execute(
+                "INSERT OR REPLACE INTO chat_slot_state (state_key,kind,owner_username,payload_json,expires_at,updated_at) VALUES (?,?,?,?,?,?)",
+                (state_key, "discuss_read", owner, json.dumps(data, ensure_ascii=False),
+                 (now + timedelta(minutes=30)).isoformat(), now.isoformat()),
+            )
+        conn.commit()
+
+
+def discuss_read_position_is_newer(username: StateKey) -> bool:
+    """讨论群续读位置是否比小说续读位置更新。
+
+    小说位置缺失、payload 损坏、没有可解析的 updated_at 或已过期，都视为没有；
+    此时只要存在有效的讨论群位置就算更新。两边都有效时按 updated_at 严格比较，
+    时间相同按讨论群未更新处理（继续走小说续读）。
+    """
+    state_key, _owner = _slot_identity(username)
+    now = datetime.now(timezone.utc)
+    with _slot_conn() as conn:
+        rows = conn.execute(
+            "SELECT kind, payload_json, expires_at, updated_at FROM chat_slot_state "
+            "WHERE state_key=? AND kind IN ('novel_read','discuss_read')",
+            (state_key,),
+        ).fetchall()
+    positions = {row[0]: row for row in rows}
+    discuss_row = positions.get("discuss_read")
+    if discuss_row is None or _is_expired(discuss_row[2], now):
+        return False
+    try:
+        discuss_value = json.loads(discuss_row[1])
+    except (TypeError, ValueError):
+        return False
+    discuss_updated = _expiry_of(discuss_row[3])
+    if not isinstance(discuss_value, dict) or discuss_updated is None:
+        return False
+    novel_row = positions.get("novel_read")
+    if novel_row is not None and not _is_expired(novel_row[2], now):
+        try:
+            novel_value = json.loads(novel_row[1])
+        except (TypeError, ValueError):
+            novel_value = None
+        if isinstance(novel_value, dict):
+            novel_updated = _expiry_of(novel_row[3])
+            if novel_updated is not None:
+                return discuss_updated > novel_updated
+    return True
 
 
 def image_aspect_ratio(message: str, fallback: str = "1:1") -> str:
@@ -444,6 +547,8 @@ def normalize_intent_result(raw, *, username: str | None = None, crisis: bool = 
     }
     if novel_intents_enabled(username, crisis):
         allowed_params.update(novel_list=set(), novel_read={"book", "chapter", "offset"}, novel_to_film={"book"})
+    if discuss_config.chat_enabled(username, crisis):
+        allowed_params.update(discuss_list=set(), discuss_read={"group", "part", "offset"})
     if not isinstance(raw, dict):
         return {"intent": None}
     intent = raw.get("intent")
@@ -469,6 +574,13 @@ def normalize_intent_result(raw, *, username: str | None = None, crisis: bool = 
         else:
             params.pop("book", None)
             missing = ["book"]
+    if intent == "discuss_read":
+        group = params.get("group")
+        params["group"] = group.strip() if isinstance(group, str) else ""
+        params["part"] = "output" if params.get("part") == "output" else "progress"
+        params["offset"] = _discuss_offset(params.get("offset"))
+        # 找群的说明由服务层给；group 为空也不追问，绝不产生 missing。
+        missing = []
     return {"intent": intent, "params": params, "missing": missing}
 
 
@@ -491,11 +603,16 @@ def recognize_intent(client, message: str, history: list[dict] | None = None, *,
             user_content = f"【对话上下文】\n{ctx}\n\n【当前消息】\n{message}"
 
     try:
+        system_content = INTENT_PROMPT
+        if novel_intents_enabled(username, crisis):
+            system_content += NOVEL_INTENT_PROMPT
+        if discuss_config.chat_enabled(username, crisis):
+            system_content += DISCUSS_INTENT_PROMPT
         resp = client.chat.completions.create(
             model=MAIN_MODEL,
             extra_body=MAIN_EXTRA_BODY,
             messages=[
-                {"role": "system", "content": INTENT_PROMPT + (NOVEL_INTENT_PROMPT if novel_intents_enabled(username, crisis) else "")},
+                {"role": "system", "content": system_content},
                 {"role": "user", "content": user_content},
             ],
             response_format={"type": "json_object"},

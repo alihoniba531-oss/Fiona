@@ -6,16 +6,20 @@ import { useCallback, useEffect, useMemo, useRef, useState, type FormEvent } fro
 import { ArrowLeft, Loader2, Plus } from "lucide-react";
 import DiscussTeamEditor, { type DiscussTeamMember } from "@/components/discuss/DiscussTeamEditor";
 import { EmptyState, ErrorNotice, LoadingState } from "@/components/novel/NovelStates";
+import { ApiError } from "@/lib/agents";
 import {
   createDiscussGroup,
   getDiscussCatalog,
+  getDiscussTaskCard,
   type DiscussCatalog,
   type DiscussCoreRole,
   type DiscussCreateForm as DiscussCreateFormState,
   type DiscussIdentityDraft,
   type DiscussLensDraft,
+  type DiscussTaskCardView,
 } from "@/lib/discuss";
 import {
+  applyDiscussTaskPrefill,
   buildDiscussCreateBody,
   defaultDiscussCustomMemberModel,
   discussErrorMessage,
@@ -29,6 +33,10 @@ const coreRoles: DiscussCoreRole[] = ["host", "critic", "writer", "acceptor"];
 const fieldClass = "ceramic-card min-h-10 w-full min-w-0 rounded-[10px] px-4 py-3 text-fs-16.5 text-[color:var(--ink)] outline-none focus-visible:ring-1 focus-visible:ring-[color:var(--ink)] disabled:opacity-50";
 
 type ModelRow = { key: string; label: string; value: string; change: (value: string) => void };
+
+function taskCardMissing(error: unknown): boolean {
+  return error instanceof ApiError && (error.status === 404 || error.status === 403);
+}
 
 function modelOptions(catalog: DiscussCatalog) {
   const options = catalog.models.map(model => ({ value: model.id, label: discussModelLabel(model.id) }));
@@ -74,18 +82,20 @@ function initialForm(catalog: DiscussCatalog): DiscussCreateFormState {
   };
 }
 
-export default function DiscussCreateForm({ embedded }: { embedded: boolean }) {
+export default function DiscussCreateForm({ embedded, taskId }: { embedded: boolean; taskId?: string }) {
   const owner = useAccountIdentity();
   const identityPending = useAccountIdentityPending();
-  return <CreateForm key={owner} owner={owner} identityPending={identityPending} embedded={embedded} />;
+  return <CreateForm key={owner} owner={owner} identityPending={identityPending} embedded={embedded} taskId={taskId} />;
 }
 
-function CreateForm({ owner, embedded, identityPending = false }: { owner: string; embedded: boolean; identityPending?: boolean }) {
+function CreateForm({ owner, embedded, identityPending = false, taskId }: { owner: string; embedded: boolean; identityPending?: boolean; taskId?: string }) {
   const router = useRouter();
   const [catalog, setCatalog] = useState<DiscussCatalog | null>(null);
   const [form, setForm] = useState<DiscussCreateFormState | null>(null);
   const [customKeys, setCustomKeys] = useState<string[]>([]);
   const [budgetText, setBudgetText] = useState("");
+  const [taskNotice, setTaskNotice] = useState("");
+  const [submitTaskId, setSubmitTaskId] = useState("");
   const [materialsOpen, setMaterialsOpen] = useState(false);
   const [loading, setLoading] = useState(true);
   const [loadError, setLoadError] = useState("");
@@ -100,13 +110,35 @@ function CreateForm({ owner, embedded, identityPending = false }: { owner: strin
     if (!request) return;
     setLoading(true);
     setLoadError("");
+    setTaskNotice("");
+    setSubmitTaskId("");
     try {
-      const next = await getDiscussCatalog(request.signal);
+      const cardResult: Promise<{ task: DiscussTaskCardView | null; error: unknown }> = taskId
+        ? getDiscussTaskCard(taskId, request.signal).then(
+            task => ({ task, error: null }),
+            error => ({ task: null, error }),
+          )
+        : Promise.resolve({ task: null, error: null });
+      const [next, card] = await Promise.all([getDiscussCatalog(request.signal), cardResult]);
       if (!request.isCurrent()) return;
+      let nextForm = initialForm(next);
+      if (card.task) {
+        if (card.task.group_id) {
+          setTaskNotice(card.task.group
+            ? `这张任务卡已经建成《${card.task.group.title}》。`
+            : "这张任务卡已经用过。");
+        } else {
+          nextForm = applyDiscussTaskPrefill(nextForm, card.task, next.limits);
+          setSubmitTaskId(taskId ?? "");
+        }
+      } else if (taskCardMissing(card.error)) {
+        setTaskNotice("任务卡不存在，可以直接新建。");
+      }
       setCatalog(next);
-      setForm(initialForm(next));
+      setForm(nextForm);
       setCustomKeys([]);
-      setBudgetText(String(next.limits.budget_default));
+      setBudgetText(String(nextForm.budget_strawberries));
+      setMaterialsOpen(Boolean(nextForm.materials));
       setError("");
     } catch (cause) {
       if (request.isCurrent()) {
@@ -117,7 +149,7 @@ function CreateForm({ owner, embedded, identityPending = false }: { owner: strin
     } finally {
       if (request.isCurrent()) setLoading(false);
     }
-  }, [beginRequest, owner]);
+  }, [beginRequest, owner, taskId]);
 
   useEffect(() => {
     if (!owner) return;
@@ -227,7 +259,9 @@ function CreateForm({ owner, embedded, identityPending = false }: { owner: strin
     setBusy(true);
     setError("");
     try {
-      const group = await createDiscussGroup(buildDiscussCreateBody(nextForm), request.signal);
+      const body = buildDiscussCreateBody(nextForm);
+      if (submitTaskId) body.task_id = submitTaskId;
+      const group = await createDiscussGroup(body, request.signal);
       if (request.isCurrent()) router.push(discussHref(`/discuss/${encodeURIComponent(group.id)}`, embedded));
     } catch (cause) {
       if (request.isCurrent()) setError(discussErrorMessage(cause));
@@ -276,6 +310,7 @@ function CreateForm({ owner, embedded, identityPending = false }: { owner: strin
     </div>
     <h1 className="mb-5 text-fs-30 tracking-[.24em]">新建讨论群</h1>
     <div className="ceramic-card min-w-0 p-7 mobile:p-4">
+      {taskNotice && <p role="status" className="ceramic-card mb-4 whitespace-pre-wrap break-words p-3 text-fs-13 text-[color:var(--ink2)]">{taskNotice}</p>}
       {error && <p role="alert" className="ceramic-card mb-4 whitespace-pre-wrap break-words p-3 text-fs-13 text-[color:var(--ink)]">{error}</p>}
       <form onSubmit={event => { void submit(event); }}>
         <fieldset disabled={busy} className="min-w-0 space-y-6">

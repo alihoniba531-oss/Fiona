@@ -108,6 +108,48 @@ NOVEL_FEEDBACK_DDL = """
 NOVEL_FEEDBACK_INDEX = "CREATE INDEX IF NOT EXISTS idx_novel_feedback_owner ON novel_feedback(owner_username)"
 
 
+# 讨论群任务卡：聊天里起草的调研诉求，作者在讨论群确认建群前只是一张本地卡片。
+DISCUSS_TASK_CARDS_DDL = """
+    CREATE TABLE IF NOT EXISTS discuss_task_cards (
+        id TEXT PRIMARY KEY,
+        owner_username TEXT NOT NULL,
+        conversation_id TEXT NOT NULL,
+        request TEXT NOT NULL,
+        materials TEXT NOT NULL DEFAULT '',
+        max_rounds INTEGER,
+        budget_strawberries INTEGER,
+        group_id TEXT DEFAULT NULL,
+        created_at TEXT NOT NULL,
+        updated_at TEXT NOT NULL
+    )
+"""
+DISCUSS_TASK_CARDS_INDEX = (
+    "CREATE INDEX IF NOT EXISTS idx_discuss_task_cards_owner "
+    "ON discuss_task_cards(owner_username)"
+)
+
+
+# 讨论群意见卡：作者点按钮前不会送进群；送出后记下插话 message_id 与时间。
+DISCUSS_NOTE_CARDS_DDL = """
+    CREATE TABLE IF NOT EXISTS discuss_note_cards (
+        id TEXT PRIMARY KEY,
+        owner_username TEXT NOT NULL,
+        conversation_id TEXT NOT NULL,
+        group_id TEXT,
+        group_title TEXT NOT NULL,
+        text TEXT NOT NULL,
+        message_id INTEGER DEFAULT NULL,
+        sent_at TEXT DEFAULT NULL,
+        created_at TEXT NOT NULL,
+        updated_at TEXT NOT NULL
+    )
+"""
+DISCUSS_NOTE_CARDS_INDEX = (
+    "CREATE INDEX IF NOT EXISTS idx_discuss_note_cards_owner "
+    "ON discuss_note_cards(owner_username)"
+)
+
+
 async def _safe_migrate(db, sql: str):
     """跑一句"老库迁移"DDL（ALTER TABLE / CREATE INDEX 等）。
     "列已存在 / 索引已存在"是这类语句的预期错（库已迁过），静默吞；
@@ -185,6 +227,8 @@ async def init_db():
         await _safe_migrate(db, "ALTER TABLE messages ADD COLUMN song_project_id TEXT DEFAULT NULL")
         await _safe_migrate(db, "ALTER TABLE messages ADD COLUMN novel_draft_id TEXT DEFAULT NULL")
         await _safe_migrate(db, "ALTER TABLE messages ADD COLUMN novel_feedback_id TEXT DEFAULT NULL")
+        await _safe_migrate(db, "ALTER TABLE messages ADD COLUMN discuss_task_id TEXT DEFAULT NULL")
+        await _safe_migrate(db, "ALTER TABLE messages ADD COLUMN discuss_note_id TEXT DEFAULT NULL")
         # 用户性别 + 匹配偏好（老库迁移）
         await _safe_migrate(db, "ALTER TABLE users ADD COLUMN gender TEXT DEFAULT NULL")
         await _safe_migrate(db, "ALTER TABLE users ADD COLUMN match_pref TEXT DEFAULT 'both'")
@@ -367,6 +411,11 @@ async def init_db():
         from discuss.store import DISCUSS_TABLES_DDL
         for discuss_table_ddl in DISCUSS_TABLES_DDL:
             await db.execute(discuss_table_ddl)
+        # 聊天 ↔ 讨论群：两张卡片表由 init_db 无条件幂等创建，不新增迁移版本号。
+        await db.execute(DISCUSS_TASK_CARDS_DDL)
+        await db.execute(DISCUSS_TASK_CARDS_INDEX)
+        await db.execute(DISCUSS_NOTE_CARDS_DDL)
+        await db.execute(DISCUSS_NOTE_CARDS_INDEX)
         from studio.store import STUDIO_TABLES_DDL, migrate_schema as migrate_studio_schema
         for studio_table_ddl in STUDIO_TABLES_DDL:
             await db.execute(studio_table_ddl)
@@ -538,6 +587,8 @@ async def clear_message_history(username: str) -> list[str]:
         await delete_user_song_data(db, username)
         await db.execute("DELETE FROM novel_drafts WHERE owner_username = ?", (username,))
         await db.execute("DELETE FROM novel_feedback WHERE owner_username = ?", (username,))
+        await db.execute("DELETE FROM discuss_task_cards WHERE owner_username = ?", (username,))
+        await db.execute("DELETE FROM discuss_note_cards WHERE owner_username = ?", (username,))
         await db.commit()
         return upload_paths
 
@@ -563,6 +614,8 @@ async def save_message(
     song_project_id: str | None = None,
     novel_draft_id: str | None = None,
     novel_feedback_id: str | None = None,
+    discuss_task_id: str | None = None,
+    discuss_note_id: str | None = None,
 ):
     from agent_store import ResourceNotFound, _ensure_default_conversation, _owned_conversation
 
@@ -601,6 +654,32 @@ async def save_message(
                     await db.rollback()
                     raise ResourceNotFound("Reference image not found")
             image_path = references[0]
+        # 讨论群任务卡归属只做附加校验：不属于本人本会话就存 NULL。
+        stored_discuss_task_id = None
+        if discuss_task_id is not None:
+            try:
+                async with db.execute(
+                    """SELECT 1 FROM discuss_task_cards
+                       WHERE id = ? AND owner_username = ? AND conversation_id = ?""",
+                    (discuss_task_id, username, conversation["id"]),
+                ) as cursor:
+                    if await cursor.fetchone() is not None:
+                        stored_discuss_task_id = discuss_task_id
+            except Exception:
+                stored_discuss_task_id = None
+        # 讨论群意见卡归属同样只做附加校验：不属于本人本会话就存 NULL。
+        stored_discuss_note_id = None
+        if discuss_note_id is not None:
+            try:
+                async with db.execute(
+                    """SELECT 1 FROM discuss_note_cards
+                       WHERE id = ? AND owner_username = ? AND conversation_id = ?""",
+                    (discuss_note_id, username, conversation["id"]),
+                ) as cursor:
+                    if await cursor.fetchone() is not None:
+                        stored_discuss_note_id = discuss_note_id
+            except Exception:
+                stored_discuss_note_id = None
         # 写歌归属只做附加校验：任何失败都不能让聊天消息落库失败。
         stored_song_project_id = None
         if song_project_id is not None:
@@ -641,9 +720,9 @@ async def save_message(
             except Exception:
                 stored_novel_draft_id = None
         await db.execute(
-            """INSERT INTO messages (username, role, content, image_path, conversation_id, agent_id, reference_image_paths, song_project_id, novel_draft_id, novel_feedback_id)
-               VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)""",
-            (username, role, content, image_path, conversation["id"], conversation["agent_id"], _json.dumps(references) if references else None, stored_song_project_id, stored_novel_draft_id, stored_novel_feedback_id),
+            """INSERT INTO messages (username, role, content, image_path, conversation_id, agent_id, reference_image_paths, song_project_id, novel_draft_id, novel_feedback_id, discuss_task_id, discuss_note_id)
+               VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)""",
+            (username, role, content, image_path, conversation["id"], conversation["agent_id"], _json.dumps(references) if references else None, stored_song_project_id, stored_novel_draft_id, stored_novel_feedback_id, stored_discuss_task_id, stored_discuss_note_id),
         )
         await db.execute(
             "UPDATE conversations SET updated_at = CURRENT_TIMESTAMP WHERE id = ?",
@@ -1034,6 +1113,8 @@ async def delete_account_data(username: str) -> dict:
         song_audio_paths = await delete_user_song_data(db, username)
         await db.execute("DELETE FROM novel_drafts WHERE owner_username = ?", (username,))
         await db.execute("DELETE FROM novel_feedback WHERE owner_username = ?", (username,))
+        await db.execute("DELETE FROM discuss_task_cards WHERE owner_username = ?", (username,))
+        await db.execute("DELETE FROM discuss_note_cards WHERE owner_username = ?", (username,))
         for discuss_table in ("discuss_outputs", "discuss_sources", "discuss_steps", "discuss_messages", "discuss_groups"):
             await db.execute(f"DELETE FROM {discuss_table} WHERE username = ?", (username,))
         await db.execute("DELETE FROM users WHERE username = ?", (username,))

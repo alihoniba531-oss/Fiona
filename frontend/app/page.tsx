@@ -695,6 +695,13 @@ export default function ChatPage() {
       setDrawer(current => current === "discuss" ? null : current);
     });
   }, [hydrated, username, beginDiscussAccessRequest]);
+  const openDiscussAt = (path: string) => {
+    if (!discussAllowed) return;
+    if (!/^\/discuss\/new\?embed=1&task=[0-9a-f-]{36}$/.test(path)
+      && !/^\/discuss\/[0-9a-f]{32}\?embed=1$/.test(path)) return;
+    setDrawer("discuss");
+    discussFrameRef.current?.contentWindow?.location.replace(path);
+  };
   const {
     agent, conversations, current: currentConversation, messages, setMessages,
     loading: conversationLoading, error: conversationError, reload: reloadConversations,
@@ -2225,6 +2232,8 @@ export default function ChatPage() {
               project_id: data.card.project_id,
               draft_id: data.card.draft_id,
               feedback_id: data.card.feedback_id,
+              task_id: data.card.task_id,
+              note_id: data.card.note_id,
               weather: data.card.weather,
               items: data.card.items,
               sources: data.card.sources,
@@ -2242,6 +2251,8 @@ export default function ChatPage() {
               project_id: data.card.project_id,
               draft_id: data.card.draft_id,
               feedback_id: data.card.feedback_id,
+              task_id: data.card.task_id,
+              note_id: data.card.note_id,
               weather: data.card.weather,
               items: data.card.items,
               sources: data.card.sources,
@@ -2738,6 +2749,7 @@ export default function ChatPage() {
                       selectedReferenceImagePaths={selectedReferenceImagePaths}
                       onCompose={composeSongSection}
                       onOpenNovel={openNovelAt}
+                      onOpenDiscuss={openDiscussAt}
                       songCardCompact={projectId => lastSongCardMessageId.get(projectId) !== msg.id}
                       imageRetryDisabled={conversationLocked || conversationLoading || !currentConversation || !!pendingImage || isReadingImage || isReadingReferences} />
                     </div>

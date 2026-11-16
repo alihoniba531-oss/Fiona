@@ -323,6 +323,17 @@ async def update_group(username, group_id, **fields):
 async def delete_group(username, group_id):
     async def operation(db):
         await refund_reserved_on_connection(db, username, group_id)
+        now = utc_now()
+        await db.execute(
+            "UPDATE discuss_task_cards SET group_id=NULL, updated_at=? "
+            "WHERE owner_username=? AND group_id=?",
+            (now, username, group_id),
+        )
+        await db.execute(
+            "UPDATE discuss_note_cards SET group_id=NULL, updated_at=? "
+            "WHERE owner_username=? AND group_id=?",
+            (now, username, group_id),
+        )
         for table in ("discuss_outputs", "discuss_sources", "discuss_steps", "discuss_messages"):
             await db.execute(
                 f"DELETE FROM {table} WHERE group_id=? AND username=?", (group_id, username)
@@ -356,23 +367,29 @@ async def has_active_group(username, exclude_group_id=None):
             return await cursor.fetchone() is not None
 
 
+async def post_user_note_in_txn(db, username, group_id, text, round):
+    """Insert one author note on a caller-owned write transaction."""
+    group = await _fetch_group(db, username, group_id)
+    if group is None:
+        return None
+    if group["status"] in ("closed", "failed"):
+        raise ValueError("closed")
+    if await _count_unread(db, username, group_id) >= 5:
+        raise ValueError("too_many")
+    cursor = await db.execute(
+        """INSERT INTO discuss_messages
+           (group_id, username, round, sender, kind, content, payload_json,
+            step_key, consumed_by, created_at)
+           VALUES (?,?,?,'user','user',?,'{}',NULL,NULL,?)""",
+        (group_id, username, int(round), text, utc_now()),
+    )
+    return await _fetch_message(db, username, cursor.lastrowid)
+
+
 async def post_user_note(username, group_id, text, round):
     async def operation(db):
-        group = await _fetch_group(db, username, group_id)
-        if group is None:
-            return None
-        if group["status"] in ("closed", "failed"):
-            raise ValueError("closed")
-        if await _count_unread(db, username, group_id) >= 5:
-            raise ValueError("too_many")
-        cursor = await db.execute(
-            """INSERT INTO discuss_messages
-               (group_id, username, round, sender, kind, content, payload_json,
-                step_key, consumed_by, created_at)
-               VALUES (?,?,?,'user','user',?,'{}',NULL,NULL,?)""",
-            (group_id, username, int(round), text, utc_now()),
-        )
-        return await _fetch_message(db, username, cursor.lastrowid)
+        return await post_user_note_in_txn(
+            db, username, group_id, text, round)
 
     return await run_write(operation)
 

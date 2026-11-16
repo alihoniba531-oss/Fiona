@@ -15,6 +15,7 @@ import type {
   DiscussStatus,
   DiscussSummary,
   DiscussTab,
+  DiscussTaskCardView,
 } from "./discuss";
 
 // 讨论群的纯函数。这里不引入任何运行时依赖（只允许 import type），
@@ -467,6 +468,32 @@ export function buildDiscussCreateBody(form: DiscussCreateForm): DiscussCreateIn
   }
   if (Object.keys(identities).length > 0) body.identities = identities;
   return body;
+}
+
+/**
+ * 新建页按任务卡预填：返回新表单，不改入参。诉求与补充材料照卡片原样填；
+ * 卡片给了整数建议时夹在目录给出的上下限之间，没给或不是整数时保留表单原值。
+ */
+export function applyDiscussTaskPrefill(
+  form: DiscussCreateForm,
+  task: Pick<DiscussTaskCardView, "request" | "materials" | "max_rounds" | "budget_strawberries">,
+  limits: Pick<DiscussLimits, "rounds_min" | "rounds_max" | "budget_min" | "budget_max">,
+): DiscussCreateForm {
+  const suggestedRounds = task.max_rounds;
+  const suggestedBudget = task.budget_strawberries;
+  const maxRounds = typeof suggestedRounds === "number" && Number.isInteger(suggestedRounds)
+    ? Math.min(Math.max(suggestedRounds, limits.rounds_min), limits.rounds_max)
+    : form.max_rounds;
+  const budgetStrawberries = typeof suggestedBudget === "number" && Number.isInteger(suggestedBudget)
+    ? Math.min(Math.max(suggestedBudget, limits.budget_min), limits.budget_max)
+    : form.budget_strawberries;
+  return {
+    ...form,
+    request: task.request,
+    materials: typeof task.materials === "string" ? task.materials : form.materials,
+    max_rounds: maxRounds,
+    budget_strawberries: budgetStrawberries,
+  };
 }
 
 interface PickShape {

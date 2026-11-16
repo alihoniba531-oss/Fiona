@@ -148,6 +148,53 @@ export interface DiscussDetail extends DiscussSummary {
   answers: string;
 }
 
+/** 任务卡上的群摘要：卡片已建群且群还在时才有。 */
+export interface DiscussTaskCardGroup {
+  id: string;
+  title: string;
+  status: DiscussStatus;
+  stop_reason: string | null;
+}
+
+/** GET /discuss/task-cards/{id} 的任务卡视图。 */
+export interface DiscussTaskCardView {
+  id: string;
+  request: string;
+  materials: string;
+  max_rounds: number | null;
+  budget_strawberries: number | null;
+  group_id: string | null;
+  group: DiscussTaskCardGroup | null;
+  created_at: string;
+}
+
+/** 意见卡送出后对应的那条插话，consumed 表示主持人读到没有。 */
+export interface DiscussNoteCardMessage {
+  id: number;
+  consumed: boolean;
+}
+
+/** 意见卡上的群摘要：群还在时才有。 */
+export interface DiscussNoteCardGroup {
+  id: string;
+  title: string;
+  status: DiscussStatus;
+  stop_reason: string | null;
+  pending_notes: number;
+}
+
+/** GET /discuss/note-cards/{id} 的意见卡视图。 */
+export interface DiscussNoteCardView {
+  id: string;
+  group_id: string | null;
+  group_title: string;
+  text: string;
+  sent_at: string | null;
+  message: DiscussNoteCardMessage | null;
+  group: DiscussNoteCardGroup | null;
+  created_at: string;
+}
+
 export interface DiscussSource {
   id: string;
   title: string;
@@ -211,6 +258,8 @@ export interface DiscussCreateInput {
   models?: Record<string, string>;
   members?: DiscussMemberInput[];
   identities?: Record<string, DiscussIdentityInput>;
+  /** 带上时建群会消费这张任务卡；不带时建群行为与旧版相同。 */
+  task_id?: string;
 }
 
 export interface DiscussPlanPickInput {
@@ -371,6 +420,8 @@ export interface DiscussPlanDraft {
 
 const root = `${API_BASE}/discuss`;
 const groupPath = (id: string) => `${root}/groups/${encodeURIComponent(id)}`;
+const taskCardPath = (id: string) => `${root}/task-cards/${encodeURIComponent(id)}`;
+const noteCardPath = (id: string) => `${root}/note-cards/${encodeURIComponent(id)}`;
 const json = (method: string, body: unknown, signal?: AbortSignal): RequestInit => ({
   method,
   signal,
@@ -391,6 +442,15 @@ export const listDiscussGroups = (signal?: AbortSignal) =>
 
 export const createDiscussGroup = (input: DiscussCreateInput, signal?: AbortSignal) =>
   apiJson<DiscussSummary>(`${root}/groups`, json("POST", input, signal));
+
+export const getDiscussTaskCard = (id: string, signal?: AbortSignal) =>
+  apiJson<DiscussTaskCardView>(taskCardPath(id), { signal, cache: "no-store" });
+
+export const getDiscussNoteCard = (id: string, signal?: AbortSignal) =>
+  apiJson<DiscussNoteCardView>(noteCardPath(id), { signal, cache: "no-store" });
+
+export const sendDiscussNoteCard = (id: string, signal?: AbortSignal) =>
+  apiJson<DiscussNoteCardView>(`${noteCardPath(id)}/send`, json("POST", {}, signal));
 
 export const getDiscussGroup = (id: string, after = 0, signal?: AbortSignal) =>
   apiJson<DiscussDetail>(`${groupPath(id)}?after=${after}`, { signal, cache: "no-store" });

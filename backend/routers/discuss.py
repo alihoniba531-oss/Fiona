@@ -5,7 +5,7 @@ from urllib.parse import quote
 from fastapi import APIRouter, Depends, HTTPException, Request, Response
 
 from auth_dep import get_current_user
-from discuss import service
+from discuss import cards, service
 from rate_limit import limiter
 
 
@@ -30,6 +30,23 @@ async def access(user: str = Depends(discuss_user)):
 @router.get('/catalog')
 async def catalog(user: str = Depends(discuss_user)):
     return await service.catalog(user)
+
+
+@router.get('/task-cards/{card_id}')
+async def task_card(card_id: str, user: str = Depends(discuss_user)):
+    return await cards.task_card_view(user, card_id)
+
+
+@router.get('/note-cards/{card_id}')
+async def note_card(card_id: str, user: str = Depends(discuss_user)):
+    return await cards.note_card_view(user, card_id)
+
+
+@router.post('/note-cards/{card_id}/send')
+@limiter.limit('20/minute')
+async def send_note_card(request: Request, card_id: str,
+                         user: str = Depends(discuss_user)):
+    return await cards.send_note_card(user, card_id)
 
 
 @router.post('/groups', status_code=201)

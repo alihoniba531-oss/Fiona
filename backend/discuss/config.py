@@ -53,6 +53,22 @@ def user_allowed(username: str) -> bool:
     return username in allowed_users()
 
 
+def chat_enabled(username: str | None, crisis: bool = False) -> bool:
+    """聊天看讨论群：非危机、账号在白名单、两个讨论群开关都开启。"""
+    if crisis or not username:
+        return False
+    if os.getenv("FIONA_DISCUSS") != "1":
+        return False
+    if username not in allowed_users():
+        return False
+    return os.getenv("FIONA_DISCUSS_CHAT") == "1"
+
+
+def chat_cards_enabled(username: str | None) -> bool:
+    """任务卡与意见卡：在聊天看讨论群的基础上再加卡片开关。"""
+    return os.getenv("FIONA_DISCUSS_CHAT_CARDS") == "1" and chat_enabled(username)
+
+
 def max_running() -> int:
     """FIONA_DISCUSS_MAX_RUNNING：全站同时在跑的群数，默认 2。"""
     return _bounded_int("FIONA_DISCUSS_MAX_RUNNING", 2, 1, 10)

@@ -35,9 +35,10 @@ from conversation_matcher import detect_and_save as detect_matches_and_save
 from database import (STRAWBERRY_COST_PER_REPLY, count_messages, get_messages,
                       refund_strawberries, save_message, set_message_image_summary,
                       strawberry_insufficient_message)
+from discuss import config as discuss_config
 from extractor import extract_and_update
 from intent_router import ask_missing, clear_pending, explicit_image_intent, fill_param, get_pending, image_aspect_ratio, image_edit_requires_reference, image_generation_discussion, recognize_intent, set_pending
-from intent_router import NOVEL_INTENTS, get_novel_read_position, novel_intents_enabled, set_novel_read_position
+from intent_router import DISCUSS_INTENTS, NOVEL_INTENTS, discuss_read_position_is_newer, get_discuss_read_position, get_novel_read_position, novel_intents_enabled, set_discuss_read_position, set_novel_read_position
 from llm import CHAT_VISION_EXTRA_BODY, CHAT_VISION_MODEL_DEFAULT, CHAT_VISION_MODEL_ENV, QWEN_CLIENT, _create_stream_with_fallback, client
 from mode_switcher import apply_mode_prompt, detect_mode, get_user_mode
 from model_router import choose_model, token_budget
@@ -620,6 +621,34 @@ def execute_intent(intent: str, params: dict, *, username: str | None = None, au
             if cap:
                 return {"text": cap, "success": False}
         return result
+    if intent in DISCUSS_INTENTS:
+        if not discuss_config.chat_enabled(username):
+            return "聊天看讨论群尚未开放给当前账号。"
+        from discuss import chat as discuss_chat
+        if intent == "discuss_list":
+            return asyncio.run(discuss_chat.list_groups_text(username))
+        part = "output" if params.get("part") == "output" else "progress"
+        group = params.get("group")
+        group = group.strip() if isinstance(group, str) else ""
+        offset = params.get("offset", 0)
+        if type(offset) is not int or offset < 0:
+            try:
+                offset = int(offset) if isinstance(offset, str) and re.fullmatch(r"[0-9]+", offset) else 0
+            except ValueError:  # 超长数字串（Python 整数转换上限）
+                offset = 0
+        cap = check_chat_daily_cap("discuss_read", username, hit=False)
+        if cap:
+            return {"text": cap, "success": False}
+        if part == "output":
+            result = asyncio.run(discuss_chat.read_output(username, group, offset))
+        else:
+            result = asyncio.run(discuss_chat.read_progress(username, group))
+        if result.get("success"):
+            # Only a successful read consumes the daily allowance.
+            cap = check_chat_daily_cap("discuss_read", username, hit=True)
+            if cap:
+                return {"text": cap, "success": False}
+        return result
     if intent == "open_app":
         return open_application(params.get("app", ""))
     if intent == "send_wechat":
@@ -791,6 +820,8 @@ class ChatState:
     song_project_id: str | None = None
     novel_draft_id: str | None = None
     novel_feedback_id: str | None = None
+    discuss_task_id: str | None = None
+    discuss_note_id: str | None = None
 
 
 @dataclass
@@ -995,6 +1026,7 @@ async def _save_response(ctx: ChatContext, state: ChatState, image_path: str | N
         ctx.user, "assistant", state.full_response, image_path=image_path, conversation_id=ctx.conversation_id,
         song_project_id=state.song_project_id, novel_draft_id=state.novel_draft_id,
         novel_feedback_id=state.novel_feedback_id,
+        discuss_task_id=state.discuss_task_id, discuss_note_id=state.discuss_note_id,
     ))
     if not state.response_saved:
         raise RuntimeError("conversation no longer available")
@@ -1427,12 +1459,14 @@ async def stream_pending(ctx: ChatContext, state: ChatState, pending: dict):
         yield _sse({"done": True})
 
 
-def recognize_intent_with_fallback(message: str, history: list[dict], *, novel_user: str | None = None) -> dict:
+def recognize_intent_with_fallback(
+    message: str, history: list[dict], *, novel_user: str | None = None, crisis: bool = False,
+) -> dict:
     """意图识别（JSON mode）+ 生图讨论拦截与搜索措辞兜底。同步，调用方负责 to_thread。"""
     if novel_user is None:
         intent_result = recognize_intent(client, message, history)
     else:
-        intent_result = recognize_intent(client, message, history, username=novel_user)
+        intent_result = recognize_intent(client, message, history, username=novel_user, crisis=crisis)
     # 能力咨询、教程或取消都不是一次新的生图授权。候选确认与普通意图
     # 路径共用此入口，避免意图模型误判后直接触发付费生成。
     if intent_result.get("intent") == "generate_image" and image_generation_discussion(message):
@@ -1469,9 +1503,20 @@ def _novel_chat_enabled(ctx: ChatContext, state: ChatState) -> bool:
     return novel_intents_enabled(ctx.user, state.crisis or state.crisis_level is not None)
 
 
+def _discuss_chat_enabled(ctx: ChatContext, state: ChatState) -> bool:
+    return discuss_config.chat_enabled(ctx.user, state.crisis or state.crisis_level is not None)
+
+
 async def _recognize_turn_intent(ctx: ChatContext, state: ChatState) -> dict:
-    if _novel_chat_enabled(ctx, state):
-        return await asyncio.to_thread(recognize_intent_with_fallback, ctx.message, ctx.history, novel_user=ctx.user)
+    novel_enabled = _novel_chat_enabled(ctx, state)
+    discuss_enabled = _discuss_chat_enabled(ctx, state)
+    if novel_enabled or discuss_enabled:
+        options = {"novel_user": ctx.user}
+        if discuss_enabled:
+            options["crisis"] = state.crisis or state.crisis_level is not None
+        return await asyncio.to_thread(
+            recognize_intent_with_fallback, ctx.message, ctx.history, **options,
+        )
     return await asyncio.to_thread(recognize_intent_with_fallback, ctx.message, ctx.history)
 
 
@@ -1507,10 +1552,41 @@ async def _stream_novel_intent(ctx: ChatContext, state: ChatState, intent_result
     yield _sse({"done": True})
 
 
+async def _stream_discuss_intent(ctx: ChatContext, state: ChatState, intent_result: dict):
+    await _ensure_active_conversation(ctx)
+    if not _discuss_chat_enabled(ctx, state):
+        async with aclosing(stream_normal(ctx, state)) as reply:
+            async for event in reply:
+                yield event
+        return
+    intent = intent_result["intent"]
+    state.trace.update(intent=intent, tool=intent)
+    result = await run_slow(execute_intent, intent, intent_result.get("params") or {},
+                            username=ctx.user, auth_method=ctx.auth_method)
+    params = intent_result.get("params")
+    part = params.get("part") if isinstance(params, dict) else None
+    if intent == "discuss_read" and part == "output" and isinstance(result, dict):
+        # A failed read also clears the position (v1.2 4.5 #4): the group may
+        # be gone, and the next "继续读" must fall through instead of resuming.
+        continuation = result.get("continuation") if result.get("success") else None
+        data = ({"group": result.get("group_id"), "part": "output", "offset": continuation}
+                if continuation else None)
+        await asyncio.to_thread(set_discuss_read_position, ctx.state_key, data)
+    state.full_response = result.get("text", "") if isinstance(result, dict) else result
+    yield _sse({"text": state.full_response})
+    async for event in _save_text_reply(ctx, state):
+        yield event
+    yield _sse({"done": True})
+
+
 async def stream_intent(ctx: ChatContext, state: ChatState, intent_result: dict):
     """意图明确：参数完整直接执行，缺参数则存 pending 追问。"""
     if intent_result.get("intent") in NOVEL_INTENTS:
         async for event in _stream_novel_intent(ctx, state, intent_result):
+            yield event
+        return
+    if intent_result.get("intent") in DISCUSS_INTENTS:
+        async for event in _stream_discuss_intent(ctx, state, intent_result):
             yield event
         return
     if ctx.byok_unreserved:
@@ -1853,6 +1929,22 @@ async def run_chat(
                 yield event
             yield _sse({"done": True})
             return
+        if (_discuss_chat_enabled(ctx, state) and not ctx.has_image
+                and re.fullmatch(r"(?:继续读|接着读|接着念)[吧。！!\s]*", ctx.message.strip())):
+            discuss_position = await asyncio.to_thread(get_discuss_read_position, ctx.state_key)
+            if discuss_position:
+                novel_enabled = _novel_chat_enabled(ctx, state)
+                novel_position = (
+                    await asyncio.to_thread(get_novel_read_position, ctx.state_key)
+                    if novel_enabled else None
+                )
+                if (not novel_enabled or not novel_position
+                        or await asyncio.to_thread(discuss_read_position_is_newer, ctx.state_key)):
+                    async for event in stream_intent(ctx, state, {
+                        "intent": "discuss_read", "params": discuss_position, "missing": [],
+                    }):
+                        yield event
+                    return
         if (_novel_chat_enabled(ctx, state) and not ctx.has_image
                 and re.fullmatch(r"(?:继续读|接着念)[吧。！!\s]*", ctx.message.strip())):
             position = await asyncio.to_thread(get_novel_read_position, ctx.state_key)

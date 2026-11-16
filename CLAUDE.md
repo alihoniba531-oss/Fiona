@@ -250,3 +250,7 @@ WO3e 导演知识库：`studio.director_kb` 读取 `backend/studio/director_kb/c
 ## 讨论群界面（第二期）
 
 入口文件：书签与抽屉在 `frontend/components/Sidebar.tsx` 和 `frontend/app/page.tsx`，三个页面在 `frontend/app/discuss/`，部件在 `frontend/components/discuss/`，类型与请求在 `frontend/lib/discuss.ts`。两条约定：侧栏不自己请求访问检查，权限由主页传入；凡是按状态决定显示什么，都写在 `frontend/lib/discussLogic.ts` 里。
+
+## 讨论群聊天互通（第三期）
+
+FIONA_DISCUSS_CHAT、FIONA_DISCUSS_CHAT_CARDS 默认关。入口 backend/discuss/chat.py、backend/discuss/cards.py。细节见 docs/ARCHITECTURE.md。

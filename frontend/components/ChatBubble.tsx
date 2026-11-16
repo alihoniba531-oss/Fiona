@@ -7,6 +7,8 @@ import GeneratedImage from "@/components/GeneratedImage";
 import SongProjectCard from "@/components/SongProjectCard";
 import NovelDraftCard from "@/components/NovelDraftCard";
 import NovelFeedbackCard from "@/components/NovelFeedbackCard";
+import DiscussTaskCard from "@/components/DiscussTaskCard";
+import DiscussNoteCard from "@/components/DiscussNoteCard";
 import { generatedImagePath, referenceImagePath, storedReferenceImagePaths, isLocalReferenceDataUrl, type ReferenceImageInput } from "@/lib/generatedImages";
 import { API_BASE as API } from "@/lib/config";
 import { openExternal, toSafeExternalUrl } from "@/lib/open";
@@ -98,6 +100,8 @@ export interface CardData {
   project_id?: string;  // "song_project" = 写歌项目卡片
   draft_id?: string;  // "novel_draft" = 书斋草稿卡片
   feedback_id?: string;  // "novel_feedback" = 修改意见卡
+  task_id?: string;  // "discuss_task" = 讨论群任务卡
+  note_id?: string;  // "discuss_note" = 讨论群意见卡
   weather?: WeatherData;
   items?: { title: string; url?: string }[];
   sources?: { title: string; url: string; site_name?: string; index?: number }[];
@@ -107,11 +111,12 @@ interface ChatCardProps {
   card: CardData;
   onCompose?: (text: string) => void;
   onOpenNovel?: (path: string) => void;
+  onOpenDiscuss?: (path: string) => void;
   songCardCompact?: (projectId: string) => boolean;
 }
 
 export function ChatCard(props: ChatCardProps) {
-  const { card, onCompose, onOpenNovel, songCardCompact } = props;
+  const { card, onCompose, onOpenNovel, onOpenDiscuss, songCardCompact } = props;
   if (card.subtype === "novel_draft") {
     if (!card.draft_id) return null;
     return <NovelDraftCard draftId={card.draft_id} onOpenNovel={onOpenNovel} />;
@@ -119,6 +124,14 @@ export function ChatCard(props: ChatCardProps) {
   if (card.subtype === "novel_feedback") {
     if (!card.feedback_id) return null;
     return <NovelFeedbackCard feedbackId={card.feedback_id} onOpenNovel={onOpenNovel} />;
+  }
+  if (card.subtype === "discuss_task") {
+    if (!card.task_id) return null;
+    return <DiscussTaskCard taskId={card.task_id} onOpenDiscuss={onOpenDiscuss} />;
+  }
+  if (card.subtype === "discuss_note") {
+    if (!card.note_id) return null;
+    return <DiscussNoteCard noteId={card.note_id} onOpenDiscuss={onOpenDiscuss} />;
   }
   if (card.subtype === "song_project") {
     const projectId = card.project_id;
@@ -285,10 +298,11 @@ interface ChatBubbleProps {
   selectedReferenceImagePaths?: string[];
   onCompose?: (text: string) => void;
   onOpenNovel?: (path: string) => void;
+  onOpenDiscuss?: (path: string) => void;
   songCardCompact?: (projectId: string) => boolean;
 }
 
-function ChatBubble({ message, agentName = "Chloe", onDelete, onSpeak, onStopSpeak, speaking = false, speakDisabled = false, onConfirmTts, onDeclineTts, onRetryImage, imageRetryDisabled, onEditImage, selectedReferenceImagePaths = [], onCompose, onOpenNovel, songCardCompact }: ChatBubbleProps) {
+function ChatBubble({ message, agentName = "Chloe", onDelete, onSpeak, onStopSpeak, speaking = false, speakDisabled = false, onConfirmTts, onDeclineTts, onRetryImage, imageRetryDisabled, onEditImage, selectedReferenceImagePaths = [], onOpenDiscuss, onCompose, onOpenNovel, songCardCompact }: ChatBubbleProps) {
   const isUser = message.role === "user";
   const referenceUrls = useMemo(() => {
     if (!isUser) return [];
@@ -407,8 +421,8 @@ function ChatBubble({ message, agentName = "Chloe", onDelete, onSpeak, onStopSpe
           </div>
         )}
 
-        {message.cardData && <ChatCard card={message.cardData} onCompose={onCompose} onOpenNovel={onOpenNovel} songCardCompact={songCardCompact} />}
-        {message.cards?.map((card, index) => <ChatCard key={index} card={card} onCompose={onCompose} onOpenNovel={onOpenNovel} songCardCompact={songCardCompact} />)}
+        {message.cardData && <ChatCard card={message.cardData} onCompose={onCompose} onOpenNovel={onOpenNovel} songCardCompact={songCardCompact} onOpenDiscuss={onOpenDiscuss} />}
+        {message.cards?.map((card, index) => <ChatCard key={index} card={card} onCompose={onCompose} onOpenNovel={onOpenNovel} songCardCompact={songCardCompact} onOpenDiscuss={onOpenDiscuss} />)}
 
         {message.imageGenerationRetry && onRetryImage && <button type="button"
           disabled={imageRetryDisabled}

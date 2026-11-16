@@ -8,7 +8,9 @@ import { LoadingState } from "@/components/novel/NovelStates";
 
 function NewDiscussContent() {
   const embedded = useSearchParams().get("embed") === "1";
-  return <DiscussShell embedded={embedded}><DiscussCreateForm embedded={embedded} /></DiscussShell>;
+  const taskParam = useSearchParams().get("task");
+  const taskId = taskParam && /^[0-9a-f-]{36}$/.test(taskParam) ? taskParam : undefined;
+  return <DiscussShell embedded={embedded}><DiscussCreateForm embedded={embedded} taskId={taskId} /></DiscussShell>;
 }
 
 export default function NewDiscussPage() {

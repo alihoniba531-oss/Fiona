@@ -18,7 +18,7 @@ from pydantic import BaseModel
 from novel.byok_bridge import ByokBridge
 from safety import CRISIS_RESOURCE_NOTE, assess_crisis
 
-from . import avatar, billing, config, roles, runner, schemas
+from . import avatar, billing, cards, config, roles, runner, schemas
 from . import store as discuss_store
 
 
@@ -31,6 +31,7 @@ class CreateGroup(BaseModel):
     models: dict[str, str] | None = None
     members: list[dict] | None = None
     identities: dict[str, dict] | None = None
+    task_id: str | None = None
 
 
 class UpdatePlan(BaseModel):
@@ -503,6 +504,11 @@ async def create_group(username: str, body: CreateGroup) -> dict:
             config=config_data,
             created_day=day,
         )
+        if body.task_id is not None:
+            consumed = await cards.consume_task_card(
+                db, username, body.task_id, group_id)
+            if not consumed:
+                await _rollback_fail(db, "任务卡不存在或已使用", 422)
     await discuss_store.run_write(operation)
     await runner.start_group(group_id, username)
     group = await discuss_store.get_group(username, group_id)

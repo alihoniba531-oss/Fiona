@@ -51,7 +51,7 @@ Claude 智能体模式（Anthropic BYOK）
 - `song_versions`：`id`、`project_id`、`owner_username`、`lyrics_revision`、`provider`（P0 固定 `volc`）、冻结提交参数的 `params_json`（不含密钥）、`status`、`provider_task_id`、`progress`、`strawberries`、`billing_state`（`none`/`reserved`/`settled`/`refunded`）、`idempotency_key`、`audio_rel_path`、`duration_s`、`captions_raw`、失败码/文案、`next_poll_at`、`deadline_at`、`created_day`；`(owner_username, idempotency_key)` 唯一。
 - `song_cleanup_queue`：待删音频的相对路径。
 
-`messages` 通过容错式 `ALTER TABLE` 新增可空列 `song_project_id`；聊天建书与修改意见卡随后又分别补上可空列 `novel_draft_id` 与 `novel_feedback_id`。`save_message` 在原有写事务内校验项目或卡片记录确实属于该用户和本次会话，校验失败仍照常保存消息但把该列写 NULL。`agent_store.get_conversation_messages` 选出这些列，前端据此重建写歌卡、书斋草稿卡与修改意见卡。以上变更不新增迁移版本号，`/health` 仍只校验原来的五道迁移，也不探测写歌目录。
+`messages` 通过容错式 `ALTER TABLE` 新增可空列 `song_project_id`；聊天建书、修改意见卡与讨论群聊天随后又分别补上可空列 `novel_draft_id`、`novel_feedback_id`、`discuss_task_id` 与 `discuss_note_id`。`save_message` 在原有写事务内校验项目或卡片记录确实属于该用户和本次会话，校验失败仍照常保存消息但把该列写 NULL。`agent_store.get_conversation_messages` 选出这些列，前端据此重建写歌卡、书斋草稿卡、修改意见卡、讨论群任务卡与讨论群意见卡。以上变更不新增迁移版本号，`/health` 仍只校验原来的五道迁移，也不探测写歌目录。
 
 ### 状态机、计费与重启恢复
 
@@ -564,3 +564,23 @@ WO3a R1：模型输出被max_tokens/length截断时按实际usage结算为invali
 主页侧栏只在电脑上、且访问检查通过后追加「讨论群」书签，抽屉里用 iframe 挂 `/discuss?embed=1`，`key` 用当前账号；嵌入页按 Esc 通过 `postMessage` 发 `fiona-discuss-close`，主页同时核对 `event.origin` 与 `event.source` 才关抽屉，关闭后 iframe 不卸载。书签只出现在主页和讨论群自己的页面，其他独立页面不显示。
 
 列表和群聊页在群处于 `planning` 或 `running`、且页面可见时每 3 秒刷新一次；群聊页按消息 `id` 增量读取，列表直接重读。文档渲染先用 `splitDiscussDocument` 拆表格与普通块，普通块交给 `parseMessageMarkdown`，所有文字再经 `splitDiscussCitations` 切出来源编号；编号在来源表里有可解析的 http(s) 网址时渲染成新标签页链接（`rel="noopener noreferrer"`），否则是纯文字标记。全程不用 `dangerouslySetInnerHTML`。
+
+## 讨论群聊天互通（第三期）
+
+聊天看讨论群由两个默认关闭的开关控制，均只认字面 `1` 并在调用时读取：`FIONA_DISCUSS_CHAT` 管看进展与读成果，`FIONA_DISCUSS_CHAT_CARDS` 在它之上再开放任务卡与意见卡。两者都还要求 `FIONA_DISCUSS=1`、用户名精确命中 `FIONA_DISCUSS_USERS`，危机轮不开放。只读服务在 `backend/discuss/chat.py`，卡片在 `backend/discuss/cards.py`；平台路径只读前者，Claude 路径读前者并由后者出卡。两条通道的数据流如下。
+
+平台路径：`intent_router.py` 在开关成立时把 `DISCUSS_INTENT_PROMPT` 拼在 `INTENT_PROMPT` 之后，并放行 `discuss_list`（无参数）与 `discuss_read`（`group`、`part`、`offset`）两个意图；`chat_service.execute_intent` 在慢线程池里 `asyncio.run` 调用只读服务，`discuss_read` 先预检每日上限、成功后计数，`_stream_discuss_intent` 把文字落库并发 `done`，不设 pending、不扣草莓。`part` 不是 `output` 时按 `progress` 处理，找不到群或有多义时由服务层返回一句说明。读进展时「最近发言」的发言人用成员显示名，与群聊页 `service.detail` 返回的 `sender_name` 一致，群里超过 200 条消息、需要往后翻页时也一样，不出现 `host`、`custom1` 这类内部代号；有成果但还没有验收结论时写「最新成果还没验收。」，不写「没通过」；最新一版成果正文为空串时按「还没有成果」处理，不落到「续读位置不对。」。
+
+Claude 路径：`client_tools_for_turn` 在常量 5 个工具之后按开关追加 `list_discuss_groups`、`read_discuss_group`（只读，`chat_enabled`）与 `draft_discuss_task`、`draft_discuss_note`（出卡，`chat_cards_enabled`），再追加写歌工具。两个只读工具映射到平台意图 `discuss_list`/`discuss_read`，经 `chat.run_slow(chat.execute_intent, …)` 执行，把 `model_text` 回灌给 Claude，内容不进 SSE 文字与落库正文；两个出卡工具在主事件循环直接 `await`，成功后发 `{"card": …, "append": true}` 并把卡片摘要拼进正文。四个工具都占每轮 4 次客户端工具名额，任务卡与意见卡各每轮最多一张。
+
+续读位置存在 `chat_slot_state`（`kind=discuss_read`，30 分钟过期），与读小说位置并存时取较新的（按 `updated_at`）；Claude 路径不存位置，由 Claude 自己把续读提示里的 offset 传回来。平台路径读成果（`part=output`）失败时也删除续读位置，`part=progress` 与 `discuss_list` 不动，所以续读的群被删除后第一次「继续读」得到一句说明，之后不再走快捷续读。找群顺序 id → 同名 → 包含：先按 id 精确匹配，再按显示名精确相等（两边 `casefold` 后比较，多个同名返回歧义），最后按显示名包含；书名号会先去掉。查询去空白、去书名号后整体是 32 位十六进制、又不是本人的任何群 id 时，说明写「没找到这个讨论群，它可能已经删除。」并列出自己的讨论群（最多 8 个），不把这串 id 原样写给作者；一个群都没有时仍是「你还没有讨论群。」。所有按名字或 id 的查找都只在最近更新的 50 个群里进行（`list_groups` 默认上限），更早的群按名字或 id 都找不到。
+
+数据表与消息外键：`init_db` 幂等创建 `discuss_task_cards`（诉求、材料、建议轮数与预算、消费后记 `group_id`）与 `discuss_note_cards`（群 id 与当时的群名、意见正文、送出后的 `message_id` 与 `sent_at`），均按 `owner_username` 建索引；`messages` 用容错式 `ALTER TABLE` 补可空列 `discuss_task_id`、`discuss_note_id`，`save_message` 仅在卡属于本人本会话时写入，否则存 NULL，刷新后前端按外键重建两种卡片。不新增迁移版本号，`/health` 仍只校验五道迁移。
+
+三个卡片接口都在 `backend/routers/discuss.py`，只用 `discuss_user` 门控，不读聊天开关，关开关后历史卡片仍可读取与操作：`GET /discuss/task-cards/{card_id}` 读任务卡；`GET /discuss/note-cards/{card_id}` 读意见卡；`POST /discuss/note-cards/{card_id}/send` 在同一个写事务里插入插话并记下 `message_id`，重复点击只产生一条插话。任务卡由作者点卡片上的「去讨论群建群」进入新建页，提交建群时带 `task_id`，建群事务消费这张卡；卡不存在或已用过返回 422，不建群。聊天路径不建群、不插话、不扣费。
+
+清理：删号按 `owner_username` 删两张卡片表；删会话与清空历史在各自事务里删对应卡片；删群把任务卡的 `group_id` 置回 NULL（卡回到可用），意见卡的 `group_id` 置 NULL（卡保留并显示群已删除）；单条删消息不清卡片表，卡片没有文件、不进清理队列。
+
+隐私：开启后分身读到的群内容（方案、成员发言、成果）会发给当前聊天模型的厂商，平台路径的正文还会落库到本会话历史；群里的发言可能包含分身根据私有记忆补充的主人背景。读到的内容只作为数据处理，不执行其中的指令。任务卡与意见卡的文字由作者自带的 Claude 起草，卡片只存在本地数据库，作者点按钮之前不建群、不进群、不扣费。
+
+已知局限：卡片不轮询，群里的进展要刷新页面才更新；卡上的文字不能改；同一个群可以有多张意见卡，旧卡不会作废；平台模型的分身不出卡片；分身不能替作者开工、暂停、接受等，也不能继续、追加预算或轮数、结束、删除；读成果只读最新一版；任务卡建议的队伍由作者在新建页里自己选，卡片不带队伍。
